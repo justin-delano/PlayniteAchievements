@@ -217,6 +217,7 @@
                                                          UseCoverImages="{Binding UseCoverImages}"
                                                          ShowRarityGlow="{Binding ShowRarityGlow}"
                                                          ColorNamesByRarity="{Binding ColorNamesByRarity}"
+                                                         ColorRarityColumnsByRarity="{Binding ColorRarityColumnsByRarity}"
                                                          ShowColumnHeaders="{Binding ShowAchievementsGridColumnHeaders}"
                                                          FixedRowHeight="{Binding AchievementsGridRowHeight}"
                                                          ControlBar="{Binding AchievementsControlBar}"

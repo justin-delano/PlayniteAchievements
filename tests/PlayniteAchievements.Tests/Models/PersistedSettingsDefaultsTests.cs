@@ -506,6 +506,7 @@ namespace PlayniteAchievements.Models.Tests
                 FriendsOverviewAchievementsUseCoverImages = !defaults.FriendsOverviewAchievementsUseCoverImages,
                 FriendsOverviewAchievementsShowRarityGlow = !defaults.FriendsOverviewAchievementsShowRarityGlow,
                 FriendsOverviewAchievementsColorNamesByRarity = !defaults.FriendsOverviewAchievementsColorNamesByRarity,
+                FriendsOverviewAchievementsColorRarityColumnsByRarity = !defaults.FriendsOverviewAchievementsColorRarityColumnsByRarity,
                 FriendsOverviewAchievementsStartInCategoryMode = !defaults.FriendsOverviewAchievementsStartInCategoryMode,
                 ShowFriendsOverviewFriendSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders,
                 ShowFriendsOverviewGameSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders,
@@ -558,6 +559,7 @@ namespace PlayniteAchievements.Models.Tests
                 Assert.AreEqual(source.FriendsOverviewAchievementsUseCoverImages, copy.FriendsOverviewAchievementsUseCoverImages);
                 Assert.AreEqual(source.FriendsOverviewAchievementsShowRarityGlow, copy.FriendsOverviewAchievementsShowRarityGlow);
                 Assert.AreEqual(source.FriendsOverviewAchievementsColorNamesByRarity, copy.FriendsOverviewAchievementsColorNamesByRarity);
+                Assert.AreEqual(source.FriendsOverviewAchievementsColorRarityColumnsByRarity, copy.FriendsOverviewAchievementsColorRarityColumnsByRarity);
                 Assert.AreEqual(source.FriendsOverviewAchievementsStartInCategoryMode, copy.FriendsOverviewAchievementsStartInCategoryMode);
                 Assert.AreEqual(source.ShowFriendsOverviewFriendSummariesGridColumnHeaders, copy.ShowFriendsOverviewFriendSummariesGridColumnHeaders);
                 Assert.AreEqual(source.ShowFriendsOverviewGameSummariesGridColumnHeaders, copy.ShowFriendsOverviewGameSummariesGridColumnHeaders);
@@ -616,8 +618,13 @@ namespace PlayniteAchievements.Models.Tests
                 // Use the inverse of each default so an omission would surface as a reset.
                 OverviewRecentAchievementsColorNamesByRarity = !defaults.OverviewRecentAchievementsColorNamesByRarity,
                 OverviewSelectedGameColorNamesByRarity = !defaults.OverviewSelectedGameColorNamesByRarity,
+                OverviewRecentAchievementsColorRarityColumnsByRarity = !defaults.OverviewRecentAchievementsColorRarityColumnsByRarity,
+                OverviewSelectedGameColorRarityColumnsByRarity = !defaults.OverviewSelectedGameColorRarityColumnsByRarity,
+                ViewAchievementsAchievementGridColorRarityColumnsByRarity = !defaults.ViewAchievementsAchievementGridColorRarityColumnsByRarity,
+                ViewFriendsAchievementsColorRarityColumnsByRarity = !defaults.ViewFriendsAchievementsColorRarityColumnsByRarity,
                 OverviewSelectedGameAchievementsStartInCategoryMode = !defaults.OverviewSelectedGameAchievementsStartInCategoryMode,
                 ModernDataGridColorNamesByRarity = !defaults.ModernDataGridColorNamesByRarity,
+                ModernDataGridColorRarityColumnsByRarity = !defaults.ModernDataGridColorRarityColumnsByRarity,
                 ShowDesktopThemeAchievementGridControlBar = !defaults.ShowDesktopThemeAchievementGridControlBar,
                 EnableAchievementCompactListControl = !defaults.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = !defaults.EnableAchievementDataGridControl,
@@ -657,8 +664,13 @@ namespace PlayniteAchievements.Models.Tests
             {
                 Assert.AreEqual(source.OverviewRecentAchievementsColorNamesByRarity, copy.OverviewRecentAchievementsColorNamesByRarity);
                 Assert.AreEqual(source.OverviewSelectedGameColorNamesByRarity, copy.OverviewSelectedGameColorNamesByRarity);
+                Assert.AreEqual(source.OverviewRecentAchievementsColorRarityColumnsByRarity, copy.OverviewRecentAchievementsColorRarityColumnsByRarity);
+                Assert.AreEqual(source.OverviewSelectedGameColorRarityColumnsByRarity, copy.OverviewSelectedGameColorRarityColumnsByRarity);
+                Assert.AreEqual(source.ViewAchievementsAchievementGridColorRarityColumnsByRarity, copy.ViewAchievementsAchievementGridColorRarityColumnsByRarity);
+                Assert.AreEqual(source.ViewFriendsAchievementsColorRarityColumnsByRarity, copy.ViewFriendsAchievementsColorRarityColumnsByRarity);
                 Assert.AreEqual(source.OverviewSelectedGameAchievementsStartInCategoryMode, copy.OverviewSelectedGameAchievementsStartInCategoryMode);
                 Assert.AreEqual(source.ModernDataGridColorNamesByRarity, copy.ModernDataGridColorNamesByRarity);
+                Assert.AreEqual(source.ModernDataGridColorRarityColumnsByRarity, copy.ModernDataGridColorRarityColumnsByRarity);
                 Assert.AreEqual(source.ShowDesktopThemeAchievementGridControlBar, copy.ShowDesktopThemeAchievementGridControlBar);
                 Assert.AreEqual(source.EnableAchievementCompactListControl, copy.EnableAchievementCompactListControl);
                 Assert.AreEqual(source.EnableAchievementDataGridControl, copy.EnableAchievementDataGridControl);
@@ -1003,6 +1015,7 @@ namespace PlayniteAchievements.Models.Tests
                 FriendsOverviewAchievementsUseCoverImages = !defaults.FriendsOverviewAchievementsUseCoverImages,
                 FriendsOverviewAchievementsShowRarityGlow = !defaults.FriendsOverviewAchievementsShowRarityGlow,
                 FriendsOverviewAchievementsColorNamesByRarity = !defaults.FriendsOverviewAchievementsColorNamesByRarity,
+                FriendsOverviewAchievementsColorRarityColumnsByRarity = !defaults.FriendsOverviewAchievementsColorRarityColumnsByRarity,
                 ShowFriendsOverviewFriendSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders,
                 ShowFriendsOverviewGameSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders,
                 ShowFriendsOverviewAchievementsGridColumnHeaders = !defaults.ShowFriendsOverviewAchievementsGridColumnHeaders,
@@ -1042,6 +1055,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.FriendsOverviewAchievementsUseCoverImages, settings.FriendsOverviewAchievementsUseCoverImages);
             Assert.AreEqual(defaults.FriendsOverviewAchievementsShowRarityGlow, settings.FriendsOverviewAchievementsShowRarityGlow);
             Assert.AreEqual(defaults.FriendsOverviewAchievementsColorNamesByRarity, settings.FriendsOverviewAchievementsColorNamesByRarity);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsColorRarityColumnsByRarity, settings.FriendsOverviewAchievementsColorRarityColumnsByRarity);
             Assert.AreEqual(defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders, settings.ShowFriendsOverviewFriendSummariesGridColumnHeaders);
             Assert.AreEqual(defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders, settings.ShowFriendsOverviewGameSummariesGridColumnHeaders);
             Assert.AreEqual(defaults.ShowFriendsOverviewAchievementsGridColumnHeaders, settings.ShowFriendsOverviewAchievementsGridColumnHeaders);

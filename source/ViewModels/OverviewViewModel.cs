@@ -887,6 +887,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ColorNamesByRaritySelectedGame => _settings?.Persisted?.OverviewSelectedGameColorNamesByRarity ?? false;
 
+        public bool ColorRarityColumnsByRarityRecentAchievements => _settings?.Persisted?.OverviewRecentAchievementsColorRarityColumnsByRarity ?? false;
+
+        public bool ColorRarityColumnsByRaritySelectedGame => _settings?.Persisted?.OverviewSelectedGameColorRarityColumnsByRarity ?? false;
+
         public bool ShowOverviewCollectionScoreCard => _settings?.Persisted?.ShowOverviewCollectionScoreCard ?? true;
 
         public bool ShowOverviewPrestigeScoreCard => _settings?.Persisted?.ShowOverviewPrestigeScoreCard ?? true;
@@ -2345,6 +2349,8 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowRarityGlowSelectedGame));
                 OnPropertyChanged(nameof(ColorNamesByRarityRecentAchievements));
                 OnPropertyChanged(nameof(ColorNamesByRaritySelectedGame));
+                OnPropertyChanged(nameof(ColorRarityColumnsByRarityRecentAchievements));
+                OnPropertyChanged(nameof(ColorRarityColumnsByRaritySelectedGame));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
                 RaiseOverviewScoreCardVisibilityChanged();
                 ApplyOverviewPieSmallSliceMode();
@@ -2401,6 +2407,14 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameColorNamesByRarity))
             {
                 OnPropertyChanged(nameof(ColorNamesByRaritySelectedGame));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewRecentAchievementsColorRarityColumnsByRarity))
+            {
+                OnPropertyChanged(nameof(ColorRarityColumnsByRarityRecentAchievements));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameColorRarityColumnsByRarity))
+            {
+                OnPropertyChanged(nameof(ColorRarityColumnsByRaritySelectedGame));
             }
             else if (propertyName == nameof(PersistedSettings.IncludeUnplayedGames))
             {

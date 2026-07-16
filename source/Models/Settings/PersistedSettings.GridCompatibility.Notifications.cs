@@ -85,6 +85,7 @@ namespace PlayniteAchievements.Models.Settings
             // Achievement / Default
             Add(A, GridOptionKeys.Achievement.Default, nameof(AchievementGridOptions.ShowRarityGlow), nameof(ModernDataGridShowRarityGlow));
             Add(A, GridOptionKeys.Achievement.Default, nameof(AchievementGridOptions.ColorNamesByRarity), nameof(ModernDataGridColorNamesByRarity));
+            Add(A, GridOptionKeys.Achievement.Default, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(ModernDataGridColorRarityColumnsByRarity));
             Add(A, GridOptionKeys.Achievement.Default, nameof(AchievementGridOptions.SortMode), nameof(AchievementDataGridSortMode));
             Add(A, GridOptionKeys.Achievement.Default, nameof(AchievementGridOptions.SortDescending), nameof(AchievementDataGridSortDescending));
             Add(A, GridOptionKeys.Achievement.Default, nameof(AchievementGridOptions.MaxHeight), nameof(AchievementDataGridMaxHeight));
@@ -92,6 +93,7 @@ namespace PlayniteAchievements.Models.Settings
                 nameof(DataGridColumnVisibility), nameof(DataGridColumnWidths), nameof(DataGridColumnOrder));
 
             // Achievement / SingleGame
+            Add(A, GridOptionKeys.Achievement.SingleGame, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(ViewAchievementsAchievementGridColorRarityColumnsByRarity));
             Add(A, GridOptionKeys.Achievement.SingleGame, nameof(AchievementGridOptions.StartInCategoryMode), nameof(ViewAchievementsAchievementGridStartInCategoryMode));
             Add(A, GridOptionKeys.Achievement.SingleGame, nameof(AchievementGridOptions.HideCategorySummaryRow), nameof(ViewAchievementsAchievementGridHideCategorySummaryRow));
             Add(A, GridOptionKeys.Achievement.SingleGame, nameof(AchievementGridOptions.ShowControlBar), nameof(ShowViewAchievementsAchievementGridControlBar));
@@ -107,6 +109,7 @@ namespace PlayniteAchievements.Models.Settings
             // Achievement / OverviewRecent
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.ShowRarityGlow), nameof(OverviewRecentAchievementsShowRarityGlow));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.ColorNamesByRarity), nameof(OverviewRecentAchievementsColorNamesByRarity));
+            Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(OverviewRecentAchievementsColorRarityColumnsByRarity));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.UseCoverImages), nameof(OverviewRecentAchievementsUseCoverImages));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.ShowControlBar), nameof(ShowOverviewRecentAchievementsGridControlBar));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.ShowColumnHeaders), nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
@@ -120,6 +123,7 @@ namespace PlayniteAchievements.Models.Settings
             // Achievement / OverviewSelectedGame
             Add(A, GridOptionKeys.Achievement.OverviewSelectedGame, nameof(AchievementGridOptions.ShowRarityGlow), nameof(OverviewSelectedGameShowRarityGlow));
             Add(A, GridOptionKeys.Achievement.OverviewSelectedGame, nameof(AchievementGridOptions.ColorNamesByRarity), nameof(OverviewSelectedGameColorNamesByRarity));
+            Add(A, GridOptionKeys.Achievement.OverviewSelectedGame, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(OverviewSelectedGameColorRarityColumnsByRarity));
             Add(A, GridOptionKeys.Achievement.OverviewSelectedGame, nameof(AchievementGridOptions.StartInCategoryMode), nameof(OverviewSelectedGameAchievementsStartInCategoryMode));
             Add(A, GridOptionKeys.Achievement.OverviewSelectedGame, nameof(AchievementGridOptions.HideCategorySummaryRow), nameof(OverviewSelectedGameAchievementsHideCategorySummaryRow));
             Add(A, GridOptionKeys.Achievement.OverviewSelectedGame, nameof(AchievementGridOptions.ShowControlBar), nameof(ShowOverviewSelectedGameGridControlBar));
@@ -137,6 +141,7 @@ namespace PlayniteAchievements.Models.Settings
             Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.UseCoverImages), nameof(FriendsOverviewAchievementsUseCoverImages));
             Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.ShowRarityGlow), nameof(FriendsOverviewAchievementsShowRarityGlow));
             Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.ColorNamesByRarity), nameof(FriendsOverviewAchievementsColorNamesByRarity));
+            Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(FriendsOverviewAchievementsColorRarityColumnsByRarity));
             Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.StartInCategoryMode), nameof(FriendsOverviewAchievementsStartInCategoryMode));
             Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.HideCategorySummaryRow), nameof(FriendsOverviewAchievementsHideCategorySummaryRow));
             Add(A, GridOptionKeys.Achievement.FriendsOverviewRecent, nameof(AchievementGridOptions.SortMode), nameof(FriendsOverviewAchievementsGridSortMode));
@@ -162,6 +167,7 @@ namespace PlayniteAchievements.Models.Settings
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.UseCoverImages), nameof(StartPageFriendsRecentAchievementsUseCoverImages));
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.ShowRarityGlow), nameof(StartPageFriendsRecentAchievementsShowRarityGlow));
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.ColorNamesByRarity), nameof(StartPageFriendsRecentAchievementsColorNamesByRarity));
+            Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(StartPageFriendsRecentAchievementsColorRarityColumnsByRarity));
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.ShowControlBar), nameof(ShowStartPageFriendsRecentAchievementsGridControlBar));
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.ShowColumnHeaders), nameof(ShowStartPageFriendsRecentAchievementsGridColumnHeaders));
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.UnlockDateMode), nameof(StartPageFriendsRecentAchievementsUnlockDateMode));
@@ -170,6 +176,9 @@ namespace PlayniteAchievements.Models.Settings
             Add(A, GridOptionKeys.Achievement.StartPageFriendAchievements, nameof(AchievementGridOptions.Columns),
                 nameof(StartPageFriendAchievementColumnVisibility), nameof(StartPageFriendAchievementColumnWidths), nameof(StartPageFriendAchievementColumnOrder),
                 nameof(StartPageFriendAchievementColumnAlignments), nameof(StartPageFriendAchievementColumnVerticalAlignments), nameof(StartPageFriendAchievementColumnHeaderAlignments));
+
+            // Achievement / ViewFriendsAchievements
+            Add(A, GridOptionKeys.Achievement.ViewFriendsAchievements, nameof(AchievementGridOptions.ColorRarityColumnsByRarity), nameof(ViewFriendsAchievementsColorRarityColumnsByRarity));
 
             // Achievement / DesktopTheme
             Add(A, GridOptionKeys.Achievement.DesktopTheme, nameof(AchievementGridOptions.StartInCategoryMode), nameof(DesktopThemeAchievementGridStartInCategoryMode));

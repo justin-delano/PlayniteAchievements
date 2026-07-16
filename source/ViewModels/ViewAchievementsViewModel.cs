@@ -383,6 +383,8 @@ namespace PlayniteAchievements.ViewModels
         // The Manage Achievements window follows the Overview "Selected Game Achievements" name-color setting.
         public bool ColorNamesByRarity => _settings?.Persisted?.OverviewSelectedGameColorNamesByRarity ?? false;
 
+        public bool ColorRarityColumnsByRarity => _settings?.Persisted?.ViewAchievementsAchievementGridColorRarityColumnsByRarity ?? false;
+
         #endregion
 
         #region Commands
@@ -793,6 +795,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
                 OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
                 OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
+                OnPropertyChanged(nameof(ColorRarityColumnsByRarity));
                 RaiseSummaryAppearanceProperties();
                 ApplySavedTimelineState();
                 ApplySearchFilter(skipDefaultSort: CurrentSortDirection.HasValue, refreshOrder: true);
@@ -852,6 +855,12 @@ namespace PlayniteAchievements.ViewModels
             if (e?.PropertyName == nameof(PersistedSettings.OverviewSelectedGameColorNamesByRarity))
             {
                 OnPropertyChanged(nameof(ColorNamesByRarity));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsAchievementGridColorRarityColumnsByRarity))
+            {
+                OnPropertyChanged(nameof(ColorRarityColumnsByRarity));
                 return;
             }
 

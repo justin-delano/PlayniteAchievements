@@ -65,6 +65,7 @@
                                              ShowControlBar="{Binding DataContext.Persisted.ShowDesktopThemeAchievementGridControlBar, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                              ShowRarityGlow="{Binding DataContext.Persisted.ModernDataGridShowRarityGlow, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                              ColorNamesByRarity="{Binding DataContext.Persisted.ModernDataGridColorNamesByRarity, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
+                                             ColorRarityColumnsByRarity="{Binding DataContext.Persisted.ModernDataGridColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                              ShowColumnHeaders="{Binding DataContext.Persisted.ShowDesktopThemeAchievementGridColumnHeaders, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                              FixedRowHeight="{Binding DataContext.Persisted.DesktopThemeAchievementGridRowHeight, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                              UseExternalSorting="True"

@@ -261,6 +261,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _useCoverImages;
         private bool _showRarityGlow = true;
         private bool _colorNamesByRarity;
+        private bool _colorRarityColumnsByRarity;
         private DateDisplayMode _unlockDateMode = DateDisplayMode.DateAndTime;
         private CompactListSortMode _sortMode = CompactListSortMode.UnlockTime;
         private bool _sortDescending = true;
@@ -284,6 +285,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _colorNamesByRarity;
             set => SetValue(ref _colorNamesByRarity, value);
+        }
+
+        public bool ColorRarityColumnsByRarity
+        {
+            get => _colorRarityColumnsByRarity;
+            set => SetValue(ref _colorRarityColumnsByRarity, value);
         }
 
         public DateDisplayMode UnlockDateMode
@@ -331,6 +338,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.UseCoverImages = UseCoverImages;
             clone.ShowRarityGlow = ShowRarityGlow;
             clone.ColorNamesByRarity = ColorNamesByRarity;
+            clone.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
             clone.UnlockDateMode = UnlockDateMode;
             clone.SortMode = SortMode;
             clone.SortDescending = SortDescending;

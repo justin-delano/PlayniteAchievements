@@ -69,6 +69,8 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public bool ColorNamesByRarity => WidgetSettings.ColorNamesByRarity;
 
+        public bool ColorRarityColumnsByRarity => WidgetSettings.ColorRarityColumnsByRarity;
+
         public bool ShowColumnHeaders => WidgetSettings.ShowColumnHeaders;
 
         public bool ShowControlBar => WidgetSettings.ShowControlBar;
@@ -84,6 +86,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
             OnPropertyChanged(nameof(UseCoverImages));
             OnPropertyChanged(nameof(ShowRarityGlow));
             OnPropertyChanged(nameof(ColorNamesByRarity));
+            OnPropertyChanged(nameof(ColorRarityColumnsByRarity));
             OnPropertyChanged(nameof(ShowColumnHeaders));
             OnPropertyChanged(nameof(ShowControlBar));
             OnPropertyChanged(nameof(RowHeight));
@@ -115,6 +118,12 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 IsWidgetSettingsProperty(propertyName, nameof(StartPageRecentUnlocksGridSettings.ColorNamesByRarity)))
             {
                 OnPropertyChanged(nameof(ColorNamesByRarity));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageRecentUnlocksGridSettings.ColorRarityColumnsByRarity)))
+            {
+                OnPropertyChanged(nameof(ColorRarityColumnsByRarity));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||

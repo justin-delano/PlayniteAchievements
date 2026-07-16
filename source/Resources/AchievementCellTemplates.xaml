@@ -178,10 +178,19 @@
                 </Image.Style>
             </Image>
             <TextBlock Text="{Binding GlobalPercentText}"
-                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                        FontWeight="SemiBold"
-                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                       Opacity="{StaticResource PlayAch.Opacity.Secondary}"/>
+                       Opacity="{StaticResource PlayAch.Opacity.Secondary}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                <Setter Property="Foreground" Value="{Binding RarityBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </StackPanel>
     </DataTemplate>
 

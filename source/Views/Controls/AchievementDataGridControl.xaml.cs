@@ -423,6 +423,24 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Identifies the ColorRarityColumnsByRarity dependency property.
+        /// When true, rarity and rarity percent text in this grid are colored by rarity tier
+        /// instead of the default text color.
+        /// </summary>
+        public static readonly DependencyProperty ColorRarityColumnsByRarityProperty =
+            DependencyProperty.Register(nameof(ColorRarityColumnsByRarity), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        /// <summary>
+        /// Gets or sets whether rarity column text in this grid is colored by rarity.
+        /// </summary>
+        public bool ColorRarityColumnsByRarity
+        {
+            get => (bool)GetValue(ColorRarityColumnsByRarityProperty);
+            set => SetValue(ColorRarityColumnsByRarityProperty, value);
+        }
+
+        /// <summary>
         /// Identifies the DataGridMaxHeight dependency property.
         /// When set, limits the maximum height of the internal DataGrid.
         /// </summary>

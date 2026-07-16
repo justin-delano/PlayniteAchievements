@@ -446,6 +446,7 @@
                                                      UseCoverImages="{Binding Settings.Persisted.FriendsOverviewAchievementsUseCoverImages}"
                                                      ShowRarityGlow="{Binding Settings.Persisted.FriendsOverviewAchievementsShowRarityGlow}"
                                                      ColorNamesByRarity="{Binding Settings.Persisted.FriendsOverviewAchievementsColorNamesByRarity}"
+                                                     ColorRarityColumnsByRarity="{Binding Settings.Persisted.FriendsOverviewAchievementsColorRarityColumnsByRarity}"
                                                      ShowColumnHeaders="{Binding Settings.Persisted.ShowFriendsOverviewAchievementsGridColumnHeaders}"
                                                      FixedRowHeight="{Binding Settings.Persisted.FriendsOverviewAchievementsGridRowHeight}"
                                                      DataGridMaxHeight="{x:Static sys:Double.NaN}"

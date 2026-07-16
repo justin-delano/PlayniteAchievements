@@ -79,6 +79,10 @@
                       IsChecked="{Binding AchievementOptions.ColorNamesByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityColumnsByRarity}"
+                      IsChecked="{Binding AchievementOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
         </StackPanel>
 
         <!-- Game-summary-specific leading rows -->

@@ -14,6 +14,7 @@
                                              UseCoverImages="{Binding UseCoverImages}"
                                              ShowRarityGlow="{Binding ShowRarityGlow}"
                                              ColorNamesByRarity="{Binding ColorNamesByRarity}"
+                                             ColorRarityColumnsByRarity="{Binding ColorRarityColumnsByRarity}"
                                              ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                              ControlBar="{Binding ControlBar}"
                                              ShowControlBar="{Binding ShowControlBar}"

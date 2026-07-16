@@ -173,6 +173,12 @@ namespace PlayniteAchievements.Models.Settings
             set => Options.ColorNamesByRarity = value;
         }
 
+        public bool ColorRarityColumnsByRarity
+        {
+            get => Options.ColorRarityColumnsByRarity;
+            set => Options.ColorRarityColumnsByRarity = value;
+        }
+
         public bool ShowColumnHeaders
         {
             get => Options.ShowColumnHeaders;
@@ -224,6 +230,7 @@ namespace PlayniteAchievements.Models.Settings
             target.UseCoverImages = UseCoverImages;
             target.ShowRarityGlow = ShowRarityGlow;
             target.ColorNamesByRarity = ColorNamesByRarity;
+            target.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
             target.ShowColumnHeaders = ShowColumnHeaders;
             target.ShowControlBar = ShowControlBar;
             target.RowHeight = RowHeight;

@@ -16,8 +16,10 @@ namespace PlayniteAchievements.Models.Tests
 
             var options = settings.GridOptions.GetAchievement(GridOptionKeys.Achievement.OverviewRecent);
             options.ShowRarityGlow = !options.ShowRarityGlow;
+            options.ColorRarityColumnsByRarity = !options.ColorRarityColumnsByRarity;
 
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewRecentAchievementsShowRarityGlow));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewRecentAchievementsColorRarityColumnsByRarity));
         }
 
         [TestMethod]

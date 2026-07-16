@@ -402,10 +402,19 @@
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding GlobalPercentText}"
-                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    FontWeight="SemiBold"
-                                   Opacity="{StaticResource PlayAch.Opacity.Secondary}"/>
+                                   Opacity="{StaticResource PlayAch.Opacity.Secondary}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedCenteredDataGridTextStyle}">
+                                    <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                            <Setter Property="Foreground" Value="{Binding RarityBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

@@ -251,6 +251,7 @@ namespace PlayniteAchievements.ViewModels.Items
                     OnPropertyChanged(nameof(RaritySortValue));
                     OnPropertyChanged(nameof(CollectionScore));
                     OnPropertyChanged(nameof(PrestigeScore));
+                    OnPropertyChanged(nameof(RarityBrush));
                     OnPropertyChanged(nameof(RarityNameBrush));
                 }
             }
@@ -742,6 +743,15 @@ namespace PlayniteAchievements.ViewModels.Items
             }
         }
 
+        public System.Windows.Media.Brush RarityBrush
+        {
+            get
+            {
+                var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+                return RarityAppearanceHelper.GetBrush(Rarity, persisted);
+            }
+        }
+
         public string HiddenTitleSuffix
         {
             get
@@ -877,6 +887,7 @@ namespace PlayniteAchievements.ViewModels.Items
             ShowLockedIcon = showLockedIcon;
             UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
             ShowRarityBar = showRarityBar;
+            OnPropertyChanged(nameof(RarityBrush));
             OnPropertyChanged(nameof(RarityNameBrush));
         }
 
@@ -1310,6 +1321,7 @@ namespace PlayniteAchievements.ViewModels.Items
             OnPropertyChanged(nameof(ShowUnlockDate));
             OnPropertyChanged(nameof(ShowLockedProgress));
             OnPropertyChanged(nameof(IsCapstone));
+            OnPropertyChanged(nameof(RarityBrush));
             OnPropertyChanged(nameof(RarityNameBrush));
             OnPropertyChanged(nameof(Hidden));
             OnPropertyChanged(nameof(IsUnlock));

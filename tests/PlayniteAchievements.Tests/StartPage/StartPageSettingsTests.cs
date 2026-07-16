@@ -142,6 +142,7 @@ namespace PlayniteAchievements.Tests.StartPage
 
             source.StartPageRecentUnlocksGrid.UseCoverImages = false;
             source.StartPageRecentUnlocksGrid.ColorNamesByRarity = true;
+            source.StartPageRecentUnlocksGrid.ColorRarityColumnsByRarity = true;
             source.StartPageRecentUnlocksGrid.ShowColumnHeaders = false;
             source.StartPageRecentUnlocksGrid.ShowControlBar = true;
             source.StartPageRecentUnlocksGrid.RowHeight = 84d;
@@ -151,6 +152,7 @@ namespace PlayniteAchievements.Tests.StartPage
 
             source.StartPageFriendsRecentUnlocksGrid.UseCoverImages = false;
             source.StartPageFriendsRecentUnlocksGrid.ColorNamesByRarity = true;
+            source.StartPageFriendsRecentUnlocksGrid.ColorRarityColumnsByRarity = true;
             source.StartPageFriendsRecentUnlocksGrid.ShowColumnHeaders = false;
             source.StartPageFriendsRecentUnlocksGrid.ShowControlBar = true;
             source.StartPageFriendsRecentUnlocksGrid.RowHeight = 86d;
@@ -182,6 +184,7 @@ namespace PlayniteAchievements.Tests.StartPage
 
             Assert.IsFalse(copy.StartPageRecentUnlocksGrid.UseCoverImages);
             Assert.IsTrue(copy.StartPageRecentUnlocksGrid.ColorNamesByRarity);
+            Assert.IsTrue(copy.StartPageRecentUnlocksGrid.ColorRarityColumnsByRarity);
             Assert.IsFalse(copy.StartPageRecentUnlocksGrid.ShowColumnHeaders);
             Assert.IsTrue(copy.StartPageRecentUnlocksGrid.ShowControlBar);
             Assert.AreEqual(84d, copy.StartPageRecentUnlocksGrid.RowHeight);
@@ -192,6 +195,7 @@ namespace PlayniteAchievements.Tests.StartPage
 
             Assert.IsFalse(copy.StartPageFriendsRecentUnlocksGrid.UseCoverImages);
             Assert.IsTrue(copy.StartPageFriendsRecentUnlocksGrid.ColorNamesByRarity);
+            Assert.IsTrue(copy.StartPageFriendsRecentUnlocksGrid.ColorRarityColumnsByRarity);
             Assert.IsFalse(copy.StartPageFriendsRecentUnlocksGrid.ShowColumnHeaders);
             Assert.IsTrue(copy.StartPageFriendsRecentUnlocksGrid.ShowControlBar);
             Assert.AreEqual(86d, copy.StartPageFriendsRecentUnlocksGrid.RowHeight);
@@ -504,6 +508,7 @@ namespace PlayniteAchievements.Tests.StartPage
             options.UseCoverImages = seed % 2 == 0;
             options.ShowRarityGlow = seed % 2 != 0;
             options.ColorNamesByRarity = seed % 2 == 0;
+            options.ColorRarityColumnsByRarity = seed % 2 != 0;
             options.UnlockDateMode = (DateDisplayMode)(seed % 3);
             options.SortMode = (CompactListSortMode)(seed % 3);
             options.SortDescending = seed % 2 == 0;
@@ -517,6 +522,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual(seed % 2 == 0, options.UseCoverImages);
             Assert.AreEqual(seed % 2 != 0, options.ShowRarityGlow);
             Assert.AreEqual(seed % 2 == 0, options.ColorNamesByRarity);
+            Assert.AreEqual(seed % 2 != 0, options.ColorRarityColumnsByRarity);
             Assert.AreEqual((DateDisplayMode)(seed % 3), options.UnlockDateMode);
             Assert.AreEqual((CompactListSortMode)(seed % 3), options.SortMode);
             Assert.AreEqual(seed % 2 == 0, options.SortDescending);
