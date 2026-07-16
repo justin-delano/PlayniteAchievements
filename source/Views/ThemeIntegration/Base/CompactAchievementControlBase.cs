@@ -166,7 +166,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 EnableRaretyIndicator = true,
                 DisplayRaretyValue = true,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                // Clicking any achievement icon opens the achievements window
+                // (or toggles hidden reveal), so always show the hand cursor.
+                Cursor = Cursors.Hand
             };
 
             var glowBinding = new Binding(RarityGlowSettingPath)
@@ -200,7 +203,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             if (SupportsHiddenReveal)
             {
                 bool hiddenLocked = achievement.Hidden && !achievement.Unlocked;
-                image.Cursor = hiddenLocked ? Cursors.Hand : null;
                 HiddenRevealHelper.SetIsRevealed(image, false);
                 ApplyAchievementDisplay(image, achievement, obscured: hiddenLocked && !ShowHiddenIcon);
             }
@@ -248,7 +250,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 _lastLayoutAchievements = null;
 
                 e.Handled = true;
+                return;
             }
+
+            e.Handled = true;
+            OpenViewAchievementsWindowFocused(null, achievement.ApiName, achievement.DisplayName);
         }
 
         protected CompactAchievementControlBase()
