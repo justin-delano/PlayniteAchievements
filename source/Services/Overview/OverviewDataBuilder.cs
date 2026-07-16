@@ -287,12 +287,13 @@ namespace PlayniteAchievements.Services.Overview
                 }
 
                 var presentation = ResolveGamePresentation(game.PlayniteGameId, presentationByGameId);
+                var summaryArt = GameSummaryArtResolver.ResolveForGame(game.PlayniteGameId);
                 snapshot.GameSummaries.Add(new GameSummaryItem
                 {
                     GameName = presentation.DisplayName ?? game.GameName ?? "Unknown",
                     SortingName = presentation.SortingName ?? presentation.DisplayName ?? game.GameName ?? "Unknown",
-                    GameLogo = presentation.IconPath,
-                    GameCoverPath = presentation.CoverPath,
+                    GameLogo = summaryArt ?? presentation.IconPath,
+                    GameCoverPath = summaryArt ?? presentation.CoverPath,
                     PlatformText = presentation.PlatformText,
                     Platforms = presentation.Platforms ?? Array.Empty<string>(),
                     RegionText = presentation.RegionText,
