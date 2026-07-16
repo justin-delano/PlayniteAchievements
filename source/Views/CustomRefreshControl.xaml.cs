@@ -197,7 +197,7 @@ namespace PlayniteAchievements.Views
 
         public ObservableCollection<ProviderOptionItem> ProviderOptions { get; } = new ObservableCollection<ProviderOptionItem>();
         public ObservableCollection<ScopeOptionItem> ScopeOptions { get; } = new ObservableCollection<ScopeOptionItem>();
-        public ObservableCollection<GameOptionItem> GameOptions { get; } = new ObservableCollection<GameOptionItem>();
+        public BulkObservableCollection<GameOptionItem> GameOptions { get; } = new BulkObservableCollection<GameOptionItem>();
         public ObservableCollection<CustomRefreshPreset> PresetOptions { get; } = new ObservableCollection<CustomRefreshPreset>();
 
         public ICollectionView IncludeGameView { get; }
@@ -609,25 +609,25 @@ namespace PlayniteAchievements.Views
 
         private void InitializeGames()
         {
-            // Both collection views observe GameOptions; defer their refreshes so bulk
-            // population does not run per-item filter passes twice per added game.
-            using (IncludeGameView.DeferRefresh())
-            using (ExcludeGameView.DeferRefresh())
+            _gamesById.Clear();
+
+            // Both collection views observe GameOptions; ReplaceAll raises a single
+            // Reset so bulk population runs one filter pass per view instead of two
+            // per added game. (DeferRefresh cannot be used here: mutating the source
+            // collection while a ListCollectionView refresh is deferred throws.)
+            var gameItems = new List<GameOptionItem>();
+            foreach (var game in _api.Database.Games
+                .Where(game => game != null && game.Id != Guid.Empty)
+                .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase))
             {
-                GameOptions.Clear();
-                _gamesById.Clear();
+                _gamesById[game.Id] = game;
 
-                foreach (var game in _api.Database.Games
-                    .Where(game => game != null && game.Id != Guid.Empty)
-                    .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase))
-                {
-                    _gamesById[game.Id] = game;
-
-                    var gameItem = new GameOptionItem(game.Id, BuildGameDisplayName(game));
-                    gameItem.PropertyChanged += OnGameOptionChanged;
-                    GameOptions.Add(gameItem);
-                }
+                var gameItem = new GameOptionItem(game.Id, BuildGameDisplayName(game));
+                gameItem.PropertyChanged += OnGameOptionChanged;
+                gameItems.Add(gameItem);
             }
+
+            GameOptions.ReplaceAll(gameItems);
         }
 
         private void InitializePresets()
