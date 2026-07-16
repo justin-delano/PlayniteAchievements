@@ -4,6 +4,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.EmuLibrary;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
@@ -148,30 +149,35 @@ namespace PlayniteAchievements.Providers.Xenia
         private bool HasSupportedRom(Game game)
         {
             var roms = game?.Roms;
-            if (roms == null)
+            if (roms != null)
+            {
+                foreach (var rom in roms)
+                {
+                    if (IsSupportedRomPath(PathExpansion.ExpandGamePath(_playniteApi, game, rom?.Path)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // Uninstalled EmuLibrary games carry no rom entries; check the source file
+            // decoded from the serialized EmuLibrary game id instead.
+            return EmuLibraryPathResolver.TryResolveSourceFilePath(_playniteApi, game, out var emuLibrarySourceFile) &&
+                   IsSupportedRomPath(emuLibrarySourceFile);
+        }
+
+        private static bool IsSupportedRomPath(string path)
+        {
+            path = (path ?? string.Empty).Trim().Trim('"');
+            if (string.IsNullOrWhiteSpace(path))
             {
                 return false;
             }
 
-            foreach (var rom in roms)
-            {
-                var path = PathExpansion.ExpandGamePath(_playniteApi, game, rom?.Path);
-                path = (path ?? string.Empty).Trim().Trim('"');
-                if (string.IsNullOrWhiteSpace(path))
-                {
-                    continue;
-                }
-
-                var extension = Path.GetExtension(path) ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(extension) ||
-                    extension.Equals(".iso", StringComparison.OrdinalIgnoreCase) ||
-                    extension.Equals(".xex", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            var extension = Path.GetExtension(path) ?? string.Empty;
+            return string.IsNullOrWhiteSpace(extension) ||
+                   extension.Equals(".iso", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".xex", StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool TryGetTitleIdOverride(Guid gameId, out string titleIdOverride)

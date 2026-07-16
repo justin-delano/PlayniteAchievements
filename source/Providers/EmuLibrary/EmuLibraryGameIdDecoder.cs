@@ -3,7 +3,7 @@ using ProtoBuf;
 using System;
 using System.IO;
 
-namespace PlayniteAchievements.Providers.RetroAchievements
+namespace PlayniteAchievements.Providers.EmuLibrary
 {
     [ProtoContract]
     [ProtoInclude(10, typeof(EmuLibrarySingleFileGameInfo))]
@@ -62,11 +62,65 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             mappingId = Guid.Empty;
             sourcePath = null;
 
+            var gameInfo = Decode(gameId) as EmuLibrarySingleFileGameInfo;
+            if (gameInfo == null ||
+                gameInfo.MappingId == Guid.Empty ||
+                string.IsNullOrWhiteSpace(gameInfo.SourcePath))
+            {
+                return false;
+            }
+
+            mappingId = gameInfo.MappingId;
+            sourcePath = gameInfo.SourcePath.Trim();
+            return true;
+        }
+
+        public static bool TryDecodeMultiFile(Game game, out Guid mappingId, out string sourceFilePath, out string sourceBaseDir)
+        {
+            mappingId = Guid.Empty;
+            sourceFilePath = null;
+            sourceBaseDir = null;
+
+            if (game == null || game.PluginId != EmuLibraryPluginId)
+            {
+                return false;
+            }
+
+            return TryDecodeMultiFile(game.GameId, out mappingId, out sourceFilePath, out sourceBaseDir);
+        }
+
+        internal static bool TryDecodeMultiFile(string gameId, out Guid mappingId, out string sourceFilePath, out string sourceBaseDir)
+        {
+            mappingId = Guid.Empty;
+            sourceFilePath = null;
+            sourceBaseDir = null;
+
+            var gameInfo = Decode(gameId) as EmuLibraryMultiFileGameInfo;
+            if (gameInfo == null || gameInfo.MappingId == Guid.Empty)
+            {
+                return false;
+            }
+
+            var trimmedFilePath = gameInfo.SourceFilePath?.Trim();
+            var trimmedBaseDir = gameInfo.SourceBaseDir?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedFilePath) && string.IsNullOrWhiteSpace(trimmedBaseDir))
+            {
+                return false;
+            }
+
+            mappingId = gameInfo.MappingId;
+            sourceFilePath = string.IsNullOrWhiteSpace(trimmedFilePath) ? null : trimmedFilePath;
+            sourceBaseDir = string.IsNullOrWhiteSpace(trimmedBaseDir) ? null : trimmedBaseDir;
+            return true;
+        }
+
+        private static EmuLibraryGameInfoBase Decode(string gameId)
+        {
             if (string.IsNullOrWhiteSpace(gameId) ||
                 gameId.Length <= GameIdPrefix.Length ||
                 !gameId.StartsWith(GameIdPrefix, StringComparison.Ordinal))
             {
-                return false;
+                return null;
             }
 
             try
@@ -74,25 +128,12 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 var serializedData = Convert.FromBase64String(gameId.Substring(GameIdPrefix.Length));
                 using (var memoryStream = new MemoryStream(serializedData))
                 {
-                    var gameInfo = Serializer.Deserialize<EmuLibraryGameInfoBase>(memoryStream) as EmuLibrarySingleFileGameInfo;
-                    if (gameInfo == null)
-                    {
-                        return false;
-                    }
-
-                    if (gameInfo.MappingId == Guid.Empty || string.IsNullOrWhiteSpace(gameInfo.SourcePath))
-                    {
-                        return false;
-                    }
-
-                    mappingId = gameInfo.MappingId;
-                    sourcePath = gameInfo.SourcePath.Trim();
-                    return true;
+                    return Serializer.Deserialize<EmuLibraryGameInfoBase>(memoryStream);
                 }
             }
             catch
             {
-                return false;
+                return null;
             }
         }
     }
