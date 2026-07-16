@@ -918,7 +918,6 @@ namespace PlayniteAchievements.Services.Refresh
                     continue;
                 }
 
-                mergedSummary.GamesRefreshed += result.Payload.Summary.GamesRefreshed;
                 mergedSummary.GamesWithAchievements += result.Payload.Summary.GamesWithAchievements;
                 mergedSummary.GamesWithoutAchievements += result.Payload.Summary.GamesWithoutAchievements;
 
@@ -927,6 +926,10 @@ namespace PlayniteAchievements.Services.Refresh
                     mergedSummary.RefreshedGameIds.AddRange(result.Payload.Summary.RefreshedGameIds);
                 }
             }
+
+            // Providers count their own passes, so summing per-provider GamesRefreshed counts a game
+            // once per servicing provider. The user-facing count is distinct games refreshed.
+            mergedSummary.GamesRefreshed = mergedSummary.RefreshedGameIds.Distinct().Count();
 
             return new RebuildPayload
             {
@@ -1273,6 +1276,14 @@ namespace PlayniteAchievements.Services.Refresh
                     {
                         FriendRefreshCoordinator.Merge(payload, result?.Payload);
                         RecordProviderFault(result, payload.FaultedProviderKeys);
+                    }
+
+                    // Merge dedupes RefreshedGameIds but sums per-provider pass counts; report the
+                    // user-facing count as distinct games refreshed.
+                    if (payload.Summary != null)
+                    {
+                        payload.Summary.GamesRefreshed = payload.Summary.RefreshedGameIds?.Distinct().Count()
+                            ?? payload.Summary.GamesRefreshed;
                     }
 
                     if (hasFriendWork)
