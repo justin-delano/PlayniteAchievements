@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Playnite.SDK;
-using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.EmuLibrary;
 using System;
 using System.IO;
 using System.Text;
@@ -9,7 +9,7 @@ using System.Text;
 namespace PlayniteAchievements.Tests.Providers
 {
     [TestClass]
-    public class RetroAchievementsEmuLibrarySettingsReaderTests
+    public class EmuLibrarySettingsReaderTests
     {
         [TestMethod]
         public void TryResolveSourceRoot_ConfigContainsMapping_ReturnsPath()

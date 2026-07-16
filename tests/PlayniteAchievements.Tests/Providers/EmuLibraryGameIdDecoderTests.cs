@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Playnite.SDK.Models;
-using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.EmuLibrary;
 using ProtoBuf;
 using System;
 using System.IO;
@@ -8,7 +8,7 @@ using System.IO;
 namespace PlayniteAchievements.Tests.Providers
 {
     [TestClass]
-    public class RetroAchievementsEmuLibraryGameIdDecoderTests
+    public class EmuLibraryGameIdDecoderTests
     {
         [TestMethod]
         public void TryDecodeSingleFile_ValidPayload_ReturnsDecodedValues()

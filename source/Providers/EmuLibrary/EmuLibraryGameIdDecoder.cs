@@ -3,7 +3,7 @@ using ProtoBuf;
 using System;
 using System.IO;
 
-namespace PlayniteAchievements.Providers.RetroAchievements
+namespace PlayniteAchievements.Providers.EmuLibrary
 {
     [ProtoContract]
     [ProtoInclude(10, typeof(EmuLibrarySingleFileGameInfo))]
