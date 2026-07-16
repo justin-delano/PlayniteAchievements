@@ -230,7 +230,7 @@
              the shadow color token rather than a text brush. -->
         <Setter Property="Effect">
             <Setter.Value>
-                <DropShadowEffect Color="{StaticResource PlayAch.Color.Shadow}" ShadowDepth="0" BlurRadius="3" Opacity="0.9"/>
+                <DropShadowEffect Color="{StaticResource PlayAch.Color.Shadow}" ShadowDepth="0" BlurRadius="5" Opacity="1"/>
             </Setter.Value>
         </Setter>
     </Style>
