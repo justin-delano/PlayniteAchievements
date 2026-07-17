@@ -106,6 +106,8 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _setDynamicAchievementsFilterCommand;
         [DontSerialize]
+        private ICommand _setDynamicAchievementsCategoryLabelFilterCommand;
+        [DontSerialize]
         private ICommand _sortDynamicAchievementsCommand;
         [DontSerialize]
         private ICommand _setDynamicAchievementsSortDirectionCommand;
@@ -303,6 +305,13 @@ namespace PlayniteAchievements.Models
         {
             get => _setDynamicAchievementsFilterCommand;
             set => SetValue(ref _setDynamicAchievementsFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicAchievementsCategoryLabelFilterCommand
+        {
+            get => _setDynamicAchievementsCategoryLabelFilterCommand;
+            set => SetValue(ref _setDynamicAchievementsCategoryLabelFilterCommand, value);
         }
 
         [DontSerialize]
@@ -940,6 +949,16 @@ namespace PlayniteAchievements.Models
         public string DynamicAchievementsFilterLabel => ModernTheme.DynamicAchievementsFilterLabel ?? DynamicThemeViewKeys.All;
 
         [DontSerialize]
+        public string DynamicAchievementsCategoryLabelFilterKey
+        {
+            get => ModernTheme.DynamicAchievementsCategoryLabelFilterKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicAchievementsCategoryLabelFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicAchievementsCategoryLabelFilterLabel => ModernTheme.DynamicAchievementsCategoryLabelFilterLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
         public string DynamicAchievementsStatusFilterKey
         {
             get => GetAchievementGroupFilter(DynamicAchievementsFilterKey, DynamicThemeOptionGroups.AchievementStatusGroup);
@@ -1060,6 +1079,9 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicAchievementCategoryTypeFilterOptions => ModernTheme.DynamicAchievementCategoryTypeFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicAchievementCategoryLabelFilterOptions => ModernTheme.DynamicAchievementCategoryLabelFilterOptions;
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicAchievementCustomizationFilterOptions => ModernTheme.DynamicAchievementCustomizationFilterOptions;
