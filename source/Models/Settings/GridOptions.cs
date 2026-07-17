@@ -357,6 +357,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showMetadataRegion = true;
         private bool _showCompletionGlow = true;
         private bool _colorRarityColumnsByRarity;
+        private bool _showNameAboveProgress;
         private DateDisplayMode _lastPlayedDateMode = DateDisplayMode.DateAndTime;
         private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
         private bool _sortDescending = true;
@@ -399,6 +400,13 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _colorRarityColumnsByRarity, value);
         }
 
+        // Renders the game name above the progress bar inside the progress cell.
+        public bool ShowNameAboveProgress
+        {
+            get => _showNameAboveProgress;
+            set => SetValue(ref _showNameAboveProgress, value);
+        }
+
         public DateDisplayMode LastPlayedDateMode
         {
             get => _lastPlayedDateMode;
@@ -427,6 +435,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.ShowMetadataRegion = ShowMetadataRegion;
             clone.ShowCompletionGlow = ShowCompletionGlow;
             clone.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
+            clone.ShowNameAboveProgress = ShowNameAboveProgress;
             clone.LastPlayedDateMode = LastPlayedDateMode;
             clone.SortMode = SortMode;
             clone.SortDescending = SortDescending;
@@ -477,6 +486,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _useCoverImages;
         private bool _showCompletionGlow = true;
         private bool _colorRarityColumnsByRarity;
+        private bool _showNameAboveProgress;
 
         public GridColumnLayoutOptions Columns
         {
@@ -518,6 +528,13 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _colorRarityColumnsByRarity, value);
         }
 
+        // Renders the category name above the progress bar inside the progress cell.
+        public bool ShowNameAboveProgress
+        {
+            get => _showNameAboveProgress;
+            set => SetValue(ref _showNameAboveProgress, value);
+        }
+
         public CategorySummaryGridOptions Clone()
         {
             return new CategorySummaryGridOptions
@@ -527,7 +544,8 @@ namespace PlayniteAchievements.Models.Settings
                 RowHeight = RowHeight,
                 UseCoverImages = UseCoverImages,
                 ShowCompletionGlow = ShowCompletionGlow,
-                ColorRarityColumnsByRarity = ColorRarityColumnsByRarity
+                ColorRarityColumnsByRarity = ColorRarityColumnsByRarity,
+                ShowNameAboveProgress = ShowNameAboveProgress
             };
         }
     }
