@@ -194,6 +194,40 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void CategoryLabel_DetailListRespectsCustomCategoryOrder()
+        {
+            var sorted = AchievementSortHelper.CreateSortedDetailList(
+                new List<AchievementDetail>
+                {
+                    CreateDetail("Alpha Item", unlocked: false, category: "Alpha", categoryOrderIndex: 1),
+                    CreateDetail("Zeta Item", unlocked: false, category: "Zeta", categoryOrderIndex: 0)
+                },
+                "CategoryLabel",
+                ListSortDirection.Ascending);
+
+            CollectionAssert.AreEqual(
+                new[] { "Zeta Item", "Alpha Item" },
+                sorted.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void CategoryLabel_DetailListWithoutOrderIndexesSortsAlphabetically()
+        {
+            var sorted = AchievementSortHelper.CreateSortedDetailList(
+                new List<AchievementDetail>
+                {
+                    CreateDetail("Zeta Item", unlocked: false, category: "Zeta"),
+                    CreateDetail("Alpha Item", unlocked: false, category: "Alpha")
+                },
+                "CategoryLabel",
+                ListSortDirection.Ascending);
+
+            CollectionAssert.AreEqual(
+                new[] { "Alpha Item", "Zeta Item" },
+                sorted.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
         public void ResolveSelectedGameAchievements_DefaultFallsBackToAllAchievements_WhenDefaultOrderIsEmpty()
         {
             var first = CreateDetail("First", unlocked: true);
@@ -647,7 +681,9 @@ namespace PlayniteAchievements.Services.Tests
             string displayName,
             bool unlocked,
             DateTime? unlockTimeUtc = null,
-            double? globalPercentUnlocked = 50)
+            double? globalPercentUnlocked = 50,
+            string category = null,
+            int categoryOrderIndex = int.MaxValue)
         {
             return new AchievementDetail
             {
@@ -655,7 +691,9 @@ namespace PlayniteAchievements.Services.Tests
                 DisplayName = displayName,
                 Unlocked = unlocked,
                 UnlockTimeUtc = unlockTimeUtc,
-                GlobalPercentUnlocked = globalPercentUnlocked
+                GlobalPercentUnlocked = globalPercentUnlocked,
+                Category = category,
+                CategoryOrderIndex = categoryOrderIndex
             };
         }
     }
