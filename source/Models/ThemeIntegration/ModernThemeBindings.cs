@@ -156,6 +156,34 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicGameSummariesSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _dynamicCategorySummaries = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private bool _hasCategorySummaries;
+        [DontSerialize]
+        private string _dynamicCategorySummariesFilterKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicCategorySummariesFilterLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicCategorySummariesSortKey = DynamicThemeViewKeys.Default;
+        [DontSerialize]
+        private string _dynamicCategorySummariesSortLabel = DynamicThemeViewKeys.Default;
+        [DontSerialize]
+        private string _dynamicCategorySummariesSortDirectionKey = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicCategorySummariesSortDirectionLabel = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicCategorySummariesDefaultFilterKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicCategorySummariesDefaultSortKey = DynamicThemeViewKeys.Default;
+        [DontSerialize]
+        private string _dynamicCategorySummariesDefaultSortDirectionKey = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicCategorySummariesFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicCategorySummariesSortOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicCategorySummariesSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicGameProgressFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicGameActivityFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
@@ -1009,6 +1037,110 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicGameSummariesSortDirectionOptions;
             set => ReplaceCollection(_dynamicGameSummariesSortDirectionOptions, value, nameof(DynamicGameSummariesSortDirectionOptions));
+        }
+
+        /// <summary>
+        /// Per-category rollup of the selected game's achievements, projected into
+        /// game-summary items so existing trophy-card templates render them unchanged.
+        /// Empty (and <see cref="HasCategorySummaries"/> false) for games with fewer
+        /// than two distinct category labels.
+        /// </summary>
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> DynamicCategorySummaries
+        {
+            get => _dynamicCategorySummaries;
+            set => ReplaceCollection(_dynamicCategorySummaries, value, nameof(DynamicCategorySummaries));
+        }
+
+        [DontSerialize]
+        public bool HasCategorySummaries
+        {
+            get => _hasCategorySummaries;
+            set => SetValue(ref _hasCategorySummaries, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesFilterKey
+        {
+            get => _dynamicCategorySummariesFilterKey;
+            set => SetValue(ref _dynamicCategorySummariesFilterKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesFilterLabel
+        {
+            get => _dynamicCategorySummariesFilterLabel;
+            set => SetValue(ref _dynamicCategorySummariesFilterLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortKey
+        {
+            get => _dynamicCategorySummariesSortKey;
+            set => SetValue(ref _dynamicCategorySummariesSortKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortLabel
+        {
+            get => _dynamicCategorySummariesSortLabel;
+            set => SetValue(ref _dynamicCategorySummariesSortLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortDirectionKey
+        {
+            get => _dynamicCategorySummariesSortDirectionKey;
+            set => SetValue(ref _dynamicCategorySummariesSortDirectionKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortDirectionLabel
+        {
+            get => _dynamicCategorySummariesSortDirectionLabel;
+            set => SetValue(ref _dynamicCategorySummariesSortDirectionLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesDefaultFilterKey
+        {
+            get => _dynamicCategorySummariesDefaultFilterKey;
+            set => SetValue(ref _dynamicCategorySummariesDefaultFilterKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesDefaultSortKey
+        {
+            get => _dynamicCategorySummariesDefaultSortKey;
+            set => SetValue(ref _dynamicCategorySummariesDefaultSortKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesDefaultSortDirectionKey
+        {
+            get => _dynamicCategorySummariesDefaultSortDirectionKey;
+            set => SetValue(ref _dynamicCategorySummariesDefaultSortDirectionKey, value);
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesFilterOptions
+        {
+            get => _dynamicCategorySummariesFilterOptions;
+            set => ReplaceCollection(_dynamicCategorySummariesFilterOptions, value, nameof(DynamicCategorySummariesFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesSortOptions
+        {
+            get => _dynamicCategorySummariesSortOptions;
+            set => ReplaceCollection(_dynamicCategorySummariesSortOptions, value, nameof(DynamicCategorySummariesSortOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesSortDirectionOptions
+        {
+            get => _dynamicCategorySummariesSortDirectionOptions;
+            set => ReplaceCollection(_dynamicCategorySummariesSortDirectionOptions, value, nameof(DynamicCategorySummariesSortDirectionOptions));
         }
 
         [DontSerialize]
