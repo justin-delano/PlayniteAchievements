@@ -102,16 +102,12 @@ namespace PlayniteAchievements.Providers.RPCS3
             if (string.IsNullOrWhiteSpace(path))
             {
                 result.ErrorMessage = ResourceProvider.GetString("LOCPlayAch_InvalidPath");
-                if (string.IsNullOrWhiteSpace(result.ErrorMessage))
-                    result.ErrorMessage = "Path is required.";
                 return result;
             }
 
             if (!Directory.Exists(path))
             {
-                result.ErrorMessage = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_InvalidPath"),
-                    path);
+                result.ErrorMessage = ResourceProvider.GetString("LOCPlayAch_InvalidPath");
                 return result;
             }
 

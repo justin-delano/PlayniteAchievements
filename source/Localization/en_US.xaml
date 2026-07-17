@@ -144,7 +144,7 @@
     <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Next">Next</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Pick">Pick</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Pick">Select</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Reset">Reset</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_ResetAll">Reset all</sys:String>
@@ -309,7 +309,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Hoyoverse">HoYoverse title</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net title</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Please enter a value for this override.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Please select a valid title for this override.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Select a valid game for this override.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Summary Exclusion</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Current Capstone: {0}</sys:String>
@@ -550,7 +550,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RecordingAuto">Automatic</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudio">Record sound</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudioHint">Records everything your PC is playing, not just the game (music and voice chat included).</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RecordingHint">Saves a short video clip for each unlock, showing the moment you earned the achievement. You need to point the plugin at an ffmpeg.exe you downloaded yourself.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecordingHint">Saves a short video clip for each unlock, showing the moment you unlocked the achievement. You need to point the plugin at an ffmpeg.exe you downloaded yourself.</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_RecordingUnavailable">Unlock recording was turned off for this session. Check the ffmpeg path, free disk space, and the plugin log.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverrides">Per-platform settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverridesHint">Default uses the settings above. A platform set to On still stays quiet while notifications or screenshots are turned off entirely.</sys:String>
@@ -580,7 +580,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Enable Tag Sync</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during refreshes.</sys:String>
-    <sys:String x:Key="LOCPlayAch_InvalidPath">Directory does not exist</sys:String>
+    <sys:String x:Key="LOCPlayAch_InvalidPath">Folder does not exist</sys:String>
 
     <!-- Provider: Battle.net -->
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSection">World of Warcraft</sys:String>
@@ -922,8 +922,8 @@
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievementCount">({0}/{1} {2})</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_None">No unowned friend game data is cached.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?&#10;&#10;This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared {0:N0} provider-only games and {1:N0} friend progress rows.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?&#10;&#10;This deletes cached data for {0:N0} games that only your friends own. Data for games you own is kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared unowned friend data for {0:N0} games.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">No friend achievement data yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Failed to load friend achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Friend refresh failed.</sys:String>
@@ -1048,7 +1048,7 @@
     <!-- ChartCut: toggle button that trims (cuts) the unlock chart to the selected time period -->
     <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_InvalidColor">Use #AARRGGBB, #RRGGBB, or a WPF color name.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Pick Color</sys:String>
+    <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Select Color</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
