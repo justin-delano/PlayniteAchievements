@@ -59,6 +59,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
         private ManageAchievementsFiltersTab _filtersControl;
         private ManageAchievementsNotesTab _notesControl;
         private ManageAchievementsAchievementIconsTab _achievementIconsControl;
+        private System.Windows.Threading.DispatcherTimer _iconOverridesChangedDebounce;
         private ManualAchievementsViewModel _manualViewModel;
         private ManageAchievementsAchievementOrderViewModel _achievementOrderViewModel;
         private ManageAchievementsCategoryViewModel _categoryViewModel;
@@ -917,8 +918,32 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void AchievementIconsControl_IconOverridesSaved(object sender, EventArgs e)
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(() => AchievementIconsControl_IconOverridesSaved(sender, e)));
+                return;
+            }
+
             _gameDataSnapshotProvider?.Invalidate();
-            _viewModel?.NotifyIconOverridesChanged();
+
+            // Icon overrides persist per interaction, but the downstream apply is a forced
+            // single-game refresh with a progress window; debounce so one editing burst
+            // triggers it once, shortly after the last commit.
+            if (_iconOverridesChangedDebounce == null)
+            {
+                _iconOverridesChangedDebounce = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(2)
+                };
+                _iconOverridesChangedDebounce.Tick += (_, __) =>
+                {
+                    _iconOverridesChangedDebounce.Stop();
+                    _viewModel?.NotifyIconOverridesChanged();
+                };
+            }
+
+            _iconOverridesChangedDebounce.Stop();
+            _iconOverridesChangedDebounce.Start();
         }
 
         private void RefreshService_GameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
@@ -1071,6 +1096,13 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void CleanupAchievementIcons()
         {
+            if (_iconOverridesChangedDebounce?.IsEnabled == true)
+            {
+                // A commit is still waiting on the debounce; apply it before tearing down.
+                _iconOverridesChangedDebounce.Stop();
+                _viewModel?.NotifyIconOverridesChanged();
+            }
+
             if (_achievementIconsControl != null)
             {
                 try
