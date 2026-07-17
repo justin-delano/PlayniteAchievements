@@ -280,6 +280,7 @@ namespace PlayniteAchievements.Models.Settings
             Add(C, GridOptionKeys.CategorySummaries.ViewAchievements, nameof(CategorySummaryGridOptions.RowHeight), nameof(ViewAchievementsCategorySummariesGridRowHeight));
             Add(C, GridOptionKeys.CategorySummaries.ViewAchievements, nameof(CategorySummaryGridOptions.UseCoverImages), nameof(ViewAchievementsCategorySummariesUseCoverImages));
             Add(C, GridOptionKeys.CategorySummaries.ViewAchievements, nameof(CategorySummaryGridOptions.ShowCompletionGlow), nameof(ViewAchievementsCategorySummariesShowCompletionGlow));
+            Add(C, GridOptionKeys.CategorySummaries.ViewAchievements, nameof(CategorySummaryGridOptions.ColorRarityColumnsByRarity), nameof(ViewAchievementsCategorySummariesColorRarityColumnsByRarity));
             Add(C, GridOptionKeys.CategorySummaries.ViewAchievements, nameof(CategorySummaryGridOptions.Columns),
                 nameof(ViewAchievementsCategorySummariesColumnVisibility), nameof(ViewAchievementsCategorySummariesColumnWidths), nameof(ViewAchievementsCategorySummariesColumnOrder),
                 nameof(ViewAchievementsCategorySummariesColumnAlignments), nameof(ViewAchievementsCategorySummariesColumnVerticalAlignments), nameof(ViewAchievementsCategorySummariesColumnHeaderAlignments));
@@ -289,6 +290,7 @@ namespace PlayniteAchievements.Models.Settings
             Add(C, GridOptionKeys.CategorySummaries.OverviewSelectedGame, nameof(CategorySummaryGridOptions.RowHeight), nameof(OverviewSelectedGameCategorySummariesGridRowHeight));
             Add(C, GridOptionKeys.CategorySummaries.OverviewSelectedGame, nameof(CategorySummaryGridOptions.UseCoverImages), nameof(OverviewSelectedGameCategorySummariesUseCoverImages));
             Add(C, GridOptionKeys.CategorySummaries.OverviewSelectedGame, nameof(CategorySummaryGridOptions.ShowCompletionGlow), nameof(OverviewSelectedGameCategorySummariesShowCompletionGlow));
+            Add(C, GridOptionKeys.CategorySummaries.OverviewSelectedGame, nameof(CategorySummaryGridOptions.ColorRarityColumnsByRarity), nameof(OverviewSelectedGameCategorySummariesColorRarityColumnsByRarity));
             Add(C, GridOptionKeys.CategorySummaries.OverviewSelectedGame, nameof(CategorySummaryGridOptions.Columns),
                 nameof(OverviewSelectedGameCategorySummariesColumnVisibility), nameof(OverviewSelectedGameCategorySummariesColumnWidths), nameof(OverviewSelectedGameCategorySummariesColumnOrder),
                 nameof(OverviewSelectedGameCategorySummariesColumnAlignments), nameof(OverviewSelectedGameCategorySummariesColumnVerticalAlignments), nameof(OverviewSelectedGameCategorySummariesColumnHeaderAlignments));
@@ -298,15 +300,20 @@ namespace PlayniteAchievements.Models.Settings
             Add(C, GridOptionKeys.CategorySummaries.FriendsOverview, nameof(CategorySummaryGridOptions.RowHeight), nameof(FriendsOverviewCategorySummariesGridRowHeight));
             Add(C, GridOptionKeys.CategorySummaries.FriendsOverview, nameof(CategorySummaryGridOptions.UseCoverImages), nameof(FriendsOverviewCategorySummariesUseCoverImages));
             Add(C, GridOptionKeys.CategorySummaries.FriendsOverview, nameof(CategorySummaryGridOptions.ShowCompletionGlow), nameof(FriendsOverviewCategorySummariesShowCompletionGlow));
+            Add(C, GridOptionKeys.CategorySummaries.FriendsOverview, nameof(CategorySummaryGridOptions.ColorRarityColumnsByRarity), nameof(FriendsOverviewCategorySummariesColorRarityColumnsByRarity));
             Add(C, GridOptionKeys.CategorySummaries.FriendsOverview, nameof(CategorySummaryGridOptions.Columns),
                 nameof(FriendsOverviewCategorySummariesColumnVisibility), nameof(FriendsOverviewCategorySummariesColumnWidths), nameof(FriendsOverviewCategorySummariesColumnOrder),
                 nameof(FriendsOverviewCategorySummariesColumnAlignments), nameof(FriendsOverviewCategorySummariesColumnVerticalAlignments), nameof(FriendsOverviewCategorySummariesColumnHeaderAlignments));
+
+            // CategorySummaries / ViewFriendsAchievements
+            Add(C, GridOptionKeys.CategorySummaries.ViewFriendsAchievements, nameof(CategorySummaryGridOptions.ColorRarityColumnsByRarity), nameof(ViewFriendsAchievementsCategorySummariesColorRarityColumnsByRarity));
 
             // CategorySummaries / DesktopTheme
             Add(C, GridOptionKeys.CategorySummaries.DesktopTheme, nameof(CategorySummaryGridOptions.ShowColumnHeaders), nameof(ShowDesktopThemeCategorySummariesGridColumnHeaders));
             Add(C, GridOptionKeys.CategorySummaries.DesktopTheme, nameof(CategorySummaryGridOptions.RowHeight), nameof(DesktopThemeCategorySummariesGridRowHeight));
             Add(C, GridOptionKeys.CategorySummaries.DesktopTheme, nameof(CategorySummaryGridOptions.UseCoverImages), nameof(DesktopThemeCategorySummariesUseCoverImages));
             Add(C, GridOptionKeys.CategorySummaries.DesktopTheme, nameof(CategorySummaryGridOptions.ShowCompletionGlow), nameof(DesktopThemeCategorySummariesShowCompletionGlow));
+            Add(C, GridOptionKeys.CategorySummaries.DesktopTheme, nameof(CategorySummaryGridOptions.ColorRarityColumnsByRarity), nameof(DesktopThemeCategorySummariesColorRarityColumnsByRarity));
             Add(C, GridOptionKeys.CategorySummaries.DesktopTheme, nameof(CategorySummaryGridOptions.Columns),
                 nameof(DesktopThemeCategorySummariesColumnVisibility), nameof(DesktopThemeCategorySummariesColumnWidths), nameof(DesktopThemeCategorySummariesColumnOrder),
                 nameof(DesktopThemeCategorySummariesColumnAlignments), nameof(DesktopThemeCategorySummariesColumnVerticalAlignments), nameof(DesktopThemeCategorySummariesColumnHeaderAlignments));
