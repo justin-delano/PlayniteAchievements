@@ -211,7 +211,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Please enter a valid positive integer Steam AppID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Please enter a valid PSN NP Communication ID such as NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Please enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
@@ -417,7 +417,7 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseRecentLimit">Override recent limit</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">You can still check progress in the overview.</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Custom Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Refresh Favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Favorites Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Full Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsFull">Friends Full Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsCustom">Friends Custom Refresh</sys:String>
@@ -425,11 +425,11 @@
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsRecent">Friends Recent Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsSelectedGame">Friends Selected Game Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsShared">Friends Shared Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Refresh Installed</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Refresh Missing</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Installed Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Missing Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Recent">Recent Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Selected">Refresh Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Single">Refresh Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Selected">Selected Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Single">Single Game Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Full</sys:String>
@@ -656,7 +656,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Tools for clearing cached plugin data and opening support or debugging utilities.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Maintenance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Show notification for refresh completion/failure</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotifyPeriodicUpdates">Show notification for periodic updates</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotifyPeriodicUpdates">Show notification for periodic refreshes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Open extension data folder (contains logs and cache)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Open Folder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">Pie Chart</sys:String>
@@ -782,7 +782,7 @@
     <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Not a valid Xenia account path - No Account file</sys:String>
 
     <!-- General Settings (continued): display, maintenance, hotkeys, notifications -->
-    <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Rebuild Now</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Refresh All Now</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Refresh only your most recently played games with achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Recent games to refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Remove All Tags</sys:String>
@@ -1024,8 +1024,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No platforms are authenticated. Please configure at least one platform in settings before refreshing.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_NotifySubscribers">Failed to notify subscribers.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Periodic update initial check failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodic update failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Periodic refresh check failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodic refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Refresh failed</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Refresh failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">Steam unlock datetime parsing failed {0} time(s) during this scan. Check the log and failed_steam_datetimes.csv, then submit an issue on GitHub. Your PlayniteAchievements language setting must match your Steam language for correct parsing.</sys:String>
