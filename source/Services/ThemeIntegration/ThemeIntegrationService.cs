@@ -460,6 +460,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 _friendCache.FriendCacheInvalidated += FriendCache_FriendCacheInvalidated;
             }
 
+            if (_friendsOverviewDataCoordinator != null)
+            {
+                _friendsOverviewDataCoordinator.SnapshotInvalidated += FriendsOverviewCoordinator_SnapshotInvalidated;
+            }
+
             // The friend runtime state is built on demand: the first read of a friend data
             // property (or a friend scope command) registers demand and triggers the build.
             // Themes without friend bindings never pay the full friends-overview snapshot cost.
@@ -471,6 +476,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             try { _settings.ModernTheme.FriendDataRequested = null; } catch { }
             try { _settings.DynamicThemeDefaultsChanged -= Settings_DynamicThemeDefaultsChanged; } catch { }
             try { _refreshService.CacheInvalidated -= RefreshService_CacheInvalidated; } catch { }
+            try
+            {
+                if (_friendsOverviewDataCoordinator != null)
+                {
+                    _friendsOverviewDataCoordinator.SnapshotInvalidated -= FriendsOverviewCoordinator_SnapshotInvalidated;
+                }
+            }
+            catch { }
             try
             {
                 if (_friendCache != null)
@@ -664,21 +677,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             _friendsOverviewDataCoordinator?.Invalidate();
-            RequestFriendStateRefreshIfConsumed();
         }
 
         private void FriendCache_FriendCacheInvalidated(object sender, EventArgs e)
         {
             _friendsOverviewDataCoordinator?.Invalidate();
-            RequestFriendStateRefreshIfConsumed();
         }
 
-        /// <summary>
-        /// Rebuilds the friend theme runtime state only when something has actually consumed
-        /// friend theme data. Staleness is always recorded via the coordinator invalidation;
-        /// without consumers the rebuild (and its full friends-overview snapshot) is skipped.
-        /// </summary>
-        public void RequestFriendStateRefreshIfConsumed()
+        // Every invalidation path funnels through the coordinator (cache invalidation handlers
+        // here, the plugin's friend-cache handler, and the post-start warm), so its
+        // SnapshotInvalidated event is the single trigger for consumed rebuilds. Staleness is
+        // always recorded; without consumers the rebuild (and its full friends-overview
+        // snapshot) is skipped.
+        private void FriendsOverviewCoordinator_SnapshotInvalidated(object sender, EventArgs e)
         {
             if (_hasFriendThemeConsumers)
             {
