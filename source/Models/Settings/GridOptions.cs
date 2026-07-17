@@ -476,6 +476,7 @@ namespace PlayniteAchievements.Models.Settings
         private double? _rowHeight;
         private bool _useCoverImages;
         private bool _showCompletionGlow = true;
+        private bool _colorRarityColumnsByRarity;
 
         public GridColumnLayoutOptions Columns
         {
@@ -509,6 +510,14 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _showCompletionGlow, value);
         }
 
+        // Colors the progress-footer badge count labels with the tier's configured rarity color,
+        // mirroring the achievement grids' ColorRarityColumnsByRarity option.
+        public bool ColorRarityColumnsByRarity
+        {
+            get => _colorRarityColumnsByRarity;
+            set => SetValue(ref _colorRarityColumnsByRarity, value);
+        }
+
         public CategorySummaryGridOptions Clone()
         {
             return new CategorySummaryGridOptions
@@ -517,7 +526,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,
                 UseCoverImages = UseCoverImages,
-                ShowCompletionGlow = ShowCompletionGlow
+                ShowCompletionGlow = ShowCompletionGlow,
+                ColorRarityColumnsByRarity = ColorRarityColumnsByRarity
             };
         }
     }
