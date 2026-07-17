@@ -79,7 +79,7 @@
                       IsChecked="{Binding AchievementOptions.ColorNamesByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityColumnsByRarity}"
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityTextByRarity}"
                       IsChecked="{Binding AchievementOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
@@ -111,7 +111,7 @@
                       IsChecked="{Binding GameSummaryOptions.ShowCompletionGlow, ElementName=EditorRoot}"
                       Visibility="{Binding ShowCompletionGlowRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityColumnsByRarity}"
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityTextByRarity}"
                       IsChecked="{Binding GameSummaryOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
@@ -131,7 +131,7 @@
                       IsChecked="{Binding CategorySummaryOptions.ShowCompletionGlow, ElementName=EditorRoot}"
                       Visibility="{Binding ShowCompletionGlowRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityColumnsByRarity}"
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityTextByRarity}"
                       IsChecked="{Binding CategorySummaryOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
