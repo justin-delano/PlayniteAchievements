@@ -52,11 +52,12 @@ namespace PlayniteAchievements.Services.Images
             _logger = logger ?? StaticLogger;
             _diskService = diskService ?? throw new ArgumentNullException(nameof(diskService));
             _maxItems = Math.Max(64, maxItems);
+            _diskService.ImageFileOverwritten += OnImageFileOverwritten;
         }
 
         public void Dispose()
         {
-            // No unmanaged resources to dispose.
+            _diskService.ImageFileOverwritten -= OnImageFileOverwritten;
         }
 
         public void Clear()
@@ -65,6 +66,55 @@ namespace PlayniteAchievements.Services.Images
             {
                 _cache.Clear();
                 _lru.Clear();
+            }
+        }
+
+        private void OnImageFileOverwritten(string path)
+        {
+            EvictByUriSegment(path);
+        }
+
+        /// <summary>
+        /// Removes every cached bitmap whose key contains the given segment
+        /// (case-insensitive). Because keys are "{size}{uri}" and the uri may carry
+        /// gray:/cachebust prefixes, a path or path fragment matches all of its decode-size
+        /// and prefix variants.
+        /// </summary>
+        public void EvictByUriSegment(string segment)
+        {
+            if (string.IsNullOrWhiteSpace(segment))
+            {
+                return;
+            }
+
+            lock (_cacheLock)
+            {
+                List<string> keysToEvict = null;
+                foreach (var key in _cache.Keys)
+                {
+                    if (key.IndexOf(segment, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        (keysToEvict ?? (keysToEvict = new List<string>())).Add(key);
+                    }
+                }
+
+                if (keysToEvict == null)
+                {
+                    return;
+                }
+
+                foreach (var key in keysToEvict)
+                {
+                    if (_cache.TryGetValue(key, out var entry))
+                    {
+                        if (entry?.Node != null)
+                        {
+                            _lru.Remove(entry.Node);
+                        }
+
+                        _cache.Remove(key);
+                    }
+                }
             }
         }
 
@@ -84,7 +134,9 @@ namespace PlayniteAchievements.Services.Images
         public void ClearGameCache(string gameId)
         {
             _diskService.ClearGameCache(gameId);
-            Clear();
+            // Game icon paths always contain the game id segment (icon_cache/<gameId>/...),
+            // so evict just that game's bitmaps instead of wiping the whole memory cache.
+            EvictByUriSegment(gameId);
         }
 
         private const string GrayPrefix = "gray:";
