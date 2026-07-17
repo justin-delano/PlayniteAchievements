@@ -411,9 +411,28 @@ namespace PlayniteAchievements
 
                     _cacheManager.CacheInvalidated += (_, __) =>
                     {
-                        try { _imageService?.Clear(); } catch { }
                         InvalidateStartPageData();
                         InvalidateFriendDataCoordinators();
+                    };
+                    // Bitmap eviction is scoped instead of wholesale: normal refreshes never
+                    // rewrite icon files in place (in-place overwrites are handled by the
+                    // DiskImageService.ImageFileOverwritten hook inside MemoryImageService), so
+                    // only true resets wipe the memory cache and removals evict per game.
+                    _cacheManager.CacheDeltaUpdated += (_, args) =>
+                    {
+                        try
+                        {
+                            switch (args?.OperationType)
+                            {
+                                case CacheDeltaOperationType.FullReset:
+                                    _imageService?.Clear();
+                                    break;
+                                case CacheDeltaOperationType.Remove:
+                                    _imageService?.EvictByUriSegment(args.Key);
+                                    break;
+                            }
+                        }
+                        catch { }
                     };
                     _achievementOverridesService = new AchievementOverridesService(
                         _gameCustomDataStore,
