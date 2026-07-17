@@ -140,6 +140,18 @@ namespace PlayniteAchievements.Views.ManageAchievements
             e.Handled = true;
         }
 
+        private void OverrideTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter || !(sender is TextBox textBox))
+            {
+                return;
+            }
+
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+
         private async void OverrideTextBox_Drop(object sender, DragEventArgs e)
         {
             if (!TryResolveRowAndVariant(sender as FrameworkElement, out var row, out var variant))
@@ -590,8 +602,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
         {
             var elements = new List<UIElement>
             {
-                RevertChangesButton,
-                SaveButton,
                 OpenIconsFolderButton
             };
 
