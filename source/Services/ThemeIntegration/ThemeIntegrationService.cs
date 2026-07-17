@@ -185,6 +185,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 ApplyDynamicSelectedGameBindings,
                 ThemeDelegatedPropertyCatalog.SingleGameTheme);
+            _settings.SetDynamicAchievementsCategoryLabelFilterCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicAchievementsCategoryLabelFilterCommand),
+                TryNormalizeSelectedGameCategoryLabel,
+                () => _runtimeState.SelectedGameAchievements.CategoryLabelKey,
+                key =>
+                {
+                    _runtimeState.SelectedGameAchievements.HasUserSelection = true;
+                    _runtimeState.SelectedGameAchievements.CategoryLabelKey = key;
+                },
+                ApplyDynamicSelectedGameBindings,
+                ThemeDelegatedPropertyCatalog.SingleGameTheme);
             _settings.FilterDynamicLibraryAchievementsByProviderCommand = CreateDynamicCommand(
                 nameof(PlayniteAchievementsSettings.FilterDynamicLibraryAchievementsByProviderCommand),
                 TryNormalizeProviderKey,
@@ -1621,6 +1632,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _runtimeState.SelectedGame = state;
             _runtimeState.SelectedGameAchievements.GameKey = state.GameId.ToString("D");
             _runtimeState.SelectedGameAchievements.GameLabel = ResolveGameLabel(state.GameId);
+            ValidateSelectedGameCategoryScope(state);
             _settings.ModernTheme.HasAchievements = true;
             _settings.ModernTheme.SelectedGameId = state.GameId;
             _settings.ModernTheme.HasCustomAchievementOrder = state.HasCustomAchievementOrder;
@@ -1706,6 +1718,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _appliedGameId = null;
             _appliedLastUpdatedUtc = default;
+            _runtimeState.SelectedGameAchievements.ResetCategoryScope();
 
             ApplyDynamicSelectedGameBindings();
 
@@ -2009,6 +2022,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             var state = _runtimeState.SelectedGameAchievements;
             state.ResetToDefault();
+            state.ResetCategoryScope();
             ApplyDynamicSelectedGameBindings();
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.SingleGameTheme);
         }
@@ -3040,11 +3054,29 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _settings.ModernTheme.DynamicAchievements = items;
             ApplyDynamicListKeyBindings(SelectedGameListBinding);
+            ApplyDynamicCategoryLabelBindings(state, viewState);
             ApplyDynamicListOptionBindings(SelectedGameListBinding);
             if (updateOptions)
             {
                 ApplyDynamicOptionBindings();
             }
+        }
+
+        private void ApplyDynamicCategoryLabelBindings(
+            SelectedGameRuntimeState state,
+            SelectedGameAchievementViewState viewState)
+        {
+            var categoryKey = viewState.CategoryLabelKey ?? DynamicThemeViewKeys.All;
+            _settings.ModernTheme.DynamicAchievementsCategoryLabelFilterKey = categoryKey;
+            _settings.ModernTheme.DynamicAchievementsCategoryLabelFilterLabel =
+                string.Equals(categoryKey, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase)
+                    ? DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All)
+                    : AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(categoryKey);
+            _settings.ModernTheme.DynamicAchievementCategoryLabelFilterOptions =
+                DynamicThemeOptionFactory.CreateCategoryLabelOptions(
+                    state?.AllAchievements,
+                    categoryKey,
+                    _settings.SetDynamicAchievementsCategoryLabelFilterCommand);
         }
 
         private void ApplyDynamicLibraryAchievementBindings()
@@ -3408,7 +3440,64 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             IEnumerable<AchievementDetail> source = SelectSelectedGameAchievementSource(state, viewState);
             source = DynamicThemeFilterEvaluator.ApplyAchievementFilters(source, viewState.FilterKey);
+            source = ApplyCategoryLabelFilter(source, viewState.CategoryLabelKey);
             return source.ToList();
+        }
+
+        private static IEnumerable<AchievementDetail> ApplyCategoryLabelFilter(
+            IEnumerable<AchievementDetail> source,
+            string categoryLabelKey)
+        {
+            if (string.IsNullOrWhiteSpace(categoryLabelKey) ||
+                string.Equals(categoryLabelKey, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
+            {
+                return source;
+            }
+
+            return source.Where(item => string.Equals(
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.Category),
+                categoryLabelKey,
+                StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool TryNormalizeSelectedGameCategoryLabel(object parameter, out string key)
+        {
+            var raw = parameter?.ToString();
+            if (string.IsNullOrWhiteSpace(raw) ||
+                string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
+            {
+                key = DynamicThemeViewKeys.All;
+                return true;
+            }
+
+            // Accept only labels present in the current game so a bad theme binding cannot
+            // pin the list to a permanently empty scope.
+            var normalized = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(raw);
+            var achievements = _runtimeState.SelectedGame?.AllAchievements ?? EmptyAchievementList;
+            key = achievements
+                .Select(item => AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.Category))
+                .FirstOrDefault(label => string.Equals(label, normalized, StringComparison.OrdinalIgnoreCase));
+            return key != null;
+        }
+
+        private void ValidateSelectedGameCategoryScope(SelectedGameRuntimeState state)
+        {
+            var viewState = _runtimeState.SelectedGameAchievements;
+            var key = viewState.CategoryLabelKey;
+            if (string.IsNullOrWhiteSpace(key) ||
+                string.Equals(key, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var exists = (state?.AllAchievements ?? EmptyAchievementList).Any(item => string.Equals(
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.Category),
+                key,
+                StringComparison.OrdinalIgnoreCase));
+            if (!exists)
+            {
+                viewState.ResetCategoryScope();
+            }
         }
 
         private List<AchievementDetail> BuildDynamicLibraryAchievements(
