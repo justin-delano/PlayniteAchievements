@@ -328,8 +328,7 @@ namespace PlayniteAchievements.Services.UI
             {
                 ShowNotification(
                     "PlayniteAchievements-Hotkey-NoTarget",
-                    ResourceProvider.GetString("LOCPlayAch_Hotkeys_NoTarget") ??
-                    "Select one game or start a game before using achievement hotkeys.",
+                    ResourceProvider.GetString("LOCPlayAch_Hotkeys_NoTarget"),
                     NotificationType.Info);
                 return;
             }
@@ -531,7 +530,7 @@ namespace PlayniteAchievements.Services.UI
             try
             {
                 _logger?.Debug($"Showing achievement hotkey notification id='{id}', type={type}, message='{message}'");
-                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements";
+                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
                 _api?.Notifications?.Add(new NotificationMessage(
                     id,
                     $"{title}\n{message}",

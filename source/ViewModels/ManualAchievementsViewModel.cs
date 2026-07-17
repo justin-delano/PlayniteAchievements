@@ -985,8 +985,7 @@ namespace PlayniteAchievements.ViewModels
                 cachedData.Achievements == null ||
                 cachedData.Achievements.Count == 0)
             {
-                return ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements") ??
-                       "The selected game has no achievements.";
+                return ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements");
             }
 
             return null;

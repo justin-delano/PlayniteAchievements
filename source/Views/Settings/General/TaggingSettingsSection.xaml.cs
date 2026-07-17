@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Views.Settings.General
                 new CompletionStatusOption
                 {
                     Id = Guid.Empty,
-                    Name = L("LOCPlayAch_Common_Default", "Default")
+                    Name = L("LOCPlayAch_Common_Default")
                 }
             };
 
@@ -127,8 +127,8 @@ namespace PlayniteAchievements.Views.Settings.General
             {
                 _logger?.Error(ex, "Failed to apply and sync tags.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    LF("LOCPlayAch_Status_Failed", "Error: {0}", ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    LF("LOCPlayAch_Status_Failed", ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -139,8 +139,8 @@ namespace PlayniteAchievements.Views.Settings.General
             try
             {
                 var result = _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    L("LOCPlayAch_Tagging_RemoveAllConfirm", "Remove all Playnite Achievements tags from all games?"),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Tagging_RemoveAllConfirm"),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 
@@ -162,22 +162,21 @@ namespace PlayniteAchievements.Views.Settings.General
             {
                 _logger?.Error(ex, "Failed to remove tags.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    LF("LOCPlayAch_Status_Failed", "Error: {0}", ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    LF("LOCPlayAch_Status_Failed", ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
-        private static string LF(string key, string fallbackFormat, params object[] args)
+        private static string LF(string key, params object[] args)
         {
-            return string.Format(L(key, fallbackFormat), args);
+            return string.Format(L(key), args);
         }
     }
 }

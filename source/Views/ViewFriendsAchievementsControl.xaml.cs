@@ -68,9 +68,9 @@ namespace PlayniteAchievements.Views
 
         public string WindowTitle => !string.IsNullOrWhiteSpace(ViewModel?.GameName)
             ? string.Format(
-                ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_WindowTitle") ?? "{0} - View Friends Achievements",
+                ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_WindowTitle"),
                 ViewModel.GameName)
-            : ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_TitleFallback") ?? "View Friends Achievements";
+            : ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_TitleFallback");
 
         public void RefreshView()
         {

@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var item = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Menu_SetCapstone", "Set Capstone"),
+                Header = L(resourceOwner, "LOCPlayAch_Menu_SetCapstone"),
                 IsCheckable = true,
                 IsChecked = isEffectiveCapstone
             };
@@ -92,12 +92,12 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Category", "Categories")
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Category")
             };
 
             var addTypeMenu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Common_AddType", "Add Type")
+                Header = L(resourceOwner, "LOCPlayAch_Common_AddType")
             };
             foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
@@ -113,7 +113,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             menu.Items.Add(addTypeMenu);
             menu.Items.Add(CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Common_SetLabelEllipsis", "Set Label..."),
+                L(resourceOwner, "LOCPlayAch_Common_SetLabelEllipsis"),
                 () =>
                 {
                     if (SetCategoryLabel(context, resourceOwner))
@@ -122,7 +122,7 @@ namespace PlayniteAchievements.Views.Helpers
                     }
                 }));
             menu.Items.Add(CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Button_Clear", "Clear"),
+                L(resourceOwner, "LOCPlayAch_Button_Clear"),
                 () =>
                 {
                     if (ClearCategories(context))
@@ -152,12 +152,12 @@ namespace PlayniteAchievements.Views.Helpers
 
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Menu_Filters", "Filters")
+                Header = L(resourceOwner, "LOCPlayAch_Menu_Filters")
             };
 
             var filterOutItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut", "Filter"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut"),
                 IsCheckable = true,
                 IsChecked = isFiltered
             };
@@ -170,7 +170,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var summaryItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries", "Filter from Summaries"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries"),
                 IsCheckable = true,
                 IsChecked = isFiltered || isSummaryFiltered,
                 IsEnabled = !isFiltered
@@ -202,17 +202,17 @@ namespace PlayniteAchievements.Views.Helpers
 
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Notes", "Notes")
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Notes")
             };
 
             var viewItem = CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Common_View", "View"),
+                L(resourceOwner, "LOCPlayAch_Common_View"),
                 () => OpenNoteDialog(context, note, isEditMode: false, resourceOwner, onChanged));
             viewItem.IsEnabled = hasNote;
             menu.Items.Add(viewItem);
 
             menu.Items.Add(CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Common_Edit", "Edit"),
+                L(resourceOwner, "LOCPlayAch_Common_Edit"),
                 () => OpenNoteDialog(context, note, isEditMode: true, resourceOwner, onChanged)));
 
             return menu;
@@ -245,10 +245,10 @@ namespace PlayniteAchievements.Views.Helpers
             FrameworkElement resourceOwner)
         {
             var inputDialog = new TextInputDialog(
-                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint", "Enter a category label for the selected achievements."),
+                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint"),
                 context.CategoryLabel);
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle", "Set Category Label"),
+                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle"),
                 inputDialog,
                 new WindowOptions
                 {
@@ -360,8 +360,8 @@ namespace PlayniteAchievements.Views.Helpers
                 isReadOnly: !isEditMode,
                 achievementIconSource: context.DisplayIcon);
             var title = isEditMode
-                ? L(resourceOwner, "LOCPlayAch_NotesDialog_EditTitle", "Edit Note")
-                : L(resourceOwner, "LOCPlayAch_NotesDialog_ViewTitle", "View Note");
+                ? L(resourceOwner, "LOCPlayAch_NotesDialog_EditTitle")
+                : L(resourceOwner, "LOCPlayAch_NotesDialog_ViewTitle");
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 title,
                 dialog,
@@ -430,7 +430,7 @@ namespace PlayniteAchievements.Views.Helpers
                 MessageBoxImage.Error);
         }
 
-        private static string L(FrameworkElement owner, string key, string fallback)
+        private static string L(FrameworkElement owner, string key)
         {
             var resourceValue = owner?.TryFindResource(key) as string;
             if (!string.IsNullOrWhiteSpace(resourceValue))
@@ -438,8 +438,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return resourceValue;
             }
 
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
         private static AchievementOverridesService CurrentOverridesService =>

@@ -181,14 +181,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 {
                     var displayName = ProviderRegistry.GetLocalizedName(existingProviderKey);
                     var message = string.Format(
-                        L(
-                            "LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning",
-                            "Manual tracking can replace cached achievement data from {0}. Continue?"),
+                        L("LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning"),
                         displayName);
 
                     var result = _playniteApi?.Dialogs?.ShowMessage(
                         message,
-                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                        L("LOCPlayAch_Title_PluginName"),
                         MessageBoxButton.OKCancel,
                         MessageBoxImage.Warning) ?? MessageBoxResult.None;
 
@@ -235,21 +233,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (UseSeparateLockedIconsOverride)
                 {
-                    return L(
-                        "LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusOverride",
-                        "Enabled via override");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusOverride");
                 }
 
                 if (GameCustomDataLookup.ShouldUseSeparateLockedIcons(_gameId, _settings?.Persisted))
                 {
-                    return L(
-                        "LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings",
-                        "Enabled via settings");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings");
                 }
 
-                return L(
-                    "LOCPlayAch_Common_Status_Disabled",
-                    "Disabled");
+                return L("LOCPlayAch_Common_Status_Disabled");
             }
         }
 
@@ -342,7 +334,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (!HasProviderOverride)
                 {
-                    return L("LOCPlayAch_Common_Status_NoOverrideSet", "No override set");
+                    return L("LOCPlayAch_Common_Status_NoOverrideSet");
                 }
 
                 var providerName = GetProviderOverrideDisplayName(_providerOverrideKey);
@@ -352,7 +344,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     descriptor.ValueKind == ProviderOverrideValueKind.None)
                 {
                     return string.Format(
-                        L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue", "Override set: {0}"),
+                        L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue"),
                         providerName);
                 }
 
@@ -360,13 +352,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     (descriptor?.ValueOptional ?? false))
                 {
                     return string.Format(
-                        L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto", "Override set: {0} (auto-detect)"),
+                        L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto"),
                         providerName);
                 }
 
                 var valueDisplay = descriptor?.GetValueDisplay(ProviderOverrideValue) ?? ProviderOverrideValue;
                 return string.Format(
-                    L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusValue", "Override set: {0} - {1}"),
+                    L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusValue"),
                     providerName,
                     valueDisplay);
             }
@@ -508,12 +500,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         public string ExclusionStatusText => IsExcluded
-            ? L("LOCPlayAch_ManageAchievements_Status_ExcludedFromRefreshes", "Excluded from Refreshes")
-            : L("LOCPlayAch_ManageAchievements_Status_IncludedFromRefreshes", "Included from Refreshes");
+            ? L("LOCPlayAch_ManageAchievements_Status_ExcludedFromRefreshes")
+            : L("LOCPlayAch_ManageAchievements_Status_IncludedFromRefreshes");
 
         public string ExclusionActionText => IsExcluded
-            ? L("LOCPlayAch_Menu_IncludeGame", "Include this Game")
-            : L("LOCPlayAch_Menu_ExcludeGame", "Exclude this Game and Clear Data");
+            ? L("LOCPlayAch_Menu_IncludeGame")
+            : L("LOCPlayAch_Menu_ExcludeGame");
 
         public bool IsExcludedFromSummaries
         {
@@ -529,12 +521,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         public string SummaryExclusionStatusText => IsExcludedFromSummaries
-            ? L("LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries", "Excluded from Summaries")
-            : L("LOCPlayAch_ManageAchievements_Status_IncludedFromSummaries", "Included in Summaries");
+            ? L("LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries")
+            : L("LOCPlayAch_ManageAchievements_Status_IncludedFromSummaries");
 
         public string SummaryExclusionActionText => IsExcludedFromSummaries
-            ? L("LOCPlayAch_Common_Action_IncludeInSummaries", "Include in Summaries")
-            : L("LOCPlayAch_Common_Action_ExcludeFromSummaries", "Exclude from Summaries");
+            ? L("LOCPlayAch_Common_Action_IncludeInSummaries")
+            : L("LOCPlayAch_Common_Action_ExcludeFromSummaries");
 
         public bool HasManualTrackingLink
         {
@@ -556,8 +548,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         public string ManualTrackingStatusText => HasManualTrackingLink
-            ? L("LOCPlayAch_Common_Status_Linked", "Linked")
-            : L("LOCPlayAch_Common_Status_NotLinked", "Not linked");
+            ? L("LOCPlayAch_Common_Status_Linked")
+            : L("LOCPlayAch_Common_Status_NotLinked");
 
         public bool HasCapstoneData
         {
@@ -661,7 +653,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var game = _playniteApi?.Database?.Games?.Get(_gameId);
                 HasGame = game != null;
-                GameName = game?.Name ?? L("LOCPlayAch_Text_UnknownGame", "Unknown Game");
+                GameName = game?.Name ?? L("LOCPlayAch_Text_UnknownGame");
 
                 GameImagePath = ResolveGameImagePath(game);
 
@@ -685,8 +677,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
                 else
                 {
-                    LastUpdatedUtcText = L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
-                    LastUpdatedLocalText = L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
+                    LastUpdatedUtcText = L("LOCPlayAch_ManageAchievements_Value_NotAvailable");
+                    LastUpdatedLocalText = L("LOCPlayAch_ManageAchievements_Value_NotAvailable");
                 }
 
                 var achievements = gameData?.Achievements ?? Enumerable.Empty<AchievementDetail>();
@@ -700,12 +692,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     ? capstone.DisplayName.Trim()
                     : !string.IsNullOrWhiteSpace(capstone?.ApiName)
                         ? capstone.ApiName.Trim()
-                        : L("LOCPlayAch_Common_None", "None");
+                        : L("LOCPlayAch_Common_None");
 
                 HasCapstoneData = (gameData?.HasAchievements ?? false) && list.Count > 0;
-                CapstoneEmptyMessage = L(
-                    "LOCPlayAch_Common_NoCachedAchievementsForGame",
-                    "No cached achievements are available for this game.");
+                CapstoneEmptyMessage = L("LOCPlayAch_Common_NoCachedAchievementsForGame");
 
                 var currentCustomData = TryLoadStoredCustomData(_plugin?.GameCustomDataStore);
                 IsExcluded = isExcluded;
@@ -789,10 +779,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void ShowAchievementPageUnavailable()
         {
             _playniteApi?.Dialogs?.ShowMessage(
-                L(
-                    "LOCPlayAch_ManageAchievements_Overview_AchievementPageUnavailable",
-                    "No achievement page link is available for this game."),
-                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                L("LOCPlayAch_ManageAchievements_Overview_AchievementPageUnavailable"),
+                L("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
@@ -822,11 +810,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessageKey, out var validationMessageFallback))
+            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessageKey))
             {
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L(validationMessageKey, validationMessageFallback),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L(validationMessageKey),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -878,19 +866,17 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     dialog.FileName,
                     GameCustomDataStore.PortableFileExtension);
                 var result = store.ExportPortablePa(_gameId, destinationPath);
-                var successMessage = L("LOCPlayAch_Status_Succeeded", "Success!") + "\n" + result.DestinationPath;
+                var successMessage = L("LOCPlayAch_Status_Succeeded") + "\n" + result.DestinationPath;
                 if (result.HasOmittedLocalIconOverrides)
                 {
                     successMessage += "\n\n" + string.Format(
-                        L(
-                            "LOCPlayAch_ManageAchievements_Overrides_ExportPaOmittedLocalIcons",
-                            ".PA export omitted {0} local image override(s). Use .PA.ZIP to export full image sets."),
+                        L("LOCPlayAch_ManageAchievements_Overrides_ExportPaOmittedLocalIcons"),
                         result.OmittedLocalIconOverrideCount);
                 }
 
                 _playniteApi?.Dialogs?.ShowMessage(
                     successMessage,
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -898,8 +884,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed exporting custom game data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -938,8 +924,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     GameCustomDataStore.PortablePackageFileExtension);
                 store.ExportPortablePackage(_gameId, destinationPath);
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L("LOCPlayAch_Status_Succeeded", "Success!") + "\n" + destinationPath,
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Status_Succeeded") + "\n" + destinationPath,
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -947,8 +933,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed exporting custom game package for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -992,19 +978,17 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 var transitionEffects = AnalyzeCustomDataTransition(previousData, currentData);
                 NotifyCustomDataChanged(transitionEffects.RequiresRefresh, transitionEffects.ForceIconRefresh);
 
-                var successMessage = L("LOCPlayAch_Status_Succeeded", "Success!");
+                var successMessage = L("LOCPlayAch_Status_Succeeded");
                 if (importResult.HasIgnoredPackageImages)
                 {
                     successMessage += "\n\n" + string.Format(
-                        L(
-                            "LOCPlayAch_ManageAchievements_Overrides_ImportIgnoredPackageImages",
-                            "Ignored {0} image file(s) because their file names did not match this game's achievement API names."),
+                        L("LOCPlayAch_ManageAchievements_Overrides_ImportIgnoredPackageImages"),
                         importResult.IgnoredPackageImageCount);
                 }
 
                 _playniteApi?.Dialogs?.ShowMessage(
                     successMessage,
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     importResult.HasIgnoredPackageImages
                         ? MessageBoxImage.Warning
@@ -1014,8 +998,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed importing custom game data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -1036,11 +1020,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             var result = _playniteApi?.Dialogs?.ShowMessage(
                 string.Format(
-                    L(
-                        "LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataConfirm",
-                        "Clear all custom data for \"{0}\"?\n\nThis removes per-game exclusions, manual links, capstones, order/category changes, and provider overrides stored by Playnite Achievements. Cached achievement data is not removed."),
+                    L("LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataConfirm"),
                     GameName),
-                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                L("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning) ?? MessageBoxResult.None;
 
@@ -1056,8 +1038,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 NotifyCustomDataChanged(transitionEffects.RequiresRefresh, transitionEffects.ForceIconRefresh);
 
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L("LOCPlayAch_Status_Succeeded", "Success!"),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Status_Succeeded"),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -1065,8 +1047,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed clearing custom data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 Reload();
@@ -1209,9 +1191,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 _logger?.Error(ex, $"Failed to refresh manage achievements data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
                     string.Format(
-                        L("LOCPlayAch_Error_RefreshFailed", "Refresh failed: {0}"),
+                        L("LOCPlayAch_Error_RefreshFailed"),
                         ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Title_PluginName"),
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
             }
@@ -1231,9 +1213,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             var result = _playniteApi?.Dialogs?.ShowMessage(
                 string.Format(
-                    L("LOCPlayAch_Menu_ClearData_ConfirmSingle", "Clear cached data for \"{0}\"?\n\nThis removes cached achievements and icons for this game. Refresh again to fetch fresh data."),
+                    L("LOCPlayAch_Menu_ClearData_ConfirmSingle"),
                     GameName),
-                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                L("LOCPlayAch_Title_PluginName"),
                 System.Windows.MessageBoxButton.YesNo,
                 System.Windows.MessageBoxImage.Warning) ?? System.Windows.MessageBoxResult.None;
 
@@ -1254,8 +1236,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L("LOCPlayAch_Status_Succeeded", "Success!"),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    L("LOCPlayAch_Status_Succeeded"),
+                    L("LOCPlayAch_Title_PluginName"),
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information);
             }
@@ -1263,8 +1245,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed to clear cached data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
             }
@@ -1304,7 +1286,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         internal void NotifyCapstoneChanged(string displayName)
         {
             CurrentCapstoneName = string.IsNullOrWhiteSpace(displayName)
-                ? L("LOCPlayAch_Common_None", "None")
+                ? L("LOCPlayAch_Common_None")
                 : displayName.Trim();
             RefreshCustomDataState();
         }
@@ -1359,18 +1341,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             var providerKey = gameData?.EffectiveProviderKey;
             if (string.IsNullOrWhiteSpace(providerKey))
             {
-                return L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
+                return L("LOCPlayAch_ManageAchievements_Value_NotAvailable");
             }
 
             var displayName = ProviderRegistry.GetLocalizedName(providerKey);
             return string.IsNullOrWhiteSpace(displayName)
-                ? L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A")
+                ? L("LOCPlayAch_ManageAchievements_Value_NotAvailable")
                 : displayName;
         }
 
         private string ResolveLibrarySourceDisplayName(Playnite.SDK.Models.Game game, string cachedLibrarySource)
         {
-            var fallback = L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
+            var fallback = L("LOCPlayAch_ManageAchievements_Value_NotAvailable");
 
             if (!string.IsNullOrWhiteSpace(game?.Source?.Name))
             {
@@ -1446,19 +1428,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             string providerKey,
             string value,
             out ProviderOverrideData providerOverride,
-            out string validationMessageKey,
-            out string validationMessageFallback)
+            out string validationMessageKey)
         {
             providerOverride = null;
             validationMessageKey = null;
-            validationMessageFallback = null;
 
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
             var descriptor = GetProviderOverrideDescriptor(normalizedKey);
             if (descriptor == null)
             {
                 validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
-                validationMessageFallback = "Please select a provider override.";
                 return false;
             }
 
@@ -1466,7 +1445,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (!result.IsValid)
             {
                 validationMessageKey = result.ErrorMessageKey ?? "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
-                validationMessageFallback = result.ErrorMessageFallback ?? "Please select a provider override.";
                 return false;
             }
 
@@ -1485,7 +1463,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 new ProviderOverrideOption
                 {
                     ProviderKey = ProviderOverrideNoneKey,
-                    DisplayName = L("LOCPlayAch_Common_None", "None"),
+                    DisplayName = L("LOCPlayAch_Common_None"),
                     Descriptor = null
                 }
             };
@@ -1523,7 +1501,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
             if (string.Equals(normalizedKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase))
             {
-                return L("LOCPlayAch_Common_None", "None");
+                return L("LOCPlayAch_Common_None");
             }
 
             return ProviderRegistry.GetLocalizedName(normalizedKey);
@@ -1537,7 +1515,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return string.Empty;
             }
 
-            return L(descriptor.InputLabelKey, descriptor.InputLabelFallback ?? descriptor.InputLabelKey);
+            return L(descriptor.InputLabelKey);
         }
 
         private string NormalizeProviderOverrideSelection(string providerKey)
@@ -1559,10 +1537,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                    (descriptor.ValueKind == ProviderOverrideValueKind.None || descriptor.ValueOptional);
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
         private string BuildDefaultPortablePaFileName()

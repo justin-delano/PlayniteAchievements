@@ -550,7 +550,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             var addTypeMenu = new MenuItem
             {
-                Header = L("LOCPlayAch_Common_AddType", "Add Type")
+                Header = L("LOCPlayAch_Common_AddType")
             };
             foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
@@ -562,11 +562,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
             menu.Items.Add(addTypeMenu);
 
             menu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_Common_SetLabelEllipsis", "Set Label..."),
+                L("LOCPlayAch_Common_SetLabelEllipsis"),
                 () => SetLabelFromContext(contextItem)));
 
             menu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_Button_Clear", "Clear"),
+                L("LOCPlayAch_Button_Clear"),
                 () => ClearRowsFromContext(contextItem)));
 
             return menu;
@@ -610,14 +610,10 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             var inputText = contextItem?.CategoryDisplay ?? string.Empty;
             var inputDialog = new TextInputDialog(
-                L(
-                    "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint",
-                    "Enter a category label for the selected achievements."),
+                L("LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint"),
                 inputText);
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                L(
-                    "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle",
-                    "Set Category Label"),
+                L("LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle"),
                 inputDialog,
                 new WindowOptions
                 {
@@ -733,15 +729,15 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             var menu = new ContextMenu();
             menu.Items.Add(CreateResetMenuItem(
-                L("LOCPlayAch_ManageAchievements_Tab_AchievementOrder", "Order"),
+                L("LOCPlayAch_ManageAchievements_Tab_AchievementOrder"),
                 ViewModel.HasCustomCategoryOrder,
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryOrder)));
             menu.Items.Add(CreateResetMenuItem(
-                L("LOCPlayAch_Column_Name", "Name"),
+                L("LOCPlayAch_Column_Name"),
                 ViewModel.HasCustomCategoryNames,
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryNames)));
             menu.Items.Add(CreateResetMenuItem(
-                L("LOCPlayAch_Column_CategoryArt", "Category Art"),
+                L("LOCPlayAch_Column_CategoryArt"),
                 ViewModel.HasCustomCategoryArt || ViewModel.HasCustomSummaryCategory,
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryArt)));
 
@@ -805,10 +801,9 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
         private static bool TryGetFirstImageFilePath(IDataObject data, out string imagePath)

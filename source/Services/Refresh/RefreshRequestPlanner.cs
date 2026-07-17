@@ -538,8 +538,7 @@ namespace PlayniteAchievements.Services.Refresh
                 displayNames += ", ...";
             }
 
-            var format = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoCapableProviderForGames") ??
-                         "No enabled and authenticated platform can refresh these games: {0}. Enable the matching platform or check its authentication in settings.";
+            var format = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoCapableProviderForGames");
             return string.Format(format, displayNames);
         }
 
@@ -598,8 +597,7 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 return new FriendOptionResult
                 {
-                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders") ??
-                                  "No authenticated friend-capable providers are available."
+                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders")
                 };
             }
 

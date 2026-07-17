@@ -200,7 +200,7 @@ namespace PlayniteAchievements.Services.Cache
             try { GameCacheUpdated?.Invoke(this, new GameCacheUpdatedEventArgs(gameId)); }
             catch (Exception ex)
             {
-                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                _logger?.Error(ex, "Failed to notify cache subscribers.");
             }
         }
 
@@ -209,7 +209,7 @@ namespace PlayniteAchievements.Services.Cache
             try { CacheDeltaUpdated?.Invoke(this, new CacheDeltaEventArgs(key, operationType, DateTime.UtcNow)); }
             catch (Exception ex)
             {
-                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                _logger?.Error(ex, "Failed to notify cache subscribers.");
             }
         }
 
@@ -218,7 +218,7 @@ namespace PlayniteAchievements.Services.Cache
             try { CacheInvalidated?.Invoke(this, EventArgs.Empty); }
             catch (Exception ex)
             {
-                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                _logger?.Error(ex, "Failed to notify cache subscribers.");
             }
         }
 
@@ -227,7 +227,7 @@ namespace PlayniteAchievements.Services.Cache
             try { FriendCacheInvalidated?.Invoke(this, EventArgs.Empty); }
             catch (Exception ex)
             {
-                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                _logger?.Error(ex, "Failed to notify cache subscribers.");
             }
         }
 

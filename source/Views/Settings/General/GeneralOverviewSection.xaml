@@ -119,8 +119,8 @@
                             <ComboBoxItem Content="French (Français)" Tag="french"/>
                             <ComboBoxItem Content="Spanish (Español)" Tag="spanish"/>
                             <ComboBoxItem Content="Italian (Italiano)" Tag="italian"/>
-                            <ComboBoxItem Content="Portuguese" Tag="portuguese"/>
-                            <ComboBoxItem Content="Brazilian Portuguese" Tag="brazilian"/>
+                            <ComboBoxItem Content="Portuguese (Português)" Tag="portuguese"/>
+                            <ComboBoxItem Content="Brazilian Portuguese (Português brasileiro)" Tag="brazilian"/>
                             <ComboBoxItem Content="Russian (Русский)" Tag="russian"/>
                             <ComboBoxItem Content="Polish (Polski)" Tag="polish"/>
                             <ComboBoxItem Content="Dutch (Nederlands)" Tag="dutch"/>

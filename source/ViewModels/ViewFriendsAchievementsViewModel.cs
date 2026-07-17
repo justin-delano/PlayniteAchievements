@@ -250,9 +250,9 @@ namespace PlayniteAchievements.ViewModels
 
         public string AchievementSectionTitle => SelectedFriend != null
             ? string.Format(
-                L("LOCPlayAch_FriendsOverview_SelectedFriendAchievements", "{0} Achievements"),
+                L("LOCPlayAch_FriendsOverview_SelectedFriendAchievements"),
                 SelectedFriend.DisplayName)
-            : L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "View Friends Achievements");
+            : L("LOCPlayAch_ViewFriendsAchievements_TitleFallback");
 
         public string AchievementCountText
         {
@@ -275,7 +275,7 @@ namespace PlayniteAchievements.ViewModels
                     format,
                     unlocked,
                     total,
-                    L("LOCPlayAch_Achievements", "Achievements"));
+                    L("LOCPlayAch_Achievements"));
             }
         }
 
@@ -362,7 +362,7 @@ namespace PlayniteAchievements.ViewModels
 
             IsLoading = true;
             ProgressPercent = 0;
-            ProgressMessage = L("LOCPlayAch_Status_LoadingAchievements", "Loading achievements");
+            ProgressMessage = L("LOCPlayAch_Status_LoadingAchievements");
 
             try
             {
@@ -382,7 +382,7 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed to load friend achievements for {_gameId}.");
-                StatusText = L("LOCPlayAch_FriendsOverview_LoadFailed", "Failed to load friends achievements.");
+                StatusText = L("LOCPlayAch_FriendsOverview_LoadFailed");
             }
             finally
             {
@@ -531,7 +531,7 @@ namespace PlayniteAchievements.ViewModels
                 : Enumerable.Empty<FriendAchievementDisplayItem>());
             Achievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(filtered, maxRows));
             StatusText = _allAchievements.Count == 0
-                ? L("LOCPlayAch_ViewFriendsAchievements_NoData", "No friend achievement data for this game yet.")
+                ? L("LOCPlayAch_ViewFriendsAchievements_NoData")
                 : string.Empty;
             OnPropertyChanged(nameof(AchievementSectionTitle));
             OnPropertyChanged(nameof(AchievementCountText));
@@ -629,7 +629,7 @@ namespace PlayniteAchievements.ViewModels
 
             IsRefreshing = true;
             ProgressPercent = 0;
-            ProgressMessage = L("LOCPlayAch_FriendsOverview_Refreshing", "Refreshing friends...");
+            ProgressMessage = L("LOCPlayAch_FriendsOverview_Refreshing");
             try
             {
                 await _refreshEntryPoint.ExecuteAsync(
@@ -644,13 +644,13 @@ namespace PlayniteAchievements.ViewModels
                 _dataCoordinator.Invalidate();
                 await LoadAsync();
                 ProgressPercent = 100;
-                ProgressMessage = L("LOCPlayAch_Status_RefreshComplete", "Refresh complete");
+                ProgressMessage = L("LOCPlayAch_Status_RefreshComplete");
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed to refresh friend achievements for {_gameId}.");
                 ProgressMessage = string.Format(
-                    L("LOCPlayAch_Error_RefreshFailed", "Refresh failed: {0}"),
+                    L("LOCPlayAch_Error_RefreshFailed"),
                     ex.Message);
             }
             finally
@@ -781,13 +781,12 @@ namespace PlayniteAchievements.ViewModels
                 _logger?.Debug(ex, $"Failed to resolve game name for {_gameId}.");
             }
 
-            return L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "View Friends Achievements");
+            return L("LOCPlayAch_ViewFriendsAchievements_TitleFallback");
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 }

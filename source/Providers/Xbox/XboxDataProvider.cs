@@ -21,12 +21,10 @@ namespace PlayniteAchievements.Providers.Xbox
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xbox",
-            "Xbox Title ID",
             raw => XboxTitleIdResolver.TryNormalizeTitleId(raw, out var titleId)
                 ? ProviderOverrideValidation.Valid(titleId)
                 : ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_XboxTitleId_InvalidId",
-                    "Please enter a valid Xbox Title ID (8-character hex or decimal)."));
+                    "LOCPlayAch_Menu_XboxTitleId_InvalidId"));
 
         // Xbox library plugin ID from Playnite
         internal static readonly Guid XboxLibraryPluginId = Guid.Parse("7e4fbb5b-4594-4c5a-8a69-1e3f41b39c52");

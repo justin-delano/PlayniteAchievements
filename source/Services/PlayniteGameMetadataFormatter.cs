@@ -78,17 +78,17 @@ namespace PlayniteAchievements.Services
 
             if (hours == 0)
             {
-                return L("LOCPlayAch_Playtime_LessThanOneHour", "<1h");
+                return L("LOCPlayAch_Playtime_LessThanOneHour");
             }
 
             if (displayMode == PlaytimeDisplayMode.HoursOnly)
             {
-                return string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours", "{0}h"), hours);
+                return string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours"), hours);
             }
 
             return minutes > 0
-                ? string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_HoursMinutes", "{0}h{1}m"), hours, minutes)
-                : string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours", "{0}h"), hours);
+                ? string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_HoursMinutes"), hours, minutes)
+                : string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours"), hours);
         }
 
         private static PlaytimeDisplayMode ResolvePlaytimeDisplayMode()
@@ -104,28 +104,9 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            string value;
-            try
-            {
-                value = ResourceProvider.GetString(key);
-            }
-            catch (Exception)
-            {
-                return fallback;
-            }
-
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return fallback;
-            }
-
-            return value.Length > 4 &&
-                value.StartsWith("<!", StringComparison.Ordinal) &&
-                value.EndsWith("!>", StringComparison.Ordinal)
-                ? fallback
-                : value;
+            return ResourceProvider.GetString(key);
         }
 
         public static string BuildOverviewMetadataText(

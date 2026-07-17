@@ -186,7 +186,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var selected = GetSelectedCategoryTypeFilterValues();
                 return selected.Count == 0
-                    ? L("LOCPlayAch_Common_Label_Type", "Type")
+                    ? L("LOCPlayAch_Common_Label_Type")
                     : AchievementCategoryTypeHelper.ToDisplayText(selected);
             }
         }
@@ -197,9 +197,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (_selectedCategoryLabelFilters.Count == 0)
                 {
-                    return L(
-                        "LOCPlayAch_Common_Label_Category",
-                        "Category");
+                    return L("LOCPlayAch_Common_Label_Category");
                 }
 
                 var ordered = CategoryLabelFilterOptions
@@ -799,10 +797,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         {
             return new[]
             {
-                new FilterStateOption(AchievementFilterStateFilter.All, L("LOCPlayAch_Common_All", "All")),
-                new FilterStateOption(AchievementFilterStateFilter.FilteredOut, L("LOCPlayAch_ManageAchievements_Filters_FilteredOut", "Filtered")),
-                new FilterStateOption(AchievementFilterStateFilter.FilteredOutOfSummaries, L("LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries", "Filtered from Summaries")),
-                new FilterStateOption(AchievementFilterStateFilter.Unfiltered, L("LOCPlayAch_ManageAchievements_Filters_Unfiltered", "Unfiltered"))
+                new FilterStateOption(AchievementFilterStateFilter.All, L("LOCPlayAch_Common_All")),
+                new FilterStateOption(AchievementFilterStateFilter.FilteredOut, L("LOCPlayAch_ManageAchievements_Filters_FilteredOut")),
+                new FilterStateOption(AchievementFilterStateFilter.FilteredOutOfSummaries, L("LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries")),
+                new FilterStateOption(AchievementFilterStateFilter.Unfiltered, L("LOCPlayAch_ManageAchievements_Filters_Unfiltered"))
             };
         }
 
@@ -812,17 +810,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 new FilterBulkTargetOption(
                     AchievementFilterBulkTarget.AchievementViews,
-                    L("LOCPlayAch_Achievements", "Achievements")),
+                    L("LOCPlayAch_Achievements")),
                 new FilterBulkTargetOption(
                     AchievementFilterBulkTarget.Summaries,
-                    L("LOCPlayAch_Overview_GameSummaries", "Game Summaries"))
+                    L("LOCPlayAch_Overview_GameSummaries"))
             };
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 

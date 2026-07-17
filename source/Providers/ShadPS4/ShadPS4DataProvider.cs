@@ -24,12 +24,10 @@ namespace PlayniteAchievements.Providers.ShadPS4
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4",
-            "ShadPS4 Match ID",
             raw => ShadPS4MatchIdHelper.TryNormalize(raw, out var matchId)
                 ? ProviderOverrideValidation.Valid(matchId)
                 : ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_ShadPS4MatchId_InvalidId",
-                    "Please enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00."));
+                    "LOCPlayAch_Menu_ShadPS4MatchId_InvalidId"));
 
         private readonly ShadPS4Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;

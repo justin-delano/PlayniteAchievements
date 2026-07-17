@@ -697,7 +697,7 @@ namespace PlayniteAchievements.ViewModels
                 return string.Empty;
             }
 
-            var totalLabel = ResourceProvider.GetString("LOCPlayAch_Column_Total") ?? "Total";
+            var totalLabel = ResourceProvider.GetString("LOCPlayAch_Column_Total");
             var piePercent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(dataPoint.Count, pieTotalCount);
 
             if (dataPoint.IsLocked || IsCompletedGamesSlice(dataPoint.IconKey))
@@ -705,7 +705,7 @@ namespace PlayniteAchievements.ViewModels
                 return $"{piePercent}% {totalLabel}";
             }
 
-            var unlockedLabel = ResourceProvider.GetString("LOCPlayAch_Common_Unlocked") ?? "Unlocked";
+            var unlockedLabel = ResourceProvider.GetString("LOCPlayAch_Common_Unlocked");
             var categoryPercent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(dataPoint.UnlockedCount, dataPoint.TotalCount);
             return $"{categoryPercent}% {unlockedLabel} ({piePercent}% {totalLabel})";
         }

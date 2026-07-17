@@ -373,11 +373,11 @@ namespace PlayniteAchievements.ViewModels
             SelectedRefreshMode,
             RefreshModeType.FriendsCustom.GetKey(),
             StringComparison.Ordinal)
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure") ?? "Configure"
-            : ResourceProvider.GetString("LOCPlayAch_Button_Refresh") ?? "Refresh";
+            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure")
+            : ResourceProvider.GetString("LOCPlayAch_Button_Refresh");
 
         public string RefreshOrCancelButtonText => IsRefreshing
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel") ?? "Cancel"
+            ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel")
             : RefreshActionButtonText;
 
         public bool IsRefreshing
@@ -431,18 +431,18 @@ namespace PlayniteAchievements.ViewModels
         public bool IsProviderDisabled => false;
 
         public string SelectedProviderFilterText => string.IsNullOrWhiteSpace(SelectedProviderKey)
-            ? ResourceProvider.GetString("LOCPlayAch_FriendsOverview_AllProviders") ?? "All Providers"
+            ? ResourceProvider.GetString("LOCPlayAch_FriendsOverview_AllProviders")
             : SelectedProviderKey;
 
         public string SelectedTypeFilterText => GetSelectedFilterText(
             _selectedTypeFilters,
             TypeFilterOptions,
-            ResourceProvider.GetString("LOCPlayAch_Common_Label_Type") ?? "Type");
+            ResourceProvider.GetString("LOCPlayAch_Common_Label_Type"));
 
         public string SelectedCategoryFilterText => GetSelectedFilterText(
             _selectedCategoryFilters,
             CategoryFilterOptions,
-            ResourceProvider.GetString("LOCPlayAch_Common_Label_Category") ?? "Category");
+            ResourceProvider.GetString("LOCPlayAch_Common_Label_Category"));
 
         public string AchievementSectionTitle
         {
@@ -451,7 +451,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SelectedFriend != null && SelectedGame != null)
                 {
                     return string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedFriendGameAchievements") ?? "{0} - {1}",
+                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedFriendGameAchievements"),
                         SelectedFriend.DisplayName,
                         SelectedGame.GameName);
                 }
@@ -464,11 +464,11 @@ namespace PlayniteAchievements.ViewModels
                 if (SelectedGame != null)
                 {
                     return string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedGameAchievements") ?? "{0} Achievements",
+                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedGameAchievements"),
                         SelectedGame.GameName);
                 }
 
-                return ResourceProvider.GetString("LOCPlayAch_RecentAchievements") ?? "Recent Achievements";
+                return ResourceProvider.GetString("LOCPlayAch_RecentAchievements");
             }
         }
 
@@ -493,7 +493,7 @@ namespace PlayniteAchievements.ViewModels
                     format,
                     unlocked,
                     total,
-                    ResourceProvider.GetString("LOCPlayAch_Achievements") ?? "Achievements");
+                    ResourceProvider.GetString("LOCPlayAch_Achievements"));
             }
         }
 
@@ -729,8 +729,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (_showCustomRefreshDialog == null)
                 {
-                    StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NotAvailable") ??
-                                 "Friends Overview is not available.";
+                    StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NotAvailable");
                     return;
                 }
 
@@ -766,8 +765,7 @@ namespace PlayniteAchievements.ViewModels
         {
             if (_refreshCoordinator == null)
             {
-                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NotAvailable") ??
-                             "Friends Overview is not available.";
+                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NotAvailable");
                 return;
             }
 
@@ -776,8 +774,7 @@ namespace PlayniteAchievements.ViewModels
                 IsRefreshing = true;
                 StatusText = null;
                 ProgressPercent = 0;
-                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_Refreshing") ??
-                                  "Refreshing friends...";
+                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_Refreshing");
                 await _refreshCoordinator.ExecuteAsync(
                     request,
                     new RefreshExecutionPolicy
@@ -792,8 +789,7 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to refresh friends overview.");
-                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_RefreshFailed") ??
-                             "Friend refresh failed.";
+                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_RefreshFailed");
             }
             finally
             {
@@ -817,8 +813,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectTargetForRefresh") ??
-                         "Select a friend or game before refreshing selected friend data.";
+            StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectTargetForRefresh");
         }
 
         private bool CanRefreshSelectedFriendTarget(object parameter)
@@ -1335,8 +1330,7 @@ namespace PlayniteAchievements.ViewModels
 
                     StatusText = HasData
                         ? null
-                        : ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NoData") ??
-                          "No friend achievement data yet.";
+                        : ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NoData");
                     OnPropertyChanged(nameof(HasData));
                     OnPropertyChanged(nameof(IsProviderDisabled));
                 }
@@ -1352,8 +1346,7 @@ namespace PlayniteAchievements.ViewModels
                     FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
                     SelectedFriendGameAllAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
                     DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
-                    StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_LoadFailed") ??
-                                 "Failed to load friend achievement data.";
+                    StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_LoadFailed");
                     OnPropertyChanged(nameof(HasData));
                 }
             }

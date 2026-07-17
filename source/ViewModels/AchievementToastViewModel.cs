@@ -114,16 +114,16 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (IsFriendUnlock)
                 {
-                    var format = ResourceProvider.GetString("LOCPlayAch_Toast_FriendUnlocked") ?? "{0} unlocked";
+                    var format = ResourceProvider.GetString("LOCPlayAch_Toast_FriendUnlocked");
                     return string.Format(format, string.IsNullOrWhiteSpace(_args.FriendDisplayName) ? "Friend" : _args.FriendDisplayName);
                 }
 
-                return ResourceProvider.GetString("LOCPlayAch_Toast_AchievementUnlocked") ?? "Achievement unlocked";
+                return ResourceProvider.GetString("LOCPlayAch_Toast_AchievementUnlocked");
             }
         }
 
         public string TitleText => string.IsNullOrWhiteSpace(_args.DisplayName)
-            ? ResourceProvider.GetString("LOCPlayAch_Text_UnknownAchievement") ?? "Achievement"
+            ? ResourceProvider.GetString("LOCPlayAch_Text_UnknownAchievement")
             : _args.DisplayName;
 
         public string Description => _args.Description;
