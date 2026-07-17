@@ -399,14 +399,6 @@
                                     Margin="{StaticResource PlayAch.Thickness.Left.Md}">
                             <WrapPanel Orientation="Horizontal"
                                        HorizontalAlignment="Right">
-                                <Button x:Name="RevertCategoryImagesButton"
-                                        Content="{DynamicResource LOCPlayAch_Common_RevertChanges}"
-                                        Command="{Binding RevertCategoryImageChangesCommand}"
-                                        Style="{StaticResource ToolbarButtonStyle}" />
-                                <Button x:Name="SaveCategoryImagesButton"
-                                        Content="{DynamicResource LOCPlayAch_Button_Save}"
-                                        Command="{Binding SaveCategoryImagesCommand}"
-                                        Padding="{StaticResource PlayAch.Thickness.ButtonPadding}" />
                                 <Button x:Name="ResetCategoryMetadataButton"
                                         Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                         Click="ResetCategoryMetadataButton_Click"
@@ -568,10 +560,11 @@
                                         <Grid Grid.Column="1"
                                               VerticalAlignment="Center"
                                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                                            <TextBox Text="{Binding ArtOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            <TextBox Text="{Binding ArtOverrideText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                                      AllowDrop="True"
                                                      PreviewDragOver="CategoryImageTextBox_PreviewDragOver"
-                                                     Drop="CategoryImageTextBox_Drop">
+                                                     Drop="CategoryImageTextBox_Drop"
+                                                     KeyDown="CategoryImageTextBox_KeyDown">
                                                 <TextBox.Style>
                                                     <Style TargetType="TextBox" BasedOn="{StaticResource EditorTextBoxStyle}">
                                                         <Style.Triggers>
