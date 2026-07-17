@@ -86,9 +86,7 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             if (e.PropertyName == nameof(PersistedSettings.ShowCompletedProgressColoring))
             {
-                RarityAppearanceHelper.ApplyCompletedProgressFillResource(
-                    Application.Current?.Resources,
-                    _settings?.Persisted);
+                RarityAppearanceHelper.ApplyBadgeApplicationResources(_settings?.Persisted);
             }
         }
 
