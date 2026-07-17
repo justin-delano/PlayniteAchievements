@@ -58,6 +58,12 @@ namespace PlayniteAchievements.Models.Settings
             set => Options.ColorRarityColumnsByRarity = value;
         }
 
+        public bool ShowNameAboveProgress
+        {
+            get => Options.ShowNameAboveProgress;
+            set => Options.ShowNameAboveProgress = value;
+        }
+
         public bool ShowColumnHeaders
         {
             get => Options.ShowColumnHeaders;
@@ -112,6 +118,7 @@ namespace PlayniteAchievements.Models.Settings
             target.UseCoverImages = UseCoverImages;
             target.ShowCompletionGlow = ShowCompletionGlow;
             target.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
+            target.ShowNameAboveProgress = ShowNameAboveProgress;
             target.ShowColumnHeaders = ShowColumnHeaders;
             target.ShowControlBar = ShowControlBar;
             target.RowHeight = RowHeight;
