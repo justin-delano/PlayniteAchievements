@@ -151,6 +151,19 @@ namespace PlayniteAchievements.Models.Achievements
                 return;
             }
 
+            var persisted = settings ?? _activeSettings;
+            if (persisted?.ShowCompletedProgressColoring == false)
+            {
+                var normalFill = resources.Contains("PlayAch.Brush.Progress.Fill")
+                    ? resources["PlayAch.Brush.Progress.Fill"]
+                    : Application.Current?.TryFindResource("PlayAch.Brush.Progress.Fill");
+                if (normalFill != null)
+                {
+                    resources["PlayAch.Brush.Progress.CompletedFill"] = normalFill;
+                    return;
+                }
+            }
+
             resources["PlayAch.Brush.Progress.CompletedFill"] = CreateCompletedProgressFillBrush(settings);
         }
 
