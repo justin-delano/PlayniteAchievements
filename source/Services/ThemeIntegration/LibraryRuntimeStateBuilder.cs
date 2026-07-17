@@ -464,6 +464,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
+            var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
+            achievement.CategoryOrderIndex =
+                AchievementCategoryFilterOrderHelper.ResolveCategoryOrderIndex(category, data?.AchievementCategoryOrder);
+
             var gameId = data?.PlayniteGameId;
             if (!gameId.HasValue || gameId.Value == Guid.Empty)
             {
@@ -472,7 +476,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             CategoryImageOverrideData imageOverride = null;
-            var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
             if (!string.IsNullOrWhiteSpace(category) &&
                 data?.AchievementCategoryImageOverrides != null)
             {
