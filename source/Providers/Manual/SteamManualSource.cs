@@ -188,6 +188,8 @@ namespace PlayniteAchievements.Providers.Manual
             }
         }
 
+        public string ResolveProviderPlatformKey(string sourceGameId) => "Steam";
+
         public void BeginRefreshAuthContext(RefreshAuthContext context)
         {
             _refreshTokenResolution = null;
