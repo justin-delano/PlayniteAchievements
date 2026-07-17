@@ -2084,6 +2084,38 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void FriendDynamicLists_NoConsumerSkipsSnapshotBuild()
+        {
+            var cache = new FakeFriendCache(CreateFriendOverviewData());
+            using var context = CreateServiceContext(friendCache: cache);
+
+            // No friend theme property has been read, so neither construction nor an
+            // invalidation may build the friends overview snapshot.
+            cache.RaiseFriendCacheInvalidated();
+            Task.Delay(250).GetAwaiter().GetResult();
+            Assert.AreEqual(0, cache.LoadFriendsOverviewDataCalls);
+
+            // The first read registers demand and builds once, even after the invalidation.
+            WaitForFriendThemeData(context.Settings);
+            Assert.AreEqual(1, cache.LoadFriendsOverviewDataCalls);
+        }
+
+        [TestMethod]
+        public void FriendDynamicLists_InvalidationAfterConsumptionRebuildsOnce()
+        {
+            var cache = new FakeFriendCache(CreateFriendOverviewData());
+            using var context = CreateServiceContext(friendCache: cache);
+
+            WaitForFriendThemeData(context.Settings);
+            Assert.AreEqual(1, cache.LoadFriendsOverviewDataCalls);
+
+            cache.RaiseFriendCacheInvalidated();
+            WaitForConditionAsync(
+                () => cache.LoadFriendsOverviewDataCalls == 2,
+                timeoutMs: 3000).GetAwaiter().GetResult();
+        }
+
+        [TestMethod]
         public void FriendDynamicLists_LoadFromFriendCacheAndSwitchToSelectedFriendGames()
         {
             var data = CreateFriendOverviewData();
