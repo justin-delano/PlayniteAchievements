@@ -320,6 +320,16 @@ namespace PlayniteAchievements.Models.Achievements
             resources["TrophySilver"] = CreateTrophyImage("TrophySilver", settings);
             resources["TrophyGold"] = CreateTrophyImage("TrophyGold", settings);
             resources["TrophyPlatinum"] = CreateTrophyImage("TrophyPlatinum", settings);
+            // Solid text brushes in the configured tier colors for rarity/trophy count labels
+            // (e.g. the game summary progress-footer badges), consumed via DynamicResource.
+            resources["PlayAch.Brush.Rarity.UltraRare"] = GetBrush(RarityTier.UltraRare, settings);
+            resources["PlayAch.Brush.Rarity.Rare"] = GetBrush(RarityTier.Rare, settings);
+            resources["PlayAch.Brush.Rarity.Uncommon"] = GetBrush(RarityTier.Uncommon, settings);
+            resources["PlayAch.Brush.Rarity.Common"] = GetBrush(RarityTier.Common, settings);
+            resources["PlayAch.Brush.Trophy.Platinum"] = CreateSolidBrush(GetTrophyColor("TrophyPlatinum", settings));
+            resources["PlayAch.Brush.Trophy.Gold"] = CreateSolidBrush(GetTrophyColor("TrophyGold", settings));
+            resources["PlayAch.Brush.Trophy.Silver"] = CreateSolidBrush(GetTrophyColor("TrophySilver", settings));
+            resources["PlayAch.Brush.Trophy.Bronze"] = CreateSolidBrush(GetTrophyColor("TrophyBronze", settings));
             SetStaticScoreBadge(resources, "ScoreBadgeBronzeTriangle", "BadgeBronzeTriangle");
             SetStaticScoreBadge(resources, "ScoreBadgeBronzeHexagon", "BadgeBronzeHexagon");
             SetStaticScoreBadge(resources, "ScoreBadgeSilverSquare", "BadgeSilverSquare");
