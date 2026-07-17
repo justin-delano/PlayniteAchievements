@@ -1,7 +1,10 @@
 // SettingsControl.xaml.cs
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using PlayniteAchievements.Models;
@@ -27,6 +30,8 @@ namespace PlayniteAchievements.Views
         private DisplaySettingsTab _displaySettingsTab;
         private GeneralSettingsTab _generalSettingsTab;
         private bool _providerNavigationBuilt;
+        private readonly HashSet<string> _autoAuthCheckedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private CancellationTokenSource _autoAuthDebounceCts;
 
         public static readonly DependencyProperty ProviderNavigationItemsProperty =
             DependencyProperty.Register(
@@ -46,7 +51,7 @@ namespace PlayniteAchievements.Views
                 nameof(SelectedProviderNavigationItem),
                 typeof(ProviderNavigationItem),
                 typeof(SettingsControl),
-                new PropertyMetadata(null));
+                new PropertyMetadata(null, OnSelectedProviderNavigationItemChanged));
 
         public ProviderNavigationItem SelectedProviderNavigationItem
         {
@@ -215,6 +220,71 @@ namespace PlayniteAchievements.Views
             _logger?.Info($"Built {ProviderNavigationItems.Count} platform navigation items");
         }
 
+        private static void OnSelectedProviderNavigationItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is SettingsControl control)
+            {
+                control.ScheduleAutoAuthCheck(e.NewValue as ProviderNavigationItem);
+            }
+        }
+
+        /// <summary>
+        /// Schedules a debounced, once-per-settings-session auth check for the selected
+        /// provider page. Selecting another page cancels a still-pending check.
+        /// </summary>
+        private void ScheduleAutoAuthCheck(ProviderNavigationItem item)
+        {
+            _autoAuthDebounceCts?.Cancel();
+            _autoAuthDebounceCts?.Dispose();
+            _autoAuthDebounceCts = null;
+
+            if (item == null ||
+                item.IsRedirect ||
+                !item.IsEnabled ||
+                _autoAuthCheckedProviders.Contains(item.ProviderKey))
+            {
+                return;
+            }
+
+            _autoAuthDebounceCts = new CancellationTokenSource();
+            _ = RunAutoAuthCheckAsync(item, _autoAuthDebounceCts.Token);
+        }
+
+        private async Task RunAutoAuthCheckAsync(ProviderNavigationItem item, CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(300, token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (token.IsCancellationRequested ||
+                !ReferenceEquals(SelectedProviderNavigationItem, item))
+            {
+                return;
+            }
+
+            if (!(item.EnsureView() is IAuthRefreshable refreshable))
+            {
+                return;
+            }
+
+            _autoAuthCheckedProviders.Add(item.ProviderKey);
+
+            try
+            {
+                _logger?.Info($"Auto-refreshing auth status for {item.ProviderKey}");
+                await refreshable.RefreshAuthStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to refresh auth status for {item.ProviderKey}");
+            }
+        }
+
         private static string GetProviderSettingsGroupName(string providerKey)
         {
             return ResourceProvider.GetString(ProviderUiPolicies.GetSettingsGroupResourceKey(providerKey));
@@ -335,6 +405,9 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+            _autoAuthDebounceCts?.Cancel();
+            _autoAuthDebounceCts?.Dispose();
+            _autoAuthDebounceCts = null;
             _settingsViewModel.Settings.Persisted.PropertyChanged -= Persisted_PropertyChanged;
             _displaySettingsTab?.Dispose();
             _generalSettingsTab?.Dispose();
