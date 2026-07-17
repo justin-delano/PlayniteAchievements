@@ -65,20 +65,14 @@ namespace PlayniteAchievements.ViewModels
         private OverviewDataSnapshot _latestSnapshot;
         private bool _hasAppliedSnapshot;
 
-        private readonly object _progressLock = new object();
-        private DateTime _lastProgressUpdate = DateTime.MinValue;
-        private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
+        private readonly RefreshHeaderProgressTracker _progressTracker;
         private const int ContextualPieSeriesCount = 5;
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
-        private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
         private bool _isApplyingTimelineRange;
-        private bool _showCompletedProgress;
-        private bool _refreshInitiated;
         private bool _selectedGameLoadInProgress;
         private bool _selectedGameContentReady;
         private CancellationTokenSource _selectedGameLoadCts;
-        private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
         private readonly object _deltaSync = new object();
         private readonly HashSet<string> _pendingDeltaKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _pendingFullResetFromDelta;
@@ -147,11 +141,8 @@ namespace PlayniteAchievements.ViewModels
             };
             _refreshDebounceTimer.Tick += OnRefreshDebounceTimerTick;
 
-            _progressHideTimer = new System.Windows.Threading.DispatcherTimer
-            {
-                Interval = ProgressHideDelay
-            };
-            _progressHideTimer.Tick += OnProgressHideTimerTick;
+            _progressTracker = new RefreshHeaderProgressTracker(_refreshService, _logger);
+            _progressTracker.PropertyChanged += OnProgressTrackerChanged;
 
             _deltaBatchTimer = new System.Windows.Threading.DispatcherTimer
             {
@@ -243,7 +234,6 @@ namespace PlayniteAchievements.ViewModels
             NavigateToGameCommand = new RelayCommand(param => NavigateToGame(param as GameSummaryItem));
 
             // Subscribe to progress events
-            _refreshService.RebuildProgress += OnRebuildProgress;
             _refreshService.CacheDeltaUpdated += OnCacheDeltaUpdated;
             _refreshService.CacheInvalidated += OnCacheInvalidated;
             if (_gameCustomDataStore != null)
@@ -1254,23 +1244,33 @@ namespace PlayniteAchievements.ViewModels
 
         #region Progress Properties
 
-        public bool IsRefreshing => _refreshService.IsRebuilding;
+        public bool IsRefreshing => _progressTracker.IsRefreshing;
 
-        private double _progressPercent;
-        public double ProgressPercent
+        public double ProgressPercent => _progressTracker.ProgressPercent;
+
+        public string ProgressMessage => _progressTracker.ProgressMessage;
+
+        public bool ShowProgress => _progressTracker.ShowProgress;
+
+        private void OnProgressTrackerChanged(object sender, PropertyChangedEventArgs e)
         {
-            get => _progressPercent;
-            set => SetValue(ref _progressPercent, value);
+            switch (e.PropertyName)
+            {
+                case nameof(RefreshHeaderProgressTracker.ProgressPercent):
+                    OnPropertyChanged(nameof(ProgressPercent));
+                    break;
+                case nameof(RefreshHeaderProgressTracker.ProgressMessage):
+                    OnPropertyChanged(nameof(ProgressMessage));
+                    break;
+                case nameof(RefreshHeaderProgressTracker.IsRefreshing):
+                    OnPropertyChanged(nameof(IsRefreshing));
+                    RaiseCommandsChanged();
+                    break;
+                case nameof(RefreshHeaderProgressTracker.ShowProgress):
+                    OnPropertyChanged(nameof(ShowProgress));
+                    break;
+            }
         }
-
-        private string _progressMessage;
-        public string ProgressMessage
-        {
-            get => _progressMessage;
-            set => SetValue(ref _progressMessage, value);
-        }
-
-        public bool ShowProgress => _refreshInitiated || IsRefreshing || _showCompletedProgress;
 
         #endregion
 
@@ -1380,12 +1380,12 @@ namespace PlayniteAchievements.ViewModels
                     _pendingDeltaKeys.Clear();
                     _pendingFullResetFromDelta = false;
                 }
-                CancelProgressHideTimer(clearCompletedProgress: true);
+                _progressTracker.NotifyDeactivated();
                 CancelPendingRefresh();
             }
             else
             {
-                ApplyRefreshStatus(_refreshService.GetRefreshStatusSnapshot());
+                _progressTracker.SyncToCurrentState();
                 // Refresh data when overview becomes active to ensure cached changes are visible
                 _ = RefreshViewAsync();
             }
@@ -1542,9 +1542,7 @@ namespace PlayniteAchievements.ViewModels
                     return;
                 }
 
-                CancelProgressHideTimer(clearCompletedProgress: false);
-                _refreshInitiated = true;
-                ApplyRefreshStatus(_refreshService.GetStartingRefreshStatusSnapshot());
+                _progressTracker.NotifyRefreshStarting();
 
                 await _refreshCoordinator.ExecuteAsync(
                     refreshRequest,
@@ -1567,7 +1565,7 @@ namespace PlayniteAchievements.ViewModels
                 // even if the final progress event was not delivered.
                 if (refreshRequest != null)
                 {
-                    ApplyRefreshStatus(_refreshService.GetRefreshStatusSnapshot());
+                    _progressTracker.SyncToCurrentState();
                 }
             }
         }
@@ -1636,9 +1634,7 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                CancelProgressHideTimer(clearCompletedProgress: false);
-                _refreshInitiated = true;
-                ApplyRefreshStatus(_refreshService.GetStartingRefreshStatusSnapshot());
+                _progressTracker.NotifyRefreshStarting();
 
                 await _refreshCoordinator.ExecuteAsync(
                     new RefreshRequest
@@ -1661,7 +1657,7 @@ namespace PlayniteAchievements.ViewModels
             }
             finally
             {
-                ApplyRefreshStatus(_refreshService.GetRefreshStatusSnapshot());
+                _progressTracker.SyncToCurrentState();
             }
         }
 
@@ -2614,42 +2610,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void OnRebuildProgress(object sender, ProgressReport report)
-        {
-            if (report == null) return;
-
-            var now = DateTime.UtcNow;
-
-            // Centralized progress/status state from RefreshRuntime.
-            var status = _refreshService.GetRefreshStatusSnapshot(report);
-
-            lock (_progressLock)
-            {
-                if (!status.IsFinal)
-                {
-                    // Only throttle non-final updates
-                    if ((now - _lastProgressUpdate) < ProgressMinInterval)
-                    {
-                        return;
-                    }
-                }
-
-                _lastProgressUpdate = now;
-            }
-
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-            {
-                try
-                {
-                    ApplyRefreshStatus(status);
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug($"Progress UI update error: {ex.Message}");
-                }
-            }));
-        }
-
         private void OnCacheDeltaUpdated(object sender, CacheDeltaEventArgs e)
         {
             if (!_isActive || e == null)
@@ -2841,74 +2801,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Failed to auto-refresh overview on cache change");
             }
-        }
-
-        private void StartProgressHideTimer()
-        {
-            if (_progressHideTimer == null)
-            {
-                return;
-            }
-
-            _progressHideTimer.Stop();
-            _progressHideTimer.Start();
-        }
-
-        private void CancelProgressHideTimer(bool clearCompletedProgress)
-        {
-            _progressHideTimer?.Stop();
-
-            if (clearCompletedProgress)
-            {
-                _refreshInitiated = false;
-                if (_showCompletedProgress)
-                {
-                    _showCompletedProgress = false;
-                    OnPropertyChanged(nameof(ShowProgress));
-                }
-            }
-        }
-
-        private void OnProgressHideTimerTick(object sender, EventArgs e)
-        {
-            _progressHideTimer?.Stop();
-            _refreshInitiated = false;
-            if (_showCompletedProgress)
-            {
-                _showCompletedProgress = false;
-                OnPropertyChanged(nameof(ShowProgress));
-            }
-        }
-
-        private void ApplyRefreshStatus(RefreshStatusSnapshot status)
-        {
-            if (status == null)
-            {
-                return;
-            }
-
-            ProgressPercent = status.ProgressPercent;
-            ProgressMessage = status.Message ?? string.Empty;
-
-            if (status.IsRefreshing)
-            {
-                _refreshInitiated = true;
-                CancelProgressHideTimer(clearCompletedProgress: false);
-                _showCompletedProgress = false;
-            }
-            else if (_refreshInitiated)
-            {
-                _showCompletedProgress = true;
-                StartProgressHideTimer();
-            }
-            else
-            {
-                _showCompletedProgress = false;
-            }
-
-            OnPropertyChanged(nameof(IsRefreshing));
-            OnPropertyChanged(nameof(ShowProgress));
-            RaiseCommandsChanged();
         }
 
         private bool FilterAchievement(AchievementDisplayItem item, SearchQuery searchQuery)
@@ -4042,12 +3934,15 @@ namespace PlayniteAchievements.ViewModels
             SetActive(false);
             CancelSelectedGameLoad();
             _refreshDebounceTimer?.Stop();
-            _progressHideTimer?.Stop();
             _deltaBatchTimer?.Stop();
             CancelPendingRefresh();
+            if (_progressTracker != null)
+            {
+                _progressTracker.PropertyChanged -= OnProgressTrackerChanged;
+                _progressTracker.Dispose();
+            }
             if (_refreshService != null)
             {
-                _refreshService.RebuildProgress -= OnRebuildProgress;
                 _refreshService.CacheDeltaUpdated -= OnCacheDeltaUpdated;
                 _refreshService.CacheInvalidated -= OnCacheInvalidated;
             }
@@ -4074,10 +3969,6 @@ namespace PlayniteAchievements.ViewModels
             if (_refreshDebounceTimer != null)
             {
                 _refreshDebounceTimer.Tick -= OnRefreshDebounceTimerTick;
-            }
-            if (_progressHideTimer != null)
-            {
-                _progressHideTimer.Tick -= OnProgressHideTimerTick;
             }
             if (_deltaBatchTimer != null)
             {
