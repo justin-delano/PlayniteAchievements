@@ -115,6 +115,9 @@
                       IsChecked="{Binding GameSummaryOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowNameAboveProgress}"
+                      IsChecked="{Binding GameSummaryOptions.ShowNameAboveProgress, ElementName=EditorRoot}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
         </StackPanel>
 
         <!-- Category-summary rows -->
@@ -134,6 +137,9 @@
             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityTextByRarity}"
                       IsChecked="{Binding CategorySummaryOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowNameAboveProgress}"
+                      IsChecked="{Binding CategorySummaryOptions.ShowNameAboveProgress, ElementName=EditorRoot}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
             <StackPanel Orientation="Horizontal"
                         Visibility="{Binding ShowRowHeightRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"

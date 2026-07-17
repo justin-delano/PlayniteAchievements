@@ -370,6 +370,8 @@
                             <Grid>
                                 <Grid Style="{StaticResource OverviewProgressContainerStyle}">
                                     <StackPanel Style="{StaticResource OverviewProgressStackStyle}">
+                                        <TextBlock Text="{Binding GameName}"
+                                                   Style="{StaticResource OverviewProgressNameTextStyle}"/>
                                         <Grid>
                                             <ProgressBar Value="{Binding Progression, Mode=OneWay}"
                                                          Style="{StaticResource OverviewProgressBarStyle}"/>

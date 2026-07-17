@@ -349,6 +349,21 @@ namespace PlayniteAchievements.Views.Controls
             private set => SetValue(ColorRarityColumnsByRarityProperty, value);
         }
 
+        public static readonly DependencyProperty ShowNameAboveProgressProperty =
+            DependencyProperty.Register(
+                nameof(ShowNameAboveProgress),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(false));
+
+        // Resolved per-surface toggle rendering the game/category name above the progress bar;
+        // consumed by OverviewProgressNameTextStyle in OverviewStyles.xaml.
+        public bool ShowNameAboveProgress
+        {
+            get => (bool)GetValue(ShowNameAboveProgressProperty);
+            private set => SetValue(ShowNameAboveProgressProperty, value);
+        }
+
         public static readonly DependencyProperty ShowColumnHeadersProperty =
             DependencyProperty.Register(
                 nameof(ShowColumnHeaders),
@@ -499,6 +514,7 @@ namespace PlayniteAchievements.Views.Controls
 
             UpdateLastPlayedDateMode(settings);
             UpdateColorRarityColumnsByRarity(settings);
+            UpdateShowNameAboveProgress(settings);
             if (_subscribedPersisted == null)
             {
                 _subscribedPersisted = settings.Persisted;
@@ -836,7 +852,8 @@ namespace PlayniteAchievements.Views.Controls
                     }
                 },
                 GetLastPlayedDateMode = () => ResolveLastPlayedDateMode(persisted, surface),
-                GetColorRarityColumnsByRarity = () => ResolveColorRarityColumnsByRarity(persisted, surface)
+                GetColorRarityColumnsByRarity = () => ResolveColorRarityColumnsByRarity(persisted, surface),
+                GetShowNameAboveProgress = () => ResolveShowNameAboveProgress(persisted, surface)
             };
         }
 
@@ -916,6 +933,44 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private static bool ResolveShowNameAboveProgress(
+            PersistedSettings persisted,
+            GridSurface surface)
+        {
+            if (persisted == null)
+            {
+                return false;
+            }
+
+            switch (surface)
+            {
+                case GridSurface.StartPage:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.StartPage).ShowNameAboveProgress;
+                case GridSurface.ViewAchievements:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewAchievements).ShowNameAboveProgress;
+                case GridSurface.FriendsOverview:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverview).ShowNameAboveProgress;
+                case GridSurface.FriendsOverviewSelectedFriend:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend).ShowNameAboveProgress;
+                case GridSurface.ViewFriendsAchievements:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).ShowNameAboveProgress;
+                case GridSurface.ViewFriendsAchievementsSelectedFriend:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend).ShowNameAboveProgress;
+                case GridSurface.ViewAchievementsCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewAchievements).ShowNameAboveProgress;
+                case GridSurface.OverviewSelectedGameCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.OverviewSelectedGame).ShowNameAboveProgress;
+                case GridSurface.FriendsOverviewCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.FriendsOverview).ShowNameAboveProgress;
+                case GridSurface.ViewFriendsAchievementsCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements).ShowNameAboveProgress;
+                case GridSurface.DesktopThemeCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.DesktopTheme).ShowNameAboveProgress;
+                default:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.Overview).ShowNameAboveProgress;
+            }
+        }
+
         private static DateDisplayMode ResolveLastPlayedDateMode(
             PersistedSettings persisted,
             GridSurface surface)
@@ -961,6 +1016,7 @@ namespace PlayniteAchievements.Views.Controls
             public Action<Dictionary<string, GridAlignment>> SetHeaderAlignments { get; set; }
             public Func<DateDisplayMode> GetLastPlayedDateMode { get; set; }
             public Func<bool> GetColorRarityColumnsByRarity { get; set; }
+            public Func<bool> GetShowNameAboveProgress { get; set; }
         }
 
         private enum GridSurface
@@ -1146,6 +1202,14 @@ namespace PlayniteAchievements.Views.Controls
             {
                 UpdateColorRarityColumnsByRarity(PlayniteAchievementsPlugin.Instance?.Settings);
             }
+
+            // Matches the per-surface flat compatibility names for both the game-summary and
+            // category-summary variants of the option (they all share this suffix).
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName.EndsWith(nameof(GameSummaryGridOptions.ShowNameAboveProgress), StringComparison.Ordinal))
+            {
+                UpdateShowNameAboveProgress(PlayniteAchievementsPlugin.Instance?.Settings);
+            }
         }
 
         private void UpdateLastPlayedDateMode(PlayniteAchievementsSettings settings)
@@ -1163,6 +1227,15 @@ namespace PlayniteAchievements.Views.Controls
             if (surfaceSettings != null)
             {
                 ColorRarityColumnsByRarity = surfaceSettings.GetColorRarityColumnsByRarity();
+            }
+        }
+
+        private void UpdateShowNameAboveProgress(PlayniteAchievementsSettings settings)
+        {
+            var surfaceSettings = GetSurfaceSettings(settings);
+            if (surfaceSettings != null)
+            {
+                ShowNameAboveProgress = surfaceSettings.GetShowNameAboveProgress();
             }
         }
 
@@ -1363,6 +1436,7 @@ namespace PlayniteAchievements.Views.Controls
             _columnPersistence?.Refresh();
             UpdateLastPlayedDateMode(PlayniteAchievementsPlugin.Instance?.Settings);
             UpdateColorRarityColumnsByRarity(PlayniteAchievementsPlugin.Instance?.Settings);
+            UpdateShowNameAboveProgress(PlayniteAchievementsPlugin.Instance?.Settings);
             RefreshPlaytimeText();
         }
 
