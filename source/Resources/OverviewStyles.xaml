@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf">
 
@@ -251,6 +252,73 @@
         <Setter Property="Margin" Value="3,0,0,0"/>
     </Style>
 
+    <!-- Per-tier variants: when the host grid's ColorRarityColumnsByRarity option is on, each
+         count label takes its tier's configured color (published by RarityAppearanceHelper),
+         mirroring the achievement grids' rarity column coloring. -->
+    <Style x:Key="OverviewMiniBadgeTextUltraRareStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.UltraRare}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextRareStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.Rare}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextUncommonStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.Uncommon}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextCommonStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.Common}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextTrophyPlatinumStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Trophy.Platinum}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextTrophyGoldStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Trophy.Gold}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextTrophySilverStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Trophy.Silver}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OverviewMiniBadgeTextTrophyBronzeStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewMiniBadgeTextStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ColorRarityColumnsByRarity, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Trophy.Bronze}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="OverviewCompletedFooterIconStyle" TargetType="Image" BasedOn="{StaticResource OverviewMiniBadgeImageStyle}">
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -267,19 +335,19 @@
                         Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}">
                     <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextUltraRareStyle}"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}">
                     <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextRareStyle}"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}">
                     <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextUncommonStyle}"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}">
                     <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextCommonStyle}"/>
                 </StackPanel>
             </StackPanel>
 
@@ -287,19 +355,19 @@
                         Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Platinum}">
                     <Image Source="{DynamicResource TrophyPlatinum}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextTrophyPlatinumStyle}"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Gold}">
                     <Image Source="{DynamicResource TrophyGold}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextTrophyGoldStyle}"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Silver}">
                     <Image Source="{DynamicResource TrophySilver}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextTrophySilverStyle}"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Bronze}">
                     <Image Source="{DynamicResource TrophyBronze}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                    <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                    <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextTrophyBronzeStyle}"/>
                 </StackPanel>
             </StackPanel>
         </Grid>

@@ -52,6 +52,12 @@ namespace PlayniteAchievements.Models.Settings
             set => Options.ShowCompletionGlow = value;
         }
 
+        public bool ColorRarityColumnsByRarity
+        {
+            get => Options.ColorRarityColumnsByRarity;
+            set => Options.ColorRarityColumnsByRarity = value;
+        }
+
         public bool ShowColumnHeaders
         {
             get => Options.ShowColumnHeaders;
@@ -105,6 +111,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowMetadataRegion = ShowMetadataRegion;
             target.UseCoverImages = UseCoverImages;
             target.ShowCompletionGlow = ShowCompletionGlow;
+            target.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
             target.ShowColumnHeaders = ShowColumnHeaders;
             target.ShowControlBar = ShowControlBar;
             target.RowHeight = RowHeight;
