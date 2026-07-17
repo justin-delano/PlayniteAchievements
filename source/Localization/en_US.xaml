@@ -36,6 +36,11 @@
     <sys:String x:Key="LOCPlayAch_Common_Label_Platform">Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Playtime</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Region">Region</sys:String>
+    <sys:String x:Key="LOCPlayAch_Region_NorthAmerica">North America</sys:String>
+    <sys:String x:Key="LOCPlayAch_Region_Europe">Europe</sys:String>
+    <sys:String x:Key="LOCPlayAch_Region_Germany">Germany</sys:String>
+    <sys:String x:Key="LOCPlayAch_Region_France">France</sys:String>
+    <sys:String x:Key="LOCPlayAch_Region_Japan">Japan</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Type">Type</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastUnlock">Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Locked">Locked</sys:String>
@@ -1052,6 +1057,7 @@
     <!-- ChartCut: toggle button that trims (cuts) the unlock chart to the selected time period -->
     <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_InvalidColor">Use #AARRGGBB, #RRGGBB, or a WPF color name.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ColorPicker_HexLabel">Hex</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Select Color</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
