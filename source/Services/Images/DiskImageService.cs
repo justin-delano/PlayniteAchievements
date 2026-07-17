@@ -73,6 +73,24 @@ namespace PlayniteAchievements.Services.Images
         private readonly Dictionary<string, PathWriteLockEntry> _pathWriteLocks =
             new Dictionary<string, PathWriteLockEntry>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Raised with the absolute target path whenever an existing cached image file is
+        /// rewritten in place (force icon refresh, changed friend avatars, replaced custom
+        /// icons). MemoryImageService listens to evict the matching decoded bitmaps; without
+        /// this, its path-keyed entries would keep serving the old pixels.
+        /// </summary>
+        public event Action<string> ImageFileOverwritten;
+
+        private void NotifyImageFileOverwritten(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            try { ImageFileOverwritten?.Invoke(path); } catch { }
+        }
+
         // Per-game snapshot of the category_defaults folder contents, so whole-library snapshot
         // builds resolve default category art with one directory scan per game instead of
         // per-achievement File.Exists probes. Entries are immutable once published; writes and
@@ -652,6 +670,7 @@ namespace PlayniteAchievements.Services.Images
                         return targetPath;
                     }
 
+                    var overwritingExisting = overwriteExistingTarget && File.Exists(resolvedTargetPath);
                     var downloadGate = IsRateLimitedDomain(uri) ? _rateLimitedDownloadGate : _downloadGate;
 
                     byte[] bytes;
@@ -679,6 +698,11 @@ namespace PlayniteAchievements.Services.Images
                     {
                         await SaveBytesWithRetryAsync(resolvedTargetPath, bytes, cancel).ConfigureAwait(false);
                         InvalidateDefaultCategoryArtSnapshotForTargetPath(resolvedTargetPath);
+                        if (overwritingExisting)
+                        {
+                            NotifyImageFileOverwritten(resolvedTargetPath);
+                        }
+
                         return resolvedTargetPath;
                     }
 
@@ -688,6 +712,10 @@ namespace PlayniteAchievements.Services.Images
                         if (savedPath != null)
                         {
                             InvalidateDefaultCategoryArtSnapshotForTargetPath(savedPath);
+                            if (overwritingExisting)
+                            {
+                                NotifyImageFileOverwritten(savedPath);
+                            }
                         }
 
                         return savedPath;
@@ -1428,10 +1456,16 @@ namespace PlayniteAchievements.Services.Images
 
                     cancel.ThrowIfCancellationRequested();
 
+                    var overwritingExisting = overwriteExistingTarget && File.Exists(resolvedTargetPath);
                     if (preserveOriginalFormat)
                     {
                         File.Copy(localPath, resolvedTargetPath, overwrite: overwriteExistingTarget);
                         InvalidateDefaultCategoryArtSnapshotForTargetPath(resolvedTargetPath);
+                        if (overwritingExisting)
+                        {
+                            NotifyImageFileOverwritten(resolvedTargetPath);
+                        }
+
                         return resolvedTargetPath;
                     }
 
@@ -1441,6 +1475,10 @@ namespace PlayniteAchievements.Services.Images
                         if (savedPath != null)
                         {
                             InvalidateDefaultCategoryArtSnapshotForTargetPath(savedPath);
+                            if (overwritingExisting)
+                            {
+                                NotifyImageFileOverwritten(savedPath);
+                            }
                         }
 
                         return savedPath;
@@ -1488,8 +1526,14 @@ namespace PlayniteAchievements.Services.Images
                     }
 
                     cancel.ThrowIfCancellationRequested();
+                    var overwritingExisting = overwriteExistingTarget && File.Exists(targetPath);
                     File.Copy(existingPath, targetPath, overwrite: overwriteExistingTarget);
                     InvalidateDefaultCategoryArtSnapshotForTargetPath(targetPath);
+                    if (overwritingExisting)
+                    {
+                        NotifyImageFileOverwritten(targetPath);
+                    }
+
                     return targetPath;
                 }
                 catch (IOException)
