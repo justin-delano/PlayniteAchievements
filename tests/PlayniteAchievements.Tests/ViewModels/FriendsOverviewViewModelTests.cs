@@ -32,6 +32,49 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void LoadAsync_TogglesIsLoadingForInitialLoad()
+        {
+            using var viewModel = CreateViewModel(CreateData());
+            var isLoadingChanges = new List<bool>();
+            viewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(FriendsOverviewViewModel.IsLoading))
+                {
+                    isLoadingChanges.Add(viewModel.IsLoading);
+                }
+            };
+
+            Assert.IsFalse(viewModel.IsLoading);
+
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            Assert.IsFalse(viewModel.IsLoading, "IsLoading should clear once the initial load completes.");
+            CollectionAssert.Contains(isLoadingChanges, true, "IsLoading should be raised during the initial load.");
+        }
+
+        [TestMethod]
+        public void LoadAsync_DoesNotFlagIsLoadingWhenDataAlreadyPresent()
+        {
+            using var viewModel = CreateViewModel(CreateData());
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            Assert.IsTrue(viewModel.HasData);
+
+            var raisedDuringReload = false;
+            viewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(FriendsOverviewViewModel.IsLoading) && viewModel.IsLoading)
+                {
+                    raisedDuringReload = true;
+                }
+            };
+
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            Assert.IsFalse(raisedDuringReload, "Reloads over populated data should not flash the loading overlay.");
+            Assert.IsFalse(viewModel.IsLoading);
+        }
+
+        [TestMethod]
         public void LoadAsync_AppliesConfiguredRowLimitsToAllThreeGrids()
         {
             var data = CreateData();
