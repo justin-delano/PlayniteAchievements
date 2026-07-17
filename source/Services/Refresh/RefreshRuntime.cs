@@ -91,6 +91,12 @@ namespace PlayniteAchievements.Services.Refresh
                 return authContext;
             }
 
+            if (HasSteamTransientAuthFailure(authContext))
+            {
+                _logger.Warn("Refresh skipped because Steam web authentication could not be verified; suppressing generic authentication modal.");
+                return authContext;
+            }
+
             _logger.Info("Refresh attempted but no platforms are authenticated.");
             PostToUi(() => _api.Dialogs.ShowMessage(
                 ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
@@ -1540,6 +1546,15 @@ namespace PlayniteAchievements.Services.Refresh
                 MessageBoxImage.Warning);
         }
 
+        private static bool HasSteamTransientAuthFailure(RefreshAuthContext authContext)
+        {
+            var result = authContext?.GetProbeResult("Steam");
+            return result != null &&
+                   !result.IsSuccess &&
+                   (result.Outcome == AuthOutcome.TimedOut ||
+                    result.Outcome == AuthOutcome.ProbeFailed);
+        }
+
         public Task ExecuteRefreshAsync(CustomRefreshOptions options, CancellationToken externalToken = default)
         {
             return ExecuteRefreshAsync(new RefreshRequest
@@ -1605,7 +1620,14 @@ namespace PlayniteAchievements.Services.Refresh
 
                 if (!string.IsNullOrWhiteSpace(resolved.UserMessage))
                 {
-                    ShowCustomRefreshMessage(resolved.UserMessage);
+                    if (HasSteamTransientAuthFailure(effectiveAuthContext))
+                    {
+                        _logger.Warn("Refresh selection produced no targets because Steam web authentication could not be verified; suppressing generic no-target modal.");
+                    }
+                    else
+                    {
+                        ShowCustomRefreshMessage(resolved.UserMessage);
+                    }
                 }
 
                 return;

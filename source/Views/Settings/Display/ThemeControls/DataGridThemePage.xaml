@@ -71,6 +71,9 @@
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
                                        Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
+                                      IsChecked="{Binding Persisted.GridOptions.Achievement[DesktopTheme].HideCategorySummaryRow}"
+                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                             <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.CategorySummaries[DesktopTheme]}"/>
                         </StackPanel>
                     </Border>

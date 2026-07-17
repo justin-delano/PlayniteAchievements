@@ -94,10 +94,23 @@ namespace PlayniteAchievements.Providers.Steam
                         return AuthProbeResult.AlreadyAuthenticated(session.SteamId64);
                     }
 
+                    if (session?.IsTransientFailure == true)
+                    {
+                        var result = AuthProbeResult.Create(
+                            session.TransientFailureOutcome.Value,
+                            "LOCPlayAch_Common_NotAuthenticated",
+                            userId: session.SteamId64);
+                        _logger?.Warn(
+                            $"[SteamAuth] Steam web auth could not be verified ({result.Outcome}); keeping persisted Steam identity unchanged.");
+                        return result;
+                    }
+
                     // Only clear the persisted ID when no session cookies remain at all.
                     // An incomplete session (ID without a web API token) must not update
                     // the persisted identity: it can carry a stale account's ID.
-                    if (session?.HasSteamSessionCookies != true)
+                    if (session != null &&
+                        !session.IsTransientFailure &&
+                        session.HasSteamSessionCookies != true)
                     {
                         PersistSteamUserId(null);
                     }
@@ -332,7 +345,35 @@ namespace PlayniteAchievements.Providers.Steam
                     return await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         _logger?.Debug($"[SteamAuth] Navigating to {CommunityEditInfoUrl} to resolve web auth session...");
-                        await view.NavigateAndWaitAsync(CommunityEditInfoUrl, timeoutMs: 15000).ConfigureAwait(true);
+                        try
+                        {
+                            await view.NavigateAndWaitAsync(CommunityEditInfoUrl, timeoutMs: 15000).ConfigureAwait(true);
+                        }
+                        catch (TimeoutException ex)
+                        {
+                            SteamWebAuthSession session = null;
+                            try
+                            {
+                                session = ResolveWebAuthSessionFromView(view);
+                            }
+                            catch (Exception inspectEx)
+                            {
+                                _logger?.Debug(inspectEx, "[SteamAuth] Failed to inspect timed-out Steam WebView.");
+                            }
+
+                            if (session?.IsComplete == true)
+                            {
+                                _logger?.Warn(
+                                    "[SteamAuth] Steam WebView navigation timed out, but a complete auth session was available from the page/cookies.");
+                                return session;
+                            }
+
+                            _logger?.Warn(ex, "[SteamAuth] Steam WebView navigation timed out before auth could be verified.");
+                            return SteamWebAuthSession.TransientFailure(
+                                AuthOutcome.TimedOut,
+                                session);
+                        }
+
                         await Task.Delay(500, ct).ConfigureAwait(true);
                         return ResolveWebAuthSessionFromView(view);
                     }, ct).ConfigureAwait(true);
@@ -341,10 +382,15 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     throw;
                 }
+                catch (TimeoutException ex)
+                {
+                    _logger?.Warn(ex, "[SteamAuth] Steam web auth session resolution timed out before the WebView could be inspected.");
+                    return SteamWebAuthSession.TransientFailure(AuthOutcome.TimedOut);
+                }
                 catch (Exception ex)
                 {
                     _logger?.Warn(ex, "[SteamAuth] Failed to resolve Steam web auth session.");
-                    return SteamWebAuthSession.Empty();
+                    return SteamWebAuthSession.TransientFailure(AuthOutcome.ProbeFailed);
                 }
             });
         }
