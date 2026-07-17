@@ -2830,6 +2830,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 new DynamicGroupOptionBinding
                 {
+                    OptionKeys = DynamicThemeOptionGroups.AchievementCategoryTypeFilterKeys,
+                    GroupKeys = new[] { DynamicThemeOptionGroups.AchievementCategoryTypeGroup },
+                    GroupMap = DynamicThemeOptionGroups.AchievementFilterGroupMap,
+                    Command = () => _settings.SetDynamicLibraryAchievementsCategoryTypeFilterCommand,
+                    SetOptions = value => _settings.ModernTheme.DynamicLibraryAchievementCategoryTypeFilterOptions = value,
+                },
+                new DynamicGroupOptionBinding
+                {
                     OptionKeys = DynamicThemeOptionGroups.AchievementCustomizationFilterKeys,
                     GroupKeys = DynamicThemeOptionGroups.AchievementCustomizationGroups,
                     GroupMap = DynamicThemeOptionGroups.AchievementFilterGroupMap,
@@ -2998,6 +3006,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     GroupMap = DynamicThemeOptionGroups.AchievementFilterGroupMap,
                     Command = () => _settings.SetDynamicFriendAchievementsTrophyFilterCommand,
                     SetOptions = value => _settings.ModernTheme.DynamicFriendAchievementTrophyFilterOptions = value,
+                },
+                new DynamicGroupOptionBinding
+                {
+                    OptionKeys = DynamicThemeOptionGroups.AchievementCategoryTypeFilterKeys,
+                    GroupKeys = new[] { DynamicThemeOptionGroups.AchievementCategoryTypeGroup },
+                    GroupMap = DynamicThemeOptionGroups.AchievementFilterGroupMap,
+                    Command = () => _settings.SetDynamicFriendAchievementsCategoryTypeFilterCommand,
+                    SetOptions = value => _settings.ModernTheme.DynamicFriendAchievementCategoryTypeFilterOptions = value,
                 },
                 new DynamicGroupOptionBinding
                 {
@@ -3363,6 +3379,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 DynamicThemeOptionGroups.AchievementTrophyFilterKeys,
                 DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementTrophyGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
                 _settings.SetDynamicAchievementsTrophyFilterCommand);
+            _settings.ModernTheme.DynamicAchievementCategoryTypeFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementCategoryTypeFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementCategoryTypeGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicAchievementsCategoryTypeFilterCommand);
             _settings.ModernTheme.DynamicAchievementCustomizationFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementCustomizationFilterKeys,
                 DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups, DynamicThemeOptionGroups.AchievementFilterGroupMap),
@@ -3561,6 +3581,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 item => item != null && string.Equals(item.Rarity.ToString(), key, StringComparison.OrdinalIgnoreCase);
             Func<FriendAchievementDisplayItem, bool> Trophy(string key) =>
                 item => string.Equals(item?.TrophyType, key, StringComparison.OrdinalIgnoreCase);
+            // CategoryType is multi-valued ("Base|DLC"); ParseValues canonicalizes aliases.
+            Func<FriendAchievementDisplayItem, bool> CategoryType(string key) =>
+                item => item != null && AchievementCategoryTypeHelper.ParseValues(item.CategoryType)
+                    .Contains(key, StringComparer.OrdinalIgnoreCase);
 
             return new Dictionary<string, Func<FriendAchievementDisplayItem, bool>>(StringComparer.Ordinal)
             {
@@ -3579,6 +3603,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 [DynamicThemeViewKeys.Gold] = Trophy(DynamicThemeViewKeys.Gold),
                 [DynamicThemeViewKeys.Silver] = Trophy(DynamicThemeViewKeys.Silver),
                 [DynamicThemeViewKeys.Bronze] = Trophy(DynamicThemeViewKeys.Bronze),
+                ["Base"] = CategoryType("Base"),
+                ["DLC"] = CategoryType("DLC"),
+                ["Singleplayer"] = CategoryType("Singleplayer"),
+                ["Multiplayer"] = CategoryType("Multiplayer"),
+                ["Collectable"] = CategoryType("Collectable"),
+                ["Missable"] = CategoryType("Missable"),
+                ["Difficulty"] = CategoryType("Difficulty"),
+                ["Stackable"] = CategoryType("Stackable"),
+                [AchievementCategoryTypeHelper.SoftcoreCategoryType] = CategoryType(AchievementCategoryTypeHelper.SoftcoreCategoryType),
+                [AchievementCategoryTypeHelper.HardcoreCategoryType] = CategoryType(AchievementCategoryTypeHelper.HardcoreCategoryType),
             };
         }
 
