@@ -176,6 +176,8 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _setDynamicAchievementsTrophyFilterCommand;
         [DontSerialize]
+        private ICommand _setDynamicAchievementsCategoryTypeFilterCommand;
+        [DontSerialize]
         private ICommand _setDynamicAchievementsCustomizationFilterCommand;
         [DontSerialize]
         private ICommand _setDynamicLibraryAchievementsStatusFilterCommand;
@@ -186,6 +188,8 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _setDynamicLibraryAchievementsTrophyFilterCommand;
         [DontSerialize]
+        private ICommand _setDynamicLibraryAchievementsCategoryTypeFilterCommand;
+        [DontSerialize]
         private ICommand _setDynamicLibraryAchievementsCustomizationFilterCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendAchievementsStatusFilterCommand;
@@ -195,6 +199,8 @@ namespace PlayniteAchievements.Models
         private ICommand _setDynamicFriendAchievementsRarityFilterCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendAchievementsTrophyFilterCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendAchievementsCategoryTypeFilterCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendAchievementsCustomizationFilterCommand;
         [DontSerialize]
@@ -549,6 +555,14 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand SetDynamicAchievementsCategoryTypeFilterCommand
+        {
+            get => _setDynamicAchievementsCategoryTypeFilterCommand ?? (_setDynamicAchievementsCategoryTypeFilterCommand =
+                new RelayCommand(value => SetDynamicAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCategoryTypeGroup, value)));
+            set => SetValue(ref _setDynamicAchievementsCategoryTypeFilterCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand SetDynamicAchievementsCustomizationFilterCommand
         {
             get => _setDynamicAchievementsCustomizationFilterCommand ?? (_setDynamicAchievementsCustomizationFilterCommand =
@@ -589,6 +603,14 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand SetDynamicLibraryAchievementsCategoryTypeFilterCommand
+        {
+            get => _setDynamicLibraryAchievementsCategoryTypeFilterCommand ?? (_setDynamicLibraryAchievementsCategoryTypeFilterCommand =
+                new RelayCommand(value => SetDynamicLibraryAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCategoryTypeGroup, value)));
+            set => SetValue(ref _setDynamicLibraryAchievementsCategoryTypeFilterCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand SetDynamicLibraryAchievementsCustomizationFilterCommand
         {
             get => _setDynamicLibraryAchievementsCustomizationFilterCommand ?? (_setDynamicLibraryAchievementsCustomizationFilterCommand =
@@ -626,6 +648,14 @@ namespace PlayniteAchievements.Models
             get => _setDynamicFriendAchievementsTrophyFilterCommand ?? (_setDynamicFriendAchievementsTrophyFilterCommand =
                 new RelayCommand(value => SetDynamicFriendAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementTrophyGroup, value)));
             set => SetValue(ref _setDynamicFriendAchievementsTrophyFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendAchievementsCategoryTypeFilterCommand
+        {
+            get => _setDynamicFriendAchievementsCategoryTypeFilterCommand ?? (_setDynamicFriendAchievementsCategoryTypeFilterCommand =
+                new RelayCommand(value => SetDynamicFriendAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCategoryTypeGroup, value)));
+            set => SetValue(ref _setDynamicFriendAchievementsCategoryTypeFilterCommand, value);
         }
 
         [DontSerialize]
@@ -938,6 +968,13 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public string DynamicAchievementsCategoryTypeFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicAchievementsFilterKey, DynamicThemeOptionGroups.AchievementCategoryTypeGroup);
+            set => SetDynamicAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCategoryTypeGroup, value);
+        }
+
+        [DontSerialize]
         public string DynamicAchievementsCustomizationFilterKey
         {
             get => GetAchievementGroupFilter(DynamicAchievementsFilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups);
@@ -1022,6 +1059,9 @@ namespace PlayniteAchievements.Models
         public ObservableCollection<DynamicThemeOption> DynamicAchievementTrophyFilterOptions => ModernTheme.DynamicAchievementTrophyFilterOptions;
 
         [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicAchievementCategoryTypeFilterOptions => ModernTheme.DynamicAchievementCategoryTypeFilterOptions;
+
+        [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicAchievementCustomizationFilterOptions => ModernTheme.DynamicAchievementCustomizationFilterOptions;
 
         [DontSerialize]
@@ -1035,6 +1075,9 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementTrophyFilterOptions => ModernTheme.DynamicLibraryAchievementTrophyFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementCategoryTypeFilterOptions => ModernTheme.DynamicLibraryAchievementCategoryTypeFilterOptions;
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementCustomizationFilterOptions => ModernTheme.DynamicLibraryAchievementCustomizationFilterOptions;
@@ -1381,6 +1424,13 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public string DynamicFriendAchievementsCategoryTypeFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementCategoryTypeGroup);
+            set => SetDynamicFriendAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCategoryTypeGroup, value);
+        }
+
+        [DontSerialize]
         public string DynamicFriendAchievementsCustomizationFilterKey
         {
             get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups);
@@ -1454,6 +1504,9 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementTrophyFilterOptions => ModernTheme.DynamicFriendAchievementTrophyFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementCategoryTypeFilterOptions => ModernTheme.DynamicFriendAchievementCategoryTypeFilterOptions;
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementCustomizationFilterOptions => ModernTheme.DynamicFriendAchievementCustomizationFilterOptions;
@@ -1545,6 +1598,13 @@ namespace PlayniteAchievements.Models
         {
             get => GetAchievementGroupFilter(DynamicLibraryAchievementsFilterKey, DynamicThemeOptionGroups.AchievementTrophyGroup);
             set => SetDynamicLibraryAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementTrophyGroup, value);
+        }
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsCategoryTypeFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicLibraryAchievementsFilterKey, DynamicThemeOptionGroups.AchievementCategoryTypeGroup);
+            set => SetDynamicLibraryAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCategoryTypeGroup, value);
         }
 
         [DontSerialize]
