@@ -664,6 +664,19 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicGameSummariesFilterOptions)] = nameof(DynamicGameSummariesFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortOptions)] = nameof(DynamicGameSummariesSortOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortDirectionOptions)] = nameof(DynamicGameSummariesSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummaries)] = nameof(DynamicCategorySummaries),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesFilterKey)] = nameof(DynamicCategorySummariesFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesFilterLabel)] = nameof(DynamicCategorySummariesFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortKey)] = nameof(DynamicCategorySummariesSortKey),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortLabel)] = nameof(DynamicCategorySummariesSortLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortDirectionKey)] = nameof(DynamicCategorySummariesSortDirectionKey),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortDirectionLabel)] = nameof(DynamicCategorySummariesSortDirectionLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesDefaultFilterKey)] = nameof(DynamicCategorySummariesDefaultFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesDefaultSortKey)] = nameof(DynamicCategorySummariesDefaultSortKey),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesDefaultSortDirectionKey)] = nameof(DynamicCategorySummariesDefaultSortDirectionKey),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesFilterOptions)] = nameof(DynamicCategorySummariesFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortOptions)] = nameof(DynamicCategorySummariesSortOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortDirectionOptions)] = nameof(DynamicCategorySummariesSortDirectionOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameProgressFilterOptions)] = nameof(DynamicGameProgressFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameActivityFilterOptions)] = nameof(DynamicGameActivityFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummaries)] = nameof(DynamicFriendSummaries),
@@ -786,6 +799,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesActivityFilterCommand)] = nameof(SetDynamicGameSummariesActivityFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicGameSummariesCommand)] = nameof(SortDynamicGameSummariesCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesSortDirectionCommand)] = nameof(SetDynamicGameSummariesSortDirectionCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicCategorySummariesFilterCommand)] = nameof(SetDynamicCategorySummariesFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SortDynamicCategorySummariesCommand)] = nameof(SortDynamicCategorySummariesCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicCategorySummariesSortDirectionCommand)] = nameof(SetDynamicCategorySummariesSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeProviderCommand)] = nameof(SetDynamicFriendScopeProviderCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeUserCommand)] = nameof(SetDynamicFriendScopeUserCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeGameCommand)] = nameof(SetDynamicFriendScopeGameCommand),
@@ -813,7 +829,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsSortDirectionCommand)] = nameof(SetDynamicFriendAchievementsSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicAchievementsCommand)] = nameof(ResetDynamicAchievementsCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicLibraryAchievementsCommand)] = nameof(ResetDynamicLibraryAchievementsCommand),
-                [nameof(PlayniteAchievementsSettings.ResetDynamicGameSummariesCommand)] = nameof(ResetDynamicGameSummariesCommand)
+                [nameof(PlayniteAchievementsSettings.ResetDynamicGameSummariesCommand)] = nameof(ResetDynamicGameSummariesCommand),
+                [nameof(PlayniteAchievementsSettings.ResetDynamicCategorySummariesCommand)] = nameof(ResetDynamicCategorySummariesCommand)
             };
 
         private static readonly IReadOnlyDictionary<string, string> ModernThemeForwardMap =
@@ -875,6 +892,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(ModernThemeBindings.DynamicGameSummariesFilterOptions)] = nameof(DynamicGameSummariesFilterOptions),
                 [nameof(ModernThemeBindings.DynamicGameSummariesSortOptions)] = nameof(DynamicGameSummariesSortOptions),
                 [nameof(ModernThemeBindings.DynamicGameSummariesSortDirectionOptions)] = nameof(DynamicGameSummariesSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicCategorySummaries)] = nameof(DynamicCategorySummaries),
+                [nameof(ModernThemeBindings.HasCategorySummaries)] = nameof(HasCategorySummaries),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesFilterKey)] = nameof(DynamicCategorySummariesFilterKey),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesFilterLabel)] = nameof(DynamicCategorySummariesFilterLabel),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesSortKey)] = nameof(DynamicCategorySummariesSortKey),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesSortLabel)] = nameof(DynamicCategorySummariesSortLabel),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesSortDirectionKey)] = nameof(DynamicCategorySummariesSortDirectionKey),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesSortDirectionLabel)] = nameof(DynamicCategorySummariesSortDirectionLabel),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesDefaultFilterKey)] = nameof(DynamicCategorySummariesDefaultFilterKey),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesDefaultSortKey)] = nameof(DynamicCategorySummariesDefaultSortKey),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesDefaultSortDirectionKey)] = nameof(DynamicCategorySummariesDefaultSortDirectionKey),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesFilterOptions)] = nameof(DynamicCategorySummariesFilterOptions),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesSortOptions)] = nameof(DynamicCategorySummariesSortOptions),
+                [nameof(ModernThemeBindings.DynamicCategorySummariesSortDirectionOptions)] = nameof(DynamicCategorySummariesSortDirectionOptions),
                 [nameof(ModernThemeBindings.DynamicGameProgressFilterOptions)] = nameof(DynamicGameProgressFilterOptions),
                 [nameof(ModernThemeBindings.DynamicGameActivityFilterOptions)] = nameof(DynamicGameActivityFilterOptions),
                 [nameof(ModernThemeBindings.DynamicFriendSummaries)] = nameof(DynamicFriendSummaries),
@@ -1029,6 +1060,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicGameSummariesFilterOptions),
             nameof(DynamicGameSummariesSortOptions),
             nameof(DynamicGameSummariesSortDirectionOptions),
+            nameof(DynamicCategorySummaries),
+            nameof(HasCategorySummaries),
+            nameof(DynamicCategorySummariesFilterKey),
+            nameof(DynamicCategorySummariesFilterLabel),
+            nameof(DynamicCategorySummariesSortKey),
+            nameof(DynamicCategorySummariesSortLabel),
+            nameof(DynamicCategorySummariesSortDirectionKey),
+            nameof(DynamicCategorySummariesSortDirectionLabel),
+            nameof(DynamicCategorySummariesDefaultFilterKey),
+            nameof(DynamicCategorySummariesDefaultSortKey),
+            nameof(DynamicCategorySummariesDefaultSortDirectionKey),
+            nameof(DynamicCategorySummariesFilterOptions),
+            nameof(DynamicCategorySummariesSortOptions),
+            nameof(DynamicCategorySummariesSortDirectionOptions),
             nameof(DynamicGameProgressFilterOptions),
             nameof(DynamicGameActivityFilterOptions),
             nameof(DynamicFriendSummaries),
@@ -1542,6 +1587,82 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public ObservableCollection<DynamicThemeOption> DynamicGameSummariesSortDirectionOptions => _modernThemeOverride?.DynamicGameSummariesSortDirectionOptions ?? _settings?.DynamicGameSummariesSortDirectionOptions;
 
+        public ObservableCollection<GameAchievementSummary> DynamicCategorySummaries => _modernThemeOverride?.DynamicCategorySummaries ?? _settings?.DynamicCategorySummaries;
+
+        public bool HasCategorySummaries => _modernThemeOverride?.HasCategorySummaries ?? _settings?.HasCategorySummaries ?? false;
+
+        public string DynamicCategorySummariesFilterKey
+        {
+            get => _modernThemeOverride?.DynamicCategorySummariesFilterKey ?? _settings?.DynamicCategorySummariesFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicCategorySummariesFilterKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicCategorySummariesFilterKey = value;
+            }
+        }
+
+        public string DynamicCategorySummariesFilterLabel => _modernThemeOverride?.DynamicCategorySummariesFilterLabel ?? _settings?.DynamicCategorySummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicCategorySummariesSortKey
+        {
+            get => _modernThemeOverride?.DynamicCategorySummariesSortKey ?? _settings?.DynamicCategorySummariesSortKey ?? DynamicThemeViewKeys.Default;
+            set
+            {
+                if (_settings != null) _settings.DynamicCategorySummariesSortKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicCategorySummariesSortKey = value;
+            }
+        }
+
+        public string DynamicCategorySummariesSortLabel => _modernThemeOverride?.DynamicCategorySummariesSortLabel ?? _settings?.DynamicCategorySummariesSortLabel ?? DynamicThemeViewKeys.Default;
+
+        public string DynamicCategorySummariesSortDirectionKey
+        {
+            get => _modernThemeOverride?.DynamicCategorySummariesSortDirectionKey ?? _settings?.DynamicCategorySummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set
+            {
+                if (_settings != null) _settings.DynamicCategorySummariesSortDirectionKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicCategorySummariesSortDirectionKey = value;
+            }
+        }
+
+        public string DynamicCategorySummariesSortDirectionLabel => _modernThemeOverride?.DynamicCategorySummariesSortDirectionLabel ?? _settings?.DynamicCategorySummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        public string DynamicCategorySummariesDefaultFilterKey
+        {
+            get => _modernThemeOverride?.DynamicCategorySummariesDefaultFilterKey ?? _settings?.DynamicCategorySummariesDefaultFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicCategorySummariesDefaultFilterKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicCategorySummariesDefaultFilterKey = value;
+            }
+        }
+
+        public string DynamicCategorySummariesDefaultSortKey
+        {
+            get => _modernThemeOverride?.DynamicCategorySummariesDefaultSortKey ?? _settings?.DynamicCategorySummariesDefaultSortKey ?? DynamicThemeViewKeys.Default;
+            set
+            {
+                if (_settings != null) _settings.DynamicCategorySummariesDefaultSortKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicCategorySummariesDefaultSortKey = value;
+            }
+        }
+
+        public string DynamicCategorySummariesDefaultSortDirectionKey
+        {
+            get => _modernThemeOverride?.DynamicCategorySummariesDefaultSortDirectionKey ?? _settings?.DynamicCategorySummariesDefaultSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set
+            {
+                if (_settings != null) _settings.DynamicCategorySummariesDefaultSortDirectionKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicCategorySummariesDefaultSortDirectionKey = value;
+            }
+        }
+
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesFilterOptions => _modernThemeOverride?.DynamicCategorySummariesFilterOptions ?? _settings?.DynamicCategorySummariesFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesSortOptions => _modernThemeOverride?.DynamicCategorySummariesSortOptions ?? _settings?.DynamicCategorySummariesSortOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesSortDirectionOptions => _modernThemeOverride?.DynamicCategorySummariesSortDirectionOptions ?? _settings?.DynamicCategorySummariesSortDirectionOptions;
+
         public ObservableCollection<DynamicThemeOption> DynamicGameProgressFilterOptions => _modernThemeOverride?.DynamicGameProgressFilterOptions ?? _settings?.DynamicGameProgressFilterOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicGameActivityFilterOptions => _modernThemeOverride?.DynamicGameActivityFilterOptions ?? _settings?.DynamicGameActivityFilterOptions;
@@ -2016,6 +2137,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public System.Windows.Input.ICommand SetDynamicGameSummariesSortDirectionCommand => _settings?.SetDynamicGameSummariesSortDirectionCommand;
 
+        public System.Windows.Input.ICommand SetDynamicCategorySummariesFilterCommand => _settings?.SetDynamicCategorySummariesFilterCommand;
+
+        public System.Windows.Input.ICommand SortDynamicCategorySummariesCommand => _settings?.SortDynamicCategorySummariesCommand;
+
+        public System.Windows.Input.ICommand SetDynamicCategorySummariesSortDirectionCommand => _settings?.SetDynamicCategorySummariesSortDirectionCommand;
+
         public System.Windows.Input.ICommand SetDynamicFriendScopeProviderCommand => _settings?.SetDynamicFriendScopeProviderCommand;
 
         public System.Windows.Input.ICommand SetDynamicFriendScopeUserCommand => _settings?.SetDynamicFriendScopeUserCommand;
@@ -2071,6 +2198,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         public System.Windows.Input.ICommand ResetDynamicLibraryAchievementsCommand => _settings?.ResetDynamicLibraryAchievementsCommand;
 
         public System.Windows.Input.ICommand ResetDynamicGameSummariesCommand => _settings?.ResetDynamicGameSummariesCommand;
+
+        public System.Windows.Input.ICommand ResetDynamicCategorySummariesCommand => _settings?.ResetDynamicCategorySummariesCommand;
 
         // Forward other common settings properties.
         public PersistedSettings Persisted => _settings?.Persisted;
