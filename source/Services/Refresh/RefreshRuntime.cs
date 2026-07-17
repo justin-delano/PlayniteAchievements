@@ -69,6 +69,12 @@ namespace PlayniteAchievements.Services.Refresh
         private readonly PlayniteAchievements.Providers.ProviderRegistry _providerRegistry;
         private readonly Action<RebuildPayload> _onRefreshCompleted;
         private int _savedGamesInCurrentRun;
+
+        // A current-user refresh that saves many games scrapes many provider web pages
+        // (multi-MB HTML on the LOH), inflating the working set the CLR then holds. After a
+        // large run, request a one-time LOH compaction. Gated so Single/Recent runs (a handful
+        // of games) never trigger a collection.
+        private const int LohCompactionSavedGamesThreshold = 25;
         private volatile List<string> _lastFailedAuthProviderKeys = new List<string>();
 
         // Dependencies that need disposal
@@ -545,7 +551,8 @@ namespace PlayniteAchievements.Services.Refresh
             finally
             {
                 EndScopedRefreshAuthContext(effectiveAuthContext, authContextReceivers);
-                var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
+                var savedGamesCount = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
+                var hasSavedGames = savedGamesCount > 0;
                 var wasCanceled = cts.IsCancellationRequested;
                 var finalTotalSteps = _refreshProgressReporter.CompletionTotalSteps;
                 EndRun();
@@ -567,6 +574,11 @@ namespace PlayniteAchievements.Services.Refresh
                 {
                     _cacheService.NotifyCacheInvalidated();
                 }
+
+                // Runs on a threadpool continuation (the run body is awaited with
+                // ConfigureAwait(false)), so the blocking collection stays off the UI thread.
+                MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
+                    savedGamesCount, LohCompactionSavedGamesThreshold, _logger);
 
                 // Notify refresh completion subscribers (e.g., auth failure notifications).
                 if (!wasCanceled && payload != null)
