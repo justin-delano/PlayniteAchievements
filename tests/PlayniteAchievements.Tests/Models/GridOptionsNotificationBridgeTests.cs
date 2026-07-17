@@ -31,8 +31,10 @@ namespace PlayniteAchievements.Models.Tests
 
             var options = settings.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.Overview);
             options.SortDescending = !options.SortDescending;
+            options.ShowNameAboveProgress = !options.ShowNameAboveProgress;
 
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesGridSortDescending));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesShowNameAboveProgress));
         }
 
         [TestMethod]
@@ -59,8 +61,10 @@ namespace PlayniteAchievements.Models.Tests
 
             var options = settings.GridOptions.CategorySummaries[GridOptionKeys.CategorySummaries.FriendsOverview];
             options.UseCoverImages = !options.UseCoverImages;
+            options.ShowNameAboveProgress = !options.ShowNameAboveProgress;
 
             CollectionAssert.Contains(raised, nameof(PersistedSettings.FriendsOverviewCategorySummariesUseCoverImages));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.FriendsOverviewCategorySummariesShowNameAboveProgress));
         }
 
         [TestMethod]
