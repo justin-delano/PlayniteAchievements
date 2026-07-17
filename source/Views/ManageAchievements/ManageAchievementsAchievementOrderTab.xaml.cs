@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using Playnite.SDK;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
