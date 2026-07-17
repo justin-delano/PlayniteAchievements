@@ -145,6 +145,16 @@
                 Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
     </Style>
 
+    <Style x:Key="OverviewProgressNameTextStyle" TargetType="TextBlock" BasedOn="{StaticResource GameSummaryNameTextStyle}">
+        <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="Visibility" Value="Collapsed"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ShowNameAboveProgress, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="OverviewGameMetadataTextStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
