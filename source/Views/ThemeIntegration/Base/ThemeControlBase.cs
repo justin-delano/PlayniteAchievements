@@ -617,6 +617,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementsGameLabel)] = nameof(DynamicAchievementsGameLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementsFilterKey)] = nameof(DynamicAchievementsFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementsFilterLabel)] = nameof(DynamicAchievementsFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicAchievementsCategoryLabelFilterKey)] = nameof(DynamicAchievementsCategoryLabelFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicAchievementsCategoryLabelFilterLabel)] = nameof(DynamicAchievementsCategoryLabelFilterLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementsStatusFilterKey)] = nameof(DynamicAchievementsStatusFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementsProgressFilterKey)] = nameof(DynamicAchievementsProgressFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementsRarityFilterKey)] = nameof(DynamicAchievementsRarityFilterKey),
@@ -639,6 +641,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementRarityFilterOptions)] = nameof(DynamicAchievementRarityFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementTrophyFilterOptions)] = nameof(DynamicAchievementTrophyFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementCategoryTypeFilterOptions)] = nameof(DynamicAchievementCategoryTypeFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicAchievementCategoryLabelFilterOptions)] = nameof(DynamicAchievementCategoryLabelFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicAchievementCustomizationFilterOptions)] = nameof(DynamicAchievementCustomizationFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameSummaries)] = nameof(DynamicGameSummaries),
                 [nameof(PlayniteAchievementsSettings.DynamicGameSummariesProviderKey)] = nameof(DynamicGameSummariesProviderKey),
@@ -754,6 +757,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsGameCommand)] = nameof(SetDynamicAchievementsGameCommand),
                 [nameof(PlayniteAchievementsSettings.FilterDynamicAchievementsByRunningGameCommand)] = nameof(FilterDynamicAchievementsByRunningGameCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsFilterCommand)] = nameof(SetDynamicAchievementsFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsCategoryLabelFilterCommand)] = nameof(SetDynamicAchievementsCategoryLabelFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsStatusFilterCommand)] = nameof(SetDynamicAchievementsStatusFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsProgressFilterCommand)] = nameof(SetDynamicAchievementsProgressFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsRarityFilterCommand)] = nameof(SetDynamicAchievementsRarityFilterCommand),
@@ -832,6 +836,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(ModernThemeBindings.DynamicAchievementsGameLabel)] = nameof(DynamicAchievementsGameLabel),
                 [nameof(ModernThemeBindings.DynamicAchievementsFilterKey)] = nameof(DynamicAchievementsFilterKey),
                 [nameof(ModernThemeBindings.DynamicAchievementsFilterLabel)] = nameof(DynamicAchievementsFilterLabel),
+                [nameof(ModernThemeBindings.DynamicAchievementsCategoryLabelFilterKey)] = nameof(DynamicAchievementsCategoryLabelFilterKey),
+                [nameof(ModernThemeBindings.DynamicAchievementsCategoryLabelFilterLabel)] = nameof(DynamicAchievementsCategoryLabelFilterLabel),
                 [nameof(ModernThemeBindings.DynamicAchievementsSortKey)] = nameof(DynamicAchievementsSortKey),
                 [nameof(ModernThemeBindings.DynamicAchievementsSortLabel)] = nameof(DynamicAchievementsSortLabel),
                 [nameof(ModernThemeBindings.DynamicAchievementsSortDirectionKey)] = nameof(DynamicAchievementsSortDirectionKey),
@@ -848,6 +854,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(ModernThemeBindings.DynamicAchievementRarityFilterOptions)] = nameof(DynamicAchievementRarityFilterOptions),
                 [nameof(ModernThemeBindings.DynamicAchievementTrophyFilterOptions)] = nameof(DynamicAchievementTrophyFilterOptions),
                 [nameof(ModernThemeBindings.DynamicAchievementCategoryTypeFilterOptions)] = nameof(DynamicAchievementCategoryTypeFilterOptions),
+                [nameof(ModernThemeBindings.DynamicAchievementCategoryLabelFilterOptions)] = nameof(DynamicAchievementCategoryLabelFilterOptions),
                 [nameof(ModernThemeBindings.DynamicAchievementCustomizationFilterOptions)] = nameof(DynamicAchievementCustomizationFilterOptions),
                 [nameof(ModernThemeBindings.DynamicGameSummaries)] = nameof(DynamicGameSummaries),
                 [nameof(ModernThemeBindings.DynamicGameSummariesProviderKey)] = nameof(DynamicGameSummariesProviderKey),
@@ -969,6 +976,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicAchievementsGameLabel),
             nameof(DynamicAchievementsFilterKey),
             nameof(DynamicAchievementsFilterLabel),
+            nameof(DynamicAchievementsCategoryLabelFilterKey),
+            nameof(DynamicAchievementsCategoryLabelFilterLabel),
             nameof(DynamicAchievementsStatusFilterKey),
             nameof(DynamicAchievementsProgressFilterKey),
             nameof(DynamicAchievementsRarityFilterKey),
@@ -991,6 +1000,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicAchievementRarityFilterOptions),
             nameof(DynamicAchievementTrophyFilterOptions),
             nameof(DynamicAchievementCategoryTypeFilterOptions),
+            nameof(DynamicAchievementCategoryLabelFilterOptions),
             nameof(DynamicAchievementCustomizationFilterOptions),
             nameof(DynamicLibraryAchievementStatusFilterOptions),
             nameof(DynamicLibraryAchievementProgressFilterOptions),
@@ -1294,6 +1304,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public string DynamicAchievementsFilterLabel => _modernThemeOverride?.DynamicAchievementsFilterLabel ?? _settings?.DynamicAchievementsFilterLabel ?? DynamicThemeViewKeys.All;
 
+        public string DynamicAchievementsCategoryLabelFilterKey
+        {
+            get => _modernThemeOverride?.DynamicAchievementsCategoryLabelFilterKey ?? _settings?.DynamicAchievementsCategoryLabelFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicAchievementsCategoryLabelFilterKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicAchievementsCategoryLabelFilterKey = value;
+            }
+        }
+
+        public string DynamicAchievementsCategoryLabelFilterLabel => _modernThemeOverride?.DynamicAchievementsCategoryLabelFilterLabel ?? _settings?.DynamicAchievementsCategoryLabelFilterLabel ?? DynamicThemeViewKeys.All;
+
         public string DynamicAchievementsStatusFilterKey
         {
             get => GetAchievementGroupFilter(DynamicAchievementsFilterKey, DynamicThemeOptionGroups.AchievementStatusGroup);
@@ -1401,6 +1423,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         public ObservableCollection<DynamicThemeOption> DynamicAchievementTrophyFilterOptions => _modernThemeOverride?.DynamicAchievementTrophyFilterOptions ?? _settings?.DynamicAchievementTrophyFilterOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicAchievementCategoryTypeFilterOptions => _modernThemeOverride?.DynamicAchievementCategoryTypeFilterOptions ?? _settings?.DynamicAchievementCategoryTypeFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicAchievementCategoryLabelFilterOptions => _modernThemeOverride?.DynamicAchievementCategoryLabelFilterOptions ?? _settings?.DynamicAchievementCategoryLabelFilterOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicAchievementCustomizationFilterOptions => _modernThemeOverride?.DynamicAchievementCustomizationFilterOptions ?? _settings?.DynamicAchievementCustomizationFilterOptions;
 
@@ -1933,6 +1957,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         public System.Windows.Input.ICommand FilterDynamicAchievementsByRunningGameCommand => _settings?.FilterDynamicAchievementsByRunningGameCommand;
 
         public System.Windows.Input.ICommand SetDynamicAchievementsFilterCommand => _settings?.SetDynamicAchievementsFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicAchievementsCategoryLabelFilterCommand => _settings?.SetDynamicAchievementsCategoryLabelFilterCommand;
 
         public System.Windows.Input.ICommand SetDynamicAchievementsStatusFilterCommand => _settings?.SetDynamicAchievementsStatusFilterCommand;
 
