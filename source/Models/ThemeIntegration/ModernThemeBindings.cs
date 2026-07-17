@@ -99,6 +99,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicAchievementTrophyFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicAchievementCategoryTypeFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicAchievementCustomizationFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
 
         [DontSerialize]
@@ -247,6 +249,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementTrophyFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementCategoryTypeFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementCustomizationFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
 
         [DontSerialize]
@@ -303,6 +307,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementRarityFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementTrophyFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementCategoryTypeFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementCustomizationFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
@@ -762,6 +768,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicAchievementCategoryTypeFilterOptions
+        {
+            get => _dynamicAchievementCategoryTypeFilterOptions;
+            set => ReplaceCollection(_dynamicAchievementCategoryTypeFilterOptions, value, nameof(DynamicAchievementCategoryTypeFilterOptions));
+        }
+
+        [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicAchievementCustomizationFilterOptions
         {
             get => _dynamicAchievementCustomizationFilterOptions;
@@ -794,6 +807,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicLibraryAchievementTrophyFilterOptions;
             set => ReplaceCollection(_dynamicLibraryAchievementTrophyFilterOptions, value, nameof(DynamicLibraryAchievementTrophyFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementCategoryTypeFilterOptions
+        {
+            get => _dynamicLibraryAchievementCategoryTypeFilterOptions;
+            set => ReplaceCollection(_dynamicLibraryAchievementCategoryTypeFilterOptions, value, nameof(DynamicLibraryAchievementCategoryTypeFilterOptions));
         }
 
         [DontSerialize]
@@ -1310,6 +1330,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicFriendAchievementTrophyFilterOptions;
             set => ReplaceCollection(_dynamicFriendAchievementTrophyFilterOptions, value, nameof(DynamicFriendAchievementTrophyFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementCategoryTypeFilterOptions
+        {
+            get => _dynamicFriendAchievementCategoryTypeFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementCategoryTypeFilterOptions, value, nameof(DynamicFriendAchievementCategoryTypeFilterOptions));
         }
 
         [DontSerialize]
