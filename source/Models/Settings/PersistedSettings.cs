@@ -151,6 +151,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
         private bool _showOverviewBarCharts = true;
         private bool _showTopMenuBarButton = true;
+        private bool _showCompletedProgressColoring = true;
         private bool _showCompactListRarityBar = true;
         private bool _progressColumnAlignmentDefaulted = true;
         private bool _inlineSurfaceTransparencySeeded = true;
@@ -1567,6 +1568,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, progress bars of fully completed games use the completed game colors
+        /// instead of the normal fill.
+        /// </summary>
+        public bool ShowCompletedProgressColoring
+        {
+            get => _showCompletedProgressColoring;
+            set => SetValue(ref _showCompletedProgressColoring, value);
+        }
+
+        /// <summary>
         /// When false, friend achievement rows for achievements the current user has not unlocked
         /// are obscured using the achievement visibility settings, as if locked for the user.
         /// Applies to all friend surfaces (overview, friends achievements window, recent unlocks, themes).
@@ -2391,6 +2402,7 @@ namespace PlayniteAchievements.Models.Settings
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
+                ShowCompletedProgressColoring = this.ShowCompletedProgressColoring,
                 ShowFriendSpoilers = this.ShowFriendSpoilers,
                 FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
@@ -2536,6 +2548,7 @@ namespace PlayniteAchievements.Models.Settings
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
             ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
+            ShowCompletedProgressColoring = defaults.ShowCompletedProgressColoring;
             ShowCompactListRarityBar = defaults.ShowCompactListRarityBar;
 
             GridColumnHeaderAlignment = defaults.GridColumnHeaderAlignment;
