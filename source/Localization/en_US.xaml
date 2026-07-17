@@ -831,8 +831,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages">Round Rarity Percentages</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Show rarity as whole percentages. Values under 1% display as &lt;1%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorNamesByRarity">Color Names by Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Color rarity text by rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">Show name above progress bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Color Rarity Text by Rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">Show Name Above Progress Bar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">View Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
