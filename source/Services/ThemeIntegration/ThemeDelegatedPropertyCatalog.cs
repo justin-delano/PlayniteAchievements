@@ -232,6 +232,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.DynamicAchievementsGameLabel),
             nameof(PlayniteAchievementsSettings.DynamicAchievementsFilterKey),
             nameof(PlayniteAchievementsSettings.DynamicAchievementsFilterLabel),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsCategoryLabelFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsCategoryLabelFilterLabel),
             nameof(PlayniteAchievementsSettings.DynamicAchievementsStatusFilterKey),
             nameof(PlayniteAchievementsSettings.DynamicAchievementsProgressFilterKey),
             nameof(PlayniteAchievementsSettings.DynamicAchievementsRarityFilterKey),
@@ -254,6 +256,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.DynamicAchievementRarityFilterOptions),
             nameof(PlayniteAchievementsSettings.DynamicAchievementTrophyFilterOptions),
             nameof(PlayniteAchievementsSettings.DynamicAchievementCategoryTypeFilterOptions),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementCategoryLabelFilterOptions),
             nameof(PlayniteAchievementsSettings.DynamicAchievementCustomizationFilterOptions)
         };
 
