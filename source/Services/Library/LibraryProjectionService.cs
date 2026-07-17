@@ -300,7 +300,7 @@ namespace PlayniteAchievements.Services.Library
                 return new LibraryProjectionSnapshot
                 {
                     UsedCachedSummary = true,
-                    LibraryState = LibraryRuntimeStateBuilder.BuildFromCachedSummary(summaryData, _api, token)
+                    LibraryState = LibraryRuntimeStateBuilder.BuildFromCachedSummary(summaryData, _api, token, _customDataStore)
                 };
             }
 

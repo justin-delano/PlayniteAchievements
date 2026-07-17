@@ -873,9 +873,9 @@ namespace PlayniteAchievements.Services.Achievements
             AchievementDisplayItem b,
             AchievementSortScope scope)
         {
-            var labelComparison = CompareText(
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a?.CategoryLabel),
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b?.CategoryLabel));
+            // Custom category order wins when present; CompareByCategoryOrder falls back to
+            // label text for items without an order index.
+            var labelComparison = CompareByCategoryOrder(a, b);
             if (labelComparison != 0)
             {
                 return labelComparison;
@@ -1093,6 +1093,7 @@ namespace PlayniteAchievements.Services.Achievements
             item.PointsValue = detail?.ScaledPoints ?? detail?.Points;
             item.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(detail?.CategoryType);
             item.CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(detail?.Category);
+            item.CategoryOrderIndex = detail?.CategoryOrderIndex ?? int.MaxValue;
             return item;
         }
 

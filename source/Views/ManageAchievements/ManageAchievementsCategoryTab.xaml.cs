@@ -228,6 +228,18 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
+        private void CategoryImageTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter || !(sender is TextBox textBox))
+            {
+                return;
+            }
+
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            Keyboard.ClearFocus();
+            e.Handled = true;
+        }
+
         private void ClearCategoryImageButton_Click(object sender, RoutedEventArgs e)
         {
             if (!TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
@@ -417,8 +429,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             if (CategorySubTabs?.SelectedIndex == 1)
             {
-                elements.Add(RevertCategoryImagesButton);
-                elements.Add(SaveCategoryImagesButton);
                 elements.Add(ResetCategoryMetadataButton);
                 elements.Add(OpenCategoryImagesFolderButton);
                 elements.Add(CategoryManagerDataGrid);

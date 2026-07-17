@@ -235,6 +235,13 @@ namespace PlayniteAchievements
 
         // Public bridge method for external helpers/themes that used to target SuccessStory via reflection.
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
+        // AnikiHelper's bridge reflects the name "RequestSingleGameScanAsync"; keep this alias
+        // so its per-game refresh keeps working.
+        public Task RequestSingleGameScanAsync(Guid playniteGameId)
+        {
+            return RequestSingleGameRefreshAsync(playniteGameId);
+        }
+
         public Task RequestSingleGameRefreshAsync(Guid playniteGameId)
         {
             return _refreshCoordinator?.ExecuteAsync(new RefreshRequest

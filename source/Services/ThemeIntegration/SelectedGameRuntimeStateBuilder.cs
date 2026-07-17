@@ -146,6 +146,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             CategoryImageOverrideData imageOverride = null;
             var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
+            achievement.CategoryOrderIndex =
+                AchievementCategoryFilterOrderHelper.ResolveCategoryOrderIndex(category, data?.AchievementCategoryOrder);
             if (!string.IsNullOrWhiteSpace(category) &&
                 data?.AchievementCategoryImageOverrides != null)
             {

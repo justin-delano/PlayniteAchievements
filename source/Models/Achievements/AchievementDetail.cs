@@ -103,6 +103,14 @@ namespace PlayniteAchievements.Models.Achievements
         [IgnoreDataMember]
         public string CategoryArtPath { get; set; }
 
+        /// <summary>
+        /// Runtime-only index of this achievement's category in the game's custom category
+        /// order (<c>AchievementCategoryOrder</c>). <see cref="int.MaxValue"/> when the game
+        /// has no custom order or the category is not in it; sorts fall back to label text.
+        /// </summary>
+        [IgnoreDataMember]
+        public int CategoryOrderIndex { get; set; } = int.MaxValue;
+
         [IgnoreDataMember]
         public ICommand SetDynamicAchievementsGameCommand { get; set; }
 

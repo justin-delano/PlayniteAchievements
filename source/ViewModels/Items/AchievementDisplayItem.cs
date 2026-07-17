@@ -1472,7 +1472,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 }
             }
 
-            var orderIndex = ResolveCategoryOrderIndex(normalizedCategory, categoryOrder);
+            var orderIndex = AchievementCategoryFilterOrderHelper.ResolveCategoryOrderIndex(normalizedCategory, categoryOrder);
             item.CategoryOrderIndex = orderIndex;
 
             CategoryImageOverrideData imageOverride = null;
@@ -1495,27 +1495,6 @@ namespace PlayniteAchievements.ViewModels.Items
                     ArtPath = artPath
                 });
             }
-        }
-
-        private static int ResolveCategoryOrderIndex(string categoryLabel, IReadOnlyList<string> categoryOrder)
-        {
-            if (string.IsNullOrWhiteSpace(categoryLabel) || categoryOrder == null || categoryOrder.Count == 0)
-            {
-                return int.MaxValue;
-            }
-
-            for (var i = 0; i < categoryOrder.Count; i++)
-            {
-                if (string.Equals(
-                    AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOrder[i]),
-                    categoryLabel,
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    return i;
-                }
-            }
-
-            return int.MaxValue;
         }
 
         private static string ResolveCategoryImageOverridePath(string value, Guid? playniteGameId)

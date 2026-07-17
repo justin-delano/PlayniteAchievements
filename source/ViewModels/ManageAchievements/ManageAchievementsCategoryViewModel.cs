@@ -62,9 +62,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private bool _hasCustomCategoryArt;
         private bool _hasCustomSummaryCategory;
         private bool _isEnforcingSummarySelection;
-        private bool _hasCategoryImageChanges;
+        private bool _isPersistingCategoryMetadata;
         private bool _hasCategoryImageValidationErrors;
-        private bool _isSavingCategoryImages;
         private string _categoryImageStatusText;
         private bool _categoryImageStatusIsError;
 
@@ -105,9 +104,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 ApplyFilter();
             });
             ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
-            SaveCategoryImagesCommand = new RelayCommand(_ => SaveCategoryImages(), _ => CanSaveCategoryImages);
-            RevertCategoryImageChangesCommand = new RelayCommand(_ => RevertCategoryImageChanges(), _ => HasCategoryImageChanges && !IsSavingCategoryImages);
-            OpenCategoryImagesFolderCommand = new RelayCommand(_ => OpenCategoryImagesFolder(), _ => !IsSavingCategoryImages);
+            OpenCategoryImagesFolderCommand = new RelayCommand(_ => OpenCategoryImagesFolder());
 
             ReloadData();
         }
@@ -120,8 +117,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public ObservableCollection<CategoryTypeSelectionOption> TypeFilterOptions { get; }
 
         public RelayCommand ClearSearchCommand { get; }
-        public RelayCommand SaveCategoryImagesCommand { get; }
-        public RelayCommand RevertCategoryImageChangesCommand { get; }
         public RelayCommand OpenCategoryImagesFolderCommand { get; }
         public bool HasAchievements
         {
@@ -255,18 +250,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
         }
 
-        public bool HasCategoryImageChanges
-        {
-            get => _hasCategoryImageChanges;
-            private set
-            {
-                if (SetValueAndReturn(ref _hasCategoryImageChanges, value))
-                {
-                    RaiseCategoryMetadataCommandStates();
-                }
-            }
-        }
-
         public bool HasCategoryImageValidationErrors
         {
             get => _hasCategoryImageValidationErrors;
@@ -277,24 +260,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     OnPropertyChanged(nameof(CategoryImageStatusText));
                     OnPropertyChanged(nameof(CategoryImageStatusIsError));
                     OnPropertyChanged(nameof(HasCategoryImageStatusText));
-                    RaiseCategoryMetadataCommandStates();
                 }
             }
         }
-
-        public bool IsSavingCategoryImages
-        {
-            get => _isSavingCategoryImages;
-            private set
-            {
-                if (SetValueAndReturn(ref _isSavingCategoryImages, value))
-                {
-                    RaiseCategoryMetadataCommandStates();
-                }
-            }
-        }
-
-        public bool CanSaveCategoryImages => HasAchievements && HasCategoryImageChanges && !HasCategoryImageValidationErrors && !IsSavingCategoryImages;
 
         public string CategoryImageStatusText
         {
@@ -751,49 +719,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return indexes;
         }
 
-        private void SaveCategoryImages()
-        {
-            if (!CanSaveCategoryImages)
-            {
-                return;
-            }
-
-            try
-            {
-                IsSavingCategoryImages = true;
-                PersistCurrentCategoryMetadata();
-                foreach (var row in CategoryRows.Where(row => row != null))
-                {
-                    row.CommitCurrentOverridesAsBaseline();
-                }
-
-                SetCategoryImageStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), isError: false);
-                RefreshCategoryMetadataState();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Failed saving category metadata for gameId={_gameId}");
-                SetCategoryImageStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
-                    isError: true);
-            }
-            finally
-            {
-                IsSavingCategoryImages = false;
-            }
-        }
-
-        private void RevertCategoryImageChanges()
-        {
-            foreach (var row in CategoryRows.Where(row => row != null))
-            {
-                row.ResetToBaseline();
-            }
-
-            SetCategoryImageStatus(null, isError: false);
-            RefreshCategoryMetadataState();
-        }
-
         private void OpenCategoryImagesFolder()
         {
             try
@@ -1245,13 +1170,23 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.ArtOverrideValue))
+            if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.ArtOverrideValue) &&
+                !_isPersistingCategoryMetadata)
             {
                 SetCategoryImageStatus(null, isError: false);
+                // Art values arrive on complete input (focus loss, Enter, picker, drop,
+                // clear). Valid values persist immediately; an invalid value stays pending
+                // in the row with its inline error and the store keeps the last good value.
+                if (sender is ManageAchievementsCategoryMetadataItem artRow &&
+                    !artRow.HasArtOverrideValidationError)
+                {
+                    PersistCurrentCategoryMetadata();
+                }
             }
 
             if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.IsSummarySelected) &&
                 !_isEnforcingSummarySelection &&
+                !_isPersistingCategoryMetadata &&
                 sender is ManageAchievementsCategoryMetadataItem selectedRow)
             {
                 if (selectedRow.IsSummarySelected)
@@ -1270,9 +1205,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     }
                 }
 
-                // The radio is an atomic, always-valid change; persist it immediately like
-                // the filter toggles. Save stays for the validated art-path edits.
-                PersistSummaryCategorySelection();
+                PersistCurrentCategoryMetadata();
             }
 
             RefreshCategoryMetadataState();
@@ -1388,51 +1321,74 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private void PersistCurrentCategoryMetadata()
         {
-            var categoryOrder = CategoryRows
-                .Where(row => row != null && !string.IsNullOrWhiteSpace(row.CategoryLabel))
-                .Select(row => row.CategoryLabel)
-                .ToList();
-            var imageOverrides = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var row in CategoryRows.Where(row => row != null))
+            _isPersistingCategoryMetadata = true;
+            try
             {
-                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.CategoryLabel);
-                if (string.IsNullOrWhiteSpace(category))
+                var categoryOrder = CategoryRows
+                    .Where(row => row != null && !string.IsNullOrWhiteSpace(row.CategoryLabel))
+                    .Select(row => row.CategoryLabel)
+                    .ToList();
+                var imageOverrides = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var row in CategoryRows.Where(row => row != null))
                 {
-                    continue;
+                    var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.CategoryLabel);
+                    if (string.IsNullOrWhiteSpace(category))
+                    {
+                        continue;
+                    }
+
+                    // A row holding an invalid pending edit keeps its last persisted value
+                    // in the store; the invalid text stays in the row with its inline error.
+                    var art = row.GetPersistableArtOverrideValue();
+                    if (string.IsNullOrWhiteSpace(art))
+                    {
+                        continue;
+                    }
+
+                    imageOverrides[category] = new CategoryImageOverrideData
+                    {
+                        Art = art
+                    };
                 }
 
-                var art = row.GetNormalizedArtOverrideValue();
-                if (string.IsNullOrWhiteSpace(art))
+                var summaryRow = CategoryRows.FirstOrDefault(row =>
+                    row != null && row.IsSummarySelected && !string.IsNullOrWhiteSpace(row.CategoryLabel));
+                var summaryCategory = summaryRow != null
+                    ? new GameSummaryCategoryData
+                    {
+                        Label = summaryRow.CategoryLabel,
+                        ProviderLabel = summaryRow.ProviderCategoryLabel
+                    }
+                    : null;
+
+                _achievementOverridesService.SetAchievementCategoryMetadata(
+                    _gameId,
+                    categoryOrder,
+                    imageOverrides,
+                    summaryCategory);
+                RaiseCategoryMetadataPersisted();
+
+                foreach (var row in CategoryRows.Where(row => row != null && !row.HasArtOverrideValidationError))
                 {
-                    continue;
+                    row.CommitCurrentOverridesAsBaseline();
                 }
 
-                imageOverrides[category] = new CategoryImageOverrideData
-                {
-                    Art = art
-                };
+                HasCustomCategoryOrder = categoryOrder.Count > 0;
+                HasCustomCategoryArt = imageOverrides.Count > 0;
+                HasCustomSummaryCategory = summaryCategory != null;
             }
-
-            var summaryRow = CategoryRows.FirstOrDefault(row =>
-                row != null && row.IsSummarySelected && !string.IsNullOrWhiteSpace(row.CategoryLabel));
-            var summaryCategory = summaryRow != null
-                ? new GameSummaryCategoryData
-                {
-                    Label = summaryRow.CategoryLabel,
-                    ProviderLabel = summaryRow.ProviderCategoryLabel
-                }
-                : null;
-
-            _achievementOverridesService.SetAchievementCategoryMetadata(
-                _gameId,
-                categoryOrder,
-                imageOverrides,
-                summaryCategory);
-            RaiseCategoryMetadataPersisted();
-            HasCustomCategoryOrder = categoryOrder.Count > 0;
-            HasCustomCategoryArt = imageOverrides.Count > 0;
-            HasCustomSummaryCategory = summaryCategory != null;
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed saving category metadata for gameId={_gameId}");
+                SetCategoryImageStatus(
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    isError: true);
+            }
+            finally
+            {
+                _isPersistingCategoryMetadata = false;
+            }
         }
 
         private void SetCustomCategoryMetadataState(bool hasOrder, bool hasNames, bool hasArt, bool hasSummaryCategory)
@@ -1528,45 +1484,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             CategoryMetadataPersisted?.Invoke(this, EventArgs.Empty);
         }
 
-        private void PersistSummaryCategorySelection()
-        {
-            var summaryRow = CategoryRows.FirstOrDefault(row =>
-                row != null && row.IsSummarySelected && !string.IsNullOrWhiteSpace(row.CategoryLabel));
-            var summaryCategory = summaryRow != null
-                ? new GameSummaryCategoryData
-                {
-                    Label = summaryRow.CategoryLabel,
-                    ProviderLabel = summaryRow.ProviderCategoryLabel
-                }
-                : null;
-
-            // Targeted write: only the summary selection changes. Order and art come from
-            // the store, not the rows, so pending unsaved art edits stay pending.
-            var order = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
-            var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
-            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, order, images, summaryCategory);
-            RaiseCategoryMetadataPersisted();
-
-            foreach (var row in CategoryRows.Where(row => row != null))
-            {
-                row.CommitSummarySelectionAsBaseline();
-            }
-
-            HasCustomSummaryCategory = summaryCategory != null;
-            RefreshCategoryMetadataState();
-        }
-
         private void RefreshCategoryMetadataState()
         {
-            var hasChanges = false;
             var hasValidationErrors = false;
             foreach (var row in CategoryRows.Where(row => row != null))
             {
-                hasChanges |= row.HasChanges;
                 hasValidationErrors |= row.HasValidationErrors;
             }
 
-            HasCategoryImageChanges = hasChanges;
             HasCategoryImageValidationErrors = hasValidationErrors;
         }
 
@@ -1577,13 +1502,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             OnPropertyChanged(nameof(CategoryImageStatusText));
             OnPropertyChanged(nameof(CategoryImageStatusIsError));
             OnPropertyChanged(nameof(HasCategoryImageStatusText));
-        }
-
-        private void RaiseCategoryMetadataCommandStates()
-        {
-            SaveCategoryImagesCommand?.RaiseCanExecuteChanged();
-            RevertCategoryImageChangesCommand?.RaiseCanExecuteChanged();
-            OpenCategoryImagesFolderCommand?.RaiseCanExecuteChanged();
         }
 
         private void ApplyCategoryOverrideMapsToRows(
@@ -1950,18 +1868,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             SetOverrideValue(null);
         }
 
-        public void ResetToBaseline()
-        {
-            _artOverrideValue = _baselineArtOverrideValue ?? string.Empty;
-            if (_isSummarySelected != _baselineIsSummarySelected)
-            {
-                _isSummarySelected = _baselineIsSummarySelected;
-                OnPropertyChanged(nameof(IsSummarySelected));
-            }
-
-            NotifyOverrideStateChanged();
-        }
-
         public void CommitCurrentOverridesAsBaseline()
         {
             _baselineArtOverrideValue = GetNormalizedArtOverrideValue();
@@ -1970,13 +1876,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         /// <summary>
-        /// Commits only the summary radio state, leaving pending art-path edits dirty.
-        /// Used by the immediate persist of the summary selection.
+        /// The art value to write to the store: the current value when valid, otherwise
+        /// the last persisted one, so an invalid pending edit never reaches the store.
         /// </summary>
-        public void CommitSummarySelectionAsBaseline()
+        public string GetPersistableArtOverrideValue()
         {
-            _baselineIsSummarySelected = _isSummarySelected;
-            OnPropertyChanged(nameof(HasChanges));
+            return HasArtOverrideValidationError
+                ? NormalizeOverrideValue(_baselineArtOverrideValue)
+                : GetNormalizedArtOverrideValue();
         }
 
         public string GetNormalizedArtOverrideValue()

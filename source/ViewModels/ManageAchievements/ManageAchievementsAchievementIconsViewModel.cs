@@ -31,9 +31,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly ILogger _logger;
 
         private bool _hasAchievements;
-        private bool _hasChanges;
         private bool _hasValidationErrors;
-        private bool _isSaving;
+        private bool _isPersisting;
         private string _saveStatusText;
         private bool _saveStatusIsError;
 
@@ -54,9 +53,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _logger = logger;
 
             AchievementRows = new ObservableCollection<AchievementIconOverrideItem>();
-            SaveCommand = new RelayCommand(_ => Save(), _ => CanSave);
-            RevertChangesCommand = new RelayCommand(_ => RevertChanges(), _ => HasChanges && !IsSaving);
-            OpenIconsFolderCommand = new RelayCommand(_ => OpenIconsFolder(), _ => !IsSaving);
+            OpenIconsFolderCommand = new RelayCommand(_ => OpenIconsFolder());
 
             ForceReloadData();
         }
@@ -65,32 +62,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public ObservableCollection<AchievementIconOverrideItem> AchievementRows { get; }
 
-        public RelayCommand SaveCommand { get; }
-        public RelayCommand RevertChangesCommand { get; }
         public RelayCommand OpenIconsFolderCommand { get; }
 
         public bool HasAchievements
         {
             get => _hasAchievements;
-            private set
-            {
-                if (SetValueAndReturn(ref _hasAchievements, value))
-                {
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public bool HasChanges
-        {
-            get => _hasChanges;
-            private set
-            {
-                if (SetValueAndReturn(ref _hasChanges, value))
-                {
-                    RaiseCommandStates();
-                }
-            }
+            private set => SetValue(ref _hasAchievements, value);
         }
 
         public bool HasValidationErrors
@@ -103,24 +80,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     OnPropertyChanged(nameof(StatusText));
                     OnPropertyChanged(nameof(StatusIsError));
                     OnPropertyChanged(nameof(HasStatusText));
-                    RaiseCommandStates();
                 }
             }
         }
-
-        public bool IsSaving
-        {
-            get => _isSaving;
-            private set
-            {
-                if (SetValueAndReturn(ref _isSaving, value))
-                {
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public bool CanSave => HasAchievements && HasChanges && !HasValidationErrors && !IsSaving;
 
         public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
 
@@ -143,11 +105,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public void RefreshData()
         {
-            if (HasChanges)
-            {
-                return;
-            }
-
             ForceReloadData();
         }
 
@@ -304,17 +261,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
         }
 
-        private void Save()
+        private void PersistCurrentIconOverrides()
         {
-            if (!CanSave)
-            {
-                return;
-            }
-
+            _isPersisting = true;
             try
             {
-                IsSaving = true;
-
                 var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var lockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < AchievementRows.Count; i++)
@@ -326,8 +277,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         continue;
                     }
 
-                    var unlockedOverride = row.GetNormalizedUnlockedOverrideValue();
-                    var lockedOverride = row.GetNormalizedLockedOverrideValue();
+                    // An invalid pending edit keeps its last persisted value in the store;
+                    // the invalid text stays in the row with its inline error.
+                    var unlockedOverride = row.GetPersistableUnlockedOverrideValue();
+                    var lockedOverride = row.GetPersistableLockedOverrideValue();
                     if (!string.IsNullOrWhiteSpace(unlockedOverride))
                     {
                         unlockedOverrides[apiName] = unlockedOverride;
@@ -343,12 +296,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
-                    AchievementRows[i]?.CommitCurrentOverridesAsBaseline();
+                    AchievementRows[i]?.CommitPersistedOverridesAsBaseline();
                 }
 
-                SetSaveStatus(
-                    L("LOCPlayAch_Status_Succeeded", "Success!"),
-                    isError: false);
                 RefreshComputedState();
                 IconOverridesSaved?.Invoke(this, EventArgs.Empty);
             }
@@ -361,19 +311,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
             finally
             {
-                IsSaving = false;
+                _isPersisting = false;
             }
-        }
-
-        private void RevertChanges()
-        {
-            for (var i = 0; i < AchievementRows.Count; i++)
-            {
-                AchievementRows[i]?.ResetToBaseline();
-            }
-
-            SetSaveStatus(null, isError: false);
-            RefreshComputedState();
         }
 
         private void OpenIconsFolder()
@@ -432,10 +371,20 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            if (e.PropertyName == nameof(AchievementIconOverrideItem.UnlockedOverrideValue) ||
-                e.PropertyName == nameof(AchievementIconOverrideItem.LockedOverrideValue))
+            var unlockedChanged = e.PropertyName == nameof(AchievementIconOverrideItem.UnlockedOverrideValue);
+            var lockedChanged = e.PropertyName == nameof(AchievementIconOverrideItem.LockedOverrideValue);
+            if ((unlockedChanged || lockedChanged) && !_isPersisting)
             {
                 SetSaveStatus(null, isError: false);
+                // Values arrive on complete input (focus loss, Enter, picker, drop, clear).
+                // Valid values persist immediately; an invalid value stays pending in the
+                // row with its inline error and the store keeps the last good value.
+                if (sender is AchievementIconOverrideItem row &&
+                    ((unlockedChanged && !row.HasUnlockedOverrideValidationError) ||
+                     (lockedChanged && !row.HasLockedOverrideValidationError)))
+                {
+                    PersistCurrentIconOverrides();
+                }
             }
 
             RefreshComputedState();
@@ -443,7 +392,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private void RefreshComputedState()
         {
-            var hasChanges = false;
             var hasValidationErrors = false;
 
             for (var i = 0; i < AchievementRows.Count; i++)
@@ -454,11 +402,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     continue;
                 }
 
-                hasChanges |= row.HasChanges;
                 hasValidationErrors |= row.HasValidationErrors;
             }
 
-            HasChanges = hasChanges;
             HasValidationErrors = hasValidationErrors;
         }
 
@@ -469,13 +415,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(StatusIsError));
             OnPropertyChanged(nameof(HasStatusText));
-        }
-
-        private void RaiseCommandStates()
-        {
-            SaveCommand?.RaiseCanExecuteChanged();
-            RevertChangesCommand?.RaiseCanExecuteChanged();
-            OpenIconsFolderCommand?.RaiseCanExecuteChanged();
         }
 
         private static List<AchievementDetail> BuildOrderedAchievements(
@@ -742,31 +681,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return variant == AchievementIconVariant.Locked ? _lockedManagedTargetPath : _unlockedManagedTargetPath;
         }
 
-        public void ResetToBaseline()
-        {
-            RestoreManagedTargetFromBackup(AchievementIconVariant.Unlocked);
-            RestoreManagedTargetFromBackup(AchievementIconVariant.Locked);
-            ClearManagedLocalOverrideState(AchievementIconVariant.Unlocked);
-            ClearManagedLocalOverrideState(AchievementIconVariant.Locked);
-
-            SuppressNotifications = true;
-            _unlockedOverrideValue = _baselineUnlockedOverrideValue ?? string.Empty;
-            _lockedOverrideValue = _baselineLockedOverrideValue ?? string.Empty;
-            SuppressNotifications = false;
-
-            NotifyOverrideStateChanged(
-                nameof(UnlockedOverrideText),
-                nameof(LockedOverrideText),
-                nameof(UnlockedOverrideValue),
-                nameof(LockedOverrideValue),
-                nameof(UnlockedOverrideToolTip),
-                nameof(LockedOverrideToolTip),
-                nameof(HasUnlockedOverrideValidationError),
-                nameof(HasLockedOverrideValidationError),
-                nameof(UnlockedPreviewPath),
-                nameof(LockedPreviewPath));
-        }
-
         public void DiscardTransientManagedState()
         {
             if (!HasTransientManagedState)
@@ -785,15 +699,44 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             SetOverrideValue(variant, string.Empty);
         }
 
-        public void CommitCurrentOverridesAsBaseline()
+        /// <summary>
+        /// The values to write to the store: the current value when valid, otherwise the
+        /// last persisted one, so an invalid pending edit never reaches the store.
+        /// </summary>
+        public string GetPersistableUnlockedOverrideValue()
         {
-            CleanupCommittedManagedTarget(AchievementIconVariant.Unlocked);
-            CleanupCommittedManagedTarget(AchievementIconVariant.Locked);
+            return HasUnlockedOverrideValidationError
+                ? NormalizeOverrideValue(_baselineUnlockedOverrideValue)
+                : GetNormalizedUnlockedOverrideValue();
+        }
 
-            _baselineUnlockedOverrideValue = GetNormalizedUnlockedOverrideValue();
-            _baselineLockedOverrideValue = GetNormalizedLockedOverrideValue();
-            ClearManagedLocalOverrideState(AchievementIconVariant.Unlocked);
-            ClearManagedLocalOverrideState(AchievementIconVariant.Locked);
+        public string GetPersistableLockedOverrideValue()
+        {
+            return HasLockedOverrideValidationError
+                ? NormalizeOverrideValue(_baselineLockedOverrideValue)
+                : GetNormalizedLockedOverrideValue();
+        }
+
+        /// <summary>
+        /// Commits each variant that was just persisted; a variant holding an invalid
+        /// pending edit keeps its previous baseline so the inline error stays visible.
+        /// </summary>
+        public void CommitPersistedOverridesAsBaseline()
+        {
+            if (!HasUnlockedOverrideValidationError)
+            {
+                CleanupCommittedManagedTarget(AchievementIconVariant.Unlocked);
+                _baselineUnlockedOverrideValue = GetNormalizedUnlockedOverrideValue();
+                ClearManagedLocalOverrideState(AchievementIconVariant.Unlocked);
+            }
+
+            if (!HasLockedOverrideValidationError)
+            {
+                CleanupCommittedManagedTarget(AchievementIconVariant.Locked);
+                _baselineLockedOverrideValue = GetNormalizedLockedOverrideValue();
+                ClearManagedLocalOverrideState(AchievementIconVariant.Locked);
+            }
+
             OnPropertyChanged(nameof(HasChanges));
         }
 
