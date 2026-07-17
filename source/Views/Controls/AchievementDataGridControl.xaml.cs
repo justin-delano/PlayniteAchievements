@@ -1672,6 +1672,18 @@ namespace PlayniteAchievements.Views.Controls
             grid.SelectedItem = item;
             grid.UpdateLayout();
             grid.ScrollIntoView(item);
+            // The immediate scroll no-ops when the hosting window has not been measured yet
+            // (focus applied while the window is still opening) or when a category drill just
+            // replaced the item collection; re-assert once layout has settled.
+            grid.Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (ReferenceEquals(grid.SelectedItem, item))
+                    {
+                        grid.ScrollIntoView(item);
+                    }
+                }),
+                System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
         private void CategoryBackToList()
