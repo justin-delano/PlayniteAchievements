@@ -168,6 +168,34 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void FriendsOverviewDataCoordinator_Invalidate_ReleasesStaleSnapshot()
+        {
+            var cache = new StubFriendCache(CreateData());
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => new PersistedSettings());
+            var weakSnapshot = BuildSnapshotAndGetWeakReference(coordinator);
+
+            coordinator.Invalidate();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.IsFalse(coordinator.TryGetCurrentSnapshot(out _));
+            Assert.IsFalse(weakSnapshot.IsAlive, "Invalidated snapshot should be collectible.");
+        }
+
+        // Builds the snapshot in a separate frame so the test method holds no strong local
+        // reference when the collection assertion runs.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static WeakReference BuildSnapshotAndGetWeakReference(FriendsOverviewDataCoordinator coordinator)
+        {
+            var snapshot = coordinator.GetSnapshotAsync(CancellationToken.None).GetAwaiter().GetResult();
+            Assert.IsNotNull(snapshot);
+            return new WeakReference(snapshot);
+        }
+
+        [TestMethod]
         public void LoadAsync_ReloadsWhenSharedCoordinatorInvalidates()
         {
             var staleData = CreateData();
