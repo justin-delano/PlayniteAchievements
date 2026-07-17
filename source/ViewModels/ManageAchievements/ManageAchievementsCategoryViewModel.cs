@@ -1252,21 +1252,27 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.IsSummarySelected) &&
                 !_isEnforcingSummarySelection &&
-                sender is ManageAchievementsCategoryMetadataItem selectedRow &&
-                selectedRow.IsSummarySelected)
+                sender is ManageAchievementsCategoryMetadataItem selectedRow)
             {
-                _isEnforcingSummarySelection = true;
-                try
+                if (selectedRow.IsSummarySelected)
                 {
-                    foreach (var row in CategoryRows.Where(row => row != null && !ReferenceEquals(row, selectedRow)))
+                    _isEnforcingSummarySelection = true;
+                    try
                     {
-                        row.IsSummarySelected = false;
+                        foreach (var row in CategoryRows.Where(row => row != null && !ReferenceEquals(row, selectedRow)))
+                        {
+                            row.IsSummarySelected = false;
+                        }
+                    }
+                    finally
+                    {
+                        _isEnforcingSummarySelection = false;
                     }
                 }
-                finally
-                {
-                    _isEnforcingSummarySelection = false;
-                }
+
+                // The radio is an atomic, always-valid change; persist it immediately like
+                // the filter toggles. Save stays for the validated art-path edits.
+                PersistSummaryCategorySelection();
             }
 
             RefreshCategoryMetadataState();
@@ -1520,6 +1526,34 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void RaiseCategoryMetadataPersisted()
         {
             CategoryMetadataPersisted?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void PersistSummaryCategorySelection()
+        {
+            var summaryRow = CategoryRows.FirstOrDefault(row =>
+                row != null && row.IsSummarySelected && !string.IsNullOrWhiteSpace(row.CategoryLabel));
+            var summaryCategory = summaryRow != null
+                ? new GameSummaryCategoryData
+                {
+                    Label = summaryRow.CategoryLabel,
+                    ProviderLabel = summaryRow.ProviderCategoryLabel
+                }
+                : null;
+
+            // Targeted write: only the summary selection changes. Order and art come from
+            // the store, not the rows, so pending unsaved art edits stay pending.
+            var order = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
+            var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
+            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, order, images, summaryCategory);
+            RaiseCategoryMetadataPersisted();
+
+            foreach (var row in CategoryRows.Where(row => row != null))
+            {
+                row.CommitSummarySelectionAsBaseline();
+            }
+
+            HasCustomSummaryCategory = summaryCategory != null;
+            RefreshCategoryMetadataState();
         }
 
         private void RefreshCategoryMetadataState()
@@ -1933,6 +1967,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _baselineArtOverrideValue = GetNormalizedArtOverrideValue();
             _baselineIsSummarySelected = _isSummarySelected;
             NotifyOverrideStateChanged();
+        }
+
+        /// <summary>
+        /// Commits only the summary radio state, leaving pending art-path edits dirty.
+        /// Used by the immediate persist of the summary selection.
+        /// </summary>
+        public void CommitSummarySelectionAsBaseline()
+        {
+            _baselineIsSummarySelected = _isSummarySelected;
+            OnPropertyChanged(nameof(HasChanges));
         }
 
         public string GetNormalizedArtOverrideValue()
