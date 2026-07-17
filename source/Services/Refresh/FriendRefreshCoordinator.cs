@@ -775,6 +775,7 @@ namespace PlayniteAchievements.Services.Refresh
                     context.RecencyFreshKeys,
                     context.OwnershipFetchedFriendIds,
                     context.CurrentUserLabelIndex,
+                    context.CurrentUserLabels,
                     cancel).ConfigureAwait(false);
                 if (!shouldContinue)
                 {
@@ -1137,6 +1138,7 @@ namespace PlayniteAchievements.Services.Refresh
             string providerKey,
             FriendIdentity friend,
             string exophaseSteamOwnershipUserId,
+            IReadOnlyList<CurrentUserGameLabel> currentUserLabels,
             RateLimiter limiter,
             CancellationToken cancel)
         {
@@ -1154,6 +1156,7 @@ namespace PlayniteAchievements.Services.Refresh
                 friend,
                 exophaseSteamOwnershipUserId,
                 ownershipResult.Data,
+                currentUserLabels,
                 limiter,
                 cancel).ConfigureAwait(false);
             return augmentedResult ?? ownershipResult;
@@ -1164,6 +1167,7 @@ namespace PlayniteAchievements.Services.Refresh
             FriendIdentity steamFriend,
             string exophaseUserId,
             IReadOnlyList<FriendGameOwnership> knownSteamOwnership,
+            IReadOnlyList<CurrentUserGameLabel> currentUserLabels,
             RateLimiter limiter,
             CancellationToken cancel)
         {
@@ -1182,9 +1186,12 @@ namespace PlayniteAchievements.Services.Refresh
 
             try
             {
-                var currentUserLabels = LoadCurrentUserGameLabelsForFriendMatching();
+                // Reuse the labels resolved once during provider preparation instead of
+                // re-materializing the whole current-user library (and the Playnite games list)
+                // for every friend; fall back to a fresh load only if they were not supplied.
+                var resolvedLabels = currentUserLabels ?? LoadCurrentUserGameLabelsForFriendMatching();
                 var exophaseResult = await limiter.ExecuteWithRetryAsync(
-                    () => source.GetSteamOwnedGamesAsync(exophaseUserId, currentUserLabels, knownSteamOwnership, cancel),
+                    () => source.GetSteamOwnedGamesAsync(exophaseUserId, resolvedLabels, knownSteamOwnership, cancel),
                     FriendRefreshWorkPolicy.IsTransientError,
                     cancel).ConfigureAwait(false);
                 if (exophaseResult?.Success != true)
@@ -1359,6 +1366,7 @@ namespace PlayniteAchievements.Services.Refresh
             HashSet<string> recencyFreshKeys,
             HashSet<string> ownershipFetchedFriendIds,
             IReadOnlyDictionary<string, Guid> currentUserLabelIndex,
+            IReadOnlyList<CurrentUserGameLabel> currentUserLabels,
             CancellationToken cancel)
         {
             if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
@@ -1372,6 +1380,7 @@ namespace PlayniteAchievements.Services.Refresh
                 providerKey,
                 friend,
                 exophaseSteamOwnershipUserId,
+                currentUserLabels,
                 limiter,
                 cancel).ConfigureAwait(false);
             if (ownershipResult?.Success != true)
