@@ -79,6 +79,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly object _loadQueueSync = new object();
         private Task _loadQueueTask;
         private bool _loadAgainRequested;
+        private bool _isLoading;
         private string _statusText;
         private string _friendSearchText;
         private string _gameSearchText;
@@ -427,6 +428,15 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
+
+        // True while the initial data load is in flight (before any data is shown), so the view
+        // can display a loading indicator. Set only for empty-state loads, so routine reloads
+        // over already-populated grids do not flash the overlay.
+        public bool IsLoading
+        {
+            get => _isLoading;
+            private set => SetValue(ref _isLoading, value);
+        }
         public bool HasData => _allFriends.Count > 0 || _allGames.Count > 0 || _allRecentUnlocks.Count > 0 || _allAchievements.Count > 0 || _allUnlockedAchievements.Count > 0;
         public bool IsProviderDisabled => false;
 
@@ -1211,6 +1221,8 @@ namespace PlayniteAchievements.ViewModels
 
         private Task LoadFromCacheAsync()
         {
+            Task queueTask;
+            bool startedNewLoad = false;
             lock (_loadQueueSync)
             {
                 if (_disposed)
@@ -1222,14 +1234,37 @@ namespace PlayniteAchievements.ViewModels
                 {
                     _loadAgainRequested = false;
                     _loadQueueTask = RunLoadFromCacheQueueAsync();
+                    startedNewLoad = true;
                 }
                 else
                 {
                     _loadAgainRequested = true;
                 }
 
-                return _loadQueueTask;
+                queueTask = _loadQueueTask;
             }
+
+            // Show the loading indicator only for an initial (empty) load, so it fills the blank
+            // window while the first snapshot builds without covering already-populated grids on
+            // routine reloads. It is cleared once the queue drains (RunLoadFromCacheQueueAsync).
+            if (startedNewLoad && !HasData)
+            {
+                SetIsLoadingOnUiThread(true);
+            }
+
+            return queueTask;
+        }
+
+        private void SetIsLoadingOnUiThread(bool value)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => IsLoading = value));
+                return;
+            }
+
+            IsLoading = value;
         }
 
         private async Task RunLoadFromCacheQueueAsync()
@@ -1248,6 +1283,7 @@ namespace PlayniteAchievements.ViewModels
                     if (!_loadAgainRequested || _disposed)
                     {
                         _loadQueueTask = null;
+                        SetIsLoadingOnUiThread(false);
                         return;
                     }
                 }
