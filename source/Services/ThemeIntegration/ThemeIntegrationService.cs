@@ -84,6 +84,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private CancellationTokenSource _friendRefreshCts;
         private int _friendRefreshRequestVersion;
         private int _friendRefreshAppliedVersion;
+        private volatile bool _hasFriendThemeConsumers;
 
         private bool _fullscreenInitialized;
         private bool _hasLoadedLibraryState;
@@ -457,14 +458,32 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             if (_friendCache != null)
             {
                 _friendCache.FriendCacheInvalidated += FriendCache_FriendCacheInvalidated;
-                RequestFriendStateRefresh();
             }
+
+            if (_friendsOverviewDataCoordinator != null)
+            {
+                _friendsOverviewDataCoordinator.SnapshotInvalidated += FriendsOverviewCoordinator_SnapshotInvalidated;
+            }
+
+            // The friend runtime state is built on demand: the first read of a friend data
+            // property (or a friend scope command) registers demand and triggers the build.
+            // Themes without friend bindings never pay the full friends-overview snapshot cost.
+            _settings.ModernTheme.FriendDataRequested = EnsureFriendThemeDataLoaded;
         }
 
         public void Dispose()
         {
+            try { _settings.ModernTheme.FriendDataRequested = null; } catch { }
             try { _settings.DynamicThemeDefaultsChanged -= Settings_DynamicThemeDefaultsChanged; } catch { }
             try { _refreshService.CacheInvalidated -= RefreshService_CacheInvalidated; } catch { }
+            try
+            {
+                if (_friendsOverviewDataCoordinator != null)
+                {
+                    _friendsOverviewDataCoordinator.SnapshotInvalidated -= FriendsOverviewCoordinator_SnapshotInvalidated;
+                }
+            }
+            catch { }
             try
             {
                 if (_friendCache != null)
@@ -556,6 +575,21 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
+        // Friend counterpart of EnsureAllGamesThemeDataLoaded: invoked from the
+        // ModernThemeBindings friend getter hook and the friend scope commands. The first call
+        // marks friend theme data as consumed and starts the initial build; later calls are a
+        // volatile-read fast path so it is safe on the UI thread during binding.
+        public void EnsureFriendThemeDataLoaded()
+        {
+            if (_hasFriendThemeConsumers || _friendCache == null)
+            {
+                return;
+            }
+
+            _hasFriendThemeConsumers = true;
+            RequestFriendStateRefresh();
+        }
+
         public void NotifyCustomDataChanged(Guid? gameId)
         {
             try
@@ -643,13 +677,24 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             _friendsOverviewDataCoordinator?.Invalidate();
-            RequestFriendStateRefresh();
         }
 
         private void FriendCache_FriendCacheInvalidated(object sender, EventArgs e)
         {
             _friendsOverviewDataCoordinator?.Invalidate();
-            RequestFriendStateRefresh();
+        }
+
+        // Every invalidation path funnels through the coordinator (cache invalidation handlers
+        // here, the plugin's friend-cache handler, and the post-start warm), so its
+        // SnapshotInvalidated event is the single trigger for consumed rebuilds. Staleness is
+        // always recorded; without consumers the rebuild (and its full friends-overview
+        // snapshot) is skipped.
+        private void FriendsOverviewCoordinator_SnapshotInvalidated(object sender, EventArgs e)
+        {
+            if (_hasFriendThemeConsumers)
+            {
+                RequestFriendStateRefresh();
+            }
         }
 
         private Guid? ResolveSelectedGameIdForThemeUpdate()
@@ -988,6 +1033,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void FilterDynamicFriendScopeByRunningGame(string commandName)
         {
+            EnsureFriendThemeDataLoaded();
             if (!TryResolveRunningGameId(commandName, out var gameId))
             {
                 return;
@@ -2110,6 +2156,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void SetDynamicFriendScopeProvider(object parameter)
         {
+            EnsureFriendThemeDataLoaded();
             var key = NormalizeFriendProviderScopeKey(parameter);
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -2132,6 +2179,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void SetDynamicFriendScopeUser(object parameter)
         {
+            EnsureFriendThemeDataLoaded();
             var key = NormalizeFriendUserScopeKey(parameter);
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -2153,6 +2201,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void SetDynamicFriendScopeGame(object parameter)
         {
+            EnsureFriendThemeDataLoaded();
             var key = NormalizeFriendGameScopeKey(parameter);
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -2173,6 +2222,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void ResetDynamicFriendScope()
         {
+            EnsureFriendThemeDataLoaded();
             _runtimeState.FriendScope.Reset();
             ApplyDynamicFriendBindings();
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
