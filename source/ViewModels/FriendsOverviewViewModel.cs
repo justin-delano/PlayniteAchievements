@@ -86,8 +86,7 @@ namespace PlayniteAchievements.ViewModels
         private string _achievementSearchText;
         private string _selectedProviderKey;
         private string _selectedRefreshMode = RefreshModeType.FriendsRecent.GetKey();
-        private double _progressPercent;
-        private string _progressMessage;
+        private readonly RefreshHeaderProgressTracker _progressTracker;
         private readonly TimeSpan _cacheInvalidationDebounceInterval;
         private readonly TimeSpan _activeRefreshInvalidationInterval;
         private DateTime _lastCacheReloadUtc = DateTime.MinValue;
@@ -157,6 +156,8 @@ namespace PlayniteAchievements.ViewModels
 
             if (_refreshRuntime != null)
             {
+                _progressTracker = new RefreshHeaderProgressTracker(_refreshRuntime, logger);
+                _progressTracker.PropertyChanged += OnProgressTrackerChanged;
                 _refreshRuntime.RebuildProgress += OnRebuildProgress;
                 _refreshRuntime.CacheInvalidated += OnCacheInvalidated;
                 _refreshRuntime.FriendCacheInvalidated += OnFriendCacheInvalidated;
@@ -395,25 +396,27 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public double ProgressPercent
-        {
-            get => _progressPercent;
-            private set => SetValue(ref _progressPercent, value);
-        }
+        public double ProgressPercent => _progressTracker?.ProgressPercent ?? 0;
 
-        public string ProgressMessage
+        public string ProgressMessage => _progressTracker?.ProgressMessage;
+
+        public bool ShowProgress => _progressTracker?.ShowProgress ?? false;
+
+        private void OnProgressTrackerChanged(object sender, PropertyChangedEventArgs e)
         {
-            get => _progressMessage;
-            private set
+            switch (e.PropertyName)
             {
-                if (SetValueAndReturn(ref _progressMessage, value))
-                {
+                case nameof(RefreshHeaderProgressTracker.ProgressPercent):
+                    OnPropertyChanged(nameof(ProgressPercent));
+                    break;
+                case nameof(RefreshHeaderProgressTracker.ProgressMessage):
+                    OnPropertyChanged(nameof(ProgressMessage));
+                    break;
+                case nameof(RefreshHeaderProgressTracker.ShowProgress):
                     OnPropertyChanged(nameof(ShowProgress));
-                }
+                    break;
             }
         }
-
-        public bool ShowProgress => IsRefreshing && !string.IsNullOrWhiteSpace(ProgressMessage);
 
         public string StatusText
         {
@@ -783,8 +786,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 IsRefreshing = true;
                 StatusText = null;
-                ProgressPercent = 0;
-                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_Refreshing");
+                _progressTracker?.NotifyRefreshStarting();
                 await _refreshCoordinator.ExecuteAsync(
                     request,
                     new RefreshExecutionPolicy
@@ -804,7 +806,6 @@ namespace PlayniteAchievements.ViewModels
             finally
             {
                 IsRefreshing = false;
-                ProgressMessage = null;
             }
         }
 
@@ -1067,12 +1068,10 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            // Progress display is handled by the shared tracker; here we only track the
+            // friend-scoped refreshing state (button/command semantics) and refresh the
+            // friends snapshot when a friend refresh completes.
             IsRefreshing = _refreshRuntime?.IsRebuilding == true;
-            ProgressPercent = Math.Max(0, Math.Min(100, report.PercentComplete));
-            if (!string.IsNullOrWhiteSpace(report.Message))
-            {
-                ProgressMessage = report.Message;
-            }
 
             if (_refreshRuntime?.IsFinalProgressReport(report) == true)
             {
@@ -2190,6 +2189,12 @@ namespace PlayniteAchievements.ViewModels
         public void Dispose()
         {
             _disposed = true;
+
+            if (_progressTracker != null)
+            {
+                _progressTracker.PropertyChanged -= OnProgressTrackerChanged;
+                _progressTracker.Dispose();
+            }
 
             if (_refreshRuntime != null)
             {
