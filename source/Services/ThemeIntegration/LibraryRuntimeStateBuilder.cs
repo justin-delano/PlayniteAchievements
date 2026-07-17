@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Services.Summaries;
@@ -98,7 +99,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     data.PlayniteGameId.Value,
                     data.Game?.Name ?? data.GameName ?? string.Empty,
                     data.Game?.Source?.Name ?? "Unknown",
-                    ResolveCoverImagePath(data.Game, api),
+                    GameSummaryArtResolver.Resolve(
+                        data.PlayniteGameId,
+                        data.GameSummaryCategory,
+                        data.AchievementCategoryImageOverrides) ?? ResolveCoverImagePath(data.Game, api),
                     stats.ProgressPercent,
                     gold,
                     silver,
@@ -141,7 +145,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         public static LibraryRuntimeState BuildFromCachedSummary(
             CachedSummaryData summaryData,
             IPlayniteAPI api,
-            CancellationToken token)
+            CancellationToken token,
+            GameCustomDataStore customDataStore = null)
         {
             token.ThrowIfCancellationRequested();
 
@@ -202,7 +207,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     gameId,
                     presentation.Game?.Name ?? game.GameName ?? string.Empty,
                     presentation.Platform ?? "Unknown",
-                    presentation.CoverImagePath,
+                    GameSummaryArtResolver.ResolveForGame(gameId, customDataStore) ?? presentation.CoverImagePath,
                     AchievementCompletionPercentCalculator.ComputeRoundedPercent(
                         game.UnlockedAchievements,
                         game.TotalAchievements),
