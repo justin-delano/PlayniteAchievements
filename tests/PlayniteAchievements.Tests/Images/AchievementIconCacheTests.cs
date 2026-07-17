@@ -671,6 +671,86 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
+        public async Task MemoryImageService_EvictByUriSegment_RemovesOnlyMatchingEntries()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gameAIcon = Path.Combine(tempDir, "icon_cache", "game-a", "128", "boss.png");
+                var gameBIcon = Path.Combine(tempDir, "icon_cache", "game-b", "128", "boss.png");
+                WriteSolidColorPng(gameAIcon, Colors.Red);
+                WriteSolidColorPng(gameBIcon, Colors.Blue);
+
+                using (var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir))
+                using (var memoryImageService = new MemoryImageService(logger: null, diskImageService))
+                {
+                    Assert.IsNotNull(await memoryImageService.GetAsync(gameAIcon, 64, CancellationToken.None));
+                    Assert.IsNotNull(await memoryImageService.GetAsync(gameBIcon, 64, CancellationToken.None));
+
+                    // Both keep serving from the memory cache after the files are gone.
+                    File.Delete(gameAIcon);
+                    File.Delete(gameBIcon);
+                    Assert.IsNotNull(await memoryImageService.GetAsync(gameAIcon, 64, CancellationToken.None));
+                    Assert.IsNotNull(await memoryImageService.GetAsync(gameBIcon, 64, CancellationToken.None));
+
+                    memoryImageService.EvictByUriSegment("game-a");
+
+                    Assert.IsNull(await memoryImageService.GetAsync(gameAIcon, 64, CancellationToken.None));
+                    Assert.IsNotNull(await memoryImageService.GetAsync(gameBIcon, 64, CancellationToken.None));
+                }
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task MemoryImageService_InPlaceOverwriteEvictsCachedBitmap()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var sourceRed = Path.Combine(tempDir, "source-red.png");
+                var sourceBlue = Path.Combine(tempDir, "source-blue.png");
+                var targetPath = Path.Combine(tempDir, "icon_cache", "game-a", "128", "boss.png");
+                WriteSolidColorPng(sourceRed, Colors.Red);
+                WriteSolidColorPng(sourceBlue, Colors.Blue);
+
+                using (var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir))
+                using (var memoryImageService = new MemoryImageService(logger: null, diskImageService))
+                {
+                    string overwrittenPath = null;
+                    diskImageService.ImageFileOverwritten += path => overwrittenPath = path;
+
+                    Assert.AreEqual(targetPath, await diskImageService.GetOrCopyLocalIconToPathAsync(
+                        sourceRed, targetPath, 128, CancellationToken.None));
+                    Assert.IsNotNull(await memoryImageService.GetAsync(targetPath, 64, CancellationToken.None));
+
+                    // A copy without overwrite leaves the existing file alone and raises nothing.
+                    Assert.AreEqual(targetPath, await diskImageService.GetOrCopyLocalIconToPathAsync(
+                        sourceBlue, targetPath, 128, CancellationToken.None));
+                    Assert.IsNull(overwrittenPath);
+
+                    Assert.AreEqual(targetPath, await diskImageService.GetOrCopyLocalIconToPathAsync(
+                        sourceBlue, targetPath, 128, CancellationToken.None, overwriteExistingTarget: true));
+                    Assert.AreEqual(targetPath, overwrittenPath);
+
+                    // The overwrite evicted the cached bitmap: with the file gone, the next
+                    // request cannot be served from memory anymore.
+                    File.Delete(targetPath);
+                    Assert.IsNull(await memoryImageService.GetAsync(targetPath, 64, CancellationToken.None));
+                }
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void ShouldUseSeparateLockedIcons_UsesGlobalSettingOrPerGameOverride()
         {
             var gameId = Guid.NewGuid();
