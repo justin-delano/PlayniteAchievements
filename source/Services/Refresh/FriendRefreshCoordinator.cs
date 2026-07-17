@@ -199,21 +199,7 @@ namespace PlayniteAchievements.Services.Refresh
             var scrapeVolume = Math.Max(
                 summary.CandidatesRefreshed,
                 Math.Max(summary.OwnershipRowsWritten, summary.AchievementsSaved));
-            if (scrapeVolume < LohCompactionWorkThreshold)
-            {
-                return;
-            }
-
-            try
-            {
-                System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
-                    System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-                GC.Collect();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "LOH-compacting collection after friend scan failed.");
-            }
+            MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(scrapeVolume, LohCompactionWorkThreshold, _logger);
         }
 
         internal async Task RefreshPreparedFriendContextsAsync(
