@@ -267,6 +267,20 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
     }
 
+    // Per-category rollup of the selected game's achievements. Default sort preserves the
+    // builder's order, which already honors the game's custom category order.
+    internal sealed class CategorySummaryViewState : DynamicThemeListViewState
+    {
+        public CategorySummaryViewState()
+            : base(
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.Default,
+                DynamicThemeViewKeys.Descending)
+        {
+        }
+    }
+
     internal sealed class GameSummaryViewState : DynamicThemeListViewState
     {
         private string _gameKey = DynamicThemeViewKeys.All;
