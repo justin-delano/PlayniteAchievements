@@ -197,17 +197,13 @@ namespace PlayniteAchievements.Views.Settings.General
 
             if (!AchievementHotkeyGesture.TryCreate(key, Keyboard.Modifiers, out var gesture))
             {
-                HotkeyCaptureStatusText = L(
-                    "LOCPlayAch_Hotkeys_InvalidShortcut",
-                    "Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.");
+                HotkeyCaptureStatusText = L("LOCPlayAch_Hotkeys_InvalidShortcut");
                 return;
             }
 
             if (IsDuplicateHotkey(target, gesture))
             {
-                HotkeyCaptureStatusText = L(
-                    "LOCPlayAch_Hotkeys_DuplicateShortcut",
-                    "That shortcut is already assigned.");
+                HotkeyCaptureStatusText = L("LOCPlayAch_Hotkeys_DuplicateShortcut");
                 return;
             }
 
@@ -222,8 +218,8 @@ namespace PlayniteAchievements.Views.Settings.General
             UpdateHotkeyButtonTexts();
 
             _capturingHotkey = target;
-            HotkeyCaptureStatusText = L("LOCPlayAch_Hotkeys_CapturePrompt", "Press a shortcut...");
-            SetHotkeyButtonText(target, L("LOCPlayAch_Hotkeys_CaptureButton", "Press keys..."));
+            HotkeyCaptureStatusText = L("LOCPlayAch_Hotkeys_CapturePrompt");
+            SetHotkeyButtonText(target, L("LOCPlayAch_Hotkeys_CaptureButton"));
 
             button?.Focus();
             Keyboard.Focus(button);
@@ -348,7 +344,7 @@ namespace PlayniteAchievements.Views.Settings.General
         private string FormatHotkeyButtonText(string hotkey)
         {
             return string.IsNullOrWhiteSpace(hotkey)
-                ? L("LOCPlayAch_Common_None", "None")
+                ? L("LOCPlayAch_Common_None")
                 : hotkey;
         }
 
@@ -377,10 +373,9 @@ namespace PlayniteAchievements.Views.Settings.General
             _persistedSubscription?.Dispose();
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 }

@@ -411,7 +411,7 @@ namespace PlayniteAchievements.Services.UI
 
             var window = PlayniteUiProvider.CreateBorderlessTopmostWindow(
                 _api,
-                ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             _activeWindow = window;
 
             var items = new ItemsControl

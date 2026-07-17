@@ -462,7 +462,7 @@ namespace PlayniteAchievements.Views
             _recentLimitOverrideText = (_settings?.Persisted?.RecentRefreshGamesCount ?? 10).ToString();
             _placeholderPreset = new CustomRefreshPreset
             {
-                Name = L("LOCPlayAch_Common_None", " "),
+                Name = L("LOCPlayAch_Common_None"),
                 Options = null
             };
 
@@ -540,13 +540,13 @@ namespace PlayniteAchievements.Views
         private void InitializeScopeOptions()
         {
             ScopeOptions.Clear();
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.All, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_All", "All games") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_Installed", "Installed") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Favorites, DisplayName = L("LOCPlayAch_RefreshModeShort_Favorites", "Favorites") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_Recent", "Recent") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.LibrarySelected, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_LibrarySelected", "Library selected") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Missing, DisplayName = L("LOCPlayAch_RefreshModeShort_Missing", "Missing") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Explicit, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Explicit", "Explicit only") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.All, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_All") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_Installed") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Favorites, DisplayName = L("LOCPlayAch_RefreshModeShort_Favorites") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_Recent") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.LibrarySelected, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_LibrarySelected") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Missing, DisplayName = L("LOCPlayAch_RefreshModeShort_Missing") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Explicit, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Explicit") });
         }
 
         private void InitializeProviders()
@@ -554,9 +554,9 @@ namespace PlayniteAchievements.Views
             ProviderOptions.Clear();
             _providersByKey.Clear();
 
-            var readyText = L("LOCPlayAch_CustomRefresh_ProviderStatus_Ready", "Ready");
-            var disabledText = L("LOCPlayAch_Common_Status_Disabled", "Disabled");
-            var noAuthText = L("LOCPlayAch_Common_NotAuthenticated", "Not authenticated");
+            var readyText = L("LOCPlayAch_CustomRefresh_ProviderStatus_Ready");
+            var disabledText = L("LOCPlayAch_Common_Status_Disabled");
+            var noAuthText = L("LOCPlayAch_Common_NotAuthenticated");
 
             foreach (var provider in _refreshService.Providers)
             {
@@ -708,11 +708,11 @@ namespace PlayniteAchievements.Views
             presetName = null;
 
             var inputDialog = new TextInputDialog(
-                L("LOCPlayAch_CustomRefresh_Presets_NameDialogHint", "Enter a preset name."),
+                L("LOCPlayAch_CustomRefresh_Presets_NameDialogHint"),
                 defaultName ?? string.Empty);
 
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                L("LOCPlayAch_CustomRefresh_Presets_NameDialogTitle", "Save preset"),
+                L("LOCPlayAch_CustomRefresh_Presets_NameDialogTitle"),
                 inputDialog,
                 new WindowOptions
                 {
@@ -748,7 +748,7 @@ namespace PlayniteAchievements.Views
             {
                 _api.Dialogs.ShowMessage(
                     string.Format(
-                        L("LOCPlayAch_CustomRefresh_Presets_NameInvalid", "Preset name must be between 1 and {0} characters."),
+                        L("LOCPlayAch_CustomRefresh_Presets_NameInvalid"),
                         CustomRefreshPreset.MaxNameLength),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
@@ -1157,7 +1157,7 @@ namespace PlayniteAchievements.Views
                 .ToList();
 
             var providerDisplay = selectedProviderNames.Count == 0
-                ? L("LOCPlayAch_Common_None", "None")
+                ? L("LOCPlayAch_Common_None")
                 : string.Join(", ", selectedProviderNames);
 
             var request = BuildSummaryEstimateRequest(selectedProviders);
@@ -1184,7 +1184,7 @@ namespace PlayniteAchievements.Views
                     }
 
                     SummaryText = string.Format(
-                        L("LOCPlayAch_CustomRefresh_SummaryFormat", "Providers: {0} | Estimated targets: {1}"),
+                        L("LOCPlayAch_CustomRefresh_SummaryFormat"),
                         providerDisplay,
                         estimatedTargets);
 
@@ -1209,10 +1209,9 @@ namespace PlayniteAchievements.Views
             return $"{game.Name} [{sourceName}]";
         }
 
-        private string L(string key, string fallback)
+        private string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) || value == key ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
         private bool TryCreateCurrentOptions(out CustomRefreshOptions options)
@@ -1223,7 +1222,7 @@ namespace PlayniteAchievements.Views
             if (UseRecentLimitOverride && !hasRecentLimit)
             {
                 _api.Dialogs.ShowMessage(
-                    L("LOCPlayAch_CustomRefresh_InvalidRecentLimit", "Recent limit override must be a positive number."),
+                    L("LOCPlayAch_CustomRefresh_InvalidRecentLimit"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1379,7 +1378,7 @@ namespace PlayniteAchievements.Views
             {
                 _api.Dialogs.ShowMessage(
                     string.Format(
-                        L("LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary", "Preset loaded with adjustments: removed {0} unavailable provider(s) and {1} missing game reference(s)."),
+                        L("LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary"),
                         removedProviderCount,
                         removedGameCount),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
@@ -1402,7 +1401,7 @@ namespace PlayniteAchievements.Views
 
             if (!ConfirmDialog(
                 string.Format(
-                    L("LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm", "Overwrite preset \"{0}\"?"),
+                    L("LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm"),
                     SelectedPreset.Name)))
             {
                 return;
@@ -1432,7 +1431,7 @@ namespace PlayniteAchievements.Views
             {
                 _api.Dialogs.ShowMessage(
                     string.Format(
-                        L("LOCPlayAch_CustomRefresh_Presets_MaxReached", "You can save up to {0} presets."),
+                        L("LOCPlayAch_CustomRefresh_Presets_MaxReached"),
                         CustomRefreshPreset.MaxPresetCount),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
@@ -1442,7 +1441,7 @@ namespace PlayniteAchievements.Views
 
             if (existingPreset != null && !ConfirmDialog(
                 string.Format(
-                    L("LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm", "Overwrite preset \"{0}\"?"),
+                    L("LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm"),
                     presetName)))
             {
                 return;
@@ -1460,7 +1459,7 @@ namespace PlayniteAchievements.Views
 
             if (!ConfirmDialog(
                 string.Format(
-                    L("LOCPlayAch_CustomRefresh_Presets_DeleteConfirm", "Delete preset \"{0}\"?"),
+                    L("LOCPlayAch_CustomRefresh_Presets_DeleteConfirm"),
                     SelectedPreset.Name)))
             {
                 return;

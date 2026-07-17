@@ -30,7 +30,7 @@ namespace PlayniteAchievements
 
             return new StartPageExtensionArgs
             {
-                ExtensionName = L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                ExtensionName = L("LOCPlayAch_Title_PluginName"),
                 Views = StartPageViewCatalog.Views
                     .Where(view => view.WidgetKind != StartPageWidgetKind.FriendsRecentUnlocksGrid
                         || Settings.Persisted.EnableFriendsFeatures)
@@ -384,6 +384,11 @@ namespace PlayniteAchievements
         private static string GetStartPageInstanceKey(string viewId, Guid instanceId)
         {
             return $"{viewId}:{instanceId:N}";
+        }
+
+        private static string L(string key)
+        {
+            return ResourceProvider.GetString(key);
         }
 
         private static string L(string key, string fallback)

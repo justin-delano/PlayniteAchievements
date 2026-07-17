@@ -325,14 +325,14 @@ namespace PlayniteAchievements.Providers.Manual
         {
             if (link == null)
             {
-                return L("LOCPlayAch_ManageAchievements_Manual_LinkSummary_None", "No manual link configured.");
+                return L("LOCPlayAch_ManageAchievements_Manual_LinkSummary_None");
             }
 
             return string.Format(
-                L("LOCPlayAch_ManageAchievements_Manual_LinkSummary", "{0} ({1})"),
+                L("LOCPlayAch_ManageAchievements_Manual_LinkSummary"),
                 string.IsNullOrWhiteSpace(link.SourceKey) ? "Manual" : link.SourceKey,
                 string.IsNullOrWhiteSpace(link.SourceGameId)
-                    ? L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A")
+                    ? L("LOCPlayAch_ManageAchievements_Value_NotAvailable")
                     : link.SourceGameId);
         }
 
@@ -348,8 +348,8 @@ namespace PlayniteAchievements.Providers.Manual
             }
 
             var result = playniteApi?.Dialogs?.ShowMessage(
-                string.Format(L("LOCPlayAch_Menu_UnlinkAchievements_Confirm", "Remove the manual achievement link for \"{0}\"?"), gameName),
-                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                string.Format(L("LOCPlayAch_Menu_UnlinkAchievements_Confirm"), gameName),
+                L("LOCPlayAch_Title_PluginName"),
                 System.Windows.MessageBoxButton.YesNo,
                 System.Windows.MessageBoxImage.Question) ?? System.Windows.MessageBoxResult.None;
             if (result != System.Windows.MessageBoxResult.Yes)
@@ -365,18 +365,17 @@ namespace PlayniteAchievements.Providers.Manual
             achievementOverridesService.ClearGameData(gameId, gameName);
 
             playniteApi?.Dialogs?.ShowMessage(
-                L("LOCPlayAch_Status_Succeeded", "Success!"),
-                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                L("LOCPlayAch_Status_Succeeded"),
+                L("LOCPlayAch_Title_PluginName"),
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);
 
             return true;
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
         private static Dictionary<string, T> BuildCaseInsensitiveLookup<T>(IReadOnlyDictionary<string, T> source)

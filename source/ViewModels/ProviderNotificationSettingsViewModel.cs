@@ -208,8 +208,8 @@ namespace PlayniteAchievements.ViewModels
             _screenshotClean == OverrideState.Inherit &&
             _screenshotWithToast == OverrideState.Inherit &&
             _screenshotFramed == OverrideState.Inherit
-                ? ResourceProvider.GetString("LOCPlayAch_Common_Default") ?? "Default"
-                : ResourceProvider.GetString("LOCPlayAch_Common_Custom") ?? "Custom";
+                ? ResourceProvider.GetString("LOCPlayAch_Common_Default")
+                : ResourceProvider.GetString("LOCPlayAch_Common_Custom");
 
         /// <summary>
         /// The row's current cell states as an override entry; all-inherit rows produce an entry

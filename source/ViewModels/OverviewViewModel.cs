@@ -168,8 +168,8 @@ namespace PlayniteAchievements.ViewModels
             CompletenessFilterOptions = new ObservableCollection<string>();
 
             // Default the progress dropdown to the full completed + incomplete scope.
-            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_Complete", "Complete"));
-            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_InProgress", "In Progress"));
+            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_Complete"));
+            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_InProgress"));
 
             // Initialize refresh mode options from service (exclude LibrarySelected - context menu only)
             RefreshModes = new ObservableCollection<RefreshMode>(
@@ -284,7 +284,7 @@ namespace PlayniteAchievements.ViewModels
                     nameof(LeftSearchText),
                     () => LeftSearchText,
                     value => LeftSearchText = value,
-                    L("LOCPlayAch_Filter_Games", "Search Games"),
+                    L("LOCPlayAch_Filter_Games"),
                     ClearLeftSearch)
             };
             GameSummariesControlBar.Items.Add(new GridProviderPlatformFilter(
@@ -324,7 +324,7 @@ namespace PlayniteAchievements.ViewModels
                     nameof(RightSearchText),
                     () => RightSearchText,
                     value => RightSearchText = value,
-                    L("LOCPlayAch_Filter_Achievements", "Search Achievements"),
+                    L("LOCPlayAch_Filter_Achievements"),
                     ClearRightSearch)
             };
 
@@ -708,7 +708,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             // Check if "Locked" was clicked
-            if (string.Equals(sliceLabel, L("LOCPlayAch_Common_Locked", "Locked"), StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(sliceLabel, L("LOCPlayAch_Common_Locked"), StringComparison.OrdinalIgnoreCase))
             {
                 ClearProviderFilters();
                 return;
@@ -736,7 +736,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedCompletenessFilterText => GetSelectedFilterText(
             _selectedCompletenessFilters,
             CompletenessFilterOptions,
-            L("LOCPlayAch_Progress", "Progress"));
+            L("LOCPlayAch_Progress"));
 
         public bool IsCompletenessFilterSelected(string value)
         {
@@ -768,7 +768,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedPlayStatusFilterText => GetSelectedFilterText(
             _selectedPlayStatusFilters,
             PlayStatusFilterOptions,
-            L("LOCPlayAch_Filter_ActivitySelectorPlaceholder", "Activity"));
+            L("LOCPlayAch_Filter_ActivitySelectorPlaceholder"));
 
         public bool IsPlayStatusFilterSelected(string value)
         {
@@ -801,10 +801,10 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var completeOption = L("LOCPlayAch_Filter_Complete", "Complete");
-            var inProgressOption = L("LOCPlayAch_Filter_InProgress", "In Progress");
-            var noProgressOption = L("LOCPlayAch_Filter_NoProgress", "No Progress");
-            var incompleteSliceLabel = L("LOCPlayAch_Overview_Incomplete", "Incomplete");
+            var completeOption = L("LOCPlayAch_Filter_Complete");
+            var inProgressOption = L("LOCPlayAch_Filter_InProgress");
+            var noProgressOption = L("LOCPlayAch_Filter_NoProgress");
+            var incompleteSliceLabel = L("LOCPlayAch_Overview_Incomplete");
             var targetFilters = new List<string>();
 
             if (string.Equals(completenessLabel, completeOption, StringComparison.OrdinalIgnoreCase))
@@ -862,7 +862,7 @@ namespace PlayniteAchievements.ViewModels
             .FirstOrDefault(mode => string.Equals(mode?.Key, SelectedRefreshMode, StringComparison.Ordinal))?
             .ShortDisplayName
             ?? RefreshModes?.FirstOrDefault()?.ShortDisplayName
-            ?? L("LOCPlayAch_Button_Refresh", "Refresh");
+            ?? L("LOCPlayAch_Button_Refresh");
 
         public string RefreshActionButtonText => string.Equals(
             SelectedRefreshMode,
@@ -1206,7 +1206,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                var title = L("LOCPlayAch_Section_Timeline", "Achievements Over Time");
+                var title = L("LOCPlayAch_Section_Timeline");
                 var selectedGameName = IsSelectedGameContentReady ? DisplayedSelectedGame?.GameName : null;
                 return string.IsNullOrWhiteSpace(selectedGameName)
                     ? title
@@ -1223,7 +1223,7 @@ namespace PlayniteAchievements.ViewModels
         public string RarityPieChartTitle
         {
             get => string.IsNullOrWhiteSpace(_rarityPieChartTitle)
-                ? L("LOCPlayAch_Overview_RarityPieChart", "Achievements by Rarity")
+                ? L("LOCPlayAch_Overview_RarityPieChart")
                 : _rarityPieChartTitle;
             private set => SetValue(ref _rarityPieChartTitle, value);
         }
@@ -1232,7 +1232,7 @@ namespace PlayniteAchievements.ViewModels
         public string TrophyPieChartTitle
         {
             get => string.IsNullOrWhiteSpace(_trophyPieChartTitle)
-                ? L("LOCPlayAch_Overview_TrophyPieChart", "Achievements by Trophy")
+                ? L("LOCPlayAch_Overview_TrophyPieChart")
                 : _trophyPieChartTitle;
             private set => SetValue(ref _trophyPieChartTitle, value);
         }
@@ -2274,9 +2274,9 @@ namespace PlayniteAchievements.ViewModels
         {
             var options = new List<string>
             {
-                L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Filter_InProgress", "In Progress"),
-                L("LOCPlayAch_Filter_NoProgress", "No Progress")
+                L("LOCPlayAch_Filter_Complete"),
+                L("LOCPlayAch_Filter_InProgress"),
+                L("LOCPlayAch_Filter_NoProgress")
             };
 
             if (CompletenessFilterOptions == null)
@@ -2301,8 +2301,8 @@ namespace PlayniteAchievements.ViewModels
         {
             var options = new List<string>
             {
-                L("LOCPlayAch_Filter_Played", "Played"),
-                L("LOCPlayAch_Filter_Unplayed", "Unplayed")
+                L("LOCPlayAch_Filter_Played"),
+                L("LOCPlayAch_Filter_Unplayed")
             };
 
             if (PlayStatusFilterOptions == null)
@@ -3074,11 +3074,11 @@ namespace PlayniteAchievements.ViewModels
                 filtered,
                 _selectedPlayStatusFilters,
                 _selectedCompletenessFilters,
-                L("LOCPlayAch_Filter_Played", "Played"),
-                L("LOCPlayAch_Filter_Unplayed", "Unplayed"),
-                L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Filter_InProgress", "In Progress"),
-                L("LOCPlayAch_Filter_NoProgress", "No Progress"));
+                L("LOCPlayAch_Filter_Played"),
+                L("LOCPlayAch_Filter_Unplayed"),
+                L("LOCPlayAch_Filter_Complete"),
+                L("LOCPlayAch_Filter_InProgress"),
+                L("LOCPlayAch_Filter_NoProgress"));
 
             _filteredGameSummaries = filtered.ToList();
             if (!string.IsNullOrEmpty(_overviewSortPath))
@@ -3126,16 +3126,16 @@ namespace PlayniteAchievements.ViewModels
             }
 
             var labels = new List<string>();
-            var completeLabel = L("LOCPlayAch_Filter_Complete", "Complete");
+            var completeLabel = L("LOCPlayAch_Filter_Complete");
             if (_selectedCompletenessFilters.Contains(completeLabel))
             {
                 labels.Add(completeLabel);
             }
 
-            if (_selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_InProgress", "In Progress")) ||
-                _selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_NoProgress", "No Progress")))
+            if (_selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_InProgress")) ||
+                _selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_NoProgress")))
             {
-                labels.Add(L("LOCPlayAch_Overview_Incomplete", "Incomplete"));
+                labels.Add(L("LOCPlayAch_Overview_Incomplete"));
             }
 
             var selectedVisibleLabels = labels
@@ -3259,11 +3259,11 @@ namespace PlayniteAchievements.ViewModels
                 filteredGames,
                 _selectedPlayStatusFilters,
                 _selectedCompletenessFilters,
-                L("LOCPlayAch_Filter_Played", "Played"),
-                L("LOCPlayAch_Filter_Unplayed", "Unplayed"),
-                L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Filter_InProgress", "In Progress"),
-                L("LOCPlayAch_Filter_NoProgress", "No Progress"));
+                L("LOCPlayAch_Filter_Played"),
+                L("LOCPlayAch_Filter_Unplayed"),
+                L("LOCPlayAch_Filter_Complete"),
+                L("LOCPlayAch_Filter_InProgress"),
+                L("LOCPlayAch_Filter_NoProgress"));
         }
 
         private IEnumerable<GameSummaryItem> GetCompletedGamesPieChartGames()
@@ -3273,11 +3273,11 @@ namespace PlayniteAchievements.ViewModels
                 filteredGames,
                 _selectedPlayStatusFilters,
                 GetCompletedGamesPieProgressFilters(),
-                L("LOCPlayAch_Filter_Played", "Played"),
-                L("LOCPlayAch_Filter_Unplayed", "Unplayed"),
-                L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Filter_InProgress", "In Progress"),
-                L("LOCPlayAch_Filter_NoProgress", "No Progress"));
+                L("LOCPlayAch_Filter_Played"),
+                L("LOCPlayAch_Filter_Unplayed"),
+                L("LOCPlayAch_Filter_Complete"),
+                L("LOCPlayAch_Filter_InProgress"),
+                L("LOCPlayAch_Filter_NoProgress"));
         }
 
         private ISet<string> GetCompletedGamesPieProgressFilters()
@@ -3287,7 +3287,7 @@ namespace PlayniteAchievements.ViewModels
                 return null;
             }
 
-            var noProgressLabel = L("LOCPlayAch_Filter_NoProgress", "No Progress");
+            var noProgressLabel = L("LOCPlayAch_Filter_NoProgress");
             if (_selectedCompletenessFilters.Contains(noProgressLabel))
             {
                 return null;
@@ -3295,8 +3295,8 @@ namespace PlayniteAchievements.ViewModels
 
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Filter_InProgress", "In Progress")
+                L("LOCPlayAch_Filter_Complete"),
+                L("LOCPlayAch_Filter_InProgress")
             };
         }
 
@@ -3322,15 +3322,15 @@ namespace PlayniteAchievements.ViewModels
             string trophyBronzeLabel = null,
             string lockedLabel = null)
         {
-            commonLabel ??= L("LOCPlayAch_Rarity_Common", "Common");
-            uncommonLabel ??= L("LOCPlayAch_Rarity_Uncommon", "Uncommon");
-            rareLabel ??= L("LOCPlayAch_Rarity_Rare", "Rare");
-            ultraRareLabel ??= L("LOCPlayAch_Rarity_UltraRare", "Ultra Rare");
-            trophyPlatinumLabel ??= L("LOCPlayAch_Trophy_Platinum", "Platinum");
-            trophyGoldLabel ??= L("LOCPlayAch_Trophy_Gold", "Gold");
-            trophySilverLabel ??= L("LOCPlayAch_Trophy_Silver", "Silver");
-            trophyBronzeLabel ??= L("LOCPlayAch_Trophy_Bronze", "Bronze");
-            lockedLabel ??= L("LOCPlayAch_Common_Locked", "Locked");
+            commonLabel ??= L("LOCPlayAch_Rarity_Common");
+            uncommonLabel ??= L("LOCPlayAch_Rarity_Uncommon");
+            rareLabel ??= L("LOCPlayAch_Rarity_Rare");
+            ultraRareLabel ??= L("LOCPlayAch_Rarity_UltraRare");
+            trophyPlatinumLabel ??= L("LOCPlayAch_Trophy_Platinum");
+            trophyGoldLabel ??= L("LOCPlayAch_Trophy_Gold");
+            trophySilverLabel ??= L("LOCPlayAch_Trophy_Silver");
+            trophyBronzeLabel ??= L("LOCPlayAch_Trophy_Bronze");
+            lockedLabel ??= L("LOCPlayAch_Common_Locked");
 
             var selectedGame = ResolveSelectedGameForChartContext(snapshot);
             var useSelectedRarity = selectedGame?.HasRarityPieChartData == true;
@@ -3412,8 +3412,8 @@ namespace PlayniteAchievements.ViewModels
                     lockedLabel);
             }
 
-            var rarityTitle = L("LOCPlayAch_Overview_RarityPieChart", "Achievements by Rarity");
-            var trophyTitle = L("LOCPlayAch_Overview_TrophyPieChart", "Achievements by Trophy");
+            var rarityTitle = L("LOCPlayAch_Overview_RarityPieChart");
+            var trophyTitle = L("LOCPlayAch_Overview_TrophyPieChart");
             RarityPieChartTitle = BuildContextualPieChartTitle(rarityTitle, useSelectedRarity ? selectedGame?.GameName : null);
             TrophyPieChartTitle = BuildContextualPieChartTitle(trophyTitle, useSelectedTrophy ? selectedGame?.GameName : null);
         }
@@ -3571,7 +3571,7 @@ namespace PlayniteAchievements.ViewModels
         {
             return OverviewGameSummaryFilters.BuildProviderFilterText(
                 ProviderFilterGroups,
-                L("LOCPlayAch_Common_Label_Platform", "Platform"));
+                L("LOCPlayAch_Common_Label_Platform"));
         }
 
         private void ApplyRightFilters(bool skipDefaultSort = false)
@@ -3674,7 +3674,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            SelectedGameHeaderText = $"({unlocked}/{total} {(isFiltered ? L("LOCPlayAch_RefreshModeShort_Selected", "Selected") : L("LOCPlayAch_Achievements", "Achievements"))})";
+            SelectedGameHeaderText = $"({unlocked}/{total} {(isFiltered ? L("LOCPlayAch_RefreshModeShort_Selected") : L("LOCPlayAch_Achievements"))})";
         }
 
         private void ResetSelectedGameSortToDefault()
@@ -4031,22 +4031,9 @@ namespace PlayniteAchievements.ViewModels
             SyncSelectedGameAchievementsDisplay();
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return fallback;
-            }
-
-            if (value.Length > 4 &&
-                value.StartsWith("<!", StringComparison.Ordinal) &&
-                value.EndsWith("!>", StringComparison.Ordinal))
-            {
-                return fallback;
-            }
-
-            return value;
+            return ResourceProvider.GetString(key);
         }
 
         public void Dispose()

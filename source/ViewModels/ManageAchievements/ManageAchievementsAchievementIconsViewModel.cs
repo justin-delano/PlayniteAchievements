@@ -130,9 +130,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (HasValidationErrors)
                 {
-                    return L(
-                        "LOCPlayAch_ManageAchievements_CustomIcons_ValidationError",
-                        "One or more icon values are invalid. Use absolute http:// or https:// URLs, or managed local files copied into plugin data.");
+                    return L("LOCPlayAch_ManageAchievements_CustomIcons_ValidationError");
                 }
 
                 return _saveStatusText;
@@ -179,9 +177,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (string.IsNullOrWhiteSpace(normalizedPath) || !File.Exists(normalizedPath))
             {
                 SetSaveStatus(
-                    L(
-                        "LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing",
-                        "The selected image file no longer exists."),
+                    L("LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing"),
                     isError: true);
                 return;
             }
@@ -213,7 +209,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 row.RevertFailedManagedLocalOverride(variant);
                 _logger?.Error(ex, $"Failed copying custom icon file for gameId={_gameId}, apiName={row.ApiName}, variant={variant}.");
                 SetSaveStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
                 RefreshComputedState();
             }
@@ -298,7 +294,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 ReplaceRows(Array.Empty<AchievementIconOverrideItem>());
                 HasAchievements = false;
                 SetSaveStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
                 RefreshComputedState();
             }
@@ -347,7 +343,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 SetSaveStatus(
-                    L("LOCPlayAch_Status_Succeeded", "Success!"),
+                    L("LOCPlayAch_Status_Succeeded"),
                     isError: false);
                 RefreshComputedState();
                 IconOverridesSaved?.Invoke(this, EventArgs.Empty);
@@ -356,7 +352,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed saving custom icon overrides for gameId={_gameId}");
                 SetSaveStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
             }
             finally
@@ -385,8 +381,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 {
                     SetSaveStatus(
                         string.Format(
-                            L("LOCPlayAch_Status_Failed", "Error: {0}"),
-                            L("LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable", "The extension data path is unavailable.")),
+                            L("LOCPlayAch_Status_Failed"),
+                            L("LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable")),
                         isError: true);
                     return;
                 }
@@ -405,7 +401,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed opening icon cache folder for gameId={_gameId}.");
                 SetSaveStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
             }
         }
@@ -595,10 +591,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 

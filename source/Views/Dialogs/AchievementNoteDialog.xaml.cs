@@ -109,9 +109,7 @@ namespace PlayniteAchievements.Views.Dialogs
         {
             if (CharacterCountTextBlock != null)
             {
-                var format = L(
-                    "LOCPlayAch_NotesDialog_CharacterCountFormat",
-                    "{0} / {1} characters");
+                var format = L("LOCPlayAch_NotesDialog_CharacterCountFormat");
                 CharacterCountTextBlock.Text = string.Format(
                     format,
                     (NoteText ?? string.Empty).Length,
@@ -225,10 +223,9 @@ namespace PlayniteAchievements.Views.Dialogs
             }
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 }

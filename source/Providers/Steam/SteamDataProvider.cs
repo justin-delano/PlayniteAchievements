@@ -23,7 +23,6 @@ namespace PlayniteAchievements.Providers.Steam
 
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam",
-            "Steam AppID",
             raw =>
             {
                 if (int.TryParse((raw ?? string.Empty).Trim(), out var appId) && appId > 0)
@@ -32,8 +31,7 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 return ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_SteamAppId_InvalidId",
-                    "Please enter a valid positive integer Steam AppID.");
+                    "LOCPlayAch_Menu_SteamAppId_InvalidId");
             });
 
         private readonly SteamHttpClient _steamClient;

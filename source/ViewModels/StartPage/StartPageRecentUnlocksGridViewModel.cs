@@ -33,7 +33,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
                     nameof(SearchText),
                     () => SearchText,
                     value => SearchText = value,
-                    L("LOCPlayAch_Filter_Achievements", "Search Achievements"),
+                    L("LOCPlayAch_Filter_Achievements"),
                     () => SearchText = string.Empty)
             };
         }
@@ -184,10 +184,9 @@ namespace PlayniteAchievements.ViewModels.StartPage
                        System.StringComparison.Ordinal);
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 }

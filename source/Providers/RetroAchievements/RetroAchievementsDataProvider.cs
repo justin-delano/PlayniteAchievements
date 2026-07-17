@@ -23,7 +23,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RetroAchievements",
-            "RetroAchievements Game ID",
             raw =>
             {
                 if (int.TryParse((raw ?? string.Empty).Trim(), out var gameId) && gameId > 0)
@@ -32,8 +31,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 }
 
                 return ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_RaGameId_InvalidId",
-                    "Please enter a valid positive integer game ID.");
+                    "LOCPlayAch_Menu_RaGameId_InvalidId");
             });
 
         private readonly ILogger _logger;

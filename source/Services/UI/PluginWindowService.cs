@@ -732,7 +732,7 @@ namespace PlayniteAchievements.Services.UI
                 _logger.Error(ex, "Failed to open Achievements Overview window");
                 _api?.Dialogs?.ShowErrorMessage(
                     $"Failed to open achievements overview: {ex.Message}",
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             }
         }
 
@@ -1113,8 +1113,7 @@ namespace PlayniteAchievements.Services.UI
 
                 var window = CreateManagedPopoutWindow(
                     ResourceProvider.GetString("LOCPlayAch_Menu_OpenOverview") ??
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ??
-                    "Achievements Overview",
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     view,
                     windowOptions,
                     isFullscreen,
@@ -1136,7 +1135,7 @@ namespace PlayniteAchievements.Services.UI
                 _logger.Error(ex, "Failed to open Achievements Overview window");
                 _api?.Dialogs?.ShowErrorMessage(
                     $"Failed to open achievements overview: {ex.Message}",
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             }
         }
 

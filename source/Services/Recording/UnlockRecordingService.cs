@@ -1516,7 +1516,7 @@ namespace PlayniteAchievements.Services.Recording
             _sessionNotified = true;
             try
             {
-                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements";
+                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
                 var message = ResourceProvider.GetString("LOCPlayAch_Notification_RecordingUnavailable");
                 _api?.Notifications?.Add(new NotificationMessage(
                     UnavailableNotificationId,

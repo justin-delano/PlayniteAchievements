@@ -189,15 +189,13 @@ namespace PlayniteAchievements.ViewModels
 
         private static void ValidateAchievementHotkeys(PersistedSettings persisted, List<string> errors)
         {
-            var viewLabel = L("LOCPlayAch_Menu_ViewAchievements", "View Achievements");
-            var manageLabel = L("LOCPlayAch_Menu_ManageAchievements", "Manage Achievements");
-            var overviewLabel = L("LOCPlayAch_Menu_OpenOverview", "Achievements Overview");
-            var openSettingsLabel = L("LOCPlayAch_Landing_OpenSettings", "Open Plugin Settings");
-            var categoryModeLabel = L("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group achievements by category");
-            var invalidMessage = L(
-                "LOCPlayAch_Hotkeys_InvalidShortcut",
-                "Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.");
-            var duplicateMessage = L("LOCPlayAch_Hotkeys_DuplicateShortcut", "That shortcut is already assigned.");
+            var viewLabel = L("LOCPlayAch_Menu_ViewAchievements");
+            var manageLabel = L("LOCPlayAch_Menu_ManageAchievements");
+            var overviewLabel = L("LOCPlayAch_Menu_OpenOverview");
+            var openSettingsLabel = L("LOCPlayAch_Landing_OpenSettings");
+            var categoryModeLabel = L("LOCPlayAch_CategorySummaries_ToggleToolTip");
+            var invalidMessage = L("LOCPlayAch_Hotkeys_InvalidShortcut");
+            var duplicateMessage = L("LOCPlayAch_Hotkeys_DuplicateShortcut");
 
             var viewValid = TryValidateHotkey(viewLabel, persisted.ViewAchievementsHotkey, invalidMessage, errors, out var viewGesture);
             var manageValid = TryValidateHotkey(manageLabel, persisted.ManageAchievementsHotkey, invalidMessage, errors, out var manageGesture);
@@ -275,9 +273,9 @@ namespace PlayniteAchievements.ViewModels
             return false;
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            return ResourceProvider.GetString(key) ?? fallback;
+            return ResourceProvider.GetString(key);
         }
 
         private PlayniteAchievementsSettings _editingClone;

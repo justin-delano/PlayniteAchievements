@@ -22,12 +22,10 @@ namespace PlayniteAchievements.Providers.Xenia
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia",
-            "Xenia TitleID",
             raw => XeniaTitleIdHelper.TryNormalize(raw, out var titleId)
                 ? ProviderOverrideValidation.Valid(titleId)
                 : ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_XeniaTitleId_InvalidId",
-                    "Please enter a valid 8-character hexadecimal Xenia TitleID."));
+                    "LOCPlayAch_Menu_XeniaTitleId_InvalidId"));
 
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;

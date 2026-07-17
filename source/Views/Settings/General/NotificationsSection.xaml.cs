@@ -164,7 +164,7 @@ namespace PlayniteAchievements.Views.Settings.General
 
             var window = Views.Helpers.PlayniteUiProvider.CreateBorderlessTopmostWindow(
                 _plugin.PlayniteApi,
-                ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             window.SizeToContent = SizeToContent.Manual;
             window.ShowActivated = true;
             window.Focusable = true;
@@ -253,10 +253,10 @@ namespace PlayniteAchievements.Views.Settings.General
 
         private AchievementUnlockedEventArgs BuildToastPreviewArgs(string kind)
         {
-            var sampleGame = L("LOCPlayAch_Settings_ToastPreviewSampleGame", "Sample Game");
-            var sampleCategory = L("LOCPlayAch_Settings_ToastPreviewSampleCategory", "Sample Category");
-            var sampleTitle = L("LOCPlayAch_Settings_ToastPreviewSampleTitle", "Example Achievement");
-            var sampleDescription = L("LOCPlayAch_Settings_ToastPreviewSampleDescription", "An example achievement description.");
+            var sampleGame = L("LOCPlayAch_Settings_ToastPreviewSampleGame");
+            var sampleCategory = L("LOCPlayAch_Settings_ToastPreviewSampleCategory");
+            var sampleTitle = L("LOCPlayAch_Settings_ToastPreviewSampleTitle");
+            var sampleDescription = L("LOCPlayAch_Settings_ToastPreviewSampleDescription");
 
             switch (kind)
             {
@@ -275,7 +275,7 @@ namespace PlayniteAchievements.Views.Settings.General
                 case "friend":
                     var friend = SampleUnlock("Rare", 7.5, false);
                     friend.IsFriendUnlock = true;
-                    friend.FriendDisplayName = L("LOCPlayAch_Settings_ToastPreviewSampleFriend", "Friend");
+                    friend.FriendDisplayName = L("LOCPlayAch_Settings_ToastPreviewSampleFriend");
                     friend.FriendAvatarUrl =
                         "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
                     return friend;
@@ -412,10 +412,9 @@ namespace PlayniteAchievements.Views.Settings.General
             CloseFramePreview();
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 }

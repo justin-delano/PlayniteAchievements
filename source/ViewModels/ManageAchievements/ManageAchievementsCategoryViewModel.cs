@@ -183,7 +183,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var selected = GetSelectedCategoryTypeValues(TypeSelectionOptions);
                 return selected.Count == 0
-                    ? L("LOCPlayAch_Common_Label_Type", "Type")
+                    ? L("LOCPlayAch_Common_Label_Type")
                     : AchievementCategoryTypeHelper.ToDisplayText(selected);
             }
         }
@@ -194,7 +194,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var selected = GetSelectedCategoryTypeFilterValues();
                 return selected.Count == 0
-                    ? L("LOCPlayAch_Common_Label_Type", "Type")
+                    ? L("LOCPlayAch_Common_Label_Type")
                     : AchievementCategoryTypeHelper.ToDisplayText(selected);
             }
         }
@@ -302,9 +302,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (HasCategoryImageValidationErrors)
                 {
-                    return L(
-                        "LOCPlayAch_ManageAchievements_CustomIcons_ValidationError",
-                        "One or more icon values are invalid. Use absolute http:// or https:// URLs, or managed local files copied into plugin data.");
+                    return L("LOCPlayAch_ManageAchievements_CustomIcons_ValidationError");
                 }
 
                 return _categoryImageStatusText;
@@ -321,9 +319,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (_selectedCategoryLabelFilters.Count == 0)
                 {
-                    return L(
-                        "LOCPlayAch_Common_Label_Category",
-                        "Category");
+                    return L("LOCPlayAch_Common_Label_Category");
                 }
 
                 var ordered = CategoryLabelFilterOptions
@@ -537,7 +533,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 HasCustomOverrides = false;
                 SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false, hasSummaryCategory: false);
                 SetCategoryImageStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
                 RefreshCategoryMetadataState();
             }
@@ -627,9 +623,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (string.IsNullOrWhiteSpace(normalizedPath) || !File.Exists(normalizedPath))
             {
                 SetCategoryImageStatus(
-                    L(
-                        "LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing",
-                        "The selected image file no longer exists."),
+                    L("LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing"),
                     isError: true);
                 return;
             }
@@ -658,7 +652,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed copying category art for gameId={_gameId}, category={row.CategoryLabel}.");
                 SetCategoryImageStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
                 RefreshCategoryMetadataState();
             }
@@ -767,14 +761,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     row.CommitCurrentOverridesAsBaseline();
                 }
 
-                SetCategoryImageStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), isError: false);
+                SetCategoryImageStatus(L("LOCPlayAch_Status_Succeeded"), isError: false);
                 RefreshCategoryMetadataState();
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed saving category metadata for gameId={_gameId}");
                 SetCategoryImageStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
             }
             finally
@@ -803,8 +797,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 {
                     SetCategoryImageStatus(
                         string.Format(
-                            L("LOCPlayAch_Status_Failed", "Error: {0}"),
-                            L("LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable", "The extension data path is unavailable.")),
+                            L("LOCPlayAch_Status_Failed"),
+                            L("LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable")),
                         isError: true);
                     return;
                 }
@@ -822,7 +816,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed opening category image cache folder for gameId={_gameId}.");
                 SetCategoryImageStatus(
-                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
             }
         }
@@ -1775,10 +1769,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return AchievementCategoryTypeHelper.ToCategoryTypeDisplayText(categoryType);
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
     }
 

@@ -124,8 +124,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 if (IsMergedFriend)
                 {
                     return MemberProviderDisplayText ??
-                           ResourceProvider.GetString("LOCPlayAch_FriendsSettings_Merged") ??
-                           "Merged";
+                           ResourceProvider.GetString("LOCPlayAch_FriendsSettings_Merged");
                 }
 
                 var localized = PlayniteAchievements.Providers.ProviderRegistry.GetLocalizedName(ProviderKey);

@@ -24,7 +24,6 @@ namespace PlayniteAchievements.Providers.Exophase
         // Optional value: an empty slug means auto-detect via game-name/platform search.
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase",
-            "Exophase game ID or slug",
             raw =>
             {
                 var trimmed = (raw ?? string.Empty).Trim();
