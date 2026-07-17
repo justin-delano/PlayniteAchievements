@@ -625,6 +625,36 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                    _plugin?.AchievementDataService?.GetRawGameAchievementData(_gameId);
         }
 
+        /// <summary>
+        /// Recomputes only the window cover image, so category metadata saves can update
+        /// it immediately without a full reload.
+        /// </summary>
+        internal void RefreshGameImage()
+        {
+            GameImagePath = ResolveGameImagePath(_playniteApi?.Database?.Games?.Get(_gameId));
+        }
+
+        private string ResolveGameImagePath(Playnite.SDK.Models.Game game)
+        {
+            // Summary-category art selected via Manage Categories wins over the
+            // Playnite cover/icon, matching the game summaries grid.
+            var imagePath = GameSummaryArtResolver.ResolveForGame(_gameId);
+            if (string.IsNullOrWhiteSpace(imagePath) && game != null)
+            {
+                if (!string.IsNullOrWhiteSpace(game.CoverImage))
+                {
+                    imagePath = _playniteApi?.Database?.GetFullFilePath(game.CoverImage);
+                }
+
+                if (string.IsNullOrWhiteSpace(imagePath) && !string.IsNullOrWhiteSpace(game.Icon))
+                {
+                    imagePath = _playniteApi?.Database?.GetFullFilePath(game.Icon);
+                }
+            }
+
+            return imagePath;
+        }
+
         public void Reload()
         {
             try
@@ -633,23 +663,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 HasGame = game != null;
                 GameName = game?.Name ?? L("LOCPlayAch_Text_UnknownGame", "Unknown Game");
 
-                // Summary-category art selected via Manage Categories wins over the
-                // Playnite cover/icon, matching the game summaries grid.
-                var imagePath = GameSummaryArtResolver.ResolveForGame(_gameId);
-                if (string.IsNullOrWhiteSpace(imagePath) && game != null)
-                {
-                    if (!string.IsNullOrWhiteSpace(game.CoverImage))
-                    {
-                        imagePath = _playniteApi?.Database?.GetFullFilePath(game.CoverImage);
-                    }
-
-                    if (string.IsNullOrWhiteSpace(imagePath) && !string.IsNullOrWhiteSpace(game.Icon))
-                    {
-                        imagePath = _playniteApi?.Database?.GetFullFilePath(game.Icon);
-                    }
-                }
-
-                GameImagePath = imagePath;
+                GameImagePath = ResolveGameImagePath(game);
 
                 var gameData = GetHydratedGameData();
                 var rawGameData = GetRawGameData();
