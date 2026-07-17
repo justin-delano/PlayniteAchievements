@@ -538,6 +538,7 @@ namespace PlayniteAchievements.Tests.StartPage
             options.ShowMetadataPlaytime = seed % 2 == 0;
             options.ShowMetadataRegion = seed % 2 != 0;
             options.ShowCompletionGlow = seed % 2 == 0;
+            options.ColorRarityColumnsByRarity = seed % 2 != 0;
             options.LastPlayedDateMode = (DateDisplayMode)(seed % 3);
             options.SortMode = (GameSummariesSortMode)(seed % 5);
             options.SortDescending = seed % 2 == 0;
@@ -551,6 +552,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual(seed % 2 == 0, options.ShowMetadataPlaytime);
             Assert.AreEqual(seed % 2 != 0, options.ShowMetadataRegion);
             Assert.AreEqual(seed % 2 == 0, options.ShowCompletionGlow);
+            Assert.AreEqual(seed % 2 != 0, options.ColorRarityColumnsByRarity);
             Assert.AreEqual((DateDisplayMode)(seed % 3), options.LastPlayedDateMode);
             Assert.AreEqual((GameSummariesSortMode)(seed % 5), options.SortMode);
             Assert.AreEqual(seed % 2 == 0, options.SortDescending);
