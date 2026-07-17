@@ -82,16 +82,20 @@ namespace PlayniteAchievements.Services.Friends
                 }
 
                 _invalidationVersion++;
+                // A version-mismatched snapshot can never be returned to a reader, so drop the
+                // reference immediately instead of pinning the full friend row set until the
+                // next successful build replaces it.
+                _snapshot = null;
             }
 
             SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
         }
 
         // Matches the overview/start-page projection warm: called once Playnite has finished
-        // starting so the shared friend snapshot reflects a populated game database. The theme
-        // integration constructor path usually has a whole-library build completed (or in
-        // flight) by then, so this coalesces instead of always rebuilding; see
-        // WarmAfterDelayAsync for the per-state behavior.
+        // starting so the shared friend snapshot reflects a populated game database. A build may
+        // already be in flight (e.g. a friends surface or friend-consuming theme requested one),
+        // so this coalesces instead of always rebuilding; see WarmAfterDelayAsync for the
+        // per-state behavior.
         public void Warm()
         {
             var generation = Interlocked.Increment(ref _warmGeneration);
@@ -180,11 +184,10 @@ namespace PlayniteAchievements.Services.Friends
                     return;
                 }
 
-                // The theme integration service requests a whole-library snapshot build during
-                // plugin construction, so by the time the post-start warm fires that build has
-                // usually completed (or is still running). Rebuilding here would repeat the
-                // multi-second friend cache load and hold the cache lock while the main view is
-                // coming up, so coalesce instead:
+                // A snapshot build may already have completed or be in flight (a friends
+                // surface or a friend-consuming theme requests one on demand). Rebuilding here
+                // would repeat the multi-second friend cache load and hold the cache lock while
+                // the main view is coming up, so coalesce instead:
                 // - build in flight: leave it untouched. Invalidating now would make the
                 //   awaiting consumer rebuild immediately, recreating the duplicate load.
                 // - completed build: mark it stale (it may have resolved game presentation
