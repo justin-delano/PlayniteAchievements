@@ -829,6 +829,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
                 _settings,
                 _logger);
+            _categoryViewModel.CategoryMetadataPersisted += CategoryViewModel_CategoryMetadataPersisted;
             _categoryControl = new ManageAchievementsCategoryTab(_categoryViewModel);
             CategoryHost.Content = _categoryControl;
         }
@@ -1027,6 +1028,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void CleanupCategory()
         {
+            if (_categoryViewModel != null)
+            {
+                _categoryViewModel.CategoryMetadataPersisted -= CategoryViewModel_CategoryMetadataPersisted;
+            }
+
             _categoryControl = null;
             _categoryViewModel = null;
 
@@ -1034,6 +1040,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
             {
                 CategoryHost.Content = null;
             }
+        }
+
+        private void CategoryViewModel_CategoryMetadataPersisted(object sender, EventArgs e)
+        {
+            _viewModel?.RefreshGameImage();
         }
 
         private void CleanupFilters()
