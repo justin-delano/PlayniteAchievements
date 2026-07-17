@@ -132,11 +132,19 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _setDynamicGameSummariesSortDirectionCommand;
         [DontSerialize]
+        private ICommand _setDynamicCategorySummariesFilterCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicCategorySummariesCommand;
+        [DontSerialize]
+        private ICommand _setDynamicCategorySummariesSortDirectionCommand;
+        [DontSerialize]
         private ICommand _resetDynamicAchievementsCommand;
         [DontSerialize]
         private ICommand _resetDynamicLibraryAchievementsCommand;
         [DontSerialize]
         private ICommand _resetDynamicGameSummariesCommand;
+        [DontSerialize]
+        private ICommand _resetDynamicCategorySummariesCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendScopeProviderCommand;
         [DontSerialize]
@@ -399,6 +407,27 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand SetDynamicCategorySummariesFilterCommand
+        {
+            get => _setDynamicCategorySummariesFilterCommand;
+            set => SetValue(ref _setDynamicCategorySummariesFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicCategorySummariesCommand
+        {
+            get => _sortDynamicCategorySummariesCommand;
+            set => SetValue(ref _sortDynamicCategorySummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicCategorySummariesSortDirectionCommand
+        {
+            get => _setDynamicCategorySummariesSortDirectionCommand;
+            set => SetValue(ref _setDynamicCategorySummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand ResetDynamicAchievementsCommand
         {
             get => _resetDynamicAchievementsCommand;
@@ -417,6 +446,13 @@ namespace PlayniteAchievements.Models
         {
             get => _resetDynamicGameSummariesCommand;
             set => SetValue(ref _resetDynamicGameSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand ResetDynamicCategorySummariesCommand
+        {
+            get => _resetDynamicCategorySummariesCommand;
+            set => SetValue(ref _resetDynamicCategorySummariesCommand, value);
         }
 
         [DontSerialize]
@@ -1256,6 +1292,88 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicGameSummariesSortDirectionOptions => ModernTheme.DynamicGameSummariesSortDirectionOptions;
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> DynamicCategorySummaries
+        {
+            get => ModernTheme.DynamicCategorySummaries;
+            set => ModernTheme.DynamicCategorySummaries = value;
+        }
+
+        [DontSerialize]
+        public bool HasCategorySummaries => ModernTheme.HasCategorySummaries;
+
+        [DontSerialize]
+        public string DynamicCategorySummariesFilterKey
+        {
+            get => ModernTheme.DynamicCategorySummariesFilterKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicCategorySummariesFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesFilterLabel => ModernTheme.DynamicCategorySummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortKey
+        {
+            get => ModernTheme.DynamicCategorySummariesSortKey ?? DynamicThemeViewKeys.Default;
+            set => ExecuteThemeCommand(SortDynamicCategorySummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortLabel => ModernTheme.DynamicCategorySummariesSortLabel ?? DynamicThemeViewKeys.Default;
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortDirectionKey
+        {
+            get => ModernTheme.DynamicCategorySummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set => ExecuteThemeCommand(SetDynamicCategorySummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesSortDirectionLabel => ModernTheme.DynamicCategorySummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public string DynamicCategorySummariesDefaultFilterKey
+        {
+            get => ModernTheme.DynamicCategorySummariesDefaultFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                ModernTheme.DynamicCategorySummariesDefaultFilterKey = value;
+                NotifyDynamicThemeDefaultsChanged(nameof(DynamicCategorySummariesDefaultFilterKey));
+            }
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesDefaultSortKey
+        {
+            get => ModernTheme.DynamicCategorySummariesDefaultSortKey ?? DynamicThemeViewKeys.Default;
+            set
+            {
+                ModernTheme.DynamicCategorySummariesDefaultSortKey = value;
+                NotifyDynamicThemeDefaultsChanged(nameof(DynamicCategorySummariesDefaultSortKey));
+            }
+        }
+
+        [DontSerialize]
+        public string DynamicCategorySummariesDefaultSortDirectionKey
+        {
+            get => ModernTheme.DynamicCategorySummariesDefaultSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set
+            {
+                ModernTheme.DynamicCategorySummariesDefaultSortDirectionKey = value;
+                NotifyDynamicThemeDefaultsChanged(nameof(DynamicCategorySummariesDefaultSortDirectionKey));
+            }
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesFilterOptions => ModernTheme.DynamicCategorySummariesFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesSortOptions => ModernTheme.DynamicCategorySummariesSortOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicCategorySummariesSortDirectionOptions => ModernTheme.DynamicCategorySummariesSortDirectionOptions;
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicGameProgressFilterOptions => ModernTheme.DynamicGameProgressFilterOptions;
