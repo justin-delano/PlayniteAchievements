@@ -126,6 +126,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string CategoryArtPath { get; set; }
 
+        public int CategoryOrderIndex { get; set; } = int.MaxValue;
+
         public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
 
         public System.Windows.Input.ICommand FilterDynamicLibraryAchievementsByProviderCommand { get; set; }
@@ -195,6 +197,8 @@ namespace PlayniteAchievements.Models.Achievements
         public List<string> AchievementCategoryOrder { get; set; }
 
         public Dictionary<string, PlayniteAchievements.Models.Settings.CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
+
+        public PlayniteAchievements.Models.Settings.GameSummaryCategoryData GameSummaryCategory { get; set; }
 
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
 
