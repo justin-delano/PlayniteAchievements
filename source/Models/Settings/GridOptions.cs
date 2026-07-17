@@ -356,6 +356,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showMetadataPlaytime = true;
         private bool _showMetadataRegion = true;
         private bool _showCompletionGlow = true;
+        private bool _colorRarityColumnsByRarity;
         private DateDisplayMode _lastPlayedDateMode = DateDisplayMode.DateAndTime;
         private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
         private bool _sortDescending = true;
@@ -390,6 +391,14 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _showCompletionGlow, value);
         }
 
+        // Colors the progress-footer badge count labels with the tier's configured rarity color,
+        // mirroring the achievement grids' ColorRarityColumnsByRarity option.
+        public bool ColorRarityColumnsByRarity
+        {
+            get => _colorRarityColumnsByRarity;
+            set => SetValue(ref _colorRarityColumnsByRarity, value);
+        }
+
         public DateDisplayMode LastPlayedDateMode
         {
             get => _lastPlayedDateMode;
@@ -417,6 +426,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.ShowMetadataPlaytime = ShowMetadataPlaytime;
             clone.ShowMetadataRegion = ShowMetadataRegion;
             clone.ShowCompletionGlow = ShowCompletionGlow;
+            clone.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
             clone.LastPlayedDateMode = LastPlayedDateMode;
             clone.SortMode = SortMode;
             clone.SortDescending = SortDescending;
