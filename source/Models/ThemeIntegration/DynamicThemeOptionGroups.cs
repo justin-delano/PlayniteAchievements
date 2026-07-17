@@ -167,6 +167,21 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             DynamicThemeViewKeys.Notes
         };
 
+        public static readonly string[] CategorySummaryFilterKeys =
+        {
+            DynamicThemeViewKeys.All,
+            DynamicThemeViewKeys.Completed,
+            DynamicThemeViewKeys.Incomplete
+        };
+
+        // Default preserves the builder's order (the game's custom category order).
+        public static readonly string[] CategorySummarySortKeys =
+        {
+            DynamicThemeViewKeys.Default,
+            DynamicThemeViewKeys.Name,
+            DynamicThemeViewKeys.Progress
+        };
+
         public static readonly string[] GameSummarySortKeys =
         {
             DynamicThemeViewKeys.Name,
@@ -219,6 +234,12 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         public static readonly IReadOnlyDictionary<string, string> GameSummaryFilterKeyMap =
             CreateCanonicalKeyMap(GameSummaryFilterKeys);
+
+        public static readonly IReadOnlyDictionary<string, string> CategorySummaryFilterKeyMap =
+            CreateCanonicalKeyMap(CategorySummaryFilterKeys);
+
+        public static readonly IReadOnlyDictionary<string, string> CategorySummarySortKeyMap =
+            CreateCanonicalKeyMap(CategorySummarySortKeys);
 
         public static readonly IReadOnlyDictionary<string, string> FriendSummaryFilterKeyMap =
             CreateCanonicalKeyMap(FriendSummaryFilterKeys);
