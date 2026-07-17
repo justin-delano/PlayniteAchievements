@@ -148,6 +148,9 @@ namespace PlayniteAchievements.Providers.Manual
 
             await EnsureManualSourceAuthenticatedAsync(source, link, cancel).ConfigureAwait(false);
 
+            // Null when the source cannot resolve a platform; the game then displays as Manual.
+            var providerPlatformKey = source.ResolveProviderPlatformKey(link.SourceGameId);
+
             // Fetch achievements directly as AchievementDetail list
             var achievements = await source.GetAchievementsAsync(link.SourceGameId, language, cancel);
             if (achievements == null || achievements.Count == 0)
@@ -157,6 +160,7 @@ namespace PlayniteAchievements.Providers.Manual
                 {
                     LastUpdatedUtc = DateTime.UtcNow,
                     ProviderKey = ProviderKey,
+                    ProviderPlatformKey = providerPlatformKey,
                     LibrarySourceName = game.PluginId.ToString(),
                     HasAchievements = false,
                     GameName = game.Name,
@@ -204,6 +208,7 @@ namespace PlayniteAchievements.Providers.Manual
             {
                 LastUpdatedUtc = DateTime.UtcNow,
                 ProviderKey = ProviderKey,
+                ProviderPlatformKey = providerPlatformKey,
                 LibrarySourceName = game.PluginId.ToString(),
                 HasAchievements = true,
                 GameName = game.Name,
