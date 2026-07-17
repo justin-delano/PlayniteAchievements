@@ -68,6 +68,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private string _categoryImageStatusText;
         private bool _categoryImageStatusIsError;
 
+        /// <summary>
+        /// Raised after category metadata (order, art overrides, summary-category selection)
+        /// has been written to the custom data store, so the hosting window can refresh
+        /// state that depends on it (e.g. the game cover image).
+        /// </summary>
+        public event EventHandler CategoryMetadataPersisted;
+
         public ManageAchievementsCategoryViewModel(
             Guid gameId,
             AchievementOverridesService achievementOverridesService,
@@ -563,6 +570,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
             var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
             _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, Array.Empty<string>(), images, summaryCategory);
+            RaiseCategoryMetadataPersisted();
             RefreshCategoryRows();
             return true;
         }
@@ -601,6 +609,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 order,
                 new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase),
                 gameSummaryCategory: null);
+            RaiseCategoryMetadataPersisted();
             RefreshCategoryRows();
             return true;
         }
@@ -1414,6 +1423,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 categoryOrder,
                 imageOverrides,
                 summaryCategory);
+            RaiseCategoryMetadataPersisted();
             HasCustomCategoryOrder = categoryOrder.Count > 0;
             HasCustomCategoryArt = imageOverrides.Count > 0;
             HasCustomSummaryCategory = summaryCategory != null;
@@ -1504,6 +1514,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, nextOrder, nextImages, summaryCategory);
+            RaiseCategoryMetadataPersisted();
+        }
+
+        private void RaiseCategoryMetadataPersisted()
+        {
+            CategoryMetadataPersisted?.Invoke(this, EventArgs.Empty);
         }
 
         private void RefreshCategoryMetadataState()
