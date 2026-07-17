@@ -87,6 +87,12 @@ namespace PlayniteAchievements.Services.Cache
         private int _friendCacheInvalidationBatchDepth;
         private bool _friendCacheInvalidationBatchDirty;
 
+        // Bumped under _sync on every in-memory mutation. LoadAllGameDataFast reads the
+        // whole-library snapshot off _sync, so it uses this to detect writes that landed during
+        // that read and skip stale-entry pruning (which could otherwise drop a freshly written
+        // game absent from the snapshot).
+        private long _writeGeneration;
+
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated;
         public event EventHandler<CacheDeltaEventArgs> CacheDeltaUpdated;
         public event EventHandler CacheInvalidated;
@@ -297,6 +303,7 @@ namespace PlayniteAchievements.Services.Cache
         {
             _userAchievements = new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
             _lruOrder = new LinkedList<string>();
+            _writeGeneration++;
         }
 
         private bool TryGetMemoryGameData_Locked(string key, out GameAchievementData data)
@@ -332,6 +339,7 @@ namespace PlayniteAchievements.Services.Cache
 
             var normalized = UserKey(key);
             var copy = CloneGameData(data);
+            _writeGeneration++;
             if (_userAchievements.TryGetValue(normalized, out var existing) && existing != null)
             {
                 existing.Data = copy;
@@ -380,6 +388,7 @@ namespace PlayniteAchievements.Services.Cache
                 }
 
                 _userAchievements.Remove(normalized);
+                _writeGeneration++;
             }
         }
 
@@ -453,6 +462,17 @@ namespace PlayniteAchievements.Services.Cache
                 throw new InvalidOperationException(
                     $"Cache manager failed to initialize (phase={operationPhase}).",
                     ex);
+            }
+        }
+
+        // Briefly takes _sync to initialize the store and surface any initialization failure,
+        // then releases it so the caller can run a long read-only query on the store's read
+        // connection without blocking short per-game reads.
+        private void EnsureReadyForRead(string operationPhase)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked(operationPhase);
             }
         }
 
@@ -595,13 +615,27 @@ namespace PlayniteAchievements.Services.Cache
 
                 try
                 {
+                    long startGeneration;
                     lock (_sync)
                     {
                         EnsureReady_Locked("LoadAllGameDataFast");
                         scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
+                        startGeneration = _writeGeneration;
+                    }
 
-                        var records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
-                                      new List<KeyValuePair<string, GameAchievementData>>();
+                    // Read the whole-library snapshot off _sync (on the store's read connection)
+                    // so this multi-second scan does not stall short per-game grid reads.
+                    var records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
+                                  new List<KeyValuePair<string, GameAchievementData>>();
+
+                    lock (_sync)
+                    {
+                        // A write that landed while the snapshot was read may have added a game
+                        // absent from it; skip pruning in that case so the freshly written game
+                        // is kept. The per-entry timestamp check below still prevents clobbering
+                        // newer in-memory data with the older snapshot.
+                        var pruneStaleEntries = _writeGeneration == startGeneration;
+
                         var result = new List<GameAchievementData>(records.Count);
                         var validKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -640,7 +674,11 @@ namespace PlayniteAchievements.Services.Cache
                             result.Add(CloneGameData(dbData));
                         }
 
-                        RemoveStaleMemoryEntries_Locked(validKeys);
+                        if (pruneStaleEntries)
+                        {
+                            RemoveStaleMemoryEntries_Locked(validKeys);
+                        }
+
                         return result;
                     }
                 }
@@ -671,8 +709,11 @@ namespace PlayniteAchievements.Services.Cache
                     {
                         EnsureReady_Locked("LoadCachedSummaryDataFast");
                         scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
-                        return _store.LoadCachedSummaryData(recentAchievementDetailLimit) ?? new CachedSummaryData();
                     }
+
+                    // Read off _sync (on the store's read connection) so a concurrent grid read
+                    // is not blocked while this summary query runs.
+                    return _store.LoadCachedSummaryData(recentAchievementDetailLimit) ?? new CachedSummaryData();
                 }
                 catch (Exception ex)
                 {
@@ -1179,43 +1220,30 @@ namespace PlayniteAchievements.Services.Cache
 
         FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewData(int recentLimit)
         {
-            lock (_sync)
-            {
-                EnsureReady_Locked("LoadFriendsOverviewData");
-                return _store.LoadFriendsOverviewData(recentLimit) ??
-                       new FriendsOverviewData();
-            }
+            EnsureReadyForRead("LoadFriendsOverviewData");
+            return _store.LoadFriendsOverviewData(recentLimit) ??
+                   new FriendsOverviewData();
         }
 
         FriendsOverviewData IFriendCacheManager.LoadFriendGameAchievementData(Guid playniteGameId)
         {
-            lock (_sync)
-            {
-                EnsureReady_Locked("LoadFriendGameAchievementData");
-                return _store.LoadFriendGameAchievementData(playniteGameId) ??
-                       new FriendsOverviewData();
-            }
+            EnsureReadyForRead("LoadFriendGameAchievementData");
+            return _store.LoadFriendGameAchievementData(playniteGameId) ??
+                   new FriendsOverviewData();
         }
 
         FriendsOverviewData IFriendCacheManager.LoadFriendRecentUnlocksData(int recentLimit)
         {
-            lock (_sync)
-            {
-                EnsureReady_Locked("LoadFriendRecentUnlocksData");
-                return _store.LoadFriendRecentUnlocksData(recentLimit) ??
-                       new FriendsOverviewData();
-            }
+            EnsureReadyForRead("LoadFriendRecentUnlocksData");
+            return _store.LoadFriendRecentUnlocksData(recentLimit) ??
+                   new FriendsOverviewData();
         }
 
         IReadOnlyList<CurrentUserGameLabel> IFriendCacheManager.LoadCurrentUserGameLabels()
         {
-            List<KeyValuePair<string, GameAchievementData>> records;
-            lock (_sync)
-            {
-                EnsureReady_Locked("LoadCurrentUserGameLabels");
-                records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
+            EnsureReadyForRead("LoadCurrentUserGameLabels");
+            var records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
                           new List<KeyValuePair<string, GameAchievementData>>();
-            }
 
             var labels = new List<CurrentUserGameLabel>(records.Count);
             for (var i = 0; i < records.Count; i++)
