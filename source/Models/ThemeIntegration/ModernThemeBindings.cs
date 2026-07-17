@@ -1178,24 +1178,46 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => ReplaceCollection(_dynamicFriendGameActivityFilterOptions, value, nameof(DynamicFriendGameActivityFilterOptions));
         }
 
+        /// <summary>
+        /// Invoked when a consumer reads one of the friend data properties. The theme
+        /// integration service uses this to build the friend runtime state on demand instead
+        /// of eagerly retaining it for themes that never bind friend data.
+        /// </summary>
+        [DontSerialize]
+        internal Action FriendDataRequested { get; set; }
+
+        private void NotifyFriendDataRequested() => FriendDataRequested?.Invoke();
+
         [DontSerialize]
         public ObservableCollection<FriendSummaryItem> DynamicFriendSummaries
         {
-            get => _dynamicFriendSummaries;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendSummaries;
+            }
             set => ReplaceCollection(_dynamicFriendSummaries, value, nameof(DynamicFriendSummaries));
         }
 
         [DontSerialize]
         public ObservableCollection<FriendGameAchievementSummary> DynamicFriendGameSummaries
         {
-            get => _dynamicFriendGameSummaries;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendGameSummaries;
+            }
             set => ReplaceCollection(_dynamicFriendGameSummaries, value, nameof(DynamicFriendGameSummaries));
         }
 
         [DontSerialize]
         public ObservableCollection<FriendAchievementDisplayItem> DynamicFriendAchievements
         {
-            get => _dynamicFriendAchievements;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendAchievements;
+            }
             set => ReplaceCollection(_dynamicFriendAchievements, value, nameof(DynamicFriendAchievements));
         }
 
@@ -1207,7 +1229,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         public FriendSummaryItem DynamicFriendScopeSummary
         {
-            get => _dynamicFriendScopeSummary;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendScopeSummary;
+            }
             set => SetValue(ref _dynamicFriendScopeSummary, value);
         }
 
@@ -1382,21 +1408,33 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicFriendScopeProviderOptions
         {
-            get => _dynamicFriendScopeProviderOptions;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendScopeProviderOptions;
+            }
             set => ReplaceCollection(_dynamicFriendScopeProviderOptions, value, nameof(DynamicFriendScopeProviderOptions));
         }
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicFriendScopeUserOptions
         {
-            get => _dynamicFriendScopeUserOptions;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendScopeUserOptions;
+            }
             set => ReplaceCollection(_dynamicFriendScopeUserOptions, value, nameof(DynamicFriendScopeUserOptions));
         }
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicFriendScopeGameOptions
         {
-            get => _dynamicFriendScopeGameOptions;
+            get
+            {
+                NotifyFriendDataRequested();
+                return _dynamicFriendScopeGameOptions;
+            }
             set => ReplaceCollection(_dynamicFriendScopeGameOptions, value, nameof(DynamicFriendScopeGameOptions));
         }
 
