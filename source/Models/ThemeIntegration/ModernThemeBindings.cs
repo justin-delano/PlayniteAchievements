@@ -534,7 +534,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                         showHiddenSuffix,
                         showLockedIcon,
                         ResolveUseSeparateLockedIcons(persisted, gameId, useSeparateLockedIcons),
-                        showRarityBar);
+                        showRarityBar,
+                        categoryOrderIndex: achievement.CategoryOrderIndex);
                     items.Add(item);
                 }
 
@@ -576,7 +577,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                     showHiddenSuffix,
                     showLockedIcon,
                     ResolveUseSeparateLockedIcons(persisted, gameId, useSeparateLockedIconsWhenAvailable),
-                    showRarityBar);
+                    showRarityBar,
+                    categoryOrderIndex: achievement.CategoryOrderIndex);
                 items.Add(item);
             }
 
