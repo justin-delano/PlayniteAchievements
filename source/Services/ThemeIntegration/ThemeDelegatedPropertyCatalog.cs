@@ -257,7 +257,21 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.DynamicAchievementTrophyFilterOptions),
             nameof(PlayniteAchievementsSettings.DynamicAchievementCategoryTypeFilterOptions),
             nameof(PlayniteAchievementsSettings.DynamicAchievementCategoryLabelFilterOptions),
-            nameof(PlayniteAchievementsSettings.DynamicAchievementCustomizationFilterOptions)
+            nameof(PlayniteAchievementsSettings.DynamicAchievementCustomizationFilterOptions),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummaries),
+            nameof(PlayniteAchievementsSettings.HasCategorySummaries),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesFilterLabel),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortDirectionLabel),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesDefaultFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesDefaultSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesDefaultSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesFilterOptions),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortOptions),
+            nameof(PlayniteAchievementsSettings.DynamicCategorySummariesSortDirectionOptions)
         };
 
         public static readonly string[] SingleGameLegacy =
