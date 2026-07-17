@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Views.Helpers;
 
@@ -80,6 +82,13 @@ namespace PlayniteAchievements.Views.Settings.Display
             if (DisplayPreviewProperties.AffectsMockPreviews(e.PropertyName))
             {
                 RefreshVisibilityPreview();
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.ShowCompletedProgressColoring))
+            {
+                RarityAppearanceHelper.ApplyCompletedProgressFillResource(
+                    Application.Current?.Resources,
+                    _settings?.Persisted);
             }
         }
 
