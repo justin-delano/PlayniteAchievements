@@ -377,6 +377,17 @@ namespace PlayniteAchievements.Services.Database
         internal SQLiteDatabase _db;
         private bool _initialized;
 
+        // Second, read-only connection used for long read-only queries (friends overview,
+        // whole-library projection, summaries). WAL mode allows a reader to run concurrently
+        // with the read-write connection, so these queries no longer serialize behind _sync and
+        // stall short per-game grid reads. Guarded by its own lock; never held together with
+        // _sync (WithReadDb runs EnsureInitialized before taking _readSync, and the disposal
+        // paths take the two locks separately).
+        private readonly object _readSync = new object();
+        private SQLiteDatabase _readDb;
+        private bool _readInitialized;
+        private const int ReadConnectionBusyTimeoutMs = 5000;
+
         public string DatabasePath { get; }
 
         public SqlNadoCacheStore(PlayniteAchievementsPlugin plugin, ILogger logger, string baseDir)
@@ -594,7 +605,7 @@ namespace PlayniteAchievements.Services.Database
 
         public List<KeyValuePair<string, GameAchievementData>> LoadAllCurrentUserGameDataByCacheKey()
         {
-            return WithDb(db =>
+            return WithReadDb(db =>
             {
                 var progressRows = db.Load<ProgressGameJoinRow>(
                     @"WITH LatestProgress AS (
@@ -2731,7 +2742,7 @@ namespace PlayniteAchievements.Services.Database
 
         public FriendsOverviewData LoadFriendsOverviewData(int recentLimit)
         {
-            return WithDb(db =>
+            return WithReadDb(db =>
             {
                 var data = new FriendsOverviewData();
 
@@ -2775,7 +2786,7 @@ namespace PlayniteAchievements.Services.Database
                 return new FriendsOverviewData();
             }
 
-            return WithDb(db =>
+            return WithReadDb(db =>
             {
                 var data = new FriendsOverviewData();
                 var presentationCache = new Dictionary<Guid, GamePresentation>();
@@ -2816,7 +2827,7 @@ namespace PlayniteAchievements.Services.Database
 
         public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit)
         {
-            return WithDb(db =>
+            return WithReadDb(db =>
             {
                 var data = new FriendsOverviewData();
                 var presentationCache = new Dictionary<Guid, GamePresentation>();
@@ -5421,6 +5432,10 @@ namespace PlayniteAchievements.Services.Database
 
         public void ClearCacheData()
         {
+            // Close the read-only connection first so it does not hold a handle to the file
+            // being deleted below. Done before the _sync block to avoid nesting the two locks.
+            DisposeReadConnection();
+
             lock (_sync)
             {
                 // Close the database connection
@@ -5601,6 +5616,73 @@ namespace PlayniteAchievements.Services.Database
             {
                 EnsureInitializedLocked();
                 action(_db);
+            }
+        }
+
+        // Runs a read-only query on the dedicated read connection, off the _sync lock. Falls
+        // back to default(T) if the connection cannot be opened or the query fails (e.g. the
+        // database file is being cleared concurrently) so read callers degrade to empty results
+        // rather than throwing.
+        internal T WithReadDb<T>(Func<SQLiteDatabase, T> action)
+        {
+            if (action == null)
+            {
+                return default;
+            }
+
+            // Ensure the read-write connection has created the database file, WAL and shared
+            // memory before the read-only connection opens against them. Done outside _readSync
+            // so the two locks are never held simultaneously.
+            EnsureInitialized();
+
+            lock (_readSync)
+            {
+                try
+                {
+                    EnsureReadConnectionLocked();
+                    return action(_readDb);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Read-only cache query failed; returning empty result.");
+                    return default;
+                }
+            }
+        }
+
+        private void EnsureReadConnectionLocked()
+        {
+            if (_readInitialized && _readDb != null)
+            {
+                return;
+            }
+
+            _readDb = new SQLiteDatabase(
+                DatabasePath,
+                SQLiteOpenOptions.SQLITE_OPEN_READONLY |
+                SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX);
+            _readDb.EnableStatementsCache = true;
+            _readDb.BusyTimeout = ReadConnectionBusyTimeoutMs;
+            _readInitialized = true;
+        }
+
+        private void DisposeReadConnection()
+        {
+            lock (_readSync)
+            {
+                if (_readDb is IDisposable disposable)
+                {
+                    try
+                    {
+                        disposable.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                _readDb = null;
+                _readInitialized = false;
             }
         }
 
@@ -6394,6 +6476,8 @@ namespace PlayniteAchievements.Services.Database
 
         public void Dispose()
         {
+            DisposeReadConnection();
+
             lock (_sync)
             {
                 _cachedCurrentUsersByProvider.Clear();

@@ -99,7 +99,7 @@ namespace PlayniteAchievements.Services.Database
 
         public CachedSummaryData LoadCachedSummaryData(int recentAchievementDetailLimit = 0)
         {
-            return _store.WithDb(db =>
+            return _store.WithReadDb(db =>
             {
                 var gameRows = LoadCachedGameSummaryRows(db);
                 var scoreTotalsByCacheKey = LoadCachedScoreTotals(db, unlockedOnly: true);

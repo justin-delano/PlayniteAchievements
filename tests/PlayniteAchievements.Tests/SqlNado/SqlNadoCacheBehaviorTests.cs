@@ -60,6 +60,72 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
+        public void ReadOnlyConnection_ReadsCommittedWritesConcurrentlyUnderWal()
+        {
+            // Validates the assumption behind the store's dedicated read connection: a second
+            // read-only connection, opened while a read-write connection is live, can read the
+            // database under WAL and sees writes the read-write connection commits afterward.
+            var path = Path.Combine(Path.GetTempPath(), "playach-sqlnado-ro-" + Guid.NewGuid().ToString("N") + ".db");
+            try
+            {
+                using (var rw = new SQLiteDatabase(
+                    path,
+                    SQLiteOpenOptions.SQLITE_OPEN_READWRITE |
+                    SQLiteOpenOptions.SQLITE_OPEN_CREATE |
+                    SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX))
+                {
+                    rw.ExecuteNonQuery("PRAGMA journal_mode = WAL;");
+                    rw.ExecuteNonQuery(
+                        @"CREATE TABLE Probe (
+                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            Value INTEGER NOT NULL
+                          );");
+                    rw.ExecuteNonQuery("INSERT INTO Probe (Value) VALUES (?);", 1L);
+
+                    using (var ro = new SQLiteDatabase(
+                        path,
+                        SQLiteOpenOptions.SQLITE_OPEN_READONLY |
+                        SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX))
+                    {
+                        ro.BusyTimeout = 5000;
+
+                        Assert.AreEqual(1L, ro.ExecuteScalar<long>("SELECT COUNT(*) FROM Probe;"));
+
+                        // A commit on the read-write connection is visible to the read-only
+                        // connection's next read.
+                        rw.ExecuteNonQuery("INSERT INTO Probe (Value) VALUES (?);", 2L);
+                        Assert.AreEqual(2L, ro.ExecuteScalar<long>("SELECT COUNT(*) FROM Probe;"));
+
+                        // A read-only connection cannot write: the insert is rejected and the
+                        // row count is unchanged.
+                        var writeRejected = false;
+                        try
+                        {
+                            ro.ExecuteNonQuery("INSERT INTO Probe (Value) VALUES (?);", 3L);
+                        }
+                        catch
+                        {
+                            writeRejected = true;
+                        }
+
+                        Assert.IsTrue(writeRejected, "Read-only connection should reject writes.");
+                        Assert.AreEqual(2L, ro.ExecuteScalar<long>("SELECT COUNT(*) FROM Probe;"));
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var file in new[] { path, path + "-wal", path + "-shm" })
+                {
+                    if (File.Exists(file))
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
         public void ComputeStaleDefinitionIds_ReturnsMissingOnly_CaseInsensitive()
         {
             var existing = new Dictionary<string, long>
