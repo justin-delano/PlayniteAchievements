@@ -2761,20 +2761,9 @@ namespace PlayniteAchievements.Services.Database
 
                 using (PerfScope.Start(_logger, "Friends.LoadAchievementRows", thresholdMs: 15))
                 data.AllAchievements = MapFriendAchievementRows(LoadFriendAllAchievementRows(db), presentationCache);
-                data.AllUnlockedAchievements = data.AllAchievements
-                    .Where(item => item?.Unlocked == true)
-                    .ToList();
-
-                // Recent unlocks are the time-stamped subset of all unlocked achievements - derive
-                // them in memory (with an explicit unlock-time sort, since the full load is in
-                // definition order) rather than re-running the identical friend/achievement join.
-                var recentUnlocked = data.AllUnlockedAchievements
-                    .Where(item => item.UnlockTimeUtc.HasValue)
-                    .OrderByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue);
-                data.RecentUnlocks = (recentLimit > 0 ? recentUnlocked.Take(recentLimit) : recentUnlocked).ToList();
 
                 using (PerfScope.Start(_logger, "Friends.ApplySummaryScores", thresholdMs: 15))
-                ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
+                FriendsOverviewDerivations.Apply(data, recentLimit);
                 return data;
             });
         }
@@ -2811,16 +2800,49 @@ namespace PlayniteAchievements.Services.Database
                         unlockedOnly: false,
                         playniteGameId: playniteGameId),
                     presentationCache);
-                data.AllUnlockedAchievements = data.AllAchievements
-                    .Where(item => item?.Unlocked == true)
-                    .ToList();
-                data.RecentUnlocks = data.AllUnlockedAchievements
-                    .Where(item => item.UnlockTimeUtc.HasValue)
-                    .OrderByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue)
-                    .ToList();
-
                 using (PerfScope.Start(_logger, "Friends.ApplyTargetGameSummaryScores", thresholdMs: 15))
-                ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
+                FriendsOverviewDerivations.Apply(data, recentLimit: 0);
+                return data;
+            });
+        }
+
+        /// <summary>
+        /// Loads the data needed to patch a retained friends-overview data set: the three cheap
+        /// lists reloaded in full (friend summaries, game summaries, ownership links — keeping
+        /// all cross-friend aggregates authoritative from SQL) plus achievement display rows for
+        /// ONLY the given scopes. The caller splices the scoped rows into its retained
+        /// AllAchievements and re-runs <see cref="FriendsOverviewDerivations"/>; the derived
+        /// lists are left empty here.
+        /// </summary>
+        public FriendsOverviewData LoadFriendsOverviewPatchData(IReadOnlyList<FriendCacheChange> reloadScopes)
+        {
+            return WithReadDb(db =>
+            {
+                var data = new FriendsOverviewData();
+                var presentationCache = new Dictionary<Guid, GamePresentation>();
+
+                using (PerfScope.Start(_logger, "Friends.LoadSummaryRows", thresholdMs: 15))
+                data.Friends = MapFriendSummaryRows(LoadFriendSummaryRows(db));
+
+                using (PerfScope.Start(_logger, "Friends.LoadGameSummaryRows", thresholdMs: 15))
+                data.Games = MapFriendGameSummaryRows(LoadFriendGameSummaryRows(db), presentationCache);
+
+                using (PerfScope.Start(_logger, "Friends.LoadGameLinkRows", thresholdMs: 15))
+                data.FriendGameLinks = MapFriendGameLinkRows(LoadFriendGameLinkRows(db));
+
+                if (reloadScopes != null && reloadScopes.Count > 0)
+                {
+                    using (PerfScope.Start(_logger, "Friends.LoadScopedAchievementRows", thresholdMs: 15))
+                    data.AllAchievements = MapFriendAchievementRows(
+                        LoadFriendAchievementRows(
+                            db,
+                            0,
+                            requireUnlockTime: false,
+                            unlockedOnly: false,
+                            reloadScopes: reloadScopes),
+                        presentationCache);
+                }
+
                 return data;
             });
         }
@@ -2845,88 +2867,9 @@ namespace PlayniteAchievements.Services.Database
                 data.AllAchievements = data.RecentUnlocks;
                 data.AllUnlockedAchievements = data.RecentUnlocks;
                 data.Friends = BuildFriendSummariesFromAchievements(data.RecentUnlocks);
-                ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
+                FriendsOverviewDerivations.ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
                 return data;
             });
-        }
-
-        private static void ApplyFriendSummaryScores(
-            IEnumerable<FriendSummaryItem> friends,
-            IEnumerable<FriendAchievementDisplayItem> unlockedAchievements)
-        {
-            var friendList = friends?.Where(friend => friend != null).ToList();
-            if (friendList == null || friendList.Count == 0)
-            {
-                return;
-            }
-
-            var achievementsByFriend = new Dictionary<string, List<FriendAchievementDisplayItem>>(
-                StringComparer.OrdinalIgnoreCase);
-            foreach (var achievement in unlockedAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
-            {
-                var key = BuildFriendScoreKey(achievement?.ProviderKey, achievement?.FriendExternalUserId);
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    continue;
-                }
-
-                if (!achievementsByFriend.TryGetValue(key, out var list))
-                {
-                    list = new List<FriendAchievementDisplayItem>();
-                    achievementsByFriend[key] = list;
-                }
-
-                list.Add(achievement);
-            }
-
-            foreach (var friend in friendList)
-            {
-                if (achievementsByFriend.TryGetValue(
-                        BuildFriendScoreKey(friend.ProviderKey, friend.ExternalUserId),
-                        out var friendAchievements))
-                {
-                    // Reuse the shared accumulator so per-friend scores, rarity, and trophy counts
-                    // stay consistent with the per-game friend path in
-                    // FriendOverviewProjection.BuildSelectedFriendGameSummary. Every row counts
-                    // (no cross-game dedup) to preserve UnlockedAchievementsCount semantics.
-                    var stats = AchievementStatsAccumulator.FromDisplayItems(
-                        friendAchievements,
-                        treatItemsAsUnlocked: true);
-                    friend.CollectionScore = stats.CollectionScore;
-                    friend.PrestigeScore = stats.PrestigeScore;
-                    friend.CommonCount = stats.CommonCount;
-                    friend.UncommonCount = stats.UncommonCount;
-                    friend.RareCount = stats.RareCount;
-                    friend.UltraRareCount = stats.UltraRareCount;
-                    friend.TrophyPlatinumCount = stats.TrophyPlatinumCount;
-                    friend.TrophyGoldCount = stats.TrophyGoldCount;
-                    friend.TrophySilverCount = stats.TrophySilverCount;
-                    friend.TrophyBronzeCount = stats.TrophyBronzeCount;
-                }
-
-                friend.CollectionLevel = GetDisplayLevel(AchievementLevelCalculator.CalculateModern(friend.CollectionScore));
-                friend.PrestigeLevel = GetDisplayLevel(AchievementLevelCalculator.CalculateModern(friend.PrestigeScore));
-            }
-        }
-
-        private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)
-        {
-            if (snapshot == null)
-            {
-                return 0;
-            }
-
-            return snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level;
-        }
-
-        private static string BuildFriendScoreKey(string providerKey, string externalUserId)
-        {
-            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
-            {
-                return null;
-            }
-
-            return providerKey.Trim() + "\u001f" + externalUserId.Trim();
         }
 
         private static string GetFriendSource(string providerKey) =>
@@ -4475,7 +4418,7 @@ namespace PlayniteAchievements.Services.Database
                                       !string.IsNullOrWhiteSpace(achievement.ProviderKey) &&
                                       !string.IsNullOrWhiteSpace(achievement.FriendExternalUserId))
                 .GroupBy(
-                    achievement => BuildFriendScoreKey(achievement.ProviderKey, achievement.FriendExternalUserId),
+                    achievement => FriendsOverviewDerivations.BuildFriendScoreKey(achievement.ProviderKey, achievement.FriendExternalUserId),
                     StringComparer.OrdinalIgnoreCase)
                 .Select(group =>
                 {
@@ -4829,7 +4772,8 @@ namespace PlayniteAchievements.Services.Database
             int recentLimit,
             bool requireUnlockTime,
             bool unlockedOnly,
-            Guid? playniteGameId = null)
+            Guid? playniteGameId = null,
+            IReadOnlyList<FriendCacheChange> reloadScopes = null)
         {
             var args = new List<object>();
             var sql = new StringBuilder(
@@ -4906,6 +4850,64 @@ namespace PlayniteAchievements.Services.Database
             {
                 sql.Append(" AND g.PlayniteGameId IS NOT NULL AND TRIM(g.PlayniteGameId) <> '' AND LOWER(g.PlayniteGameId) = LOWER(?)");
                 args.Add(playniteGameId.Value.ToString("D"));
+            }
+
+            if (reloadScopes != null && reloadScopes.Count > 0)
+            {
+                // Restrict rows to the changed (provider [, friend], game) scopes. A scope
+                // without a friend covers every friend of that game (definition-level changes).
+                var scopeSql = new List<string>();
+                foreach (var scope in reloadScopes)
+                {
+                    if (scope == null)
+                    {
+                        continue;
+                    }
+
+                    var gameConditions = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(scope.ProviderGameKey))
+                    {
+                        gameConditions.Add("LOWER(g.ProviderGameKey) = LOWER(?)");
+                    }
+
+                    if (scope.AppId > 0)
+                    {
+                        gameConditions.Add("g.ProviderGameId = ?");
+                    }
+
+                    if (gameConditions.Count == 0)
+                    {
+                        // Not translatable to a game filter; callers exclude such kinds before
+                        // requesting a patch load.
+                        continue;
+                    }
+
+                    var conditions = new List<string> { "LOWER(g.ProviderKey) = LOWER(?)" };
+                    args.Add(scope.ProviderKey ?? string.Empty);
+                    if (!string.IsNullOrWhiteSpace(scope.ExternalUserId))
+                    {
+                        conditions.Add("LOWER(u.ExternalUserId) = LOWER(?)");
+                        args.Add(scope.ExternalUserId);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(scope.ProviderGameKey))
+                    {
+                        args.Add(scope.ProviderGameKey);
+                    }
+
+                    if (scope.AppId > 0)
+                    {
+                        args.Add(scope.AppId);
+                    }
+
+                    conditions.Add("(" + string.Join(" OR ", gameConditions) + ")");
+                    scopeSql.Add("(" + string.Join(" AND ", conditions) + ")");
+                }
+
+                sql.Append(scopeSql.Count > 0
+                    // No translatable scope must return nothing, never everything.
+                    ? " AND (" + string.Join(" OR ", scopeSql) + ")"
+                    : " AND 1 = 0");
             }
 
             // Recent-unlock queries stay unlock-time ordered so LIMIT takes the newest rows.
