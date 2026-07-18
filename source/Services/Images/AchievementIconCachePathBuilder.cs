@@ -18,6 +18,8 @@ namespace PlayniteAchievements.Services.Images
         private const string FallbackStem = "achievement";
         private const int MaxStemLength = 96;
         private const string CustomFolderName = "custom";
+        private const string ModeFolderName = "original";
+        internal const string LegacyCompressedModeFolderName = "128";
         internal const string DefaultCategoryFolderName = "category_defaults";
         private static readonly HashSet<string> ReservedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -44,11 +46,6 @@ namespace PlayniteAchievements.Services.Images
             "LPT8",
             "LPT9"
         };
-
-        public static string GetModeFolder(bool preserveOriginalResolution)
-        {
-            return preserveOriginalResolution ? "original" : "128";
-        }
 
         public static string GetCustomFolder()
         {
@@ -103,7 +100,25 @@ namespace PlayniteAchievements.Services.Images
 
         public static string BuildRelativePath(
             string gameId,
-            bool preserveOriginalResolution,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            return BuildModeRelativePath(gameId, ModeFolderName, fileStem, variant);
+        }
+
+        // Path of the retired compressed 128px cache mode. Only used to serve pre-existing files
+        // until each game's next refresh replaces and deletes them; never written to.
+        internal static string BuildLegacyCompressedRelativePath(
+            string gameId,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            return BuildModeRelativePath(gameId, LegacyCompressedModeFolderName, fileStem, variant);
+        }
+
+        private static string BuildModeRelativePath(
+            string gameId,
+            string modeFolder,
             string fileStem,
             AchievementIconVariant variant)
         {
@@ -120,7 +135,7 @@ namespace PlayniteAchievements.Services.Images
             return Path.Combine(
                 "icon_cache",
                 gameId.Trim(),
-                GetModeFolder(preserveOriginalResolution),
+                modeFolder,
                 fileName);
         }
 

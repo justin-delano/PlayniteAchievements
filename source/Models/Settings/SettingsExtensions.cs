@@ -138,7 +138,6 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowHiddenDescription = source.ShowHiddenDescription;
             target.ShowHiddenSuffix = source.ShowHiddenSuffix;
             target.ShowLockedIcon = source.ShowLockedIcon;
-            target.PreserveAchievementIconResolution = source.PreserveAchievementIconResolution;
             target.UseSeparateLockedIconsWhenAvailable = source.UseSeparateLockedIconsWhenAvailable;
             target.SeparateLockedIconEnabledGameIds = source.SeparateLockedIconEnabledGameIds != null
                 ? new HashSet<Guid>(source.SeparateLockedIconEnabledGameIds)

@@ -165,12 +165,6 @@ namespace PlayniteAchievements.Views.Settings.General
         private void ClearAllIconCache_Click(object sender, RoutedEventArgs e) =>
             ClearIconCache(IconCacheClearScope.All);
 
-        private void ClearCompressedIconCache_Click(object sender, RoutedEventArgs e) =>
-            ClearIconCache(IconCacheClearScope.CompressedOnly);
-
-        private void ClearFullResolutionIconCache_Click(object sender, RoutedEventArgs e) =>
-            ClearIconCache(IconCacheClearScope.FullResolutionOnly);
-
         private void ClearLockedIconCache_Click(object sender, RoutedEventArgs e) =>
             ClearIconCache(IconCacheClearScope.LockedOnly);
 
@@ -256,10 +250,6 @@ namespace PlayniteAchievements.Views.Settings.General
         {
             switch (scope)
             {
-                case IconCacheClearScope.CompressedOnly:
-                    return "LOCPlayAch_Settings_IconCache_FileLabel_Compressed";
-                case IconCacheClearScope.FullResolutionOnly:
-                    return "LOCPlayAch_Settings_IconCache_FileLabel_FullResolution";
                 case IconCacheClearScope.LockedOnly:
                     return "LOCPlayAch_Settings_IconCache_FileLabel_Locked";
                 default:

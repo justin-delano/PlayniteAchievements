@@ -127,7 +127,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenDescription = false;
         private bool _showHiddenSuffix = true;
         private bool _showLockedIcon = true;
-        private bool _preserveAchievementIconResolution = false;
         private bool _useSeparateLockedIconsWhenAvailable = false;
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
         private bool _modernCompactListShowRarityGlow = true;
@@ -1325,16 +1324,6 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, achievement icons are cached at their original decoded size instead of the optimized 128px cache mode.
-        /// Changes apply on the next refresh.
-        /// </summary>
-        public bool PreserveAchievementIconResolution
-        {
-            get => _preserveAchievementIconResolution;
-            set => SetValue(ref _preserveAchievementIconResolution, value);
-        }
-
-        /// <summary>
         /// When true, providers with distinct locked icons will cache and use them instead of grayscaling the unlocked icon.
         /// Changes apply on the next refresh for newly cached icons.
         /// </summary>
@@ -2382,7 +2371,6 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowLockedIcon = this.ShowLockedIcon,
-                PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
                 ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
@@ -2526,7 +2514,6 @@ namespace PlayniteAchievements.Models.Settings
             ShowHiddenSuffix = defaults.ShowHiddenSuffix;
             ShowLockedIcon = defaults.ShowLockedIcon;
             ShowFriendSpoilers = defaults.ShowFriendSpoilers;
-            PreserveAchievementIconResolution = defaults.PreserveAchievementIconResolution;
             UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
             ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;

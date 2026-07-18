@@ -26,16 +26,14 @@ namespace PlayniteAchievements.Services.Images.Tests
 
             var unlockedPath = AchievementIconCachePathBuilder.BuildRelativePath(
                 "game-123",
-                preserveOriginalResolution: false,
                 stem,
                 AchievementIconVariant.Unlocked);
             var lockedPath = AchievementIconCachePathBuilder.BuildRelativePath(
                 "game-123",
-                preserveOriginalResolution: true,
                 stem,
                 AchievementIconVariant.Locked);
 
-            Assert.AreEqual(Path.Combine("icon_cache", "game-123", "128", "boss_win.png"), unlockedPath);
+            Assert.AreEqual(Path.Combine("icon_cache", "game-123", "original", "boss_win.png"), unlockedPath);
             Assert.AreEqual(Path.Combine("icon_cache", "game-123", "original", "boss_win.locked.png"), lockedPath);
         }
 
@@ -180,61 +178,6 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
-        public async Task PopulateAchievementIconCacheAsync_MigratesLegacyHashCacheToApiNamePath()
-        {
-            var tempDir = CreateTempDirectory();
-
-            try
-            {
-                var settings = new PersistedSettings
-                {
-                    PreserveAchievementIconResolution = false,
-                    UseSeparateLockedIconsWhenAvailable = false
-                };
-                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
-                var iconService = new AchievementIconService(
-                    diskImageService,
-                    new ManagedCustomIconService(diskImageService, logger: null),
-                    settings,
-                    logger: null);
-                var gameId = Guid.NewGuid();
-                var sourcePath = "https://cdn.example.com/icons/legacy.png";
-                var achievement = new AchievementDetail
-                {
-                    ApiName = "legacy:achievement",
-                    UnlockedIconPath = sourcePath,
-                    LockedIconPath = sourcePath
-                };
-                var data = new GameAchievementData
-                {
-                    PlayniteGameId = gameId,
-                    Achievements = { achievement }
-                };
-
-                var legacyPath = diskImageService.GetIconCachePathFromUri(sourcePath, 128, gameId.ToString("D"));
-                WritePlaceholderFile(legacyPath);
-
-                var stem = AchievementIconCachePathBuilder.BuildFileStems(new[] { achievement.ApiName })[achievement.ApiName];
-                var apiNamedPath = diskImageService.GetAchievementIconCachePath(
-                    gameId.ToString("D"),
-                    preserveOriginalResolution: false,
-                    stem,
-                    AchievementIconVariant.Unlocked);
-
-                await iconService.PopulateAchievementIconCacheAsync(data, CancellationToken.None);
-
-                Assert.IsFalse(File.Exists(legacyPath));
-                Assert.IsTrue(File.Exists(apiNamedPath));
-                Assert.AreEqual(apiNamedPath, achievement.UnlockedIconPath);
-                Assert.AreEqual(apiNamedPath, achievement.LockedIconPath);
-            }
-            finally
-            {
-                DeleteDirectory(tempDir);
-            }
-        }
-
-        [TestMethod]
         public async Task PopulateAchievementIconCacheAsync_UsesSeparateLockedIconsOnlyWhenEnabled()
         {
             var tempDir = CreateTempDirectory();
@@ -249,7 +192,6 @@ namespace PlayniteAchievements.Services.Images.Tests
 
                 var enabledSettings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = true
                 };
                 var enabledDiskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
@@ -260,12 +202,10 @@ namespace PlayniteAchievements.Services.Images.Tests
                     logger: null);
                 var unlockedTarget = enabledDiskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Unlocked);
                 var lockedTarget = enabledDiskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Locked);
                 WritePlaceholderFile(unlockedTarget);
@@ -291,7 +231,6 @@ namespace PlayniteAchievements.Services.Images.Tests
 
                 var disabledSettings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = false
                 };
                 var disabledDiskImageService = new DiskImageService(logger: null, cacheRoot: Path.Combine(tempDir, "disabled"));
@@ -302,7 +241,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                     logger: null);
                 var disabledUnlockedTarget = disabledDiskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Unlocked);
                 WritePlaceholderFile(disabledUnlockedTarget);
@@ -325,7 +263,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 Assert.AreEqual(disabledUnlockedTarget, disabledAchievement.LockedIconPath);
                 Assert.IsFalse(File.Exists(disabledDiskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Locked)));
             }
@@ -350,7 +287,6 @@ namespace PlayniteAchievements.Services.Images.Tests
 
                 var settings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = false,
                     SeparateLockedIconEnabledGameIds = new HashSet<Guid> { gameId }
                 };
@@ -362,12 +298,10 @@ namespace PlayniteAchievements.Services.Images.Tests
                     logger: null);
                 var unlockedTarget = diskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Unlocked);
                 var lockedTarget = diskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Locked);
                 WritePlaceholderFile(unlockedTarget);
@@ -408,7 +342,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 var apiName = "custom_locked";
                 var settings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = false
                 };
                 var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
@@ -484,7 +417,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 var apiName = "custom_unlocked_only";
                 var settings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = true
                 };
                 var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
@@ -527,7 +459,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                     AchievementIconVariant.Unlocked);
                 var lockedTarget = diskImageService.GetAchievementIconCachePath(
                     gameId.ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Locked);
 
@@ -552,7 +483,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 var gameId = Guid.NewGuid();
                 var settings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = false
                 };
                 var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
@@ -770,78 +700,6 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
-        public void ClearIconCache_CompressedOnly_RemovesCompressedFilesAndKeepsOriginalFiles()
-        {
-            var tempDir = CreateTempDirectory();
-
-            try
-            {
-                var gameId = Guid.NewGuid().ToString("D");
-                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
-                var compressedUnlocked = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss", AchievementIconVariant.Unlocked);
-                var compressedLocked = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss", AchievementIconVariant.Locked);
-                var originalUnlocked = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: true, "boss", AchievementIconVariant.Unlocked);
-                var legacyCompressed = diskImageService.GetIconCachePathFromUri("https://cdn.example.com/legacy-compressed.png", 128, gameId);
-                var legacyOriginal = diskImageService.GetIconCachePathFromUri("https://cdn.example.com/legacy-original.png", 0, gameId);
-
-                WritePlaceholderFile(compressedUnlocked);
-                WritePlaceholderFile(compressedLocked);
-                WritePlaceholderFile(originalUnlocked);
-                WritePlaceholderFile(legacyCompressed);
-                WritePlaceholderFile(legacyOriginal);
-
-                var deletedCount = diskImageService.ClearIconCache(IconCacheClearScope.CompressedOnly);
-
-                Assert.AreEqual(3, deletedCount);
-                Assert.IsFalse(File.Exists(compressedUnlocked));
-                Assert.IsFalse(File.Exists(compressedLocked));
-                Assert.IsFalse(File.Exists(legacyCompressed));
-                Assert.IsTrue(File.Exists(originalUnlocked));
-                Assert.IsTrue(File.Exists(legacyOriginal));
-            }
-            finally
-            {
-                DeleteDirectory(tempDir);
-            }
-        }
-
-        [TestMethod]
-        public void ClearIconCache_FullResolutionOnly_RemovesOriginalFilesAndKeepsCompressedFiles()
-        {
-            var tempDir = CreateTempDirectory();
-
-            try
-            {
-                var gameId = Guid.NewGuid().ToString("D");
-                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
-                var compressedUnlocked = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss", AchievementIconVariant.Unlocked);
-                var originalUnlocked = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: true, "boss", AchievementIconVariant.Unlocked);
-                var originalLocked = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: true, "boss", AchievementIconVariant.Locked);
-                var legacyCompressed = diskImageService.GetIconCachePathFromUri("https://cdn.example.com/legacy-compressed.png", 128, gameId);
-                var legacyOriginal = diskImageService.GetIconCachePathFromUri("https://cdn.example.com/legacy-original.png", 0, gameId);
-
-                WritePlaceholderFile(compressedUnlocked);
-                WritePlaceholderFile(originalUnlocked);
-                WritePlaceholderFile(originalLocked);
-                WritePlaceholderFile(legacyCompressed);
-                WritePlaceholderFile(legacyOriginal);
-
-                var deletedCount = diskImageService.ClearIconCache(IconCacheClearScope.FullResolutionOnly);
-
-                Assert.AreEqual(3, deletedCount);
-                Assert.IsFalse(File.Exists(originalUnlocked));
-                Assert.IsFalse(File.Exists(originalLocked));
-                Assert.IsFalse(File.Exists(legacyOriginal));
-                Assert.IsTrue(File.Exists(compressedUnlocked));
-                Assert.IsTrue(File.Exists(legacyCompressed));
-            }
-            finally
-            {
-                DeleteDirectory(tempDir);
-            }
-        }
-
-        [TestMethod]
         public void ClearIconCache_LockedOnly_RemovesNamedLockedFilesAndExplicitLegacyLockedPaths()
         {
             var tempDir = CreateTempDirectory();
@@ -850,8 +708,8 @@ namespace PlayniteAchievements.Services.Images.Tests
             {
                 var gameId = Guid.NewGuid().ToString("D");
                 var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
-                var unlockedPath = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: true, "boss", AchievementIconVariant.Unlocked);
-                var lockedPath = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: true, "boss", AchievementIconVariant.Locked);
+                var unlockedPath = diskImageService.GetAchievementIconCachePath(gameId, "boss", AchievementIconVariant.Unlocked);
+                var lockedPath = diskImageService.GetAchievementIconCachePath(gameId, "boss", AchievementIconVariant.Locked);
                 var legacyLocked = diskImageService.GetIconCachePathFromUri("https://cdn.example.com/legacy-locked.png", 0, gameId);
                 var legacyUnlocked = diskImageService.GetIconCachePathFromUri("https://cdn.example.com/legacy-unlocked.png", 0, gameId);
 
@@ -885,15 +743,15 @@ namespace PlayniteAchievements.Services.Images.Tests
             {
                 var gameId = Guid.NewGuid().ToString("D");
                 var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
-                var firstPath = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss_one", AchievementIconVariant.Unlocked);
-                var secondPath = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss_two", AchievementIconVariant.Unlocked);
+                var firstPath = diskImageService.GetAchievementIconCachePath(gameId, "boss_one", AchievementIconVariant.Unlocked);
+                var secondPath = diskImageService.GetAchievementIconCachePath(gameId, "boss_two", AchievementIconVariant.Unlocked);
                 var snapshots = new List<Tuple<int, int>>();
 
                 WritePlaceholderFile(firstPath);
                 WritePlaceholderFile(secondPath);
 
                 var deletedCount = diskImageService.ClearIconCache(
-                    IconCacheClearScope.CompressedOnly,
+                    IconCacheClearScope.All,
                     reportDeleteProgress: (processed, total) => snapshots.Add(Tuple.Create(processed, total)));
 
                 Assert.AreEqual(2, deletedCount);
@@ -922,7 +780,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 var managedCustomIconService = new ManagedCustomIconService(diskImageService, logger: null);
                 var cachedPath = diskImageService.GetAchievementIconCachePath(
                     gameId,
-                    preserveOriginalResolution: false,
                     "boss",
                     AchievementIconVariant.Unlocked);
                 var customPath = managedCustomIconService.GetAchievementCustomIconPath(
@@ -945,6 +802,39 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
+        public void DeleteLegacyCompressedGameIconFolder_RemovesOnlyLegacyFolderAndIsIdempotent()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gameId = Guid.NewGuid().ToString("D");
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var legacyPath = diskImageService.GetLegacyCompressedAchievementIconCachePath(
+                    gameId, "boss", AchievementIconVariant.Unlocked);
+                var originalPath = diskImageService.GetAchievementIconCachePath(
+                    gameId, "boss", AchievementIconVariant.Unlocked);
+
+                WritePlaceholderFile(legacyPath);
+                WritePlaceholderFile(originalPath);
+
+                diskImageService.DeleteLegacyCompressedGameIconFolder(gameId);
+
+                Assert.IsFalse(Directory.Exists(Path.GetDirectoryName(legacyPath)));
+                Assert.IsTrue(File.Exists(originalPath));
+
+                // Second call is a no-op once the folder is gone.
+                diskImageService.DeleteLegacyCompressedGameIconFolder(gameId);
+
+                Assert.IsTrue(File.Exists(originalPath));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public async Task PopulateFriendAchievementIconCacheAsync_NeverDownloadsSeparateLockedIcon()
         {
             var tempDir = CreateTempDirectory();
@@ -954,7 +844,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 // Separate locked icons are enabled globally to prove friends still ignore them.
                 var settings = new PersistedSettings
                 {
-                    PreserveAchievementIconResolution = false,
                     UseSeparateLockedIconsWhenAvailable = true
                 };
                 var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
@@ -1135,7 +1024,6 @@ namespace PlayniteAchievements.Services.Images.Tests
                 var otherGameIcon = FriendIconPath("Steam", "570");
                 var ownedIcon = diskImageService.GetAchievementIconCachePath(
                     Guid.NewGuid().ToString("D"),
-                    preserveOriginalResolution: false,
                     stem,
                     AchievementIconVariant.Unlocked);
 
@@ -1159,12 +1047,11 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
-        public void PersistedSettingsCloneAndCopy_PreserveAchievementIconCacheFlags()
+        public void PersistedSettingsCloneAndCopy_PreservesSeparateLockedIconFlags()
         {
             var gameId = Guid.NewGuid();
             var source = new PersistedSettings
             {
-                PreserveAchievementIconResolution = true,
                 UseSeparateLockedIconsWhenAvailable = true,
                 SeparateLockedIconEnabledGameIds = new HashSet<Guid> { gameId }
             };
@@ -1173,10 +1060,8 @@ namespace PlayniteAchievements.Services.Images.Tests
             var copyTarget = new PersistedSettings();
             copyTarget.CopyFrom(source);
 
-            Assert.IsTrue(clone.PreserveAchievementIconResolution);
             Assert.IsTrue(clone.UseSeparateLockedIconsWhenAvailable);
             Assert.IsTrue(clone.SeparateLockedIconEnabledGameIds.Contains(gameId));
-            Assert.IsTrue(copyTarget.PreserveAchievementIconResolution);
             Assert.IsTrue(copyTarget.UseSeparateLockedIconsWhenAvailable);
             Assert.IsTrue(copyTarget.SeparateLockedIconEnabledGameIds.Contains(gameId));
         }
