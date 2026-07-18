@@ -12,6 +12,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/LogoResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="LandingPageTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
@@ -166,12 +167,11 @@
 
             <!-- Plugin Icon -->
             <Image x:Name="PluginIcon"
-                   Source="pack://application:,,,/icon.png"
+                   Source="{StaticResource PlayAch.Image.Logo}"
                    Width="56"
                    Height="56"
                    HorizontalAlignment="Center"
-                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
-                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
             <!-- Main Title -->
             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Title}"
