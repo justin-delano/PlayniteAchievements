@@ -338,6 +338,12 @@
                             Style="{StaticResource NavigationButtonStyle}"
                             ToolTip="{Binding CloseViewToolTip}"/>
 
+                    <Image Source="{StaticResource PlayAch.Image.Logo}"
+                           Width="24"
+                           Height="24"
+                           VerticalAlignment="Center"
+                           Margin="{StaticResource PlayAch.Thickness.Left.Md}"/>
+
                     <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                FontWeight="Bold"
