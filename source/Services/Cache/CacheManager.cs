@@ -1243,6 +1243,13 @@ namespace PlayniteAchievements.Services.Cache
                    new FriendsOverviewData();
         }
 
+        FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewPatchData(IReadOnlyList<FriendCacheChange> reloadScopes)
+        {
+            EnsureReadyForRead("LoadFriendsOverviewPatchData");
+            return _store.LoadFriendsOverviewPatchData(reloadScopes) ??
+                   new FriendsOverviewData();
+        }
+
         FriendsOverviewData IFriendCacheManager.LoadFriendGameAchievementData(Guid playniteGameId)
         {
             EnsureReadyForRead("LoadFriendGameAchievementData");

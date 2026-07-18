@@ -234,6 +234,7 @@ namespace PlayniteAchievements.Services.Refresh
                 new Dictionary<string, FriendOwnershipRecency>();
 
             public FriendsOverviewData LoadFriendsOverviewData(int recentLimit) => new FriendsOverviewData();
+            public FriendsOverviewData LoadFriendsOverviewPatchData(IReadOnlyList<FriendCacheChange> reloadScopes) => new FriendsOverviewData();
             public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) => new FriendsOverviewData();
             public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit) => new FriendsOverviewData();
             public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() => new List<CurrentUserGameLabel>();

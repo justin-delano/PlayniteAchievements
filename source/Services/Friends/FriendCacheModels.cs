@@ -214,6 +214,12 @@ namespace PlayniteAchievements.Services.Friends
             _maxChanges = Math.Max(1, maxChanges);
         }
 
+        /// <summary>True when the pending window has collapsed to a full invalidation.</summary>
+        public bool PendingIsFull => _full;
+
+        /// <summary>True when nothing has been recorded since the last drain.</summary>
+        public bool IsEmpty => !_full && _changes.Count == 0;
+
         /// <summary>Records a change; null means "unscoped" and collapses the window to full.</summary>
         public void Add(FriendCacheChange change)
         {
@@ -426,6 +432,13 @@ namespace PlayniteAchievements.Services.Friends
             string externalUserId);
 
         FriendsOverviewData LoadFriendsOverviewData(int recentLimit);
+
+        /// <summary>
+        /// Loads the friends/games/links lists in full plus achievement rows for only the given
+        /// scopes, for incremental snapshot patching. Derived lists stay empty; the caller
+        /// splices and re-derives. See SqlNadoCacheStore.LoadFriendsOverviewPatchData.
+        /// </summary>
+        FriendsOverviewData LoadFriendsOverviewPatchData(IReadOnlyList<FriendCacheChange> reloadScopes);
 
         FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId);
 

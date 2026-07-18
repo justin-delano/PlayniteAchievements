@@ -3047,6 +3047,9 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 return Data;
             }
 
+            public FriendsOverviewData LoadFriendsOverviewPatchData(IReadOnlyList<FriendCacheChange> reloadScopes) =>
+                Data;
+
             public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) =>
                 Data;
 

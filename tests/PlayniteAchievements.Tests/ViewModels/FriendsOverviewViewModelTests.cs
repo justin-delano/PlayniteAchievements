@@ -1434,6 +1434,9 @@ namespace PlayniteAchievements.Tests.ViewModels
                     : data;
             }
 
+            public FriendsOverviewData LoadFriendsOverviewPatchData(IReadOnlyList<FriendCacheChange> reloadScopes) =>
+                Data;
+
             public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) =>
                 Data;
 
