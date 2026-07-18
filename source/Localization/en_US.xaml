@@ -1045,6 +1045,12 @@
     <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Achievement unlocked</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
     <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
+    <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
+    <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Congratulations!</sys:String>
+    <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
+    <sys:String x:Key="LOCPlayAch_Toast_GameComplete">Game Complete!</sys:String>
+    <!-- Toast_FriendGameComplete: heading of a friend's game-completion toast; {0} is the friend's display name -->
+    <sys:String x:Key="LOCPlayAch_Toast_FriendGameComplete">{0} completed the game!</sys:String>
     <!-- Text_UnknownAchievement: fallback shown when an achievement's name cannot be resolved -->
     <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">Unknown achievement</sys:String>
     <!-- Xenia_NotFoundWarning: {0} is the missing item (TitleID or a .gpd filename), {1} is the game name -->
