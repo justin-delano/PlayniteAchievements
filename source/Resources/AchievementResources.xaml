@@ -394,14 +394,15 @@
                     </StackPanel>
 
                     <!-- Branding: shared screenshots identify the plugin. Product name stays a
-                         literal (not localized). BrandingIcon.png loads synchronously via pack URI. -->
+                         literal (not localized). The logo is a DrawingImage (LogoResources.xaml),
+                         which loads synchronously as offscreen rendering requires. -->
                     <StackPanel Grid.Column="2"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
                         <Border Width="1"
                                 Margin="0,10,20,10"
                                 Background="{DynamicResource PlayAch.Brush.PopupBorder}"/>
-                        <Image Source="pack://application:,,,/PlayniteAchievements;component/Resources/BrandingIcon.png"
+                        <Image Source="{StaticResource PlayAch.Image.Logo}"
                                Width="58"
                                Height="58"
                                VerticalAlignment="Center"
