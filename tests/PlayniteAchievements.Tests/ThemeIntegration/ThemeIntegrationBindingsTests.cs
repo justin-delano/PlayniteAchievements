@@ -2932,7 +2932,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 Data = data;
             }
 
-            public event EventHandler FriendCacheInvalidated;
+            public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 
             public FriendsOverviewData Data { get; set; }
 
@@ -2942,7 +2942,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             public void RaiseFriendCacheInvalidated()
             {
-                FriendCacheInvalidated?.Invoke(this, EventArgs.Empty);
+                FriendCacheInvalidated?.Invoke(this, FriendCacheInvalidatedEventArgs.FullInvalidation);
             }
 
             public IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch() =>

@@ -3,6 +3,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PlayniteAchievements.Services.Friends
 {
@@ -67,6 +68,187 @@ namespace PlayniteAchievements.Services.Friends
 
         public void Dispose()
         {
+        }
+    }
+
+    /// <summary>
+    /// What a friend-cache write touched, so invalidation consumers can patch instead of
+    /// rebuilding. Kinds without a friend scope (game definitions, roster) affect all friends.
+    /// </summary>
+    internal enum FriendCacheChangeKind
+    {
+        /// <summary>One friend's achievement rows for one game changed (the scan hot path).</summary>
+        FriendGameAchievements,
+
+        /// <summary>One friend's ownership rows changed (many games; links and summaries affected).</summary>
+        FriendOwnership,
+
+        /// <summary>A game's definition or images changed for every friend that owns it.</summary>
+        GameDefinition,
+
+        /// <summary>One friend's cached data was deleted.</summary>
+        FriendRemoved,
+
+        /// <summary>The provider's friend roster changed (friends added or removed).</summary>
+        Roster
+    }
+
+    internal sealed class FriendCacheChange : IEquatable<FriendCacheChange>
+    {
+        private FriendCacheChange(
+            FriendCacheChangeKind kind,
+            string providerKey,
+            string externalUserId,
+            int appId,
+            string providerGameKey)
+        {
+            Kind = kind;
+            ProviderKey = providerKey ?? string.Empty;
+            ExternalUserId = externalUserId;
+            AppId = appId;
+            ProviderGameKey = providerGameKey;
+        }
+
+        public FriendCacheChangeKind Kind { get; }
+
+        public string ProviderKey { get; }
+
+        /// <summary>Null for kinds without a friend scope (GameDefinition, Roster).</summary>
+        public string ExternalUserId { get; }
+
+        /// <summary>Zero when the change is not game-scoped or the app id is unknown.</summary>
+        public int AppId { get; }
+
+        /// <summary>Null when the change is not game-scoped or the key is unknown.</summary>
+        public string ProviderGameKey { get; }
+
+        public static FriendCacheChange ForFriendGameAchievements(
+            string providerKey, string externalUserId, int appId, string providerGameKey) =>
+            new FriendCacheChange(FriendCacheChangeKind.FriendGameAchievements, providerKey, externalUserId, appId, providerGameKey);
+
+        public static FriendCacheChange ForFriendOwnership(string providerKey, string externalUserId) =>
+            new FriendCacheChange(FriendCacheChangeKind.FriendOwnership, providerKey, externalUserId, 0, null);
+
+        public static FriendCacheChange ForGameDefinition(string providerKey, int appId, string providerGameKey) =>
+            new FriendCacheChange(FriendCacheChangeKind.GameDefinition, providerKey, null, appId, providerGameKey);
+
+        public static FriendCacheChange ForFriendRemoved(string providerKey, string externalUserId) =>
+            new FriendCacheChange(FriendCacheChangeKind.FriendRemoved, providerKey, externalUserId, 0, null);
+
+        public static FriendCacheChange ForRoster(string providerKey) =>
+            new FriendCacheChange(FriendCacheChangeKind.Roster, providerKey, null, 0, null);
+
+        public bool Equals(FriendCacheChange other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            return Kind == other.Kind &&
+                   AppId == other.AppId &&
+                   string.Equals(ProviderKey, other.ProviderKey, StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(ExternalUserId, other.ExternalUserId, StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(ProviderGameKey, other.ProviderGameKey, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override bool Equals(object obj) => Equals(obj as FriendCacheChange);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = (int)Kind;
+                hash = (hash * 397) ^ AppId;
+                hash = (hash * 397) ^ StringComparer.OrdinalIgnoreCase.GetHashCode(ProviderKey ?? string.Empty);
+                hash = (hash * 397) ^ (ExternalUserId == null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(ExternalUserId));
+                hash = (hash * 397) ^ (ProviderGameKey == null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(ProviderGameKey));
+                return hash;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Scope carried by <see cref="IFriendCacheManager.FriendCacheInvalidated"/>. IsFull means
+    /// "everything may have changed" (unscoped writes, clears, or an overflowing change set) and
+    /// Changes is empty; consumers must fall back to a full rebuild.
+    /// </summary>
+    internal sealed class FriendCacheInvalidatedEventArgs : EventArgs
+    {
+        public static readonly FriendCacheInvalidatedEventArgs FullInvalidation =
+            new FriendCacheInvalidatedEventArgs(true, Array.Empty<FriendCacheChange>());
+
+        private FriendCacheInvalidatedEventArgs(bool isFull, IReadOnlyCollection<FriendCacheChange> changes)
+        {
+            IsFull = isFull;
+            Changes = changes ?? Array.Empty<FriendCacheChange>();
+        }
+
+        public bool IsFull { get; }
+
+        public IReadOnlyCollection<FriendCacheChange> Changes { get; }
+
+        public static FriendCacheInvalidatedEventArgs Scoped(IReadOnlyCollection<FriendCacheChange> changes)
+        {
+            return changes == null || changes.Count == 0
+                ? FullInvalidation
+                : new FriendCacheInvalidatedEventArgs(false, changes);
+        }
+    }
+
+    /// <summary>
+    /// Accumulates the scope of deferred friend-cache invalidations inside a batch window.
+    /// Collapses to a full invalidation when an unscoped change arrives or the set overflows
+    /// <paramref name="maxChanges"/>. Not thread-safe; the owner synchronizes access.
+    /// </summary>
+    internal sealed class FriendCacheInvalidationScopeAccumulator
+    {
+        public const int DefaultMaxChanges = 128;
+
+        private readonly HashSet<FriendCacheChange> _changes = new HashSet<FriendCacheChange>();
+        private readonly int _maxChanges;
+        private bool _full;
+
+        public FriendCacheInvalidationScopeAccumulator(int maxChanges = DefaultMaxChanges)
+        {
+            _maxChanges = Math.Max(1, maxChanges);
+        }
+
+        /// <summary>Records a change; null means "unscoped" and collapses the window to full.</summary>
+        public void Add(FriendCacheChange change)
+        {
+            if (change == null)
+            {
+                _full = true;
+                _changes.Clear();
+                return;
+            }
+
+            if (_full)
+            {
+                return;
+            }
+
+            _changes.Add(change);
+            if (_changes.Count > _maxChanges)
+            {
+                _full = true;
+                _changes.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Takes the accumulated scope out, resetting the accumulator: scope travels with the
+        /// emitted event, so a later flush in the same batch starts empty.
+        /// </summary>
+        public FriendCacheInvalidatedEventArgs Drain()
+        {
+            var args = _full || _changes.Count == 0
+                ? FriendCacheInvalidatedEventArgs.FullInvalidation
+                : FriendCacheInvalidatedEventArgs.Scoped(_changes.ToList());
+            _changes.Clear();
+            _full = false;
+            return args;
         }
     }
 
@@ -155,7 +337,7 @@ namespace PlayniteAchievements.Services.Friends
 
     internal interface IFriendCacheManager
     {
-        event EventHandler FriendCacheInvalidated;
+        event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 
         IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch();
 

@@ -1001,7 +1001,7 @@ namespace PlayniteAchievements
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
         }
 
-        private void FriendCacheManager_FriendCacheInvalidated(object sender, EventArgs e)
+        private void FriendCacheManager_FriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
             InvalidateFriendDataCoordinators();
         }

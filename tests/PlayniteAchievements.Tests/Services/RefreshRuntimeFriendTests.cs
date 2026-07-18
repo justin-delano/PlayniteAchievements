@@ -2393,14 +2393,14 @@ namespace PlayniteAchievements.Services.Tests
             }
             public List<FriendIdentity> CachedFriends { get; set; } = new List<FriendIdentity>();
 
-            public event EventHandler FriendCacheInvalidated;
+            public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 
             public IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch() =>
                 NullFriendCacheInvalidationBatch.Instance;
 
             public void NotifyFriendCacheInvalidated()
             {
-                FriendCacheInvalidated?.Invoke(this, EventArgs.Empty);
+                FriendCacheInvalidated?.Invoke(this, FriendCacheInvalidatedEventArgs.FullInvalidation);
             }
 
             public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends)

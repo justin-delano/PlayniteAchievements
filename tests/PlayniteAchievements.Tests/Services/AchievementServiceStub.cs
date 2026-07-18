@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Services.Refresh
             public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated;
             public event EventHandler<CacheDeltaEventArgs> CacheDeltaUpdated;
             public event EventHandler CacheInvalidated;
-            public event EventHandler FriendCacheInvalidated;
+            public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 #pragma warning restore CS0067
 
             public void EnsureDiskCacheOrClearMemory() { }
@@ -152,7 +152,8 @@ namespace PlayniteAchievements.Services.Refresh
             public void RemoveGameData(Guid playniteGameId) { }
             public void RemoveGameCache(Guid playniteGameId) { }
             public void NotifyCacheInvalidated() => CacheInvalidated?.Invoke(this, EventArgs.Empty);
-            public void NotifyFriendCacheInvalidated() => FriendCacheInvalidated?.Invoke(this, EventArgs.Empty);
+            public void NotifyFriendCacheInvalidated() =>
+                FriendCacheInvalidated?.Invoke(this, FriendCacheInvalidatedEventArgs.FullInvalidation);
             public IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch() => NullFriendCacheInvalidationBatch.Instance;
             public void ClearCache() { }
             public string ExportDatabaseToCsv(string exportDirectory) => null;

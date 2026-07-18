@@ -86,6 +86,10 @@ namespace PlayniteAchievements.Services.Cache
         private bool _startupFailureDialogShown;
         private int _friendCacheInvalidationBatchDepth;
         private bool _friendCacheInvalidationBatchDirty;
+        // Scope accumulated across deferred raises within a batch window (guarded by _sync);
+        // drained on every flush so scope travels with the event, not the batch lifetime.
+        private readonly FriendCacheInvalidationScopeAccumulator _friendCacheInvalidationScope =
+            new FriendCacheInvalidationScopeAccumulator();
 
         // Bumped under _sync on every in-memory mutation. LoadAllGameDataFast reads the
         // whole-library snapshot off _sync, so it uses this to detect writes that landed during
@@ -96,9 +100,9 @@ namespace PlayniteAchievements.Services.Cache
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated;
         public event EventHandler<CacheDeltaEventArgs> CacheDeltaUpdated;
         public event EventHandler CacheInvalidated;
-        public event EventHandler FriendCacheInvalidated;
+        public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 
-        event EventHandler IFriendCacheManager.FriendCacheInvalidated
+        event EventHandler<FriendCacheInvalidatedEventArgs> IFriendCacheManager.FriendCacheInvalidated
         {
             add => FriendCacheInvalidated += value;
             remove => FriendCacheInvalidated -= value;
@@ -228,47 +232,54 @@ namespace PlayniteAchievements.Services.Cache
             }
         }
 
-        private void RaiseFriendCacheInvalidatedEvent()
+        private void RaiseFriendCacheInvalidatedEvent(FriendCacheInvalidatedEventArgs args)
         {
-            try { FriendCacheInvalidated?.Invoke(this, EventArgs.Empty); }
+            args = args ?? FriendCacheInvalidatedEventArgs.FullInvalidation;
+            _logger?.Debug(
+                $"[RefreshPerf] kind=friends phase=invalidation.raise full={args.IsFull} changes={args.Changes.Count}");
+            try { FriendCacheInvalidated?.Invoke(this, args); }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to notify cache subscribers.");
             }
         }
 
-        private void RaiseOrDeferFriendCacheInvalidatedEvent()
+        private void RaiseOrDeferFriendCacheInvalidatedEvent(FriendCacheChange change)
         {
             if (_friendCacheInvalidationBatchDepth > 0)
             {
                 _friendCacheInvalidationBatchDirty = true;
+                _friendCacheInvalidationScope.Add(change);
                 return;
             }
 
-            RaiseFriendCacheInvalidatedEvent();
+            RaiseFriendCacheInvalidatedEvent(
+                change == null
+                    ? FriendCacheInvalidatedEventArgs.FullInvalidation
+                    : FriendCacheInvalidatedEventArgs.Scoped(new[] { change }));
         }
 
         private void FlushFriendCacheInvalidationBatch()
         {
-            var shouldRaise = false;
+            FriendCacheInvalidatedEventArgs args = null;
             lock (_sync)
             {
                 if (_friendCacheInvalidationBatchDirty)
                 {
                     _friendCacheInvalidationBatchDirty = false;
-                    shouldRaise = true;
+                    args = _friendCacheInvalidationScope.Drain();
                 }
             }
 
-            if (shouldRaise)
+            if (args != null)
             {
-                RaiseFriendCacheInvalidatedEvent();
+                RaiseFriendCacheInvalidatedEvent(args);
             }
         }
 
         private void EndFriendCacheInvalidationBatch()
         {
-            var shouldRaise = false;
+            FriendCacheInvalidatedEventArgs args = null;
             lock (_sync)
             {
                 if (_friendCacheInvalidationBatchDepth > 0)
@@ -279,13 +290,13 @@ namespace PlayniteAchievements.Services.Cache
                 if (_friendCacheInvalidationBatchDepth == 0 && _friendCacheInvalidationBatchDirty)
                 {
                     _friendCacheInvalidationBatchDirty = false;
-                    shouldRaise = true;
+                    args = _friendCacheInvalidationScope.Drain();
                 }
             }
 
-            if (shouldRaise)
+            if (args != null)
             {
-                RaiseFriendCacheInvalidatedEvent();
+                RaiseFriendCacheInvalidatedEvent(args);
             }
         }
 
@@ -943,7 +954,7 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.SaveFriendList(providerKey, friends);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(FriendCacheChange.ForRoster(providerKey));
                 }
 
                 return result;
@@ -962,7 +973,7 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.SaveFriendOwnership(providerKey, externalUserId, ownership, options);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(FriendCacheChange.ForFriendOwnership(providerKey, externalUserId));
                 }
 
                 return result;
@@ -980,7 +991,8 @@ namespace PlayniteAchievements.Services.Cache
                 result = _store.SaveFriendGameDefinition(providerKey, definition);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(
+                        FriendCacheChange.ForGameDefinition(providerKey, definition?.AppId ?? 0, definition?.ProviderGameKey));
                 }
             }
 
@@ -1007,7 +1019,8 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.SaveProviderGameImagePaths(providerKey, providerGameKey, appId, iconAbsolutePath, coverAbsolutePath);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(
+                        FriendCacheChange.ForGameDefinition(providerKey, appId, providerGameKey));
                 }
 
                 return result;
@@ -1054,7 +1067,8 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.ClearUnownedFriendGameData();
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    // Bulk clear has no per-game scope; forces a full invalidation.
+                    RaiseOrDeferFriendCacheInvalidatedEvent(null);
                 }
 
                 return result;
@@ -1072,7 +1086,8 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.ClearUnownedFriendGame(providerKey, appId, providerGameKey);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(
+                        FriendCacheChange.ForGameDefinition(providerKey, appId, providerGameKey));
                 }
 
                 return result;
@@ -1109,7 +1124,8 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.PromoteProviderOnlyGameToPlayniteBacked(providerKey, appId, providerGameKey, playniteGameId);
                 if (result?.Success == true && result.WrittenCount > 0)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(
+                        FriendCacheChange.ForGameDefinition(providerKey, appId, providerGameKey));
                 }
 
                 return result;
@@ -1130,7 +1146,8 @@ namespace PlayniteAchievements.Services.Cache
                 result = _store.SaveFriendGameAchievements(providerKey, externalUserId, providerGameKey, appId, achievements);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(
+                        FriendCacheChange.ForFriendGameAchievements(providerKey, externalUserId, appId, providerGameKey));
                 }
             }
 
@@ -1169,7 +1186,8 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.DeleteFriendData(providerKey, externalUserId, preserveFriendRecord);
                 if (result?.Success == true)
                 {
-                    RaiseOrDeferFriendCacheInvalidatedEvent();
+                    RaiseOrDeferFriendCacheInvalidatedEvent(
+                        FriendCacheChange.ForFriendRemoved(providerKey, externalUserId));
                 }
 
                 return result;

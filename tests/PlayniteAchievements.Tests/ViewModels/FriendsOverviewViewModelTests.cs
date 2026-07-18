@@ -1311,7 +1311,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                 Data = data;
             }
 
-            public event EventHandler FriendCacheInvalidated;
+            public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 
             public FriendsOverviewData Data { get; set; }
 
@@ -1325,7 +1325,7 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             public void RaiseFriendCacheInvalidated()
             {
-                FriendCacheInvalidated?.Invoke(this, EventArgs.Empty);
+                FriendCacheInvalidated?.Invoke(this, FriendCacheInvalidatedEventArgs.FullInvalidation);
             }
 
             public IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch() =>

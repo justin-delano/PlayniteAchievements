@@ -1092,7 +1092,7 @@ namespace PlayniteAchievements.ViewModels
             InvalidateFriendsOverviewSnapshot(forceImmediate: false);
         }
 
-        private void OnFriendCacheInvalidated(object sender, EventArgs e)
+        private void OnFriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
             if (_disposed)
             {

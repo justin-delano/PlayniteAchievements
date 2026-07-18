@@ -679,7 +679,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _friendsOverviewDataCoordinator?.Invalidate();
         }
 
-        private void FriendCache_FriendCacheInvalidated(object sender, EventArgs e)
+        private void FriendCache_FriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
             _friendsOverviewDataCoordinator?.Invalidate();
         }
