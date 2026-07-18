@@ -486,7 +486,7 @@ namespace PlayniteAchievements.Providers.Exophase
                         var imageCount = await GetDocumentImageCountAsync(view).ConfigureAwait(false);
                         if (imageCount > MaxImageWarmCount)
                         {
-                            _logger?.Info($"[Exophase] Skipping in-browser CDN warm for {imageCount} images (cap {MaxImageWarmCount}); thumbnails will warm via the download retry path.");
+                            _logger?.Info($"[Exophase] Skipping in-browser CDN warm for {imageCount} images (cap {MaxImageWarmCount}); each download attempt still triggers CDN generation, and thumbnails not ready this run are picked up by a later refresh.");
                         }
                         else
                         {
