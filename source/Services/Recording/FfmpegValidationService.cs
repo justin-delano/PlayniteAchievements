@@ -11,9 +11,10 @@ namespace PlayniteAchievements.Services.Recording
 {
     /// <summary>
     /// Validates a user-supplied ffmpeg build: parses -version, probes -encoders for the H.264
-    /// encoders the capture command can use, and optionally runs a 1-second gdigrab smoke test to
-    /// the null muxer. Results are cached per path for the session; drives both the settings Test
-    /// button and the recording service's Auto encoder selection.
+    /// encoders the capture command can use, probes -filters for ddagrab, and optionally runs
+    /// 1-second gdigrab/ddagrab smoke tests to the null muxer. Results are cached per path for
+    /// the session; drives the settings Test button and the recording service's Auto encoder and
+    /// capture backend selection.
     /// </summary>
     internal sealed class FfmpegValidationService
     {
@@ -43,6 +44,13 @@ namespace PlayniteAchievements.Services.Recording
             public string Version { get; set; }
 
             public IReadOnlyList<string> AvailableEncoders { get; set; } = new List<string>();
+
+            /// <summary>
+            /// True when the build's -filters output lists ddagrab (and, if the smoke test ran,
+            /// a 1s ddagrab capture succeeded). Drives the Auto capture backend preferring
+            /// Desktop Duplication over the cursor-flickering gdigrab.
+            /// </summary>
+            public bool SupportsDdagrab { get; set; }
 
             /// <summary>Diagnostic detail for the settings status line when invalid.</summary>
             public string Error { get; set; }
@@ -96,14 +104,30 @@ namespace PlayniteAchievements.Services.Recording
                 return result;
             }
 
+            // Best-effort: a failed filters probe just means no ddagrab preference, not an
+            // invalid build.
+            var filterLines = await RunProbeAsync(path, RecordingCommandBuilder.FiltersProbeArguments)
+                .ConfigureAwait(false);
+            result.SupportsDdagrab = ParseDdagrabSupport(filterLines);
+
             if (runSmokeTest)
             {
                 result.SmokeTested = true;
-                var smokeOk = await RunSmokeTestAsync(path).ConfigureAwait(false);
+                var smokeOk = await RunSmokeTestAsync(path, RecordingCommandBuilder.BuildSmokeTestArguments())
+                    .ConfigureAwait(false);
                 if (!smokeOk)
                 {
                     result.Error = "screen capture test failed";
                     return result;
+                }
+
+                // Desktop Duplication can fail at runtime (RDP, hybrid GPUs) even when the
+                // filter exists; a failed ddagrab test only drops the Auto preference.
+                if (result.SupportsDdagrab &&
+                    !await RunSmokeTestAsync(path, RecordingCommandBuilder.BuildDdagrabSmokeTestArguments())
+                        .ConfigureAwait(false))
+                {
+                    result.SupportsDdagrab = false;
                 }
             }
 
@@ -126,11 +150,11 @@ namespace PlayniteAchievements.Services.Recording
             }
         }
 
-        private async Task<bool> RunSmokeTestAsync(string path)
+        private async Task<bool> RunSmokeTestAsync(string path, string arguments)
         {
             using (var host = new FfmpegProcessHost(
                        path,
-                       RecordingCommandBuilder.BuildSmokeTestArguments(),
+                       arguments,
                        _logger))
             {
                 if (!host.Start())
@@ -173,6 +197,12 @@ namespace PlayniteAchievements.Services.Recording
                     line != null &&
                     Regex.IsMatch(line, $@"\b{Regex.Escape(encoder)}\b")))
                 .ToList();
+        }
+
+        internal static bool ParseDdagrabSupport(IReadOnlyList<string> stdOutLines)
+        {
+            return stdOutLines != null &&
+                   stdOutLines.Any(line => line != null && Regex.IsMatch(line, @"\bddagrab\b"));
         }
     }
 }

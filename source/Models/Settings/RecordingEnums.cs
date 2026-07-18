@@ -25,8 +25,10 @@ namespace PlayniteAchievements.Models.Settings
     }
 
     /// <summary>
-    /// ffmpeg screen-capture input. Gdigrab works on every ffmpeg build; Ddagrab
-    /// (Desktop Duplication) needs ffmpeg 5.0+ and is opt-in.
+    /// ffmpeg screen-capture input. Gdigrab works on every ffmpeg build but makes the visible
+    /// mouse cursor flicker while capturing (GDI BitBlt with CAPTUREBLT); Ddagrab (Desktop
+    /// Duplication, ffmpeg 5.0+) records the cursor without the flicker. Auto prefers Ddagrab
+    /// when the probed build supports it, falling back to Gdigrab.
     /// </summary>
     public enum RecordingCaptureBackend
     {

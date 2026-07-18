@@ -125,6 +125,9 @@ namespace PlayniteAchievements.Services.Recording
             public string CaptureArguments;
             public string EncoderArguments;
             public RecordingCaptureBackend Backend;
+            /// <summary>True when Backend came from the Auto setting, allowing the ddagrab
+            /// crash path to downgrade to gdigrab instead of retrying an explicit choice.</summary>
+            public bool BackendAutoResolved;
             public System.Drawing.Rectangle MonitorBounds;
             public Guid OwnerGameId;
             public string GameName;
@@ -412,12 +415,12 @@ namespace PlayniteAchievements.Services.Recording
 
                 var encoderArgs = await ResolveEncoderArgumentsAsync(session.FfmpegPath, persisted.RecordingEncoder)
                     .ConfigureAwait(false);
-                var backend = persisted.RecordingCaptureBackend == RecordingCaptureBackend.Ddagrab
-                    ? RecordingCaptureBackend.Ddagrab
-                    : RecordingCaptureBackend.Gdigrab;
+                var backend = await ResolveBackendAsync(session.FfmpegPath, persisted.RecordingCaptureBackend)
+                    .ConfigureAwait(false);
 
                 session.EncoderArguments = encoderArgs;
                 session.Backend = backend;
+                session.BackendAutoResolved = persisted.RecordingCaptureBackend == RecordingCaptureBackend.Auto;
                 session.MonitorBounds = bounds.Value;
                 session.CaptureArguments = BuildCaptureArgumentsFor(session, persisted, bounds.Value);
 
@@ -599,6 +602,20 @@ namespace PlayniteAchievements.Services.Recording
                 session.Stopping = true;
                 NotifyRecordingUnavailableOnce();
                 return;
+            }
+
+            // An Auto-resolved ddagrab capture that dies (RDP session, hybrid GPU, driver
+            // quirks) restarts as gdigrab instead of retrying the same failing backend; an
+            // explicit Ddagrab selection keeps retrying the user's choice.
+            if (session.Backend == RecordingCaptureBackend.Ddagrab && session.BackendAutoResolved)
+            {
+                var persisted = _settings?.Persisted;
+                if (persisted != null)
+                {
+                    session.Backend = RecordingCaptureBackend.Gdigrab;
+                    session.CaptureArguments = BuildCaptureArgumentsFor(session, persisted, session.MonitorBounds);
+                    _logger?.Info("[Recording] ddagrab capture failed; falling back to gdigrab for this session.");
+                }
             }
 
             _logger?.Warn(
@@ -1431,6 +1448,26 @@ namespace PlayniteAchievements.Services.Recording
             {
                 _logger?.Debug(ex, "[Recording] Encoder probe failed; defaulting to libx264.");
                 return RecordingCommandBuilder.BuildEncoderArguments(RecordingEncoder.Auto, null);
+            }
+        }
+
+        private async Task<RecordingCaptureBackend> ResolveBackendAsync(string ffmpegPath, RecordingCaptureBackend configured)
+        {
+            if (configured != RecordingCaptureBackend.Auto)
+            {
+                return configured;
+            }
+
+            try
+            {
+                // Cached per path, so this shares the probe run by the encoder resolution.
+                var result = await _validation.ValidateAsync(ffmpegPath).ConfigureAwait(false);
+                return RecordingCommandBuilder.ResolveBackend(configured, result?.SupportsDdagrab == true);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[Recording] Capture backend probe failed; defaulting to gdigrab.");
+                return RecordingCaptureBackend.Gdigrab;
             }
         }
 

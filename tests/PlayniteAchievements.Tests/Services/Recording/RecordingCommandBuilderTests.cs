@@ -91,8 +91,30 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var args = RecordingCommandBuilder.BuildCaptureArguments(options);
 
-            StringAssert.Contains(args, "ddagrab=output_idx=1:framerate=30");
+            StringAssert.Contains(args, "ddagrab=output_idx=1:framerate=30:draw_mouse=1");
             Assert.IsFalse(args.Contains("gdigrab"), args);
+        }
+
+        [TestMethod]
+        public void ResolveBackend_AutoPrefersDdagrabWhenSupported()
+        {
+            Assert.AreEqual(
+                RecordingCaptureBackend.Ddagrab,
+                RecordingCommandBuilder.ResolveBackend(RecordingCaptureBackend.Auto, supportsDdagrab: true));
+            Assert.AreEqual(
+                RecordingCaptureBackend.Gdigrab,
+                RecordingCommandBuilder.ResolveBackend(RecordingCaptureBackend.Auto, supportsDdagrab: false));
+        }
+
+        [TestMethod]
+        public void ResolveBackend_ExplicitChoicesPassThrough()
+        {
+            Assert.AreEqual(
+                RecordingCaptureBackend.Gdigrab,
+                RecordingCommandBuilder.ResolveBackend(RecordingCaptureBackend.Gdigrab, supportsDdagrab: true));
+            Assert.AreEqual(
+                RecordingCaptureBackend.Ddagrab,
+                RecordingCommandBuilder.ResolveBackend(RecordingCaptureBackend.Ddagrab, supportsDdagrab: false));
         }
 
         [TestMethod]
@@ -249,6 +271,16 @@ namespace PlayniteAchievements.Services.Tests.Recording
             StringAssert.Contains(args, "-offset_x 10 -offset_y 20");
             StringAssert.Contains(args, "-video_size 64x64");
             StringAssert.Contains(args, "-t 1 -f null -");
+        }
+
+        [TestMethod]
+        public void DdagrabSmokeTest_IsOneSecondCaptureToNullMuxer()
+        {
+            var args = RecordingCommandBuilder.BuildDdagrabSmokeTestArguments(1);
+
+            StringAssert.Contains(args, "ddagrab=output_idx=1:framerate=10");
+            StringAssert.Contains(args, "-t 1 -f null -");
+            Assert.IsFalse(args.Contains("gdigrab"), args);
         }
 
         // === Cropped exports ===

@@ -82,7 +82,7 @@ namespace PlayniteAchievements.Services.Recording
             if (options.Backend == RecordingCaptureBackend.Ddagrab)
             {
                 builder.Append(Invariant(
-                    " -f lavfi -i \"ddagrab=output_idx={0}:framerate={1},hwdownload,format=bgra\"",
+                    " -f lavfi -i \"ddagrab=output_idx={0}:framerate={1}:draw_mouse=1,hwdownload,format=bgra\"",
                     Math.Max(0, options.MonitorIndex),
                     fps));
             }
@@ -114,6 +114,22 @@ namespace PlayniteAchievements.Services.Recording
             builder.Append(Invariant(" -f segment -segment_time {0} -reset_timestamps 1 -strftime 1", Math.Max(1, options.SegmentSeconds)));
             builder.Append(" \"").Append(TrimTrailingSeparators(options.BufferDirectory)).Append('\\').Append(SegmentStrftimePattern).Append('"');
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Resolves the configured capture backend to the one actually used. Explicit choices
+        /// pass through; Auto prefers Ddagrab (Desktop Duplication draws the cursor without the
+        /// on-screen flicker gdigrab's GDI BitBlt causes) when the probed ffmpeg build has the
+        /// filter, else Gdigrab.
+        /// </summary>
+        public static RecordingCaptureBackend ResolveBackend(RecordingCaptureBackend configured, bool supportsDdagrab)
+        {
+            if (configured != RecordingCaptureBackend.Auto)
+            {
+                return configured;
+            }
+
+            return supportsDdagrab ? RecordingCaptureBackend.Ddagrab : RecordingCaptureBackend.Gdigrab;
         }
 
         /// <summary>
@@ -325,9 +341,23 @@ namespace PlayniteAchievements.Services.Recording
                 offsetY);
         }
 
+        /// <summary>
+        /// A 1-second ddagrab capture to the null muxer — verifies Desktop Duplication actually
+        /// works on this machine (it can fail under RDP or on some hybrid-GPU setups even when
+        /// the ffmpeg build has the filter).
+        /// </summary>
+        public static string BuildDdagrabSmokeTestArguments(int monitorIndex = 0)
+        {
+            return Invariant(
+                "-hide_banner -loglevel warning -f lavfi -i \"ddagrab=output_idx={0}:framerate=10,hwdownload,format=bgra\" -t 1 -f null -",
+                Math.Max(0, monitorIndex));
+        }
+
         public const string VersionProbeArguments = "-hide_banner -version";
 
         public const string EncodersProbeArguments = "-hide_banner -encoders";
+
+        public const string FiltersProbeArguments = "-hide_banner -filters";
 
         private static string ScaleFilter(RecordingResolution resolution)
         {
