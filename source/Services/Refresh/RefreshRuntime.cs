@@ -475,6 +475,9 @@ namespace PlayniteAchievements.Services.Refresh
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
             List<IRefreshAuthContextReceiver> authContextReceivers = null;
 
+            var memBaseline = MemoryDiagnostics.Log(_logger, "refresh.start", $"mode={mode} operation={operationId}");
+            var memSampler = MemoryDiagnostics.StartSampler(_logger, $"mode={mode}", TimeSpan.FromSeconds(60));
+
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
             Report(
@@ -550,6 +553,7 @@ namespace PlayniteAchievements.Services.Refresh
             }
             finally
             {
+                memSampler?.Dispose();
                 EndScopedRefreshAuthContext(effectiveAuthContext, authContextReceivers);
                 var savedGamesCount = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
                 var hasSavedGames = savedGamesCount > 0;
@@ -574,6 +578,12 @@ namespace PlayniteAchievements.Services.Refresh
                 {
                     _cacheService.NotifyCacheInvalidated();
                 }
+
+                MemoryDiagnostics.Log(
+                    _logger,
+                    "refresh.end",
+                    memBaseline,
+                    $"mode={mode} savedGames={savedGamesCount} canceled={wasCanceled}");
 
                 // Runs on a threadpool continuation (the run body is awaited with
                 // ConfigureAwait(false)), so the blocking collection stays off the UI thread.
