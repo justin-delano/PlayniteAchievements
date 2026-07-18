@@ -339,8 +339,8 @@
                             ToolTip="{Binding CloseViewToolTip}"/>
 
                     <Image Source="{StaticResource PlayAch.Image.Logo}"
-                           Width="24"
-                           Height="24"
+                           Width="30"
+                           Height="30"
                            VerticalAlignment="Center"
                            Margin="{StaticResource PlayAch.Thickness.Left.Md}"/>
 
