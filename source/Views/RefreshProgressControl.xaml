@@ -11,6 +11,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/LogoResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -35,16 +36,13 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Badge Icon -->
+                <!-- Plugin Logo -->
                 <Image Grid.Column="0"
-                       Source="{DynamicResource BadgeRarityUltraRare}"
+                       Source="{StaticResource PlayAch.Image.Logo}"
                        Width="28"
                        Height="28"
                        Margin="{StaticResource PlayAch.Thickness.Right.Md}"
-                       VerticalAlignment="Center"
-                       SnapsToDevicePixels="True"
-                       RenderOptions.BitmapScalingMode="NearestNeighbor"
-                       Effect="{StaticResource BadgeShadow}"/>
+                       VerticalAlignment="Center"/>
 
                 <!-- Title -->
                 <TextBlock Grid.Column="1"
