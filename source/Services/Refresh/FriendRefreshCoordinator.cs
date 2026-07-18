@@ -343,7 +343,38 @@ namespace PlayniteAchievements.Services.Refresh
                 {
                     _logger?.Debug(ex, $"Failed to end friend refresh for {context?.ProviderKey}.");
                 }
+
+                try
+                {
+                    ReleaseContextScrapeState(context);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Failed to release friend refresh context state for {context?.ProviderKey}.");
+                }
             }
+        }
+
+        // The per-run scrape state holds several overlapping full copies of every friend-game row
+        // (ownership snapshots, the grouped definition-plan copy, the current-user label set), and
+        // the contexts can stay reachable past the run's hot path (combined runs hold them until
+        // the whole plan finishes). Drop the big collections here so the LOH compaction at
+        // refresh end can actually return their space. Friends/ScopedFriends stay intact: they
+        // are small identity lists and perf logging reads them.
+        private static void ReleaseContextScrapeState(FriendProviderRefreshContext context)
+        {
+            if (context == null)
+            {
+                return;
+            }
+
+            context.OwnershipSnapshots = null;
+            context.DefinitionPlan = null;
+            context.CurrentUserLabelIndex = null;
+            context.CurrentUserLabels = Array.Empty<CurrentUserGameLabel>();
+            context.ProbedProviderOnlyAchievementKeys.Clear();
+            context.RecencyFreshKeys.Clear();
+            context.OwnershipFetchedFriendIds.Clear();
         }
 
         /// <summary>
