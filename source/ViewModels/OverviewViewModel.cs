@@ -2652,10 +2652,26 @@ namespace PlayniteAchievements.ViewModels
             });
         }
 
-        private void OnCacheInvalidated(object sender, EventArgs e)
+        private void OnCacheInvalidated(object sender, CacheInvalidatedEventArgs e)
         {
             if (!_isActive || _disposed || _refreshService.IsRebuilding)
             {
+                return;
+            }
+
+            // Scoped invalidations (a poller tick names exactly one game) route through the
+            // existing per-game fragment path instead of the full projection + search index
+            // rebuild; only unscoped invalidations pay for the full refresh.
+            if (e != null && !e.IsFull)
+            {
+                foreach (var gameId in e.ChangedGameIds)
+                {
+                    if (gameId != Guid.Empty)
+                    {
+                        QueueOverviewDelta(isFullReset: false, key: gameId.ToString("D"));
+                    }
+                }
+
                 return;
             }
 

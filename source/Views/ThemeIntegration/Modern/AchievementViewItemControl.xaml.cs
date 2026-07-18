@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -176,10 +177,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             _isCacheEventSubscribed = false;
         }
 
-        private void RefreshService_CacheInvalidated(object sender, EventArgs e)
+        private void RefreshService_CacheInvalidated(object sender, CacheInvalidatedEventArgs e)
         {
+            // Scoped invalidations name the changed games; skip on the event thread when none
+            // of them is this control's game (mirrors the GameCacheUpdated filter). Unscoped
+            // invalidations still refresh unconditionally.
+            if (e != null && !e.IsFull &&
+                !e.ChangedGameIds.Any(gameId => IsCurrentGame(gameId.ToString())))
+            {
+                return;
+            }
+
             // CacheInvalidated fires when any cache change occurs (throttled).
-            // Always refresh this control since we don't know which game changed.
             // Must dispatch to UI thread first before accessing IsLoaded
             var dispatcher = Dispatcher;
             if (dispatcher == null)
