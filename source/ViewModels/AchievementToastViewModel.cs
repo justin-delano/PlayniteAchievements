@@ -35,10 +35,21 @@ namespace PlayniteAchievements.ViewModels
 
         // Raw fields consumed by the unlock-screenshot feature (not shown in the toast UI).
         internal bool IsPreview => _args.IsPreview;
-        internal string AchievementName => IsGameCompleted
-            ? ResourceProvider.GetString("LOCPlayAch_Toast_GameComplete")
-            : _args.DisplayName;
+        internal string AchievementName => ResolveAchievementName(_args);
         internal int AchievementNumber => _args.AchievementNumber;
+
+        /// <summary>
+        /// The unlock's name for screenshot/clip filenames and clip-to-wave matching: the
+        /// achievement's display name, or the localized "Game Complete!" for the completion
+        /// notification (which carries no display name). Shared with the recording service so
+        /// both sides agree on the name.
+        /// </summary>
+        internal static string ResolveAchievementName(AchievementUnlockedEventArgs args)
+        {
+            return args?.IsGameCompleted == true
+                ? ResourceProvider.GetString("LOCPlayAch_Toast_GameComplete")
+                : args?.DisplayName;
+        }
         internal Guid PlayniteGameId => _args.PlayniteGameId;
 
         // Raw progress and scoring data for template composition (e.g. a "27/40" progress line

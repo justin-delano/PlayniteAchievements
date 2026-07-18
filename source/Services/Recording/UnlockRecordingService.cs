@@ -717,9 +717,7 @@ namespace PlayniteAchievements.Services.Recording
 
         private void OnAchievementUnlocked(object sender, AchievementUnlockedEventArgs e)
         {
-            // Completion notifications are not achievement unlocks — the completing unlock
-            // already gets its clip; a second clip of the congratulations toast would duplicate it.
-            if (_disposed || e == null || e.IsPreview || e.IsFriendUnlock || e.IsGameCompleted)
+            if (_disposed || e == null || e.IsPreview || e.IsFriendUnlock)
             {
                 return;
             }
@@ -771,7 +769,10 @@ namespace PlayniteAchievements.Services.Recording
                 Session = session,
                 ProviderKey = e.ProviderKey,
                 GameName = e.GameName,
-                AchievementName = e.DisplayName,
+                // Resolved through the shared helper so completion notifications (no
+                // DisplayName) get the same name the toast wave reports, letting the clip
+                // match its wave and carry a sensible filename.
+                AchievementName = ViewModels.AchievementToastViewModel.ResolveAchievementName(e),
                 AchievementNumber = e.AchievementNumber,
                 TotalCount = e.TotalCount,
                 UnlockTimeUtc = e.UnlockTimeUtc,

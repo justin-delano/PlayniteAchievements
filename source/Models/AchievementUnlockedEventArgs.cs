@@ -38,8 +38,8 @@ namespace PlayniteAchievements.Models
 
         /// <summary>
         /// True for the standalone "Congratulations! Game Complete!" notification emitted in its
-        /// own wave after the completing unlock's toasts. Not an achievement unlock: it never
-        /// produces recording clips, and of the screenshot variants only the framed one applies.
+        /// own wave after the completing unlock's toasts. It runs the full notification pipeline
+        /// like any other own unlock: toasts, screenshots, and recording clips.
         /// </summary>
         public bool IsGameCompleted { get; set; }
 

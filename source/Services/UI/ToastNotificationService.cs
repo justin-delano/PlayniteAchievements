@@ -678,21 +678,9 @@ namespace PlayniteAchievements.Services.UI
             foreach (var vm in wave)
             {
                 // The policy ANDs the EnableUnlockScreenshots master switch into each variant flag.
+                // Completion notifications are treated like any other own unlock here.
                 var effective = ProviderNotificationPolicy.Resolve(persisted, vm.ProviderKey);
                 var variants = ScreenshotVariants.None;
-
-                // The completion notification is not an achievement unlock: only the framed
-                // variant applies (a clean or with-toast shot would duplicate the completing
-                // unlock wave's captures moments earlier).
-                if (vm.IsGameCompleted)
-                {
-                    if (effective.ScreenshotFramed)
-                    {
-                        plan.Items.Add((vm, ScreenshotVariants.Framed));
-                    }
-
-                    continue;
-                }
 
                 if (effective.ScreenshotClean)
                 {
