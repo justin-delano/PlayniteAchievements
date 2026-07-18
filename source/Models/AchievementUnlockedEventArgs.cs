@@ -30,16 +30,10 @@ namespace PlayniteAchievements.Models
         public bool IsCapstone { get; set; }
 
         /// <summary>
-        /// True when this notification belongs to the game's completion moment: the unlock batch
-        /// that pushed the game to complete (all unlocked, or the capstone unlocked), or the
-        /// completion notification itself. Exposed to templates as IsCompleted.
-        /// </summary>
-        public bool CompletesGame { get; set; }
-
-        /// <summary>
         /// True for the standalone "Congratulations! Game Complete!" notification emitted in its
-        /// own wave after the completing unlock's toasts. Not an achievement unlock: it never
-        /// produces recording clips, and of the screenshot variants only the framed one applies.
+        /// own wave after the completing unlock's toasts. Exposed to templates as IsCompleted.
+        /// Not an achievement unlock: it never produces recording clips, and of the screenshot
+        /// variants only the framed one applies.
         /// </summary>
         public bool IsGameCompletionNotification { get; set; }
 

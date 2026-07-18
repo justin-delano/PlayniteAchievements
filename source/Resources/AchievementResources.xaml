@@ -75,11 +75,23 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Rarity accent strip (capstone color takes precedence over rarity) -->
+                <!-- Rarity accent strip (capstone color takes precedence over rarity). Completion
+                     notifications restyle here, in the template: base values live in Setters so
+                     the IsCompleted trigger can override them. -->
                 <Border Grid.Column="0"
                         Width="4"
-                        CornerRadius="8,0,0,8"
-                        Background="{Binding AccentBrush}"/>
+                        CornerRadius="8,0,0,8">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{Binding AccentBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                    <Setter Property="Background" Value="{Binding CompletedBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
 
                 <Grid Grid.Column="1" Margin="8">
                     <Grid.RowDefinitions>
@@ -101,11 +113,24 @@
                     <Grid Width="55"
                           Height="55"
                           HorizontalAlignment="Center">
+                        <!-- Completion notifications swap the achievement icon for the
+                             completed-game badge and the completed glow. -->
                         <Image Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"
-                               helpers:AsyncImage.Uri="{Binding IconSource}"
-                               helpers:AsyncImage.DecodePixel="160"
-                               Effect="{Binding RarityGlowEffect}"/>
+                               helpers:AsyncImage.DecodePixel="160">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="helpers:AsyncImage.Uri" Value="{Binding IconPath}"/>
+                                    <Setter Property="Effect" Value="{Binding RarityGlowEffect}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <Setter Property="helpers:AsyncImage.Uri" Value="{Binding CompletedBadgeImage}"/>
+                                            <Setter Property="Effect" Value="{Binding CompletedGlowEffect}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                         <!-- Hardcore RetroAchievements unlocks: crisp rarity border instead of glow. -->
                         <Border Margin="-2"
                                 BorderThickness="2"
@@ -151,11 +176,60 @@
                                    helpers:AsyncImage.DecodePixel="64"/>
                         </Border>
                         <TextBlock Text="{Binding HeaderText}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding ShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                    <Setter Property="Visibility" Value="{Binding ShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <!-- Completion headers replace the unlock header: "Congratulations!" for
+                             your own completion, "<friend> completed the game!" for a friend's. -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Toast_Congratulations}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                <Condition Binding="{Binding IsFriendUnlock}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                <Condition Binding="{Binding IsFriendUnlock}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="{Binding FriendDisplayName, Mode=OneWay}"/><Run Text=" "/><Run Text="{DynamicResource LOCPlayAch_Toast_CompletedTheGame}"/>
+                        </TextBlock>
                         <!-- Optional unlock datetime (the Unlock Time appearance toggle, off by
                              default) -->
                         <TextBlock Text="  &#8226;  "
@@ -170,15 +244,28 @@
                                    Visibility="{Binding ShowUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </StackPanel>
 
-                    <TextBlock Text="{Binding TitleText}"
-                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                               Foreground="{Binding TitleBrush}"
-                               FontSize="{DynamicResource PlayAch.FontSize.Title}"
+                    <!-- Completion notifications force the title, swap it for "Game Complete!",
+                         and color it with the completed brush. -->
+                    <TextBlock FontSize="{DynamicResource PlayAch.FontSize.Title}"
                                FontWeight="SemiBold"
                                TextWrapping="NoWrap"
                                TextTrimming="CharacterEllipsis"
-                               Margin="0,1,0,0"
-                               Visibility="{Binding ShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                               Margin="0,1,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                <Setter Property="Text" Value="{Binding TitleText}"/>
+                                <Setter Property="Foreground" Value="{Binding TitleBrush}"/>
+                                <Setter Property="Visibility" Value="{Binding ShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                        <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Toast_GameComplete}"/>
+                                        <Setter Property="Foreground" Value="{Binding CompletedBrush}"/>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
                     <TextBlock Text="{Binding Description}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
@@ -193,11 +280,21 @@
                     <StackPanel Orientation="Horizontal"
                                 Margin="0,2,0,0">
                         <TextBlock Text="{Binding GameName}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                    <Setter Property="Visibility" Value="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <Style.Triggers>
+                                        <!-- The game name is the completion message's subject. -->
+                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="  &#8226;  "
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
@@ -301,10 +398,24 @@
                         <Grid Width="84"
                               Height="84"
                               HorizontalAlignment="Center">
+                            <!-- Completion notifications swap the achievement icon for the
+                                 completed-game badge and the completed glow (all sync-loaded, as
+                                 offscreen rendering requires). -->
                             <Image Stretch="Uniform"
-                                   RenderOptions.BitmapScalingMode="HighQuality"
-                                   Source="{Binding IconSource}"
-                                   Effect="{Binding FrameRarityGlowEffect}"/>
+                                   RenderOptions.BitmapScalingMode="HighQuality">
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Setter Property="Source" Value="{Binding IconPath}"/>
+                                        <Setter Property="Effect" Value="{Binding FrameRarityGlowEffect}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                <Setter Property="Source" Value="{Binding CompletedBadgeImage}"/>
+                                                <Setter Property="Effect" Value="{Binding FrameCompletedGlowEffect}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
                             <Border Margin="-3"
                                     BorderThickness="3"
                                     Background="Transparent"
@@ -338,11 +449,59 @@
                              datetime is current-culture localized; separator needs both parts) -->
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding HeaderText}"
-                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                        FontSize="17"
-                                       TextTrimming="CharacterEllipsis"
-                                       Visibility="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                        <Setter Property="Visibility" Value="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <!-- Completion headers replace the unlock header, mirroring the toast. -->
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Toast_Congratulations}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                    <Condition Binding="{Binding IsFriendUnlock}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                    <Condition Binding="{Binding IsFriendUnlock}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                                <Run Text="{Binding FriendDisplayName, Mode=OneWay}"/><Run Text=" "/><Run Text="{DynamicResource LOCPlayAch_Toast_CompletedTheGame}"/>
+                            </TextBlock>
                             <TextBlock Text="  &#8226;  "
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
@@ -354,14 +513,27 @@
                                        FontSize="17"
                                        Visibility="{Binding FrameShowUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding TitleText}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                   Foreground="{Binding FrameTitleBrush}"
-                                   FontSize="30"
+                        <!-- Completion notifications force the title, swap it for "Game
+                             Complete!", and color it with the completed brush. -->
+                        <TextBlock FontSize="30"
                                    FontWeight="SemiBold"
                                    TextTrimming="CharacterEllipsis"
-                                   Margin="0,1,0,0"
-                                   Visibility="{Binding FrameShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                   Margin="0,1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                    <Setter Property="Text" Value="{Binding TitleText}"/>
+                                    <Setter Property="Foreground" Value="{Binding FrameTitleBrush}"/>
+                                    <Setter Property="Visibility" Value="{Binding FrameShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Toast_GameComplete}"/>
+                                            <Setter Property="Foreground" Value="{Binding CompletedBrush}"/>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="{Binding Description}"
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
@@ -374,11 +546,21 @@
                         <StackPanel Orientation="Horizontal"
                                     Margin="0,5,0,0">
                             <TextBlock Text="{Binding GameName}"
-                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                        FontSize="19"
-                                       TextTrimming="CharacterEllipsis"
-                                       Visibility="{Binding FrameShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                       TextTrimming="CharacterEllipsis">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                                        <Setter Property="Visibility" Value="{Binding FrameShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        <Style.Triggers>
+                                            <!-- The game name is the completion message's subject. -->
+                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                             <TextBlock Text="  &#8226;  "
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"

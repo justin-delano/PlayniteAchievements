@@ -35,40 +35,35 @@ namespace PlayniteAchievements.ViewModels
 
         // Raw fields consumed by the unlock-screenshot feature (not shown in the toast UI).
         internal bool IsPreview => _args.IsPreview;
-        internal string AchievementName => IsGameCompletionNotification ? TitleText : _args.DisplayName;
+        internal string AchievementName => IsCompleted
+            ? ResourceProvider.GetString("LOCPlayAch_Toast_GameComplete")
+            : _args.DisplayName;
         internal int AchievementNumber => _args.AchievementNumber;
         internal int TotalCount => _args.TotalCount;
         internal Guid PlayniteGameId => _args.PlayniteGameId;
 
-        // The header identifies who unlocked the achievement (or who completed the game), so it
-        // is mandatory for friend unlocks and completion notifications; otherwise it honors the
-        // user's toggle. The completion notification also forces its title and game name — they
-        // are the message.
-        public bool ShowHeader => IsFriendUnlock || IsGameCompletionNotification || _settings.ToastShowHeader;
-        public bool ShowName => (_settings.ToastShowName || IsGameCompletionNotification) && !string.IsNullOrWhiteSpace(TitleText);
+        // The header identifies who unlocked the achievement, so it is mandatory for friend
+        // unlocks; for your own unlocks it honors the user's toggle. Completion notifications are
+        // restyled entirely by the templates (triggers on IsCompleted force the header/title/game
+        // name visible there), never here.
+        public bool ShowHeader => IsFriendUnlock || _settings.ToastShowHeader;
+        public bool ShowName => _settings.ToastShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool ShowDescription => _settings.ToastShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
         public bool ShowCategory => _settings.ToastShowCategory && HasDistinctCategory;
         public bool ShowPercent => _settings.ToastShowRarityPercent && _args.GlobalPercent.HasValue;
         public bool IsCapstone => _args.IsCapstone;
 
         /// <summary>
-        /// True when this notification belongs to the game's completion moment: the unlock batch
-        /// that pushed the game to complete, and the standalone completion notification.
-        /// </summary>
-        public bool IsCompleted => _args.CompletesGame;
-
-        /// <summary>
         /// True for the standalone "Congratulations! Game Complete!" notification that follows
-        /// the completing unlock's wave.
+        /// the completing unlock's wave. Regular unlocks — including the one that completed the
+        /// game — report false; IsCapstone marks the capstone achievement itself.
         /// </summary>
-        public bool IsGameCompletionNotification => _args.IsGameCompletionNotification;
+        public bool IsCompleted => _args.IsGameCompletionNotification;
 
         public bool HasTrophy => !string.IsNullOrWhiteSpace(_args.TrophyType);
         private bool HasRarityData => _args.GlobalPercent.HasValue || !string.IsNullOrWhiteSpace(_args.RarityTier);
-        public bool ShowBadge => _settings.ToastShowRarityBadge &&
-            !IsGameCompletionNotification &&
-            (IsCapstone || HasTrophy || HasRarityData);
-        public bool ShowGameName => (_settings.ToastShowGameName || IsGameCompletionNotification) && !string.IsNullOrWhiteSpace(_args.GameName);
+        public bool ShowBadge => _settings.ToastShowRarityBadge && (IsCapstone || HasTrophy || HasRarityData);
+        public bool ShowGameName => _settings.ToastShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);
         public bool ShowGameCategorySeparator => ShowGameName && ShowCategory;
         public bool HasFriendAvatar => !string.IsNullOrWhiteSpace(FriendAvatar);
 
@@ -106,46 +101,29 @@ namespace PlayniteAchievements.ViewModels
 
         // Frame-scoped visibility/appearance: the screenshot frame honors its own FrameShow*
         // settings so the saved image can show different fields than the on-screen toast.
-        public bool FrameShowHeader => IsFriendUnlock || IsGameCompletionNotification || _settings.FrameShowHeader;
-        public bool FrameShowName => (_settings.FrameShowName || IsGameCompletionNotification) && !string.IsNullOrWhiteSpace(TitleText);
+        public bool FrameShowHeader => IsFriendUnlock || _settings.FrameShowHeader;
+        public bool FrameShowName => _settings.FrameShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool FrameShowDescription => _settings.FrameShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
         public bool FrameShowCategory => _settings.FrameShowCategory && HasDistinctCategory;
         public bool FrameShowPercent => _settings.FrameShowRarityPercent && _args.GlobalPercent.HasValue;
-        public bool FrameShowBadge => _settings.FrameShowRarityBadge &&
-            !IsGameCompletionNotification &&
-            (IsCapstone || HasTrophy || HasRarityData);
-        public bool FrameShowGameName => (_settings.FrameShowGameName || IsGameCompletionNotification) && !string.IsNullOrWhiteSpace(_args.GameName);
+        public bool FrameShowBadge => _settings.FrameShowRarityBadge && (IsCapstone || HasTrophy || HasRarityData);
+        public bool FrameShowGameName => _settings.FrameShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);
         public bool FrameShowGameCategorySeparator => FrameShowGameName && FrameShowCategory;
-        public bool FrameShowShineBorder => !IsGameCompletionNotification && _settings.FrameShowRarityGlow && IsHardcore;
+        public bool FrameShowShineBorder => _settings.FrameShowRarityGlow && IsHardcore;
 
         // Mirrors TitleBrush but honors the frame's own rarity-colored-name toggle.
         public Brush FrameTitleBrush => _settings.FrameRarityColoredName
             ? AccentBrush
             : Application.Current?.TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.White;
 
-        public Effect FrameRarityGlowEffect => _settings.FrameShowRarityGlow
-            ? IsGameCompletionNotification
-                ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings)
-                : !IsHardcore
-                    ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
-                    : null
+        public Effect FrameRarityGlowEffect => _settings.FrameShowRarityGlow && !IsHardcore
+            ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
             : null;
 
         public string HeaderText
         {
             get
             {
-                if (IsGameCompletionNotification)
-                {
-                    if (IsFriendUnlock)
-                    {
-                        var completeFormat = ResourceProvider.GetString("LOCPlayAch_Toast_FriendGameComplete");
-                        return string.Format(completeFormat, string.IsNullOrWhiteSpace(_args.FriendDisplayName) ? "Friend" : _args.FriendDisplayName);
-                    }
-
-                    return ResourceProvider.GetString("LOCPlayAch_Toast_Congratulations");
-                }
-
                 if (IsFriendUnlock)
                 {
                     var format = ResourceProvider.GetString("LOCPlayAch_Toast_FriendUnlocked");
@@ -156,29 +134,20 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public string TitleText
-        {
-            get
-            {
-                if (IsGameCompletionNotification)
-                {
-                    return ResourceProvider.GetString("LOCPlayAch_Toast_GameComplete");
-                }
+        public string TitleText => string.IsNullOrWhiteSpace(_args.DisplayName)
+            ? ResourceProvider.GetString("LOCPlayAch_Text_UnknownAchievement")
+            : _args.DisplayName;
 
-                return string.IsNullOrWhiteSpace(_args.DisplayName)
-                    ? ResourceProvider.GetString("LOCPlayAch_Text_UnknownAchievement")
-                    : _args.DisplayName;
-            }
-        }
+        // Raw friend identity for template composition (e.g. the friend completion header). The
+        // completion texts themselves live in the templates as LOC resources, not here.
+        public string FriendDisplayName => string.IsNullOrWhiteSpace(_args.FriendDisplayName)
+            ? "Friend"
+            : _args.FriendDisplayName;
 
         public string Description => _args.Description;
         public string Category => _args.Category;
         public string GameName => _args.GameName;
         public string IconPath => string.IsNullOrWhiteSpace(_args.IconPath) ? DefaultIcon : _args.IconPath;
-        public bool UsesCompletedBadgeIcon => IsGameCompletionNotification;
-        public object IconSource => UsesCompletedBadgeIcon
-            ? RarityAppearanceHelper.CreateCompletedBadgePreview(_settings)
-            : (object)IconPath;
         public string FriendAvatar => !string.IsNullOrWhiteSpace(_args.FriendAvatarPath)
             ? _args.FriendAvatarPath
             : _args.FriendAvatarUrl;
@@ -195,17 +164,23 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Rarity-colored brush for the left accent strip and countdown bar (completed color for
-        /// capstones and the completion notification, otherwise the rarity color).
+        /// capstones, otherwise the rarity color). Completion notifications keep this untouched —
+        /// the templates restyle them with the palette below.
         /// </summary>
-        public Brush AccentBrush => IsCapstone || IsGameCompletionNotification
+        public Brush AccentBrush => IsCapstone
             ? RarityAppearanceHelper.GetCompletedBrush(_settings)
             : RarityAppearanceHelper.GetBrush(_rarity, _settings);
 
-        // Completion palette, always available regardless of this notification's kind so theme
-        // templates can apply their own completion styling with triggers on IsCompleted /
-        // IsGameCompletionNotification instead of the plugin-computed values above.
+        // Completion palette, always available regardless of this notification's kind so the
+        // bundled templates (and themes) apply completion styling with triggers on IsCompleted.
+        // The glows honor the toast/frame rarity-glow toggles.
         public Brush CompletedBrush => RarityAppearanceHelper.GetCompletedBrush(_settings);
-        public Effect CompletedGlowEffect => RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings);
+        public Effect CompletedGlowEffect => _settings.ToastShowRarityGlow
+            ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings)
+            : null;
+        public Effect FrameCompletedGlowEffect => _settings.FrameShowRarityGlow
+            ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings)
+            : null;
         public ImageSource CompletedBadgeImage => RarityAppearanceHelper.CreateCompletedBadgePreview(_settings);
         public Brush RarityBrush => RarityAppearanceHelper.GetBrush(_rarity, _settings);
 
@@ -220,25 +195,19 @@ namespace PlayniteAchievements.ViewModels
         /// Hardcore RetroAchievements unlocks get a crisp rarity-colored border in place of the
         /// soft glow, mirroring the datagrids. Both are gated on the rarity-glow toggle.
         /// </summary>
-        public bool ShowShineBorder => !IsGameCompletionNotification && _settings.ToastShowRarityGlow && IsHardcore;
+        public bool ShowShineBorder => _settings.ToastShowRarityGlow && IsHardcore;
 
         // Glossy metallic rarity border (matches RarityToShineBrush used by the datagrids).
         public Brush IconBorderBrush => RarityAppearanceHelper.GetShineBrush(_rarity, _settings);
 
         // Soft rarity glow for non-hardcore unlocks (matches PercentToRarityGlow, BlurRadius 20).
-        public Effect RarityGlowEffect => _settings.ToastShowRarityGlow
-            ? IsGameCompletionNotification
-                ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings)
-                : !IsHardcore
-                    ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
-                    : null
+        public Effect RarityGlowEffect => _settings.ToastShowRarityGlow && !IsHardcore
+            ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
             : null;
 
-        // Secondary rarity/capstone badge. Standalone completion notifications return null: the
-        // completed-game badge is already their main icon (IconSource).
-        public ImageSource BadgeImage => IsGameCompletionNotification
-            ? null
-            : CreateBadge(IsCapstone);
+        // Secondary rarity/trophy/capstone badge. Completion notifications resolve to null
+        // naturally (no capstone, trophy, or rarity data on them).
+        public ImageSource BadgeImage => CreateBadge(IsCapstone);
 
         private ImageSource CreateBadge(bool completed)
         {
@@ -266,7 +235,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsCapstone || IsGameCompletionNotification)
+                if (IsCapstone || IsCompleted)
                 {
                     return "capstoneachievement";
                 }
@@ -294,7 +263,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsCapstone || IsGameCompletionNotification)
+                if (IsCapstone || IsCompleted)
                 {
                     return 5;
                 }

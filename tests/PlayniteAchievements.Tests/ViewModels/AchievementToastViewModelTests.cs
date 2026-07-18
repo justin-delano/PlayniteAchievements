@@ -36,12 +36,11 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void CompletionNotification_UsesCompletedBadgeAsMainIconWithoutSecondaryBadge()
+        public void CompletionNotification_IsCompletedIsTheOnlyCompletionFlag()
         {
             var viewModel = new AchievementToastViewModel(
                 new AchievementUnlockedEventArgs
                 {
-                    CompletesGame = true,
                     IsGameCompletionNotification = true
                 },
                 new PersistedSettings
@@ -52,10 +51,14 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.IsTrue(viewModel.IsCompleted);
             Assert.IsFalse(viewModel.IsCapstone);
-            Assert.IsTrue(viewModel.UsesCompletedBadgeIcon);
+            // No capstone/trophy/rarity data on the completion notification, so the secondary
+            // badge resolves to hidden/null without any completion special-casing.
             Assert.IsFalse(viewModel.ShowBadge);
             Assert.IsNull(viewModel.BadgeImage);
             Assert.IsFalse(viewModel.FrameShowBadge);
+            // The capstone-tier sound covers the completion notification.
+            Assert.AreEqual("capstoneachievement", viewModel.SoundTierSegment);
+            Assert.AreEqual(5, viewModel.SoundTierRank);
         }
 
         [TestMethod]
@@ -67,23 +70,45 @@ namespace PlayniteAchievements.Tests.ViewModels
                     RarityTier = "Rare",
                     GlobalPercent = 9.3
                 },
-                new PersistedSettings());
+                new PersistedSettings
+                {
+                    ToastShowRarityGlow = true,
+                    FrameShowRarityGlow = true
+                });
 
             Assert.IsFalse(viewModel.IsCompleted);
             Assert.IsNotNull(viewModel.CompletedBrush);
             Assert.IsNotNull(viewModel.CompletedGlowEffect);
+            Assert.IsNotNull(viewModel.FrameCompletedGlowEffect);
             Assert.IsNotNull(viewModel.CompletedBadgeImage);
             Assert.IsNotNull(viewModel.RarityBrush);
         }
 
         [TestMethod]
-        public void CompletingUnlock_KeepsAchievementIconAndOwnBadge()
+        public void CompletedGlows_HonorTheRarityGlowToggles()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    IsGameCompletionNotification = true
+                },
+                new PersistedSettings
+                {
+                    ToastShowRarityGlow = false,
+                    FrameShowRarityGlow = false
+                });
+
+            Assert.IsNull(viewModel.CompletedGlowEffect);
+            Assert.IsNull(viewModel.FrameCompletedGlowEffect);
+        }
+
+        [TestMethod]
+        public void RegularUnlock_KeepsAchievementIconAndOwnBadge()
         {
             var viewModel = new AchievementToastViewModel(
                 new AchievementUnlockedEventArgs
                 {
                     IconPath = "achievement.png",
-                    CompletesGame = true,
                     RarityTier = "Rare",
                     GlobalPercent = 9.3
                 },
@@ -93,12 +118,24 @@ namespace PlayniteAchievements.Tests.ViewModels
                     FrameShowRarityBadge = true
                 });
 
-            Assert.AreEqual("achievement.png", viewModel.IconSource);
-            Assert.IsFalse(viewModel.UsesCompletedBadgeIcon);
-            Assert.IsTrue(viewModel.IsCompleted);
-            Assert.IsFalse(viewModel.IsGameCompletionNotification);
+            Assert.AreEqual("achievement.png", viewModel.IconPath);
+            Assert.IsFalse(viewModel.IsCompleted);
             Assert.IsTrue(viewModel.ShowBadge);
             Assert.IsTrue(viewModel.FrameShowBadge);
+        }
+
+        [TestMethod]
+        public void FriendDisplayName_FallsBackWhenMissing()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    IsFriendUnlock = true,
+                    IsGameCompletionNotification = true
+                },
+                new PersistedSettings());
+
+            Assert.AreEqual("Friend", viewModel.FriendDisplayName);
         }
     }
 }

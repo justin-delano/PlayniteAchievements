@@ -373,7 +373,7 @@ namespace PlayniteAchievements.Services
             var numberByApiName = BuildAchievementNumberMap(after);
             foreach (var achievement in unlocks)
             {
-                _notifyUnlocked?.Invoke(CreateUserEventArgs(game, after, achievement, ResolveAchievementNumber(numberByApiName, achievement), completesGame));
+                _notifyUnlocked?.Invoke(CreateUserEventArgs(game, after, achievement, ResolveAchievementNumber(numberByApiName, achievement)));
             }
 
             return completesGame ? CreateUserCompletionEventArgs(game, after) : null;
@@ -616,7 +616,7 @@ namespace PlayniteAchievements.Services
 
             foreach (var row in fresh)
             {
-                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row, completesGame));
+                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row));
             }
 
             return (fresh.Count, completesGame ? CreateFriendCompletionEventArgs(state.Game, target, rows) : null);
@@ -742,8 +742,7 @@ namespace PlayniteAchievements.Services
             Game game,
             GameAchievementData data,
             AchievementDetail achievement,
-            int achievementNumber,
-            bool completesGame)
+            int achievementNumber)
         {
             return new AchievementUnlockedEventArgs
             {
@@ -766,8 +765,7 @@ namespace PlayniteAchievements.Services
                 UnlockedCount = data?.UnlockedCount ?? 0,
                 TotalCount = data?.AchievementCount ?? 0,
                 AchievementNumber = achievementNumber,
-                GameCompleted = data?.IsCompleted == true,
-                CompletesGame = completesGame
+                GameCompleted = data?.IsCompleted == true
             };
         }
 
@@ -783,7 +781,6 @@ namespace PlayniteAchievements.Services
                 UnlockedCount = data?.UnlockedCount ?? 0,
                 TotalCount = data?.AchievementCount ?? 0,
                 GameCompleted = true,
-                CompletesGame = true,
                 IsGameCompletionNotification = true
             };
         }
@@ -792,8 +789,7 @@ namespace PlayniteAchievements.Services
             Game game,
             FriendPollTarget target,
             IReadOnlyList<FriendAchievementRow> allRows,
-            FriendAchievementRow row,
-            bool completesGame)
+            FriendAchievementRow row)
         {
             return new AchievementUnlockedEventArgs
             {
@@ -819,8 +815,7 @@ namespace PlayniteAchievements.Services
                 FriendExternalUserId = target?.Friend?.ExternalUserId,
                 FriendDisplayName = target?.Friend?.DisplayName,
                 FriendAvatarPath = target?.Friend?.AvatarPath,
-                FriendAvatarUrl = target?.Friend?.AvatarUrl,
-                CompletesGame = completesGame
+                FriendAvatarUrl = target?.Friend?.AvatarUrl
             };
         }
 
@@ -837,7 +832,6 @@ namespace PlayniteAchievements.Services
                 UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
                 TotalCount = allRows?.Count ?? 0,
                 GameCompleted = true,
-                CompletesGame = true,
                 IsGameCompletionNotification = true,
                 IsFriendUnlock = true,
                 FriendExternalUserId = target?.Friend?.ExternalUserId,
