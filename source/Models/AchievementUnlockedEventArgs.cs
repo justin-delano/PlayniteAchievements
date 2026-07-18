@@ -7,6 +7,14 @@ namespace PlayniteAchievements.Models
         public Guid PlayniteGameId { get; set; }
         public string GameName { get; set; }
         public string ProviderKey { get; set; }
+
+        /// <summary>
+        /// Absolute local paths to the Playnite game's icon and cover art, resolved from the
+        /// Playnite database at event creation. Null when the game has no art (e.g. previews).
+        /// </summary>
+        public string GameIconPath { get; set; }
+        public string GameCoverPath { get; set; }
+
         public string ApiName { get; set; }
         public string DisplayName { get; set; }
         public string Description { get; set; }

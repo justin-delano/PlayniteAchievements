@@ -135,6 +135,8 @@ namespace PlayniteAchievements.Tests.ViewModels
                     TotalCount = 40,
                     Points = 90,
                     ScaledPoints = 180,
+                    GameIconPath = @"c:\playnite\icon.png",
+                    GameCoverPath = @"c:\playnite\cover.jpg",
                     IsCompletionAchievement = true
                 },
                 new PersistedSettings());
@@ -144,6 +146,8 @@ namespace PlayniteAchievements.Tests.ViewModels
             Assert.AreEqual(40, viewModel.TotalCount);
             Assert.AreEqual(90, viewModel.Points);
             Assert.AreEqual(180, viewModel.ScaledPoints);
+            Assert.AreEqual(@"c:\playnite\icon.png", viewModel.GameIconPath);
+            Assert.AreEqual(@"c:\playnite\cover.jpg", viewModel.GameCoverPath);
             // Game state, distinct from the completion-notification kind.
             Assert.IsTrue(viewModel.IsCompletionAchievement);
             Assert.IsFalse(viewModel.IsGameCompleted);

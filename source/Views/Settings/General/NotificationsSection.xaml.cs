@@ -281,6 +281,7 @@ namespace PlayniteAchievements.Views.Settings.General
                         GameName = sampleGame,
                         UnlockedCount = 40,
                         TotalCount = 40,
+                        UnlockTimeUtc = DateTime.UtcNow,
                         IsGameCompleted = true
                     };
                 case "friend":

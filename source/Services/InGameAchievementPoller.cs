@@ -376,7 +376,11 @@ namespace PlayniteAchievements.Services
                 _notifyUnlocked?.Invoke(CreateUserEventArgs(game, after, achievement, ResolveAchievementNumber(numberByApiName, achievement)));
             }
 
-            return completesGame ? CreateUserCompletionEventArgs(game, after) : null;
+            // The completion time is the triggering achievement's unlock time — the latest in the
+            // completing batch. Null when the provider supplies no timestamps, so the completion
+            // toast shows no datetime exactly when its unlocks don't.
+            var completionTimeUtc = unlocks.Select(a => a?.UnlockTimeUtc).Max();
+            return completesGame ? CreateUserCompletionEventArgs(game, after, completionTimeUtc) : null;
         }
 
         /// <summary>
@@ -619,7 +623,10 @@ namespace PlayniteAchievements.Services
                 _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row, completeNow));
             }
 
-            return (fresh.Count, completesGame ? CreateFriendCompletionEventArgs(state.Game, target, rows) : null);
+            // The completion time is the triggering achievement's unlock time — the latest in the
+            // completing batch — and null when the provider supplies no timestamps.
+            var completionTimeUtc = fresh.Select(row => row?.UnlockTimeUtc).Max();
+            return (fresh.Count, completesGame ? CreateFriendCompletionEventArgs(state.Game, target, rows, completionTimeUtc) : null);
         }
 
         private HashSet<string> GetToastedFriendSet(GamePollState state, FriendPollTarget target)
@@ -738,7 +745,29 @@ namespace PlayniteAchievements.Services
                 .Contains(AchievementCategoryTypeHelper.HardcoreCategoryType);
         }
 
-        private static AchievementUnlockedEventArgs CreateUserEventArgs(
+        /// <summary>
+        /// Resolves a Playnite database art reference (game icon/cover) to an absolute local
+        /// file path for template bindings; null when the game has no art.
+        /// </summary>
+        private string ResolveGameArtPath(string databasePath)
+        {
+            if (string.IsNullOrWhiteSpace(databasePath))
+            {
+                return null;
+            }
+
+            try
+            {
+                return _api?.Database?.GetFullFilePath(databasePath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[InGamePolling] Failed to resolve game art path for toast.");
+                return null;
+            }
+        }
+
+        private AchievementUnlockedEventArgs CreateUserEventArgs(
             Game game,
             GameAchievementData data,
             AchievementDetail achievement,
@@ -748,6 +777,8 @@ namespace PlayniteAchievements.Services
             {
                 PlayniteGameId = game?.Id ?? data?.PlayniteGameId ?? Guid.Empty,
                 GameName = data?.GameName ?? game?.Name,
+                GameIconPath = ResolveGameArtPath(game?.Icon),
+                GameCoverPath = ResolveGameArtPath(game?.CoverImage),
                 ProviderKey = achievement?.ProviderKey ?? data?.ProviderKey,
                 ApiName = achievement?.ApiName,
                 DisplayName = achievement?.DisplayName,
@@ -769,22 +800,26 @@ namespace PlayniteAchievements.Services
             };
         }
 
-        private static AchievementUnlockedEventArgs CreateUserCompletionEventArgs(
+        private AchievementUnlockedEventArgs CreateUserCompletionEventArgs(
             Game game,
-            GameAchievementData data)
+            GameAchievementData data,
+            DateTime? completionTimeUtc)
         {
             return new AchievementUnlockedEventArgs
             {
                 PlayniteGameId = game?.Id ?? data?.PlayniteGameId ?? Guid.Empty,
                 GameName = data?.GameName ?? game?.Name,
+                GameIconPath = ResolveGameArtPath(game?.Icon),
+                GameCoverPath = ResolveGameArtPath(game?.CoverImage),
                 ProviderKey = data?.ProviderKey,
+                UnlockTimeUtc = completionTimeUtc,
                 UnlockedCount = data?.UnlockedCount ?? 0,
                 TotalCount = data?.AchievementCount ?? 0,
                 IsGameCompleted = true
             };
         }
 
-        private static AchievementUnlockedEventArgs CreateFriendEventArgs(
+        private AchievementUnlockedEventArgs CreateFriendEventArgs(
             Game game,
             FriendPollTarget target,
             IReadOnlyList<FriendAchievementRow> allRows,
@@ -795,6 +830,8 @@ namespace PlayniteAchievements.Services
             {
                 PlayniteGameId = target?.PlayniteGameId ?? game?.Id ?? Guid.Empty,
                 GameName = target?.GameName ?? game?.Name,
+                GameIconPath = ResolveGameArtPath(game?.Icon),
+                GameCoverPath = ResolveGameArtPath(game?.CoverImage),
                 ProviderKey = target?.ProviderKey,
                 ApiName = row?.ApiName,
                 DisplayName = row?.DisplayName,
@@ -820,16 +857,20 @@ namespace PlayniteAchievements.Services
             };
         }
 
-        private static AchievementUnlockedEventArgs CreateFriendCompletionEventArgs(
+        private AchievementUnlockedEventArgs CreateFriendCompletionEventArgs(
             Game game,
             FriendPollTarget target,
-            IReadOnlyList<FriendAchievementRow> allRows)
+            IReadOnlyList<FriendAchievementRow> allRows,
+            DateTime? completionTimeUtc)
         {
             return new AchievementUnlockedEventArgs
             {
                 PlayniteGameId = target?.PlayniteGameId ?? game?.Id ?? Guid.Empty,
                 GameName = target?.GameName ?? game?.Name,
+                GameIconPath = ResolveGameArtPath(game?.Icon),
+                GameCoverPath = ResolveGameArtPath(game?.CoverImage),
                 ProviderKey = target?.ProviderKey,
+                UnlockTimeUtc = completionTimeUtc,
                 UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
                 TotalCount = allRows?.Count ?? 0,
                 IsGameCompleted = true,

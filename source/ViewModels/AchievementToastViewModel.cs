@@ -201,6 +201,11 @@ namespace PlayniteAchievements.ViewModels
         public string Description => _args.Description;
         public string Category => _args.Category;
         public string GameName => _args.GameName;
+
+        // Absolute local paths to the Playnite game's icon and cover art; null when the game has
+        // none (e.g. previews). Local files, so frame templates may bind Image.Source directly.
+        public string GameIconPath => _args.GameIconPath;
+        public string GameCoverPath => _args.GameCoverPath;
         public string IconPath => string.IsNullOrWhiteSpace(_args.IconPath) ? DefaultIcon : _args.IconPath;
         public string FriendAvatar => !string.IsNullOrWhiteSpace(_args.FriendAvatarPath)
             ? _args.FriendAvatarPath
