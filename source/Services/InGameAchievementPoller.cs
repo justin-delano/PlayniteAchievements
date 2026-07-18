@@ -257,6 +257,9 @@ namespace PlayniteAchievements.Services
 
             await RunUserTickAsync(eligible, token).ConfigureAwait(false);
 
+            // Friend completion notifications fire after every friend's unlock events, mirroring
+            // the user phases: user unlocks, user completions, friend unlocks, friend completions.
+            var friendCompletions = new List<AchievementUnlockedEventArgs>();
             foreach (var state in eligible)
             {
                 if (!IsTracked(state.Game.Id))
@@ -267,8 +270,13 @@ namespace PlayniteAchievements.Services
                 state.TickCount++;
                 if (ShouldRunFriendTick(state.TickCount))
                 {
-                    await RunFriendTickAsync(state, token).ConfigureAwait(false);
+                    friendCompletions.AddRange(await RunFriendTickAsync(state, token).ConfigureAwait(false));
                 }
+            }
+
+            foreach (var completion in friendCompletions)
+            {
+                _notifyUnlocked?.Invoke(completion);
             }
         }
 
@@ -324,6 +332,9 @@ namespace PlayniteAchievements.Services
                     $"[PollerTiming] tick took {timer.Elapsed.TotalSeconds:F1}s, exceeding the {interval.TotalSeconds:F0}s poll interval; unlock detection (and clip length) lags accordingly.");
             }
 
+            // Completion notifications are collected and fired only after every game's unlock
+            // events so they always land in their own wave behind the achievement toasts.
+            var completions = new List<AchievementUnlockedEventArgs>();
             foreach (var state in states)
             {
                 // A game stopped mid-tick must not toast unlocks from its final refresh.
@@ -332,11 +343,20 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
-                EmitUserUnlocks(state.Game, beforeByGame[state.Game.Id], interval, timer.ElapsedMilliseconds);
+                var completion = EmitUserUnlocks(state.Game, beforeByGame[state.Game.Id], interval, timer.ElapsedMilliseconds);
+                if (completion != null)
+                {
+                    completions.Add(completion);
+                }
+            }
+
+            foreach (var completion in completions)
+            {
+                _notifyUnlocked?.Invoke(completion);
             }
         }
 
-        private void EmitUserUnlocks(Game game, GameAchievementData before, TimeSpan interval, long elapsedMs)
+        private AchievementUnlockedEventArgs EmitUserUnlocks(Game game, GameAchievementData before, TimeSpan interval, long elapsedMs)
         {
             var after = _cacheManager?.LoadGameData(game.Id.ToString());
             HydrateForToast(after);
@@ -346,11 +366,17 @@ namespace PlayniteAchievements.Services
             _logger?.Debug(
                 $"[InGamePolling] User tick complete: game={game.Name}, interval={interval.TotalSeconds:F0}s, elapsedMs={elapsedMs}, unlocks={unlocks.Count}.");
 
+            // This batch completes the game when the data crossed from incomplete to complete
+            // (all unlocked, or the capstone unlocked) with at least one new unlock in hand.
+            var completesGame = unlocks.Count > 0 && before?.IsCompleted != true && after?.IsCompleted == true;
+
             var numberByApiName = BuildAchievementNumberMap(after);
             foreach (var achievement in unlocks)
             {
-                _notifyUnlocked?.Invoke(CreateUserEventArgs(game, after, achievement, ResolveAchievementNumber(numberByApiName, achievement)));
+                _notifyUnlocked?.Invoke(CreateUserEventArgs(game, after, achievement, ResolveAchievementNumber(numberByApiName, achievement), completesGame));
             }
+
+            return completesGame ? CreateUserCompletionEventArgs(game, after) : null;
         }
 
         /// <summary>
@@ -392,31 +418,32 @@ namespace PlayniteAchievements.Services
                 : 0;
         }
 
-        private async Task RunFriendTickAsync(GamePollState state, CancellationToken token)
+        private async Task<List<AchievementUnlockedEventArgs>> RunFriendTickAsync(GamePollState state, CancellationToken token)
         {
+            var completions = new List<AchievementUnlockedEventArgs>();
             var game = state.Game;
             if (_friendCache == null)
             {
-                return;
+                return completions;
             }
 
             if (_refreshRuntime?.IsRebuilding == true)
             {
                 _logger?.Debug("[InGamePolling] Friend tick skipped: refresh already running.");
-                return;
+                return completions;
             }
 
             var roster = LoadFriendRoster(game);
             if (roster.Count == 0)
             {
                 _logger?.Debug($"[InGamePolling] Friend tick skipped: no active friends own {game.Name}.");
-                return;
+                return completions;
             }
 
             var batch = SelectFriendBatch(state, roster);
             if (batch.Count == 0)
             {
-                return;
+                return completions;
             }
 
             var providerKeys = batch
@@ -461,11 +488,17 @@ namespace PlayniteAchievements.Services
             var totalUnlocks = 0;
             foreach (var target in batch)
             {
-                totalUnlocks += EmitFriendUnlocks(state, target);
+                var (count, completion) = EmitFriendUnlocks(state, target);
+                totalUnlocks += count;
+                if (completion != null)
+                {
+                    completions.Add(completion);
+                }
             }
 
             _logger?.Debug(
                 $"[InGamePolling] Friend tick complete: game={game.Name}, elapsedMs={timer.ElapsedMilliseconds}, batch={batch.Count}, roster={roster.Count}, cursor={state.FriendCursor}, unlocks={totalUnlocks}.");
+            return completions;
         }
 
         private List<FriendPollTarget> LoadFriendRoster(Game game)
@@ -532,7 +565,7 @@ namespace PlayniteAchievements.Services
             return result;
         }
 
-        private int EmitFriendUnlocks(GamePollState state, FriendPollTarget target)
+        private (int Count, AchievementUnlockedEventArgs Completion) EmitFriendUnlocks(GamePollState state, FriendPollTarget target)
         {
             var rows = _friendCache.LoadFriendGameAchievements(
                 target.ProviderKey,
@@ -563,15 +596,30 @@ namespace PlayniteAchievements.Services
 
             if (fresh.Count == 0)
             {
-                return 0;
+                return (0, null);
             }
+
+            // This batch completes the friend's game when the rows are complete now (all
+            // unlocked, or an unlocked capstone) and were not complete before these fresh
+            // unlocks landed.
+            var freshKeys = new HashSet<string>(
+                fresh.Where(row => row != null).Select(row => row.ApiName ?? string.Empty),
+                StringComparer.OrdinalIgnoreCase);
+            var unlockedNow = rows.Count(row => row?.Unlocked == true);
+            var completeNow =
+                (rows.Count > 0 && unlockedNow >= rows.Count) ||
+                rows.Any(row => row?.IsCapstone == true && row.Unlocked);
+            var completeBefore =
+                (rows.Count > 0 && unlockedNow - fresh.Count >= rows.Count) ||
+                rows.Any(row => row?.IsCapstone == true && row.Unlocked && !freshKeys.Contains(row.ApiName ?? string.Empty));
+            var completesGame = completeNow && !completeBefore;
 
             foreach (var row in fresh)
             {
-                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row));
+                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row, completesGame));
             }
 
-            return fresh.Count;
+            return (fresh.Count, completesGame ? CreateFriendCompletionEventArgs(state.Game, target, rows) : null);
         }
 
         private HashSet<string> GetToastedFriendSet(GamePollState state, FriendPollTarget target)
@@ -694,7 +742,8 @@ namespace PlayniteAchievements.Services
             Game game,
             GameAchievementData data,
             AchievementDetail achievement,
-            int achievementNumber)
+            int achievementNumber,
+            bool completesGame)
         {
             return new AchievementUnlockedEventArgs
             {
@@ -717,7 +766,25 @@ namespace PlayniteAchievements.Services
                 UnlockedCount = data?.UnlockedCount ?? 0,
                 TotalCount = data?.AchievementCount ?? 0,
                 AchievementNumber = achievementNumber,
-                GameCompleted = data?.IsCompleted == true
+                GameCompleted = data?.IsCompleted == true,
+                CompletesGame = completesGame
+            };
+        }
+
+        private static AchievementUnlockedEventArgs CreateUserCompletionEventArgs(
+            Game game,
+            GameAchievementData data)
+        {
+            return new AchievementUnlockedEventArgs
+            {
+                PlayniteGameId = game?.Id ?? data?.PlayniteGameId ?? Guid.Empty,
+                GameName = data?.GameName ?? game?.Name,
+                ProviderKey = data?.ProviderKey,
+                UnlockedCount = data?.UnlockedCount ?? 0,
+                TotalCount = data?.AchievementCount ?? 0,
+                GameCompleted = true,
+                CompletesGame = true,
+                IsGameCompletionNotification = true
             };
         }
 
@@ -725,7 +792,8 @@ namespace PlayniteAchievements.Services
             Game game,
             FriendPollTarget target,
             IReadOnlyList<FriendAchievementRow> allRows,
-            FriendAchievementRow row)
+            FriendAchievementRow row,
+            bool completesGame)
         {
             return new AchievementUnlockedEventArgs
             {
@@ -747,6 +815,30 @@ namespace PlayniteAchievements.Services
                 UnlockTimeUtc = row?.UnlockTimeUtc,
                 UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
                 TotalCount = allRows?.Count ?? 0,
+                IsFriendUnlock = true,
+                FriendExternalUserId = target?.Friend?.ExternalUserId,
+                FriendDisplayName = target?.Friend?.DisplayName,
+                FriendAvatarPath = target?.Friend?.AvatarPath,
+                FriendAvatarUrl = target?.Friend?.AvatarUrl,
+                CompletesGame = completesGame
+            };
+        }
+
+        private static AchievementUnlockedEventArgs CreateFriendCompletionEventArgs(
+            Game game,
+            FriendPollTarget target,
+            IReadOnlyList<FriendAchievementRow> allRows)
+        {
+            return new AchievementUnlockedEventArgs
+            {
+                PlayniteGameId = target?.PlayniteGameId ?? game?.Id ?? Guid.Empty,
+                GameName = target?.GameName ?? game?.Name,
+                ProviderKey = target?.ProviderKey,
+                UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
+                TotalCount = allRows?.Count ?? 0,
+                GameCompleted = true,
+                CompletesGame = true,
+                IsGameCompletionNotification = true,
                 IsFriendUnlock = true,
                 FriendExternalUserId = target?.Friend?.ExternalUserId,
                 FriendDisplayName = target?.Friend?.DisplayName,
