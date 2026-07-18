@@ -314,7 +314,7 @@
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center"
                                     Margin="0,6,0,0">
-                            <Image Source="{Binding BadgeImage}"
+                            <Image Source="{Binding FrameBadgeImage}"
                                    Width="28"
                                    Height="28"
                                    VerticalAlignment="Center"
@@ -353,6 +353,19 @@
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                        FontSize="17"
                                        Visibility="{Binding FrameShowUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <!-- Completion line: only on the unlock batch that completed the game
+                                 (the completion notification's own frame says it in its title). -->
+                            <TextBlock Text="  &#8226;  "
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       Visibility="{Binding FrameShowGameCompleteSeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Toast_GameComplete}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{Binding FrameAccentBrush}"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       Visibility="{Binding FrameShowGameCompleteLine, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding TitleText}"
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"

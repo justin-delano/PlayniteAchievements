@@ -117,9 +117,11 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// The frame's "Game Complete!" line: shown on the completing unlock's framed screenshot.
-        /// The completion notification's own frame hides it — its title already says it.
+        /// The completion notification's own frame hides it — its title already says it. The
+        /// separator shows only when header text or the datetime precedes the line.
         /// </summary>
         public bool FrameShowGameCompleteLine => IsCompleted && !IsGameCompletionNotification;
+        public bool FrameShowGameCompleteSeparator => FrameShowGameCompleteLine && (FrameShowHeader || FrameShowUnlockTime);
 
         // Mirrors TitleBrush but honors the frame's own rarity-colored-name toggle.
         public Brush FrameTitleBrush => _settings.FrameRarityColoredName
