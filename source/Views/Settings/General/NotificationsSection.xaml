@@ -421,6 +421,11 @@
                                     CommandParameter="capstone"
                                     Content="{DynamicResource LOCPlayAch_Completed}"
                                     Margin="0,0,8,8"/>
+                            <Button x:Name="ToastPreviewCompleteButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="complete"
+                                    Content="{DynamicResource LOCPlayAch_Toast_GameComplete}"
+                                    Margin="0,0,8,8"/>
                             <Button x:Name="ToastPreviewFriendButton"
                                     Click="ToastPreviewButton_Click"
                                     CommandParameter="friend"
@@ -493,11 +498,42 @@
                                       Margin="0,0,14,8"/>
                         </WrapPanel>
 
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
+                                   Style="{StaticResource MutedTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
                         <WrapPanel>
-                            <Button x:Name="FramePreviewButton"
+                            <Button x:Name="FramePreviewCommonButton"
                                     Click="FramePreviewButton_Click"
-                                    Content="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
-                                    Margin="0,0,8,0"/>
+                                    CommandParameter="common"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_Common}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="FramePreviewUncommonButton"
+                                    Click="FramePreviewButton_Click"
+                                    CommandParameter="uncommon"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="FramePreviewRareButton"
+                                    Click="FramePreviewButton_Click"
+                                    CommandParameter="rare"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_Rare}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="FramePreviewUltraRareButton"
+                                    Click="FramePreviewButton_Click"
+                                    CommandParameter="ultrarare"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="FramePreviewCapstoneButton"
+                                    Click="FramePreviewButton_Click"
+                                    CommandParameter="capstone"
+                                    Content="{DynamicResource LOCPlayAch_Completed}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="FramePreviewCompleteButton"
+                                    Click="FramePreviewButton_Click"
+                                    CommandParameter="complete"
+                                    Content="{DynamicResource LOCPlayAch_Toast_GameComplete}"
+                                    Margin="0,0,8,8"/>
                         </WrapPanel>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FramePreviewHint}"
                                    Style="{StaticResource MutedTextStyle}"

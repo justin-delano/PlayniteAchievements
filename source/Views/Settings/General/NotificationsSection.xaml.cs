@@ -148,6 +148,7 @@ namespace PlayniteAchievements.Views.Settings.General
         /// </summary>
         private void FramePreviewButton_Click(object sender, RoutedEventArgs e)
         {
+            var kind = (sender as Button)?.CommandParameter as string ?? "mockup";
             var persisted = _settings?.Persisted;
             if (persisted == null)
             {
@@ -190,7 +191,7 @@ namespace PlayniteAchievements.Views.Settings.General
             };
             canvas.Children.Add(new ContentControl
             {
-                Content = new AchievementToastViewModel(BuildToastPreviewArgs("mockup"), persisted),
+                Content = new AchievementToastViewModel(BuildToastPreviewArgs(kind), persisted),
                 ContentTemplate = template,
             });
             window.Content = new System.Windows.Controls.Viewbox
@@ -271,7 +272,20 @@ namespace PlayniteAchievements.Views.Settings.General
                 case "capstone":
                     var capstone = SampleUnlock("UltraRare", 1.2, true);
                     capstone.GameCompleted = true;
+                    capstone.CompletesGame = true;
                     return capstone;
+                case "complete":
+                    // The standalone completion notification (own wave after unlock toasts).
+                    return new AchievementUnlockedEventArgs
+                    {
+                        IsPreview = true,
+                        GameName = sampleGame,
+                        UnlockedCount = 40,
+                        TotalCount = 40,
+                        GameCompleted = true,
+                        CompletesGame = true,
+                        IsGameCompletionNotification = true
+                    };
                 case "friend":
                     var friend = SampleUnlock("Rare", 7.5, false);
                     friend.IsFriendUnlock = true;

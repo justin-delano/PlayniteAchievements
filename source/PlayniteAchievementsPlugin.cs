@@ -622,7 +622,7 @@ namespace PlayniteAchievements
             {
                 Title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 Type = SiderbarItemType.View,
-                Icon = GetOverviewIcon(),
+                Icon = Views.Helpers.PluginLogo.CreateIcon(18),
                 Opened = () =>
                 {
                     return new OverviewHostControl(
@@ -634,21 +634,6 @@ namespace PlayniteAchievements
                 }
             };
 
-        }
-
-        private TextBlock GetOverviewIcon()
-        {
-            var tb = new TextBlock
-            {
-                Text = char.ConvertFromUtf32(0xedd7), // ico-font: trophy
-                FontSize = 18
-            };
-
-            var font = ResourceProvider.GetResource("FontIcoFont") as FontFamily;
-            tb.FontFamily = font ?? new FontFamily("Segoe UI Symbol");
-            // tb.SetResourceReference(TextBlock.ForegroundProperty, "GlyphBrush");
-
-            return tb;
         }
 
         // === Top Panel ===

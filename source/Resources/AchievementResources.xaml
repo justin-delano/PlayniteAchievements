@@ -9,6 +9,7 @@
         <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementGridStyles.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementCellTemplates.xaml"/>
         <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementControlStyles.xaml"/>
+        <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/LogoResources.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
     <!--
@@ -313,7 +314,7 @@
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center"
                                     Margin="0,6,0,0">
-                            <Image Source="{Binding BadgeImage}"
+                            <Image Source="{Binding FrameBadgeImage}"
                                    Width="28"
                                    Height="28"
                                    VerticalAlignment="Center"
@@ -352,6 +353,19 @@
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                        FontSize="17"
                                        Visibility="{Binding FrameShowUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <!-- Completion line: only on the unlock batch that completed the game
+                                 (the completion notification's own frame says it in its title). -->
+                            <TextBlock Text="  &#8226;  "
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       Visibility="{Binding FrameShowGameCompleteSeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Toast_GameComplete}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{Binding FrameAccentBrush}"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       Visibility="{Binding FrameShowGameCompleteLine, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding TitleText}"
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
@@ -393,14 +407,15 @@
                     </StackPanel>
 
                     <!-- Branding: shared screenshots identify the plugin. Product name stays a
-                         literal (not localized). BrandingIcon.png loads synchronously via pack URI. -->
+                         literal (not localized). The logo is a DrawingImage (LogoResources.xaml),
+                         which loads synchronously as offscreen rendering requires. -->
                     <StackPanel Grid.Column="2"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
                         <Border Width="1"
                                 Margin="0,10,20,10"
                                 Background="{DynamicResource PlayAch.Brush.PopupBorder}"/>
-                        <Image Source="pack://application:,,,/PlayniteAchievements;component/Resources/BrandingIcon.png"
+                        <Image Source="{StaticResource PlayAch.Image.Logo}"
                                Width="58"
                                Height="58"
                                VerticalAlignment="Center"

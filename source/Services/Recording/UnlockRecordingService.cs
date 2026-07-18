@@ -700,7 +700,9 @@ namespace PlayniteAchievements.Services.Recording
 
         private void OnAchievementUnlocked(object sender, AchievementUnlockedEventArgs e)
         {
-            if (_disposed || e == null || e.IsPreview || e.IsFriendUnlock)
+            // Completion notifications are not achievement unlocks — the completing unlock
+            // already gets its clip; a second clip of the congratulations toast would duplicate it.
+            if (_disposed || e == null || e.IsPreview || e.IsFriendUnlock || e.IsGameCompletionNotification)
             {
                 return;
             }

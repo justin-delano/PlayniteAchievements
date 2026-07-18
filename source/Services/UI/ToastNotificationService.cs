@@ -303,10 +303,13 @@ namespace PlayniteAchievements.Services.UI
 
             var anchor = items[anchorIndex];
             var end = anchorIndex;
+            // Completion notifications never share a wave with achievement unlocks: they follow
+            // in their own wave (multiple completions of the same kind may stack together).
             while (end < items.Count &&
                    result.Count < max &&
                    items[end].IsFriendUnlock == anchor.IsFriendUnlock &&
-                   items[end].PlayniteGameId == anchor.PlayniteGameId)
+                   items[end].PlayniteGameId == anchor.PlayniteGameId &&
+                   items[end].IsGameCompletionNotification == anchor.IsGameCompletionNotification)
             {
                 result.Add(items[end]);
                 end++;
@@ -677,6 +680,20 @@ namespace PlayniteAchievements.Services.UI
                 // The policy ANDs the EnableUnlockScreenshots master switch into each variant flag.
                 var effective = ProviderNotificationPolicy.Resolve(persisted, vm.ProviderKey);
                 var variants = ScreenshotVariants.None;
+
+                // The completion notification is not an achievement unlock: only the framed
+                // variant applies (a clean or with-toast shot would duplicate the completing
+                // unlock wave's captures moments earlier).
+                if (vm.IsGameCompletionNotification)
+                {
+                    if (effective.ScreenshotFramed)
+                    {
+                        plan.Items.Add((vm, ScreenshotVariants.Framed));
+                    }
+
+                    continue;
+                }
+
                 if (effective.ScreenshotClean)
                 {
                     variants |= ScreenshotVariants.Clean;
