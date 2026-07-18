@@ -11,10 +11,8 @@ namespace PlayniteAchievements.ViewModels
 {
     public sealed class AchievementToastViewModel
     {
-        // Plugin logo (rendered from Images/Logo.svg), shown when the unlock has no icon of its
-        // own; the settings previews set no IconPath so they show it too.
         private const string DefaultIcon =
-            "pack://application:,,,/PlayniteAchievements;component/Resources/Logo.png";
+            "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
 
         private readonly AchievementUnlockedEventArgs _args;
         private readonly PersistedSettings _settings;

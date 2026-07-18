@@ -145,7 +145,6 @@
   <ItemGroup>
     <Resource Include="Resources\BrandingIcon.png" />
     <Resource Include="Resources\HiddenAchIcon.png" />
-    <Resource Include="Resources\Logo.png" />
     <Resource Include="Resources\UnlockedAchIcon.png" />
     <Content Include="Resources\HiddenAchIcon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
