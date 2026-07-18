@@ -21,7 +21,14 @@ namespace PlayniteAchievements.Models
         public DateTime? UnlockTimeUtc { get; set; }
         public int UnlockedCount { get; set; }
         public int TotalCount { get; set; }
-        public bool GameCompleted { get; set; }
+
+        /// <summary>
+        /// True when the game is complete after this unlock (all achievements unlocked, or the
+        /// capstone unlocked) — the "completion achievement" state on a real unlock, distinct
+        /// from the standalone IsGameCompleted notification.
+        /// </summary>
+        public bool IsCompletionAchievement { get; set; }
+
         public bool IsFriendUnlock { get; set; }
         public string FriendExternalUserId { get; set; }
         public string FriendDisplayName { get; set; }
@@ -31,11 +38,10 @@ namespace PlayniteAchievements.Models
 
         /// <summary>
         /// True for the standalone "Congratulations! Game Complete!" notification emitted in its
-        /// own wave after the completing unlock's toasts. Exposed to templates as IsCompleted.
-        /// Not an achievement unlock: it never produces recording clips, and of the screenshot
-        /// variants only the framed one applies.
+        /// own wave after the completing unlock's toasts. Not an achievement unlock: it never
+        /// produces recording clips, and of the screenshot variants only the framed one applies.
         /// </summary>
-        public bool IsGameCompletionNotification { get; set; }
+        public bool IsGameCompleted { get; set; }
 
         /// <summary>
         /// 1-based position of this achievement within the game's provider/custom sort order.

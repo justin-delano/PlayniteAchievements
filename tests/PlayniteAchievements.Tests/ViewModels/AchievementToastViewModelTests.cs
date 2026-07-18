@@ -36,12 +36,12 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void CompletionNotification_IsCompletedIsTheOnlyCompletionFlag()
+        public void CompletionNotification_IsGameCompletedMarksTheStandaloneToast()
         {
             var viewModel = new AchievementToastViewModel(
                 new AchievementUnlockedEventArgs
                 {
-                    IsGameCompletionNotification = true
+                    IsGameCompleted = true
                 },
                 new PersistedSettings
                 {
@@ -49,7 +49,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                     FrameShowRarityBadge = true
                 });
 
-            Assert.IsTrue(viewModel.IsCompleted);
+            Assert.IsTrue(viewModel.IsGameCompleted);
             Assert.IsFalse(viewModel.IsCapstone);
             // No capstone/trophy/rarity data on the completion notification, so the secondary
             // badge resolves to hidden/null without any completion special-casing.
@@ -76,7 +76,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                     FrameShowRarityGlow = true
                 });
 
-            Assert.IsFalse(viewModel.IsCompleted);
+            Assert.IsFalse(viewModel.IsGameCompleted);
             Assert.IsNotNull(viewModel.CompletedBrush);
             Assert.IsNotNull(viewModel.CompletedGlowEffect);
             Assert.IsNotNull(viewModel.FrameCompletedGlowEffect);
@@ -90,7 +90,7 @@ namespace PlayniteAchievements.Tests.ViewModels
             var viewModel = new AchievementToastViewModel(
                 new AchievementUnlockedEventArgs
                 {
-                    IsGameCompletionNotification = true
+                    IsGameCompleted = true
                 },
                 new PersistedSettings
                 {
@@ -119,7 +119,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                 });
 
             Assert.AreEqual("achievement.png", viewModel.IconPath);
-            Assert.IsFalse(viewModel.IsCompleted);
+            Assert.IsFalse(viewModel.IsGameCompleted);
             Assert.IsTrue(viewModel.ShowBadge);
             Assert.IsTrue(viewModel.FrameShowBadge);
         }
@@ -135,7 +135,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                     TotalCount = 40,
                     Points = 90,
                     ScaledPoints = 180,
-                    GameCompleted = true
+                    IsCompletionAchievement = true
                 },
                 new PersistedSettings());
 
@@ -145,8 +145,8 @@ namespace PlayniteAchievements.Tests.ViewModels
             Assert.AreEqual(90, viewModel.Points);
             Assert.AreEqual(180, viewModel.ScaledPoints);
             // Game state, distinct from the completion-notification kind.
-            Assert.IsTrue(viewModel.GameCompleted);
-            Assert.IsFalse(viewModel.IsCompleted);
+            Assert.IsTrue(viewModel.IsCompletionAchievement);
+            Assert.IsFalse(viewModel.IsGameCompleted);
         }
 
         [TestMethod]
@@ -170,7 +170,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                 new AchievementUnlockedEventArgs
                 {
                     IsFriendUnlock = true,
-                    IsGameCompletionNotification = true
+                    IsGameCompleted = true
                 },
                 new PersistedSettings());
 

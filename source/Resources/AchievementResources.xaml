@@ -77,7 +77,7 @@
 
                 <!-- Rarity accent strip (capstone color takes precedence over rarity). Completion
                      notifications restyle here, in the template: base values live in Setters so
-                     the IsCompleted trigger can override them. -->
+                     the IsGameCompleted trigger can override them. -->
                 <Border Grid.Column="0"
                         Width="4"
                         CornerRadius="8,0,0,8">
@@ -85,7 +85,7 @@
                         <Style TargetType="Border">
                             <Setter Property="Background" Value="{Binding AccentBrush}"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                     <Setter Property="Background" Value="{Binding CompletedBrush}"/>
                                 </DataTrigger>
                             </Style.Triggers>
@@ -123,7 +123,7 @@
                                     <Setter Property="helpers:AsyncImage.Uri" Value="{Binding IconPath}"/>
                                     <Setter Property="Effect" Value="{Binding RarityGlowEffect}"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                        <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                             <Setter Property="helpers:AsyncImage.Uri" Value="{Binding CompletedBadgeImage}"/>
                                             <Setter Property="Effect" Value="{Binding CompletedGlowEffect}"/>
                                         </DataTrigger>
@@ -183,7 +183,7 @@
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                                     <Setter Property="Visibility" Value="{Binding ShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                        <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -202,7 +202,7 @@
                                     <Style.Triggers>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                <Condition Binding="{Binding IsGameCompleted}" Value="True"/>
                                                 <Condition Binding="{Binding IsFriendUnlock}" Value="False"/>
                                             </MultiDataTrigger.Conditions>
                                             <Setter Property="Visibility" Value="Visible"/>
@@ -220,7 +220,7 @@
                                     <Style.Triggers>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                <Condition Binding="{Binding IsGameCompleted}" Value="True"/>
                                                 <Condition Binding="{Binding IsFriendUnlock}" Value="True"/>
                                             </MultiDataTrigger.Conditions>
                                             <Setter Property="Visibility" Value="Visible"/>
@@ -257,7 +257,7 @@
                                 <Setter Property="Foreground" Value="{Binding TitleBrush}"/>
                                 <Setter Property="Visibility" Value="{Binding ShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                    <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                         <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Toast_GameComplete}"/>
                                         <Setter Property="Foreground" Value="{Binding CompletedBrush}"/>
                                         <Setter Property="Visibility" Value="Visible"/>
@@ -288,7 +288,7 @@
                                     <Setter Property="Visibility" Value="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <Style.Triggers>
                                         <!-- The game name is the completion message's subject. -->
-                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                        <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -408,7 +408,7 @@
                                         <Setter Property="Source" Value="{Binding IconPath}"/>
                                         <Setter Property="Effect" Value="{Binding FrameRarityGlowEffect}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                                 <Setter Property="Source" Value="{Binding CompletedBadgeImage}"/>
                                                 <Setter Property="Effect" Value="{Binding FrameCompletedGlowEffect}"/>
                                             </DataTrigger>
@@ -456,7 +456,7 @@
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                                         <Setter Property="Visibility" Value="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -474,7 +474,7 @@
                                         <Style.Triggers>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                    <Condition Binding="{Binding IsGameCompleted}" Value="True"/>
                                                     <Condition Binding="{Binding IsFriendUnlock}" Value="False"/>
                                                 </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility" Value="Visible"/>
@@ -492,7 +492,7 @@
                                         <Style.Triggers>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                    <Condition Binding="{Binding IsGameCompleted}" Value="True"/>
                                                     <Condition Binding="{Binding IsFriendUnlock}" Value="True"/>
                                                 </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility" Value="Visible"/>
@@ -525,7 +525,7 @@
                                     <Setter Property="Foreground" Value="{Binding FrameTitleBrush}"/>
                                     <Setter Property="Visibility" Value="{Binding FrameShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                        <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                             <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Toast_GameComplete}"/>
                                             <Setter Property="Foreground" Value="{Binding CompletedBrush}"/>
                                             <Setter Property="Visibility" Value="Visible"/>
@@ -554,7 +554,7 @@
                                         <Setter Property="Visibility" Value="{Binding FrameShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         <Style.Triggers>
                                             <!-- The game name is the completion message's subject. -->
-                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                            <DataTrigger Binding="{Binding IsGameCompleted}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </Style.Triggers>

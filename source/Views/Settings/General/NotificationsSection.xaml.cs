@@ -271,7 +271,7 @@ namespace PlayniteAchievements.Views.Settings.General
                     return SampleUnlock("UltraRare", 1.8, false);
                 case "capstone":
                     var capstone = SampleUnlock("UltraRare", 1.2, true);
-                    capstone.GameCompleted = true;
+                    capstone.IsCompletionAchievement = true;
                     return capstone;
                 case "complete":
                     // The standalone completion notification (own wave after unlock toasts).
@@ -281,8 +281,7 @@ namespace PlayniteAchievements.Views.Settings.General
                         GameName = sampleGame,
                         UnlockedCount = 40,
                         TotalCount = 40,
-                        GameCompleted = true,
-                        IsGameCompletionNotification = true
+                        IsGameCompleted = true
                     };
                 case "friend":
                     var friend = SampleUnlock("Rare", 7.5, false);

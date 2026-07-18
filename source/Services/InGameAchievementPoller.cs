@@ -765,7 +765,7 @@ namespace PlayniteAchievements.Services
                 UnlockedCount = data?.UnlockedCount ?? 0,
                 TotalCount = data?.AchievementCount ?? 0,
                 AchievementNumber = achievementNumber,
-                GameCompleted = data?.IsCompleted == true
+                IsCompletionAchievement = data?.IsCompleted == true
             };
         }
 
@@ -780,8 +780,7 @@ namespace PlayniteAchievements.Services
                 ProviderKey = data?.ProviderKey,
                 UnlockedCount = data?.UnlockedCount ?? 0,
                 TotalCount = data?.AchievementCount ?? 0,
-                GameCompleted = true,
-                IsGameCompletionNotification = true
+                IsGameCompleted = true
             };
         }
 
@@ -812,7 +811,7 @@ namespace PlayniteAchievements.Services
                 UnlockTimeUtc = row?.UnlockTimeUtc,
                 UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
                 TotalCount = allRows?.Count ?? 0,
-                GameCompleted = gameCompleted,
+                IsCompletionAchievement = gameCompleted,
                 IsFriendUnlock = true,
                 FriendExternalUserId = target?.Friend?.ExternalUserId,
                 FriendDisplayName = target?.Friend?.DisplayName,
@@ -833,8 +832,7 @@ namespace PlayniteAchievements.Services
                 ProviderKey = target?.ProviderKey,
                 UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
                 TotalCount = allRows?.Count ?? 0,
-                GameCompleted = true,
-                IsGameCompletionNotification = true,
+                IsGameCompleted = true,
                 IsFriendUnlock = true,
                 FriendExternalUserId = target?.Friend?.ExternalUserId,
                 FriendDisplayName = target?.Friend?.DisplayName,

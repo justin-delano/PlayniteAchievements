@@ -309,7 +309,7 @@ namespace PlayniteAchievements.Services.UI
                    result.Count < max &&
                    items[end].IsFriendUnlock == anchor.IsFriendUnlock &&
                    items[end].PlayniteGameId == anchor.PlayniteGameId &&
-                   items[end].IsCompleted == anchor.IsCompleted)
+                   items[end].IsGameCompleted == anchor.IsGameCompleted)
             {
                 result.Add(items[end]);
                 end++;
@@ -684,7 +684,7 @@ namespace PlayniteAchievements.Services.UI
                 // The completion notification is not an achievement unlock: only the framed
                 // variant applies (a clean or with-toast shot would duplicate the completing
                 // unlock wave's captures moments earlier).
-                if (vm.IsCompleted)
+                if (vm.IsGameCompleted)
                 {
                     if (effective.ScreenshotFramed)
                     {

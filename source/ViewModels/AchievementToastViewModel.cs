@@ -35,7 +35,7 @@ namespace PlayniteAchievements.ViewModels
 
         // Raw fields consumed by the unlock-screenshot feature (not shown in the toast UI).
         internal bool IsPreview => _args.IsPreview;
-        internal string AchievementName => IsCompleted
+        internal string AchievementName => IsGameCompleted
             ? ResourceProvider.GetString("LOCPlayAch_Toast_GameComplete")
             : _args.DisplayName;
         internal int AchievementNumber => _args.AchievementNumber;
@@ -50,8 +50,8 @@ namespace PlayniteAchievements.ViewModels
 
         // The header identifies who unlocked the achievement, so it is mandatory for friend
         // unlocks; for your own unlocks it honors the user's toggle. Completion notifications are
-        // restyled entirely by the templates (triggers on IsCompleted force the header/title/game
-        // name visible there), never here.
+        // restyled entirely by the templates (triggers on IsGameCompleted force the header/title/
+        // game name visible there), never here.
         public bool ShowHeader => IsFriendUnlock || _settings.ToastShowHeader;
         public bool ShowName => _settings.ToastShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool ShowDescription => _settings.ToastShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
@@ -61,18 +61,18 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// True for the standalone "Congratulations! Game Complete!" notification that follows
-        /// the completing unlock's wave. Regular unlocks — including the one that completed the
-        /// game — report false; IsCapstone marks the capstone achievement itself.
+        /// the completing unlock's wave. Regular unlocks — including the completion achievement
+        /// itself — report false.
         /// </summary>
-        public bool IsCompleted => _args.IsGameCompletionNotification;
+        public bool IsGameCompleted => _args.IsGameCompleted;
 
         /// <summary>
-        /// Whether the game is complete after this unlock (all achievements unlocked, or the
-        /// capstone unlocked) — game state, unlike IsCompleted which marks the standalone
-        /// completion notification. Computed for your own unlocks and friend unlocks alike, so a
-        /// template can restyle the unlock that finished the game.
+        /// True on a real achievement unlock when the game is complete after it (all
+        /// achievements unlocked, or the capstone unlocked) — computed for your own unlocks and
+        /// friend unlocks alike, so a template can restyle the unlock that finished the game.
+        /// The standalone IsGameCompleted notification reports false here.
         /// </summary>
-        public bool GameCompleted => _args.GameCompleted;
+        public bool IsCompletionAchievement => _args.IsCompletionAchievement;
 
         public bool HasTrophy => !string.IsNullOrWhiteSpace(_args.TrophyType);
 
@@ -215,8 +215,8 @@ namespace PlayniteAchievements.ViewModels
             : RarityAppearanceHelper.GetBrush(_rarity, _settings);
 
         // Completion palette, always available regardless of this notification's kind so the
-        // bundled templates (and themes) apply completion styling with triggers on IsCompleted.
-        // The glows honor the toast/frame rarity-glow toggles.
+        // bundled templates (and themes) apply completion styling with triggers on
+        // IsGameCompleted / IsCompletionAchievement. The glows honor the rarity-glow toggles.
         public Brush CompletedBrush => RarityAppearanceHelper.GetCompletedBrush(_settings);
         public Effect CompletedGlowEffect => _settings.ToastShowRarityGlow
             ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings)
@@ -278,7 +278,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsCapstone || IsCompleted)
+                if (IsCapstone || IsGameCompleted)
                 {
                     return "capstoneachievement";
                 }
@@ -306,7 +306,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsCapstone || IsCompleted)
+                if (IsCapstone || IsGameCompleted)
                 {
                     return 5;
                 }
