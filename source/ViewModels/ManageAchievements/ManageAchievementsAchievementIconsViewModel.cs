@@ -503,11 +503,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     return null;
                 }
 
-                var preserveOriginalResolution = _settings?.Persisted?.PreserveAchievementIconResolution ?? false;
-
                 var preferred = disk.GetAchievementIconCachePath(
                     _gameIdText,
-                    preserveOriginalResolution,
                     fileStem,
                     variant);
                 if (!string.IsNullOrWhiteSpace(preferred) && File.Exists(preferred))
@@ -515,9 +512,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     return preferred;
                 }
 
-                var fallback = disk.GetAchievementIconCachePath(
+                // Retired compressed 128px cache; still served for games not refreshed since the
+                // compressed mode was removed. The folder is deleted on each game's next refresh.
+                var fallback = disk.GetLegacyCompressedAchievementIconCachePath(
                     _gameIdText,
-                    !preserveOriginalResolution,
                     fileStem,
                     variant);
                 return !string.IsNullOrWhiteSpace(fallback) && File.Exists(fallback)

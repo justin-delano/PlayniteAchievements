@@ -19,9 +19,7 @@ namespace PlayniteAchievements.Services.Images
     public enum IconCacheClearScope
     {
         All = 0,
-        CompressedOnly = 1,
-        FullResolutionOnly = 2,
-        LockedOnly = 3
+        LockedOnly = 1
     }
 
     /// <summary>
@@ -295,7 +293,7 @@ namespace PlayniteAchievements.Services.Images
         /// <summary>
         /// Legacy helper: generate a cache filename from a URI using a SHA256 hash.
         /// New achievement icon writes should use API-name paths instead.
-        /// This is retained for display-time fallback and lazy legacy migration.
+        /// This is retained for display-time hash-cache lookups (MemoryImageService, GifAnimationHelper).
         /// </summary>
         public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
@@ -333,13 +331,25 @@ namespace PlayniteAchievements.Services.Images
 
         internal string GetAchievementIconCachePath(
             string gameId,
-            bool preserveOriginalResolution,
             string fileStem,
             AchievementIconVariant variant)
         {
             var relativePath = AchievementIconCachePathBuilder.BuildRelativePath(
                 gameId,
-                preserveOriginalResolution,
+                fileStem,
+                variant);
+            return Path.Combine(_cacheRoot, relativePath);
+        }
+
+        // Path of the retired compressed 128px cache mode. Read-only fallback for games not yet
+        // refreshed since the mode was removed; the folder is deleted after each game's refresh.
+        internal string GetLegacyCompressedAchievementIconCachePath(
+            string gameId,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            var relativePath = AchievementIconCachePathBuilder.BuildLegacyCompressedRelativePath(
+                gameId,
                 fileStem,
                 variant);
             return Path.Combine(_cacheRoot, relativePath);
@@ -507,48 +517,6 @@ namespace PlayniteAchievements.Services.Images
         private void ClearDefaultCategoryArtSnapshots()
         {
             _defaultCategoryArtSnapshots.Clear();
-        }
-
-        public bool TryMigrateLegacyAchievementIcon(
-            string legacySourceIdentifier,
-            string targetPath,
-            int legacyDecodeSize,
-            string gameId = null)
-        {
-            if (string.IsNullOrWhiteSpace(legacySourceIdentifier) ||
-                string.IsNullOrWhiteSpace(targetPath) ||
-                legacyDecodeSize <= 0)
-            {
-                return false;
-            }
-
-            try
-            {
-                if (File.Exists(targetPath))
-                {
-                    return true;
-                }
-
-                var legacyPath = GetIconCachePathFromUri(legacySourceIdentifier, legacyDecodeSize, gameId);
-                if (string.IsNullOrWhiteSpace(legacyPath) || !File.Exists(legacyPath))
-                {
-                    return false;
-                }
-
-                EnsureTargetDirectory(targetPath);
-                File.Move(legacyPath, targetPath);
-                InvalidateDefaultCategoryArtSnapshotForTargetPath(targetPath);
-                return true;
-            }
-            catch (IOException)
-            {
-                return File.Exists(targetPath);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"Failed to migrate legacy cached icon to {targetPath}");
-                return false;
-            }
         }
 
         /// <summary>
@@ -1051,6 +1019,35 @@ namespace PlayniteAchievements.Services.Images
             ClearGameCache(gameId);
         }
 
+        // Deletes a game's retired compressed 128px icon folder after a refresh has repopulated the
+        // original-resolution cache. No-op when the folder is absent, which is the steady state.
+        internal void DeleteLegacyCompressedGameIconFolder(string gameId)
+        {
+            if (string.IsNullOrWhiteSpace(gameId))
+            {
+                return;
+            }
+
+            try
+            {
+                var legacyDir = Path.Combine(
+                    IconCacheDirectory,
+                    gameId.Trim(),
+                    AchievementIconCachePathBuilder.LegacyCompressedModeFolderName);
+                if (!Directory.Exists(legacyDir))
+                {
+                    return;
+                }
+
+                Directory.Delete(legacyDir, recursive: true);
+                InvalidateDefaultCategoryArtSnapshot(gameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to delete legacy compressed icon cache for game '{gameId}'.");
+            }
+        }
+
         // Deletes a single icon_cache-rooted subdirectory (recursively) and prunes parent
         // directories left empty, up to but not including the icon_cache root. Guarded so only
         // paths resolving under icon_cache can be removed. Used to drop a specific game's cached
@@ -1266,19 +1263,9 @@ namespace PlayniteAchievements.Services.Images
             }
 
             var fileName = Path.GetFileName(path) ?? string.Empty;
-            var parentDirectory = Path.GetDirectoryName(path);
-            var modeFolder = string.IsNullOrWhiteSpace(parentDirectory)
-                ? string.Empty
-                : new DirectoryInfo(parentDirectory).Name;
-            var isCompressed = string.Equals(modeFolder, "128", StringComparison.OrdinalIgnoreCase) ||
-                               fileName.IndexOf("_128.", StringComparison.OrdinalIgnoreCase) >= 0;
 
             switch (scope)
             {
-                case IconCacheClearScope.CompressedOnly:
-                    return isCompressed;
-                case IconCacheClearScope.FullResolutionOnly:
-                    return !isCompressed;
                 case IconCacheClearScope.LockedOnly:
                     return fileName.IndexOf(".locked.", StringComparison.OrdinalIgnoreCase) >= 0;
                 default:

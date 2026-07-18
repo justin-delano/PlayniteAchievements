@@ -1023,7 +1023,6 @@ namespace PlayniteAchievements
                    propertyName == nameof(PersistedSettings.ShowHiddenDescription) ||
                    propertyName == nameof(PersistedSettings.ShowHiddenSuffix) ||
                    propertyName == nameof(PersistedSettings.ShowLockedIcon) ||
-                   propertyName == nameof(PersistedSettings.PreserveAchievementIconResolution) ||
                    propertyName == nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable) ||
                    propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds);
         }

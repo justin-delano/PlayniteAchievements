@@ -1403,6 +1403,10 @@ namespace PlayniteAchievements.Services.Refresh
 
                 Interlocked.Increment(ref _savedGamesInCurrentRun);
 
+                // The persisted icon paths now point at original-resolution files, so the game's
+                // retired compressed 128px folder (if any) is no longer referenced and can go.
+                _achievementIconService.DeleteLegacyCompressedIconFolder(key);
+
                 FriendRefresh.PromoteMatchingProviderOnlyFriendGame(provider, data);
 
                 // Fire per-game refresh event for amortized tag syncing
