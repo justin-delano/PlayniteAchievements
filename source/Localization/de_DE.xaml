@@ -832,7 +832,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Sortierrichtung wechseln</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Für Standardsortierung Spaltenüberschrift erneut anklicken.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionGlow">Komplettierungsleuchten anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Spoiler von Freunden anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Spoiler durch Erfolge von Freunden anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(Verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf Symbolen freigeschalteter Erfolge anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Histogramm anzeigen</sys:String>
@@ -874,7 +874,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Downloads platform-supplied locked icons when they differ from the unlocked icon. Otherwise the unlocked icon is shown in grayscale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Description">Debugging and support tools.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Werkzeuge</sys:String>
-    <sys:String x:Key="LOCPlayAch_UseCoverImages">Use Cover Images Instead of Icons in Games List</sys:String>
+    <sys:String x:Key="LOCPlayAch_UseCoverImages">Cover statt Symbole in Listen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">Elementanzeige</sys:String>
     <!-- Context_Preview / Context_Settings: uppercase panel labels above theme preview and settings columns -->
     <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">VORSCHAU</sys:String>
@@ -947,7 +947,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Erfolge nach Trophäe</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Freundeübersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Friend Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">Freunde suchen</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">Freunde filtern...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_AllProviders">Alle Plattformen</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearSelection">Clear Selection</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendAchievements">{0} Erfolge</sys:String>
