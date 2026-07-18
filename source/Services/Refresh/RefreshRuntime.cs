@@ -70,10 +70,12 @@ namespace PlayniteAchievements.Services.Refresh
         private readonly Action<RebuildPayload> _onRefreshCompleted;
         private int _savedGamesInCurrentRun;
 
-        // A current-user refresh that saves many games scrapes many provider web pages
-        // (multi-MB HTML on the LOH), inflating the working set the CLR then holds. After a
-        // large run, request a one-time LOH compaction. Gated so Single/Recent runs (a handful
-        // of games) never trigger a collection.
+        // A refresh that saves many games or scrapes many friend rows fetches many provider web
+        // pages (multi-MB HTML on the LOH), inflating the working set the CLR then holds. After a
+        // large run, request a one-time LOH compaction. The gate takes the max of current-user
+        // saved games and friend scrape volume so combined runs whose weight is on the friend
+        // side still compact, while Single/Recent runs (a handful of games) never trigger a
+        // collection.
         private const int LohCompactionSavedGamesThreshold = 25;
         private volatile List<string> _lastFailedAuthProviderKeys = new List<string>();
 
@@ -587,8 +589,13 @@ namespace PlayniteAchievements.Services.Refresh
 
                 // Runs on a threadpool continuation (the run body is awaited with
                 // ConfigureAwait(false)), so the blocking collection stays off the UI thread.
+                // payload is null on cancel/exception paths, so friend volume is 0 there and
+                // only current-user saves can gate the compaction (matching prior behavior).
                 MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
-                    savedGamesCount, LohCompactionSavedGamesThreshold, _logger);
+                    Math.Max(savedGamesCount, FriendRefreshCoordinator.GetFriendScrapeVolume(payload)),
+                    LohCompactionSavedGamesThreshold,
+                    _logger,
+                    context: $"refresh.end mode={mode}");
 
                 // Notify refresh completion subscribers (e.g., auth failure notifications).
                 if (!wasCanceled && payload != null)

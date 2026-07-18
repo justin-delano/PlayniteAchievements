@@ -109,13 +109,6 @@ namespace PlayniteAchievements.Services.Refresh
         private const int FriendInvalidationFlushMinCompletions = 25;
         private static readonly TimeSpan FriendInvalidationFlushInterval = TimeSpan.FromSeconds(2);
 
-        // A large friend scan scrapes many web pages (multi-MB HTML crossing the CEF boundary)
-        // and materializes big per-friend collections, inflating the Large Object Heap. .NET
-        // does not return that space to the OS on its own, so after a substantial scan we
-        // request a one-time LOH-compacting collection. Gated by work volume so small
-        // single-game (in-game poller) ticks and no-op periodic updates never trigger it.
-        private const int LohCompactionWorkThreshold = 25;
-
         private IFriendCacheManager _friendCache => _cacheService as IFriendCacheManager;
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -184,22 +177,25 @@ namespace PlayniteAchievements.Services.Refresh
                 }
             }
 
-            CompactLargeObjectHeapAfterLargeScan(payload);
             return payload;
         }
 
-        private void CompactLargeObjectHeapAfterLargeScan(RebuildPayload payload)
+        /// <summary>
+        /// Work volume of the friend scrape portion of a run, for the shared LOH compaction gate
+        /// in RefreshRuntime. Zero when the payload carries no friend summary (e.g. current-user
+        /// only runs).
+        /// </summary>
+        internal static int GetFriendScrapeVolume(RebuildPayload payload)
         {
             var summary = payload?.FriendSummary;
             if (summary == null)
             {
-                return;
+                return 0;
             }
 
-            var scrapeVolume = Math.Max(
+            return Math.Max(
                 summary.CandidatesRefreshed,
                 Math.Max(summary.OwnershipRowsWritten, summary.AchievementsSaved));
-            MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(scrapeVolume, LohCompactionWorkThreshold, _logger);
         }
 
         internal async Task RefreshPreparedFriendContextsAsync(
