@@ -56,7 +56,24 @@ namespace PlayniteAchievements.Tests.ViewModels
             Assert.IsFalse(viewModel.ShowBadge);
             Assert.IsNull(viewModel.BadgeImage);
             Assert.IsFalse(viewModel.FrameShowBadge);
-            Assert.IsNull(viewModel.FrameBadgeImage);
+        }
+
+        [TestMethod]
+        public void CompletionPalette_AlwaysAvailableRegardlessOfKind()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    RarityTier = "Rare",
+                    GlobalPercent = 9.3
+                },
+                new PersistedSettings());
+
+            Assert.IsFalse(viewModel.IsCompleted);
+            Assert.IsNotNull(viewModel.CompletedBrush);
+            Assert.IsNotNull(viewModel.CompletedGlowEffect);
+            Assert.IsNotNull(viewModel.CompletedBadgeImage);
+            Assert.IsNotNull(viewModel.RarityBrush);
         }
 
         [TestMethod]
@@ -78,10 +95,10 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.AreEqual("achievement.png", viewModel.IconSource);
             Assert.IsFalse(viewModel.UsesCompletedBadgeIcon);
+            Assert.IsTrue(viewModel.IsCompleted);
+            Assert.IsFalse(viewModel.IsGameCompletionNotification);
             Assert.IsTrue(viewModel.ShowBadge);
             Assert.IsTrue(viewModel.FrameShowBadge);
-            Assert.IsFalse(viewModel.FrameShowGameCompleteLine);
-            Assert.IsFalse(viewModel.FrameShowGameCompleteSeparator);
         }
     }
 }

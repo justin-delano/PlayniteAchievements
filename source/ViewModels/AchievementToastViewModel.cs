@@ -118,14 +118,9 @@ namespace PlayniteAchievements.ViewModels
         public bool FrameShowGameCategorySeparator => FrameShowGameName && FrameShowCategory;
         public bool FrameShowShineBorder => !IsGameCompletionNotification && _settings.FrameShowRarityGlow && IsHardcore;
 
-        // Retained for theme override compatibility. The default frame no longer adds a secondary
-        // "Game Complete!" header line; completion is represented by the standalone notification.
-        public bool FrameShowGameCompleteLine => false;
-        public bool FrameShowGameCompleteSeparator => false;
-
         // Mirrors TitleBrush but honors the frame's own rarity-colored-name toggle.
         public Brush FrameTitleBrush => _settings.FrameRarityColoredName
-            ? FrameAccentBrush
+            ? AccentBrush
             : Application.Current?.TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.White;
 
         public Effect FrameRarityGlowEffect => _settings.FrameShowRarityGlow
@@ -206,13 +201,13 @@ namespace PlayniteAchievements.ViewModels
             ? RarityAppearanceHelper.GetCompletedBrush(_settings)
             : RarityAppearanceHelper.GetBrush(_rarity, _settings);
 
-        /// <summary>
-        /// Frame-scoped accent: unlike the toast, the frame also switches to the completed color
-        /// for the unlock batch that completed the game (IsCompleted).
-        /// </summary>
-        public Brush FrameAccentBrush => IsCapstone || IsCompleted
-            ? RarityAppearanceHelper.GetCompletedBrush(_settings)
-            : RarityAppearanceHelper.GetBrush(_rarity, _settings);
+        // Completion palette, always available regardless of this notification's kind so theme
+        // templates can apply their own completion styling with triggers on IsCompleted /
+        // IsGameCompletionNotification instead of the plugin-computed values above.
+        public Brush CompletedBrush => RarityAppearanceHelper.GetCompletedBrush(_settings);
+        public Effect CompletedGlowEffect => RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings);
+        public ImageSource CompletedBadgeImage => RarityAppearanceHelper.CreateCompletedBadgePreview(_settings);
+        public Brush RarityBrush => RarityAppearanceHelper.GetBrush(_rarity, _settings);
 
         // Capstone color takes precedence over rarity, matching the grid's RarityNameBrush.
         public Brush TitleBrush => _settings.ToastRarityColoredName
@@ -239,15 +234,9 @@ namespace PlayniteAchievements.ViewModels
                     : null
             : null;
 
+        // Secondary rarity/capstone badge. Standalone completion notifications return null: the
+        // completed-game badge is already their main icon (IconSource).
         public ImageSource BadgeImage => IsGameCompletionNotification
-            ? null
-            : CreateBadge(IsCapstone);
-
-        /// <summary>
-        /// Frame-scoped badge follows the achievement's own badge; standalone completion
-        /// notifications do not show a badge under the icon.
-        /// </summary>
-        public ImageSource FrameBadgeImage => IsGameCompletionNotification
             ? null
             : CreateBadge(IsCapstone);
 

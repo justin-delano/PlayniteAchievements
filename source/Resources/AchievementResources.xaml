@@ -314,7 +314,7 @@
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center"
                                     Margin="0,6,0,0">
-                            <Image Source="{Binding FrameBadgeImage}"
+                            <Image Source="{Binding BadgeImage}"
                                    Width="28"
                                    Height="28"
                                    VerticalAlignment="Center"
