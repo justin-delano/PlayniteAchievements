@@ -229,6 +229,7 @@ namespace PlayniteAchievements.Services.Friends
         {
             try
             {
+                var memBaseline = MemoryDiagnostics.Capture();
                 var persisted = _persistedSettingsFactory();
                 FriendsOverviewData data;
                 using (PerfScope.Start(_logger, "FriendsOverview.LoadCache", thresholdMs: 25))
@@ -236,7 +237,13 @@ namespace PlayniteAchievements.Services.Friends
                     data = _friendCache?.LoadFriendsOverviewData(0) ?? new FriendsOverviewData();
                 }
 
-                return CreateSnapshot(data, persisted);
+                var snapshot = CreateSnapshot(data, persisted);
+                MemoryDiagnostics.Log(
+                    _logger,
+                    "friendsOverview.build",
+                    memBaseline,
+                    $"friends={snapshot.Friends.Count} games={snapshot.Games.Count} recentUnlocks={snapshot.RecentUnlocks.Count} allAchievements={snapshot.AllAchievements.Count} allUnlocked={snapshot.AllUnlockedAchievements.Count}");
+                return snapshot;
             }
             catch (Exception ex)
             {
