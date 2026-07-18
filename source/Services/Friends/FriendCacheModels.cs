@@ -75,7 +75,7 @@ namespace PlayniteAchievements.Services.Friends
     /// What a friend-cache write touched, so invalidation consumers can patch instead of
     /// rebuilding. Kinds without a friend scope (game definitions, roster) affect all friends.
     /// </summary>
-    internal enum FriendCacheChangeKind
+    public enum FriendCacheChangeKind
     {
         /// <summary>One friend's achievement rows for one game changed (the scan hot path).</summary>
         FriendGameAchievements,
@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Services.Friends
         Roster
     }
 
-    internal sealed class FriendCacheChange : IEquatable<FriendCacheChange>
+    public sealed class FriendCacheChange : IEquatable<FriendCacheChange>
     {
         private FriendCacheChange(
             FriendCacheChangeKind kind,
@@ -173,7 +173,7 @@ namespace PlayniteAchievements.Services.Friends
     /// "everything may have changed" (unscoped writes, clears, or an overflowing change set) and
     /// Changes is empty; consumers must fall back to a full rebuild.
     /// </summary>
-    internal sealed class FriendCacheInvalidatedEventArgs : EventArgs
+    public sealed class FriendCacheInvalidatedEventArgs : EventArgs
     {
         public static readonly FriendCacheInvalidatedEventArgs FullInvalidation =
             new FriendCacheInvalidatedEventArgs(true, Array.Empty<FriendCacheChange>());

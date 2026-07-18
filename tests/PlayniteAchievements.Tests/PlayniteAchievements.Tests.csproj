@@ -240,6 +240,7 @@
     <Compile Include="..\..\source\Models\AuthOutcome.cs" Link="Source\Models\AuthOutcome.cs" />
     <Compile Include="..\..\source\Models\AuthProbeResult.cs" Link="Source\Models\AuthProbeResult.cs" />
     <Compile Include="..\..\source\Models\CacheDeltaEventArgs.cs" Link="Source\Models\CacheDeltaEventArgs.cs" />
+    <Compile Include="..\..\source\Models\CacheInvalidatedEventArgs.cs" Link="Source\Models\CacheInvalidatedEventArgs.cs" />
     <Compile Include="..\..\source\Models\CachePersistenceException.cs" Link="Source\Models\CachePersistenceException.cs" />
     <Compile Include="..\..\source\Models\CacheModels.cs" Link="Source\Models\CacheModels.cs" />
     <Compile Include="..\..\source\Models\CacheWriteResult.cs" Link="Source\Models\CacheWriteResult.cs" />
