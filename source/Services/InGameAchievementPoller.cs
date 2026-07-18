@@ -616,7 +616,7 @@ namespace PlayniteAchievements.Services
 
             foreach (var row in fresh)
             {
-                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row));
+                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row, completeNow));
             }
 
             return (fresh.Count, completesGame ? CreateFriendCompletionEventArgs(state.Game, target, rows) : null);
@@ -789,7 +789,8 @@ namespace PlayniteAchievements.Services
             Game game,
             FriendPollTarget target,
             IReadOnlyList<FriendAchievementRow> allRows,
-            FriendAchievementRow row)
+            FriendAchievementRow row,
+            bool gameCompleted)
         {
             return new AchievementUnlockedEventArgs
             {
@@ -811,6 +812,7 @@ namespace PlayniteAchievements.Services
                 UnlockTimeUtc = row?.UnlockTimeUtc,
                 UnlockedCount = allRows?.Count(r => r?.Unlocked == true) ?? 0,
                 TotalCount = allRows?.Count ?? 0,
+                GameCompleted = gameCompleted,
                 IsFriendUnlock = true,
                 FriendExternalUserId = target?.Friend?.ExternalUserId,
                 FriendDisplayName = target?.Friend?.DisplayName,

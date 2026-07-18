@@ -39,8 +39,14 @@ namespace PlayniteAchievements.ViewModels
             ? ResourceProvider.GetString("LOCPlayAch_Toast_GameComplete")
             : _args.DisplayName;
         internal int AchievementNumber => _args.AchievementNumber;
-        internal int TotalCount => _args.TotalCount;
         internal Guid PlayniteGameId => _args.PlayniteGameId;
+
+        // Raw progress and scoring data for template composition (e.g. a "27/40" progress line
+        // or a points tag). Points are provider-specific and null when the provider has none.
+        public int UnlockedCount => _args.UnlockedCount;
+        public int TotalCount => _args.TotalCount;
+        public int? Points => _args.Points;
+        public int? ScaledPoints => _args.ScaledPoints;
 
         // The header identifies who unlocked the achievement, so it is mandatory for friend
         // unlocks; for your own unlocks it honors the user's toggle. Completion notifications are
@@ -60,7 +66,44 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         public bool IsCompleted => _args.IsGameCompletionNotification;
 
+        /// <summary>
+        /// Whether the game is complete after this unlock (all achievements unlocked, or the
+        /// capstone unlocked) — game state, unlike IsCompleted which marks the standalone
+        /// completion notification. Computed for your own unlocks and friend unlocks alike, so a
+        /// template can restyle the unlock that finished the game.
+        /// </summary>
+        public bool GameCompleted => _args.GameCompleted;
+
         public bool HasTrophy => !string.IsNullOrWhiteSpace(_args.TrophyType);
+
+        /// <summary>
+        /// Canonical trophy tier for trophy-based providers: "Platinum", "Gold", "Silver", or
+        /// "Bronze" (normalized casing so DataTrigger Value= matching works regardless of what
+        /// the provider reported); empty when the unlock has no trophy. Mirrors the tier
+        /// fallback of MapTrophyKey/BadgeImage.
+        /// </summary>
+        public string TrophyType
+        {
+            get
+            {
+                if (!HasTrophy)
+                {
+                    return string.Empty;
+                }
+
+                switch (_args.TrophyType.Trim().ToLowerInvariant())
+                {
+                    case "platinum":
+                        return "Platinum";
+                    case "gold":
+                        return "Gold";
+                    case "silver":
+                        return "Silver";
+                    default:
+                        return "Bronze";
+                }
+            }
+        }
         private bool HasRarityData => _args.GlobalPercent.HasValue || !string.IsNullOrWhiteSpace(_args.RarityTier);
         public bool ShowBadge => _settings.ToastShowRarityBadge && (IsCapstone || HasTrophy || HasRarityData);
         public bool ShowGameName => _settings.ToastShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);

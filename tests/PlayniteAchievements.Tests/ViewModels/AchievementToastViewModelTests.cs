@@ -125,6 +125,45 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void DataBindings_ExposeTrophyCountsPointsAndGameState()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    TrophyType = "platinum",
+                    UnlockedCount = 27,
+                    TotalCount = 40,
+                    Points = 90,
+                    ScaledPoints = 180,
+                    GameCompleted = true
+                },
+                new PersistedSettings());
+
+            Assert.AreEqual("Platinum", viewModel.TrophyType);
+            Assert.AreEqual(27, viewModel.UnlockedCount);
+            Assert.AreEqual(40, viewModel.TotalCount);
+            Assert.AreEqual(90, viewModel.Points);
+            Assert.AreEqual(180, viewModel.ScaledPoints);
+            // Game state, distinct from the completion-notification kind.
+            Assert.IsTrue(viewModel.GameCompleted);
+            Assert.IsFalse(viewModel.IsCompleted);
+        }
+
+        [TestMethod]
+        public void TrophyType_EmptyWithoutTrophyData()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    RarityTier = "Rare"
+                },
+                new PersistedSettings());
+
+            Assert.AreEqual(string.Empty, viewModel.TrophyType);
+            Assert.IsNull(viewModel.Points);
+        }
+
+        [TestMethod]
         public void FriendDisplayName_FallsBackWhenMissing()
         {
             var viewModel = new AchievementToastViewModel(
