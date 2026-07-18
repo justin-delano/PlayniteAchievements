@@ -253,33 +253,30 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <Border Grid.Row="3"
-                Background="{StaticResource PlayAch.Brush.Overlay.Shade.12}"
-                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                Margin="0,10,0,0"
-                Padding="10,8,10,10">
-            <Expander x:Name="BulkEditExpander"
-                      IsExpanded="False"
-                      Focusable="True"
-                      IsTabStop="False"
-                      Background="Transparent"
-                      BorderThickness="0">
-                <Expander.Header>
-                    <StackPanel>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Edit}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontWeight="SemiBold" />
-                        <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Category_BulkHint}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Hint}"
-                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   Margin="0,3,0,0" />
-                    </StackPanel>
-                </Expander.Header>
+        <Expander Grid.Row="3"
+                  x:Name="BulkEditExpander"
+                  IsExpanded="False"
+                  Focusable="True"
+                  IsTabStop="False"
+                  Background="{StaticResource PlayAch.Brush.Overlay.Shade.12}"
+                  BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                  BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                  Margin="0,10,0,0"
+                  Padding="10,8,10,10">
+            <Expander.Header>
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Common_Edit}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Category_BulkHint}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               Margin="0,3,0,0" />
+                </StackPanel>
+            </Expander.Header>
 
-                <Grid Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
+            <Grid Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -360,9 +357,8 @@
                             Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             Height="{StaticResource PlayAch.Size.Control.Height}"
                             Margin="8,8,0,0" />
-                </Grid>
-            </Expander>
-        </Border>
+            </Grid>
+        </Expander>
     </Grid>
         </TabItem>
 
