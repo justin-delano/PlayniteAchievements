@@ -3462,6 +3462,8 @@ namespace PlayniteAchievements.Services.Refresh
             private readonly int _providerCount;
             private readonly string _kind;
             private readonly Stopwatch _total = Stopwatch.StartNew();
+            private readonly MemorySnapshot _memBaseline =
+                MemoryDiagnostics.Enabled ? MemoryDiagnostics.Capture() : default(MemorySnapshot);
 
             public FriendRefreshPerfSession(
                 ILogger logger,
@@ -3550,7 +3552,9 @@ namespace PlayniteAchievements.Services.Refresh
 
             private void Log(string phase, string detail)
             {
-                _logger?.Debug($"[RefreshPerf] kind={_kind} phase={phase} {detail}");
+                // Memory fields are appended at the end so the established
+                // "[RefreshPerf] kind=... phase=... {detail}" prefix stays grep-stable.
+                _logger?.Debug($"[RefreshPerf] kind={_kind} phase={phase} {detail}{MemoryDiagnostics.FormatInlineSuffix(_memBaseline)}");
             }
 
             private static long Elapsed(Stopwatch timer)

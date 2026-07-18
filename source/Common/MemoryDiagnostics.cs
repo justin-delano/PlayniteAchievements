@@ -120,6 +120,41 @@ namespace PlayniteAchievements.Common
         }
 
         /// <summary>
+        /// Captures current counters and formats a compact key=value suffix (with a leading
+        /// space) for appending to an existing perf log line. Empty when disabled or capture
+        /// fails, so callers can append unconditionally.
+        /// </summary>
+        public static string FormatInlineSuffix(MemorySnapshot baseline)
+        {
+            if (!Enabled)
+            {
+                return string.Empty;
+            }
+
+            var snapshot = Capture();
+            if (!snapshot.IsValid)
+            {
+                return string.Empty;
+            }
+
+            var suffix = string.Format(
+                CultureInfo.InvariantCulture,
+                " workingSetMb={0:F1} managedMb={1:F1}",
+                snapshot.WorkingSetBytes / BytesPerMb,
+                snapshot.ManagedBytes / BytesPerMb);
+
+            if (baseline.IsValid)
+            {
+                suffix += string.Format(
+                    CultureInfo.InvariantCulture,
+                    " deltaManagedMb={0:+0.0;-0.0;+0.0}",
+                    (snapshot.ManagedBytes - baseline.ManagedBytes) / BytesPerMb);
+            }
+
+            return suffix;
+        }
+
+        /// <summary>
         /// Starts a periodic [MemPerf] point=sample logger for long-running work (e.g. multi-minute
         /// refresh phases). Runs on the thread pool; dispose to stop. Returns null when disabled.
         /// </summary>
