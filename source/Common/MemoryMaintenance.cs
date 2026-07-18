@@ -18,17 +18,23 @@ namespace PlayniteAchievements.Common
         /// in-game poller ticks, empty periodic updates) never trigger a collection.
         /// Call from a background thread only — <see cref="GC.Collect()"/> blocks.
         /// </summary>
-        public static void CompactLargeObjectHeapAfterLargeScan(int workVolume, int threshold, ILogger logger = null)
+        public static void CompactLargeObjectHeapAfterLargeScan(int workVolume, int threshold, ILogger logger = null, string context = null)
         {
+            var gateDetail = $"workVolume={workVolume} threshold={threshold}" +
+                (string.IsNullOrWhiteSpace(context) ? string.Empty : $" context={context.Trim()}");
+
             if (workVolume < threshold)
             {
+                MemoryDiagnostics.Log(logger, "compaction.skipped", gateDetail);
                 return;
             }
 
             try
             {
+                var before = MemoryDiagnostics.Log(logger, "compaction.before", gateDetail);
                 GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                 GC.Collect();
+                MemoryDiagnostics.Log(logger, "compaction.after", before, gateDetail);
             }
             catch (Exception ex)
             {
