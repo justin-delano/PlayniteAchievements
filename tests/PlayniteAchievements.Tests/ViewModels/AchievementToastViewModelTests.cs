@@ -34,5 +34,54 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.AreEqual(RarityTier.Common, viewModel.Rarity);
         }
+
+        [TestMethod]
+        public void CompletionNotification_UsesCompletedBadgeAsMainIconWithoutSecondaryBadge()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    CompletesGame = true,
+                    IsGameCompletionNotification = true
+                },
+                new PersistedSettings
+                {
+                    ToastShowRarityBadge = true,
+                    FrameShowRarityBadge = true
+                });
+
+            Assert.IsTrue(viewModel.IsCompleted);
+            Assert.IsFalse(viewModel.IsCapstone);
+            Assert.IsTrue(viewModel.UsesCompletedBadgeIcon);
+            Assert.IsFalse(viewModel.ShowBadge);
+            Assert.IsNull(viewModel.BadgeImage);
+            Assert.IsFalse(viewModel.FrameShowBadge);
+            Assert.IsNull(viewModel.FrameBadgeImage);
+        }
+
+        [TestMethod]
+        public void CompletingUnlock_KeepsAchievementIconAndOwnBadge()
+        {
+            var viewModel = new AchievementToastViewModel(
+                new AchievementUnlockedEventArgs
+                {
+                    IconPath = "achievement.png",
+                    CompletesGame = true,
+                    RarityTier = "Rare",
+                    GlobalPercent = 9.3
+                },
+                new PersistedSettings
+                {
+                    ToastShowRarityBadge = true,
+                    FrameShowRarityBadge = true
+                });
+
+            Assert.AreEqual("achievement.png", viewModel.IconSource);
+            Assert.IsFalse(viewModel.UsesCompletedBadgeIcon);
+            Assert.IsTrue(viewModel.ShowBadge);
+            Assert.IsTrue(viewModel.FrameShowBadge);
+            Assert.IsFalse(viewModel.FrameShowGameCompleteLine);
+            Assert.IsFalse(viewModel.FrameShowGameCompleteSeparator);
+        }
     }
 }
