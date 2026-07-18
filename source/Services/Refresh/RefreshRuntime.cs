@@ -593,11 +593,14 @@ namespace PlayniteAchievements.Services.Refresh
                 // ConfigureAwait(false)), so the blocking collection stays off the UI thread.
                 // payload is null on cancel/exception paths, so friend volume is 0 there and
                 // only current-user saves can gate the compaction (matching prior behavior).
+                var compactionWorkVolume = Math.Max(
+                    savedGamesCount, FriendRefreshCoordinator.GetFriendScrapeVolume(payload));
                 MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
-                    Math.Max(savedGamesCount, FriendRefreshCoordinator.GetFriendScrapeVolume(payload)),
+                    compactionWorkVolume,
                     LohCompactionSavedGamesThreshold,
                     _logger,
                     context: $"refresh.end mode={mode}");
+                ScheduleFollowUpCompaction(compactionWorkVolume, mode);
 
                 // Notify refresh completion subscribers (e.g., auth failure notifications).
                 if (!wasCanceled && payload != null)
@@ -607,6 +610,44 @@ namespace PlayniteAchievements.Services.Refresh
 
                 _refreshProgressReporter.Reset();
             }
+        }
+
+        // The completion compaction returns the scrape peak, but the post-refresh rebuild wave
+        // (final friends snapshot build, overview and theme refreshes) keeps allocating for tens
+        // of seconds after refresh end, and that garbage otherwise lingers in the working set
+        // until an unrelated gen-2 collection. A single delayed follow-up sweeps the settled
+        // wave. One-shot per refresh, same work-volume gate, skipped when a newer refresh is
+        // already running (its own completion compaction covers it).
+        private static readonly TimeSpan FollowUpCompactionDelay = TimeSpan.FromSeconds(60);
+
+        private void ScheduleFollowUpCompaction(int workVolume, RefreshModeType mode)
+        {
+            if (workVolume < LohCompactionSavedGamesThreshold)
+            {
+                return;
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(FollowUpCompactionDelay).ConfigureAwait(false);
+                    if (IsRebuilding)
+                    {
+                        return;
+                    }
+
+                    MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
+                        workVolume,
+                        LohCompactionSavedGamesThreshold,
+                        _logger,
+                        context: $"refresh.followUp mode={mode}");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Follow-up LOH compaction failed.");
+                }
+            });
         }
 
         private sealed class RefreshGameTarget

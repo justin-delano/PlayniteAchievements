@@ -33,6 +33,11 @@ namespace PlayniteAchievements.Common
             {
                 var before = MemoryDiagnostics.Log(logger, "compaction.before", gateDetail);
                 GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+                // Full cycle: collect, drain finalizers, collect again, so finalizable graphs
+                // (webview handles, streams) are reclaimed in the same pass instead of surviving
+                // one collection behind.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
                 GC.Collect();
                 MemoryDiagnostics.Log(logger, "compaction.after", before, gateDetail);
             }
