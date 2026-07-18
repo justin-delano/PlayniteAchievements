@@ -1263,7 +1263,7 @@ namespace PlayniteAchievements.ViewModels
                     cache.RemoveGameData(_playniteGame.Id);
                 }
 
-                cache.NotifyCacheInvalidated();
+                cache.NotifyCacheInvalidated(new[] { _playniteGame.Id });
             }
             catch (Exception ex)
             {
@@ -1487,7 +1487,7 @@ namespace PlayniteAchievements.ViewModels
                     cachedData.LastUpdatedUtc = nowUtc;
 
                     _cacheManager.SaveGameData(_playniteGame.Id.ToString(), cachedData);
-                    _cacheManager.NotifyCacheInvalidated();
+                    _cacheManager.NotifyCacheInvalidated(new[] { _playniteGame.Id });
 
                     // Ensure immediate theme refresh for this game after manual edits.
                     if (_settings?.SelectedGame?.Id == _playniteGame.Id)

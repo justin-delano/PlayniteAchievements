@@ -157,7 +157,7 @@ namespace PlayniteAchievements.Services.Refresh
             remove => _cacheService.CacheDeltaUpdated -= value;
         }
 
-        public event EventHandler CacheInvalidated
+        public event EventHandler<CacheInvalidatedEventArgs> CacheInvalidated
         {
             add => _cacheService.CacheInvalidated += value;
             remove => _cacheService.CacheInvalidated -= value;
@@ -578,7 +578,9 @@ namespace PlayniteAchievements.Services.Refresh
 
                 if (hasSavedGames)
                 {
-                    _cacheService.NotifyCacheInvalidated();
+                    // Scoped when the run knows which games it refreshed (a poller tick names
+                    // exactly one); null or an over-large list degrades to a full invalidation.
+                    _cacheService.NotifyCacheInvalidated(payload?.Summary?.RefreshedGameIds);
                 }
 
                 MemoryDiagnostics.Log(

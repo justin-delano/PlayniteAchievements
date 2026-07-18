@@ -99,7 +99,7 @@ namespace PlayniteAchievements.Services.Cache
 
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated;
         public event EventHandler<CacheDeltaEventArgs> CacheDeltaUpdated;
-        public event EventHandler CacheInvalidated;
+        public event EventHandler<CacheInvalidatedEventArgs> CacheInvalidated;
         public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated;
 
         event EventHandler<FriendCacheInvalidatedEventArgs> IFriendCacheManager.FriendCacheInvalidated
@@ -223,9 +223,9 @@ namespace PlayniteAchievements.Services.Cache
             }
         }
 
-        private void RaiseCacheInvalidatedEvent()
+        private void RaiseCacheInvalidatedEvent(CacheInvalidatedEventArgs args = null)
         {
-            try { CacheInvalidated?.Invoke(this, EventArgs.Empty); }
+            try { CacheInvalidated?.Invoke(this, args ?? CacheInvalidatedEventArgs.FullInvalidation); }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to notify cache subscribers.");
@@ -932,7 +932,12 @@ namespace PlayniteAchievements.Services.Cache
 
         public void NotifyCacheInvalidated()
         {
-            RaiseCacheInvalidatedEvent();
+            RaiseCacheInvalidatedEvent(CacheInvalidatedEventArgs.FullInvalidation);
+        }
+
+        public void NotifyCacheInvalidated(IReadOnlyList<Guid> changedGameIds)
+        {
+            RaiseCacheInvalidatedEvent(CacheInvalidatedEventArgs.Scoped(changedGameIds));
         }
 
         public string ExportDatabaseToCsv(string exportDirectory)

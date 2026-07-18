@@ -1296,7 +1296,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             bool forceIconRefresh = false)
         {
             _gameDataSnapshotProvider?.Invalidate();
-            _refreshService?.Cache?.NotifyCacheInvalidated();
+            _refreshService?.Cache?.NotifyCacheInvalidated(new[] { _gameId });
 
             if (_settings?.SelectedGame?.Id == _gameId)
             {
@@ -1315,7 +1315,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         internal void NotifyIconOverridesChanged()
         {
             _gameDataSnapshotProvider?.Invalidate();
-            _refreshService?.Cache?.NotifyCacheInvalidated();
+            _refreshService?.Cache?.NotifyCacheInvalidated(new[] { _gameId });
             if (_settings?.SelectedGame?.Id == _gameId)
             {
                 _plugin?.ThemeUpdateService?.RequestUpdate(_gameId, forceRefresh: true);
