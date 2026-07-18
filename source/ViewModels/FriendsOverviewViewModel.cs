@@ -1102,8 +1102,9 @@ namespace PlayniteAchievements.ViewModels
             // Not forceImmediate: friend scans flush cache invalidations every ~2s, and each
             // immediate reload is a full multi-second snapshot rebuild. The scheduled path
             // applies the active-refresh interval during scans (and the short idle debounce
-            // otherwise), so scan progress still surfaces on a bounded cadence.
-            InvalidateFriendsOverviewSnapshot(forceImmediate: false);
+            // otherwise), so scan progress still surfaces on a bounded cadence. The change
+            // scope is passed through so the coordinator can patch instead of fully reloading.
+            InvalidateFriendsOverviewSnapshot(forceImmediate: false, e);
         }
 
         private void OnFriendsOverviewSnapshotInvalidated(object sender, EventArgs e)
@@ -1116,7 +1117,7 @@ namespace PlayniteAchievements.ViewModels
             ScheduleCacheInvalidationReloadOnDispatcher(forceImmediate: false);
         }
 
-        private void InvalidateFriendsOverviewSnapshot(bool forceImmediate)
+        private void InvalidateFriendsOverviewSnapshot(bool forceImmediate, FriendCacheInvalidatedEventArgs args = null)
         {
             if (_disposed)
             {
@@ -1126,7 +1127,7 @@ namespace PlayniteAchievements.ViewModels
             Interlocked.Increment(ref _suppressCoordinatorInvalidationReload);
             try
             {
-                _friendsOverviewDataCoordinator?.Invalidate();
+                _friendsOverviewDataCoordinator?.Invalidate(args);
             }
             finally
             {

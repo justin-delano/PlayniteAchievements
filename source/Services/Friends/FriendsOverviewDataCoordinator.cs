@@ -37,8 +37,16 @@ namespace PlayniteAchievements.Services.Friends
         // fanned out one SnapshotInvalidated event each, and every consumer rebuild is a full
         // multi-second cache load materializing the whole friend display graph (~50k+ display
         // items). Coalescing to a leading fire plus one trailing fire per window caps rebuild
-        // cadence while keeping isolated invalidations (settings toggles) instant.
+        // cadence while keeping isolated invalidations (settings toggles) instant. When every
+        // pending change is patchable the rebuild is a cheap incremental patch, so a much
+        // shorter window keeps friends surfaces near-live during scans.
         private static readonly TimeSpan DefaultInvalidationEventThrottleInterval = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan DefaultScopedInvalidationEventThrottleInterval = TimeSpan.FromSeconds(3);
+
+        // Above this many distinct pending changes an incremental patch stops paying for itself
+        // (the scoped SQL grows and a full reload amortizes better), so the window collapses to
+        // a full rebuild. Also bounds the scoped query's parameter count.
+        private const int MaxPatchableChanges = 64;
 
         private readonly object _syncRoot = new object();
         private readonly IFriendCacheManager _friendCache;
@@ -46,9 +54,16 @@ namespace PlayniteAchievements.Services.Friends
         private readonly ILogger _logger;
         private readonly TimeSpan _warmDebounceInterval;
         private readonly TimeSpan _invalidationEventThrottleInterval;
+        private readonly TimeSpan _scopedInvalidationEventThrottleInterval;
         private readonly Stopwatch _eventClock = Stopwatch.StartNew();
+        private readonly FriendCacheInvalidationScopeAccumulator _pendingScope =
+            new FriendCacheInvalidationScopeAccumulator(MaxPatchableChanges);
         private FriendsOverviewSnapshot _snapshot;
-        private Task<FriendsOverviewSnapshot> _buildTask;
+        // AllAchievements of the last successful build, kept as the splice base for incremental
+        // patches. Item instances are shared with the published snapshot, so this pins list
+        // overhead only, not a second copy of the display items.
+        private List<FriendAchievementDisplayItem> _patchBaseAchievements;
+        private Task<SnapshotBuildResult> _buildTask;
         private int _invalidationVersion = 1;
         private int _snapshotVersion;
         private int _buildTaskVersion;
@@ -62,7 +77,8 @@ namespace PlayniteAchievements.Services.Friends
             Func<PersistedSettings> persistedSettingsFactory,
             ILogger logger = null,
             TimeSpan? warmDebounceInterval = null,
-            TimeSpan? invalidationEventThrottleInterval = null)
+            TimeSpan? invalidationEventThrottleInterval = null,
+            TimeSpan? scopedInvalidationEventThrottleInterval = null)
         {
             _friendCache = friendCache;
             _persistedSettingsFactory = persistedSettingsFactory ?? (() => null);
@@ -70,6 +86,14 @@ namespace PlayniteAchievements.Services.Friends
             _warmDebounceInterval = warmDebounceInterval ?? DefaultWarmDebounceInterval;
             _invalidationEventThrottleInterval =
                 invalidationEventThrottleInterval ?? DefaultInvalidationEventThrottleInterval;
+            _scopedInvalidationEventThrottleInterval =
+                scopedInvalidationEventThrottleInterval ?? DefaultScopedInvalidationEventThrottleInterval;
+        }
+
+        private sealed class SnapshotBuildResult
+        {
+            public FriendsOverviewSnapshot Snapshot { get; set; }
+            public List<FriendAchievementDisplayItem> BaseAchievements { get; set; }
         }
 
         public event EventHandler SnapshotInvalidated;
@@ -89,6 +113,11 @@ namespace PlayniteAchievements.Services.Friends
 
         public void Invalidate()
         {
+            Invalidate(null);
+        }
+
+        public void Invalidate(FriendCacheInvalidatedEventArgs args)
+        {
             bool fireNow;
             var trailingDelay = TimeSpan.Zero;
             lock (_syncRoot)
@@ -101,12 +130,31 @@ namespace PlayniteAchievements.Services.Friends
                 _invalidationVersion++;
                 // A version-mismatched snapshot can never be returned to a reader, so drop the
                 // reference immediately instead of pinning the full friend row set until the
-                // next successful build replaces it.
+                // next successful build replaces it. (_patchBaseAchievements stays: it is the
+                // splice base that makes the next build cheap.)
                 _snapshot = null;
+
+                if (args == null || args.IsFull)
+                {
+                    _pendingScope.Add(null);
+                }
+                else
+                {
+                    foreach (var change in args.Changes)
+                    {
+                        _pendingScope.Add(change);
+                    }
+                }
+
+                // A pending window that is fully scoped rebuilds via a cheap patch, so it may
+                // fire much more often than one that forces a full reload.
+                var window = _pendingScope.PendingIsFull || _patchBaseAchievements == null
+                    ? _invalidationEventThrottleInterval
+                    : _scopedInvalidationEventThrottleInterval;
 
                 var now = _eventClock.Elapsed;
                 if (_lastInvalidationEventAt == null ||
-                    now - _lastInvalidationEventAt.Value >= _invalidationEventThrottleInterval)
+                    now - _lastInvalidationEventAt.Value >= window)
                 {
                     _lastInvalidationEventAt = now;
                     fireNow = true;
@@ -114,7 +162,7 @@ namespace PlayniteAchievements.Services.Friends
                 else if (!_trailingInvalidationScheduled)
                 {
                     _trailingInvalidationScheduled = true;
-                    trailingDelay = _lastInvalidationEventAt.Value + _invalidationEventThrottleInterval - now;
+                    trailingDelay = _lastInvalidationEventAt.Value + window - now;
                     fireNow = false;
                 }
                 else
@@ -183,7 +231,7 @@ namespace PlayniteAchievements.Services.Friends
         {
             cancel.ThrowIfCancellationRequested();
 
-            Task<FriendsOverviewSnapshot> task;
+            Task<SnapshotBuildResult> task;
             lock (_syncRoot)
             {
                 ThrowIfDisposed();
@@ -202,19 +250,27 @@ namespace PlayniteAchievements.Services.Friends
                 else
                 {
                     _buildTaskVersion = _invalidationVersion;
-                    task = Task.Run(BuildSnapshot);
+                    // The pending scope travels with this build. If the build fails or is
+                    // superseded, the drained accumulator leaves the next window empty, which
+                    // drains to a full invalidation - a safe fallback, never a lost change.
+                    var scope = forceRefresh
+                        ? DiscardPendingScopeAndForceFull_Locked()
+                        : _pendingScope.Drain();
+                    var baseAchievements = _patchBaseAchievements;
+                    task = Task.Run(() => BuildSnapshot(scope, baseAchievements));
                     _buildTask = task;
                 }
             }
 
-            var snapshot = await task.ConfigureAwait(false);
+            var result = await task.ConfigureAwait(false);
             cancel.ThrowIfCancellationRequested();
 
             lock (_syncRoot)
             {
                 if (ReferenceEquals(_buildTask, task))
                 {
-                    _snapshot = snapshot ?? new FriendsOverviewSnapshot();
+                    _snapshot = result?.Snapshot ?? new FriendsOverviewSnapshot();
+                    _patchBaseAchievements = result?.BaseAchievements;
                     _snapshotVersion = _buildTaskVersion;
                     _buildTask = null;
                 }
@@ -224,7 +280,13 @@ namespace PlayniteAchievements.Services.Friends
             // invalidation lands mid-build, consumers converge through the next (throttled)
             // SnapshotInvalidated fire instead of looping here — during scans that loop rebuilt
             // the full friend display graph every few seconds.
-            return snapshot ?? new FriendsOverviewSnapshot();
+            return result?.Snapshot ?? new FriendsOverviewSnapshot();
+        }
+
+        private FriendCacheInvalidatedEventArgs DiscardPendingScopeAndForceFull_Locked()
+        {
+            _pendingScope.Drain();
+            return FriendCacheInvalidatedEventArgs.FullInvalidation;
         }
 
         public void Dispose()
@@ -233,6 +295,7 @@ namespace PlayniteAchievements.Services.Friends
             {
                 _disposed = true;
                 _snapshot = null;
+                _patchBaseAchievements = null;
                 _buildTask = null;
             }
         }
@@ -292,16 +355,46 @@ namespace PlayniteAchievements.Services.Friends
             }
         }
 
-        private FriendsOverviewSnapshot BuildSnapshot()
+        private SnapshotBuildResult BuildSnapshot(
+            FriendCacheInvalidatedEventArgs scope,
+            List<FriendAchievementDisplayItem> baseAchievements)
         {
             try
             {
                 var memBaseline = MemoryDiagnostics.Capture();
                 var persisted = _persistedSettingsFactory();
-                FriendsOverviewData data;
-                using (PerfScope.Start(_logger, "FriendsOverview.LoadCache", thresholdMs: 25))
+                var buildKind = "full";
+                FriendsOverviewData data = null;
+
+                if (baseAchievements != null && CanPatch(scope))
                 {
-                    data = _friendCache?.LoadFriendsOverviewData(0) ?? new FriendsOverviewData();
+                    try
+                    {
+                        using (PerfScope.Start(_logger, "FriendsOverview.LoadPatch", thresholdMs: 25))
+                        {
+                            var reloadScopes = SelectAchievementReloadScopes(scope.Changes);
+                            var patch = _friendCache?.LoadFriendsOverviewPatchData(reloadScopes);
+                            if (patch != null)
+                            {
+                                data = BuildPatchedData(baseAchievements, patch, scope.Changes);
+                                buildKind = $"incremental changes={scope.Changes.Count}";
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Any patch failure falls back to the full load below.
+                        _logger?.Debug(ex, "Incremental friends overview patch failed; falling back to full build.");
+                        data = null;
+                    }
+                }
+
+                if (data == null)
+                {
+                    using (PerfScope.Start(_logger, "FriendsOverview.LoadCache", thresholdMs: 25))
+                    {
+                        data = _friendCache?.LoadFriendsOverviewData(0) ?? new FriendsOverviewData();
+                    }
                 }
 
                 var snapshot = CreateSnapshot(data, persisted);
@@ -309,14 +402,115 @@ namespace PlayniteAchievements.Services.Friends
                     _logger,
                     "friendsOverview.build",
                     memBaseline,
-                    $"friends={snapshot.Friends.Count} games={snapshot.Games.Count} recentUnlocks={snapshot.RecentUnlocks.Count} allAchievements={snapshot.AllAchievements.Count} allUnlocked={snapshot.AllUnlockedAchievements.Count}");
-                return snapshot;
+                    $"kind={buildKind} friends={snapshot.Friends.Count} games={snapshot.Games.Count} recentUnlocks={snapshot.RecentUnlocks.Count} allAchievements={snapshot.AllAchievements.Count} allUnlocked={snapshot.AllUnlockedAchievements.Count}");
+                return new SnapshotBuildResult
+                {
+                    Snapshot = snapshot,
+                    BaseAchievements = data.AllAchievements
+                };
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to build friends overview snapshot.");
-                return new FriendsOverviewSnapshot();
+                // Null base forces the next build to be full.
+                return new SnapshotBuildResult { Snapshot = new FriendsOverviewSnapshot() };
             }
+        }
+
+        // Roster changes alter which friends exist (the shape of every list), so they take the
+        // full path. Everything else is expressible as a splice plus wholesale reloads of the
+        // three cheap lists.
+        internal static bool CanPatch(FriendCacheInvalidatedEventArgs scope)
+        {
+            return scope != null &&
+                   !scope.IsFull &&
+                   scope.Changes.Count > 0 &&
+                   scope.Changes.All(change =>
+                       change != null && change.Kind != FriendCacheChangeKind.Roster);
+        }
+
+        // Only these kinds change achievement rows; ownership and removal changes are covered by
+        // the wholesale reloads and the removal splice respectively.
+        internal static List<FriendCacheChange> SelectAchievementReloadScopes(
+            IReadOnlyCollection<FriendCacheChange> changes)
+        {
+            return (changes ?? Array.Empty<FriendCacheChange>())
+                .Where(change => change != null &&
+                                 (change.Kind == FriendCacheChangeKind.FriendGameAchievements ||
+                                  change.Kind == FriendCacheChangeKind.GameDefinition))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Splices freshly loaded scoped achievement rows into the retained base list and
+        /// re-runs the shared derivations, producing a data set equivalent to a full reload for
+        /// the given changes. All lists are new instances (copy-on-write); the untouched
+        /// achievement items are reused by reference.
+        /// </summary>
+        internal static FriendsOverviewData BuildPatchedData(
+            List<FriendAchievementDisplayItem> baseAchievements,
+            FriendsOverviewData patch,
+            IReadOnlyCollection<FriendCacheChange> changes)
+        {
+            var changeList = (changes ?? Array.Empty<FriendCacheChange>())
+                .Where(change => change != null)
+                .ToList();
+
+            var merged = (baseAchievements ?? new List<FriendAchievementDisplayItem>())
+                .Where(item => item != null && !changeList.Any(change => MatchesRemovalScope(item, change)))
+                .Concat(patch.AllAchievements ?? new List<FriendAchievementDisplayItem>())
+                // Best-effort restoration of the full load's (friend, game) ordering; OrderBy is
+                // stable, so each friend+game pair keeps its canonical definition order.
+                .OrderBy(item => item.FriendName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.GameName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var data = new FriendsOverviewData
+            {
+                Friends = patch.Friends ?? new List<FriendSummaryItem>(),
+                Games = patch.Games ?? new List<FriendGameSummaryItem>(),
+                FriendGameLinks = patch.FriendGameLinks ?? new List<FriendGameLinkItem>(),
+                AllAchievements = merged
+            };
+
+            FriendsOverviewDerivations.Apply(data, recentLimit: 0);
+            return data;
+        }
+
+        // Which retained achievement rows a change supersedes: fresh rows replace them (or, for
+        // FriendRemoved, nothing does).
+        internal static bool MatchesRemovalScope(FriendAchievementDisplayItem item, FriendCacheChange change)
+        {
+            switch (change.Kind)
+            {
+                case FriendCacheChangeKind.FriendGameAchievements:
+                    return MatchesProvider(item, change) && MatchesFriend(item, change) && MatchesGame(item, change);
+                case FriendCacheChangeKind.GameDefinition:
+                    return MatchesProvider(item, change) && MatchesGame(item, change);
+                case FriendCacheChangeKind.FriendRemoved:
+                    return MatchesProvider(item, change) && MatchesFriend(item, change);
+                default:
+                    // FriendOwnership changes no achievement rows; Roster never reaches the
+                    // patch path.
+                    return false;
+            }
+        }
+
+        private static bool MatchesProvider(FriendAchievementDisplayItem item, FriendCacheChange change) =>
+            string.Equals(item.ProviderKey, change.ProviderKey, StringComparison.OrdinalIgnoreCase);
+
+        private static bool MatchesFriend(FriendAchievementDisplayItem item, FriendCacheChange change) =>
+            string.Equals(item.FriendExternalUserId, change.ExternalUserId, StringComparison.OrdinalIgnoreCase);
+
+        private static bool MatchesGame(FriendAchievementDisplayItem item, FriendCacheChange change)
+        {
+            if (!string.IsNullOrWhiteSpace(change.ProviderGameKey) &&
+                string.Equals(item.ProviderGameKey, change.ProviderGameKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return change.AppId > 0 && item.AppId == change.AppId;
         }
 
         internal static FriendsOverviewSnapshot CreateSnapshot(FriendsOverviewData data, PersistedSettings persisted)

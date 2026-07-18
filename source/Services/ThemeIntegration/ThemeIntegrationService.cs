@@ -681,7 +681,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void FriendCache_FriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
-            _friendsOverviewDataCoordinator?.Invalidate();
+            _friendsOverviewDataCoordinator?.Invalidate(e);
         }
 
         // Every invalidation path funnels through the coordinator (cache invalidation handlers

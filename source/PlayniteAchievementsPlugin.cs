@@ -1003,12 +1003,15 @@ namespace PlayniteAchievements
 
         private void FriendCacheManager_FriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
-            InvalidateFriendDataCoordinators();
+            InvalidateFriendDataCoordinators(e);
         }
 
-        private void InvalidateFriendDataCoordinators()
+        // Settings-driven callers pass no args (projection-affecting settings need a full
+        // rebuild); cache-driven callers pass the change scope through so the overview
+        // coordinator can patch instead of reloading everything.
+        private void InvalidateFriendDataCoordinators(FriendCacheInvalidatedEventArgs args = null)
         {
-            _friendsOverviewDataCoordinator?.Invalidate();
+            _friendsOverviewDataCoordinator?.Invalidate(args);
             _friendGameAchievementsDataCoordinator?.Invalidate();
             _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
