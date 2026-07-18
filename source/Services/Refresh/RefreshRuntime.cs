@@ -613,12 +613,17 @@ namespace PlayniteAchievements.Services.Refresh
         }
 
         // The completion compaction returns the scrape peak, but the post-refresh rebuild wave
-        // (final friends snapshot build, overview and theme refreshes) keeps allocating for tens
-        // of seconds after refresh end, and that garbage otherwise lingers in the working set
-        // until an unrelated gen-2 collection. A single delayed follow-up sweeps the settled
-        // wave. One-shot per refresh, same work-volume gate, skipped when a newer refresh is
-        // already running (its own completion compaction covers it).
-        private static readonly TimeSpan FollowUpCompactionDelay = TimeSpan.FromSeconds(60);
+        // (final friends snapshot build, overview and theme refreshes) keeps allocating after
+        // refresh end, and that garbage otherwise lingers in the working set until an unrelated
+        // gen-2 collection. Measured on a large scan, the wave settles within ~20s, so the first
+        // follow-up sweeps then; a later one catches stragglers (demand-driven theme rebuilds).
+        // Same work-volume gate; a sweep is skipped (and the chain stopped) when a newer refresh
+        // is already running, since its own completion compaction covers it.
+        private static readonly TimeSpan[] FollowUpCompactionDelays =
+        {
+            TimeSpan.FromSeconds(20),
+            TimeSpan.FromSeconds(90)
+        };
 
         private void ScheduleFollowUpCompaction(int workVolume, RefreshModeType mode)
         {
@@ -631,17 +636,22 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 try
                 {
-                    await Task.Delay(FollowUpCompactionDelay).ConfigureAwait(false);
-                    if (IsRebuilding)
+                    var elapsed = TimeSpan.Zero;
+                    foreach (var delay in FollowUpCompactionDelays)
                     {
-                        return;
-                    }
+                        await Task.Delay(delay - elapsed).ConfigureAwait(false);
+                        elapsed = delay;
+                        if (IsRebuilding)
+                        {
+                            return;
+                        }
 
-                    MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
-                        workVolume,
-                        LohCompactionSavedGamesThreshold,
-                        _logger,
-                        context: $"refresh.followUp mode={mode}");
+                        MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
+                            workVolume,
+                            LohCompactionSavedGamesThreshold,
+                            _logger,
+                            context: $"refresh.followUp mode={mode} atSeconds={(int)delay.TotalSeconds}");
+                    }
                 }
                 catch (Exception ex)
                 {
