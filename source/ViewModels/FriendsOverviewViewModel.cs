@@ -116,7 +116,10 @@ namespace PlayniteAchievements.ViewModels
                 new FriendsOverviewDataCoordinator(friendCache, () => _settings?.Persisted, logger);
             _friendsOverviewDataCoordinator.SnapshotInvalidated += OnFriendsOverviewSnapshotInvalidated;
             _cacheInvalidationDebounceInterval = cacheInvalidationDebounceInterval ?? TimeSpan.FromMilliseconds(300);
-            _activeRefreshInvalidationInterval = activeRefreshInvalidationInterval ?? TimeSpan.FromMilliseconds(2500);
+            // Matches the FriendsOverviewDataCoordinator invalidation-event throttle: each reload
+            // during an active friend refresh rebuilds the full friend display graph, so the two
+            // cadences are kept aligned.
+            _activeRefreshInvalidationInterval = activeRefreshInvalidationInterval ?? TimeSpan.FromSeconds(15);
 
             if (_cacheInvalidationDebounceInterval > TimeSpan.Zero ||
                 _activeRefreshInvalidationInterval > TimeSpan.Zero)
@@ -1096,7 +1099,11 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            InvalidateFriendsOverviewSnapshot(forceImmediate: true);
+            // Not forceImmediate: friend scans flush cache invalidations every ~2s, and each
+            // immediate reload is a full multi-second snapshot rebuild. The scheduled path
+            // applies the active-refresh interval during scans (and the short idle debounce
+            // otherwise), so scan progress still surfaces on a bounded cadence.
+            InvalidateFriendsOverviewSnapshot(forceImmediate: false);
         }
 
         private void OnFriendsOverviewSnapshotInvalidated(object sender, EventArgs e)

@@ -32,29 +32,43 @@ namespace PlayniteAchievements.Services.Friends
     {
         private static readonly TimeSpan DefaultWarmDebounceInterval = TimeSpan.FromMilliseconds(1500);
 
+        // Invalidation bursts (a friend scan flushes cache invalidations every ~2s) previously
+        // fanned out one SnapshotInvalidated event each, and every consumer rebuild is a full
+        // multi-second cache load materializing the whole friend display graph (~50k+ display
+        // items). Coalescing to a leading fire plus one trailing fire per window caps rebuild
+        // cadence while keeping isolated invalidations (settings toggles) instant.
+        private static readonly TimeSpan DefaultInvalidationEventThrottleInterval = TimeSpan.FromSeconds(15);
+
         private readonly object _syncRoot = new object();
         private readonly IFriendCacheManager _friendCache;
         private readonly Func<PersistedSettings> _persistedSettingsFactory;
         private readonly ILogger _logger;
         private readonly TimeSpan _warmDebounceInterval;
+        private readonly TimeSpan _invalidationEventThrottleInterval;
+        private readonly Stopwatch _eventClock = Stopwatch.StartNew();
         private FriendsOverviewSnapshot _snapshot;
         private Task<FriendsOverviewSnapshot> _buildTask;
         private int _invalidationVersion = 1;
         private int _snapshotVersion;
         private int _buildTaskVersion;
         private int _warmGeneration;
+        private TimeSpan? _lastInvalidationEventAt;
+        private bool _trailingInvalidationScheduled;
         private bool _disposed;
 
         public FriendsOverviewDataCoordinator(
             IFriendCacheManager friendCache,
             Func<PersistedSettings> persistedSettingsFactory,
             ILogger logger = null,
-            TimeSpan? warmDebounceInterval = null)
+            TimeSpan? warmDebounceInterval = null,
+            TimeSpan? invalidationEventThrottleInterval = null)
         {
             _friendCache = friendCache;
             _persistedSettingsFactory = persistedSettingsFactory ?? (() => null);
             _logger = logger;
             _warmDebounceInterval = warmDebounceInterval ?? DefaultWarmDebounceInterval;
+            _invalidationEventThrottleInterval =
+                invalidationEventThrottleInterval ?? DefaultInvalidationEventThrottleInterval;
         }
 
         public event EventHandler SnapshotInvalidated;
@@ -74,6 +88,8 @@ namespace PlayniteAchievements.Services.Friends
 
         public void Invalidate()
         {
+            bool fireNow;
+            var trailingDelay = TimeSpan.Zero;
             lock (_syncRoot)
             {
                 if (_disposed)
@@ -86,9 +102,64 @@ namespace PlayniteAchievements.Services.Friends
                 // reference immediately instead of pinning the full friend row set until the
                 // next successful build replaces it.
                 _snapshot = null;
+
+                var now = _eventClock.Elapsed;
+                if (_lastInvalidationEventAt == null ||
+                    now - _lastInvalidationEventAt.Value >= _invalidationEventThrottleInterval)
+                {
+                    _lastInvalidationEventAt = now;
+                    fireNow = true;
+                }
+                else if (!_trailingInvalidationScheduled)
+                {
+                    _trailingInvalidationScheduled = true;
+                    trailingDelay = _lastInvalidationEventAt.Value + _invalidationEventThrottleInterval - now;
+                    fireNow = false;
+                }
+                else
+                {
+                    // A trailing fire is already scheduled; this invalidation folds into it. The
+                    // version bump above still marks the snapshot stale for direct requests.
+                    return;
+                }
             }
 
-            SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
+            if (fireNow)
+            {
+                SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                _ = FireTrailingInvalidationAsync(trailingDelay);
+            }
+        }
+
+        private async Task FireTrailingInvalidationAsync(TimeSpan delay)
+        {
+            try
+            {
+                if (delay > TimeSpan.Zero)
+                {
+                    await Task.Delay(delay).ConfigureAwait(false);
+                }
+
+                lock (_syncRoot)
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
+                    _trailingInvalidationScheduled = false;
+                    _lastInvalidationEventAt = _eventClock.Elapsed;
+                }
+
+                SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Trailing snapshot invalidation fire failed.");
+            }
         }
 
         // Matches the overview/start-page projection warm: called once Playnite has finished
@@ -109,55 +180,50 @@ namespace PlayniteAchievements.Services.Friends
 
         public async Task<FriendsOverviewSnapshot> GetSnapshotAsync(bool forceRefresh, CancellationToken cancel)
         {
-            var forceNextBuild = forceRefresh;
-            while (true)
+            cancel.ThrowIfCancellationRequested();
+
+            Task<FriendsOverviewSnapshot> task;
+            lock (_syncRoot)
             {
-                cancel.ThrowIfCancellationRequested();
+                ThrowIfDisposed();
 
-                Task<FriendsOverviewSnapshot> task;
-                lock (_syncRoot)
+                if (!forceRefresh &&
+                    _snapshot != null &&
+                    _snapshotVersion == _invalidationVersion)
                 {
-                    ThrowIfDisposed();
-
-                    if (!forceNextBuild &&
-                        _snapshot != null &&
-                        _snapshotVersion == _invalidationVersion)
-                    {
-                        return _snapshot;
-                    }
-
-                    if (!forceNextBuild && _buildTask != null)
-                    {
-                        task = _buildTask;
-                    }
-                    else
-                    {
-                        _buildTaskVersion = _invalidationVersion;
-                        task = Task.Run(BuildSnapshot);
-                        _buildTask = task;
-                        forceNextBuild = false;
-                    }
+                    return _snapshot;
                 }
 
-                var snapshot = await task.ConfigureAwait(false);
-                cancel.ThrowIfCancellationRequested();
-
-                lock (_syncRoot)
+                if (!forceRefresh && _buildTask != null)
                 {
-                    if (ReferenceEquals(_buildTask, task))
-                    {
-                        _snapshot = snapshot ?? new FriendsOverviewSnapshot();
-                        _snapshotVersion = _buildTaskVersion;
-                        _buildTask = null;
-                    }
-
-                    if (_snapshot != null &&
-                        _snapshotVersion == _invalidationVersion)
-                    {
-                        return _snapshot;
-                    }
+                    task = _buildTask;
+                }
+                else
+                {
+                    _buildTaskVersion = _invalidationVersion;
+                    task = Task.Run(BuildSnapshot);
+                    _buildTask = task;
                 }
             }
+
+            var snapshot = await task.ConfigureAwait(false);
+            cancel.ThrowIfCancellationRequested();
+
+            lock (_syncRoot)
+            {
+                if (ReferenceEquals(_buildTask, task))
+                {
+                    _snapshot = snapshot ?? new FriendsOverviewSnapshot();
+                    _snapshotVersion = _buildTaskVersion;
+                    _buildTask = null;
+                }
+            }
+
+            // Bounded staleness: the result reflects the cache as of build start. When an
+            // invalidation lands mid-build, consumers converge through the next (throttled)
+            // SnapshotInvalidated fire instead of looping here — during scans that loop rebuilt
+            // the full friend display graph every few seconds.
+            return snapshot ?? new FriendsOverviewSnapshot();
         }
 
         public void Dispose()

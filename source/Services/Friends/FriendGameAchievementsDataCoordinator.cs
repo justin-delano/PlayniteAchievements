@@ -61,63 +61,58 @@ namespace PlayniteAchievements.Services.Friends
                 return new FriendsOverviewSnapshot();
             }
 
-            while (true)
+            cancel.ThrowIfCancellationRequested();
+
+            Task<FriendsOverviewSnapshot> task;
+            lock (_syncRoot)
             {
-                cancel.ThrowIfCancellationRequested();
-
-                Task<FriendsOverviewSnapshot> task;
-                lock (_syncRoot)
+                ThrowIfDisposed();
+                if (_snapshots.TryGetValue(playniteGameId, out var cached) &&
+                    cached.Version == _invalidationVersion)
                 {
-                    ThrowIfDisposed();
-                    if (_snapshots.TryGetValue(playniteGameId, out var cached) &&
-                        cached.Version == _invalidationVersion)
-                    {
-                        return cached.Snapshot ?? new FriendsOverviewSnapshot();
-                    }
-
-                    if (_buildTasks.TryGetValue(playniteGameId, out var running))
-                    {
-                        task = running.Task;
-                    }
-                    else
-                    {
-                        var version = _invalidationVersion;
-                        task = Task.Run(() => BuildSnapshot(playniteGameId));
-                        _buildTasks[playniteGameId] = new BuildEntry
-                        {
-                            Version = version,
-                            Task = task
-                        };
-                    }
+                    return cached.Snapshot ?? new FriendsOverviewSnapshot();
                 }
 
-                var snapshot = await task.ConfigureAwait(false);
-                cancel.ThrowIfCancellationRequested();
-
-                lock (_syncRoot)
+                if (_buildTasks.TryGetValue(playniteGameId, out var running))
                 {
-                    if (_buildTasks.TryGetValue(playniteGameId, out var running) &&
-                        ReferenceEquals(running.Task, task))
+                    task = running.Task;
+                }
+                else
+                {
+                    var version = _invalidationVersion;
+                    task = Task.Run(() => BuildSnapshot(playniteGameId));
+                    _buildTasks[playniteGameId] = new BuildEntry
                     {
-                        if (running.Version == _invalidationVersion)
-                        {
-                            _snapshots[playniteGameId] = new CacheEntry
-                            {
-                                Version = running.Version,
-                                Snapshot = snapshot ?? new FriendsOverviewSnapshot()
-                            };
-                        }
-
-                        _buildTasks.Remove(playniteGameId);
-                    }
-
-                    if (_snapshots.TryGetValue(playniteGameId, out var cached) &&
-                        cached.Version == _invalidationVersion)
-                    {
-                        return cached.Snapshot ?? new FriendsOverviewSnapshot();
-                    }
+                        Version = version,
+                        Task = task
+                    };
                 }
             }
+
+            var snapshot = await task.ConfigureAwait(false);
+            cancel.ThrowIfCancellationRequested();
+
+            lock (_syncRoot)
+            {
+                if (_buildTasks.TryGetValue(playniteGameId, out var running) &&
+                    ReferenceEquals(running.Task, task))
+                {
+                    if (running.Version == _invalidationVersion)
+                    {
+                        _snapshots[playniteGameId] = new CacheEntry
+                        {
+                            Version = running.Version,
+                            Snapshot = snapshot ?? new FriendsOverviewSnapshot()
+                        };
+                    }
+
+                    _buildTasks.Remove(playniteGameId);
+                }
+            }
+
+            // Bounded staleness: reflect the cache as of build start rather than rebuilding in a
+            // loop when invalidations land mid-build; the next SnapshotInvalidated fire converges.
+            return snapshot ?? new FriendsOverviewSnapshot();
         }
 
         public void Dispose()

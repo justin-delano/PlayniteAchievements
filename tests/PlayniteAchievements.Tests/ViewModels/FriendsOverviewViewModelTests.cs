@@ -102,7 +102,7 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void FriendsOverviewDataCoordinator_InvalidatedDuringBuild_ReturnsFreshSnapshot()
+        public void FriendsOverviewDataCoordinator_InvalidatedDuringBuild_ReturnsBoundedStaleSnapshotThenRebuilds()
         {
             var staleData = CreateData();
             staleData.Games[0].GameLogo = null;
@@ -133,9 +133,43 @@ namespace PlayniteAchievements.Tests.ViewModels
             Assert.IsTrue(task.Wait(TimeSpan.FromSeconds(2)));
             var snapshot = task.GetAwaiter().GetResult();
 
+            // A mid-build invalidation no longer triggers a rebuild loop: the awaited call
+            // returns the bounded-stale result of the single load it joined.
+            Assert.AreEqual(1, cache.LoadFriendsOverviewDataCalls);
+            Assert.IsNull(snapshot.Games[0].GameLogo);
+            Assert.IsFalse(coordinator.TryGetCurrentSnapshot(out _));
+
+            // Convergence happens on the next request (in production, driven by the throttled
+            // SnapshotInvalidated fire).
+            var fresh = coordinator.GetSnapshotAsync(CancellationToken.None).GetAwaiter().GetResult();
             Assert.AreEqual(2, cache.LoadFriendsOverviewDataCalls);
-            Assert.AreEqual("icon.png", snapshot.Games[0].GameLogo);
-            Assert.AreEqual("cover.png", snapshot.Games[0].GameCoverPath);
+            Assert.AreEqual("icon.png", fresh.Games[0].GameLogo);
+            Assert.AreEqual("cover.png", fresh.Games[0].GameCoverPath);
+        }
+
+        [TestMethod]
+        public void FriendsOverviewDataCoordinator_InvalidationBurst_CoalescesEventsToLeadingAndTrailingFire()
+        {
+            var cache = new StubFriendCache(CreateData());
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => new PersistedSettings(),
+                invalidationEventThrottleInterval: TimeSpan.FromMilliseconds(250));
+            var fires = 0;
+            coordinator.SnapshotInvalidated += (_, __) => Interlocked.Increment(ref fires);
+
+            for (var i = 0; i < 10; i++)
+            {
+                coordinator.Invalidate();
+            }
+
+            // Leading fire only, so far.
+            Assert.AreEqual(1, Volatile.Read(ref fires));
+
+            // The burst's remaining invalidations fold into exactly one trailing fire.
+            Assert.IsTrue(SpinWait.SpinUntil(() => Volatile.Read(ref fires) == 2, TimeSpan.FromSeconds(2)));
+            Thread.Sleep(400);
+            Assert.AreEqual(2, Volatile.Read(ref fires));
         }
 
         [TestMethod]
@@ -648,11 +682,13 @@ namespace PlayniteAchievements.Tests.ViewModels
             var cache = new StubFriendCache(initialData);
             var refreshRuntime = new RefreshRuntime();
             refreshRuntime.BeginTestRefresh(new ProgressReport { Mode = RefreshModeType.Full });
+            // Raw friend-cache invalidations now go through the scheduled reload path (they no
+            // longer force an immediate reload); zero intervals exercise the immediate branch.
             var viewModel = CreateViewModel(
                 cache,
                 refreshRuntime: refreshRuntime,
-                cacheInvalidationDebounceInterval: TimeSpan.FromSeconds(10),
-                activeRefreshInvalidationInterval: TimeSpan.FromSeconds(10));
+                cacheInvalidationDebounceInterval: TimeSpan.Zero,
+                activeRefreshInvalidationInterval: TimeSpan.Zero);
             viewModel.LoadAsync().GetAwaiter().GetResult();
             var loadCountAfterInitialLoad = cache.LoadFriendsOverviewDataCalls;
 
@@ -668,7 +704,7 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void FriendCacheInvalidated_DuringFriendRefresh_ReloadsCheckpointImmediately()
+        public void FriendCacheInvalidated_DuringFriendRefresh_ReloadsCheckpointOnActiveRefreshCadence()
         {
             var initialData = CreateData();
             var updatedData = CreateData();
@@ -685,11 +721,14 @@ namespace PlayniteAchievements.Tests.ViewModels
             var cache = new StubFriendCache(initialData);
             var refreshRuntime = new RefreshRuntime();
             refreshRuntime.BeginTestRefresh(new ProgressReport { Mode = RefreshModeType.FriendsFull });
+            // Checkpoint reloads during an active friend refresh follow the active-refresh
+            // cadence (production default 15s) instead of forcing an immediate rebuild per
+            // invalidation; a zero interval exercises the immediate branch of that path.
             var viewModel = CreateViewModel(
                 cache,
                 refreshRuntime: refreshRuntime,
                 cacheInvalidationDebounceInterval: TimeSpan.Zero,
-                activeRefreshInvalidationInterval: TimeSpan.FromSeconds(10));
+                activeRefreshInvalidationInterval: TimeSpan.Zero);
             viewModel.LoadAsync().GetAwaiter().GetResult();
             var loadCountAfterInitialLoad = cache.LoadFriendsOverviewDataCalls;
 
