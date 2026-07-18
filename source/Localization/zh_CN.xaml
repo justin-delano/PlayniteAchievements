@@ -667,13 +667,9 @@ This deletes this game's manual links, capstones, custom icons, ordering, catego
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control how locked and hidden achievement details are displayed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Hours Between Refreshes:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Clear every cached icon file.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearCompressedDescription">Clear only compressed 128px icons.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearFullResolutionDescription">Clear only original-resolution icons.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Clear only separate locked icons. The next refresh restores them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">Clear cached icon files. Missing icons are downloaded again on the next refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_All">图标</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_Compressed">已压缩图标</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_FullResolution">原始分辨率图标</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_Locked">未解锁图标</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressDeletingCount">正在删除缓存的 {0} 文件... ({1}/{2})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoFiles">未找到缓存的 {0} 文件。</sys:String>
@@ -714,8 +710,6 @@ This deletes this game's manual links, capstones, custom icons, ordering, catego
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">保留原始分辨率的成就图标</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Keeps cached icons at their original resolution instead of compressed 128px copies. Uses more disk space.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">进度条</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Game Summaries Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Selected Game Grid</sys:String>
@@ -1067,6 +1061,13 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Achievement unlocked</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
     <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
+    <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
+    <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Congratulations!</sys:String>
+    <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
+    <sys:String x:Key="LOCPlayAch_Toast_GameComplete">Game Complete!</sys:String>
+    <!-- Toast_CompletedTheGame: suffix of a friend's game-completion heading; the template
+         composes it as "<friend name> completed the game!" -->
+    <sys:String x:Key="LOCPlayAch_Toast_CompletedTheGame">completed the game!</sys:String>
     <!-- Text_UnknownAchievement: fallback shown when an achievement's name cannot be resolved -->
     <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">Unknown achievement</sys:String>
     <!-- Xenia_NotFoundWarning: {0} is the missing item (TitleID or a .gpd filename), {1} is the game name -->
