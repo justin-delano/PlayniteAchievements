@@ -186,7 +186,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">حذف نقشه‌بندی پلی‌نایت</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">متصل‌کردن به بازی Playnite</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">بازی انتخاب‌شده از Playnite با بازی دوست اگزوفیس ({0}) روی یک پلتفرم نیست.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData">پاک‌سازی داده‌ها</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?
 
 This deletes their cached achievements, icons, and any manual links and unlock times.</sys:String>
