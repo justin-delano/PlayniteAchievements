@@ -132,60 +132,60 @@
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">تصاویر صفحه</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">ضبط‌شده‌ها</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">تصویر دسته‌بندی</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Use for Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">مورد استفاده برای خلاصه‌های بازی</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Apply">Apply</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Browse">Browse</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Login">Sign in</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_SignOut">Sign out</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Next">Next</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Pick">Select</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Reset">Reset</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_ResetAll">Reset All</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Run">Run</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Save">Save</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Search">Search</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Test">Test</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Add">افزودن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Apply">اعمال</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Browse">جستجو</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Cancel">انصراف</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Clear">پاک کردن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Configure">تنظیم</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Login">ورود</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_SignOut">خروج از حساب</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Remove">پاک کردن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Next">بعدی</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Ok">بله</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Pick">انتخاب کردن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Refresh">تازه‌سازی</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Reset">بازنشانی</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_ResetAll">بازنشانی همه</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Run">دویدن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Save">ذخیره کردن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Search">جستجو</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Test">آزمایش</sys:String>
 
     <!-- ================================================================= -->
     <!-- 05 Provider Names -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Battle.net</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Apple">Apple</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_EA">EA</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_FFXIV">Final Fantasy XIV</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_GooglePlay">Google Play</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Hoyoverse">HoYoverse</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Manual">Manual</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_RPCS3">RPCS3</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_ShadPS4">ShadPS4</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Ubisoft">Ubisoft</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Xbox">Xbox</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Xenia">Xenia</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_BattleNet">سرویس بتل‌نت</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Apple">اپل</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_EA">الکترونیک آرتز</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Epic">فروشگاه اپیک گیمز</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Exophase">پلتفرم اگزوفیس</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_FFXIV">نسخهٔ چهاردهم فاینال فانتزی</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_GOG">پلتفرم گوگ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_GooglePlay">فروشگاه گوگل</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Hoyoverse">هویوورس</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Manual">به‌طور دستی</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_PSN">پلی استیشن</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">سایت رترو اچیومنتز</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_RPCS3">شبیه‌ساز پلی‌استیشن3</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_ShadPS4">شبیه‌ساز پلی‌استیشن4</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Steam">پلتفرم استیم</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Ubisoft">پلتفرم یوبی‌سافت</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Xbox">ایکس باکس</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Xenia">شبیه‌ساز Xenia</sys:String>
 
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">Change Playnite Mapping</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">Clear Playnite Mapping</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">Map to Playnite Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">The selected Playnite game is not on the same platform as the Exophase friend game ({0}).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">تغییر نقشه‌بندی پلی‌نایت</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">حذف نقشه‌بندی پلی‌نایت</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">متصل‌کردن به بازی Playnite</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">بازی انتخاب‌شده از Playnite با بازی دوست اگزوفیس ({0}) روی یک پلتفرم نیست.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?
 
@@ -230,62 +230,62 @@ It is fetched again on the next friend refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">بازنشانی بازی‌های انتخاب‌شده</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">تعیین نشان افتخار</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">برداشتن پیوند موفقیت‌ها برای &quot;{0}&quot;؟
 
-This removes the manual link and deletes its unlock times and this game's cached data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ViewFriendsAchievements">View Friends' Achievements</sys:String>
+این عمل لینک دستی را برمی‌دارد و زمان‌های آنلاک و اطلاعات کش این بازی را حذف می‌کند.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">مشاهدهٔ دستاوردها</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ViewFriendsAchievements">مشاهدهٔ دستاوردهای دوستان</sys:String>
 
     <!-- ================================================================= -->
     <!-- 07 Manage Achievements -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_BulkHint">Expand to bulk edit selected achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_ManageCategories">Manage Categories</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint">Enter a category label for the selected achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle">Set Category Label</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Label">Filter by Category Label</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Type">Filter by Category Type</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Hint">Set categories for this game's achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">Category label for selected achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">Rename categories, choose category images, and drag categories into their display order.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_RenameDialog_Hint">Select the existing label and provide the new label text.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game summary grids. Click again to clear.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Tab_Assign">Assign Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Base">Base</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Collectable">Collectable</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Default">Default</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Difficulty">Difficulty</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_DLC">DLC</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Hardcore">Hardcore</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Missable">Missable</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Multiplayer">Multiplayer</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Singleplayer">Singleplayer</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Softcore">Softcore</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Stackable">Stackable</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel">Category Type</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Header">Custom Achievement Icons</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">Set optional unlocked and locked icon overrides for this game's achievements. Drag in image links or files, or browse for a file.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">The selected image file no longer exists.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">Open Icons Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">The extension data path is unavailable.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">One or more icon values are invalid. Use image links (http:// or https://) or local image files.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Filtered</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Filtered from Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filter</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Filter from Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Control which achievements appear in achievement views and summaries.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Unfiltered">Unfiltered</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_HasNote">Note added</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Header">Achievement Notes</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_NoNote">No note</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">Note</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithNotes">With Notes</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithoutNotes">Without Notes</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_BulkHint">برای ویرایش دسته‌جمعی دستاوردهای انتخاب‌شده، باز کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_ManageCategories">مدیریت دسته‌بندی‌ها</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint">یک برچسب دسته‌بندی، برای دستاوردهای انتخاب‌شده وارد کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle">تنظیم برچسب دسته‌بندی</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Label">فیلتر بر اساس برچسب دسته‌بندی</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Type">فیلتر بر اساس نوع دسته‌بندی</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Hint">کالکشن برای دستاوردهای این بازی را مشخص کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">برچسب دسته‌بندی برای دستاوردهای انتخاب‌شده</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">نام طبقه‌ها را تغییر دهید، عکس‌هایشان را انتخاب کنید و با کشیدن و رها کردن، ترتیب نمایش را تنظیم کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_RenameDialog_Hint">برچسب فعلی را انتخاب کنید و متن برچسب جدید را وارد نمایید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">از تصویر این دسته‌بندی، به‌عنوان تصویر بازی در جدول‌های خلاصهٔ بازی، استفاده کن. برای پاک‌سازی دوباره، کلیک کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Tab_Assign">تعیین دستاوردها</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Base">پایه</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Collectable">کلکسیونی</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Default">پیش فرض</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Difficulty">درجه سختی</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_DLC">محتوای قابل دانلود</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Hardcore">سخت‌ترین درجه</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Missable">قابل‌ازدست‌رفتن</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Multiplayer">چندنفره</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Singleplayer">تک نفره</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Softcore">سطح آسان</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Stackable">قابل روی‌هم‌گذاری</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel">نوع دسته‌بندی</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Header">آیکون‌های سفارشی دستاوردها</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">آیکون‌های سفارشی اختیاری برای وضعیت باز و بستهٔ دستاوردهای این بازی تعیین کنید. لینک یا فایل تصویر را بکشید و بیندازید، یا فایلی را جستجو کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">فایل تصویر انتخاب‌شده دیگر وجود ندارد.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">باز کردن پوشهٔ آیکون‌ها</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">آدرس داده‌های برنامهٔ کمکی در دسترس نمی‌باشد.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">یک یا چند مقدار آیکون نامعتبر است. از لینک‌های تصویری (http:// یا https://) یا فایل‌های تصویر روی دستگاه استفاده کنید.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">فیلتر شده</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">فیلترشده از خلاصه‌ها</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">فیلتر</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">فیلتر شده از خلاصه ها</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">تعیین کنید کدام دستاوردها در دیدگاه‌ها و جمع‌بندی‌های دستاورد نمایش داده شوند.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Unfiltered">فیلتر‌نشده</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_HasNote">یادداشت افزوده شد</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Header">یادداشت‌های دستاورد</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Hint">برای دستاوردهای این بازی یادداشت شخصی اضافه کنید. قالب‌بندی از نشانگرهای **پررنگ*، *مورب* و __underline__ پشتیبانی می‌کند.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_NoNote">بدون یادداشت</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">یادداشت</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithNotes">یادداشت‌دار</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithoutNotes">بدون یادداشت</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary">{0} ({1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary_None">No manual link configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary_None">لینک دستی تنظیم نشده است.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning">Enable manual tracking?
 
 Manual tracking can replace this game's cached achievement data from {0}.</sys:String>
