@@ -86,10 +86,14 @@
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} bis {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">Wertungssystem</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Sammel- und Prestigewertung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Collection Score rewards total achievement collecting. Each unlocked achievement gives fixed points from its rarity tier.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige Score rewards rare achievement collecting. Rare achievements are worth many more points than common achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Die Sammelwertung belohnt das generelle Freischalten von Erfolgen. Jede Freischaltung gewährt eine feste Punktzahl, basierend auf der Seltenheitsstufe.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Die Prestigewertung belohnt das Freischalten seltener Erfolge. Diese sind erheblich mehr Punkte wert als gewöhnliche.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Stufen und Ränge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Collection and Prestige scores each contribute to a Tier and Level. The first tier is Bronze V, followed by Bronze IV, and continues through Silver, Gold, Platinum, and Master tiers until Master I. Earning 10 levels advances you to the next tier.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Das Erringen von Sammel- und Prestigepunkten trägt jeweils zu einem Rang und einer Stufe bei. 
+
+Für einen Rangaufstieg sind 10 Stufen erforderlich.
+
+Der erste Rang ist Bronze V, gefolgt von Bronze IV, weiter über die Ränge Silber, Gold, Platin und Meister bis hin zu Meister I.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_ButtonTooltip">Informationen zum Bewertungssystem</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tier_Master">Meister</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
@@ -193,12 +197,12 @@ Hiermit werden zwischengespeicherte Erfolge, Symbole, manuelle Verknüpfungen un
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Erfolgsdaten von &quot;{0}&quot; entfernen?
 
 Hiermit werden zwischengespeicherte Erfolge, Symbole, manuelle Verknüpfungen und Freischaltzeiten gelöscht.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">Exclude {0} selected games and clear their data?
+    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">{0} ausgewählte Spiele ausschließen und zugehörige Daten entfernen?
 
-This hides them from the achievements view and deletes their cached data and manual links.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">Exclude &quot;{0}&quot; and clear its data?
+Dadurch werden die Spiele aus Erfolgsansichten ausgeschlossen und sämtliche zugehörige zwischengespeicherten Daten und manuelle Verknüpfungen werden gelöscht.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">&quot;{0}&quot; ausschließen und zugehörige Daten entfernen?
 
-This hides the game from the achievements view and deletes its cached data and manual link.</sys:String>
+Dadurch wird das Spiel aus Erfolgsansichten ausgeschlossen und sämtliche zugehörige zwischengespeicherten Daten und manuelle Verknüpfungen werden gelöscht.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshes">Aus Aktualisierungen ausschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Aus Aktualisierungen ausschließen und Erfolgsdaten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Dieses Spiel ausschließen und Erfolgsdaten entfernen</sys:String>
@@ -270,12 +274,12 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">Die ausgewählte Bilddatei existiert nicht mehr.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">Symbolordner öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">Der Datenpfad der Erweiterung ist nicht verfügbar.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">One or more icon values are invalid. Use image links (http:// or https://) or local image files.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">Ungültige Symboldaten. Links zu Bildern (http:// bzw. https://) oder lokale Bilddateien verwenden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Gefiltert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Aus Übersichten herausgefiltert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filterung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Aus Übersichten herausfiltern</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Control which achievements appear in achievement views and summaries.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Festlegung der Auflistung von Erfolgen in An- und Übersichten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Unfiltered">Ungefiltert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_HasNote">Notiz hinzugefügt</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Header">Erfolgsnotizen</sys:String>
@@ -317,7 +321,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings">Durch Einstellungen aktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox">Immer separate Sperrsymbole für dieses Spiel verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader">Separate Sperrsymbole</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Download separate locked icons for this game when the platform provides them. Unchecked, the global setting applies. Takes effect on the next refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Download separater Symbole für gesperrte Erfolge, sofern von der Plattform angeboten. Wenn deaktiviert werden, werden globale Einstellungen verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHeader">Plattformübersteuerung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHint">Force this game to use one supported achievement platform, or clear the override to use automatic matching.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto">Übersteuerung gesetzt: {0} (automatische Erkennung)</sys:String>
@@ -386,7 +390,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Sign in to Exophase in plugin settings to use manual linking.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Zur Verwendung manueller Verknüpfungen in den Einstellungen bei Exohpase anmelden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">Sign in to Steam in plugin settings to fetch achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">Das ausgewählte Spiel verfügt über keine Erfolge.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Search for a game to link achievements from. The selected game's achievements will be linked to this Playnite game.</sys:String>
@@ -412,7 +416,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ExcludeHeader">Ausgeschlossene Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ExecutionHeader">Ausführung</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_ForceIncludeBypass">Explicit includes bypass user exclusions</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ForceIncludeBypass">Die explizite Auswahl übersteuert Ausschlüsse durch Benutzer</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Header">Einmalige benutzerdefinierte Aktualisierung durchführen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_IncludeHeader">Ausgewählte Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_InvalidRecentLimit">Die Übersteuerung der Anzahl muss positiv sein.</sys:String>
@@ -424,7 +428,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Delete">Löschen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_DeleteConfirm">Voreinstellung &quot;{0}&quot; löschen?</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Load">Laden</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary">Preset loaded with adjustments: removed {0} unavailable platform(s) and {1} missing game reference(s).</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary">Voreinstellung mit Anpassungen geladen: {0} nicht verfügbare Plattform(en), sowie {1} fehlende Spielreferenz(en) entfernt.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_MaxReached">Es können bis zu {0} Voreinstellungen gespeichert werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Bezeichnung für Voreinstellungen eingeben (1-64 Zeichen).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Benutzerdefinierte Aktualisierungsvoreinstellung speichern</sys:String>
@@ -578,7 +582,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingCaptureBackend">Aufnahmemethode</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingAuto">Automatisch</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudio">Audiospur aufnehmen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudioHint">Records everything your PC is playing, not just the game (music and voice chat included).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudioHint">Aufnahmen enthalten die vollständige Audiowiedergabe des Systems (z.B. Musikwiedergabe oder laufende Sprach-Chat).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingHint">Saves a short video clip of each unlock. Requires ffmpeg.exe (set the path below).</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_RecordingUnavailable">Unlock recording was turned off for this session. Check the ffmpeg path, free disk space, and the plugin log.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverrides">Plattformspezifische Einstellungen</sys:String>
@@ -587,7 +591,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Override_Off">Aus</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewButton">Vorschau des Rahmens auf dem Bildschirm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewHint">Der Rahmen erscheint nur in Screenhots und nicht während des Spielens. Escape drücken oder 10 Sekunden auf Schließen der Vorschau warten.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewHint">Fire an example notification to see it on screen with your current settings, position, and slide animation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewHint">Beispielhafte Benachrichtigung zur Überprüfung der aktuellen Einstellungen anzeigen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewFriend">Freundesfreischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleGame">Beispielhaftes Spiel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleCategory">Beispielkategorie</sys:String>
@@ -630,17 +634,17 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_MissingOAuthSetup">API-Client-Zugangsdaten oder Redirect URL fehlen</sys:String>
 
     <!-- Provider: Epic -->
-    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Paste the &quot;authorizationCode&quot; value from the page here:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Sign in to Epic in your default browser when it opens
-2. After signing in, find the &quot;authorizationCode&quot; value on the page
-3. Copy and paste that value in the next dialog</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Den angezeigten Wert von &quot;authorizationCode&quot; hier einfügen:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Nach Öffnen des Standardbrowsers bei Epic anmelden
+2. Nach Anmeldung den Wert für &quot;authorizationCode&quot; auf der Seite kopieren
+3. Wert im nachfolgenden Dialog einfügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Anmeldung</sys:String>
 
     <!-- Provider: Exophase -->
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Verwaltete Plattformen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on these platforms will use Exophase instead of native platform support. Check platforms you want Exophase to manage.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Spiele dieser Plattformen werden Exophase statt der nativen Plattform verwenden. Auswählen, welche Plattformen durch Exophase verwaltet werden sollen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Manage Achievements to include individually.</sys:String>
     <sys:String x:Key="LOCPlayAch_Exophase_SelectPlatforms">Plattformen wählen</sys:String>
 
@@ -790,12 +794,12 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Pfad zur ausführbaren Datei</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Pfad zu rpcs3.exe.</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophäenorder nicht gefunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation (missing dev_hdd0home)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Ungültige RPCS3-Installation (dev_hdd0home fehlt)</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">Kein Benutzerprofil in dev_hdd0\home gefunden</sys:String>
 
     <!-- Provider: ShadPS4 -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Stammordner</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Your ShadPS4 root folder; both legacy and newer layouts are detected. Default: %AppData%\shadPS4.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">ShadPS4-Stammordner. Traditionelles und neueres Layout gefunden. Standard: %AppData%\shadPS4</sys:String>
 
     <!-- Provider: Xbox -->
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">Kleinere Symbole herunterladen</sys:String>
@@ -856,7 +860,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exakt darstellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Exakte Segmentgrößen anzeigen. Symbole für Segmente unter 5 % werden ausgeblendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Segmente unter 5 % in Kreisdiagrammen verbergen.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">The center percentage always uses exact counts, so it can differ from the pie when slices are hidden or rounded.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">Der zentrale Prozentwert zeigt stets den exakten Wert an. Daher kann es bei Segmentrundung oder -ausblendung zu unterschiedlichen Ausgaben kommen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Runden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description">Segmente unter 5 % auf 5 % aufrunden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Statistik</sys:String>
@@ -864,8 +868,8 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatische Zuweisung von Schlagworten nach Erfolgsstatus zur besseren Filterung in der Bibliothek.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Schlagwortkonfiguration</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Use Separate Locked Icons When Available</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Downloads platform-supplied locked icons when they differ from the unlocked icon. Otherwise the unlocked icon is shown in grayscale.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Separate Sperrsymbole (sofern verfügbar) anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Download von Sperrsymbolen der Plattform, sofern verfügbar und unterschiedlich zum Freischaltsymbol. Ansonsten werden die Freischaltsymbole in Graustufen verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Description">Debugging- und Support-Werkzeuge.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Werkzeuge</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Cover statt Symbole anzeigen</sys:String>
@@ -930,12 +934,12 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Vollendungserfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Started">Gestartet</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Nicht gestartet</sys:String>
-    <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
-    <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Mit letzter Freischaltung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">Keine letzte Freischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Spieleübersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Vervollständigte Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Unvollständig</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">No game selected in the overview.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">Kein Spiel in Übersicht ausgewählt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Erfolge nach Plattform</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Erfolge nach Seltenheit</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Erfolge nach Trophäe</sys:String>
@@ -956,20 +960,20 @@ Hiermit werden zwischengespeicherte Daten für {0:N0} Spiele gelöscht, die nur 
 
 Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared unowned friend data for {0:N0} games.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">No friend achievement data yet.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Failed to load friend achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">Keine Freundeserfolgsdaten vorhanden.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Fehler beim Laden der Freundeserfolgsdaten.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Freundesaktualisierung fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NotAvailable">Freundesübersicht nicht verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectTargetForRefresh">Select a friend or game before refreshing selected friend data.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_WindowTitle">{0} - Freundeserfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_TitleFallback">Freundeserfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_NoData">No friend achievement data for this game yet.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_RefreshSelectedFriend">Refresh Friend for This Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_NoData">Keine Freundeserfolgsdaten für dieses Spiel vorhanden.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_RefreshSelectedFriend">Freund dieses Spiels aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_Header">Custom Friends Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectedGameScope">Ausgewähltes Spiel: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SummaryFormat">Plattformen: {0} | Geltungsbereich: {1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Leave unselected to include all. Selections narrow the chosen scope.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Ohne Auswahl werden alle inkludiert. Eine Auswahl engt den Geltungsbereich ein.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">Keine authentifizierte Plattform mit Freundesunterstützung verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">Lade Freundesdaten {1}/{2}: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Aktualisiere Bibliotheken von Freunden {0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Aktualisiere Bibliotheken von Freunden {0}/{1}: {2}</sys:String>
@@ -1054,7 +1058,7 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <!-- ================================================================= -->
     <!-- 17 Errors and Notifications -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No platforms are authenticated. Set up at least one platform in settings before refreshing.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">Keine authentifizierte Plattform. Vor dem Datenabgleich mindestens eine Plattform in den Einstellungen konfigurieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Prüfung der periodischen Aktualisierung fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodische Aktualisierung fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Aktualisierung fehlgeschlagen</sys:String>
