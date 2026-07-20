@@ -79,14 +79,12 @@ namespace PlayniteAchievements.Services.Library
 
         public OverviewDataSnapshot GetOverviewSnapshot(
             PlayniteAchievementsSettings settings,
-            ISet<string> revealedKeys,
             CancellationToken token)
         {
-            var useCache = revealedKeys == null || revealedKeys.Count == 0;
             var snapshot = GetOrBuild(
                 "overview",
-                useCache,
-                () => BuildOverview(settings ?? _settings, revealedKeys, token));
+                useCache: true,
+                build: () => BuildOverview(settings ?? _settings, token));
             return snapshot?.OverviewSnapshot ?? new OverviewDataSnapshot();
         }
 
@@ -275,7 +273,6 @@ namespace PlayniteAchievements.Services.Library
 
         private LibraryProjectionSnapshot BuildOverview(
             PlayniteAchievementsSettings settings,
-            ISet<string> revealedKeys,
             CancellationToken token)
         {
             var builder = new OverviewDataBuilder(
@@ -286,7 +283,7 @@ namespace PlayniteAchievements.Services.Library
 
             return new LibraryProjectionSnapshot
             {
-                OverviewSnapshot = builder.Build(settings, revealedKeys, token)
+                OverviewSnapshot = builder.Build(settings, token)
             };
         }
 
@@ -405,16 +402,6 @@ namespace PlayniteAchievements.Services.Library
                     return;
                 }
 
-                // When the summary fast path is unavailable the overview build hydrates the
-                // whole library; precomputing that with no view attached would re-retain the
-                // data the on-demand consumers release. Invalidate() already cleared the
-                // cache, so consumers still rebuild fresh when opened.
-                if (!_achievementDataService.CanUseSummaryFastPathForOverview())
-                {
-                    _logger?.Debug("[OverviewPerf] Warm skipped because the overview build would take the hydrated path.");
-                    return;
-                }
-
                 lock (_sync)
                 {
                     _lastWarmStartedUtc = DateTime.UtcNow;
@@ -422,10 +409,7 @@ namespace PlayniteAchievements.Services.Library
 
                 using (PerfScope.StartStartup(_logger, "Warm.OverviewProjection", thresholdMs: 250))
                 {
-                    GetOverviewSnapshot(
-                        _settings,
-                        new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                        CancellationToken.None);
+                    GetOverviewSnapshot(_settings, CancellationToken.None);
                 }
             }
             catch (Exception ex)
