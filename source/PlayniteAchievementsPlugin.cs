@@ -454,6 +454,16 @@ namespace PlayniteAchievements
                         _logger,
                         isRefreshActive: () => _refreshService?.IsRebuilding == true);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
+
+                    // Reconcile the cache DB's AchievementFilters mirror against custom data
+                    // before any summary read (theme wiring, projection warm). Synchronous and
+                    // cheap when unchanged; also covers legacy custom-data migrations that
+                    // bypass CustomDataChanged.
+                    using (PerfScope.StartStartup(_logger, "PluginCtor.AchievementFilterResync", thresholdMs: 50))
+                    {
+                        _achievementDataService.SyncAllAchievementFiltersFromCustomData();
+                    }
+
                     _notifications = new NotificationPublisher(api, settings, _logger);
                     _refreshCoordinator = new RefreshEntryPoint(
                         _refreshService,
