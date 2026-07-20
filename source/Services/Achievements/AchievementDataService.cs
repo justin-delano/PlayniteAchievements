@@ -1,5 +1,4 @@
 using Playnite.SDK;
-using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -7,12 +6,10 @@ using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Database;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Hydration;
-using PlayniteAchievements.Services.Summaries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Threading;
 
 namespace PlayniteAchievements.Services.Achievements
 {
@@ -61,21 +58,6 @@ namespace PlayniteAchievements.Services.Achievements
         // Bumped on every invalidation; a summary loaded before an invalidation must not be
         // memoized after it (it may have been built against since-replaced filter mirror rows).
         private int _overviewProjectionGeneration;
-
-        // Hydrated visible game data for the overview. Used only when the summary fast path is
-        // unavailable (no fast read support, or the summary load failed), where each open would
-        // otherwise repeat the full load + hydrate. Held as a Lazy so concurrent first callers share a
-        // single load instead of each running the full load + hydrate; a null factory result
-        // marks a failed load, which is never memoized. The factory takes the cache manager's
-        // internal lock under the Lazy's own lock, never under _overviewProjectionCacheSync,
-        // while invalidation takes only _overviewProjectionCacheSync - no lock cycle.
-        private Lazy<List<GameAchievementData>> _overviewVisibleGameData;
-
-        // Number of attached overview views. While positive, _overviewVisibleGameData stays
-        // memoized so spoiler reveals and delta refreshes reuse the hydrated list; at zero the
-        // list is dropped right after each build (warm/start-page consumers keep only the light
-        // snapshot) and on the last release.
-        private int _overviewHydrationConsumerCount;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -228,122 +210,6 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
-        public List<GameAchievementData> GetAllGameAchievementDataForOverview()
-        {
-            try
-            {
-                var result = LoadAllCachedGameData();
-                HydrateAll(result, includeAchievementOverlays: false);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed to get all overview achievement data");
-                return new List<GameAchievementData>();
-            }
-        }
-
-        /// <summary>
-        /// Counts an attached overview view. While at least one view is attached, the hydrated
-        /// overview game data stays memoized across reads.
-        /// </summary>
-        internal void AcquireOverviewHydrationConsumer()
-        {
-            lock (_overviewProjectionCacheSync)
-            {
-                _overviewHydrationConsumerCount++;
-            }
-        }
-
-        /// <summary>
-        /// Detaches an overview view. When the count reaches zero, drops the hydrated overview
-        /// game data so the full library's achievement detail becomes collectable; the next
-        /// consumer rebuilds it on demand.
-        /// </summary>
-        internal void ReleaseOverviewHydrationConsumer()
-        {
-            lock (_overviewProjectionCacheSync)
-            {
-                if (_overviewHydrationConsumerCount <= 0)
-                {
-                    _logger?.Debug("Overview hydration consumer count underflow; ignoring.");
-                    return;
-                }
-
-                _overviewHydrationConsumerCount--;
-                if (_overviewHydrationConsumerCount > 0 || _overviewVisibleGameData == null)
-                {
-                    return;
-                }
-
-                _overviewVisibleGameData = null;
-            }
-
-            MemoryDiagnostics.Log(_logger, "overviewHydration.release");
-        }
-
-        public List<GameAchievementData> GetAllVisibleGameAchievementDataForOverview()
-        {
-            Lazy<List<GameAchievementData>> lazy;
-            lock (_overviewProjectionCacheSync)
-            {
-                if (_overviewVisibleGameData == null)
-                {
-                    _overviewVisibleGameData = new Lazy<List<GameAchievementData>>(
-                        LoadVisibleOverviewGameData,
-                        LazyThreadSafetyMode.ExecutionAndPublication);
-                }
-
-                lazy = _overviewVisibleGameData;
-            }
-
-            // Shared read-only snapshot; consumers (the overview builder) only enumerate it.
-            var visible = lazy.Value;
-            if (visible != null)
-            {
-                // Build-then-release: with no overview view attached (post-invalidation warm,
-                // start-page builds) the raw hydrated list is not retained once the caller's
-                // snapshot is built; callers keep their own reference for the current build.
-                lock (_overviewProjectionCacheSync)
-                {
-                    if (_overviewHydrationConsumerCount == 0 &&
-                        ReferenceEquals(_overviewVisibleGameData, lazy))
-                    {
-                        _overviewVisibleGameData = null;
-                    }
-                }
-
-                return visible;
-            }
-
-            // The load failed; drop the failed Lazy (unless an invalidation already replaced
-            // it) so the next call retries instead of memoizing the failure.
-            lock (_overviewProjectionCacheSync)
-            {
-                if (ReferenceEquals(_overviewVisibleGameData, lazy))
-                {
-                    _overviewVisibleGameData = null;
-                }
-            }
-
-            return new List<GameAchievementData>();
-        }
-
-        private List<GameAchievementData> LoadVisibleOverviewGameData()
-        {
-            try
-            {
-                var result = LoadAllCachedGameData();
-                HydrateAll(result, includeAchievementOverlays: false);
-                return ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed to get all visible overview achievement data");
-                return null;
-            }
-        }
-
         public List<GameAchievementData> GetAllGameAchievementDataForTheme()
         {
             try
@@ -461,8 +327,6 @@ namespace PlayniteAchievements.Services.Achievements
                     excludedSummaryIds);
             }
 
-            ApplyAchievementFilterCorrections(summaryData, customDataByGameId, excludedSummaryIds);
-
             var gameIdsNeedingCompletionOverrides = new HashSet<Guid>(
                 summaryData.Games
                     .Where(game => game?.PlayniteGameId.HasValue == true && !game.IsCompleted)
@@ -484,56 +348,6 @@ namespace PlayniteAchievements.Services.Achievements
             ApplyRecentSummaryCustomization(summaryData.RecentUnlocks, customizationByGameId);
 
             return summaryData;
-        }
-
-        // The persisted summary rows aggregate over ALL cached achievements, so games with
-        // per-achievement filters would show unfiltered counts on the fast path. Recompute just
-        // those games' rows from the filtered per-game data (the same projection the hydrated
-        // path uses), so only games with filters pay a per-game load.
-        private void ApplyAchievementFilterCorrections(
-            CachedSummaryData summaryData,
-            IReadOnlyDictionary<Guid, GameCustomDataFile> customDataByGameId,
-            ISet<Guid> excludedSummaryIds)
-        {
-            if (summaryData?.Games == null || customDataByGameId == null || customDataByGameId.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var pair in customDataByGameId)
-            {
-                var gameId = pair.Key;
-                if (gameId == Guid.Empty ||
-                    (excludedSummaryIds != null && excludedSummaryIds.Contains(gameId)))
-                {
-                    continue;
-                }
-
-                if (!HasApiNames(pair.Value?.FilteredAchievementApiNames) &&
-                    !HasApiNames(pair.Value?.SummaryFilteredAchievementApiNames))
-                {
-                    continue;
-                }
-
-                if (!summaryData.Games.Any(game => game?.PlayniteGameId == gameId))
-                {
-                    continue;
-                }
-
-                var gameData = GetGameAchievementDataForOverview(gameId);
-                if (gameData == null)
-                {
-                    // Per-game load failed; keep the unfiltered row rather than dropping the game.
-                    _logger?.Debug($"[OverviewPerf] Filter correction skipped for game {gameId}; per-game load returned no data.");
-                    continue;
-                }
-
-                OverviewSummaryFilterCorrections.Apply(
-                    summaryData,
-                    gameId,
-                    gameData.Achievements,
-                    gameData.IsCompleted);
-            }
         }
 
         private Dictionary<Guid, SummaryCustomizationData> BuildSummaryCustomizationByGameId(
@@ -906,20 +720,6 @@ namespace PlayniteAchievements.Services.Achievements
             return visibleAchievements;
         }
 
-        // Whether GetCachedSummaryDataForOverview can serve the light summary fast path. When
-        // false, an overview build takes the whole-library hydrate path; the projection warm
-        // consults this to avoid precomputing that with no consumer attached. The fast path is
-        // filter-aware (per-game corrections), so this only depends on fast read support.
-        internal bool CanUseSummaryFastPathForOverview()
-        {
-            return _cacheReadOptimizations != null;
-        }
-
-        private static bool HasApiNames(IReadOnlyCollection<string> apiNames)
-        {
-            return apiNames != null && apiNames.Count > 0;
-        }
-
         private void ApplyGameSummaryCustomization(
             IList<CachedGameSummaryData> games,
             IReadOnlyDictionary<Guid, SummaryCustomizationData> customizationByGameId)
@@ -1224,7 +1024,6 @@ namespace PlayniteAchievements.Services.Achievements
             {
                 _overviewProjectionGeneration++;
                 _overviewSummaryCacheByLimit.Clear();
-                _overviewVisibleGameData = null;
             }
         }
 
