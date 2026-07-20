@@ -79,7 +79,8 @@ namespace PlayniteAchievements.Services.Images
             IReadOnlyDictionary<string, string> lockedOverrides,
             CancellationToken cancel,
             Action<int, int> onIconProgress = null,
-            bool forceRefreshExistingTargets = false)
+            bool forceRefreshExistingTargets = false,
+            ISet<string> forceOverrideApiNames = null)
         {
             if (data?.Achievements == null || data.Achievements.Count == 0)
             {
@@ -101,6 +102,7 @@ namespace PlayniteAchievements.Services.Images
                     unlockedOverrides,
                     lockedOverrides,
                     forceRefreshExistingTargets,
+                    forceOverrideApiNames,
                     cancel)
                 .ConfigureAwait(false);
 
@@ -297,6 +299,7 @@ namespace PlayniteAchievements.Services.Images
             IReadOnlyDictionary<string, string> unlockedOverrides,
             IReadOnlyDictionary<string, string> lockedOverrides,
             bool overwriteExistingTargets,
+            ISet<string> forceOverrideApiNames,
             CancellationToken cancel)
         {
             if (achievements == null || achievements.Count == 0)
@@ -317,13 +320,20 @@ namespace PlayniteAchievements.Services.Images
                     continue;
                 }
 
+                var fileStem = default(string);
+                if (!string.IsNullOrWhiteSpace(apiName))
+                {
+                    fileStems.TryGetValue(apiName, out fileStem);
+                }
+
+                var forceThisAchievement = !string.IsNullOrWhiteSpace(apiName) &&
+                    forceOverrideApiNames?.Contains(apiName) == true;
+                var overwriteExistingTarget = overwriteExistingTargets || forceThisAchievement;
+
                 var resolvedUnlockedOverride = default(string);
                 var resolvedLockedOverride = default(string);
 
-                if (hasOverrides &&
-                    !string.IsNullOrWhiteSpace(apiName) &&
-                    fileStems.TryGetValue(apiName, out var fileStem) &&
-                    !string.IsNullOrWhiteSpace(fileStem))
+                if (hasOverrides && !string.IsNullOrWhiteSpace(fileStem))
                 {
                     var unlockedSource = AchievementIconOverrideHelper.GetOverrideValue(unlockedOverrides, apiName);
                     if (!string.IsNullOrWhiteSpace(unlockedSource))
@@ -335,7 +345,7 @@ namespace PlayniteAchievements.Services.Images
                                 fileStem,
                                 AchievementIconVariant.Unlocked,
                                 cancel,
-                                overwriteExistingTarget: overwriteExistingTargets)
+                                overwriteExistingTarget: overwriteExistingTarget)
                             .ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(resolvedUnlockedOverride))
                         {
@@ -353,12 +363,38 @@ namespace PlayniteAchievements.Services.Images
                                 fileStem,
                                 AchievementIconVariant.Locked,
                                 cancel,
-                                overwriteExistingTarget: overwriteExistingTargets)
+                                overwriteExistingTarget: overwriteExistingTarget)
                             .ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(resolvedLockedOverride))
                         {
                             achievement.LockedIconPath = resolvedLockedOverride;
                         }
+                    }
+                }
+
+                // A force-listed achievement whose override was cleared still points at the managed
+                // custom file; restore the variant to the still-cached provider default so the stale
+                // custom path is not persisted.
+                if (forceThisAchievement && !string.IsNullOrWhiteSpace(fileStem))
+                {
+                    if (string.IsNullOrWhiteSpace(
+                        AchievementIconOverrideHelper.GetOverrideValue(unlockedOverrides, apiName)))
+                    {
+                        achievement.UnlockedIconPath = RestoreDefaultIconPath(
+                            achievement.UnlockedIconPath,
+                            gameId,
+                            fileStem,
+                            AchievementIconVariant.Unlocked);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(
+                        AchievementIconOverrideHelper.GetOverrideValue(lockedOverrides, apiName)))
+                    {
+                        achievement.LockedIconPath = RestoreDefaultIconPath(
+                            achievement.LockedIconPath,
+                            gameId,
+                            fileStem,
+                            AchievementIconVariant.Locked);
                     }
                 }
 
@@ -373,6 +409,48 @@ namespace PlayniteAchievements.Services.Images
                     useSeparateLockedIcons,
                     !string.IsNullOrWhiteSpace(resolvedUnlockedOverride),
                     !string.IsNullOrWhiteSpace(resolvedLockedOverride));
+            }
+        }
+
+        // Restores a cleared override variant to the still-cached provider default (original
+        // resolution first, retired compressed cache second - the same order the Icons tab preview
+        // uses). Paths that do not point at this game's managed custom icons or a missing file are
+        // returned unchanged.
+        private string RestoreDefaultIconPath(
+            string currentPath,
+            string gameId,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            var needsRestore = string.IsNullOrWhiteSpace(currentPath) ||
+                _managedCustomIconService.IsManagedCustomIconPath(currentPath, gameId) ||
+                IsMissingLocalFile(currentPath);
+            if (!needsRestore)
+            {
+                return currentPath;
+            }
+
+            var restored = _diskImageService.FindExistingAchievementIconCachePath(gameId, fileStem, variant);
+            if (!string.IsNullOrWhiteSpace(restored))
+            {
+                return restored;
+            }
+
+            var legacy = _diskImageService.GetLegacyCompressedAchievementIconCachePath(gameId, fileStem, variant);
+            return !string.IsNullOrWhiteSpace(legacy) && File.Exists(legacy)
+                ? legacy
+                : null;
+        }
+
+        private static bool IsMissingLocalFile(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path) && !File.Exists(path);
+            }
+            catch (ArgumentException)
+            {
+                return false;
             }
         }
 
