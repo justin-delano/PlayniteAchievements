@@ -114,6 +114,12 @@ namespace PlayniteAchievements.ViewModels
             _ownsFriendsOverviewDataCoordinator = friendsOverviewDataCoordinator == null;
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator ??
                 new FriendsOverviewDataCoordinator(friendCache, () => _settings?.Persisted, logger);
+            if (!_ownsFriendsOverviewDataCoordinator)
+            {
+                // A shared coordinator retains its snapshot only while views (or a
+                // friend-consuming theme) hold it; an owned instance is disposed wholesale.
+                _friendsOverviewDataCoordinator.AddViewConsumer();
+            }
             _friendsOverviewDataCoordinator.SnapshotInvalidated += OnFriendsOverviewSnapshotInvalidated;
             _cacheInvalidationDebounceInterval = cacheInvalidationDebounceInterval ?? TimeSpan.FromMilliseconds(300);
             // Matches the FriendsOverviewDataCoordinator invalidation-event throttle: each reload
@@ -2204,6 +2210,12 @@ namespace PlayniteAchievements.ViewModels
 
         public void Dispose()
         {
+            // Guards the shared coordinator's view-consumer count against double-decrement.
+            if (_disposed)
+            {
+                return;
+            }
+
             _disposed = true;
 
             if (_progressTracker != null)
@@ -2241,6 +2253,10 @@ namespace PlayniteAchievements.ViewModels
             if (_ownsFriendsOverviewDataCoordinator)
             {
                 _friendsOverviewDataCoordinator?.Dispose();
+            }
+            else
+            {
+                _friendsOverviewDataCoordinator?.RemoveViewConsumer();
             }
         }
 
