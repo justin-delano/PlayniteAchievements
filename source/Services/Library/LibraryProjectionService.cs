@@ -405,6 +405,16 @@ namespace PlayniteAchievements.Services.Library
                     return;
                 }
 
+                // When the summary fast path is unavailable the overview build hydrates the
+                // whole library; precomputing that with no view attached would re-retain the
+                // data the on-demand consumers release. Invalidate() already cleared the
+                // cache, so consumers still rebuild fresh when opened.
+                if (!_achievementDataService.CanUseSummaryFastPathForOverview())
+                {
+                    _logger?.Debug("[OverviewPerf] Warm skipped because the overview build would take the hydrated path.");
+                    return;
+                }
+
                 lock (_sync)
                 {
                     _lastWarmStartedUtc = DateTime.UtcNow;
