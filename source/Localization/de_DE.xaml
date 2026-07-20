@@ -46,7 +46,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Locked">Gesperrt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NewLabel">Neue Bezeichnung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">Keine zwischengespeicherten Erfolge für dieses Spiel vorhanden.</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Refresh button to check for achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Noch keine Erfolgsdaten verfügbar. Aktualisierung für Datenabgleich ausführen.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Keine Unterstützung von Erfolgen durch dieses Spiel oder seiner Plattform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Keine Erfolge gefunden</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Nicht authentifiziert</sys:String>
@@ -220,9 +220,9 @@ Dadurch wird das Spiel aus Erfolgsansichten ausgeschlossen und sämtliche zugeh�
 
 Their cached achievement data is deleted and they are skipped during friend refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend">Erfolgsdaten entfernen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Clear cached achievement data for {0}?
+    <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Zwischengespeicherte Erfolgsdaten von {0} entfernen?
 
-It is fetched again on the next friend refresh.</sys:String>
+Diese werden bei der nächsten Freundesaktualisierung erneut  geladen.</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Ansicht schließen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Gültige Game ID eingeben (numerisch).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Gültige Xenia Title ID eingeben (8-stellig, hexadezimal).</sys:String>
@@ -422,9 +422,11 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_InvalidRecentLimit">Die Übersteuerung der Anzahl muss positiv sein.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_MenuItem">Benutzerdefinierte Aktualisierung...</sys:String>
     <!-- CustomRefresh_NoCapableProviderForGames: {0} is a comma-separated list of game names (capped) -->
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoCapableProviderForGames">No enabled and authenticated platform can refresh these games: {0}. Enable the matching platform or check its authentication in settings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoCapableProviderForGames">Keine aktivierte oder authentifizierte Plattform zur Aktualisierung dieser Spiele verfügbar: {0}
+
+Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprüfen.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingGames">In dieser benutzerdefinierten Aktualisierungsanfrage sind keine Spiele enthalten.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingProviders">No enabled and authenticated platforms match this custom refresh request.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingProviders">Für diese benutzerdefinierte Aktualisierungsanfrage sind keine authentifizierten oder aktivierten Plattformen verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Delete">Löschen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_DeleteConfirm">Voreinstellung &quot;{0}&quot; löschen?</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Load">Laden</sys:String>
@@ -670,7 +672,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">File Scan Cache neu erstellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Maximales Alter des File Scan Caches (in Tagen):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Sichtbarkeit von Erfolgen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control how locked and hidden achievement details are displayed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Darstellung der Informationsdetails verborgener Erfolge.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Aktualisierungsintervall (in Stunden):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Alle zwischengespeicherten Symboldateien entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Separate Sperrsymbole entfernen (bei nächster Aktualisierung erneut geladen)</sys:String>
@@ -784,7 +786,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableAutomaticCapstoneAssignment">Vollendungserfolge automatisch aus Siegesbedingungen zuweisen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Seltenheitsstatistik</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Zwanglos</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Sets which rarity (hardcore or softcore) is shown for locked achievements. Unlocked achievements always use their own unlock mode. Takes effect after a refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Darstellung des Seltenheitsmodus (Hardcore oder Zwanglos) für gesperrte Erfolge. Für freigeschaltete Erfolge wird immer der eigene Modus angezeigt. Wirksam nach Aktualisierung.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
 
     <!-- Provider: Steam -->
@@ -849,7 +851,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Vereinheitlichte Seltenheitsabzeichen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseTrophiesForRarity">Trophäen als Seltenheitsabzeichen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages">Seltenheitswerte runden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Ganzzahlige Prozentwerte anzeigen. Werte unter 1 % werden mit &quot;&lt; 1 %&quot; dargestellt.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Ganzzahlige Prozentwerte anzeigen. Werte unter 1 % werden als &quot;&lt; 1 %&quot; dargestellt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletedProgressColoring">Vervollständigte Fortschrittsleisten einfärben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletedProgressColoring_Help">Verwendet die Farbe vervollständigter Spiele zur Färbung der Fortschrittsleisten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorNamesByRarity">Erfolgstitel nach Seltenheit färben</sys:String>
@@ -964,7 +966,7 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Fehler beim Laden der Freundeserfolgsdaten.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Freundesaktualisierung fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NotAvailable">Freundesübersicht nicht verfügbar.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectTargetForRefresh">Select a friend or game before refreshing selected friend data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectTargetForRefresh">Freund oder Spiel zur Aktualisierung von Freundesdaten auswählen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_WindowTitle">{0} - Freundeserfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_TitleFallback">Freundeserfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_NoData">Keine Freundeserfolgsdaten für dieses Spiel vorhanden.</sys:String>
