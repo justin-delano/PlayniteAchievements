@@ -325,6 +325,7 @@ namespace PlayniteAchievements.Services.Overview
                     TrophySilverTotal = game.TrophySilverTotal,
                     TrophyBronzeTotal = game.TrophyBronzeTotal,
                     LastPlayed = presentation.LastPlayed,
+                    LastUnlockUtc = game.LastUnlockUtc,
                     IsCompleted = game.IsCompleted,
                     Provider = providerName,
                     ProviderKey = providerKey,
