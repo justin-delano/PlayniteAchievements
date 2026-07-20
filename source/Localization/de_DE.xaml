@@ -1065,7 +1065,11 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodische Aktualisierung fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Aktualisierung fehlgeschlagen</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Aktualisierung fehlgeschlagen: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">Could not read {0} Steam unlock time(s). Set the plugin language to match your Steam language, then refresh. See the log for details.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">Fehler beim Auslesen der Steam-Freischaltzeiten von {0}.
+
+Plugin-Sprache übereinstimmend mit der Spracheinstellung in Steam konfigurieren und erneut aktualisieren. 
+
+Details sind in der Log-Datei aufgezeichnet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0}-Authentifizierung abgelaufen oder ungültig. Klicken zum Öffnen der Einstellungen.</sys:String>
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Erfolg freigeschaltet</sys:String>
