@@ -1,3 +1,4 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
@@ -465,6 +466,6 @@ namespace PlayniteAchievements.ViewModels.Items
 
         public string TotalPlaytimeText => PlayniteGameMetadataFormatter.FormatPlaytime(TotalPlaytimeSeconds);
 
-        public string CountsText => $"{UnlockedAchievementsCount:N0} / {SharedGamesCount:N0}";
+        public string CountsText => string.Format(FormattingCulture.Current, "{0:N0} / {1:N0}", UnlockedAchievementsCount, SharedGamesCount);
     }
 }

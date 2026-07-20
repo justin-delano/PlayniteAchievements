@@ -1,5 +1,6 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Tests.Models
@@ -8,10 +9,18 @@ namespace PlayniteAchievements.Tests.Models
     [DoNotParallelize]
     public class AchievementRarityResolverTests
     {
+        // Percent output depends on the plugin formatting culture; pin it for determinism.
+        [TestInitialize]
+        public void PinFormattingCulture()
+        {
+            FormattingCulture.Initialize(() => "english");
+        }
+
         [TestCleanup]
         public void ResetRounding()
         {
             AchievementRarityResolver.RoundDisplayPercentages = false;
+            FormattingCulture.Initialize(() => "english");
         }
 
         private static void WithRounding(Action assertions)
@@ -24,6 +33,19 @@ namespace PlayniteAchievements.Tests.Models
             finally
             {
                 AchievementRarityResolver.RoundDisplayPercentages = false;
+            }
+        }
+
+        private static void WithGerman(Action assertions)
+        {
+            FormattingCulture.Initialize(() => "german");
+            try
+            {
+                assertions();
+            }
+            finally
+            {
+                FormattingCulture.Initialize(() => "english");
             }
         }
 
@@ -100,6 +122,26 @@ namespace PlayniteAchievements.Tests.Models
                 Assert.AreEqual("<1% - Ultra Rare", AchievementRarityResolver.GetDetailText(0.42, RarityTier.UltraRare));
                 Assert.AreEqual("12% - Rare", AchievementRarityResolver.GetDetailText(12.34, RarityTier.Rare));
             });
+        }
+
+        [TestMethod]
+        public void FormatPercent_GermanUsesCommaAndSpacedPercentSign()
+        {
+            WithGerman(() =>
+            {
+                Assert.AreEqual("12,3 %", AchievementRarityResolver.FormatPercent(12.34));
+                Assert.AreEqual("100,0 %", AchievementRarityResolver.FormatPercent(100.0));
+            });
+        }
+
+        [TestMethod]
+        public void FormatPercent_GermanRoundedShowsSpacedLessThanOne()
+        {
+            WithGerman(() => WithRounding(() =>
+            {
+                Assert.AreEqual("< 1 %", AchievementRarityResolver.FormatPercent(0.5));
+                Assert.AreEqual("12 %", AchievementRarityResolver.FormatPercent(12.34));
+            }));
         }
 
         [TestMethod]

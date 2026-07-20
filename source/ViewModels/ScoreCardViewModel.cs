@@ -52,13 +52,14 @@ namespace PlayniteAchievements.ViewModels
             ? L("LOCPlayAch_Score_Collection")
             : L("LOCPlayAch_Score_Prestige");
 
-        public string ScoreText => Score.ToString("N0");
+        public string ScoreText => Score.ToString("N0", FormattingCulture.Current);
 
         public string PointsText => string.Format(
             L("LOCPlayAch_Score_PointsFormat"),
             ScoreText);
 
         public string LevelText => string.Format(
+            FormattingCulture.Current,
             L("LOCPlayAch_Score_LevelFormat"),
             Level);
 
@@ -195,7 +196,12 @@ namespace PlayniteAchievements.ViewModels
                 return $"{progressLabel}: 0/0";
             }
 
-            return $"{progressLabel}: {snapshot.CurrentLevelPoints:N0}/{snapshot.CurrentLevelTotalPoints:N0}";
+            return string.Format(
+                FormattingCulture.Current,
+                "{0}: {1:N0}/{2:N0}",
+                progressLabel,
+                snapshot.CurrentLevelPoints,
+                snapshot.CurrentLevelTotalPoints);
         }
 
         private static string FormatPointsUntilNextLevel(AchievementLevelSnapshot snapshot)
@@ -207,7 +213,7 @@ namespace PlayniteAchievements.ViewModels
 
             return string.Format(
                 L("LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat"),
-                Math.Max(0, snapshot?.PointsUntilNextLevel ?? 0).ToString("N0"),
+                Math.Max(0, snapshot?.PointsUntilNextLevel ?? 0).ToString("N0", FormattingCulture.Current),
                 FormatNextLevel(snapshot));
         }
 
@@ -221,7 +227,7 @@ namespace PlayniteAchievements.ViewModels
             var nextTier = AchievementRankPresentation.FormatRank(snapshot.NextRank);
             return string.Format(
                 L("LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat"),
-                Math.Max(0, snapshot.PointsUntilNextRank).ToString("N0"),
+                Math.Max(0, snapshot.PointsUntilNextRank).ToString("N0", FormattingCulture.Current),
                 nextTier);
         }
 
@@ -231,6 +237,7 @@ namespace PlayniteAchievements.ViewModels
                 ? 0
                 : (snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level);
             return string.Format(
+                FormattingCulture.Current,
                 L("LOCPlayAch_Score_LevelFormat"),
                 Math.Max(0, currentLevel + 1));
         }

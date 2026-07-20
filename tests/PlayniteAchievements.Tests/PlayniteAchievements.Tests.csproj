@@ -216,7 +216,9 @@
     <Compile Include="..\..\source\Common\MemoryDiagnostics.cs" Link="Source\Common\MemoryDiagnostics.cs" />
     <Compile Include="..\..\source\Common\MemoryMaintenance.cs" Link="Source\Common\MemoryMaintenance.cs" />
     <Compile Include="..\..\source\Common\OffscreenViewLeaseSource.cs" Link="Source\Common\OffscreenViewLeaseSource.cs" />
+    <Compile Include="..\..\source\Common\FormattingCulture.cs" Link="Source\Common\FormattingCulture.cs" />
     <Compile Include="..\..\source\Common\PathExpansion.cs" Link="Source\Common\PathExpansion.cs" />
+    <Compile Include="..\..\source\Common\PercentFormatter.cs" Link="Source\Common\PercentFormatter.cs" />
     <Compile Include="..\..\source\Common\PerfScope.cs" Link="Source\Common\PerfScope.cs" />
     <Compile Include="..\..\source\Common\RelativeDateFormatter.cs" Link="Source\Common\RelativeDateFormatter.cs" />
     <Compile Include="..\..\source\Common\RelayCommand.cs" Link="Source\Common\RelayCommand.cs" />
@@ -291,6 +293,7 @@
     <Compile Include="..\..\source\Models\Achievements\AchievementIconResolver.cs" Link="Source\Models\Achievements\AchievementIconResolver.cs" />
     <Compile Include="..\..\source\Models\Tagging\TaggingSettings.cs" Link="Source\Models\Tagging\TaggingSettings.cs" />
     <Compile Include="..\..\source\Models\Tagging\TagType.cs" Link="Source\Models\Tagging\TagType.cs" />
+    <Compile Include="..\..\source\Services\Tagging\DefaultTagNameCatalog.cs" Link="Source\Services\Tagging\DefaultTagNameCatalog.cs" />
     <Compile Include="..\..\source\Models\Settings\ThemeMigrationCacheEntry.cs" Link="Source\Models\Settings\ThemeMigrationCacheEntry.cs" />
     <Compile Include="..\..\source\Models\Settings\ManualAchievementLink.cs" Link="Source\Models\Settings\ManualAchievementLink.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementRarityResolver.cs" Link="Source\Models\Achievements\AchievementRarityResolver.cs" />

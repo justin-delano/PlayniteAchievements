@@ -58,7 +58,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ForceReloadData();
         }
 
-        public event EventHandler IconOverridesSaved;
+        public event EventHandler<IconOverridesSavedEventArgs> IconOverridesSaved;
 
         public ObservableCollection<AchievementIconOverrideItem> AchievementRows { get; }
 
@@ -240,7 +240,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         _managedCustomIconService));
                 }
 
-                ReplaceRows(rows);
+                if (!TryMergeRowsInPlace(rows))
+                {
+                    RestoreRevealedState(rows);
+                    ReplaceRows(rows);
+                }
+
                 HasAchievements = rows.Count > 0;
                 SetSaveStatus(null, isError: false);
                 RefreshComputedState();
@@ -264,6 +269,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var lockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var changedApiNames = new List<string>();
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
                     var row = AchievementRows[i];
@@ -271,6 +277,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     if (string.IsNullOrWhiteSpace(apiName))
                     {
                         continue;
+                    }
+
+                    if (row.HasPersistableChanges)
+                    {
+                        changedApiNames.Add(apiName);
                     }
 
                     // An invalid pending edit keeps its last persisted value in the store;
@@ -296,7 +307,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 RefreshComputedState();
-                IconOverridesSaved?.Invoke(this, EventArgs.Empty);
+                if (changedApiNames.Count > 0)
+                {
+                    IconOverridesSaved?.Invoke(this, new IconOverridesSavedEventArgs(changedApiNames));
+                }
             }
             catch (Exception ex)
             {
@@ -342,6 +356,69 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 SetSaveStatus(
                     string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
                     isError: true);
+            }
+        }
+
+        /// <summary>
+        /// Reuses the live row instances when the reloaded achievement set is unchanged, so
+        /// transient view state (reveal, scroll position, focus) survives the reload.
+        /// </summary>
+        private bool TryMergeRowsInPlace(IReadOnlyList<AchievementIconOverrideItem> newRows)
+        {
+            if (newRows.Count == 0 || newRows.Count != AchievementRows.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < newRows.Count; i++)
+            {
+                if (!string.Equals(
+                    NormalizeText(AchievementRows[i]?.ApiName),
+                    NormalizeText(newRows[i]?.ApiName),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            // Rows adopt already-persisted state here; Row_PropertyChanged must not
+            // treat the resulting notifications as user edits and re-persist.
+            _isPersisting = true;
+            try
+            {
+                for (var i = 0; i < newRows.Count; i++)
+                {
+                    AchievementRows[i]?.UpdateFrom(newRows[i]);
+                }
+            }
+            finally
+            {
+                _isPersisting = false;
+            }
+
+            return true;
+        }
+
+        private void RestoreRevealedState(IReadOnlyList<AchievementIconOverrideItem> newRows)
+        {
+            var revealedByApiName = AchievementRows
+                .Where(row => row != null && !string.IsNullOrWhiteSpace(row.ApiName))
+                .GroupBy(row => NormalizeText(row.ApiName), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First().IsRevealed, StringComparer.OrdinalIgnoreCase);
+            if (revealedByApiName.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var row in newRows)
+            {
+                var apiName = NormalizeText(row?.ApiName);
+                if (!string.IsNullOrWhiteSpace(apiName) &&
+                    revealedByApiName.TryGetValue(apiName, out var isRevealed) &&
+                    isRevealed)
+                {
+                    row.IsRevealed = true;
+                }
             }
         }
 
@@ -534,6 +611,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
     }
 
+    public sealed class IconOverridesSavedEventArgs : EventArgs
+    {
+        public IconOverridesSavedEventArgs(IReadOnlyCollection<string> changedApiNames)
+        {
+            ChangedApiNames = changedApiNames ?? Array.Empty<string>();
+        }
+
+        public IReadOnlyCollection<string> ChangedApiNames { get; }
+    }
+
     public sealed class AchievementIconOverrideItem : AchievementDisplayItem
     {
         private const string PreviewHttpPrefix = "previewhttp:";
@@ -612,6 +699,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _hasLockedContentChange ||
             !string.Equals(GetNormalizedUnlockedOverrideValue(), _baselineUnlockedOverrideValue, StringComparison.Ordinal) ||
             !string.Equals(GetNormalizedLockedOverrideValue(), _baselineLockedOverrideValue, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Like HasChanges, but only counts variants whose current value will actually be
+        /// written to the store (invalid pending edits are excluded).
+        /// </summary>
+        internal bool HasPersistableChanges =>
+            (!HasUnlockedOverrideValidationError &&
+                (_hasUnlockedContentChange ||
+                 !string.Equals(GetNormalizedUnlockedOverrideValue(), _baselineUnlockedOverrideValue, StringComparison.Ordinal))) ||
+            (!HasLockedOverrideValidationError &&
+                (_hasLockedContentChange ||
+                 !string.Equals(GetNormalizedLockedOverrideValue(), _baselineLockedOverrideValue, StringComparison.Ordinal)));
 
         public bool HasTransientManagedState =>
             HasPendingManagedLocalOverride(AchievementIconVariant.Unlocked) ||
@@ -792,6 +891,108 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             row._unlockedOverrideValue = row._baselineUnlockedOverrideValue ?? string.Empty;
             row._lockedOverrideValue = row._baselineLockedOverrideValue ?? string.Empty;
             return row;
+        }
+
+        /// <summary>
+        /// Adopts a freshly-built row's data onto this live instance so the bound row keeps
+        /// its transient view state. IsRevealed is intentionally not copied, and a variant
+        /// with a pending edit keeps its current text (only its baseline advances).
+        /// </summary>
+        internal void UpdateFrom(AchievementIconOverrideItem source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            ProviderKey = source.ProviderKey;
+            GameName = source.GameName;
+            SortingName = source.SortingName;
+            PlayniteGameId = source.PlayniteGameId;
+            DisplayName = source.DisplayName;
+            Description = source.Description;
+            UnlockedIconPath = source.UnlockedIconPath;
+            LockedIconPath = source.LockedIconPath;
+            UnlockTimeUtc = source.UnlockTimeUtc;
+            GlobalPercentUnlocked = source.GlobalPercentUnlocked;
+            PointsValue = source.PointsValue;
+            ProgressNum = source.ProgressNum;
+            ProgressDenom = source.ProgressDenom;
+            TrophyType = source.TrophyType;
+            Unlocked = source.Unlocked;
+            Hidden = source.Hidden;
+            ShowHiddenIcon = source.ShowHiddenIcon;
+            ShowHiddenTitle = source.ShowHiddenTitle;
+            ShowHiddenDescription = source.ShowHiddenDescription;
+            ShowRarityBar = source.ShowRarityBar;
+            ShowHiddenSuffix = source.ShowHiddenSuffix;
+            ShowLockedIcon = source.ShowLockedIcon;
+            UseSeparateLockedIconsWhenAvailable = source.UseSeparateLockedIconsWhenAvailable;
+            CategoryType = source.CategoryType;
+            CategoryLabel = source.CategoryLabel;
+            GameIconPath = source.GameIconPath;
+            GameCoverPath = source.GameCoverPath;
+
+            _originalUnlockedPreviewPath = source._originalUnlockedPreviewPath;
+            _originalLockedPreviewPath = source._originalLockedPreviewPath;
+
+            var unlockedValueChanged = AdoptPersistedBaseline(
+                AchievementIconVariant.Unlocked,
+                source._baselineUnlockedOverrideValue);
+            var lockedValueChanged = AdoptPersistedBaseline(
+                AchievementIconVariant.Locked,
+                source._baselineLockedOverrideValue);
+
+            // Only a variant whose committed value actually changed re-raises its text
+            // bindings, so in-progress typing in an unrelated field is never clobbered.
+            if (unlockedValueChanged)
+            {
+                NotifyOverrideStateChangedForVariant(AchievementIconVariant.Unlocked);
+            }
+
+            if (lockedValueChanged)
+            {
+                NotifyOverrideStateChangedForVariant(AchievementIconVariant.Locked);
+            }
+
+            // Always re-raise the previews: a re-materialized managed file keeps its path,
+            // and only a fresh evaluation picks up the new cache-bust token.
+            OnPropertyChanged(nameof(UnlockedPreviewPath));
+            OnPropertyChanged(nameof(LockedPreviewPath));
+            OnPropertyChanged(nameof(HasChanges));
+        }
+
+        private bool AdoptPersistedBaseline(AchievementIconVariant variant, string newBaseline)
+        {
+            var normalizedNewBaseline = NormalizeOverrideValue(newBaseline);
+            var hadPendingEdit = GetHasContentChange(variant) ||
+                !string.Equals(
+                    GetNormalizedOverrideValue(variant),
+                    GetBaselineOverrideValue(variant),
+                    StringComparison.Ordinal);
+
+            if (variant == AchievementIconVariant.Locked)
+            {
+                _baselineLockedOverrideValue = normalizedNewBaseline;
+            }
+            else
+            {
+                _baselineUnlockedOverrideValue = normalizedNewBaseline;
+            }
+
+            if (hadPendingEdit)
+            {
+                return false;
+            }
+
+            var nextValue = normalizedNewBaseline ?? string.Empty;
+            if (string.Equals(GetCurrentOverrideValue(variant), nextValue, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            SetCurrentOverrideValue(variant, nextValue, notifyIfUnchanged: false);
+            return true;
         }
 
         private void SetOverrideValue(AchievementIconVariant variant, string value)

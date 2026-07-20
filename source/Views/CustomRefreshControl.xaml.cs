@@ -1186,7 +1186,7 @@ namespace PlayniteAchievements.Views
                     SummaryText = string.Format(
                         L("LOCPlayAch_CustomRefresh_SummaryFormat"),
                         providerDisplay,
-                        estimatedTargets);
+                        estimatedTargets.ToString("N0", FormattingCulture.Current));
 
                     CanRun = selectedProviders.Count > 0 && estimatedTargets > 0;
                 }));

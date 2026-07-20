@@ -218,6 +218,26 @@ namespace PlayniteAchievements
             }
         }
 
+        /// <summary>
+        /// Directory containing the plugin's shipped localization dictionaries, resolved
+        /// from the installed assembly location. Returns null when it cannot be resolved.
+        /// </summary>
+        private string GetPluginLocalizationDirectory()
+        {
+            try
+            {
+                var installDirectory = Path.GetDirectoryName(typeof(PlayniteAchievementsPlugin).Assembly.Location);
+                return string.IsNullOrEmpty(installDirectory)
+                    ? null
+                    : Path.Combine(installDirectory, "Localization");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to resolve plugin localization directory.");
+                return null;
+            }
+        }
+
         public void PersistSettingsForUi()
         {
             try
@@ -347,6 +367,8 @@ namespace PlayniteAchievements
 
                 AchievementRarityResolver.RoundDisplayPercentages =
                     _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
+
+                FormattingCulture.Initialize(() => _settingsViewModel?.Settings?.Persisted?.GlobalLanguage);
 
                 // NECESSARY TO MAKE SURE CHARTS WORK
                 var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
@@ -501,7 +523,8 @@ namespace PlayniteAchievements
                     _tagSyncService = new TagSyncService(
                         PlayniteApi,
                         _logger,
-                        settings.Persisted);
+                        settings.Persisted,
+                        GetPluginLocalizationDirectory());
                     _tagSyncService.InitializeAndSubscribeTaggingSettings();
 
                     _fullscreenControllerNavigationService = new FullscreenControllerNavigationService(
@@ -962,6 +985,20 @@ namespace PlayniteAchievements
 
                 _achievementHotkeyService?.Start();
 
+                // Re-localize un-customized default tag names to the current Playnite
+                // language; needs the database, which is only open from this point on.
+                try
+                {
+                    if (_tagSyncService?.RelocalizeDefaultTagNames() == true)
+                    {
+                        PersistSettingsForUi();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Failed to re-localize default tag names.");
+                }
+
                 // Auto-migrate themes that have been updated since the last migration.
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
@@ -1005,6 +1042,11 @@ namespace PlayniteAchievements
             {
                 AchievementRarityResolver.RoundDisplayPercentages =
                     _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.GlobalLanguage))
+            {
+                FormattingCulture.Refresh();
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||

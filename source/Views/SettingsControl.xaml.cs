@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
@@ -79,6 +80,7 @@ namespace PlayniteAchievements.Views
             _pickColor = pickColor ?? throw new ArgumentNullException(nameof(pickColor));
 
             InitializeComponent();
+            FormattingCulture.Apply(this);
 
             // Initialize provider navigation overview
             ProviderNavigationItems = new ObservableCollection<ProviderNavigationItem>();

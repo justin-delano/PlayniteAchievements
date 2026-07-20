@@ -49,6 +49,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly ILogger _logger;
         private readonly AchievementPageLinkResolver _achievementPageLinkResolver;
 
+        private Task _iconOverridesApplyChain;
         private ManageAchievementsTab _selectedTab;
         private bool _hasGame;
         private string _gameName;
@@ -470,11 +471,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (TotalAchievements <= 0)
                 {
-                    return "0 / 0 (0%)";
+                    return $"0 / 0 ({PercentFormatter.FormatWhole(0)})";
                 }
 
                 var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(UnlockedAchievements, TotalAchievements);
-                return $"{UnlockedAchievements} / {TotalAchievements} ({percent}%)";
+                return $"{UnlockedAchievements} / {TotalAchievements} ({PercentFormatter.FormatWhole(percent)})";
             }
         }
 
@@ -1312,8 +1313,46 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
         }
 
-        internal void NotifyIconOverridesChanged()
+        internal void NotifyIconOverridesChanged(IReadOnlyCollection<string> changedApiNames)
         {
+            if (changedApiNames == null || changedApiNames.Count == 0)
+            {
+                return;
+            }
+
+            // Chain onto the previous apply so overlapping edit bursts run one at a time;
+            // each run re-reads the override store, so the final run converges to the
+            // last persisted state.
+            _iconOverridesApplyChain = ApplyIconOverridesAsync(_iconOverridesApplyChain, changedApiNames);
+        }
+
+        private async Task ApplyIconOverridesAsync(
+            Task previousApply,
+            IReadOnlyCollection<string> changedApiNames)
+        {
+            try
+            {
+                await (previousApply ?? Task.CompletedTask);
+            }
+            catch
+            {
+                // Already logged by the run that faulted.
+            }
+
+            try
+            {
+                if (_refreshService != null)
+                {
+                    // No ConfigureAwait(false): the post-apply invalidation below must
+                    // resume on the dispatcher.
+                    await _refreshService.ApplyAchievementIconOverridesAsync(_gameId, changedApiNames);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed applying icon overrides for gameId={_gameId}");
+            }
+
             _gameDataSnapshotProvider?.Invalidate();
             _refreshService?.Cache?.NotifyCacheInvalidated(new[] { _gameId });
             if (_settings?.SelectedGame?.Id == _gameId)
@@ -1322,7 +1361,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             RefreshCustomDataState();
-            TriggerRefresh(forceIconRefresh: true);
         }
 
         private bool ShouldWarnAboutManualTrackingOverride(out string providerKey)

@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Services.Tagging
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PersistedSettings _settings;
+        private readonly Lazy<DefaultTagNameCatalog> _defaultNameCatalog;
         private TaggingSettings _subscribedTaggingSettings;
 
         // Cache of tag IDs by tag type to avoid repeated database lookups
@@ -34,11 +35,14 @@ namespace PlayniteAchievements.Services.Tagging
         public TagSyncService(
             IPlayniteAPI api,
             ILogger logger,
-            PersistedSettings settings)
+            PersistedSettings settings,
+            string localizationDirectory = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _defaultNameCatalog = new Lazy<DefaultTagNameCatalog>(
+                () => new DefaultTagNameCatalog(localizationDirectory, _logger));
         }
 
         /// <summary>
@@ -88,21 +92,17 @@ namespace PlayniteAchievements.Services.Tagging
                 _settings.TaggingSettings = new TaggingSettings();
             }
 
-            _settings.TaggingSettings.InitializeDefaults(tagType =>
-            {
-                return tagType switch
-                {
-                    TagType.HasAchievements => FormatTagName("LOCPlayAch_Tagging_HasAchievements"),
-                    TagType.InProgress => FormatTagName("LOCPlayAch_Filter_InProgress"),
-                    TagType.Completed => FormatTagName("LOCPlayAch_Completed"),
-                    TagType.NoAchievements => FormatTagName("LOCPlayAch_Tagging_NoAchievements"),
-                    TagType.Customized => FormatTagName("LOCPlayAch_Tagging_Customized"),
-                    TagType.NotCustomized => FormatTagName("LOCPlayAch_Tagging_NotCustomized"),
-                    TagType.Excluded => FormatTagName("LOCPlayAch_ManageAchievements_Status_Excluded"),
-                    TagType.ExcludedFromSummaries => FormatTagName("LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries"),
-                    _ => TaggingSettings.GetDefaultDisplayName(tagType)
-                };
-            });
+            _settings.TaggingSettings.InitializeDefaults(GetLocalizedDefaultName);
+        }
+
+        /// <summary>
+        /// Resolves the default display name for a tag type in the current Playnite language.
+        /// </summary>
+        private static string GetLocalizedDefaultName(TagType tagType)
+        {
+            return DefaultTagNameCatalog.StatusResourceKeys.TryGetValue(tagType, out var statusResourceKey)
+                ? FormatTagName(statusResourceKey)
+                : TaggingSettings.GetDefaultDisplayName(tagType);
         }
 
         private static string FormatTagName(string statusResourceKey)
@@ -110,6 +110,69 @@ namespace PlayniteAchievements.Services.Tagging
             return string.Format(
                 ResourceProvider.GetString("LOCPlayAch_Tag_PrefixFormat"),
                 ResourceProvider.GetString(statusResourceKey));
+        }
+
+        /// <summary>
+        /// Updates tag display names that still match a known default (from any shipped
+        /// language) to the current language's default, and renames the corresponding
+        /// Playnite tags in place. Customized names are left untouched. Requires the
+        /// Playnite database to be open, so call from OnApplicationStarted or later.
+        /// </summary>
+        /// <returns>True when any display name changed and settings should be persisted.</returns>
+        public bool RelocalizeDefaultTagNames()
+        {
+            var tagConfigs = _settings.TaggingSettings?.TagConfigs;
+            if (tagConfigs == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var kvp in tagConfigs)
+            {
+                var config = kvp.Value;
+                if (config == null)
+                {
+                    continue;
+                }
+
+                var newName = _defaultNameCatalog.Value.GetRelocalizedName(
+                    kvp.Key,
+                    config.DisplayName,
+                    GetLocalizedDefaultName(kvp.Key));
+                if (newName == null)
+                {
+                    continue;
+                }
+
+                var oldName = config.DisplayName;
+                config.DisplayName = newName;
+                changed = true;
+                RenamePlayniteTag(config, oldName, newName);
+            }
+
+            return changed;
+        }
+
+        private void RenamePlayniteTag(TagConfig config, string oldName, string newName)
+        {
+            try
+            {
+                if (config.TagId is Guid tagId && tagId != Guid.Empty)
+                {
+                    var tag = _api.Database.Tags.Get(tagId);
+                    if (tag != null && !string.Equals(tag.Name, newName, StringComparison.Ordinal))
+                    {
+                        tag.Name = newName;
+                        _api.Database.Tags.Update(tag);
+                        _logger.Info($"Renamed tag '{oldName}' to '{newName}' to match the current language.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to rename tag '{oldName}' to '{newName}'.");
+            }
         }
 
         private void SubscribeToTaggingSettingsChanges(TaggingSettings taggingSettings)

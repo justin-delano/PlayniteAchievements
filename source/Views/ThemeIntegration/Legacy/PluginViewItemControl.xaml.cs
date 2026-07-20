@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
@@ -73,6 +74,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         public PluginViewItemControl()
         {
             InitializeComponent();
+            FormattingCulture.Apply(this);
             DataContextChanged += OnDataContextChanged;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;

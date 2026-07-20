@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services
@@ -81,14 +82,17 @@ namespace PlayniteAchievements.Services
                 return L("LOCPlayAch_Playtime_LessThanOneHour");
             }
 
+            var culture = FormattingCulture.Current;
+            var hoursText = hours.ToString("N0", culture);
+
             if (displayMode == PlaytimeDisplayMode.HoursOnly)
             {
-                return string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours"), hours);
+                return string.Format(culture, L("LOCPlayAch_Playtime_Hours"), hoursText);
             }
 
             return minutes > 0
-                ? string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_HoursMinutes"), hours, minutes)
-                : string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours"), hours);
+                ? string.Format(culture, L("LOCPlayAch_Playtime_HoursMinutes"), hoursText, minutes)
+                : string.Format(culture, L("LOCPlayAch_Playtime_Hours"), hoursText);
         }
 
         private static PlaytimeDisplayMode ResolvePlaytimeDisplayMode()

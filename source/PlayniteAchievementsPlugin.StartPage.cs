@@ -63,6 +63,7 @@ namespace PlayniteAchievements
             }
 
             var view = CreateStartPageView(definition.WidgetKind);
+            Common.FormattingCulture.Apply(view);
             view.DataContext = viewModel;
 
             var key = GetStartPageInstanceKey(viewId, instanceId);
