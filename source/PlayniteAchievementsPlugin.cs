@@ -417,7 +417,6 @@ namespace PlayniteAchievements
                         _logger);
                     _friendGameAchievementsDataCoordinator = new FriendGameAchievementsDataCoordinator(
                         _friendCacheManager,
-                        _friendsOverviewDataCoordinator,
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
                     _friendsRecentUnlocksDataCoordinator = new FriendsRecentUnlocksDataCoordinator(
