@@ -5532,6 +5532,203 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        internal static class AchievementFilterKinds
+        {
+            public const string Filtered = "Filtered";
+            public const string SummaryFiltered = "SummaryFiltered";
+        }
+
+        private sealed class AchievementFilterRow
+        {
+            public string PlayniteGameId { get; set; }
+            public string ApiName { get; set; }
+            public string Kind { get; set; }
+        }
+
+        private static string AchievementFilterEntryKey(string apiName, string kind)
+        {
+            return (apiName ?? string.Empty).Trim() + "\n" + (kind ?? string.Empty).Trim();
+        }
+
+        private static HashSet<string> BuildAchievementFilterEntryKeys(
+            IReadOnlyList<(string ApiName, string Kind)> entries)
+        {
+            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in entries ?? Array.Empty<(string, string)>())
+            {
+                if (string.IsNullOrWhiteSpace(entry.ApiName) || string.IsNullOrWhiteSpace(entry.Kind))
+                {
+                    continue;
+                }
+
+                keys.Add(AchievementFilterEntryKey(entry.ApiName, entry.Kind));
+            }
+
+            return keys;
+        }
+
+        /// <summary>
+        /// Replaces one game's rows in the AchievementFilters mirror (see the schema comment:
+        /// derived from per-game custom data, which the summary queries cannot join to
+        /// directly). Compares before writing so unchanged saves stay WAL-silent. Returns true
+        /// when rows changed.
+        /// </summary>
+        public bool ReplaceAchievementFilters(
+            Guid playniteGameId,
+            IReadOnlyList<(string ApiName, string Kind)> entries)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            var gameIdText = playniteGameId.ToString();
+            var desired = BuildAchievementFilterEntryKeys(entries);
+            return WithDb(db =>
+            {
+                var existing = db.Load<AchievementFilterRow>(
+                        @"SELECT PlayniteGameId, ApiName, Kind
+                          FROM AchievementFilters
+                          WHERE PlayniteGameId = ?;",
+                        gameIdText)
+                    .Select(row => AchievementFilterEntryKey(row.ApiName, row.Kind))
+                    .ToList();
+
+                if (existing.Count == desired.Count && desired.SetEquals(existing))
+                {
+                    return false;
+                }
+
+                var nowIso = ToIso(DateTime.UtcNow);
+                db.RunTransaction(() =>
+                {
+                    db.ExecuteNonQuery(
+                        "DELETE FROM AchievementFilters WHERE PlayniteGameId = ?;",
+                        gameIdText);
+                    InsertAchievementFilterKeys(db, gameIdText, desired, nowIso);
+                });
+
+                return true;
+            });
+        }
+
+        /// <summary>
+        /// Reconciles the whole AchievementFilters mirror against the desired per-game entry
+        /// sets (games absent from the map lose their rows). Diffs first and returns the number
+        /// of changed games; 0 means no write at all.
+        /// </summary>
+        public int ResyncAllAchievementFilters(
+            IReadOnlyDictionary<Guid, IReadOnlyList<(string ApiName, string Kind)>> entriesByGameId)
+        {
+            var desiredByGame = new Dictionary<Guid, HashSet<string>>();
+            foreach (var pair in entriesByGameId ?? new Dictionary<Guid, IReadOnlyList<(string, string)>>())
+            {
+                if (pair.Key == Guid.Empty)
+                {
+                    continue;
+                }
+
+                var keys = BuildAchievementFilterEntryKeys(pair.Value);
+                if (keys.Count > 0)
+                {
+                    desiredByGame[pair.Key] = keys;
+                }
+            }
+
+            return WithDb(db =>
+            {
+                var existingByGameText = db.Load<AchievementFilterRow>(
+                        "SELECT PlayniteGameId, ApiName, Kind FROM AchievementFilters;")
+                    .GroupBy(row => row.PlayniteGameId ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => new HashSet<string>(
+                            group.Select(row => AchievementFilterEntryKey(row.ApiName, row.Kind)),
+                            StringComparer.OrdinalIgnoreCase),
+                        StringComparer.OrdinalIgnoreCase);
+
+                // Stale rows: stored games no longer carrying filters (or unparsable ids).
+                var textsToDelete = new List<string>();
+                foreach (var pair in existingByGameText)
+                {
+                    if (!Guid.TryParse(pair.Key, out var gameId) ||
+                        !desiredByGame.TryGetValue(gameId, out var desired) ||
+                        !desired.SetEquals(pair.Value))
+                    {
+                        textsToDelete.Add(pair.Key);
+                    }
+                }
+
+                // New or changed games to (re)write.
+                var gamesToWrite = new List<Guid>();
+                foreach (var pair in desiredByGame)
+                {
+                    if (!existingByGameText.TryGetValue(pair.Key.ToString(), out var existing) ||
+                        !pair.Value.SetEquals(existing))
+                    {
+                        gamesToWrite.Add(pair.Key);
+                    }
+                }
+
+                if (textsToDelete.Count == 0 && gamesToWrite.Count == 0)
+                {
+                    return 0;
+                }
+
+                var nowIso = ToIso(DateTime.UtcNow);
+                db.RunTransaction(() =>
+                {
+                    foreach (var gameIdText in textsToDelete)
+                    {
+                        db.ExecuteNonQuery(
+                            "DELETE FROM AchievementFilters WHERE PlayniteGameId = ?;",
+                            gameIdText);
+                    }
+
+                    foreach (var gameId in gamesToWrite)
+                    {
+                        var gameIdText = gameId.ToString();
+                        db.ExecuteNonQuery(
+                            "DELETE FROM AchievementFilters WHERE PlayniteGameId = ?;",
+                            gameIdText);
+                        InsertAchievementFilterKeys(db, gameIdText, desiredByGame[gameId], nowIso);
+                    }
+                });
+
+                var changedGames = new HashSet<string>(textsToDelete, StringComparer.OrdinalIgnoreCase);
+                foreach (var gameId in gamesToWrite)
+                {
+                    changedGames.Add(gameId.ToString());
+                }
+
+                return changedGames.Count;
+            });
+        }
+
+        private static void InsertAchievementFilterKeys(
+            SQLiteDatabase db,
+            string gameIdText,
+            IEnumerable<string> entryKeys,
+            string nowIso)
+        {
+            foreach (var key in entryKeys)
+            {
+                var separator = key.IndexOf('\n');
+                if (separator <= 0 || separator >= key.Length - 1)
+                {
+                    continue;
+                }
+
+                db.ExecuteNonQuery(
+                    @"INSERT OR IGNORE INTO AchievementFilters (PlayniteGameId, ApiName, Kind, CreatedUtc)
+                      VALUES (?, ?, ?, ?);",
+                    gameIdText,
+                    key.Substring(0, separator),
+                    key.Substring(separator + 1),
+                    nowIso);
+            }
+        }
+
         private void EnsureInitializedLocked()
         {
             if (_initialized)
