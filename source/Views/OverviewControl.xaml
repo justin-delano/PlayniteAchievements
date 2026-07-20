@@ -44,7 +44,7 @@
                             </Image.Source>
                         </Image>
                     </Grid>
-                    <TextBlock Text="{Binding Count}"
+                    <TextBlock Text="{Binding Count, StringFormat={}{0:N0}}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                FontSize="{DynamicResource PlayAch.FontSize.Caption}"
