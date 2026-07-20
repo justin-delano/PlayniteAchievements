@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _viewModel.IconOverridesSaved += ViewModel_IconOverridesSaved;
         }
 
-        public event EventHandler IconOverridesSaved;
+        public event EventHandler<IconOverridesSavedEventArgs> IconOverridesSaved;
 
         public void RefreshData()
         {
@@ -187,9 +187,9 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        private void ViewModel_IconOverridesSaved(object sender, EventArgs e)
+        private void ViewModel_IconOverridesSaved(object sender, IconOverridesSavedEventArgs e)
         {
-            IconOverridesSaved?.Invoke(this, EventArgs.Empty);
+            IconOverridesSaved?.Invoke(this, e);
         }
 
         private void EnsureAchievementCardsScrollViewer()
