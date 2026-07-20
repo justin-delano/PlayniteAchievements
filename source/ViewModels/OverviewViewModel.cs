@@ -2887,11 +2887,20 @@ namespace PlayniteAchievements.ViewModels
             }
             else if (HasMaterializedGlobalAchievementItems() && AllAchievements.Count < _totalCount)
             {
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_FilteredCounts"), AllAchievements.Count, _totalCount, _unlockedCount, _gamesCount);
+                StatusText = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Status_FilteredCounts"),
+                    AllAchievements.Count.ToString("N0", FormattingCulture.Current),
+                    _totalCount.ToString("N0", FormattingCulture.Current),
+                    _unlockedCount.ToString("N0", FormattingCulture.Current),
+                    _gamesCount.ToString("N0", FormattingCulture.Current));
             }
             else
             {
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_TotalCounts"), _totalCount, _unlockedCount, _gamesCount);
+                StatusText = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Status_TotalCounts"),
+                    _totalCount.ToString("N0", FormattingCulture.Current),
+                    _unlockedCount.ToString("N0", FormattingCulture.Current),
+                    _gamesCount.ToString("N0", FormattingCulture.Current));
             }
         }
 
@@ -3590,7 +3599,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            SelectedGameHeaderText = $"({unlocked}/{total} {(isFiltered ? L("LOCPlayAch_RefreshModeShort_Selected") : L("LOCPlayAch_Achievements"))})";
+            SelectedGameHeaderText = $"({unlocked.ToString("N0", FormattingCulture.Current)}/{total.ToString("N0", FormattingCulture.Current)} {(isFiltered ? L("LOCPlayAch_RefreshModeShort_Selected") : L("LOCPlayAch_Achievements"))})";
         }
 
         private void ResetSelectedGameSortToDefault()

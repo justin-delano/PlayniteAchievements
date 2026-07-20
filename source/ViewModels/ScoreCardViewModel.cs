@@ -59,6 +59,7 @@ namespace PlayniteAchievements.ViewModels
             ScoreText);
 
         public string LevelText => string.Format(
+            FormattingCulture.Current,
             L("LOCPlayAch_Score_LevelFormat"),
             Level);
 
@@ -236,6 +237,7 @@ namespace PlayniteAchievements.ViewModels
                 ? 0
                 : (snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level);
             return string.Format(
+                FormattingCulture.Current,
                 L("LOCPlayAch_Score_LevelFormat"),
                 Math.Max(0, currentLevel + 1));
         }

@@ -273,8 +273,8 @@ namespace PlayniteAchievements.ViewModels
 
                 return string.Format(
                     format,
-                    unlocked,
-                    total,
+                    unlocked.ToString("N0", FormattingCulture.Current),
+                    total.ToString("N0", FormattingCulture.Current),
                     L("LOCPlayAch_Achievements"));
             }
         }

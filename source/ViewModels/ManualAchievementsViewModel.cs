@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -512,6 +513,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 SearchStatusMessage = string.Format(
+                    FormattingCulture.Current,
                     ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Search_ResultsFormat"),
                     SearchResults.Count);
 

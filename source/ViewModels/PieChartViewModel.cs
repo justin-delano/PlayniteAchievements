@@ -685,10 +685,10 @@ namespace PlayniteAchievements.ViewModels
 
             if (dataPoint.IsLocked || IsCompletedGamesSlice(dataPoint.IconKey))
             {
-                return dataPoint.Count.ToString();
+                return dataPoint.Count.ToString("N0", FormattingCulture.Current);
             }
 
-            return $"{dataPoint.UnlockedCount}/{dataPoint.TotalCount}";
+            return $"{dataPoint.UnlockedCount.ToString("N0", FormattingCulture.Current)}/{dataPoint.TotalCount.ToString("N0", FormattingCulture.Current)}";
         }
 
         private static string FormatSecondaryMetricText(PieSliceInputData dataPoint, int pieTotalCount)

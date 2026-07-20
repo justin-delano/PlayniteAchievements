@@ -515,8 +515,8 @@ namespace PlayniteAchievements.ViewModels
 
                 return string.Format(
                     format,
-                    unlocked,
-                    total,
+                    unlocked.ToString("N0", FormattingCulture.Current),
+                    total.ToString("N0", FormattingCulture.Current),
                     ResourceProvider.GetString("LOCPlayAch_Achievements"));
             }
         }
@@ -2040,7 +2040,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             var format = GetResourceFormatOrFallback("LOCPlayAch_Common_SelectedCountFormat", "{0:N0} selected", "{0");
-            return string.Format(format, selectedCount);
+            return string.Format(FormattingCulture.Current, format, selectedCount);
         }
 
         internal static string GetResourceFormatOrFallback(string resourceKey, string fallback, params string[] requiredPlaceholders)
