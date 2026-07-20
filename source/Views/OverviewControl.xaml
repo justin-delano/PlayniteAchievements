@@ -224,11 +224,11 @@
                 </Setter>
             </Style>
 
-            <!-- Button style that disables during refresh -->
+            <!-- Icon button style that disables during refresh -->
         <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
-                <Setter Property="Padding" Value="10,3"/>
-                <Setter Property="MinWidth" Value="88"/>
-                <Setter Property="Height" Value="24"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="MinHeight" Value="0"/>
                 <Setter Property="Margin" Value="0,0,6,0"/>
             </Style>
 
@@ -420,10 +420,18 @@
                         </Button>
 
                         <Button x:Name="RefreshActionButton"
-                                Content="{Binding ActiveRefreshHeader.RefreshOrCancelButtonText, ElementName=OverviewControlRoot}"
                                 Command="{Binding ActiveRefreshHeader.RefreshOrCancelCommand, ElementName=OverviewControlRoot}"
+                                ToolTip="{Binding ActiveRefreshHeader.RefreshOrCancelButtonText, ElementName=OverviewControlRoot}"
                                 Style="{StaticResource RefreshButtonStyle}"
-                                Margin="0"/>
+                                Height="{Binding ActualHeight, ElementName=RefreshModeSelectionButton}"
+                                Width="{Binding ActualHeight, ElementName=RefreshModeSelectionButton}"
+                                Margin="0">
+                            <TextBlock Text="{Binding ActiveRefreshHeader.RefreshOrCancelButtonGlyph, ElementName=OverviewControlRoot}"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
 

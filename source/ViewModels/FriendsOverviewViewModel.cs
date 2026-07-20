@@ -364,6 +364,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RefreshModeSelectionText));
                     OnPropertyChanged(nameof(RefreshActionButtonText));
                     OnPropertyChanged(nameof(RefreshOrCancelButtonText));
+                    OnPropertyChanged(nameof(RefreshOrCancelButtonGlyph));
                 }
             }
         }
@@ -385,6 +386,12 @@ namespace PlayniteAchievements.ViewModels
             ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel")
             : RefreshActionButtonText;
 
+        public string RefreshOrCancelButtonGlyph => IsRefreshing
+            ? "\uEEE4"
+            : string.Equals(SelectedRefreshMode, RefreshModeType.FriendsCustom.GetKey(), StringComparison.Ordinal)
+                ? "\uEFE1"
+                : "\uEFD1";
+
         public bool IsRefreshing
         {
             get => _isRefreshing;
@@ -394,6 +401,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     RaiseRefreshCanExecuteChanged();
                     OnPropertyChanged(nameof(RefreshOrCancelButtonText));
+                    OnPropertyChanged(nameof(RefreshOrCancelButtonGlyph));
                     OnPropertyChanged(nameof(ShowProgress));
                 }
             }

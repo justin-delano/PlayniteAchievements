@@ -42,9 +42,9 @@
             <Style x:Key="FriendsOverviewRefreshButtonStyle"
                    TargetType="Button"
                    BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
-                <Setter Property="Padding" Value="10,3"/>
-                <Setter Property="MinWidth" Value="88"/>
-                <Setter Property="Height" Value="24"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="MinHeight" Value="0"/>
                 <Setter Property="Margin" Value="0"/>
             </Style>
 
@@ -173,9 +173,17 @@
                             </Button.ContextMenu>
                         </Button>
 
-                        <Button Content="{Binding RefreshOrCancelButtonText}"
-                                Command="{Binding RefreshOrCancelCommand}"
-                                Style="{StaticResource FriendsOverviewRefreshButtonStyle}"/>
+                        <Button Command="{Binding RefreshOrCancelCommand}"
+                                ToolTip="{Binding RefreshOrCancelButtonText}"
+                                Style="{StaticResource FriendsOverviewRefreshButtonStyle}"
+                                Height="{Binding ActualHeight, ElementName=RefreshModeSelectionButton}"
+                                Width="{Binding ActualHeight, ElementName=RefreshModeSelectionButton}">
+                            <TextBlock Text="{Binding RefreshOrCancelButtonGlyph}"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
 

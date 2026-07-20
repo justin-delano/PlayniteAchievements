@@ -865,6 +865,12 @@ namespace PlayniteAchievements.ViewModels
             ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel")
             : RefreshActionButtonText;
 
+        public string RefreshOrCancelButtonGlyph => IsRefreshing
+            ? "\uEEE4"
+            : string.Equals(SelectedRefreshMode, RefreshModeType.Custom.GetKey(), StringComparison.Ordinal)
+                ? "\uEFE1"
+                : "\uEFD1";
+
         public bool UseCoverImagesGameSummaries => _settings?.Persisted?.OverviewGameSummariesUseCoverImages ?? true;
 
         public bool UseCoverImagesRecentAchievements => _settings?.Persisted?.OverviewRecentAchievementsUseCoverImages ?? true;
@@ -1617,6 +1623,7 @@ namespace PlayniteAchievements.ViewModels
         {
             OnPropertyChanged(nameof(RefreshActionButtonText));
             OnPropertyChanged(nameof(RefreshOrCancelButtonText));
+            OnPropertyChanged(nameof(RefreshOrCancelButtonGlyph));
             OnPropertyChanged(nameof(RefreshModeSelectionText));
         }
 
@@ -2919,6 +2926,7 @@ namespace PlayniteAchievements.ViewModels
             (OpenGameInLibraryCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (OpenGameInOverviewCommand as RelayCommand)?.RaiseCanExecuteChanged();
             OnPropertyChanged(nameof(RefreshOrCancelButtonText));
+            OnPropertyChanged(nameof(RefreshOrCancelButtonGlyph));
         }
 
         #endregion
