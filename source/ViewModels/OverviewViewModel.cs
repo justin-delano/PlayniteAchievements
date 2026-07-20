@@ -132,6 +132,10 @@ namespace PlayniteAchievements.ViewModels
                 _refreshService.Providers,
                 _playniteApi,
                 _logger);
+            // While an overview view is attached, the hydrated overview game data stays
+            // memoized; the last Dispose releases it so the full library's achievement detail
+            // does not outlive the view.
+            _achievementDataService.AcquireOverviewHydrationConsumer();
             _selectedGamePipeline = new AchievementSelectionPipeline(_achievementDataService, _settings);
 
             // Initialize debounce timer
@@ -3954,7 +3958,14 @@ namespace PlayniteAchievements.ViewModels
 
         public void Dispose()
         {
+            // Guards the hydration consumer count against double-decrement.
+            if (_disposed)
+            {
+                return;
+            }
+
             _disposed = true;
+            _achievementDataService?.ReleaseOverviewHydrationConsumer();
             SetActive(false);
             CancelSelectedGameLoad();
             _refreshDebounceTimer?.Stop();
