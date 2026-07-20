@@ -760,6 +760,22 @@ namespace PlayniteAchievements.Services.Cache
                         EnsureReady_Locked("LoadGameData");
                         scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
 
+                        // Cheap freshness probe: when the in-memory copy is at least as new as
+                        // the store's row, skip the full two-query read (the same comparison the
+                        // fallthrough performs after materializing the row). A null probe (no
+                        // row or unparsable timestamp) falls through to the full read, which
+                        // stays authoritative for existence and eviction.
+                        if (TryGetMemoryGameData_Locked(normalizedKey, out var cachedData) && cachedData != null)
+                        {
+                            var probedDbUpdated = _store.GetCurrentUserGameLastUpdatedUtc(normalizedKey);
+                            if (probedDbUpdated.HasValue &&
+                                DateTimeUtilities.AsUtcKind(cachedData.LastUpdatedUtc) >=
+                                DateTimeUtilities.AsUtcKind(probedDbUpdated.Value))
+                            {
+                                return CloneGameData(cachedData);
+                            }
+                        }
+
                         var dbData = _store.LoadCurrentUserGameData(normalizedKey);
                         if (dbData == null)
                         {
