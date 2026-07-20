@@ -86,6 +86,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private int _friendRefreshAppliedVersion;
         private volatile bool _hasFriendThemeConsumers;
 
+        // Sticky-true once any theme friend binding is read; consulted by the friends overview
+        // coordinator's release path so a friend-consuming theme keeps the snapshot alive.
+        internal bool HasFriendThemeConsumers => _hasFriendThemeConsumers;
+
         private bool _fullscreenInitialized;
         private bool _hasLoadedLibraryState;
         private bool _lastLibraryRefreshIncludedHeavyAchievementLists = true;
