@@ -535,6 +535,148 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
+        public async Task PopulateAchievementIconCacheAsync_ForceOverrideApiNames_RematerializesOnlyListedAchievements()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gameId = Guid.NewGuid();
+                var settings = new PersistedSettings
+                {
+                    UseSeparateLockedIconsWhenAvailable = false
+                };
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var managedCustomIconService = new ManagedCustomIconService(diskImageService, logger: null);
+                var iconService = new AchievementIconService(
+                    diskImageService,
+                    managedCustomIconService,
+                    settings,
+                    logger: null);
+
+                var changedSource = Path.Combine(tempDir, "override-changed.png");
+                var unchangedSource = Path.Combine(tempDir, "override-unchanged.png");
+                WriteSolidColorPng(changedSource, Colors.Red);
+                WriteSolidColorPng(unchangedSource, Colors.Red);
+
+                var changedAchievement = new AchievementDetail { ApiName = "changed_override" };
+                var unchangedAchievement = new AchievementDetail { ApiName = "unchanged_override" };
+                var data = new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    Achievements = { changedAchievement, unchangedAchievement }
+                };
+                var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [changedAchievement.ApiName] = changedSource,
+                    [unchangedAchievement.ApiName] = unchangedSource
+                };
+
+                await iconService.PopulateAchievementIconCacheAsync(
+                    data,
+                    unlockedOverrides,
+                    null,
+                    CancellationToken.None);
+
+                var changedTarget = changedAchievement.UnlockedIconPath;
+                var unchangedTarget = unchangedAchievement.UnlockedIconPath;
+                var changedFirstBytes = File.ReadAllBytes(changedTarget);
+                var unchangedFirstBytes = File.ReadAllBytes(unchangedTarget);
+
+                WriteSolidColorPng(changedSource, Colors.Blue);
+                WriteSolidColorPng(unchangedSource, Colors.Blue);
+
+                await iconService.PopulateAchievementIconCacheAsync(
+                    data,
+                    unlockedOverrides,
+                    null,
+                    CancellationToken.None,
+                    forceOverrideApiNames: new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        changedAchievement.ApiName
+                    });
+
+                Assert.IsFalse(changedFirstBytes.SequenceEqual(File.ReadAllBytes(changedTarget)));
+                Assert.IsTrue(unchangedFirstBytes.SequenceEqual(File.ReadAllBytes(unchangedTarget)));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task PopulateAchievementIconCacheAsync_ClearedOverrideRestoresDefaultCachedIcon()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gameId = Guid.NewGuid();
+                var settings = new PersistedSettings
+                {
+                    UseSeparateLockedIconsWhenAvailable = false
+                };
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var managedCustomIconService = new ManagedCustomIconService(diskImageService, logger: null);
+                var iconService = new AchievementIconService(
+                    diskImageService,
+                    managedCustomIconService,
+                    settings,
+                    logger: null);
+
+                var providerSource = Path.Combine(tempDir, "provider.png");
+                var overrideSource = Path.Combine(tempDir, "override.png");
+                WriteSolidColorPng(providerSource, Colors.Red);
+                WriteSolidColorPng(overrideSource, Colors.Blue);
+
+                var achievement = new AchievementDetail
+                {
+                    ApiName = "cleared_override",
+                    UnlockedIconPath = providerSource,
+                    LockedIconPath = providerSource
+                };
+                var data = new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    Achievements = { achievement }
+                };
+
+                await iconService.PopulateAchievementIconCacheAsync(data, CancellationToken.None);
+                var defaultTarget = achievement.UnlockedIconPath;
+                Assert.IsTrue(File.Exists(defaultTarget));
+
+                var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [achievement.ApiName] = overrideSource
+                };
+                await iconService.PopulateAchievementIconCacheAsync(
+                    data,
+                    unlockedOverrides,
+                    null,
+                    CancellationToken.None);
+                Assert.AreNotEqual(defaultTarget, achievement.UnlockedIconPath);
+
+                await iconService.PopulateAchievementIconCacheAsync(
+                    data,
+                    null,
+                    null,
+                    CancellationToken.None,
+                    forceOverrideApiNames: new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        achievement.ApiName
+                    });
+
+                Assert.AreEqual(defaultTarget, achievement.UnlockedIconPath);
+                Assert.IsTrue(File.Exists(achievement.UnlockedIconPath));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public async Task DiskImageService_ReleasesPathLocksAfterUniqueLocalCopies()
         {
             var tempDir = CreateTempDirectory();
