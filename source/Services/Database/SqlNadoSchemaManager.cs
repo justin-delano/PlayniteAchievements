@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 16;
+        public const int SchemaVersion = 17;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -150,6 +150,7 @@ namespace PlayniteAchievements.Services.Database
 
             EnsureFriendOwnershipTable(db);
             EnsureProviderGameDefinitionStateTable(db);
+            EnsureAchievementFiltersTable(db);
 
             var storedVersion = GetStoredSchemaVersion(db);
             var verification = VerifyRequiredColumns(db);
@@ -329,6 +330,7 @@ namespace PlayniteAchievements.Services.Database
             EnsureFriendOwnershipIndexes(db);
             EnsureProviderGameDefinitionStateTable(db);
             EnsureProviderGameDefinitionStateIndexes(db);
+            EnsureAchievementFiltersTable(db);
         }
 
         private void EnsureFriendOwnershipTable(SQLiteDatabase db)
@@ -362,6 +364,23 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_FriendOwnership_LastScraped
                 ON FriendOwnership (LastScrapedUtc, LastScrapeStatus);");
+        }
+
+        // Derived mirror of the per-game achievement filter lists stored in game_custom_data.db
+        // (a separate SQLite file the summary queries cannot join to). Fully resynced from
+        // custom data at startup and on every CustomDataChanged; refresh saves never touch it.
+        // The UNIQUE index prefix-covers the summary queries' (PlayniteGameId, ApiName)
+        // anti-join probe.
+        private void EnsureAchievementFiltersTable(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS AchievementFilters (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                PlayniteGameId TEXT NOT NULL COLLATE NOCASE,
+                ApiName TEXT NOT NULL COLLATE NOCASE,
+                Kind TEXT NOT NULL COLLATE NOCASE,
+                CreatedUtc TEXT NOT NULL,
+                UNIQUE (PlayniteGameId, ApiName, Kind)
+            );");
         }
 
         private void EnsureProviderGameDefinitionStateTable(SQLiteDatabase db)
@@ -672,6 +691,7 @@ namespace PlayniteAchievements.Services.Database
             ReconcileProviderGameDefinitionStateTable(db, ref backupPath);
             EnsureProviderGameDefinitionStateTable(db);
             EnsureProviderGameDefinitionStateIndexes(db);
+            EnsureAchievementFiltersTable(db);
 
             return backupPath;
         }
@@ -916,6 +936,12 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(friendOwnershipColumns, "LastScrapeDetail", "FriendOwnership", missing);
             EnsureRequiredColumn(friendOwnershipColumns, "CreatedUtc", "FriendOwnership", missing);
             EnsureRequiredColumn(friendOwnershipColumns, "UpdatedUtc", "FriendOwnership", missing);
+
+            var achievementFilterColumns = GetColumnNames(db, "AchievementFilters");
+            EnsureRequiredColumn(achievementFilterColumns, "PlayniteGameId", "AchievementFilters", missing);
+            EnsureRequiredColumn(achievementFilterColumns, "ApiName", "AchievementFilters", missing);
+            EnsureRequiredColumn(achievementFilterColumns, "Kind", "AchievementFilters", missing);
+            EnsureRequiredColumn(achievementFilterColumns, "CreatedUtc", "AchievementFilters", missing);
 
             var providerGameDefinitionStateColumns = GetColumnNames(db, "ProviderGameDefinitionState");
             EnsureRequiredColumn(providerGameDefinitionStateColumns, "ProviderKey", "ProviderGameDefinitionState", missing);
