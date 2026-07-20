@@ -60,6 +60,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
         private ManageAchievementsNotesTab _notesControl;
         private ManageAchievementsAchievementIconsTab _achievementIconsControl;
         private System.Windows.Threading.DispatcherTimer _iconOverridesChangedDebounce;
+        private readonly HashSet<string> _pendingIconOverrideApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private ManualAchievementsViewModel _manualViewModel;
         private ManageAchievementsAchievementOrderViewModel _achievementOrderViewModel;
         private ManageAchievementsCategoryViewModel _categoryViewModel;
@@ -916,7 +917,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _viewModel?.NotifyCapstoneChanged(e?.DisplayName);
         }
 
-        private void AchievementIconsControl_IconOverridesSaved(object sender, EventArgs e)
+        private void AchievementIconsControl_IconOverridesSaved(object sender, IconOverridesSavedEventArgs e)
         {
             if (!Dispatcher.CheckAccess())
             {
@@ -925,25 +926,37 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
 
             _gameDataSnapshotProvider?.Invalidate();
+            _pendingIconOverrideApiNames.UnionWith(e?.ChangedApiNames ?? Array.Empty<string>());
 
-            // Icon overrides persist per interaction, but the downstream apply is a forced
-            // single-game refresh with a progress window; debounce so one editing burst
-            // triggers it once, shortly after the last commit.
+            // Icon overrides persist per interaction; debounce so one editing burst applies
+            // the changed icons once, shortly after the last commit.
             if (_iconOverridesChangedDebounce == null)
             {
                 _iconOverridesChangedDebounce = new System.Windows.Threading.DispatcherTimer
                 {
-                    Interval = TimeSpan.FromSeconds(2)
+                    Interval = TimeSpan.FromMilliseconds(750)
                 };
                 _iconOverridesChangedDebounce.Tick += (_, __) =>
                 {
                     _iconOverridesChangedDebounce.Stop();
-                    _viewModel?.NotifyIconOverridesChanged();
+                    FlushPendingIconOverrideChanges();
                 };
             }
 
             _iconOverridesChangedDebounce.Stop();
             _iconOverridesChangedDebounce.Start();
+        }
+
+        private void FlushPendingIconOverrideChanges()
+        {
+            if (_pendingIconOverrideApiNames.Count == 0)
+            {
+                return;
+            }
+
+            var changedApiNames = _pendingIconOverrideApiNames.ToList();
+            _pendingIconOverrideApiNames.Clear();
+            _viewModel?.NotifyIconOverridesChanged(changedApiNames);
         }
 
         private void RefreshService_GameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
@@ -1100,7 +1113,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             {
                 // A commit is still waiting on the debounce; apply it before tearing down.
                 _iconOverridesChangedDebounce.Stop();
-                _viewModel?.NotifyIconOverridesChanged();
+                FlushPendingIconOverrideChanges();
             }
 
             if (_achievementIconsControl != null)
