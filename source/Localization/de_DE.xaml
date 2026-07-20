@@ -189,7 +189,7 @@ Der erste Rang ist Bronze V, gefolgt von Bronze IV, weiter über die Ränge Silb
     <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">Playnite-Zuweisung ändern</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">Playnite-Zuweisung entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">Playnite-Spiel zuweisen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">The selected Playnite game is not on the same platform as the Exophase friend game ({0}).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">Das ausgewählte Spiel stammt nicht von derselben Plattform wie das Spiel des Exophase-Freundes ({0}).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Erfolgsdaten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Erfolgsdaten der {0} ausgewählten Spiele entfernen?
 
@@ -647,7 +647,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Verwaltete Plattformen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Spiele dieser Plattformen werden Exophase statt der nativen Plattform verwenden. Auswählen, welche Plattformen durch Exophase verwaltet werden sollen.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Manage Achievements to include individually.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Hinweis: Für Spiele abgewählter Plattformen die Erfolgsverwaltung zum individuellen Hinzufügen verwenden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Exophase_SelectPlatforms">Plattformen wählen</sys:String>
 
     <!-- Provider: HoYoverse -->
@@ -736,7 +736,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Verwendet {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">Freunde</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Freunde automatisch erkennen</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list. Steam is supported in this version.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Plattformauswahl zur automatischen Abfrage der Freundesliste. In dieser Version wird Steam unterstützt.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">Exohpase für Steam-Freundesbesitz verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">Adds missing Steam games from the merged Exophase profile when refreshing Steam friend ownership. Requires Exophase to be enabled.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGames">Nicht im Besitz befindliche Spiele in Aktualisierung einbeziehen</sys:String>
