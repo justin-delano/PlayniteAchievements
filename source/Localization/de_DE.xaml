@@ -501,7 +501,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Maximale Höhe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Tabelle</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk. Changes apply on the next refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Festlegen der Erfolgssymbolspeicherung. Änderungen werden beim nächsten Datenabgleich angewandt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">Zwischengespeicherte Erfolgssymbole</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Advanced">Erweitert</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Anwenden &amp; synchronisieren</sys:String>
@@ -641,7 +641,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Anmeldung</sys:String>
 
     <!-- Provider: Exophase -->
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">Exophase kann automatische Erfolge auf verwalteten Plattformen aktualisieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Verwaltete Plattformen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Spiele dieser Plattformen werden Exophase statt der nativen Plattform verwenden. Auswählen, welche Plattformen durch Exophase verwaltet werden sollen.</sys:String>
@@ -760,7 +760,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2Note">und den npsso-Wert kopieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step3">Den Wert unten einfügen und Enter drücken</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">NPSSO-Cookie</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">The page shows {&quot;npsso&quot;:&quot;xxx&quot;}. Copy only the xxx part.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Die Seite zeigt {&quot;npsso&quot;:&quot;xxx&quot;} an. Den xxx-Wert kopieren.</sys:String>
 
     <!-- Provider: FFXIV -->
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterName">Charaktername</sys:String>
@@ -969,7 +969,7 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_TitleFallback">Freundeserfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_NoData">Keine Freundeserfolgsdaten für dieses Spiel vorhanden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_RefreshSelectedFriend">Freund dieses Spiels aktualisieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_Header">Custom Friends Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_Header">Benutzerdefinierte Freundesaktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectedGameScope">Ausgewähltes Spiel: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SummaryFormat">Plattformen: {0} | Geltungsbereich: {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Ohne Auswahl werden alle inkludiert. Eine Auswahl engt den Geltungsbereich ein.</sys:String>
