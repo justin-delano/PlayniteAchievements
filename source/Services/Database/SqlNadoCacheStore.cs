@@ -2834,6 +2834,42 @@ namespace PlayniteAchievements.Services.Database
         }
 
         /// <summary>
+        /// Loads every friend's achievement rows — LOCKED INCLUDED — for one game identified by
+        /// provider scope (ProviderKey + AppId/ProviderGameKey), so provider-only friend games
+        /// without a PlayniteGameId are supported. Used by the friend+game pair comparison
+        /// surfaces to materialize locked rows on demand, since the overview snapshot carries
+        /// unlocked rows only.
+        /// </summary>
+        public FriendsOverviewData LoadFriendGameAchievementData(FriendCacheChange gameScope)
+        {
+            if (gameScope == null ||
+                string.IsNullOrWhiteSpace(gameScope.ProviderKey) ||
+                (gameScope.AppId <= 0 && string.IsNullOrWhiteSpace(gameScope.ProviderGameKey)))
+            {
+                return new FriendsOverviewData();
+            }
+
+            return WithReadDb(db =>
+            {
+                var data = new FriendsOverviewData();
+                var presentationCache = new Dictionary<Guid, GamePresentation>();
+
+                using (PerfScope.Start(_logger, "Friends.LoadPairAchievementRows", thresholdMs: 15))
+                data.AllAchievements = MapFriendAchievementRows(
+                    LoadFriendAchievementRows(
+                        db,
+                        0,
+                        requireUnlockTime: false,
+                        unlockedOnly: false,
+                        reloadScopes: new[] { gameScope }),
+                    presentationCache);
+
+                FriendsOverviewDerivations.Apply(data, recentLimit: 0);
+                return data;
+            });
+        }
+
+        /// <summary>
         /// Loads the data needed to patch a retained friends-overview data set: the three cheap
         /// lists reloaded in full (friend summaries, game summaries, ownership links — keeping
         /// all cross-friend aggregates authoritative from SQL) plus achievement display rows for
@@ -2859,13 +2895,16 @@ namespace PlayniteAchievements.Services.Database
 
                 if (reloadScopes != null && reloadScopes.Count > 0)
                 {
+                    // Unlocked-only to match the retained splice base (see
+                    // LoadFriendAllAchievementRows); a locked patch row would otherwise
+                    // reintroduce rows the base never carries.
                     using (PerfScope.Start(_logger, "Friends.LoadScopedAchievementRows", thresholdMs: 15))
                     data.AllAchievements = MapFriendAchievementRows(
                         LoadFriendAchievementRows(
                             db,
                             0,
                             requireUnlockTime: false,
-                            unlockedOnly: false,
+                            unlockedOnly: true,
                             reloadScopes: reloadScopes),
                         presentationCache);
                 }
@@ -4785,9 +4824,14 @@ namespace PlayniteAchievements.Services.Database
                 : db.Load<FriendGameLinkRow>(sql.ToString()).ToList();
         }
 
+        // Unlocked-only: the overview snapshot's consumers (summaries, recents, projection
+        // derivations, single-selection grids) never read locked rows, and materializing the
+        // full definition-driven set was the dominant load cost (~6x more rows). The friend+game
+        // pair comparison view loads its one game's locked rows on demand via
+        // LoadFriendGameAchievementData instead.
         private static List<FriendRecentUnlockRow> LoadFriendAllAchievementRows(SQLiteDatabase db)
         {
-            return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: false);
+            return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: true);
         }
 
         // Rows are driven from the game's full AchievementDefinitions schema with the friend's
