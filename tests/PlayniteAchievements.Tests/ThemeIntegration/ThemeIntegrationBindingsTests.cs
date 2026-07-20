@@ -31,6 +31,13 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
     [TestClass]
     public class ThemeIntegrationBindingsTests
     {
+        // Percent assertions (e.g. FriendCompletionText) depend on the plugin formatting culture.
+        [TestInitialize]
+        public void PinFormattingCulture()
+        {
+            PlayniteAchievements.Common.FormattingCulture.Initialize(() => "english");
+        }
+
         [TestMethod]
         public void SelectedGameBuilder_IncludesStoredFallbackRarityInStats()
         {

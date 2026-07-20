@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shell;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 
 namespace PlayniteAchievements.Views.Helpers
 {
@@ -49,6 +50,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             Window windowExtension = API.Instance.Dialogs.CreateWindow(windowOptions);
 
+            FormattingCulture.Apply(windowExtension);
             windowExtension.Title = Title;
             windowExtension.ShowInTaskbar = false;
             windowExtension.ResizeMode = windowOptions.CanBeResizable ? ResizeMode.CanResize : ResizeMode.NoResize;
@@ -164,6 +166,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             Window window = API.Instance.Dialogs.CreateWindow(fsOptions);
 
+            FormattingCulture.Apply(window);
             window.Title = title;
             window.Tag = FullscreenWindowTag;
             ConfigureBorderlessFullscreenWindow(window);
@@ -202,6 +205,7 @@ namespace PlayniteAchievements.Views.Helpers
                 ShowCloseButton = false
             }) ?? new Window();
 
+            FormattingCulture.Apply(window);
             window.Title = title ?? string.Empty;
             ConfigureBorderlessFullscreenWindow(window);
             ApplyWindowThemeBrushes(window);
@@ -269,6 +273,7 @@ namespace PlayniteAchievements.Views.Helpers
                 ShowCloseButton = false
             }) ?? new Window();
 
+            FormattingCulture.Apply(window);
             window.Title = title ?? string.Empty;
             window.ShowInTaskbar = false;
             window.ShowActivated = false;

@@ -952,7 +952,7 @@ namespace PlayniteAchievements.ViewModels.Items
 
         public int Points => PointsValue ?? 0;
 
-        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
+        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString("N0", FormattingCulture.Current) : "-";
 
         public int CollectionScore => _source?.CollectionScore ?? 0;
 

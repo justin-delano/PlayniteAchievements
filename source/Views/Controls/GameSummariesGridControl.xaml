@@ -417,7 +417,7 @@
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            TextWrapping="Wrap"
                                            TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
-                                    <TextBlock.Inlines><Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource PlayAch.Brush.Text}"/><Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource PlayAch.Brush.Text}"/></TextBlock.Inlines>
+                                    <TextBlock.Inlines><Run Text="{Binding UnlockedAchievements, Mode=OneWay, StringFormat={}{0:N0}}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource PlayAch.Brush.Text}"/><Run Text="{Binding TotalAchievements, Mode=OneWay, StringFormat={}{0:N0}}" Foreground="{DynamicResource PlayAch.Brush.Text}"/></TextBlock.Inlines>
                                 </TextBlock>
                             </Grid>
                         </ContentControl>

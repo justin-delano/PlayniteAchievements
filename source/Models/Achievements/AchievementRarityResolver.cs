@@ -1,4 +1,5 @@
 using System;
+using PlayniteAchievements.Common;
 
 namespace PlayniteAchievements.Models.Achievements
 {
@@ -23,7 +24,7 @@ namespace PlayniteAchievements.Models.Achievements
         {
             if (!RoundDisplayPercentages)
             {
-                return $"{rawPercent:F1}%";
+                return PercentFormatter.Format(rawPercent, 1);
             }
 
             return FormatRoundedPercent(rawPercent);
@@ -37,7 +38,7 @@ namespace PlayniteAchievements.Models.Achievements
         {
             if (!RoundDisplayPercentages)
             {
-                return $"{rawPercent:F0}%";
+                return PercentFormatter.FormatWhole(rawPercent);
             }
 
             return FormatRoundedPercent(rawPercent);
@@ -47,10 +48,10 @@ namespace PlayniteAchievements.Models.Achievements
         {
             if (rawPercent < 1)
             {
-                return "<1%";
+                return PercentFormatter.FormatLessThanWhole(1);
             }
 
-            return $"{Math.Round(rawPercent, MidpointRounding.AwayFromZero):F0}%";
+            return PercentFormatter.FormatWhole(Math.Round(rawPercent, MidpointRounding.AwayFromZero));
         }
 
         public static string GetDisplayText(double? rawPercent, RarityTier rarity)

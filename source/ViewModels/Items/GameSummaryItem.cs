@@ -278,7 +278,7 @@ namespace PlayniteAchievements.ViewModels.Items
 
         public int Progression => AchievementCompletionPercentCalculator.ComputeRoundedPercent(UnlockedAchievements, TotalAchievements);
 
-        public string ProgressionText => $"{Progression}%";
+        public string ProgressionText => PercentFormatter.FormatWhole(Progression);
 
         public string CollectionScoreFractionText => FormatScoreFraction(CollectionScore, CollectionScoreTotal);
 
@@ -295,7 +295,7 @@ namespace PlayniteAchievements.ViewModels.Items
 
         private static string FormatScoreFraction(int earned, int total)
         {
-            return $"{Math.Max(0, earned):N0}/{Math.Max(0, total):N0}";
+            return string.Format(FormattingCulture.Current, "{0:N0}/{1:N0}", Math.Max(0, earned), Math.Max(0, total));
         }
     }
 }

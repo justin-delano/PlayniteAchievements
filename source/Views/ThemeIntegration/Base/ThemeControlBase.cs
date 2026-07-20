@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -376,6 +377,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             {
                 return;
             }
+
+            FormattingCulture.Apply(this);
 
             try
             {

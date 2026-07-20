@@ -471,11 +471,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (TotalAchievements <= 0)
                 {
-                    return "0 / 0 (0%)";
+                    return $"0 / 0 ({PercentFormatter.FormatWhole(0)})";
                 }
 
                 var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(UnlockedAchievements, TotalAchievements);
-                return $"{UnlockedAchievements} / {TotalAchievements} ({percent}%)";
+                return $"{UnlockedAchievements} / {TotalAchievements} ({PercentFormatter.FormatWhole(percent)})";
             }
         }
 
