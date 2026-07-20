@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -63,6 +64,12 @@ namespace PlayniteAchievements.Services.Achievements
         // internal lock under the Lazy's own lock, never under _overviewProjectionCacheSync,
         // while invalidation takes only _overviewProjectionCacheSync - no lock cycle.
         private Lazy<List<GameAchievementData>> _overviewVisibleGameData;
+
+        // Number of attached overview views. While positive, _overviewVisibleGameData stays
+        // memoized so spoiler reveals and delta refreshes reuse the hydrated list; at zero the
+        // list is dropped right after each build (warm/start-page consumers keep only the light
+        // snapshot) and on the last release.
+        private int _overviewHydrationConsumerCount;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -229,6 +236,45 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
+        /// <summary>
+        /// Counts an attached overview view. While at least one view is attached, the hydrated
+        /// overview game data stays memoized across reads.
+        /// </summary>
+        internal void AcquireOverviewHydrationConsumer()
+        {
+            lock (_overviewProjectionCacheSync)
+            {
+                _overviewHydrationConsumerCount++;
+            }
+        }
+
+        /// <summary>
+        /// Detaches an overview view. When the count reaches zero, drops the hydrated overview
+        /// game data so the full library's achievement detail becomes collectable; the next
+        /// consumer rebuilds it on demand.
+        /// </summary>
+        internal void ReleaseOverviewHydrationConsumer()
+        {
+            lock (_overviewProjectionCacheSync)
+            {
+                if (_overviewHydrationConsumerCount <= 0)
+                {
+                    _logger?.Debug("Overview hydration consumer count underflow; ignoring.");
+                    return;
+                }
+
+                _overviewHydrationConsumerCount--;
+                if (_overviewHydrationConsumerCount > 0 || _overviewVisibleGameData == null)
+                {
+                    return;
+                }
+
+                _overviewVisibleGameData = null;
+            }
+
+            MemoryDiagnostics.Log(_logger, "overviewHydration.release");
+        }
+
         public List<GameAchievementData> GetAllVisibleGameAchievementDataForOverview()
         {
             Lazy<List<GameAchievementData>> lazy;
@@ -248,6 +294,18 @@ namespace PlayniteAchievements.Services.Achievements
             var visible = lazy.Value;
             if (visible != null)
             {
+                // Build-then-release: with no overview view attached (post-invalidation warm,
+                // start-page builds) the raw hydrated list is not retained once the caller's
+                // snapshot is built; callers keep their own reference for the current build.
+                lock (_overviewProjectionCacheSync)
+                {
+                    if (_overviewHydrationConsumerCount == 0 &&
+                        ReferenceEquals(_overviewVisibleGameData, lazy))
+                    {
+                        _overviewVisibleGameData = null;
+                    }
+                }
+
                 return visible;
             }
 
@@ -783,6 +841,14 @@ namespace PlayniteAchievements.Services.Achievements
             }
 
             return visibleAchievements;
+        }
+
+        // Whether GetCachedSummaryDataForOverview can serve the light summary fast path. When
+        // false, an overview build takes the whole-library hydrate path; the projection warm
+        // consults this to avoid precomputing that with no consumer attached.
+        internal bool CanUseSummaryFastPathForOverview()
+        {
+            return !HasAchievementFiltersConfigured();
         }
 
         private bool HasAchievementFiltersConfigured()
