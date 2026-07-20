@@ -6,6 +6,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Hydration;
+using PlayniteAchievements.Services.Summaries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -54,11 +55,10 @@ namespace PlayniteAchievements.Services.Achievements
         private readonly object _overviewProjectionCacheSync = new object();
         private readonly Dictionary<int, CachedSummaryData> _overviewSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
-        private bool? _overviewHasAchievementFilters;
 
-        // Hydrated visible game data for the overview. Used only when achievement filters are
-        // configured (which disables the summary fast path), where each open would otherwise
-        // repeat the full load + hydrate. Held as a Lazy so concurrent first callers share a
+        // Hydrated visible game data for the overview. Used only when the summary fast path is
+        // unavailable (no fast read support, or the summary load failed), where each open would
+        // otherwise repeat the full load + hydrate. Held as a Lazy so concurrent first callers share a
         // single load instead of each running the full load + hydrate; a null factory result
         // marks a failed load, which is never memoized. The factory takes the cache manager's
         // internal lock under the Lazy's own lock, never under _overviewProjectionCacheSync,
@@ -380,12 +380,6 @@ namespace PlayniteAchievements.Services.Achievements
 
         internal CachedSummaryData GetCachedSummaryDataForOverview(int recentAchievementDetailLimit = 0)
         {
-            if (HasAchievementFiltersConfigured())
-            {
-                _logger?.Debug("[OverviewPerf] Cached summary fast path skipped because achievement filters are configured.");
-                return null;
-            }
-
             var normalizedLimit = Math.Max(0, recentAchievementDetailLimit);
             lock (_overviewProjectionCacheSync)
             {
@@ -450,6 +444,8 @@ namespace PlayniteAchievements.Services.Achievements
                     excludedSummaryIds);
             }
 
+            ApplyAchievementFilterCorrections(summaryData, customDataByGameId, excludedSummaryIds);
+
             var gameIdsNeedingCompletionOverrides = new HashSet<Guid>(
                 summaryData.Games
                     .Where(game => game?.PlayniteGameId.HasValue == true && !game.IsCompleted)
@@ -471,6 +467,56 @@ namespace PlayniteAchievements.Services.Achievements
             ApplyRecentSummaryCustomization(summaryData.RecentUnlocks, customizationByGameId);
 
             return summaryData;
+        }
+
+        // The persisted summary rows aggregate over ALL cached achievements, so games with
+        // per-achievement filters would show unfiltered counts on the fast path. Recompute just
+        // those games' rows from the filtered per-game data (the same projection the hydrated
+        // path uses), so only games with filters pay a per-game load.
+        private void ApplyAchievementFilterCorrections(
+            CachedSummaryData summaryData,
+            IReadOnlyDictionary<Guid, GameCustomDataFile> customDataByGameId,
+            ISet<Guid> excludedSummaryIds)
+        {
+            if (summaryData?.Games == null || customDataByGameId == null || customDataByGameId.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var pair in customDataByGameId)
+            {
+                var gameId = pair.Key;
+                if (gameId == Guid.Empty ||
+                    (excludedSummaryIds != null && excludedSummaryIds.Contains(gameId)))
+                {
+                    continue;
+                }
+
+                if (!HasApiNames(pair.Value?.FilteredAchievementApiNames) &&
+                    !HasApiNames(pair.Value?.SummaryFilteredAchievementApiNames))
+                {
+                    continue;
+                }
+
+                if (!summaryData.Games.Any(game => game?.PlayniteGameId == gameId))
+                {
+                    continue;
+                }
+
+                var gameData = GetGameAchievementDataForOverview(gameId);
+                if (gameData == null)
+                {
+                    // Per-game load failed; keep the unfiltered row rather than dropping the game.
+                    _logger?.Debug($"[OverviewPerf] Filter correction skipped for game {gameId}; per-game load returned no data.");
+                    continue;
+                }
+
+                OverviewSummaryFilterCorrections.Apply(
+                    summaryData,
+                    gameId,
+                    gameData.Achievements,
+                    gameData.IsCompleted);
+            }
         }
 
         private Dictionary<Guid, SummaryCustomizationData> BuildSummaryCustomizationByGameId(
@@ -845,43 +891,11 @@ namespace PlayniteAchievements.Services.Achievements
 
         // Whether GetCachedSummaryDataForOverview can serve the light summary fast path. When
         // false, an overview build takes the whole-library hydrate path; the projection warm
-        // consults this to avoid precomputing that with no consumer attached.
+        // consults this to avoid precomputing that with no consumer attached. The fast path is
+        // filter-aware (per-game corrections), so this only depends on fast read support.
         internal bool CanUseSummaryFastPathForOverview()
         {
-            return !HasAchievementFiltersConfigured();
-        }
-
-        private bool HasAchievementFiltersConfigured()
-        {
-            lock (_overviewProjectionCacheSync)
-            {
-                if (_overviewHasAchievementFilters.HasValue)
-                {
-                    return _overviewHasAchievementFilters.Value;
-                }
-            }
-
-            var hasAchievementFilters = ComputeHasAchievementFiltersConfigured();
-            lock (_overviewProjectionCacheSync)
-            {
-                _overviewHasAchievementFilters = hasAchievementFilters;
-                return hasAchievementFilters;
-            }
-        }
-
-        private bool ComputeHasAchievementFiltersConfigured()
-        {
-            var customDataByGameId = LoadCustomDataByGameId();
-            foreach (var customData in customDataByGameId.Values)
-            {
-                if (HasApiNames(customData?.FilteredAchievementApiNames) ||
-                    HasApiNames(customData?.SummaryFilteredAchievementApiNames))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return _cacheReadOptimizations != null;
         }
 
         private static bool HasApiNames(IReadOnlyCollection<string> apiNames)
@@ -1105,7 +1119,6 @@ namespace PlayniteAchievements.Services.Achievements
             lock (_overviewProjectionCacheSync)
             {
                 _overviewSummaryCacheByLimit.Clear();
-                _overviewHasAchievementFilters = null;
                 _overviewVisibleGameData = null;
             }
         }
