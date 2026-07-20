@@ -470,6 +470,33 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        // Cheap freshness probe for the per-game grid read: the latest progress row's
+        // LastUpdatedUtc for the cache key, or null when no row exists or the value is
+        // unparsable — callers must fall back to the full read on null rather than treating it
+        // as a deleted row.
+        public DateTime? GetCurrentUserGameLastUpdatedUtc(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            var cacheKey = key.Trim();
+            return WithDb(db =>
+            {
+                var value = db.ExecuteScalar<string>(
+                    @"SELECT ugp.LastUpdatedUtc
+                      FROM UserGameProgress ugp
+                      INNER JOIN Users u ON u.Id = ugp.UserId
+                      WHERE u.IsCurrentUser = 1
+                        AND ugp.CacheKey = ?
+                      ORDER BY ugp.LastUpdatedUtc DESC
+                      LIMIT 1;",
+                    cacheKey);
+                return ParseUtc(value);
+            });
+        }
+
         public DateTime? GetMostRecentFriendLastRefreshedUtc()
         {
             return WithDb(db =>
