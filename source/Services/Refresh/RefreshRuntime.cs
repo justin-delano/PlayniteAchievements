@@ -1524,7 +1524,12 @@ namespace PlayniteAchievements.Services.Refresh
                     forceOverrideApiNames: forceApiNames)
                 .ConfigureAwait(false);
 
-            _cacheService.SaveGameData(key, data);
+            var writeResult = _cacheService.SaveGameData(key, data);
+            if (writeResult == null || !writeResult.Success)
+            {
+                _logger?.Error(
+                    $"Persisting icon override apply failed. key={key}, code={writeResult?.ErrorCode ?? "unknown"}, message={writeResult?.ErrorMessage ?? "Unknown cache persistence failure."}");
+            }
         }
 
         private string ResolveFinalSuccessMessage(RebuildPayload payload, Func<RebuildPayload, string> finalMessage)
