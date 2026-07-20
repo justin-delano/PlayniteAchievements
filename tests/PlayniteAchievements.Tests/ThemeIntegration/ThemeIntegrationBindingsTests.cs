@@ -1022,9 +1022,9 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             context.Service.PopulateSingleGameDataSync(firstGameId);
 
             Assert.AreEqual(DynamicThemeViewKeys.All, context.Settings.DynamicAchievementsFilterKey);
-            Assert.AreEqual(DynamicThemeViewKeys.Default, context.Settings.DynamicAchievementsSortKey);
+            Assert.AreEqual(DynamicThemeViewKeys.UnlockTime, context.Settings.DynamicAchievementsSortKey);
             Assert.AreEqual(DynamicThemeViewKeys.Descending, context.Settings.DynamicAchievementsSortDirectionKey);
-            AssertAchievementNames(context.Settings.DynamicAchievements, "Alpha Locked", "Bravo Rare", "Charlie Ultra");
+            AssertAchievementNames(context.Settings.DynamicAchievements, "Charlie Ultra", "Bravo Rare", "Alpha Locked");
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.DynamicAchievements)));
 
             context.Settings.SetDynamicAchievementsFilterCommand.Execute("uNlOcKeD");
@@ -1276,7 +1276,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             Assert.AreEqual("Locked+Rare+UltraRare", context.Settings.DynamicAchievementsFilterKey);
             Assert.AreEqual("Locked + Rare + Ultra Rare", context.Settings.DynamicAchievementsFilterLabel);
-            AssertAchievementNames(context.Settings.DynamicAchievements, "Rare Locked", "Ultra Locked");
+            AssertAchievementNames(context.Settings.DynamicAchievements, "Ultra Locked", "Rare Locked");
             CollectionAssert.Contains(
                 context.Settings.DynamicAchievementsFilterOptions.Select(item => item.Key).ToList(),
                 "Locked+Rare+UltraRare");

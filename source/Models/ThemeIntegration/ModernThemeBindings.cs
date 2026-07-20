@@ -71,9 +71,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private string _dynamicAchievementsCategoryLabelFilterLabel = DynamicThemeViewKeys.All;
         [DontSerialize]
-        private string _dynamicAchievementsSortKey = DynamicThemeViewKeys.Default;
+        private string _dynamicAchievementsSortKey = DynamicThemeViewKeys.UnlockTime;
         [DontSerialize]
-        private string _dynamicAchievementsSortLabel = DynamicThemeViewKeys.Default;
+        private string _dynamicAchievementsSortLabel = DynamicThemeViewKeys.UnlockTime;
         [DontSerialize]
         private string _dynamicAchievementsSortDirectionKey = DynamicThemeViewKeys.Descending;
         [DontSerialize]
@@ -81,7 +81,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private string _dynamicAchievementsDefaultFilterKey = DynamicThemeViewKeys.All;
         [DontSerialize]
-        private string _dynamicAchievementsDefaultSortKey = DynamicThemeViewKeys.Default;
+        private string _dynamicAchievementsDefaultSortKey = DynamicThemeViewKeys.UnlockTime;
         [DontSerialize]
         private string _dynamicAchievementsDefaultSortDirectionKey = DynamicThemeViewKeys.Descending;
         [DontSerialize]

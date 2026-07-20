@@ -202,7 +202,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             : base(
                 DynamicThemeViewKeys.All,
                 DynamicThemeViewKeys.All,
-                DynamicThemeViewKeys.Default,
+                DynamicThemeViewKeys.UnlockTime,
                 DynamicThemeViewKeys.Descending)
         {
         }

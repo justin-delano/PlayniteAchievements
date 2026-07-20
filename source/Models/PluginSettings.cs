@@ -1039,12 +1039,12 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public string DynamicAchievementsSortKey
         {
-            get => ModernTheme.DynamicAchievementsSortKey ?? DynamicThemeViewKeys.Default;
+            get => ModernTheme.DynamicAchievementsSortKey ?? DynamicThemeViewKeys.UnlockTime;
             set => ExecuteThemeCommand(SortDynamicAchievementsCommand, value);
         }
 
         [DontSerialize]
-        public string DynamicAchievementsSortLabel => ModernTheme.DynamicAchievementsSortLabel ?? DynamicThemeViewKeys.Default;
+        public string DynamicAchievementsSortLabel => ModernTheme.DynamicAchievementsSortLabel ?? DynamicThemeViewKeys.UnlockTime;
 
         [DontSerialize]
         public string DynamicAchievementsSortDirectionKey
@@ -1070,7 +1070,7 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public string DynamicAchievementsDefaultSortKey
         {
-            get => ModernTheme.DynamicAchievementsDefaultSortKey ?? DynamicThemeViewKeys.Default;
+            get => ModernTheme.DynamicAchievementsDefaultSortKey ?? DynamicThemeViewKeys.UnlockTime;
             set
             {
                 ModernTheme.DynamicAchievementsDefaultSortKey = value;

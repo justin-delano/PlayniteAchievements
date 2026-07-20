@@ -1399,7 +1399,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public string DynamicAchievementsSortKey
         {
-            get => _modernThemeOverride?.DynamicAchievementsSortKey ?? _settings?.DynamicAchievementsSortKey ?? DynamicThemeViewKeys.Default;
+            get => _modernThemeOverride?.DynamicAchievementsSortKey ?? _settings?.DynamicAchievementsSortKey ?? DynamicThemeViewKeys.UnlockTime;
             set
             {
                 if (_settings != null) _settings.DynamicAchievementsSortKey = value;
@@ -1407,7 +1407,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             }
         }
 
-        public string DynamicAchievementsSortLabel => _modernThemeOverride?.DynamicAchievementsSortLabel ?? _settings?.DynamicAchievementsSortLabel ?? DynamicThemeViewKeys.Default;
+        public string DynamicAchievementsSortLabel => _modernThemeOverride?.DynamicAchievementsSortLabel ?? _settings?.DynamicAchievementsSortLabel ?? DynamicThemeViewKeys.UnlockTime;
 
         public string DynamicAchievementsSortDirectionKey
         {
@@ -1433,7 +1433,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public string DynamicAchievementsDefaultSortKey
         {
-            get => _modernThemeOverride?.DynamicAchievementsDefaultSortKey ?? _settings?.DynamicAchievementsDefaultSortKey ?? DynamicThemeViewKeys.Default;
+            get => _modernThemeOverride?.DynamicAchievementsDefaultSortKey ?? _settings?.DynamicAchievementsDefaultSortKey ?? DynamicThemeViewKeys.UnlockTime;
             set
             {
                 if (_settings != null) _settings.DynamicAchievementsDefaultSortKey = value;

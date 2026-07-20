@@ -2019,7 +2019,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 _settings.ModernTheme.DynamicAchievementsDefaultSortKey,
                 DynamicThemeOptionGroups.SelectedGameAchievementSortKeyMap,
                 state.DefaultSortKey,
-                DynamicThemeViewKeys.Default,
+                DynamicThemeViewKeys.UnlockTime,
                 nameof(PlayniteAchievementsSettings.DynamicAchievementsDefaultSortKey));
             var directionKey = NormalizeDefaultKey(
                 _settings.ModernTheme.DynamicAchievementsDefaultSortDirectionKey,
@@ -2871,7 +2871,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private DynamicListBinding SelectedGameListBinding => _selectedGameListBinding ??= new DynamicListBinding
         {
             ViewState = () => _runtimeState.SelectedGameAchievements,
-            SortLabelFallbackKey = DynamicThemeViewKeys.Default,
+            SortLabelFallbackKey = DynamicThemeViewKeys.UnlockTime,
             SetFilterKey = value => _settings.ModernTheme.DynamicAchievementsFilterKey = value,
             SetFilterLabel = value => _settings.ModernTheme.DynamicAchievementsFilterLabel = value,
             SetSortKey = value => _settings.ModernTheme.DynamicAchievementsSortKey = value,
