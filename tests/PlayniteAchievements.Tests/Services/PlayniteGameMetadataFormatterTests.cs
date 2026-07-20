@@ -1,12 +1,27 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Services.Tests
 {
     [TestClass]
+    [DoNotParallelize]
     public class PlayniteGameMetadataFormatterTests
     {
+        // Hour formatting depends on the plugin formatting culture; pin it for determinism.
+        [TestInitialize]
+        public void PinFormattingCulture()
+        {
+            FormattingCulture.Initialize(() => "english");
+        }
+
+        [TestCleanup]
+        public void RestoreFormattingCulture()
+        {
+            FormattingCulture.Initialize(() => "english");
+        }
+
         [TestMethod]
         public void FormatPlaytime_ReturnsEmptyForZeroPlaytime()
         {
@@ -59,6 +74,27 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(
                 "<1h",
                 PlayniteGameMetadataFormatter.FormatPlaytime(15UL * 60, PlaytimeDisplayMode.HoursOnly));
+        }
+
+        [TestMethod]
+        public void FormatPlaytime_UsesThousandsSeparatorForHours()
+        {
+            var playtimeSeconds = 1234UL * 60 * 60;
+            Assert.AreEqual(
+                "1,234h",
+                PlayniteGameMetadataFormatter.FormatPlaytime(playtimeSeconds, PlaytimeDisplayMode.HoursOnly));
+
+            FormattingCulture.Initialize(() => "german");
+            try
+            {
+                Assert.AreEqual(
+                    "1.234h",
+                    PlayniteGameMetadataFormatter.FormatPlaytime(playtimeSeconds, PlaytimeDisplayMode.HoursOnly));
+            }
+            finally
+            {
+                FormattingCulture.Initialize(() => "english");
+            }
         }
 
         [TestMethod]
