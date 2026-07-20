@@ -1319,6 +1319,13 @@ namespace PlayniteAchievements.Services.Cache
                    new FriendsOverviewData();
         }
 
+        FriendsOverviewData IFriendCacheManager.LoadFriendGameAchievementData(FriendCacheChange gameScope)
+        {
+            EnsureReadyForRead("LoadFriendGameAchievementData");
+            return _store.LoadFriendGameAchievementData(gameScope) ??
+                   new FriendsOverviewData();
+        }
+
         FriendsOverviewData IFriendCacheManager.LoadFriendRecentUnlocksData(int recentLimit)
         {
             EnsureReadyForRead("LoadFriendRecentUnlocksData");
