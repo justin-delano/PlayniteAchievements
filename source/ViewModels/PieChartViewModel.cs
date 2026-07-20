@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -702,12 +703,12 @@ namespace PlayniteAchievements.ViewModels
 
             if (dataPoint.IsLocked || IsCompletedGamesSlice(dataPoint.IconKey))
             {
-                return $"{piePercent}% {totalLabel}";
+                return $"{PercentFormatter.FormatWhole(piePercent)} {totalLabel}";
             }
 
             var unlockedLabel = ResourceProvider.GetString("LOCPlayAch_Common_Unlocked");
             var categoryPercent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(dataPoint.UnlockedCount, dataPoint.TotalCount);
-            return $"{categoryPercent}% {unlockedLabel} ({piePercent}% {totalLabel})";
+            return $"{PercentFormatter.FormatWhole(categoryPercent)} {unlockedLabel} ({PercentFormatter.FormatWhole(piePercent)} {totalLabel})";
         }
 
         private static bool IsCompletedGamesSlice(string iconKey)
