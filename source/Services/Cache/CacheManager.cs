@@ -20,7 +20,16 @@ namespace PlayniteAchievements.Services.Cache
         CachedSummaryData LoadCachedSummaryDataFast(int recentAchievementDetailLimit = 0);
     }
 
-    public sealed class CacheManager : ICacheManager, ICacheReadOptimizations, IFriendCacheManager, IDisposable
+    // Write access to the AchievementFilters mirror table — the summary queries' SQL-side view
+    // of the per-game achievement filter lists that live in the separate custom-data database.
+    internal interface IAchievementFilterMirror
+    {
+        void ReplaceAchievementFilters(Guid playniteGameId, IReadOnlyList<(string ApiName, string Kind)> entries);
+
+        void ResyncAllAchievementFilters(IReadOnlyDictionary<Guid, IReadOnlyList<(string ApiName, string Kind)>> entriesByGameId);
+    }
+
+    public sealed class CacheManager : ICacheManager, ICacheReadOptimizations, IAchievementFilterMirror, IFriendCacheManager, IDisposable
     {
         private const int MaxInMemoryGames = 256;
 
@@ -150,6 +159,38 @@ namespace PlayniteAchievements.Services.Cache
         CachedSummaryData ICacheReadOptimizations.LoadCachedSummaryDataFast(int recentAchievementDetailLimit)
         {
             return LoadCachedSummaryDataFast(recentAchievementDetailLimit);
+        }
+
+        // Mirror writes never throw: when the store failed to initialize, summaries are
+        // unavailable anyway and the summary reader fails open (empty table = unfiltered).
+        void IAchievementFilterMirror.ReplaceAchievementFilters(
+            Guid playniteGameId,
+            IReadOnlyList<(string ApiName, string Kind)> entries)
+        {
+            try
+            {
+                _store.ReplaceAchievementFilters(playniteGameId, entries);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to sync achievement filter mirror for game {playniteGameId}.");
+            }
+        }
+
+        void IAchievementFilterMirror.ResyncAllAchievementFilters(
+            IReadOnlyDictionary<Guid, IReadOnlyList<(string ApiName, string Kind)>> entriesByGameId)
+        {
+            try
+            {
+                var changedGames = _store.ResyncAllAchievementFilters(entriesByGameId);
+                _logger?.Debug(changedGames > 0
+                    ? $"[Filters] Achievement filter mirror resynced for {changedGames} game(s)."
+                    : "[Filters] Achievement filter mirror unchanged.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to resync achievement filter mirror.");
+            }
         }
 
         private void InitializeCacheStartup()
