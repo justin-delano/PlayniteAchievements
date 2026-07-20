@@ -348,6 +348,8 @@ namespace PlayniteAchievements
                 AchievementRarityResolver.RoundDisplayPercentages =
                     _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
 
+                FormattingCulture.Initialize(() => _settingsViewModel?.Settings?.Persisted?.GlobalLanguage);
+
                 // NECESSARY TO MAKE SURE CHARTS WORK
                 var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
                 var panel = new WpfToolkit.Controls.VirtualizingWrapPanel();
@@ -981,6 +983,11 @@ namespace PlayniteAchievements
             {
                 AchievementRarityResolver.RoundDisplayPercentages =
                     _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.GlobalLanguage))
+            {
+                FormattingCulture.Refresh();
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||
