@@ -4,6 +4,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Database;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Hydration;
 using PlayniteAchievements.Services.Summaries;
@@ -48,6 +49,7 @@ namespace PlayniteAchievements.Services.Achievements
 
         private readonly ICacheManager _cacheService;
         private readonly ICacheReadOptimizations _cacheReadOptimizations;
+        private readonly IAchievementFilterMirror _filterMirror;
         private readonly GameDataHydrator _hydrator;
         private readonly ILogger _logger;
         private readonly GameCustomDataStore _gameCustomDataStore;
@@ -55,6 +57,10 @@ namespace PlayniteAchievements.Services.Achievements
         private readonly object _overviewProjectionCacheSync = new object();
         private readonly Dictionary<int, CachedSummaryData> _overviewSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
+
+        // Bumped on every invalidation; a summary loaded before an invalidation must not be
+        // memoized after it (it may have been built against since-replaced filter mirror rows).
+        private int _overviewProjectionGeneration;
 
         // Hydrated visible game data for the overview. Used only when the summary fast path is
         // unavailable (no fast read support, or the summary load failed), where each open would
@@ -86,6 +92,7 @@ namespace PlayniteAchievements.Services.Achievements
             _gameCustomDataStore = gameCustomDataStore;
             _persistedSettings = settings.Persisted;
             _cacheReadOptimizations = cacheService as ICacheReadOptimizations;
+            _filterMirror = cacheService as IAchievementFilterMirror;
             _hydrator = new GameDataHydrator(api, settings.Persisted, _gameCustomDataStore);
             SubscribeOverviewProjectionInvalidation();
         }
@@ -381,12 +388,15 @@ namespace PlayniteAchievements.Services.Achievements
         internal CachedSummaryData GetCachedSummaryDataForOverview(int recentAchievementDetailLimit = 0)
         {
             var normalizedLimit = Math.Max(0, recentAchievementDetailLimit);
+            int generation;
             lock (_overviewProjectionCacheSync)
             {
                 if (_overviewSummaryCacheByLimit.TryGetValue(normalizedLimit, out var cachedSummary))
                 {
                     return cachedSummary;
                 }
+
+                generation = _overviewProjectionGeneration;
             }
 
             var summaryData = GetCachedSummaryData(normalizedLimit);
@@ -409,7 +419,14 @@ namespace PlayniteAchievements.Services.Achievements
 
             lock (_overviewProjectionCacheSync)
             {
-                _overviewSummaryCacheByLimit[normalizedLimit] = hydratedSummary;
+                // Memoize only when no invalidation landed mid-load; a stale result is still
+                // returned to this caller (bounded staleness) but must not outlive the
+                // invalidation in the memo.
+                if (generation == _overviewProjectionGeneration)
+                {
+                    _overviewSummaryCacheByLimit[normalizedLimit] = hydratedSummary;
+                }
+
                 return hydratedSummary;
             }
         }
@@ -1087,12 +1104,12 @@ namespace PlayniteAchievements.Services.Achievements
 
         private void SubscribeOverviewProjectionInvalidation()
         {
-            _cacheService.CacheInvalidated += OnOverviewProjectionSourceChanged;
+            _cacheService.CacheInvalidated += OnCacheInvalidatedForOverview;
             _cacheService.CacheDeltaUpdated += OnOverviewProjectionSourceChanged;
 
             if (_gameCustomDataStore != null)
             {
-                _gameCustomDataStore.CustomDataChanged += OnOverviewProjectionSourceChanged;
+                _gameCustomDataStore.CustomDataChanged += OnCustomDataChangedForOverview;
             }
 
             if (_persistedSettings != null)
@@ -1114,10 +1131,98 @@ namespace PlayniteAchievements.Services.Achievements
             InvalidateOverviewProjectionCaches();
         }
 
+        // Ordering invariant: the filter mirror is written BEFORE the summary memo is cleared,
+        // so no reader can cache a summary built against stale mirror rows. This relies on the
+        // handler being synchronous and on AchievementDataService subscribing to
+        // CustomDataChanged before every other summary consumer (it is constructed before
+        // LibraryProjectionService in the plugin ctor, and multicast handlers run in
+        // subscription order).
+        private void OnCustomDataChangedForOverview(object sender, GameCustomDataChangedEventArgs e)
+        {
+            SyncAchievementFiltersForGame(e?.PlayniteGameId ?? Guid.Empty);
+            InvalidateOverviewProjectionCaches();
+        }
+
+        // A full cache invalidation may follow ClearCache(), which deletes the whole database
+        // file including the filter mirror; resync heals it (a cheap no-op when unchanged).
+        private void OnCacheInvalidatedForOverview(object sender, CacheInvalidatedEventArgs e)
+        {
+            if (e?.IsFull != false)
+            {
+                SyncAllAchievementFiltersFromCustomData();
+            }
+
+            InvalidateOverviewProjectionCaches();
+        }
+
+        private void SyncAchievementFiltersForGame(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty || _filterMirror == null || _gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            // A missing custom-data row (deleted) maps to an empty entry list, which removes
+            // the game's mirror rows.
+            _gameCustomDataStore.TryLoad(playniteGameId, out var customData);
+            _filterMirror.ReplaceAchievementFilters(playniteGameId, BuildFilterEntries(customData));
+        }
+
+        /// <summary>
+        /// Reconciles the whole AchievementFilters mirror against the custom-data store and
+        /// clears the summary memo. Called at startup (covers legacy migrations that bypass
+        /// CustomDataChanged) and after full cache invalidations.
+        /// </summary>
+        internal void SyncAllAchievementFiltersFromCustomData()
+        {
+            if (_filterMirror == null)
+            {
+                return;
+            }
+
+            var entriesByGameId = new Dictionary<Guid, IReadOnlyList<(string ApiName, string Kind)>>();
+            foreach (var pair in LoadCustomDataByGameId())
+            {
+                var entries = BuildFilterEntries(pair.Value);
+                if (entries.Count > 0)
+                {
+                    entriesByGameId[pair.Key] = entries;
+                }
+            }
+
+            _filterMirror.ResyncAllAchievementFilters(entriesByGameId);
+            InvalidateOverviewProjectionCaches();
+        }
+
+        private static List<(string ApiName, string Kind)> BuildFilterEntries(GameCustomDataFile customData)
+        {
+            var entries = new List<(string ApiName, string Kind)>();
+            AppendFilterEntries(entries, customData?.FilteredAchievementApiNames, SqlNadoCacheStore.AchievementFilterKinds.Filtered);
+            AppendFilterEntries(entries, customData?.SummaryFilteredAchievementApiNames, SqlNadoCacheStore.AchievementFilterKinds.SummaryFiltered);
+            return entries;
+        }
+
+        private static void AppendFilterEntries(
+            List<(string ApiName, string Kind)> entries,
+            IEnumerable<string> apiNames,
+            string kind)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var apiName in apiNames ?? Enumerable.Empty<string>())
+            {
+                var normalized = NormalizeText(apiName);
+                if (normalized != null && seen.Add(normalized))
+                {
+                    entries.Add((normalized, kind));
+                }
+            }
+        }
+
         private void InvalidateOverviewProjectionCaches()
         {
             lock (_overviewProjectionCacheSync)
             {
+                _overviewProjectionGeneration++;
                 _overviewSummaryCacheByLimit.Clear();
                 _overviewVisibleGameData = null;
             }
