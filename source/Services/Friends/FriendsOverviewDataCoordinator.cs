@@ -24,6 +24,10 @@ namespace PlayniteAchievements.Services.Friends
 
         public List<FriendAchievementDisplayItem> RecentUnlocks { get; set; } = new List<FriendAchievementDisplayItem>();
 
+        // Unlocked rows only: the overview surfaces and projection derivations never read
+        // locked rows, and loading the full definition-driven set dominated build cost. The
+        // friend+game pair comparison loads its one game's locked rows on demand via
+        // IFriendCacheManager.LoadFriendGameAchievementData(FriendCacheChange).
         public List<FriendAchievementDisplayItem> AllAchievements { get; set; } = new List<FriendAchievementDisplayItem>();
 
         public List<FriendAchievementDisplayItem> AllUnlockedAchievements { get; set; } = new List<FriendAchievementDisplayItem>();
