@@ -58,7 +58,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ForceReloadData();
         }
 
-        public event EventHandler IconOverridesSaved;
+        public event EventHandler<IconOverridesSavedEventArgs> IconOverridesSaved;
 
         public ObservableCollection<AchievementIconOverrideItem> AchievementRows { get; }
 
@@ -264,6 +264,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var lockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var changedApiNames = new List<string>();
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
                     var row = AchievementRows[i];
@@ -271,6 +272,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     if (string.IsNullOrWhiteSpace(apiName))
                     {
                         continue;
+                    }
+
+                    if (row.HasPersistableChanges)
+                    {
+                        changedApiNames.Add(apiName);
                     }
 
                     // An invalid pending edit keeps its last persisted value in the store;
@@ -296,7 +302,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 RefreshComputedState();
-                IconOverridesSaved?.Invoke(this, EventArgs.Empty);
+                if (changedApiNames.Count > 0)
+                {
+                    IconOverridesSaved?.Invoke(this, new IconOverridesSavedEventArgs(changedApiNames));
+                }
             }
             catch (Exception ex)
             {
@@ -534,6 +543,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
     }
 
+    public sealed class IconOverridesSavedEventArgs : EventArgs
+    {
+        public IconOverridesSavedEventArgs(IReadOnlyCollection<string> changedApiNames)
+        {
+            ChangedApiNames = changedApiNames ?? Array.Empty<string>();
+        }
+
+        public IReadOnlyCollection<string> ChangedApiNames { get; }
+    }
+
     public sealed class AchievementIconOverrideItem : AchievementDisplayItem
     {
         private const string PreviewHttpPrefix = "previewhttp:";
@@ -612,6 +631,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _hasLockedContentChange ||
             !string.Equals(GetNormalizedUnlockedOverrideValue(), _baselineUnlockedOverrideValue, StringComparison.Ordinal) ||
             !string.Equals(GetNormalizedLockedOverrideValue(), _baselineLockedOverrideValue, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Like HasChanges, but only counts variants whose current value will actually be
+        /// written to the store (invalid pending edits are excluded).
+        /// </summary>
+        internal bool HasPersistableChanges =>
+            (!HasUnlockedOverrideValidationError &&
+                (_hasUnlockedContentChange ||
+                 !string.Equals(GetNormalizedUnlockedOverrideValue(), _baselineUnlockedOverrideValue, StringComparison.Ordinal))) ||
+            (!HasLockedOverrideValidationError &&
+                (_hasLockedContentChange ||
+                 !string.Equals(GetNormalizedLockedOverrideValue(), _baselineLockedOverrideValue, StringComparison.Ordinal)));
 
         public bool HasTransientManagedState =>
             HasPendingManagedLocalOverride(AchievementIconVariant.Unlocked) ||
