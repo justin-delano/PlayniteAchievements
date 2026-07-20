@@ -274,7 +274,7 @@ namespace PlayniteAchievements.ViewModels.Items
         public string UnlockTimeText => UnlockTime.ToLocalTime().ToString("g");
         public string GlobalPercentText => AchievementRarityResolver.GetDisplayText(GlobalPercentUnlocked, Rarity);
         public int Points => PointsValue ?? 0;
-        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
+        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString("N0", FormattingCulture.Current) : "-";
 
         /// <summary>
         /// True if rarity percentage data is available for this achievement.
