@@ -331,6 +331,37 @@ namespace PlayniteAchievements.Services.Images
             return Path.Combine(_cacheRoot, relativePath);
         }
 
+        // Probes the default cached achievement icon across supported extensions. Downloads with
+        // decodeSize 0 preserve the source format, so the stored extension follows the source
+        // rather than the canonical extension of the relative path.
+        internal string FindExistingAchievementIconCachePath(
+            string gameId,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            var canonicalPath = GetAchievementIconCachePath(gameId, fileStem, variant);
+            if (string.IsNullOrWhiteSpace(canonicalPath))
+            {
+                return null;
+            }
+
+            if (File.Exists(canonicalPath))
+            {
+                return canonicalPath;
+            }
+
+            foreach (var extension in SupportedImageExtensions)
+            {
+                var candidate = Path.ChangeExtension(canonicalPath, extension);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
         // Path of the retired compressed 128px cache mode. Read-only fallback for games not yet
         // refreshed since the mode was removed; the folder is deleted after each game's refresh.
         internal string GetLegacyCompressedAchievementIconCachePath(

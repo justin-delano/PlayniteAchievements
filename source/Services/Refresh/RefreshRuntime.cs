@@ -1484,6 +1484,54 @@ namespace PlayniteAchievements.Services.Refresh
             }
         }
 
+        // Applies icon overrides for the given achievements against the cached game data without
+        // running providers: materialize changed overrides (or restore cleared ones to the cached
+        // provider default) and persist the rewritten paths. The legacy compressed folder is kept
+        // because a clear-restore may resolve into it, and GameRefreshed/tag sync is not raised;
+        // the store's CustomDataChanged side effects already cover the override edit itself.
+        public async Task ApplyAchievementIconOverridesAsync(
+            Guid gameId,
+            IReadOnlyCollection<string> changedApiNames,
+            CancellationToken cancel = default)
+        {
+            if (gameId == Guid.Empty ||
+                changedApiNames == null ||
+                changedApiNames.Count == 0 ||
+                _achievementIconService == null ||
+                _cacheService == null)
+            {
+                return;
+            }
+
+            var key = gameId.ToString();
+            var data = _cacheService.LoadGameData(key);
+            if (data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            var unlockedIconOverrides = GameCustomDataLookup.GetAchievementUnlockedIconOverrides(gameId);
+            var lockedIconOverrides = GameCustomDataLookup.GetAchievementLockedIconOverrides(gameId);
+            var forceApiNames = new HashSet<string>(changedApiNames, StringComparer.OrdinalIgnoreCase);
+
+            await _achievementIconService.PopulateAchievementIconCacheAsync(
+                    data,
+                    unlockedIconOverrides,
+                    lockedIconOverrides,
+                    cancel,
+                    onIconProgress: null,
+                    forceRefreshExistingTargets: false,
+                    forceOverrideApiNames: forceApiNames)
+                .ConfigureAwait(false);
+
+            var writeResult = _cacheService.SaveGameData(key, data);
+            if (writeResult == null || !writeResult.Success)
+            {
+                _logger?.Error(
+                    $"Persisting icon override apply failed. key={key}, code={writeResult?.ErrorCode ?? "unknown"}, message={writeResult?.ErrorMessage ?? "Unknown cache persistence failure."}");
+            }
+        }
+
         private string ResolveFinalSuccessMessage(RebuildPayload payload, Func<RebuildPayload, string> finalMessage)
         {
             var defaultMessage = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
