@@ -19,6 +19,7 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <converters:RarityPercentToTextConverter x:Key="RarityPercentToTextConverter"/>
+            <converters:WholePercentToTextConverter x:Key="WholePercentToText"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -81,7 +82,7 @@
                             <TextBlock Text=" ("
                                        FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                        Opacity="{StaticResource PlayAch.Opacity.Placeholder}"/>
-                            <TextBlock Text="{Binding ProgressPercent, Mode=OneWay, StringFormat={}{0:F0}%}"
+                            <TextBlock Text="{Binding ProgressPercent, Mode=OneWay, Converter={StaticResource WholePercentToText}}"
                                        FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                        Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                             <TextBlock Text=")"
