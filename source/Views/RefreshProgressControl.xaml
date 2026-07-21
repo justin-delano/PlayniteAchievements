@@ -41,8 +41,8 @@
                 <!-- Plugin Logo -->
                 <Image Grid.Column="0"
                        Source="{StaticResource PlayAch.Image.Logo}"
-                       Width="28"
-                       Height="28"
+                       Width="32"
+                       Height="32"
                        Margin="{StaticResource PlayAch.Thickness.Right.Md}"
                        VerticalAlignment="Center"/>
 

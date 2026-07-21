@@ -679,19 +679,9 @@ namespace PlayniteAchievements
 
         }
 
-        private TextBlock GetOverviewIcon()
+        private FrameworkElement GetOverviewIcon()
         {
-            var tb = new TextBlock
-            {
-                Text = char.ConvertFromUtf32(0xedd7), // ico-font: trophy
-                FontSize = 18
-            };
-
-            var font = ResourceProvider.GetResource("FontIcoFont") as FontFamily;
-            tb.FontFamily = font ?? new FontFamily("Segoe UI Symbol");
-            // tb.SetResourceReference(TextBlock.ForegroundProperty, "GlyphBrush");
-
-            return tb;
+            return BrandIconFactory.CreateTrophyIcon(18);
         }
 
         // === Top Panel ===
