@@ -508,8 +508,8 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">Zwischengespeicherte Erfolgssymbole</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Advanced">Erweitert</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Anwenden &amp; synchronisieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Verstecke Spiele in Massenaktualisierungen enthalten</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Versteckte Spiele werden stets bei Einzel- oder spezifizierten Aktualisierungen berücksichtigen.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Versteckte Spiele bei Aktualisierungen berücksichtigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Bei Einzel- oder spezifizierten Aktualisierungen werden versteckte Spiele stets berücksichtigt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Histogramm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Schaltfläche</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Entferne zwischengespeicherte Erfolgsdaten...</sys:String>
@@ -546,7 +546,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendRefreshMultiplier">Freundesdaten bei jeder N. Abfrage abrufen:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendBatchSize">Freunde pro Aktualisierung (0 = alle):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_MaxConcurrentToasts">Anzahl zeitgleicher Benachrichtigungen:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastDurationSeconds">Anzeigedauer (in Sekunden):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastDurationSeconds">Anzeigedauer in Sekunden:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition">Position:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomRight">Unten rechts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomLeft">Unten links</sys:String>
@@ -614,7 +614,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Vor der Verwendung von Erfolgstastenkürzel ein Spiel auswählen oder starten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Tastenkürzel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Schlagwortsynchronisation aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte enthalten</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte berücksichtigen</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">Wenn deaktiviert: Spiele ohne Spielzeit werden bei Aktualisierungen übersprungen.</sys:String>
     <sys:String x:Key="LOCPlayAch_InvalidPath">Ordner existiert nicht</sys:String>
 
@@ -674,7 +674,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Maximales Alter des File Scan Caches (in Tagen):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Sichtbarkeit von Erfolgen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Darstellung der Informationsdetails verborgener Erfolge.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Aktualisierungsintervall (in Stunden):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Intervall in Stunden:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Alle zwischengespeicherten Symboldateien entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Separate Sperrsymbole entfernen (bei nächster Aktualisierung erneut geladen)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">Zwischengespeicherte Symboldateien entfernen. Fehlende Symbole werden bei der nächsten Aktualisierung erneut geladen.</sys:String>
@@ -689,7 +689,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_LanguageHint">Die Sprache für Erfolgstexte. Die Plattformen werden diese Sprache verwenden, sofern unterstützt. Ansonsten wird Englisch als Fallback verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Werkzeuge zum Entfernen zwischengespeicherter Daten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Wartung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Benachrichtigung bei Abschluss/Fehler von Aktualisierungen anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Benachrichtigungen bei Abschluss/Fehler von Aktualisierungen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyPeriodicUpdates">Benachrichtigungen periodischer Aktualisierungen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Datenordner öffnen (enthält Logs und Cache)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Ordner öffnen</sys:String>
