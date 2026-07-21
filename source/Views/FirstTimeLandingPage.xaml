@@ -168,8 +168,8 @@
             <!-- Plugin Icon -->
             <Image x:Name="PluginIcon"
                    Source="{StaticResource PlayAch.Image.Logo}"
-                   Width="56"
-                   Height="56"
+                   Width="63"
+                   Height="63"
                    HorizontalAlignment="Center"
                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 

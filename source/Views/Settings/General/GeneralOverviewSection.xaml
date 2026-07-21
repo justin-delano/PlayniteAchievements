@@ -24,8 +24,8 @@
                     BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                 <StackPanel Orientation="Horizontal">
                     <Image Source="{StaticResource PlayAch.Image.Logo}"
-                           Width="28"
-                           Height="28"
+                           Width="32"
+                           Height="32"
                            VerticalAlignment="Center"
                            Margin="{StaticResource PlayAch.Thickness.Right.Compact}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Description}"
