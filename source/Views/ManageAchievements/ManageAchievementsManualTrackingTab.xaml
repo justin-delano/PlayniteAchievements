@@ -108,6 +108,7 @@
                         BorderThickness="0"
                         Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                     <DataGrid x:Name="SearchResultsDataGrid"
+                              Style="{StaticResource PlayAch.DataGrid.BaseStyle}"
                               ItemsSource="{Binding SearchResults}"
                               SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
                               AutoGenerateColumns="False"
@@ -318,6 +319,7 @@
                         BorderThickness="0"
                         Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                     <DataGrid x:Name="ManualAchievementsDataGrid"
+                              Style="{StaticResource PlayAch.DataGrid.BaseStyle}"
                               ItemsSource="{Binding FilteredAchievements}"
                               AutoGenerateColumns="False"
                               IsReadOnly="False"

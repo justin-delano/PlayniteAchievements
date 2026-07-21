@@ -78,6 +78,7 @@
                                                SelectionChanged="CategoryList_SelectionChanged"/>
 
     <DataGrid x:Name="AchievementsDataGrid"
+              Style="{StaticResource PlayAch.DataGrid.BaseStyle}"
               Visibility="{Binding AchievementGridVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
               ItemsSource="{Binding EffectiveAchievements, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
               MaxHeight="{Binding DataGridMaxHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"

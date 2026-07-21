@@ -91,7 +91,9 @@
         </Border>
     </ControlTemplate>
 
-    <Style TargetType="{x:Type DataGrid}">
+    <!-- This dictionary is merged into Application.Current.Resources; keyless styles here would
+         apply to every matching control in the Playnite process, including other plugins. -->
+    <Style x:Key="PlayAch.DataGrid.BaseStyle" TargetType="{x:Type DataGrid}">
         <Setter Property="helpers:DataGridColumnGripperBehavior.IsEnabled" Value="True"/>
         <Style.Triggers>
             <Trigger Property="helpers:DataGridHoverScrollBarBehavior.IsEnabled"

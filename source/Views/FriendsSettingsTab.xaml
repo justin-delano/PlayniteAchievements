@@ -156,6 +156,7 @@
                                Margin="0,0,0,8"/>
 
                     <DataGrid Grid.Row="2"
+                              Style="{StaticResource PlayAch.DataGrid.BaseStyle}"
                               ItemsSource="{Binding Friends}"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"

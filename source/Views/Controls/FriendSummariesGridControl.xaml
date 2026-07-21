@@ -50,6 +50,7 @@
                                     ShowControlBar="{Binding ShowControlBar, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}}"/>
 
     <DataGrid x:Name="FriendSummariesGrid"
+              Style="{StaticResource PlayAch.DataGrid.BaseStyle}"
               Grid.Row="1"
               KeyboardNavigation.DirectionalNavigation="Contained"
               ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}}"
