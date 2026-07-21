@@ -255,7 +255,7 @@ namespace PlayniteAchievements.Services.UI
         {
             try
             {
-                var main = Application.Current?.MainWindow;
+                var main = System.Windows.Application.Current?.MainWindow;
                 var source = main != null ? PresentationSource.FromVisual(main) : null;
                 if (source?.CompositionTarget != null)
                 {
@@ -281,7 +281,7 @@ namespace PlayniteAchievements.Services.UI
                     return target.TransformToDevice.M11;
                 }
 
-                var main = Application.Current?.MainWindow;
+                var main = System.Windows.Application.Current?.MainWindow;
                 var mainTarget = main != null ? PresentationSource.FromVisual(main)?.CompositionTarget : null;
                 if (mainTarget != null)
                 {
