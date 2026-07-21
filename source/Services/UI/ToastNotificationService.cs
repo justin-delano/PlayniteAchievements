@@ -428,16 +428,22 @@ namespace PlayniteAchievements.Services.UI
                 items.ItemTemplate = template;
             }
 
+            LogWaveDiagnostics(toastItems, template);
+
             window.Content = items;
             window.Opacity = 0;
-            window.Loaded += (s, e) => PlaceWindow(window);
-            window.ContentRendered += (s, e) => PlaceWindow(window);
+            // Do not move the window during Loaded: a SizeToContent window moved before it is first
+            // presented at DPI > 100% gets an HWND sized from unscaled DIPs, which clips content
+            // inside the card. Pre-place before Show() so the HWND is created at its final rect on
+            // the game's monitor; ContentRendered/shown/snap remain as post-presentation corrections.
+            window.ContentRendered += (s, e) => PlaceWindow(window, "rendered");
 
             EventHandler onRendering = null;
             try
             {
+                PlaceWindow(window, "preshow");
                 window.Show();
-                PlaceWindow(window);
+                PlaceWindow(window, "shown");
                 SlideIn(window);
 
                 // Let the toast finish sliding in and paint, then capture (so the toast is in the
@@ -452,7 +458,7 @@ namespace PlayniteAchievements.Services.UI
                 // Release the slide-in animation so placement can move Top directly, and snap to
                 // the game window corner now that the toast is fully laid out.
                 window.BeginAnimation(Window.TopProperty, null);
-                PlaceWindow(window);
+                PlaceWindow(window, "snap");
 
                 // The wave is now fully visible: signal the recording service so it can anchor
                 // clip ends at the moment the toast actually appeared on screen.
@@ -580,7 +586,7 @@ namespace PlayniteAchievements.Services.UI
                         if (focused)
                         {
                             window.Show();
-                            PlaceWindow(window);
+                            PlaceWindow(window, "refocus");
                         }
                         else
                         {
@@ -825,12 +831,73 @@ namespace PlayniteAchievements.Services.UI
                 TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
+        /// <summary>
+        /// Emits the once-per-wave header and display-environment diagnostic lines (gated behind the
+        /// compile-time perf tracing flag). Together with the per-placement lines these let a remote
+        /// user's log answer whether a mixed-DPI topology or a SizeToContent/DPI HWND mismatch is
+        /// behind toast clipping.
+        /// </summary>
+        private void LogWaveDiagnostics(IReadOnlyList<AchievementToastViewModel> toastItems, DataTemplate template)
+        {
+            if (!Common.PerfScope.PerfTracingEnabled)
+            {
+                return;
+            }
+
+            try
+            {
+                var overridePath = _templateResolver?.ResolveActiveThemeOverridePath();
+                var templateSource = template == null
+                    ? "null-template"
+                    : (string.IsNullOrEmpty(overridePath) ? "default" : $"theme({overridePath})");
+                var gameHwnd = ResolveWaveWindowHandle();
+
+                _logger?.Info(string.Format(
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    "Toast wave: corner={0} template={1} items={2} gameHwnd=0x{3:X}",
+                    _activePosition,
+                    templateSource,
+                    toastItems?.Count ?? 0,
+                    gameHwnd.ToInt64()));
+                _logger?.Info(ToastPlacementDiagnostics.DescribeEnvironment(_api));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Toast wave diagnostics failed.");
+            }
+        }
+
         private void PlaceWindow(Window window)
         {
-            if (window != null)
+            PlaceWindow(window, null);
+        }
+
+        /// <summary>
+        /// Positions the toast within the current placement area. When <paramref name="stage"/> is
+        /// supplied and perf tracing is compiled on, emits one diagnostic line describing exactly
+        /// what drove this placement (coordinate spaces, DPI transform, resulting rect and HWND).
+        /// The per-frame follow path passes no stage so the hot path stays silent.
+        /// </summary>
+        private void PlaceWindow(Window window, string stage)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            var trace = stage != null && Common.PerfScope.PerfTracingEnabled;
+            if (!trace)
             {
                 PositionInArea(window, ResolvePlacementArea(window));
+                return;
             }
+
+            var area = ResolvePlacementArea(window, out var gamePx, out var areaSource, out var transformSource);
+            PositionInArea(window, area);
+
+            var gameHwnd = ResolveWaveWindowHandle();
+            _logger?.Info(ToastPlacementDiagnostics.DescribePlacement(
+                stage, window, gameHwnd, gamePx, area, areaSource, transformSource));
         }
 
         /// <summary>
@@ -846,7 +913,7 @@ namespace PlayniteAchievements.Services.UI
 
             if (_screenshotService.TryGetClientBounds(gameHwnd, out var pixelBounds))
             {
-                var dip = ConvertPhysicalToDip(window, pixelBounds);
+                var dip = ConvertPhysicalToDip(window, pixelBounds, out _);
                 if (dip.Width > 0 && dip.Height > 0)
                 {
                     PositionInArea(window, dip);
@@ -864,8 +931,32 @@ namespace PlayniteAchievements.Services.UI
             var margin = 24d;
             var width = window.ActualWidth > 0 ? window.ActualWidth : window.Width;
             var height = window.ActualHeight > 0 ? window.ActualHeight : window.Height;
-            if (double.IsNaN(width) || width <= 0) width = 410;
-            if (double.IsNaN(height) || height <= 0) height = 138;
+            if (double.IsNaN(width) || width <= 0 || double.IsNaN(height) || height <= 0)
+            {
+                // Before the window is laid out, measure the content so theme-supplied templates of
+                // any size are placed correctly instead of assuming the default card's dimensions.
+                // Measuring an unshown window can throw, so fall back to the default card size.
+                var desired = new Size(double.NaN, double.NaN);
+                try
+                {
+                    window.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    desired = window.DesiredSize;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Toast pre-layout measure failed; using default card size.");
+                }
+
+                if (double.IsNaN(width) || width <= 0)
+                {
+                    width = desired.Width > 0 ? desired.Width : 438;
+                }
+
+                if (double.IsNaN(height) || height <= 0)
+                {
+                    height = desired.Height > 0 ? desired.Height : 138;
+                }
+            }
 
             switch (_activePosition)
             {
@@ -896,32 +987,63 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private Rect ResolvePlacementArea(Window window)
         {
-            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(
+            return ResolvePlacementArea(window, out _, out _, out _);
+        }
+
+        private Rect ResolvePlacementArea(
+            Window window,
+            out System.Drawing.Rectangle? gamePx,
+            out string areaSource,
+            out string transformSource)
+        {
+            gamePx = _screenshotService?.TryGetGameWindowBounds(
                 ResolveWaveWindowHandle(),
                 _getGameProcessId?.Invoke(_activeWaveGameId));
-            if (pixelBounds.HasValue)
+            if (gamePx.HasValue)
             {
-                var dip = ConvertPhysicalToDip(window, pixelBounds.Value);
+                var dip = ConvertPhysicalToDip(window, gamePx.Value, out transformSource);
                 if (dip.Width > 0 && dip.Height > 0)
                 {
+                    areaSource = "game";
                     return dip;
                 }
             }
 
+            areaSource = "workarea";
+            transformSource = "n/a";
             return SystemParameters.WorkArea;
         }
 
         private static Rect ConvertPhysicalToDip(Window window, System.Drawing.Rectangle rect)
+        {
+            return ConvertPhysicalToDip(window, rect, out _);
+        }
+
+        /// <summary>
+        /// Converts a physical-pixel rectangle to WPF device-independent units. Because the Playnite
+        /// process is system-DPI-aware, TransformFromDevice is a single global matrix, so when the
+        /// toast window has no presentation source yet (pre-Show placement) the main window's
+        /// transform is exactly right. Only when neither has a source does it fall back to treating
+        /// pixels as DIPs (1:1), which is reported via <paramref name="transformSource"/> so the
+        /// diagnostics log can flag that degraded case rather than hiding it.
+        /// </summary>
+        private static Rect ConvertPhysicalToDip(Window window, System.Drawing.Rectangle rect, out string transformSource)
         {
             try
             {
                 var target = PresentationSource.FromVisual(window)?.CompositionTarget;
                 if (target != null)
                 {
-                    var transform = target.TransformFromDevice;
-                    var topLeft = transform.Transform(new Point(rect.Left, rect.Top));
-                    var bottomRight = transform.Transform(new Point(rect.Right, rect.Bottom));
-                    return new Rect(topLeft, bottomRight);
+                    transformSource = "window";
+                    return TransformRect(target.TransformFromDevice, rect);
+                }
+
+                var main = Application.Current?.MainWindow;
+                var mainTarget = main != null ? PresentationSource.FromVisual(main)?.CompositionTarget : null;
+                if (mainTarget != null)
+                {
+                    transformSource = "mainwindow";
+                    return TransformRect(mainTarget.TransformFromDevice, rect);
                 }
             }
             catch
@@ -929,7 +1051,15 @@ namespace PlayniteAchievements.Services.UI
                 // Fall through to raw (assume 1:1 device scale).
             }
 
+            transformSource = "identity";
             return new Rect(rect.Left, rect.Top, rect.Width, rect.Height);
+        }
+
+        private static Rect TransformRect(Matrix transform, System.Drawing.Rectangle rect)
+        {
+            var topLeft = transform.Transform(new Point(rect.Left, rect.Top));
+            var bottomRight = transform.Transform(new Point(rect.Right, rect.Bottom));
+            return new Rect(topLeft, bottomRight);
         }
 
         private void SlideIn(Window window)
