@@ -146,7 +146,7 @@
     </Style>
 
     <Style x:Key="OverviewProgressNameTextStyle" TargetType="TextBlock" BasedOn="{StaticResource GameSummaryNameTextStyle}">
-        <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
         <Setter Property="Visibility" Value="Collapsed"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding ShowNameAboveProgress, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
@@ -201,7 +201,7 @@
                 </MultiDataTrigger.Conditions>
                 <Setter Property="RenderTransform">
                     <Setter.Value>
-                        <TranslateTransform Y="10"/>
+                        <TranslateTransform Y="11"/>
                     </Setter.Value>
                 </Setter>
             </MultiDataTrigger>
@@ -243,7 +243,7 @@
 
     <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="Margin" Value="0,5,0,0"/>
+        <Setter Property="Margin" Value="0,7,0,0"/>
         <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Icon.Tiny}"/>
     </Style>
 

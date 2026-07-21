@@ -1343,9 +1343,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (_refreshService != null)
                 {
-                    // No ConfigureAwait(false): the post-apply invalidation below must
-                    // resume on the dispatcher.
-                    await _refreshService.ApplyAchievementIconOverridesAsync(_gameId, changedApiNames);
+                    // The apply completes mostly synchronously when icon files are already
+                    // cached (including the SQLite SaveGameData at the end), so it must run
+                    // on a worker thread or it stalls the dispatcher and input goes jerky.
+                    // The outer await has no ConfigureAwait(false): the post-apply
+                    // invalidation below must resume on the dispatcher.
+                    await Task.Run(() => _refreshService.ApplyAchievementIconOverridesAsync(_gameId, changedApiNames));
                 }
             }
             catch (Exception ex)

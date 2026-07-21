@@ -24,6 +24,10 @@ namespace PlayniteAchievements.Services.Friends
 
         public List<FriendAchievementDisplayItem> RecentUnlocks { get; set; } = new List<FriendAchievementDisplayItem>();
 
+        // Unlocked rows only: the overview surfaces and projection derivations never read
+        // locked rows, and loading the full definition-driven set dominated build cost. The
+        // friend+game pair comparison loads its one game's locked rows on demand via
+        // IFriendCacheManager.LoadFriendGameAchievementData(FriendCacheChange).
         public List<FriendAchievementDisplayItem> AllAchievements { get; set; } = new List<FriendAchievementDisplayItem>();
 
         public List<FriendAchievementDisplayItem> AllUnlockedAchievements { get; set; } = new List<FriendAchievementDisplayItem>();
@@ -64,6 +68,8 @@ namespace PlayniteAchievements.Services.Friends
         // overhead only, not a second copy of the display items.
         private List<FriendAchievementDisplayItem> _patchBaseAchievements;
         private Task<SnapshotBuildResult> _buildTask;
+        private Func<bool> _externalConsumerProbe;
+        private int _viewConsumerCount;
         private int _invalidationVersion = 1;
         private int _snapshotVersion;
         private int _buildTaskVersion;
@@ -97,6 +103,118 @@ namespace PlayniteAchievements.Services.Friends
         }
 
         public event EventHandler SnapshotInvalidated;
+
+        /// <summary>
+        /// Raised after the retained snapshot and patch base have been dropped because the last
+        /// view consumer detached and no external consumer holds the data. Consumers caching
+        /// slices of the snapshot (start-page coordinators) should invalidate on this event so
+        /// their slices stop pinning the released projection.
+        /// </summary>
+        public event EventHandler SnapshotReleased;
+
+        /// <summary>
+        /// Registers a probe consulted when the last view consumer detaches. When it returns
+        /// true (e.g. the active theme reads friend bindings), the snapshot is kept alive for
+        /// that consumer instead of being released.
+        /// </summary>
+        public void SetExternalConsumerProbe(Func<bool> probe)
+        {
+            lock (_syncRoot)
+            {
+                _externalConsumerProbe = probe;
+            }
+        }
+
+        /// <summary>
+        /// Counts an attached view (friends overview view model). While at least one view is
+        /// attached, the snapshot and patch base are retained across invalidations.
+        /// </summary>
+        public void AddViewConsumer()
+        {
+            lock (_syncRoot)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _viewConsumerCount++;
+            }
+        }
+
+        /// <summary>
+        /// Detaches a view consumer. When the count reaches zero and no external consumer
+        /// (theme) needs the data, drops the snapshot, patch base, and any in-flight build's
+        /// publish slot so the full friend row set becomes collectable. The next
+        /// <see cref="GetSnapshotAsync(CancellationToken)"/> performs a full rebuild.
+        /// </summary>
+        public void RemoveViewConsumer()
+        {
+            Func<bool> probe;
+            lock (_syncRoot)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (_viewConsumerCount <= 0)
+                {
+                    _logger?.Debug("Friends overview view-consumer count underflow; ignoring.");
+                    return;
+                }
+
+                _viewConsumerCount--;
+                if (_viewConsumerCount > 0)
+                {
+                    return;
+                }
+
+                probe = _externalConsumerProbe;
+            }
+
+            if (probe?.Invoke() == true)
+            {
+                return;
+            }
+
+            bool released;
+            lock (_syncRoot)
+            {
+                released = ReleaseSnapshot_Locked();
+            }
+
+            if (released)
+            {
+                MemoryDiagnostics.Log(_logger, "friendsOverview.release");
+                SnapshotReleased?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private bool ReleaseSnapshot_Locked()
+        {
+            // Re-checked because the probe runs outside the lock: a view may have re-attached
+            // in between, in which case the data stays.
+            if (_disposed || _viewConsumerCount > 0)
+            {
+                return false;
+            }
+
+            if (_snapshot == null && _patchBaseAchievements == null && _buildTask == null)
+            {
+                return false;
+            }
+
+            // Bumping the version marks any published snapshot stale for direct readers;
+            // nulling _buildTask makes an in-flight build fail the ReferenceEquals publish
+            // guard in GetSnapshotAsync, so its completion cannot re-pin the row set (the
+            // awaiting caller still receives its result).
+            _invalidationVersion++;
+            _snapshot = null;
+            _patchBaseAchievements = null;
+            _buildTask = null;
+            return true;
+        }
 
         public bool TryGetCurrentSnapshot(out FriendsOverviewSnapshot snapshot)
         {
@@ -211,11 +329,10 @@ namespace PlayniteAchievements.Services.Friends
             }
         }
 
-        // Matches the overview/start-page projection warm: called once Playnite has finished
-        // starting so the shared friend snapshot reflects a populated game database. A build may
-        // already be in flight (e.g. a friends surface or friend-consuming theme requested one),
-        // so this coalesces instead of always rebuilding; see WarmAfterDelayAsync for the
-        // per-state behavior.
+        // Debounced eager build. The snapshot is otherwise built on demand by the first
+        // consumer (friends view or friend-consuming theme binding); a build may already be in
+        // flight, so this coalesces instead of always rebuilding — see WarmAfterDelayAsync for
+        // the per-state behavior.
         public void Warm()
         {
             var generation = Interlocked.Increment(ref _warmGeneration);

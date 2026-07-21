@@ -442,6 +442,14 @@ namespace PlayniteAchievements.Services.Friends
 
         FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId);
 
+        /// <summary>
+        /// Loads every friend's achievement rows (locked included) for one game identified by
+        /// provider scope, supporting provider-only games without a PlayniteGameId. Used by the
+        /// friend+game pair comparison to materialize locked rows on demand; the overview
+        /// snapshot itself carries unlocked rows only.
+        /// </summary>
+        FriendsOverviewData LoadFriendGameAchievementData(FriendCacheChange gameScope);
+
         FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit);
 
         // Current-user games (with the servicing provider label stored at scan time) used to resolve a

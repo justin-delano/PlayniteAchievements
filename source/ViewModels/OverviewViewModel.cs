@@ -1423,26 +1423,14 @@ namespace PlayniteAchievements.ViewModels
                 await _refreshLock.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
-                    var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
-                    var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
-                    var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
-                    var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
-                    HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    if (anyHidingEnabled)
-                    {
-                        lock (_revealedKeys)
-                        {
-                            if (_revealedKeys.Count > 0)
-                            {
-                                revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
-                            }
-                        }
-                    }
+                    // Spoiler reveals only affect the per-game grids (a separate per-game
+                    // path); the overview snapshot carries no per-achievement display items,
+                    // so it builds without reveal state.
                     OverviewDataSnapshot snapshot;
                     snapshot = await Task.Run(
                         () => _libraryProjectionService != null
-                            ? _libraryProjectionService.GetOverviewSnapshot(_settings, revealedCopy, cancel)
-                            : _dataBuilder.Build(_settings, revealedCopy, cancel),
+                            ? _libraryProjectionService.GetOverviewSnapshot(_settings, cancel)
+                            : _dataBuilder.Build(_settings, cancel),
                         cancel).ConfigureAwait(false);
 
                     // Still off the UI thread: precompute the search-text maps so ApplySnapshot
@@ -3963,6 +3951,11 @@ namespace PlayniteAchievements.ViewModels
 
         public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             _disposed = true;
             SetActive(false);
             CancelSelectedGameLoad();

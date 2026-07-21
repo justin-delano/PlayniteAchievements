@@ -57,6 +57,16 @@ namespace PlayniteAchievements.ViewModels
         private List<FriendAchievementDisplayItem> _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allAchievements = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
+
+        // On-demand rows for the friend+game pair comparison. The overview snapshot carries
+        // unlocked rows only, so the selected game's full definition rows (locked included,
+        // all friends) are fetched once per game selection and swapped in when they land;
+        // until then the pair view falls back to the snapshot's unlocked rows.
+        private List<FriendAchievementDisplayItem> _pairGameAchievements;
+        private string _pairGameKey;
+        private string _pairGameKeyInFlight;
+        private int _pairFetchVersion;
+        internal Task PairAchievementsFetchTask { get; private set; }
         private List<FriendSummaryItem> _filteredFriendsList = new List<FriendSummaryItem>();
         private List<FriendGameSummaryItem> _filteredGamesList = new List<FriendGameSummaryItem>();
         private List<FriendAchievementDisplayItem> _filteredAchievementsList = new List<FriendAchievementDisplayItem>();
@@ -114,6 +124,12 @@ namespace PlayniteAchievements.ViewModels
             _ownsFriendsOverviewDataCoordinator = friendsOverviewDataCoordinator == null;
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator ??
                 new FriendsOverviewDataCoordinator(friendCache, () => _settings?.Persisted, logger);
+            if (!_ownsFriendsOverviewDataCoordinator)
+            {
+                // A shared coordinator retains its snapshot only while views (or a
+                // friend-consuming theme) hold it; an owned instance is disposed wholesale.
+                _friendsOverviewDataCoordinator.AddViewConsumer();
+            }
             _friendsOverviewDataCoordinator.SnapshotInvalidated += OnFriendsOverviewSnapshotInvalidated;
             _cacheInvalidationDebounceInterval = cacheInvalidationDebounceInterval ?? TimeSpan.FromMilliseconds(300);
             // Matches the FriendsOverviewDataCoordinator invalidation-event throttle: each reload
@@ -1369,6 +1385,7 @@ namespace PlayniteAchievements.ViewModels
                     _allRecentUnlocks = result.RecentUnlocks;
                     _allAchievements = result.AllAchievements;
                     _allUnlockedAchievements = result.AllUnlockedAchievements;
+                    ResetPairAchievements();
 
                     using (PerfScope.Start(_logger, "FriendsOverview.ApplyOnUiThread", thresholdMs: 15))
                     {
@@ -1392,6 +1409,7 @@ namespace PlayniteAchievements.ViewModels
                     _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
                     _allAchievements = new List<FriendAchievementDisplayItem>();
                     _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
+                    ResetPairAchievements();
                     _projection = new FriendOverviewProjection(null);
                     FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
                     FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
@@ -1524,9 +1542,10 @@ namespace PlayniteAchievements.ViewModels
 
                 // Locked rows only make sense in the single friend + single game comparison view;
                 // every aggregated view (friend-only, game-only) shows unlocked rows, and no
-                // selection keeps the recent-unlocks feed.
-                var achievementSource = HasFriendGameSelection
-                    ? _allAchievements
+                // selection keeps the recent-unlocks feed. Pair rows (locked included) load on
+                // demand per selected game.
+                IReadOnlyList<FriendAchievementDisplayItem> achievementSource = HasFriendGameSelection
+                    ? ResolvePairAchievementSource()
                     : HasAnySelection
                         ? _allUnlockedAchievements
                         : _allRecentUnlocks;
@@ -1615,7 +1634,7 @@ namespace PlayniteAchievements.ViewModels
                 // snapshot loaded from the cache. Replaced before DisplayedAchievements so the grid's
                 // items-source reset rebuilds category rollups from the new selection's rows.
                 SelectedFriendGameAllAchievements.ReplaceAll(HasFriendGameSelection
-                    ? _allAchievements.Where(achievement =>
+                    ? achievementSource.Where(achievement =>
                         IsSameFriend(achievement, SelectedFriend) &&
                         IsSameGame(achievement, SelectedGame))
                     : Enumerable.Empty<FriendAchievementDisplayItem>());
@@ -1629,6 +1648,97 @@ namespace PlayniteAchievements.ViewModels
             {
                 _isApplyingFilters = false;
             }
+        }
+
+        // Returns the pair comparison's achievement source: the on-demand full rows when they
+        // are loaded (or loaded-empty, falling back), otherwise the snapshot's unlocked rows
+        // while a fetch for the selected game runs.
+        private IReadOnlyList<FriendAchievementDisplayItem> ResolvePairAchievementSource()
+        {
+            var key = FriendOverviewProjection.GetGameScopeKey(SelectedGame);
+            if (string.IsNullOrWhiteSpace(key) ||
+                string.Equals(key, FriendOverviewProjection.AllScopeKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return _allAchievements;
+            }
+
+            if (_pairGameAchievements != null &&
+                string.Equals(_pairGameKey, key, StringComparison.OrdinalIgnoreCase))
+            {
+                // A loaded-but-empty result (no cached definitions for the game) falls back to
+                // the unlocked rows instead of blanking the grid; it is cached either way so
+                // filter churn does not re-query.
+                return _pairGameAchievements.Count > 0 ? _pairGameAchievements : _allAchievements;
+            }
+
+            BeginPairAchievementsFetch(key, SelectedGame);
+            return _allAchievements;
+        }
+
+        private void BeginPairAchievementsFetch(string key, FriendGameSummaryItem game)
+        {
+            if (_friendCache == null ||
+                game == null ||
+                string.Equals(_pairGameKeyInFlight, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _pairGameKeyInFlight = key;
+            var version = Interlocked.Increment(ref _pairFetchVersion);
+            var gameScope = FriendCacheChange.ForGameDefinition(
+                game.ProviderKey,
+                game.AppId,
+                game.ProviderGameKey);
+            PairAchievementsFetchTask = FetchPairAchievementsAsync(version, key, gameScope);
+        }
+
+        private async Task FetchPairAchievementsAsync(int version, string key, FriendCacheChange gameScope)
+        {
+            List<FriendAchievementDisplayItem> rows = null;
+            try
+            {
+                rows = await Task
+                    .Run(() => _friendCache.LoadFriendGameAchievementData(gameScope)?.AllAchievements)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to load friend pair achievement rows.");
+            }
+
+            void Apply()
+            {
+                if (_disposed || version != Volatile.Read(ref _pairFetchVersion))
+                {
+                    return;
+                }
+
+                _pairGameKeyInFlight = null;
+                _pairGameKey = key;
+                _pairGameAchievements = rows ?? new List<FriendAchievementDisplayItem>();
+                ApplyFilters(preserveSelections: true);
+            }
+
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                dispatcher.InvokeIfNeeded(Apply);
+            }
+            else
+            {
+                Apply();
+            }
+        }
+
+        // Drops the on-demand pair rows and discards any in-flight fetch result; the next
+        // pair-scoped ApplyFilters re-fetches against the fresh cache state.
+        private void ResetPairAchievements()
+        {
+            Interlocked.Increment(ref _pairFetchVersion);
+            _pairGameAchievements = null;
+            _pairGameKey = null;
+            _pairGameKeyInFlight = null;
         }
 
         private void ApplyAchievementConfiguredDefaultSort()
@@ -2204,6 +2314,12 @@ namespace PlayniteAchievements.ViewModels
 
         public void Dispose()
         {
+            // Guards the shared coordinator's view-consumer count against double-decrement.
+            if (_disposed)
+            {
+                return;
+            }
+
             _disposed = true;
 
             if (_progressTracker != null)
@@ -2241,6 +2357,10 @@ namespace PlayniteAchievements.ViewModels
             if (_ownsFriendsOverviewDataCoordinator)
             {
                 _friendsOverviewDataCoordinator?.Dispose();
+            }
+            else
+            {
+                _friendsOverviewDataCoordinator?.RemoveViewConsumer();
             }
         }
 

@@ -2546,6 +2546,9 @@ namespace PlayniteAchievements.Services.Tests
             public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) =>
                 new FriendsOverviewData();
 
+            public FriendsOverviewData LoadFriendGameAchievementData(FriendCacheChange gameScope) =>
+                new FriendsOverviewData();
+
             public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit) =>
                 new FriendsOverviewData();
 

@@ -86,6 +86,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private int _friendRefreshAppliedVersion;
         private volatile bool _hasFriendThemeConsumers;
 
+        // On-demand locked-row rows for the dynamic friend pair scope (friend + game both
+        // selected). The friend runtime state carries unlocked rows only; the selected game's
+        // full rows (locked included) are fetched once per game key and swapped in, mirroring
+        // FriendsOverviewViewModel's pair comparison.
+        private List<FriendAchievementDisplayItem> _dynamicFriendPairRows;
+        private string _dynamicFriendPairKey;
+        private string _dynamicFriendPairKeyInFlight;
+        private int _dynamicFriendPairFetchVersion;
+
+        // Sticky-true once any theme friend binding is read; consulted by the friends overview
+        // coordinator's release path so a friend-consuming theme keeps the snapshot alive.
+        internal bool HasFriendThemeConsumers => _hasFriendThemeConsumers;
+
         private bool _fullscreenInitialized;
         private bool _hasLoadedLibraryState;
         private bool _lastLibraryRefreshIncludedHeavyAchievementLists = true;
@@ -2351,6 +2364,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ApplyFriendState(FriendRuntimeState state, bool notify)
         {
             _runtimeState.Friends = state ?? FriendRuntimeState.Empty;
+            // The pair rows were loaded against the previous snapshot's cache state; drop them
+            // so a still-selected pair re-fetches during the binding rebuild below.
+            ResetDynamicFriendPairRows();
             ValidateDynamicFriendScope(_runtimeState.Friends);
             ApplyDynamicFriendBindings(updateOptions: false);
             if (notify)
@@ -3888,9 +3904,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 selectedFriend != null ||
                 selectedGame != null;
 
-            IEnumerable<FriendAchievementDisplayItem> source = hasScopedSelection
-                ? state.AllAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>()
-                : state.RecentUnlocks ?? Enumerable.Empty<FriendAchievementDisplayItem>();
+            // Same selection logic as the friends overview: only the single friend + single
+            // game pair shows locked rows (loaded on demand); every other scoped view stays on
+            // the snapshot's unlocked rows, and no scope keeps the recent-unlocks feed.
+            IEnumerable<FriendAchievementDisplayItem> source =
+                selectedFriend != null && selectedGame != null
+                    ? ResolveDynamicFriendPairSource(state, selectedGame)
+                    : hasScopedSelection
+                        ? state.AllAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>()
+                        : state.RecentUnlocks ?? Enumerable.Empty<FriendAchievementDisplayItem>();
 
             source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);
             if (selectedFriend != null)
@@ -3905,6 +3927,98 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             source = ApplyDynamicFilterPredicates(source, viewState.FilterKey, FriendAchievementFilterPredicates);
             return FriendAchievementSortTable.Sort(source, viewState).ToList();
+        }
+
+        // Returns the pair scope's achievement source: the on-demand full rows when loaded for
+        // the selected game (a loaded-but-empty result falls back instead of blanking the
+        // lists), otherwise the snapshot's unlocked rows while the fetch runs.
+        private IEnumerable<FriendAchievementDisplayItem> ResolveDynamicFriendPairSource(
+            FriendRuntimeState state,
+            FriendGameSummaryItem selectedGame)
+        {
+            IEnumerable<FriendAchievementDisplayItem> fallback =
+                state.AllAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>();
+            var key = FriendOverviewProjection.GetGameScopeKey(selectedGame);
+            if (FriendOverviewProjection.IsAllScope(key))
+            {
+                return fallback;
+            }
+
+            if (_dynamicFriendPairRows != null &&
+                string.Equals(_dynamicFriendPairKey, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return _dynamicFriendPairRows.Count > 0 ? _dynamicFriendPairRows : fallback;
+            }
+
+            BeginDynamicFriendPairFetch(key, selectedGame);
+            return fallback;
+        }
+
+        private void BeginDynamicFriendPairFetch(string key, FriendGameSummaryItem game)
+        {
+            if (_friendCache == null ||
+                game == null ||
+                string.Equals(_dynamicFriendPairKeyInFlight, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _dynamicFriendPairKeyInFlight = key;
+            var version = Interlocked.Increment(ref _dynamicFriendPairFetchVersion);
+            var gameScope = FriendCacheChange.ForGameDefinition(
+                game.ProviderKey,
+                game.AppId,
+                game.ProviderGameKey);
+            _ = FetchDynamicFriendPairRowsAsync(version, key, gameScope);
+        }
+
+        private async Task FetchDynamicFriendPairRowsAsync(int version, string key, FriendCacheChange gameScope)
+        {
+            List<FriendAchievementDisplayItem> rows = null;
+            try
+            {
+                rows = await Task
+                    .Run(() => _friendCache.LoadFriendGameAchievementData(gameScope)?.AllAchievements)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to load dynamic friend pair achievement rows.");
+            }
+
+            void Apply()
+            {
+                if (version != Volatile.Read(ref _dynamicFriendPairFetchVersion))
+                {
+                    return;
+                }
+
+                _dynamicFriendPairKeyInFlight = null;
+                _dynamicFriendPairKey = key;
+                _dynamicFriendPairRows = rows ?? new List<FriendAchievementDisplayItem>();
+                ApplyDynamicFriendBindings();
+                NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
+            }
+
+            var uiDispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+            if (uiDispatcher == null)
+            {
+                Apply();
+            }
+            else
+            {
+                uiDispatcher.InvokeIfNeeded(Apply, DispatcherPriority.Background);
+            }
+        }
+
+        // Drops the on-demand pair rows and discards any in-flight fetch result; the next
+        // pair-scoped binding build re-fetches against the fresh cache state.
+        private void ResetDynamicFriendPairRows()
+        {
+            Interlocked.Increment(ref _dynamicFriendPairFetchVersion);
+            _dynamicFriendPairRows = null;
+            _dynamicFriendPairKey = null;
+            _dynamicFriendPairKeyInFlight = null;
         }
 
         /// <summary>

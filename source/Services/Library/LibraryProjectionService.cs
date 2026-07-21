@@ -79,14 +79,12 @@ namespace PlayniteAchievements.Services.Library
 
         public OverviewDataSnapshot GetOverviewSnapshot(
             PlayniteAchievementsSettings settings,
-            ISet<string> revealedKeys,
             CancellationToken token)
         {
-            var useCache = revealedKeys == null || revealedKeys.Count == 0;
             var snapshot = GetOrBuild(
                 "overview",
-                useCache,
-                () => BuildOverview(settings ?? _settings, revealedKeys, token));
+                useCache: true,
+                build: () => BuildOverview(settings ?? _settings, token));
             return snapshot?.OverviewSnapshot ?? new OverviewDataSnapshot();
         }
 
@@ -275,7 +273,6 @@ namespace PlayniteAchievements.Services.Library
 
         private LibraryProjectionSnapshot BuildOverview(
             PlayniteAchievementsSettings settings,
-            ISet<string> revealedKeys,
             CancellationToken token)
         {
             var builder = new OverviewDataBuilder(
@@ -286,7 +283,7 @@ namespace PlayniteAchievements.Services.Library
 
             return new LibraryProjectionSnapshot
             {
-                OverviewSnapshot = builder.Build(settings, revealedKeys, token)
+                OverviewSnapshot = builder.Build(settings, token)
             };
         }
 
@@ -412,10 +409,7 @@ namespace PlayniteAchievements.Services.Library
 
                 using (PerfScope.StartStartup(_logger, "Warm.OverviewProjection", thresholdMs: 250))
                 {
-                    GetOverviewSnapshot(
-                        _settings,
-                        new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                        CancellationToken.None);
+                    GetOverviewSnapshot(_settings, CancellationToken.None);
                 }
             }
             catch (Exception ex)

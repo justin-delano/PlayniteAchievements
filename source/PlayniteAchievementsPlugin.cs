@@ -417,7 +417,6 @@ namespace PlayniteAchievements
                         _logger);
                     _friendGameAchievementsDataCoordinator = new FriendGameAchievementsDataCoordinator(
                         _friendCacheManager,
-                        _friendsOverviewDataCoordinator,
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
                     _friendsRecentUnlocksDataCoordinator = new FriendsRecentUnlocksDataCoordinator(
@@ -476,6 +475,16 @@ namespace PlayniteAchievements
                         _logger,
                         isRefreshActive: () => _refreshService?.IsRebuilding == true);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
+
+                    // Reconcile the cache DB's AchievementFilters mirror against custom data
+                    // before any summary read (theme wiring, projection warm). Synchronous and
+                    // cheap when unchanged; also covers legacy custom-data migrations that
+                    // bypass CustomDataChanged.
+                    using (PerfScope.StartStartup(_logger, "PluginCtor.AchievementFilterResync", thresholdMs: 50))
+                    {
+                        _achievementDataService.SyncAllAchievementFiltersFromCustomData();
+                    }
+
                     _notifications = new NotificationPublisher(api, settings, _logger);
                     _refreshCoordinator = new RefreshEntryPoint(
                         _refreshService,
@@ -586,6 +595,17 @@ namespace PlayniteAchievements
                         _cacheManager as Services.Friends.IFriendCacheManager,
                         _friendsOverviewDataCoordinator,
                         _achievementHotkeyTargetResolver.ResolveRunningGame);
+
+                    // A friend-consuming theme is a plugin-lifetime consumer: it keeps the
+                    // friends snapshot alive when the last friends view closes.
+                    _friendsOverviewDataCoordinator?.SetExternalConsumerProbe(
+                        () => _themeIntegrationService?.HasFriendThemeConsumers == true);
+                    if (_friendsOverviewDataCoordinator != null)
+                    {
+                        _friendsOverviewDataCoordinator.SnapshotReleased += FriendsOverviewDataCoordinator_SnapshotReleased;
+                        _eventSubscriptions.Add(() =>
+                            _friendsOverviewDataCoordinator.SnapshotReleased -= FriendsOverviewDataCoordinator_SnapshotReleased);
+                    }
 
                     SubscribeDatabaseEventHandlers();
 
@@ -916,7 +936,10 @@ namespace PlayniteAchievements
                 // Playnite's populated database rather than the blank values an early startup warm
                 // would bake in.
                 _libraryProjectionService?.Warm();
-                _friendsOverviewDataCoordinator?.Warm();
+                // The friends overview snapshot is intentionally NOT warmed here: it is built
+                // on demand by the first consumer (friends view or a theme friend binding) and
+                // released when the last consumer detaches, so it only occupies memory while
+                // something displays it.
 
                 var dispatcher = PlayniteApi?.MainView?.UIDispatcher
                     ?? System.Windows.Application.Current?.Dispatcher;
@@ -1046,6 +1069,15 @@ namespace PlayniteAchievements
         private void FriendCacheManager_FriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
             InvalidateFriendDataCoordinators(e);
+        }
+
+        // The derived coordinators cache slices whose Projection references the released
+        // snapshot's projection; invalidating them lets the full friend row set become
+        // collectable. Their next builds fall back to the cheap scoped DB loads.
+        private void FriendsOverviewDataCoordinator_SnapshotReleased(object sender, EventArgs e)
+        {
+            _friendGameAchievementsDataCoordinator?.Invalidate();
+            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         // Settings-driven callers pass no args (projection-affecting settings need a full

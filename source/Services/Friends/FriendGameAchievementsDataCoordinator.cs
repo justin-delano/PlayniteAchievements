@@ -16,7 +16,6 @@ namespace PlayniteAchievements.Services.Friends
     {
         private readonly object _syncRoot = new object();
         private readonly IFriendCacheManager _friendCache;
-        private readonly FriendsOverviewDataCoordinator _overviewCoordinator;
         private readonly Func<PersistedSettings> _persistedSettingsFactory;
         private readonly ILogger _logger;
         private readonly Dictionary<Guid, CacheEntry> _snapshots = new Dictionary<Guid, CacheEntry>();
@@ -26,12 +25,10 @@ namespace PlayniteAchievements.Services.Friends
 
         public FriendGameAchievementsDataCoordinator(
             IFriendCacheManager friendCache,
-            FriendsOverviewDataCoordinator overviewCoordinator,
             Func<PersistedSettings> persistedSettingsFactory,
             ILogger logger = null)
         {
             _friendCache = friendCache;
-            _overviewCoordinator = overviewCoordinator;
             _persistedSettingsFactory = persistedSettingsFactory ?? (() => null);
             _logger = logger;
         }
@@ -129,14 +126,10 @@ namespace PlayniteAchievements.Services.Friends
         {
             try
             {
-                if (_overviewCoordinator?.TryGetCurrentSnapshot(out var overviewSnapshot) == true)
-                {
-                    using (PerfScope.Start(_logger, "FriendsGameAchievements.DeriveWarmSnapshot", thresholdMs: 10))
-                    {
-                        return SliceWarmSnapshot(overviewSnapshot, playniteGameId);
-                    }
-                }
-
+                // Always the scoped SQL load: this surface compares LOCKED and unlocked rows,
+                // and the warm overview snapshot carries unlocked rows only, so slicing it
+                // would silently drop the locked half. The per-game query is cheap and the
+                // result is cached per invalidation version.
                 var persisted = _persistedSettingsFactory();
                 FriendsOverviewData data;
                 using (PerfScope.Start(_logger, "FriendsGameAchievements.LoadCache", thresholdMs: 25))
@@ -155,71 +148,6 @@ namespace PlayniteAchievements.Services.Friends
                 _logger?.Error(ex, $"Failed to build friend game achievements snapshot for {playniteGameId}.");
                 return new FriendsOverviewSnapshot();
             }
-        }
-
-        private static FriendsOverviewSnapshot SliceWarmSnapshot(
-            FriendsOverviewSnapshot source,
-            Guid playniteGameId)
-        {
-            var allAchievements = (source?.AllAchievements ?? new List<FriendAchievementDisplayItem>())
-                .Where(achievement => achievement?.PlayniteGameId == playniteGameId)
-                .ToList();
-            var allUnlocked = allAchievements
-                .Where(achievement => achievement.Unlocked)
-                .ToList();
-            var recent = allUnlocked
-                .Where(achievement => achievement.UnlockTimeUtc.HasValue)
-                .OrderByDescending(achievement => achievement.UnlockTimeUtc ?? DateTime.MinValue)
-                .ToList();
-            var games = (source?.Games ?? new List<FriendGameSummaryItem>())
-                .Where(game => game?.PlayniteGameId == playniteGameId)
-                .ToList();
-            var links = (source?.Data?.FriendGameLinks ?? new List<FriendGameLinkItem>())
-                .Where(link => link?.PlayniteGameId == playniteGameId)
-                .ToList();
-
-            var friendKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var achievement in allAchievements)
-            {
-                var key = FriendOverviewProjection.GetFriendScopeKey(achievement);
-                if (!FriendOverviewProjection.IsAllScope(key))
-                {
-                    friendKeys.Add(key);
-                }
-            }
-
-            foreach (var link in links)
-            {
-                var key = FriendOverviewProjection.GetFriendScopeKey(link);
-                if (!FriendOverviewProjection.IsAllScope(key))
-                {
-                    friendKeys.Add(key);
-                }
-            }
-
-            var friends = (source?.Friends ?? new List<FriendSummaryItem>())
-                .Where(friend => friendKeys.Contains(FriendOverviewProjection.GetFriendScopeKey(friend)))
-                .ToList();
-            var data = new FriendsOverviewData
-            {
-                Friends = friends,
-                Games = games,
-                FriendGameLinks = links,
-                RecentUnlocks = recent,
-                AllAchievements = allAchievements,
-                AllUnlockedAchievements = allUnlocked
-            };
-
-            return new FriendsOverviewSnapshot
-            {
-                Data = data,
-                Projection = source?.Projection ?? new FriendOverviewProjection(null),
-                Friends = friends,
-                Games = games,
-                RecentUnlocks = recent,
-                AllAchievements = allAchievements,
-                AllUnlockedAchievements = allUnlocked
-            };
         }
 
         private void ThrowIfDisposed()
