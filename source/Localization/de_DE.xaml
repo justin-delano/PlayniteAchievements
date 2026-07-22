@@ -12,7 +12,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Actions">Aktionen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Aus Übersichten ausschließen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Nicht in Übersichten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">In Übersichten enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Typ hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Auf Auswahl anwenden</sys:String>
@@ -216,9 +216,9 @@ Dadurch wird das Spiel aus Erfolgsansichten ausgeschlossen und sämtliche zugeh�
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">In Übersicht anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Freund ignorieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Freund nicht mehr ignorieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}?
+    <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">{0} ignorieren?
 
-Their cached achievement data is deleted and they are skipped during friend refreshes.</sys:String>
+Die zwischengespeicherten Erfolgsdaten des Freundes werden gelöscht. Zudem wird er bei Freundesaktualisierungen übersprungen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend">Erfolgsdaten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Zwischengespeicherte Erfolgsdaten von {0} entfernen?
 
@@ -276,7 +276,7 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">Der Datenpfad der Erweiterung ist nicht verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">Ungültige Symboldaten. Links zu Bildern (http:// bzw. https://) oder lokale Bilddateien verwenden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Gefiltert</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Aus Übersichten herausgefiltert</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Nicht in Übersichten</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filterung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Aus Übersichten herausfiltern</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Festlegung der Auflistung von Erfolgen in An- und Übersichten.</sys:String>
@@ -388,7 +388,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <!-- ================================================================= -->
     <!-- 08 Manual Tracking and Linking -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Erfolge als freigeschaltet markieren und Freischaltzeiten setzen. Änderungen mit Klick auf OK speichern.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Fehler beim Verifizieren der Exophase-Authentifizierung für das manuelle Verknüpfen. Erneut versuchen oder Exophase-Authentifizierung in den Einstellungen überprüfen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Zur Verwendung manueller Verknüpfungen in den Einstellungen bei Exohpase anmelden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">Zum Abgleichen von Erfolgen Steam-Anmeldung in den Plugin-Einstellungen durchführen.</sys:String>
