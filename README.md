@@ -1,11 +1,29 @@
 <p align="center">
-  <img src="BrandingPackage/01 Logo (dark backgrounds)/02 Crest Icon/PNG/pa-crest-gold-master-icon.png" alt="Playnite Achievements icon" width="128" height="128">
+  <img
+    src="BrandingPackage/01%20Logo%20(dark%20backgrounds)/02%20Crest%20Icon/PNG/pa-crest-gold-master-icon.png"
+    alt="Playnite Achievements icon"
+    width="128"
+    height="128"
+  >
 </p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="BrandingPackage/01 Logo (dark backgrounds)/03 Wordmark (stacked)/PNG/pa-stacked-wordmark-master-icon-white-text.png">
-  <source media="(prefers-color-scheme: light)" srcset="BrandingPackage/02 Logo (light backgrounds)/03 Wordmark (stacked)/PNG/pa-stacked-wordmark-master-icon-navy-text.png">
-</picture>
+<p align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="BrandingPackage/01%20Logo%20(dark%20backgrounds)/03%20Wordmark%20(stacked)/PNG/pa-stacked-wordmark-master-icon-white-text.png"
+    >
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="BrandingPackage/02%20Logo%20(light%20backgrounds)/03%20Wordmark%20(stacked)/PNG/pa-stacked-wordmark-master-icon-navy-text.png"
+    >
+    <img
+      src="BrandingPackage/02%20Logo%20(light%20backgrounds)/03%20Wordmark%20(stacked)/PNG/pa-stacked-wordmark-master-icon-navy-text.png"
+      alt="Playnite Achievements"
+      width="350"
+    >
+  </picture>
+</p>
 
 
 <div align="center">
