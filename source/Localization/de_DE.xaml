@@ -236,9 +236,9 @@ Diese werden bei der nächsten Freundesaktualisierung erneut  geladen.</sys:Stri
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Aktualisierung läuft]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Erfolgsdaten der ausgewählten Spiele aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Als Vollendungserfolg festlegen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Erfolgsverknüpfungen für &quot;{0}&quot; aufheben?
 
-This removes the manual link and deletes its unlock times and this game's cached data.</sys:String>
+Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeicherte Daten des Spiels entfernt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Erfolgsansicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewFriendsAchievements">Freundeserfolge ansehen</sys:String>
 
@@ -270,7 +270,7 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Stackable">Stapelbar</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel">Kategorietyp</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Header">Benutzerdefinierte Erfolgssymbole</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">Set optional unlocked and locked icon overrides for this game's achievements. Drag in image links or files, or browse for a file.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">Optionale Übersteuerung von Freischalt- oder Sperrsymbolen dieses Spiels. Bilddateien bzw. -Links per Drag &amp; Drop oder Schaltfläche hinzufügen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">Die ausgewählte Bilddatei existiert nicht mehr.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">Symbolordner öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">Der Datenpfad der Erweiterung ist nicht verfügbar.</sys:String>
@@ -309,12 +309,12 @@ Damit werden manuelle Verknüpfungen, Vollendungserfolge, Symbole, Reihenfolgen,
 
 Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_CustomDataHeader">Benutzerdefinierte Daten</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_CustomDataHint">Export or import this game's custom data as .PA files (.PA.ZIP includes images), or clear it. Refresh and summary exclusions are not included.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_CustomDataHint">Export/Import der benutzerdefinierten Daten dieses Spiels im PA-Dateiformat (PA.zip enthält Bilder). Ausschlüsse aus Aktualisierungen oder Übersichten sind nicht enthalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader">Spielausschluss</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExclusionHint">Dieses Spiel von der Verfolgung aus- oder wieder einschließen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExportPaButton">.PA exportieren</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExportPackageButton">.PA.ZIP exportieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExportPaOmittedLocalIcons">.PA export omitted {0} local image override(s). Use .PA.ZIP to export full image sets.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExportPaOmittedLocalIcons">Beim PA-Export wurden {0} lokale Bildübersteuerungen ausgelassen. PA.ZIP für vollständigen Export der Bilddaten verwenden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ImportIgnoredPackageImages">{0} Bilddateien ignoriert, die keinem Erfolg dieses Spiels angehören.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ImportPortableButton">.PA oder .PA.ZIP importieren</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusOverride">Durch Übersteuerung aktiviert</sys:String>
@@ -396,7 +396,7 @@ Zwischengespeicherte Erfolgsdaten bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Such nach Spiel zur Erfolgsverknüpfung. Die Erfolge des gewählten Spiels werden mit diesem Playnite-Spiel verknüpft.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">Keine Spiele gefunden. Versuche einen anderen Suchbegriff.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">{0} Spiel(e) gefunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Import manual links from SuccessStory (Legacy). Import is add-only and never overwrites existing manual links or cached platform data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Manueller Import von Verknüpfungen aus SuccessStory. Der Import ist additiv und überschreibt keine existierenden Verknüpfungen oder zwischengespeicherten Plattformdaten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">Manueller SuccessStory-Import</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">Manuelle Verknüpfungen aus SuccessStory importieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathHint">Standardpfad: Playnite ExtensionsData\cebe6d32-8c46-4459-b993-5a5189d60788\SuccessStory</sys:String>
@@ -488,10 +488,10 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Keine Erfolge zwischengespeichert. Aktualisierung für Datenabgleich durchführen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Aktualisierung abgeschlossen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">Einige Plattformen benötigen eine Authentifizierung.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount">{0} friends refresh complete: {1} friend game checks refreshed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount">{0} Freundesaktualisierung abgeschlossen: {1} Spiele von Freunden aktualisiert</sys:String>
     <!-- In the two status formats below, {0} is a localized refresh mode name (e.g. "Full", "Custom") -->
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">{0} Aktualisierung abgeschlossen: {1} Spiele aktualisiert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_CombinedRefreshCompleteWithModeAndCounts">{0} complete: {1} games refreshed; {2} friend game checks refreshed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_CombinedRefreshCompleteWithModeAndCounts">{0} abgeschlossen: {1} Spiele aktualisiert; {2} Spiele von Freunden überprüft.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Aktualisiere...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Starting">Starte...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">Erfolgreich</sys:String>
@@ -656,7 +656,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">&quot;Honkai: Star Rail&quot; aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">&quot;Zenless Zone Zero&quot; aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker-Exportdateien</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optionale Exporte von öffentlichen Trackern können Erfolge als freigeschaltet markieren. Ohne Exportdatei werden bei einer Aktualisierung weiterhin Definitionen heruntergeladen, jedoch bleiben die Erfolge gesperrt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">Anleitung für die JSON-Datei</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1">1. {0} öffnen und anmelden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">StarDB Achievement Importer</sys:String>
@@ -962,7 +962,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
 Hiermit werden zwischengespeicherte Daten für {0:N0} Spiele gelöscht, die nur der Freund besitzt.
 
 Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared unowned friend data for {0:N0} games.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Entferne Freundesdaten für {0:N0} nicht in Besitz befindliche Spiele.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">Keine Freundeserfolgsdaten vorhanden.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Fehler beim Laden der Freundeserfolgsdaten.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Freundesaktualisierung fehlgeschlagen.</sys:String>
