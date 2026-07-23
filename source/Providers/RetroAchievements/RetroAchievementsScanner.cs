@@ -420,71 +420,19 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             {
                 var raSettings = ProviderRegistry.Settings<RetroAchievementsSettings>();
                 var gameInfo = await _api.GetGameInfoAndUserProgressAsync(gameId, cancel).ConfigureAwait(false);
-                var achievements = RetroAchievementsAchievementMapper.ParseAchievements(
-                    gameInfo,
-                    raSettings.RaRarityStats,
-                    categoryLabel: "Base",
-                    enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
-                    setCategoryType: "Base");
-
-                _logger?.Info($"[RA] Parsed {achievements.Count} achievements for '{gameInfo?.GameTitle}'.");
-
-                var categoryImageSources = new List<(string CategoryLabel, Models.RaGameInfoUserProgress Info)>
-                {
-                    ("Base", gameInfo)
-                };
-
                 var subsetConsoleId = RetroAchievementsSubsetConsoleResolver.Resolve(gameInfo, consoleId);
 
-                // Fetch subset achievements if enabled.
-                if (raSettings.EnableRaSubsetScanning && subsetConsoleId.HasValue)
-                {
-                    try
-                    {
-                        var subsets = await _hashIndexStore.GetSubsetsForGameAsync(gameId, subsetConsoleId.Value, cancel).ConfigureAwait(false);
-                        if (subsets != null && subsets.Count > 0)
-                        {
-                            foreach (var subset in subsets)
-                            {
-                                cancel.ThrowIfCancellationRequested();
+                var sets = await RetroAchievementsSetAssembler.AssembleAsync(
+                    gameInfo,
+                    gameId,
+                    subsetConsoleId,
+                    _hashIndexStore,
+                    raSettings,
+                    (setId, ct) => _api.GetGameInfoAndUserProgressAsync(setId, ct),
+                    _logger,
+                    cancel).ConfigureAwait(false);
 
-                                try
-                                {
-                                    var subsetInfo = await _api.GetGameInfoAndUserProgressAsync(subset.Id, cancel).ConfigureAwait(false);
-                                    var categoryLabel = ExtractCategoryLabel(subset.Title) ?? "Subset";
-                                    var subsetAchievements = RetroAchievementsAchievementMapper.ParseAchievements(
-                                        subsetInfo,
-                                        raSettings.RaRarityStats,
-                                        categoryLabel: categoryLabel,
-                                        enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
-                                        setCategoryType: "Subset");
-
-                                    _logger?.Info($"[RA] Parsed {subsetAchievements.Count} achievements for subset '{subset.Title}' (category={categoryLabel}).");
-
-                                    achievements.AddRange(subsetAchievements);
-                                    categoryImageSources.Add((categoryLabel, subsetInfo));
-                                }
-                                catch (OperationCanceledException) { throw; }
-                                catch (Exception ex)
-                                {
-                                    _logger?.Warn(ex, $"[RA] Failed to fetch subset '{subset.Title}' (ID={subset.Id}): {ex.Message}");
-                                }
-                            }
-
-                        }
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch (Exception ex)
-                    {
-                        _logger?.Warn(ex, $"[RA] Failed to look up subsets for gameId={gameId}: {ex.Message}");
-                    }
-                }
-                else if (raSettings.EnableRaSubsetScanning)
-                {
-                    _logger?.Info($"[RA] Skipping subset lookup for '{game?.Name}' because no console ID was resolved.");
-                }
-
-                await DownloadCategoryImagesAsync(game?.Id, categoryImageSources, cancel).ConfigureAwait(false);
+                await DownloadCategoryImagesAsync(game?.Id, sets.CategoryImageSources, cancel).ConfigureAwait(false);
 
                 return new GameAchievementData
                 {
@@ -493,9 +441,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     ProviderKey = "RetroAchievements",
                     LibrarySourceName = game?.Source?.Name,
                     LastUpdatedUtc = DateTime.UtcNow,
-                    HasAchievements = achievements.Count > 0,
+                    HasAchievements = sets.Achievements.Count > 0,
                     PlayniteGameId = game?.Id,
-                    Achievements = achievements
+                    Achievements = sets.Achievements
                 };
             }
             catch (Exception ex)
@@ -594,11 +542,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             if (hashes == null || hashes.Count == 0) return "(none)";
             return string.Join(",", hashes.Select(h => string.IsNullOrWhiteSpace(h) ? "?" : h));
-        }
-
-        internal static string ExtractCategoryLabel(string subsetTitle)
-        {
-            return RetroAchievementsAchievementMapper.ExtractCategoryLabel(subsetTitle);
         }
 
         private async Task<int> TryMatchGameByNameAsync(Game game, int consoleId, CancellationToken cancel)
