@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.RetroAchievements.Models;
+using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,7 +18,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             RaGameInfoUserProgress gameInfo,
             string rarityStats,
             string categoryLabel = null,
-            bool enableAutomaticCapstoneAssignment = false)
+            bool enableAutomaticCapstoneAssignment = false,
+            bool isSubset = false)
         {
             var list = new List<AchievementDetail>();
 
@@ -77,6 +79,16 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                 var unlockedIcon = BuildBadgeUrl(badge, locked: false);
                 var lockedIcon = BuildBadgeUrl(badge, locked: true);
+
+                // Unlocked achievements are classified by the mode they were earned in;
+                // locked achievements keep the default (null) mode. Subset achievements
+                // additionally carry the "Subset" type, combined with the unlock mode
+                // (e.g. "Subset|Hardcore") in canonical order.
+                var unlockModeType = earnedInHardcore ? "Hardcore" : earnedSoftcore ? "Softcore" : null;
+                var categoryType = isSubset
+                    ? AchievementCategoryTypeHelper.Combine(new[] { "Subset", unlockModeType })
+                    : unlockModeType;
+
                 var detail = new AchievementDetail
                 {
                     ApiName = achId,
@@ -89,9 +101,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     Category = categoryLabel,
                     IsCapstone = enableAutomaticCapstoneAssignment &&
                                  string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
-                    // Unlocked achievements are classified by the mode they were earned in.
-                    // Locked achievements keep the default category type.
-                    CategoryType = earnedInHardcore ? "Hardcore" : earnedSoftcore ? "Softcore" : null,
+                    CategoryType = categoryType,
                     UnlockTimeUtc = unlockUtc,
                     Hidden = false,
                     Rarity = globalPercent.HasValue
