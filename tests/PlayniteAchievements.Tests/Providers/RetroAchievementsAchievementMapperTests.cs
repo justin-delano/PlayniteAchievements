@@ -98,6 +98,53 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void ParseAchievements_SubsetCombinesSubsetTypeWithUnlockMode()
+        {
+            var gameInfo = new RaGameInfoUserProgress
+            {
+                NumDistinctPlayers = 100,
+                NumDistinctPlayersCasual = 100,
+                NumDistinctPlayersHardcore = 20,
+                Achievements = new Dictionary<string, RaAchievement>
+                {
+                    ["201"] = new RaAchievement
+                    {
+                        Title = "Soft Subset Win",
+                        DateEarned = "2025-06-11 13:05:22",
+                        NumAwarded = 50
+                    },
+                    ["202"] = new RaAchievement
+                    {
+                        Title = "Hard Subset Win",
+                        DateEarned = "2025-06-10 01:00:00",
+                        DateEarnedHardcore = "2025-06-12 02:00:00",
+                        NumAwarded = 40,
+                        NumAwardedHardcore = 4
+                    },
+                    ["203"] = new RaAchievement
+                    {
+                        Title = "Locked Subset",
+                        NumAwarded = 10
+                    }
+                }
+            };
+
+            var achievements = RetroAchievementsAchievementMapper.ParseAchievements(
+                gameInfo,
+                rarityStats: "casual",
+                categoryLabel: "Bonus",
+                enableAutomaticCapstoneAssignment: false,
+                isSubset: true);
+
+            // The free-form label is unchanged; only the canonical type gains "Subset",
+            // combined with the unlock mode in canonical order (Subset before Softcore/Hardcore).
+            Assert.AreEqual("Bonus", achievements.Single(item => item.ApiName == "201").Category);
+            Assert.AreEqual("Subset|Softcore", achievements.Single(item => item.ApiName == "201").CategoryType);
+            Assert.AreEqual("Subset|Hardcore", achievements.Single(item => item.ApiName == "202").CategoryType);
+            Assert.AreEqual("Subset", achievements.Single(item => item.ApiName == "203").CategoryType);
+        }
+
+        [TestMethod]
         public void ExtractCategoryLabel_PreservesScannerSubsetPatterns()
         {
             Assert.AreEqual("Bonus", RetroAchievementsAchievementMapper.ExtractCategoryLabel("Game [Subset - Bonus]"));
