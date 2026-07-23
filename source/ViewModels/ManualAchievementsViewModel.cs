@@ -1281,6 +1281,9 @@ namespace PlayniteAchievements.ViewModels
 
             if (achievements != null)
             {
+                // Resolve unlock state through the shared resolver so the editor matches the
+                // provider's cache-writing logic (tolerant of Exophase legacy vs stable ApiNames).
+                var resolver = new ManualUnlockResolver(link);
                 foreach (var detail in achievements)
                 {
                     if (detail == null || string.IsNullOrWhiteSpace(detail.ApiName))
@@ -1288,33 +1291,7 @@ namespace PlayniteAchievements.ViewModels
                         continue;
                     }
 
-                    // Get existing unlock state
-                    var isUnlocked = false;
-                    DateTime? unlockTime = null;
-
-                    if (link?.UnlockStates != null &&
-                        link.UnlockStates.TryGetValue(detail.ApiName, out var existingUnlocked))
-                    {
-                        isUnlocked = existingUnlocked;
-                    }
-
-                    if (link?.UnlockTimes != null &&
-                        link.UnlockTimes.TryGetValue(detail.ApiName, out var existingTime))
-                    {
-                        unlockTime = existingTime;
-
-                        // Backward compatibility: before UnlockStates existed,
-                        // unlock state was inferred from unlock time value.
-                        if (link?.UnlockStates == null || link.UnlockStates.Count == 0)
-                        {
-                            isUnlocked = existingTime.HasValue;
-                        }
-                    }
-
-                    if (!isUnlocked)
-                    {
-                        unlockTime = null;
-                    }
+                    resolver.TryResolveUnlock(detail, out var isUnlocked, out var unlockTime);
 
                     var item = new ManualAchievementEditItem(detail, isUnlocked, unlockTime, _playniteGame.Id);
                     item.PropertyChanged += OnAchievementChanged;
@@ -1464,26 +1441,25 @@ namespace PlayniteAchievements.ViewModels
                 {
                     var nowUtc = DateTime.UtcNow;
 
+                    // Keep the display platform in sync so the game attributes to its real platform
+                    // (e.g. Steam/PSN) instead of "Manual" right after a window edit, without waiting
+                    // for a full provider refresh. Null (unresolvable slug) mirrors provider behavior.
+                    cachedData.ProviderPlatformKey = _source?.ResolveProviderPlatformKey(link.SourceGameId);
+
+                    // Reset then re-apply through the shared resolver, so the cached unlocked set
+                    // exactly reflects the just-saved link (and never carries stale unlocks).
                     foreach (var achievement in cachedData.Achievements)
                     {
-                        if (string.IsNullOrWhiteSpace(achievement?.ApiName))
+                        if (achievement == null)
                         {
                             continue;
                         }
 
-                        var unlockedState = false;
-                        var hasState = link.UnlockStates != null &&
-                                       link.UnlockStates.TryGetValue(achievement.ApiName, out unlockedState);
-                        DateTime? unlockTime = null;
-                        var hasTime = link.UnlockTimes != null &&
-                                      link.UnlockTimes.TryGetValue(achievement.ApiName, out unlockTime);
-
-                        var isUnlocked = (hasState && unlockedState) || (hasTime && unlockTime.HasValue);
-                        achievement.Unlocked = isUnlocked;
-                        achievement.UnlockTimeUtc = isUnlocked && hasTime && unlockTime.HasValue
-                            ? unlockTime
-                            : null;
+                        achievement.Unlocked = false;
+                        achievement.UnlockTimeUtc = null;
                     }
+
+                    new ManualUnlockResolver(link).ApplyUnlockState(cachedData.Achievements);
 
                     // Force a new snapshot version so theme update coalescing does not skip this save.
                     cachedData.LastUpdatedUtc = nowUtc;
@@ -1607,8 +1583,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             var baseline = _lastSavedLink ?? _existingLink;
-            var unlockTimes = baseline?.UnlockTimes ?? new Dictionary<string, DateTime?>();
-            var unlockStates = baseline?.UnlockStates ?? new Dictionary<string, bool>();
+            var resolver = new ManualUnlockResolver(baseline);
 
             foreach (var item in AllAchievements)
             {
@@ -1617,16 +1592,10 @@ namespace PlayniteAchievements.ViewModels
                     continue;
                 }
 
-                var hasState = unlockStates.TryGetValue(item.ApiName, out var unlockedState);
-                var hasTime = unlockTimes.TryGetValue(item.ApiName, out var unlockTime);
-                var isUnlocked = hasState
-                    ? unlockedState
-                    : (hasTime && unlockTime.HasValue);
-
-                if (isUnlocked)
+                if (resolver.TryResolveUnlock(item.Source, out _, out var unlockTime))
                 {
                     item.IsUnlocked = true;
-                    item.UnlockTime = hasTime && unlockTime.HasValue ? unlockTime.Value : (DateTime?)null;
+                    item.UnlockTime = unlockTime;
                 }
                 else
                 {
