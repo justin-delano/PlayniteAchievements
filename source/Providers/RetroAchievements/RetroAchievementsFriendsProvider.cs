@@ -599,7 +599,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 gameInfo,
                 raSettings.RaRarityStats,
                 categoryLabel: "Base",
-                enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment);
+                enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
+                setCategoryType: "Base");
 
             var subsetConsoleId = RetroAchievementsSubsetConsoleResolver.Resolve(gameInfo, null);
             if (raSettings.EnableRaSubsetScanning && subsetConsoleId.HasValue)
@@ -668,7 +669,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         subsetInfo,
                         raSettings.RaRarityStats,
                         categoryLabel: categoryLabel,
-                        enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment);
+                        enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
+                        setCategoryType: "Subset");
                     achievements.AddRange(subsetAchievements);
                 }
                 catch (OperationCanceledException) { throw; }

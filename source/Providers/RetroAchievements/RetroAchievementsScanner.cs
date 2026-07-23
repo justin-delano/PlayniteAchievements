@@ -424,7 +424,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     gameInfo,
                     raSettings.RaRarityStats,
                     categoryLabel: "Base",
-                    enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment);
+                    enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
+                    setCategoryType: "Base");
 
                 _logger?.Info($"[RA] Parsed {achievements.Count} achievements for '{gameInfo?.GameTitle}'.");
 
@@ -456,7 +457,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                         raSettings.RaRarityStats,
                                         categoryLabel: categoryLabel,
                                         enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
-                                        isSubset: true);
+                                        setCategoryType: "Subset");
 
                                     _logger?.Info($"[RA] Parsed {subsetAchievements.Count} achievements for subset '{subset.Title}' (category={categoryLabel}).");
 

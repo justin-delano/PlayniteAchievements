@@ -19,7 +19,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             string rarityStats,
             string categoryLabel = null,
             bool enableAutomaticCapstoneAssignment = false,
-            bool isSubset = false)
+            string setCategoryType = null)
         {
             var list = new List<AchievementDetail>();
 
@@ -81,13 +81,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 var lockedIcon = BuildBadgeUrl(badge, locked: true);
 
                 // Unlocked achievements are classified by the mode they were earned in;
-                // locked achievements keep the default (null) mode. Subset achievements
-                // additionally carry the "Subset" type, combined with the unlock mode
-                // (e.g. "Subset|Hardcore") in canonical order.
+                // locked achievements keep the default (null) mode. The set-membership type
+                // (the base set -> "Base", a subset -> "Subset") is combined with the unlock
+                // mode in canonical order (e.g. "Base|Hardcore", "Subset|Softcore").
                 var unlockModeType = earnedInHardcore ? "Hardcore" : earnedSoftcore ? "Softcore" : null;
-                var categoryType = isSubset
-                    ? AchievementCategoryTypeHelper.Combine(new[] { "Subset", unlockModeType })
-                    : unlockModeType;
+                var categoryType = string.IsNullOrWhiteSpace(setCategoryType)
+                    ? unlockModeType
+                    : AchievementCategoryTypeHelper.Combine(new[] { setCategoryType, unlockModeType });
 
                 var detail = new AchievementDetail
                 {

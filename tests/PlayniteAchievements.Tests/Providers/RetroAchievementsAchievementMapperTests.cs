@@ -75,13 +75,15 @@ namespace PlayniteAchievements.Tests.Providers
                 gameInfo,
                 rarityStats: "casual",
                 categoryLabel: "Base",
-                enableAutomaticCapstoneAssignment: true);
+                enableAutomaticCapstoneAssignment: true,
+                setCategoryType: "Base");
 
             Assert.AreEqual(2, achievements.Count);
 
+            // Base-set achievements carry the "Base" type combined with the unlock mode.
             var soft = achievements.Single(item => item.ApiName == "101");
             Assert.AreEqual("Base", soft.Category);
-            Assert.AreEqual("Softcore", soft.CategoryType);
+            Assert.AreEqual("Base|Softcore", soft.CategoryType);
             Assert.AreEqual(new DateTime(2025, 6, 11, 13, 5, 22, DateTimeKind.Utc), soft.UnlockTimeUtc);
             Assert.AreEqual("https://i.retroachievements.org/Badge/12345.png", soft.UnlockedIconPath);
             Assert.AreEqual("https://i.retroachievements.org/Badge/12345_lock.png", soft.LockedIconPath);
@@ -134,7 +136,7 @@ namespace PlayniteAchievements.Tests.Providers
                 rarityStats: "casual",
                 categoryLabel: "Bonus",
                 enableAutomaticCapstoneAssignment: false,
-                isSubset: true);
+                setCategoryType: "Subset");
 
             // The free-form label is unchanged; only the canonical type gains "Subset",
             // combined with the unlock mode in canonical order (Subset before Softcore/Hardcore).
