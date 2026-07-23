@@ -862,6 +862,21 @@ namespace PlayniteAchievements
                 _logger?.Debug(ex, $"Failed to stop in-game poller for {game.Name}.");
             }
 
+            // The game-close refresh runs a Single request, which bypasses user exclusions so a
+            // manual single-game refresh can force an excluded game. Automatic refreshes must
+            // honor the exclusion, so gate this path explicitly.
+            var excludedGameIds = GameCustomDataLookup.GetExcludedRefreshGameIds(
+                _settingsViewModel?.Settings?.Persisted,
+                _gameCustomDataStore);
+            if (excludedGameIds?.Contains(game.Id) == true)
+            {
+                _logger.Info($"Game stopped: {game.Name}; excluded from refreshes, skipping refresh.");
+                // No refresh delta will arrive to rebuild the projection after the session's
+                // suppressed warms; schedule it explicitly (no-op while other games still run).
+                _libraryProjectionService?.Warm();
+                return;
+            }
+
             if (!AnyProviderCapable(game))
             {
                 _logger.Info($"Game stopped: {game.Name}; no enabled provider is capable, skipping refresh.");
