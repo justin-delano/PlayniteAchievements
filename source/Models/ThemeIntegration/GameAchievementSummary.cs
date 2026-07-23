@@ -142,6 +142,23 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public bool IsCompleted { get; }
 
         /// <summary>
+        /// True when this summary represents a base-game achievement category (dynamic category cards
+        /// only). The flags below are precomputed from the card's canonical group-type token so themes
+        /// can bind a plain boolean (e.g. IsBaseCategory) instead of string-matching the localized name.
+        /// All false for ordinary per-game summaries.
+        /// </summary>
+        public bool IsBaseCategory { get; }
+
+        /// <summary>True when this summary represents a DLC achievement category.</summary>
+        public bool IsDlcCategory { get; }
+
+        /// <summary>True when this summary represents an update achievement category.</summary>
+        public bool IsUpdateCategory { get; }
+
+        /// <summary>True when this summary represents a subset achievement category.</summary>
+        public bool IsSubsetCategory { get; }
+
+        /// <summary>
         /// Date of the most recent achievement unlock.
         /// </summary>
         public DateTime LastUnlockDate { get; }
@@ -240,7 +257,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int achievementCount = 0,
             ICommand openViewAchievementsWindow = null,
             ICommand openManageAchievementsWindow = null,
-            string sortingName = null)
+            string sortingName = null,
+            string categoryType = null)
         {
             GameId = gameId;
             Name = name ?? string.Empty;
@@ -254,6 +272,12 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _silverCount = Math.Max(0, silverCount);
             _bronzeCount = Math.Max(0, bronzeCount);
             IsCompleted = isCompleted;
+            // categoryType is a single canonical group token from CategorySummaryBuilder
+            // (Base/DLC/Update/Subset, or Default/null for non-category summaries).
+            IsBaseCategory = string.Equals(categoryType, "Base", StringComparison.OrdinalIgnoreCase);
+            IsDlcCategory = string.Equals(categoryType, "DLC", StringComparison.OrdinalIgnoreCase);
+            IsUpdateCategory = string.Equals(categoryType, "Update", StringComparison.OrdinalIgnoreCase);
+            IsSubsetCategory = string.Equals(categoryType, "Subset", StringComparison.OrdinalIgnoreCase);
             LastUnlockDate = lastUnlockDate;
             LastPlayed = lastPlayed;
             UnlockedCount = Math.Max(0, unlockedCount);

@@ -75,6 +75,7 @@ namespace PlayniteAchievements.Services.Summaries
                     .ApplyTo(item);
 
                 item.IsCompleted = ComputeIsCompleted(bucket);
+                item.CategoryType = ResolveCategoryType(bucket);
 
                 result.Add(item);
             }
@@ -110,6 +111,22 @@ namespace PlayniteAchievements.Services.Summaries
             }
 
             return hasAny && allUnlocked;
+        }
+
+        /// <summary>
+        /// Resolves the bucket's group-based category type token (Base/DLC/Update/Subset) for theme
+        /// binding, falling back to <see cref="AchievementCategoryTypeHelper.DefaultCategoryType"/> when
+        /// the bucket has no group membership. A category label maps 1:1 to a provider set in practice,
+        /// so the group component is uniform; the canonical-first pick is a defensive tiebreak.
+        /// </summary>
+        private static string ResolveCategoryType(IReadOnlyList<AchievementDisplayItem> bucket)
+        {
+            var combined = AchievementCategoryTypeHelper.Combine(
+                bucket.Where(item => item != null).Select(item => item.CategoryType));
+            var groupComponents = AchievementCategoryTypeHelper.GetGroupTypeComponents(combined);
+            return groupComponents.Count > 0
+                ? groupComponents[0]
+                : AchievementCategoryTypeHelper.DefaultCategoryType;
         }
 
         private static System.Guid? ResolveSharedGameId(IReadOnlyList<AchievementDisplayItem> bucket)

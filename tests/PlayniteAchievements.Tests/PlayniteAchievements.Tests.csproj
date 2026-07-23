@@ -75,6 +75,9 @@
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValidators.cs" Link="Source\Providers\Overrides\ProviderOverrideValidators.cs" />
     <Compile Include="..\..\source\Providers\Overrides\IProviderOverride.cs" Link="Source\Providers\Overrides\IProviderOverride.cs" />
     <Compile Include="..\..\source\Providers\PSN\PsnNpCommIdHelper.cs" Link="Source\Providers\PSN\PsnNpCommIdHelper.cs" />
+    <Compile Include="..\..\source\Providers\PSN\PsnTrophyCategoryHelper.cs" Link="Source\Providers\PSN\PsnTrophyCategoryHelper.cs" />
+    <Compile Include="..\..\source\Providers\PSN\PsnTrophyMatchHelper.cs" Link="Source\Providers\PSN\PsnTrophyMatchHelper.cs" />
+    <Compile Include="..\..\source\Providers\PSN\Models\PsnTrophyModels.cs" Link="Source\Providers\PSN\Models\PsnTrophyModels.cs" />
     <Compile Include="..\..\source\Services\Achievements\AchievementIconOverrideHelper.cs" Link="Source\Services\Achievements\AchievementIconOverrideHelper.cs" />
     <Compile Include="..\..\source\Services\Achievements\AchievementNoteHelper.cs" Link="Source\Services\Achievements\AchievementNoteHelper.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" Link="Source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" />
