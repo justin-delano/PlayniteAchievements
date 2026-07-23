@@ -3351,7 +3351,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     item.UnlockedAchievements,
                     item.TotalAchievements,
                     openManageAchievementsWindow: hasGame ? GetOpenManageAchievementsCommand(gameId) : null,
-                    sortingName: item.SortingName ?? item.GameName));
+                    sortingName: item.SortingName ?? item.GameName,
+                    categoryType: (item as CategorySummaryItem)?.CategoryType));
             }
 
             return new ObservableCollection<GameAchievementSummary>(projected);
