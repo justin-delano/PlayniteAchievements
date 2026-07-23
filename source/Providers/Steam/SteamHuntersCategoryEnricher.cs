@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Providers.Steam
     {
         internal const string BaseCategoryType = "Base";
         internal const string DlcCategoryType = "DLC";
+        internal const string UpdateCategoryType = "Update";
 
         // Enrichment is best-effort: after consecutive failed fetches, stop calling out for the
         // rest of the session (until ClearCache) so an unreachable steamhunters.com cannot stall
@@ -287,7 +288,12 @@ namespace PlayniteAchievements.Providers.Steam
                 return BaseCategoryType;
             }
 
-            return group?.DlcAppId.HasValue == true ? DlcCategoryType : BaseCategoryType;
+            // A group carrying a DlcAppId is a separate DLC product. A group without one is a
+            // post-launch update to the base game, so it belongs to both Base and Update
+            // (e.g. "Base|Update"); Combine emits canonical order (Base precedes Update).
+            return group?.DlcAppId.HasValue == true
+                ? DlcCategoryType
+                : AchievementCategoryTypeHelper.Combine(new[] { BaseCategoryType, UpdateCategoryType });
         }
 
         private Task<SteamHuntersAchievementGroupsResponse> GetGroupsAsync(
