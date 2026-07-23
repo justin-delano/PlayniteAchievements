@@ -193,8 +193,7 @@
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       Focusable="False"
-                                      IsTabStop="False"
-                                      Click="RowSelectionCheckBox_Click"/>
+                                      IsTabStop="False"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

@@ -330,6 +330,16 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             if (source is CheckBox || VisualTreeHelpers.FindVisualParent<CheckBox>(source) != null)
             {
+                // Toggle bulk-selection ourselves and consume the event so the DataGrid never runs
+                // native cell selection / BringIntoView, which scrolls (and oscillates) when the
+                // clicked row is only partially visible at the viewport edge.
+                if (VisualTreeHelpers.FindVisualParent<DataGridRow>(source)?.DataContext
+                        is ManageAchievementsCategoryItem checkItem)
+                {
+                    checkItem.IsSelected = !checkItem.IsSelected;
+                }
+
+                e.Handled = true;
                 return;
             }
 
@@ -679,16 +689,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
 
             return new List<ManageAchievementsCategoryItem> { contextItem };
-        }
-
-        private void RowSelectionCheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && checkBox.DataContext is ManageAchievementsCategoryItem item)
-            {
-                item.IsSelected = checkBox.IsChecked == true;
-            }
-
-            e.Handled = true;
         }
 
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
