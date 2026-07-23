@@ -1484,8 +1484,15 @@ namespace PlayniteAchievements.ViewModels.Items
                 categoryImageOverrides.TryGetValue(normalizedCategory, out imageOverride);
             }
 
+            // Default art is normally keyed by the provider label, but an achievement recategorized
+            // into another category (e.g. via a category merge) keeps its original provider label
+            // while its effective label now points at the target category. Probe the effective label
+            // first so every achievement in the target category resolves the target's art (rather than
+            // its old category's), then fall back to the provider label for un-merged categories,
+            // including renames where the effective label has no default file of its own.
             var artPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Art, playniteGameId) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory) ??
                 CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory);
             item.CategoryArtPath = artPath;
 
