@@ -611,6 +611,24 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Width="Auto"
+                                                MinWidth="90"
+                                                CanUserResize="False"
+                                                CanUserSort="False"
+                                                Header="{DynamicResource LOCPlayAch_Column_Merge}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="{DynamicResource LOCPlayAch_Common_Merge}"
+                                            Click="MergeCategoryButton_Click"
+                                            ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_MergeTooltip}"
+                                            IsEnabled="{Binding DataContext.CanMergeCategories, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
 

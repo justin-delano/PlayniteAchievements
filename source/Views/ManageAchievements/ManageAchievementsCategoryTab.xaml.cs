@@ -647,6 +647,56 @@ namespace PlayniteAchievements.Views.ManageAchievements
             ViewModel.SetCategoryLabelForSelection(rows, inputText);
         }
 
+        private void MergeCategoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null || !TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
+            {
+                return;
+            }
+
+            var sourceLabel = row.CategoryLabel;
+            var targetOptions = ViewModel.CategoryRows
+                .Where(candidate => candidate != null && !string.IsNullOrWhiteSpace(candidate.CategoryLabel))
+                .Select(candidate => candidate.CategoryLabel)
+                .ToList();
+
+            if (targetOptions.Count(label => !string.Equals(label, sourceLabel, StringComparison.OrdinalIgnoreCase)) == 0)
+            {
+                return;
+            }
+
+            var dialog = new MergeCategoryDialog(sourceLabel, targetOptions);
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                L("LOCPlayAch_ManageAchievements_Category_MergeDialog_Title"),
+                dialog,
+                new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = false,
+                    Width = 500,
+                    Height = 220
+                });
+
+            WindowPlacementPersistenceService.Attach(
+                window,
+                ViewModel.PlacementSettings,
+                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
+                "ManageAchievementsMergeCategoryDialog",
+                ViewModel.PlacementLogger);
+
+            dialog.RequestClose += (s, args) => window.Close();
+            window.ShowDialog();
+
+            if (dialog.DialogResult != true)
+            {
+                return;
+            }
+
+            ViewModel.MergeCategoryInto(sourceLabel, dialog.SelectedTarget);
+        }
+
         private void ClearRowsFromContext(ManageAchievementsCategoryItem contextItem)
         {
             if (ViewModel == null)
