@@ -61,6 +61,23 @@ namespace PlayniteAchievements.Tests.Services
         }
 
         [TestMethod]
+        public void Normalize_CanonicalizesUpdateAliasAndOrdersAfterBase()
+        {
+            Assert.AreEqual("Update", AchievementCategoryTypeHelper.Normalize("update"));
+            // Base precedes Update in canonical order regardless of input order.
+            Assert.AreEqual("Base|Update", AchievementCategoryTypeHelper.Combine(new[] { "Base", "Update" }));
+            Assert.AreEqual("Base|Update", AchievementCategoryTypeHelper.Normalize("update|base"));
+        }
+
+        [TestMethod]
+        public void AssignableCategoryTypes_IncludesUpdate()
+        {
+            CollectionAssert.Contains(
+                AchievementCategoryTypeHelper.AssignableCategoryTypes.ToList(),
+                "Update");
+        }
+
+        [TestMethod]
         public void AllowedCategoryTypes_IncludesDerivedTypes()
         {
             CollectionAssert.Contains(

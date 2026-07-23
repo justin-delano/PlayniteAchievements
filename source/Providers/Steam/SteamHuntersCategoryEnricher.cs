@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Providers.Steam
     {
         internal const string BaseCategoryType = "Base";
         internal const string DlcCategoryType = "DLC";
+        internal const string UpdateCategoryType = "Update";
 
         // Enrichment is best-effort: after consecutive failed fetches, stop calling out for the
         // rest of the session (until ClearCache) so an unreachable steamhunters.com cannot stall
@@ -90,9 +91,10 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         // Plans one default art file per category: (normalized category label -> Steam appId).
-        // DLC groups map to their dlcAppId; every other labeled group (the base category,
-        // update groups, collection sub-games) maps to the game's own appId so non-DLC
-        // categories share the base banner. Dedupe is first-wins by label to match the
+        // Any group carrying a DlcAppId (a DLC launch or a DLC update) maps to that dlcAppId;
+        // every other labeled group (the base category, base-game update groups, collection
+        // sub-games) maps to the game's own appId so non-DLC categories share the base banner.
+        // Dedupe is first-wins by label to match the
         // assignment order in ApplyGroups, with the base entry first so a DLC label
         // colliding with the game name cannot hijack it.
         internal static IReadOnlyList<KeyValuePair<string, int>> BuildCategoryImagePlan(
@@ -119,7 +121,11 @@ namespace PlayniteAchievements.Providers.Steam
 
             foreach (var group in groups)
             {
-                var isDlc = string.Equals(ResolveCategoryType(groupBy, group), DlcCategoryType, StringComparison.Ordinal) &&
+                // DLC art comes from the DLC's own appId whenever a group carries one -- launch or
+                // update alike -- while the "game" grouping mode always uses the base banner. Keyed
+                // on the DlcAppId signal directly so DLC-update groups ("DLC|Update") still map to
+                // the DLC rather than falling back to the base game.
+                var isDlc = !string.Equals(groupBy, "game", StringComparison.OrdinalIgnoreCase) &&
                             group?.DlcAppId > 0;
                 var entryAppId = isDlc ? group.DlcAppId.Value : appId;
                 if (entryAppId <= 0)
@@ -287,7 +293,15 @@ namespace PlayniteAchievements.Providers.Steam
                 return BaseCategoryType;
             }
 
-            return group?.DlcAppId.HasValue == true ? DlcCategoryType : BaseCategoryType;
+            // Two independent signals. A DlcAppId means the achievements belong to a separate
+            // DLC product (DLC) rather than the base game (Base). A group Name means they were
+            // added by a post-launch update (Update). So a DLC that received an update types as
+            // "DLC|Update" and a base-game update as "Base|Update"; Combine emits canonical order
+            // (Base/DLC precede Update).
+            var ownerType = group?.DlcAppId.HasValue == true ? DlcCategoryType : BaseCategoryType;
+            return string.IsNullOrWhiteSpace(group?.Name)
+                ? ownerType
+                : AchievementCategoryTypeHelper.Combine(new[] { ownerType, UpdateCategoryType });
         }
 
         private Task<SteamHuntersAchievementGroupsResponse> GetGroupsAsync(

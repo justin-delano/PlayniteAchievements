@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Steam.Tests
         {
             // Mirrors Starfield/Atomic Heart ordering: the DLC group (has DlcAppId) comes
             // first in the array, and the update group (no DlcAppId) comes after. Position
-            // must not matter -- only DlcAppId presence should decide Base vs DLC.
+            // must not matter -- only DlcAppId presence should decide Base+Update vs DLC.
             var achievements = new List<AchievementDetail>
             {
                 new AchievementDetail { ApiName = "dlc_ach" },
@@ -39,10 +39,47 @@ namespace PlayniteAchievements.Steam.Tests
 
             Assert.AreEqual("DLC", achievements[0].CategoryType);
             Assert.AreEqual("Expansion", achievements[0].Category);
-            Assert.AreEqual("Base", achievements[1].CategoryType);
+            Assert.AreEqual("Base|Update", achievements[1].CategoryType);
             Assert.AreEqual("Update #1", achievements[1].Category);
             Assert.AreEqual("Base", achievements[2].CategoryType);
             Assert.AreEqual("My Game", achievements[2].Category);
+        }
+
+        [TestMethod]
+        public void ApplyGroups_DlcUpdate_TypesAsDlcAndUpdate()
+        {
+            // Mirrors The Binding of Isaac: a DLC group with no Name is the DLC launch set
+            // (DLC), while a group carrying BOTH a DlcAppId and a Name (e.g. "Booster Pack #5")
+            // is a post-launch update to that DLC and types as "DLC|Update". The two signals
+            // are independent: DlcAppId -> DLC vs Base, Name -> Update.
+            var achievements = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "dlc_launch" },
+                new AchievementDetail { ApiName = "dlc_update" }
+            };
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 570660,
+                    DlcAppName = "Expansion",
+                    AchievementApiNames = new List<string> { "dlc_launch" }
+                },
+                new SteamHuntersAchievementGroup
+                {
+                    Name = "Booster Pack #5",
+                    DlcAppId = 570660,
+                    DlcAppName = "Expansion",
+                    AchievementApiNames = new List<string> { "dlc_update" }
+                }
+            };
+
+            SteamHuntersCategoryEnricher.ApplyGroups(achievements, groups, "dlcandupdate", "My Game");
+
+            Assert.AreEqual("DLC", achievements[0].CategoryType);
+            Assert.AreEqual("Expansion", achievements[0].Category);
+            Assert.AreEqual("DLC|Update", achievements[1].CategoryType);
+            Assert.AreEqual("Booster Pack #5", achievements[1].Category);
         }
 
         [TestMethod]
@@ -224,6 +261,38 @@ namespace PlayniteAchievements.Steam.Tests
             Assert.AreEqual(2138330, plan[1].Value);
             Assert.AreEqual("Update #1", plan[2].Key);
             Assert.AreEqual(1091500, plan[2].Value);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_DlcUpdateGroups_MapToDlcAppId()
+        {
+            // A DLC-update group (DlcAppId + Name) must still pull the DLC's banner, not the
+            // base game's -- art keys on the DlcAppId signal, independent of the update Name.
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 570660,
+                    DlcAppName = "Expansion"
+                },
+                new SteamHuntersAchievementGroup
+                {
+                    Name = "Booster Pack #5",
+                    DlcAppId = 570660,
+                    DlcAppName = "Expansion"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
+                groups, "dlcandupdate", "My Game", appId: 250900);
+
+            Assert.AreEqual(3, plan.Count);
+            Assert.AreEqual("My Game", plan[0].Key);
+            Assert.AreEqual(250900, plan[0].Value);
+            Assert.AreEqual("Expansion", plan[1].Key);
+            Assert.AreEqual(570660, plan[1].Value);
+            Assert.AreEqual("Booster Pack #5", plan[2].Key);
+            Assert.AreEqual(570660, plan[2].Value);
         }
 
         [TestMethod]
