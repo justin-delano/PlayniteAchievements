@@ -44,6 +44,23 @@ namespace PlayniteAchievements.Tests.Services
         }
 
         [TestMethod]
+        public void Normalize_CanonicalizesSubsetAliasAndOrdersBeforeUnlockMode()
+        {
+            Assert.AreEqual("Subset", AchievementCategoryTypeHelper.Normalize("subset"));
+            // Subset precedes Hardcore/Softcore in canonical order regardless of input order.
+            Assert.AreEqual("Subset|Hardcore", AchievementCategoryTypeHelper.Normalize("hardcore|subset"));
+            Assert.AreEqual("Subset|Softcore", AchievementCategoryTypeHelper.Combine(new[] { "Subset", "Softcore" }));
+        }
+
+        [TestMethod]
+        public void AssignableCategoryTypes_IncludesSubset()
+        {
+            CollectionAssert.Contains(
+                AchievementCategoryTypeHelper.AssignableCategoryTypes.ToList(),
+                "Subset");
+        }
+
+        [TestMethod]
         public void AllowedCategoryTypes_IncludesDerivedTypes()
         {
             CollectionAssert.Contains(

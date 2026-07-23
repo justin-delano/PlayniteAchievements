@@ -455,7 +455,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                         subsetInfo,
                                         raSettings.RaRarityStats,
                                         categoryLabel: categoryLabel,
-                                        enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment);
+                                        enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment,
+                                        isSubset: true);
 
                                     _logger?.Info($"[RA] Parsed {subsetAchievements.Count} achievements for subset '{subset.Title}' (category={categoryLabel}).");
 

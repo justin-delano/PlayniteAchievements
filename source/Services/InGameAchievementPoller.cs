@@ -662,6 +662,15 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
+            // Polling issues automatic Single/multi-game refreshes, which bypass user exclusions;
+            // an excluded game must not be refreshed while it runs, so gate it here.
+            if (game != null &&
+                GameCustomDataLookup.GetExcludedRefreshGameIds(persisted)?.Contains(game.Id) == true)
+            {
+                if (logReason) _logger?.Debug($"[InGamePolling] Skipped: {game.Name} is excluded from refreshes.");
+                return false;
+            }
+
             return true;
         }
 
