@@ -1441,6 +1441,11 @@ namespace PlayniteAchievements.ViewModels
                 {
                     var nowUtc = DateTime.UtcNow;
 
+                    // Keep the display platform in sync so the game attributes to its real platform
+                    // (e.g. Steam/PSN) instead of "Manual" right after a window edit, without waiting
+                    // for a full provider refresh. Null (unresolvable slug) mirrors provider behavior.
+                    cachedData.ProviderPlatformKey = _source?.ResolveProviderPlatformKey(link.SourceGameId);
+
                     // Reset then re-apply through the shared resolver, so the cached unlocked set
                     // exactly reflects the just-saved link (and never carries stale unlocks).
                     foreach (var achievement in cachedData.Achievements)
