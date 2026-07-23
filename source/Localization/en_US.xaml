@@ -250,6 +250,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Singleplayer">Singleplayer</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Softcore">Softcore</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Stackable">Stackable</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Subset">Subset</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel">Category Type</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Header">Custom Achievement Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">Set optional unlocked and locked icon overrides for this game's achievements. Drag in image links or files, or browse for a file.</sys:String>
