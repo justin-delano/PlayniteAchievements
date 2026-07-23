@@ -972,49 +972,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             var categoryOverrideMap = GetCurrentCategoryOverrideMap();
-            var changed = false;
-            var affectedCount = 0;
-
-            foreach (var item in _allRows.Where(row => row != null))
-            {
-                var apiName = (item.ApiName ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(apiName))
-                {
-                    continue;
-                }
-
-                var effectiveCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.Category);
-                if (!string.Equals(effectiveCategory, normalizedSourceCategory, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                affectedCount++;
-                var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.ProviderCategory);
-                if (string.Equals(providerCategory, normalizedTargetCategory, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (categoryOverrideMap.Remove(apiName))
-                    {
-                        changed = true;
-                    }
-
-                    continue;
-                }
-
-                if (!categoryOverrideMap.TryGetValue(apiName, out var existingCategory) ||
-                    !string.Equals(existingCategory, normalizedTargetCategory, StringComparison.Ordinal))
-                {
-                    categoryOverrideMap[apiName] = normalizedTargetCategory;
-                    changed = true;
-                }
-            }
-
-            if (affectedCount == 0)
-            {
-                return false;
-            }
-
-            if (!changed)
+            if (!ReassignEffectiveCategoryRows(
+                    normalizedSourceCategory,
+                    normalizedTargetCategory,
+                    categoryOverrideMap,
+                    categoryTypeOverrideMap: null,
+                    targetGroupTypes: null))
             {
                 return false;
             }
@@ -1025,6 +988,168 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ApplyCategoryOverrideMapsToRows(categoryOverrideMap, categoryTypeOverrideMap);
             RefreshCategoryRows();
             return true;
+        }
+
+        /// <summary>
+        /// Folds every achievement in <paramref name="sourceCategoryLabel"/> into
+        /// <paramref name="targetCategoryLabel"/>: re-labels them to the target and replaces their
+        /// group-based type tags (Base/DLC/Update/Subset) with the target category's, preserving all
+        /// other type tags. If the source category was the game-summary-art source, that selection is
+        /// reset; the target category's own state is left untouched.
+        /// </summary>
+        public bool MergeCategoryInto(string sourceCategoryLabel, string targetCategoryLabel)
+        {
+            var normalizedSourceCategory = AchievementCategoryTypeHelper.NormalizeCategory(sourceCategoryLabel);
+            if (string.IsNullOrWhiteSpace(normalizedSourceCategory))
+            {
+                return false;
+            }
+
+            var normalizedTargetCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(targetCategoryLabel);
+            if (string.IsNullOrWhiteSpace(normalizedTargetCategory) ||
+                string.Equals(normalizedSourceCategory, normalizedTargetCategory, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var targetGroupTypes = ResolveGroupTypesForCategory(normalizedTargetCategory);
+
+            var categoryOverrideMap = GetCurrentCategoryOverrideMap();
+            var categoryTypeOverrideMap = GetCurrentCategoryTypeOverrideMap();
+            if (!ReassignEffectiveCategoryRows(
+                    normalizedSourceCategory,
+                    normalizedTargetCategory,
+                    categoryOverrideMap,
+                    categoryTypeOverrideMap,
+                    targetGroupTypes))
+            {
+                return false;
+            }
+
+            PersistCategoryOverrideMaps(categoryOverrideMap, categoryTypeOverrideMap);
+            MergeCategoryMetadata(normalizedSourceCategory, normalizedTargetCategory);
+            ApplyCategoryOverrideMapsToRows(categoryOverrideMap, categoryTypeOverrideMap);
+            RefreshCategoryRows();
+            return true;
+        }
+
+        /// <summary>
+        /// Re-points every achievement whose effective category equals <paramref name="normalizedSource"/>
+        /// to <paramref name="normalizedTarget"/> in <paramref name="categoryOverrideMap"/>. When
+        /// <paramref name="categoryTypeOverrideMap"/> is non-null (merge), also replaces each moved
+        /// achievement's group-based type tags with <paramref name="targetGroupTypes"/>. An override is
+        /// removed rather than set when the resulting value matches the achievement's provider default.
+        /// Returns true when at least one achievement was affected and something changed.
+        /// </summary>
+        private bool ReassignEffectiveCategoryRows(
+            string normalizedSource,
+            string normalizedTarget,
+            Dictionary<string, string> categoryOverrideMap,
+            Dictionary<string, string> categoryTypeOverrideMap,
+            IReadOnlyList<string> targetGroupTypes)
+        {
+            var affectedCount = 0;
+            var changed = false;
+
+            foreach (var item in _allRows.Where(row => row != null))
+            {
+                var apiName = (item.ApiName ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                var effectiveCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.Category);
+                if (!string.Equals(effectiveCategory, normalizedSource, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                affectedCount++;
+
+                var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.ProviderCategory);
+                if (string.Equals(providerCategory, normalizedTarget, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (categoryOverrideMap.Remove(apiName))
+                    {
+                        changed = true;
+                    }
+                }
+                else if (!categoryOverrideMap.TryGetValue(apiName, out var existingCategory) ||
+                         !string.Equals(existingCategory, normalizedTarget, StringComparison.Ordinal))
+                {
+                    categoryOverrideMap[apiName] = normalizedTarget;
+                    changed = true;
+                }
+
+                if (categoryTypeOverrideMap == null)
+                {
+                    continue;
+                }
+
+                var newType = AchievementCategoryTypeHelper.NormalizeOrDefault(
+                    AchievementCategoryTypeHelper.ReplaceGroupTypes(item.CategoryType, targetGroupTypes));
+                var providerType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.ProviderCategoryType);
+                if (string.Equals(newType, providerType, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (categoryTypeOverrideMap.Remove(apiName))
+                    {
+                        changed = true;
+                    }
+                }
+                else if (!categoryTypeOverrideMap.TryGetValue(apiName, out var existingType) ||
+                         !string.Equals(existingType, newType, StringComparison.Ordinal))
+                {
+                    categoryTypeOverrideMap[apiName] = newType;
+                    changed = true;
+                }
+            }
+
+            return affectedCount > 0 && changed;
+        }
+
+        /// <summary>
+        /// The group-based type signature (Base/DLC/Update/Subset) shared by the achievements currently
+        /// in <paramref name="targetLabel"/>, picking the most common signature so a coherent single
+        /// group wins (never Base+DLC). Empty when the target category carries no group-based type.
+        /// </summary>
+        private IReadOnlyList<string> ResolveGroupTypesForCategory(string targetLabel)
+        {
+            var normalizedTarget = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(targetLabel);
+
+            var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+            var bySignature = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+            foreach (var item in _allRows.Where(row => row != null))
+            {
+                var effectiveCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.Category);
+                if (!string.Equals(effectiveCategory, normalizedTarget, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var group = AchievementCategoryTypeHelper.GetGroupTypeComponents(item.CategoryType);
+                var signature = string.Join("|", group);
+                counts.TryGetValue(signature, out var count);
+                counts[signature] = count + 1;
+                if (!bySignature.ContainsKey(signature))
+                {
+                    bySignature[signature] = group;
+                }
+            }
+
+            if (counts.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var bestSignature = counts
+                .OrderByDescending(pair => pair.Value)
+                .ThenBy(pair => pair.Key, StringComparer.Ordinal)
+                .First()
+                .Key;
+
+            return bySignature[bestSignature];
         }
 
         public bool ApplyCategoryRenameOverride(ManageAchievementsCategoryMetadataItem row)
@@ -1467,6 +1592,74 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     Label = normalizedTarget,
                     ProviderLabel = summaryCategory.ProviderLabel
                 };
+            }
+
+            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, nextOrder, nextImages, summaryCategory);
+            RaiseCategoryMetadataPersisted();
+        }
+
+        private void MergeCategoryMetadata(string sourceCategory, string targetCategory)
+        {
+            var normalizedSource = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(sourceCategory);
+            var normalizedTarget = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(targetCategory);
+            if (string.IsNullOrWhiteSpace(normalizedSource) ||
+                string.IsNullOrWhiteSpace(normalizedTarget) ||
+                string.Equals(normalizedSource, normalizedTarget, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var currentOrder = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
+            var currentImages = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
+
+            // Collapse the source's order slot onto the target's existing position (dedupe).
+            var nextOrder = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var label in currentOrder ?? Enumerable.Empty<string>())
+            {
+                var normalized = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(label);
+                if (string.IsNullOrWhiteSpace(normalized))
+                {
+                    continue;
+                }
+
+                if (string.Equals(normalized, normalizedSource, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalizedTarget;
+                }
+
+                if (seen.Add(normalized))
+                {
+                    nextOrder.Add(normalized);
+                }
+            }
+
+            // Drop the source's per-category art override. Unlike the rename path, a merge does not
+            // fold the source's art into the target: the target is left exactly as it was.
+            var nextImages = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in currentImages ?? new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase))
+            {
+                var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(key) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                if (string.Equals(key, normalizedSource, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                nextImages[key] = pair.Value.Clone();
+            }
+
+            // Reset the game-summary-art selection when the merged-away source held it; leave any
+            // other selection (including the target's) untouched.
+            var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
+            if (summaryCategory != null &&
+                string.Equals(summaryCategory.Label, normalizedSource, StringComparison.OrdinalIgnoreCase))
+            {
+                summaryCategory = null;
             }
 
             _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, nextOrder, nextImages, summaryCategory);
