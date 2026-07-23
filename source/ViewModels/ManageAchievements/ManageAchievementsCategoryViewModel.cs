@@ -124,6 +124,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             private set => SetValue(ref _hasAchievements, value);
         }
 
+        /// <summary>
+        /// True when there is more than one category, so a category can be merged into another.
+        /// </summary>
+        public bool CanMergeCategories => CategoryRows.Count > 1;
+
+        internal Models.Settings.PersistedSettings PlacementSettings => _settings?.Persisted;
+
+        internal ILogger PlacementLogger => _logger;
+
         public string SearchText
         {
             get => _searchText;
@@ -1280,6 +1289,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             RefreshCategoryMetadataState();
+            OnPropertyChanged(nameof(CanMergeCategories));
         }
 
         private void CategoryMetadataRow_PropertyChanged(object sender, PropertyChangedEventArgs e)
