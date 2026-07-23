@@ -41,6 +41,19 @@ namespace PlayniteAchievements.Services.Achievements
                 HardcoreCategoryType
             };
 
+        // Category types derived from an achievement's provider group/subset membership (which
+        // set/DLC/subset it belongs to), as opposed to intrinsic attributes (Missable, Stackable,
+        // Difficulty, ...) or state-derived types (Softcore/Hardcore). A category merge replaces
+        // these with the target category's group tags while preserving the rest.
+        private static readonly HashSet<string> GroupBasedCategoryTypes =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Base",
+                "DLC",
+                "Update",
+                "Subset"
+            };
+
         private const int NormalizeCacheCapacity = 512;
 
         private static readonly ConcurrentDictionary<string, string> NormalizeOrDefaultCache =
@@ -135,6 +148,46 @@ namespace PlayniteAchievements.Services.Achievements
             }
 
             return Normalize(string.Join("|", categoryTypes));
+        }
+
+        /// <summary>
+        /// The group-based components (Base/DLC/Update/Subset) of a category type value, in
+        /// canonical order. These describe which provider group/subset an achievement belongs to.
+        /// </summary>
+        public static IReadOnlyList<string> GetGroupTypeComponents(string rawValue)
+        {
+            return ParseValues(rawValue)
+                .Where(GroupBasedCategoryTypes.Contains)
+                .ToList();
+        }
+
+        /// <summary>
+        /// The non-group components of a category type value (everything except Base/DLC/Update/
+        /// Subset), in canonical order. These are preserved when an achievement is merged into
+        /// another category.
+        /// </summary>
+        public static IReadOnlyList<string> GetNonGroupTypeComponents(string rawValue)
+        {
+            return ParseValues(rawValue)
+                .Where(value => !GroupBasedCategoryTypes.Contains(value))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Replaces the group-based components of <paramref name="achievementType"/> with
+        /// <paramref name="targetGroupComponents"/>, preserving all non-group components. An empty
+        /// or null target drops the group tags entirely. Normalizes to <see cref="DefaultCategoryType"/>
+        /// when nothing remains.
+        /// </summary>
+        public static string ReplaceGroupTypes(string achievementType, IEnumerable<string> targetGroupComponents)
+        {
+            var preserved = GetNonGroupTypeComponents(achievementType);
+            var group = (targetGroupComponents ?? Enumerable.Empty<string>())
+                .SelectMany(ParseValues)
+                .Where(GroupBasedCategoryTypes.Contains);
+
+            var combined = Combine(group.Concat(preserved));
+            return string.IsNullOrWhiteSpace(combined) ? DefaultCategoryType : combined;
         }
 
         public static List<string> ParseValues(string rawValue)
