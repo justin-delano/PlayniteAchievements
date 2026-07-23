@@ -193,6 +193,45 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.IsTrue(context.Settings.ModernTheme.HasCategorySummaries);
         }
 
+        [TestMethod]
+        public void PopulateSingleGameDataSync_ProjectsGroupTypeFlagsPerCategory()
+        {
+            using var context = CreateServiceContext();
+            var gameId = Guid.NewGuid();
+            SeedGame(
+                context,
+                gameId,
+                Achievement("Base One", "Base", unlocked: true, unlockTimeUtc: Utc(2026, 3, 1, 9, 0, 0), categoryType: "Base"),
+                Achievement("Base Two", "Base", unlocked: false, categoryType: "Base"),
+                Achievement("Bonus One", "Bonus Set", unlocked: true, unlockTimeUtc: Utc(2026, 3, 2, 9, 0, 0), categoryType: "Subset"),
+                Achievement("DLC One", "Frozen Wilds", unlocked: false, categoryType: "DLC"),
+                Achievement("Plain One", "Extras", unlocked: false));
+
+            context.Service.PopulateSingleGameDataSync(gameId);
+
+            var summaries = context.Settings.ModernTheme.DynamicCategorySummaries;
+
+            var baseCard = FindByName(summaries, "Base");
+            Assert.IsTrue(baseCard.IsBaseCategory);
+            Assert.IsFalse(baseCard.IsDlcCategory);
+            Assert.IsFalse(baseCard.IsSubsetCategory);
+            Assert.IsFalse(baseCard.IsUpdateCategory);
+
+            var subsetCard = FindByName(summaries, "Bonus Set");
+            Assert.IsTrue(subsetCard.IsSubsetCategory);
+            Assert.IsFalse(subsetCard.IsBaseCategory);
+
+            var dlcCard = FindByName(summaries, "Frozen Wilds");
+            Assert.IsTrue(dlcCard.IsDlcCategory);
+            Assert.IsFalse(dlcCard.IsBaseCategory);
+
+            var plainCard = FindByName(summaries, "Extras");
+            Assert.IsFalse(plainCard.IsBaseCategory);
+            Assert.IsFalse(plainCard.IsDlcCategory);
+            Assert.IsFalse(plainCard.IsSubsetCategory);
+            Assert.IsFalse(plainCard.IsUpdateCategory);
+        }
+
         private static ServiceTestContext CreateServiceContext()
         {
             var settings = new PlayniteAchievementsSettings();
@@ -240,13 +279,15 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             string category,
             bool unlocked,
             double? percent = null,
-            DateTime? unlockTimeUtc = null)
+            DateTime? unlockTimeUtc = null,
+            string categoryType = null)
         {
             return new AchievementDetail
             {
                 ApiName = name,
                 DisplayName = name,
                 Category = category,
+                CategoryType = categoryType,
                 Unlocked = unlocked,
                 GlobalPercentUnlocked = percent,
                 Rarity = percent.HasValue
