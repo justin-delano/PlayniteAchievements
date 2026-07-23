@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Steam.Tests
         {
             // Mirrors Starfield/Atomic Heart ordering: the DLC group (has DlcAppId) comes
             // first in the array, and the update group (no DlcAppId) comes after. Position
-            // must not matter -- only DlcAppId presence should decide Base vs DLC.
+            // must not matter -- only DlcAppId presence should decide Base+Update vs DLC.
             var achievements = new List<AchievementDetail>
             {
                 new AchievementDetail { ApiName = "dlc_ach" },
@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Steam.Tests
 
             Assert.AreEqual("DLC", achievements[0].CategoryType);
             Assert.AreEqual("Expansion", achievements[0].Category);
-            Assert.AreEqual("Base", achievements[1].CategoryType);
+            Assert.AreEqual("Base|Update", achievements[1].CategoryType);
             Assert.AreEqual("Update #1", achievements[1].Category);
             Assert.AreEqual("Base", achievements[2].CategoryType);
             Assert.AreEqual("My Game", achievements[2].Category);
