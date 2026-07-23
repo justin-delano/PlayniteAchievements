@@ -1539,6 +1539,19 @@ namespace PlayniteAchievements
                         .Distinct()
                         .ToList() ?? new List<Guid>();
 
+                    // The GameIds path bypasses user exclusions so a manual multi-select menu
+                    // refresh can force excluded games; this auto-refresh of newly added games is
+                    // not user-initiated, so drop excluded games before requesting the refresh.
+                    var excludedGameIds = GameCustomDataLookup.GetExcludedRefreshGameIds(
+                        _settingsViewModel?.Settings?.Persisted,
+                        _gameCustomDataStore);
+                    if (excludedGameIds?.Count > 0)
+                    {
+                        validGameIds = validGameIds
+                            .Where(id => !excludedGameIds.Contains(id))
+                            .ToList();
+                    }
+
                     if (validGameIds.Count == 0)
                     {
                         return;
