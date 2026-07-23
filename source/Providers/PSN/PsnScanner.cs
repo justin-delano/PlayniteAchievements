@@ -237,8 +237,8 @@ namespace PlayniteAchievements.Providers.PSN
                     DisplayName = detail.TrophyName,
                     Description = detail.TrophyDetail,
                     UnlockedIconPath = detail.TrophyIconUrl,
-                    CategoryType = MapTrophyGroupToCategoryType(detail.TrophyGroupId),
-                    Category = ResolveCategory(detail.TrophyGroupId, groupNameById),
+                    CategoryType = PsnTrophyCategoryHelper.MapTrophyGroupToCategoryType(detail.TrophyGroupId),
+                    Category = PsnTrophyCategoryHelper.ResolveCategory(detail.TrophyGroupId, groupNameById),
                     Hidden = detail.Hidden,
                     Unlocked = unlocked,
                     UnlockTimeUtc = unlockUtc,
@@ -434,45 +434,6 @@ namespace PlayniteAchievements.Providers.PSN
             }
 
             return map;
-        }
-
-        /// <summary>
-        /// Resolves the free-text category label for a trophy from its group. The base/default group
-        /// maps to null (rendered as the localized "Default" label by the hydrator, consistent with
-        /// the Category=null convention); only DLC groups take a named label from the group title.
-        /// </summary>
-        internal static string ResolveCategory(
-            string trophyGroupId,
-            IReadOnlyDictionary<string, string> groupNameById)
-        {
-            if (string.Equals(MapTrophyGroupToCategoryType(trophyGroupId), "Base", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            var key = PsnTrophyMatchHelper.NormalizeGroupId(trophyGroupId);
-            if (groupNameById != null &&
-                groupNameById.TryGetValue(key, out var name) &&
-                !string.IsNullOrWhiteSpace(name))
-            {
-                return name.Trim();
-            }
-
-            return null;
-        }
-
-        private static string MapTrophyGroupToCategoryType(string trophyGroupId)
-        {
-            var normalized = (trophyGroupId ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(normalized) ||
-                string.Equals(normalized, "default", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(normalized, "base", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(normalized, "000", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Base";
-            }
-
-            return "DLC";
         }
 
         private static double? NormalizePercent(double? rawPercent)
