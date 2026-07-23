@@ -247,6 +247,12 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
+        public bool IsExcludedFromSummaries(Guid playniteGameId) =>
+            GameCustomDataLookup.IsExcludedFromSummaries(playniteGameId, null, _gameCustomDataStore);
+
+        public bool IsExcludedFromRefreshes(Guid playniteGameId) =>
+            GameCustomDataLookup.IsExcludedFromRefreshes(playniteGameId, null, _gameCustomDataStore);
+
         public void SetExcludedFromSummaries(Guid playniteGameId, bool excluded)
         {
             if (playniteGameId == Guid.Empty)
