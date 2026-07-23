@@ -98,5 +98,80 @@ namespace PlayniteAchievements.Tests.Services
             CollectionAssert.DoesNotContain(assignable, AchievementCategoryTypeHelper.SoftcoreCategoryType);
             CollectionAssert.Contains(assignable, "Base");
         }
+
+        [TestMethod]
+        public void GetGroupTypeComponents_ReturnsOnlyGroupTypesInCanonicalOrder()
+        {
+            CollectionAssert.AreEqual(
+                new[] { "DLC", "Update" },
+                AchievementCategoryTypeHelper.GetGroupTypeComponents("update|missable|dlc").ToList());
+            Assert.AreEqual(0, AchievementCategoryTypeHelper.GetGroupTypeComponents("Missable|Hardcore").Count);
+        }
+
+        [TestMethod]
+        public void GetNonGroupTypeComponents_ExcludesGroupTypes()
+        {
+            CollectionAssert.AreEqual(
+                new[] { "Missable", "Hardcore" },
+                AchievementCategoryTypeHelper.GetNonGroupTypeComponents("DLC|Missable|Hardcore").ToList());
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_ReplacesGroupTagAndPreservesNonGroupTypes()
+        {
+            // DLC replaced by Base; Missable preserved; canonical order enforced.
+            Assert.AreEqual(
+                "Base|Missable",
+                AchievementCategoryTypeHelper.ReplaceGroupTypes("DLC|Missable", new[] { "Base" }));
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_NeverProducesConflictingGroupTags()
+        {
+            // Base is dropped, not unioned, so the result is DLC (plus preserved Hardcore) - never Base|DLC.
+            var result = AchievementCategoryTypeHelper.ReplaceGroupTypes("Base|Hardcore", new[] { "DLC" });
+            Assert.AreEqual("DLC|Hardcore", result);
+            CollectionAssert.DoesNotContain(AchievementCategoryTypeHelper.ParseValues(result), "Base");
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_MultiValueTargetGroupIsApplied()
+        {
+            Assert.AreEqual(
+                "DLC|Update|Missable",
+                AchievementCategoryTypeHelper.ReplaceGroupTypes("Subset|Missable", new[] { "DLC", "Update" }));
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_EmptyTargetClearsGroupTagKeepingOthers()
+        {
+            Assert.AreEqual(
+                "Missable",
+                AchievementCategoryTypeHelper.ReplaceGroupTypes("DLC|Missable", System.Array.Empty<string>()));
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_EmptyTargetOnGroupOnlyTypeYieldsDefault()
+        {
+            Assert.AreEqual(
+                "Default",
+                AchievementCategoryTypeHelper.ReplaceGroupTypes("DLC", null));
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_PreservesDerivedUnlockModeTypes()
+        {
+            Assert.AreEqual(
+                "Base|Softcore",
+                AchievementCategoryTypeHelper.ReplaceGroupTypes("Subset|Softcore", new[] { "Base" }));
+        }
+
+        [TestMethod]
+        public void ReplaceGroupTypes_NullAchievementTypeAdoptsTargetGroup()
+        {
+            Assert.AreEqual(
+                "Base",
+                AchievementCategoryTypeHelper.ReplaceGroupTypes(null, new[] { "Base" }));
+        }
     }
 }
