@@ -24,18 +24,15 @@ namespace PlayniteAchievements.Providers.PSN
             return "DLC";
         }
 
-        // Resolves the free-text category label for a trophy from its group. The base/default group
-        // maps to null (rendered as the localized "Default" label by the hydrator, consistent with the
-        // Category=null convention); only DLC groups take a named label from the group title.
+        // Resolves the free-text category label for a trophy from its group title. Every group
+        // (including the base/default group, whose title is typically the game name) takes its own
+        // label; a group with no resolvable title returns null, which the hydrator renders as the
+        // localized "Default" label. The base group stays typed Base via MapTrophyGroupToCategoryType,
+        // independent of its label.
         internal static string ResolveCategory(
             string trophyGroupId,
             IReadOnlyDictionary<string, string> groupNameById)
         {
-            if (string.Equals(MapTrophyGroupToCategoryType(trophyGroupId), "Base", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
             var key = PsnTrophyMatchHelper.NormalizeGroupId(trophyGroupId);
             if (groupNameById != null &&
                 groupNameById.TryGetValue(key, out var name) &&

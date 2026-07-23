@@ -23,11 +23,10 @@ namespace PlayniteAchievements.Tests.Providers
         [DataRow("")]
         [DataRow("   ")]
         [DataRow("default")]
-        [DataRow("base")]
-        [DataRow("000")]
-        public void ResolveCategory_BaseGroup_ReturnsNull(string groupId)
+        public void ResolveCategory_BaseGroup_ReturnsGroupTitle(string groupId)
         {
-            Assert.IsNull(PsnTrophyCategoryHelper.ResolveCategory(groupId, Groups()));
+            // The base/default group (id normalizes to "default") takes its own title, like DLC groups.
+            Assert.AreEqual("Base Game", PsnTrophyCategoryHelper.ResolveCategory(groupId, Groups()));
         }
 
         [TestMethod]
