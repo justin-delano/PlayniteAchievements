@@ -879,6 +879,79 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return true;
         }
 
+        public bool SetCategoryTypeForSelection(
+            IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
+            string categoryType,
+            bool isSelected)
+        {
+            if (selectedRows == null || selectedRows.Count == 0)
+            {
+                return false;
+            }
+
+            var normalizedType = AchievementCategoryTypeHelper.Normalize(categoryType);
+            if (string.IsNullOrWhiteSpace(normalizedType))
+            {
+                return false;
+            }
+
+            var categoryTypeOverrideMap = GetCurrentCategoryTypeOverrideMap();
+            var categoryTypeChanged = false;
+
+            foreach (var item in selectedRows.Where(row => row != null))
+            {
+                var apiName = (item.ApiName ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                var currentEffectiveCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType);
+                var tokens = AchievementCategoryTypeHelper.ParseValues(currentEffectiveCategoryType)
+                    .Where(value => !string.Equals(value, normalizedType, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (isSelected)
+                {
+                    tokens.Add(normalizedType);
+                }
+
+                var updatedCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(
+                    AchievementCategoryTypeHelper.Combine(tokens));
+
+                if (string.Equals(updatedCategoryType, currentEffectiveCategoryType, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var providerCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.ProviderCategoryType);
+                if (string.Equals(updatedCategoryType, providerCategoryType, StringComparison.Ordinal))
+                {
+                    // Result matches the provider value: drop the override so the row is no
+                    // longer flagged as customized.
+                    if (categoryTypeOverrideMap.Remove(apiName))
+                    {
+                        categoryTypeChanged = true;
+                    }
+                }
+                else if (!categoryTypeOverrideMap.TryGetValue(apiName, out var existingCategoryType) ||
+                         !string.Equals(existingCategoryType, updatedCategoryType, StringComparison.Ordinal))
+                {
+                    categoryTypeOverrideMap[apiName] = updatedCategoryType;
+                    categoryTypeChanged = true;
+                }
+            }
+
+            if (!categoryTypeChanged)
+            {
+                return false;
+            }
+
+            var categoryOverrideMap = GetCurrentCategoryOverrideMap();
+            PersistCategoryOverrideMaps(categoryOverrideMap, categoryTypeOverrideMap);
+            ApplyCategoryOverrideMapsToRows(categoryOverrideMap, categoryTypeOverrideMap);
+            return true;
+        }
+
         public bool SetCategoryLabelForSelection(
             IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
             string categoryLabel)
