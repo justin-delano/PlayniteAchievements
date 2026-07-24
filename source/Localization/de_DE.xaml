@@ -44,7 +44,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Label_Type">Typ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastUnlock">Freischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Locked">Gesperrt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Merge">Merge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Merge">Zusammenführen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NewLabel">Neue Bezeichnung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">Keine zwischengespeicherten Erfolge für dieses Spiel vorhanden.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Noch keine Erfolgsdaten verfügbar. Aktualisierung für Datenabgleich ausführen.</sys:String>
@@ -137,8 +137,8 @@ Der erste Rang ist Bronze V, gefolgt von Bronze IV, weiter über die Ränge Silb
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">Screenshots</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">Aufnahmen</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Kategoriegrafik</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Für Übersichten</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Merge">Merge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Übersichtsgrafik</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Merge">Zusammenführen</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -256,10 +256,10 @@ Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeichert
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Hint">Erfolgskategorien für dieses Spiel festlegen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">Kategoriebezeichnung für ausgewählte Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">Umbenennung, Bildzuweisung und Reihenfolge von Kategorien.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Hint">Move all achievements from this category into another. Group-based types (Base, DLC, Update, Subset) are inherited from the target; other types are kept.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Merge into</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Hint">Verschiebung alle Erfolge dieser Kategorie in eine andere. Gruppenbasierte Typen der Zielkategorie (Basis, DLC, Update, Subset) werden übernommen; davon abweichende bleiben erhalten.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Zielkategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Title">Kategorie zusammenführen</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Diese Kategorie mit einer andern zusammenführen. Erfolge werden in das Zusammenführungsziel verschoben.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Diese Kategorie mit einer anderen zusammenführen und Erfolge verschieben.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_RenameDialog_Hint">Bestehende Bezeichnung auswählen und neuen Text eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Diese Kategoriegrafik als Spielegrafik in Übersichtstabellen verwenden. Erneut klicken zum Entfernen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Tab_Assign">Erfolgszuweisung</sys:String>
