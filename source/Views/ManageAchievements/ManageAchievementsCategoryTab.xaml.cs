@@ -1,11 +1,14 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -43,6 +46,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+
+            // Live sorting repositions only the rows whose sorted-column value changed (via a
+            // Move, not a Reset), and does nothing while no column sort is active. This keeps
+            // in-place category edits flicker-free yet still honors an active sort.
+            EnableLiveSorting(viewModel.AchievementRows);
             DataGridRowReorderBehavior.SetOptions(CategoryManagerDataGrid, new DataGridRowReorderOptions
             {
                 DragDataFormat = CategoryDragDataFormat,
@@ -595,6 +603,16 @@ namespace PlayniteAchievements.Views.ManageAchievements
             var item = new MenuItem { Header = header };
             item.Click += (_, __) => onClick?.Invoke();
             return item;
+        }
+
+        private static void EnableLiveSorting(IEnumerable source)
+        {
+            if (source != null &&
+                CollectionViewSource.GetDefaultView(source) is ICollectionViewLiveShaping live &&
+                live.CanChangeLiveSorting)
+            {
+                live.IsLiveSorting = true;
+            }
         }
 
         private static bool IsCategoryTypeOnAllRows(
