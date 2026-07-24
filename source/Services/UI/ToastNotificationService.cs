@@ -430,15 +430,18 @@ namespace PlayniteAchievements.Services.UI
 
             LogWaveDiagnostics(toastItems, template);
 
-            // Counter-scale the toast content by 1/dpiScale so the popup keeps a fixed physical size
-            // instead of ballooning with the Windows display-scale setting. LayoutTransform (not
-            // RenderTransform) so the SizeToContent window auto-sizes to the scaled content and corner
-            // placement stays correct. Applied to the ItemsControl (outside the ItemTemplate) so it
-            // scales any template the resolver returns; must be set before the pre-show measure.
-            var inverseDpiScale = ResolveInverseDpiScale(window);
-            items.LayoutTransform = new ScaleTransform(inverseDpiScale, inverseDpiScale);
-
             window.Content = items;
+
+            // Bound the toast to a fraction of the available area so it never dominates the screen at
+            // high display scales (or with an oversized theme template), while keeping its natural size
+            // when there is room. LayoutTransform (not RenderTransform) so the SizeToContent window
+            // auto-sizes to the scaled content and corner placement stays correct; applied to the
+            // ItemsControl (outside the ItemTemplate) so it governs whatever template the resolver returns.
+            var fitScale = ResolveFitScale(window, items);
+            if (fitScale < 1.0)
+            {
+                items.LayoutTransform = new ScaleTransform(fitScale, fitScale);
+            }
             window.Opacity = 0;
             // Do not move the window during Loaded: a SizeToContent window moved before it is first
             // presented at DPI > 100% gets an HWND sized from unscaled DIPs, which clips content
@@ -1023,36 +1026,58 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// The counter-scale factor that keeps the toast at a fixed physical size regardless of the
-        /// Windows display-scale setting. Equals <c>TransformFromDevice.M11</c> (= 1 / dpiScale): 1.0
-        /// at 100% (a no-op) and 0.4 at 250%. Because the Playnite process is system-DPI-aware the
-        /// transform is a single global matrix, so before the toast window has a presentation source
-        /// the main window's transform is exactly right (same rationale as <see cref="ConvertPhysicalToDip(Window, System.Drawing.Rectangle, out string)"/>).
-        /// Falls back to 1.0 (no counter-scale) when no transform is resolvable.
+        /// Largest fraction of the placement area (game window or work area) the toast card is allowed
+        /// to occupy on either axis. Sizing by proportion instead of a fixed DIP width keeps the toast
+        /// modest across every resolution and display-scale combination: at high scale on a small panel
+        /// the natural card is a large fraction of the (small) DIP area and gets shrunk to fit, while on
+        /// a roomy display it stays at its natural size (readable) because it already fits.
         /// </summary>
-        private static double ResolveInverseDpiScale(Window window)
+        private const double MaxToastAreaFraction = 0.32;
+
+        /// <summary>
+        /// The scale to apply to the toast content so it fits within <see cref="MaxToastAreaFraction"/>
+        /// of the placement area. Returns 1.0 (no scaling) when the content already fits or when the
+        /// area/natural size cannot be resolved; only ever shrinks, never enlarges past the template's
+        /// natural size. Works pre-Show: <see cref="ResolvePlacementArea(Window)"/> uses the main
+        /// window's DPI transform when the toast window has no presentation source yet, and the content
+        /// is measured off-tree (falling back to the default card footprint if the measure throws).
+        /// </summary>
+        private double ResolveFitScale(Window window, FrameworkElement content)
         {
             try
             {
-                var target = PresentationSource.FromVisual(window)?.CompositionTarget;
-                if (target != null)
+                var area = ResolvePlacementArea(window);
+                if (area.Width <= 0 || area.Height <= 0)
                 {
-                    return target.TransformFromDevice.M11;
+                    return 1.0;
                 }
 
-                var main = Application.Current?.MainWindow;
-                var mainTarget = main != null ? PresentationSource.FromVisual(main)?.CompositionTarget : null;
-                if (mainTarget != null)
+                // Natural (unscaled) size the content wants. Measuring an unshown element can throw, so
+                // fall back to the default card footprint (matches the PositionInArea fallback).
+                var natural = new Size(438, 138);
+                try
                 {
-                    return mainTarget.TransformFromDevice.M11;
+                    content.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    if (content.DesiredSize.Width > 0 && content.DesiredSize.Height > 0)
+                    {
+                        natural = content.DesiredSize;
+                    }
                 }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Toast fit measure failed; using default card size.");
+                }
+
+                var widthScale = (MaxToastAreaFraction * area.Width) / natural.Width;
+                var heightScale = (MaxToastAreaFraction * area.Height) / natural.Height;
+                var scale = Math.Min(widthScale, heightScale);
+
+                return scale < 1.0 ? scale : 1.0;
             }
             catch
             {
-                // Fall through to identity (no counter-scale).
+                return 1.0;
             }
-
-            return 1.0;
         }
 
         private static Rect ConvertPhysicalToDip(Window window, System.Drawing.Rectangle rect)
