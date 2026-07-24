@@ -558,18 +558,26 @@ namespace PlayniteAchievements.Views.ManageAchievements
         {
             var menu = new ContextMenu();
 
-            var addTypeMenu = new MenuItem
+            var rows = ResolveActionRows(contextItem);
+            var typesMenu = new MenuItem
             {
-                Header = L("LOCPlayAch_Common_AddType")
+                Header = L("LOCPlayAch_Common_Label_Type")
             };
             foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
                 var capturedType = categoryType;
-                addTypeMenu.Items.Add(CreateMenuItem(
-                    ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
-                    () => AddTypeFromContext(contextItem, capturedType)));
+                var typeItem = new MenuItem
+                {
+                    Header = ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = IsCategoryTypeOnAllRows(rows, capturedType)
+                };
+                typeItem.Click += (_, __) =>
+                    ViewModel?.SetCategoryTypeForSelection(rows, capturedType, typeItem.IsChecked);
+                typesMenu.Items.Add(typeItem);
             }
-            menu.Items.Add(addTypeMenu);
+            menu.Items.Add(typesMenu);
 
             menu.Items.Add(CreateMenuItem(
                 L("LOCPlayAch_Common_SetLabelEllipsis"),
@@ -589,20 +597,18 @@ namespace PlayniteAchievements.Views.ManageAchievements
             return item;
         }
 
-        private void AddTypeFromContext(ManageAchievementsCategoryItem contextItem, string categoryType)
+        private static bool IsCategoryTypeOnAllRows(
+            IReadOnlyList<ManageAchievementsCategoryItem> rows,
+            string categoryType)
         {
-            if (ViewModel == null)
+            if (rows == null || rows.Count == 0)
             {
-                return;
+                return false;
             }
 
-            var rows = ResolveActionRows(contextItem);
-            if (rows.Count == 0)
-            {
-                return;
-            }
-
-            ViewModel.AddCategoryTypesToSelection(rows, new[] { categoryType });
+            return rows.All(row => row != null &&
+                AchievementCategoryTypeHelper.ParseValues(row.CategoryType)
+                    .Any(value => string.Equals(value, categoryType, StringComparison.OrdinalIgnoreCase)));
         }
 
         private void SetLabelFromContext(ManageAchievementsCategoryItem contextItem)
