@@ -430,6 +430,14 @@ namespace PlayniteAchievements.Services.UI
 
             LogWaveDiagnostics(toastItems, template);
 
+            // Counter-scale the toast content by 1/dpiScale so the popup keeps a fixed physical size
+            // instead of ballooning with the Windows display-scale setting. LayoutTransform (not
+            // RenderTransform) so the SizeToContent window auto-sizes to the scaled content and corner
+            // placement stays correct. Applied to the ItemsControl (outside the ItemTemplate) so it
+            // scales any template the resolver returns; must be set before the pre-show measure.
+            var inverseDpiScale = ResolveInverseDpiScale(window);
+            items.LayoutTransform = new ScaleTransform(inverseDpiScale, inverseDpiScale);
+
             window.Content = items;
             window.Opacity = 0;
             // Do not move the window during Loaded: a SizeToContent window moved before it is first
@@ -1012,6 +1020,39 @@ namespace PlayniteAchievements.Services.UI
             areaSource = "workarea";
             transformSource = "n/a";
             return SystemParameters.WorkArea;
+        }
+
+        /// <summary>
+        /// The counter-scale factor that keeps the toast at a fixed physical size regardless of the
+        /// Windows display-scale setting. Equals <c>TransformFromDevice.M11</c> (= 1 / dpiScale): 1.0
+        /// at 100% (a no-op) and 0.4 at 250%. Because the Playnite process is system-DPI-aware the
+        /// transform is a single global matrix, so before the toast window has a presentation source
+        /// the main window's transform is exactly right (same rationale as <see cref="ConvertPhysicalToDip(Window, System.Drawing.Rectangle, out string)"/>).
+        /// Falls back to 1.0 (no counter-scale) when no transform is resolvable.
+        /// </summary>
+        private static double ResolveInverseDpiScale(Window window)
+        {
+            try
+            {
+                var target = PresentationSource.FromVisual(window)?.CompositionTarget;
+                if (target != null)
+                {
+                    return target.TransformFromDevice.M11;
+                }
+
+                var main = Application.Current?.MainWindow;
+                var mainTarget = main != null ? PresentationSource.FromVisual(main)?.CompositionTarget : null;
+                if (mainTarget != null)
+                {
+                    return mainTarget.TransformFromDevice.M11;
+                }
+            }
+            catch
+            {
+                // Fall through to identity (no counter-scale).
+            }
+
+            return 1.0;
         }
 
         private static Rect ConvertPhysicalToDip(Window window, System.Drawing.Rectangle rect)
