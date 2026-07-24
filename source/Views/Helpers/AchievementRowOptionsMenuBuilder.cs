@@ -95,23 +95,39 @@ namespace PlayniteAchievements.Views.Helpers
                 Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Category")
             };
 
-            var addTypeMenu = new MenuItem
+            var typesMenu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Common_AddType")
+                Header = L(resourceOwner, "LOCPlayAch_Common_Label_Type")
             };
+            var effectiveTypes = AchievementCategoryTypeHelper.ParseValues(context.CategoryType);
             foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
                 var capturedType = categoryType;
-                addTypeMenu.Items.Add(CreateMenuItem(
-                    ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
-                    () =>
+                var typeItem = new MenuItem
+                {
+                    Header = ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = effectiveTypes.Any(value =>
+                        string.Equals(value, capturedType, StringComparison.OrdinalIgnoreCase))
+                };
+                typeItem.Click += (_, __) =>
+                {
+                    if (typeItem.IsChecked)
                     {
                         AddCategoryType(context, capturedType);
-                        onChanged?.Invoke();
-                    }));
+                    }
+                    else
+                    {
+                        RemoveCategoryType(context, capturedType);
+                    }
+
+                    onChanged?.Invoke();
+                };
+                typesMenu.Items.Add(typeItem);
             }
 
-            menu.Items.Add(addTypeMenu);
+            menu.Items.Add(typesMenu);
             menu.Items.Add(CreateMenuItem(
                 L(resourceOwner, "LOCPlayAch_Common_SetLabelEllipsis"),
                 () =>
@@ -238,6 +254,28 @@ namespace PlayniteAchievements.Views.Helpers
             normalizedMap[context.ApiName] = merged;
             CurrentOverridesService?.SetAchievementCategoryTypeOverrides(context.GameId, normalizedMap);
             context.ApplyCategoryType(merged);
+        }
+
+        private static void RemoveCategoryType(AchievementRowContext context, string categoryType)
+        {
+            var map = GameCustomDataLookup.GetAchievementCategoryTypeOverrides(
+                context.GameId,
+                CurrentSettings,
+                CurrentStore);
+            var normalizedMap = CloneStringMap(map);
+            var currentEffective = AchievementCategoryTypeHelper.NormalizeOrDefault(context.CategoryType);
+            var remaining = AchievementCategoryTypeHelper.NormalizeOrDefault(
+                AchievementCategoryTypeHelper.Combine(
+                    AchievementCategoryTypeHelper.ParseValues(currentEffective)
+                        .Where(value => !string.Equals(value, categoryType, StringComparison.OrdinalIgnoreCase))));
+            if (string.Equals(remaining, currentEffective, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            normalizedMap[context.ApiName] = remaining;
+            CurrentOverridesService?.SetAchievementCategoryTypeOverrides(context.GameId, normalizedMap);
+            context.ApplyCategoryType(remaining);
         }
 
         private static bool SetCategoryLabel(
