@@ -825,60 +825,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return true;
         }
 
-        public bool AddCategoryTypesToSelection(
-            IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
-            IEnumerable<string> categoryTypesToAdd)
-        {
-            if (selectedRows == null || selectedRows.Count == 0)
-            {
-                return false;
-            }
-
-            var normalizedTypes = AchievementCategoryTypeHelper.Normalize(
-                AchievementCategoryTypeHelper.Combine(categoryTypesToAdd));
-            var selectedCategoryTypes = AchievementCategoryTypeHelper.ParseValues(normalizedTypes);
-            if (selectedCategoryTypes.Count == 0)
-            {
-                return false;
-            }
-
-            var categoryTypeOverrideMap = GetCurrentCategoryTypeOverrideMap();
-            var categoryTypeChanged = false;
-
-            foreach (var item in selectedRows.Where(row => row != null))
-            {
-                var apiName = (item.ApiName ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(apiName))
-                {
-                    continue;
-                }
-
-                var currentEffectiveCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType);
-                var mergedCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                    AchievementCategoryTypeHelper.Combine(
-                        AchievementCategoryTypeHelper.ParseValues(currentEffectiveCategoryType)
-                            .Concat(selectedCategoryTypes)));
-
-                if (!string.Equals(mergedCategoryType, currentEffectiveCategoryType, StringComparison.Ordinal) &&
-                    (!categoryTypeOverrideMap.TryGetValue(apiName, out var existingCategoryType) ||
-                     !string.Equals(existingCategoryType, mergedCategoryType, StringComparison.Ordinal)))
-                {
-                    categoryTypeOverrideMap[apiName] = mergedCategoryType;
-                    categoryTypeChanged = true;
-                }
-            }
-
-            if (!categoryTypeChanged)
-            {
-                return false;
-            }
-
-            var categoryOverrideMap = GetCurrentCategoryOverrideMap();
-            PersistCategoryOverrideMaps(categoryOverrideMap, categoryTypeOverrideMap);
-            ApplyCategoryOverrideMapsToRows(categoryOverrideMap, categoryTypeOverrideMap);
-            return true;
-        }
-
         public bool SetCategoryTypeForSelection(
             IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
             string categoryType,
