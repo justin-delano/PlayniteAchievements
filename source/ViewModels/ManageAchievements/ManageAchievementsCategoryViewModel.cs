@@ -1744,7 +1744,23 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 (categoryOverrideMap?.Count ?? 0) > 0 ||
                 (categoryTypeOverrideMap?.Count ?? 0) > 0;
             RefreshCategoryLabelOptions();
-            ApplyFilter();
+
+            // Rows update their bound Type/Category cells in place via property change, so a
+            // full collection rebuild is unnecessary for an edit that does not change which
+            // rows are visible. Only re-filter when a filter keyed on category, type, or search
+            // text is active; otherwise skip ApplyFilter to avoid the ReplaceAll Reset that
+            // regenerates every DataGrid row and causes a visible flicker.
+            if (IsVisibilityFilteredByCategoryEdit())
+            {
+                ApplyFilter();
+            }
+        }
+
+        private bool IsVisibilityFilteredByCategoryEdit()
+        {
+            return SearchQuery.From(SearchText).HasValue
+                || GetSelectedCategoryTypeFilterValues().Count > 0
+                || _selectedCategoryLabelFilters.Count > 0;
         }
 
         private Dictionary<string, string> GetCurrentCategoryOverrideMap()
