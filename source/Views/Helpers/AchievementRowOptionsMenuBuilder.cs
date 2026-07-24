@@ -242,10 +242,7 @@ namespace PlayniteAchievements.Views.Helpers
                 CurrentStore);
             var normalizedMap = CloneStringMap(map);
             var currentEffective = AchievementCategoryTypeHelper.NormalizeOrDefault(context.CategoryType);
-            var merged = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                AchievementCategoryTypeHelper.Combine(
-                    AchievementCategoryTypeHelper.ParseValues(currentEffective)
-                        .Concat(new[] { categoryType })));
+            var merged = AchievementCategoryTypeHelper.WithCategoryType(currentEffective, categoryType, include: true);
             if (string.Equals(merged, currentEffective, StringComparison.Ordinal))
             {
                 return;
@@ -264,10 +261,7 @@ namespace PlayniteAchievements.Views.Helpers
                 CurrentStore);
             var normalizedMap = CloneStringMap(map);
             var currentEffective = AchievementCategoryTypeHelper.NormalizeOrDefault(context.CategoryType);
-            var remaining = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                AchievementCategoryTypeHelper.Combine(
-                    AchievementCategoryTypeHelper.ParseValues(currentEffective)
-                        .Where(value => !string.Equals(value, categoryType, StringComparison.OrdinalIgnoreCase))));
+            var remaining = AchievementCategoryTypeHelper.WithCategoryType(currentEffective, categoryType, include: false);
             if (string.Equals(remaining, currentEffective, StringComparison.Ordinal))
             {
                 return;
