@@ -853,16 +853,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 var currentEffectiveCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType);
-                var tokens = AchievementCategoryTypeHelper.ParseValues(currentEffectiveCategoryType)
-                    .Where(value => !string.Equals(value, normalizedType, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                if (isSelected)
-                {
-                    tokens.Add(normalizedType);
-                }
-
-                var updatedCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                    AchievementCategoryTypeHelper.Combine(tokens));
+                var updatedCategoryType = AchievementCategoryTypeHelper.WithCategoryType(
+                    currentEffectiveCategoryType, normalizedType, isSelected);
 
                 if (string.Equals(updatedCategoryType, currentEffectiveCategoryType, StringComparison.Ordinal))
                 {
