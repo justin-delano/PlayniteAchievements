@@ -190,6 +190,31 @@ namespace PlayniteAchievements.Services.Achievements
             return string.IsNullOrWhiteSpace(combined) ? DefaultCategoryType : combined;
         }
 
+        /// <summary>
+        /// Returns <paramref name="categoryTypeValue"/> with <paramref name="categoryType"/> added
+        /// (<paramref name="include"/> true) or removed (<paramref name="include"/> false), in
+        /// canonical order. Normalizes to <see cref="DefaultCategoryType"/> when no components
+        /// remain. A null/blank <paramref name="categoryType"/> leaves the value unchanged.
+        /// </summary>
+        public static string WithCategoryType(string categoryTypeValue, string categoryType, bool include)
+        {
+            var token = Normalize(categoryType);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return NormalizeOrDefault(categoryTypeValue);
+            }
+
+            var tokens = ParseValues(categoryTypeValue)
+                .Where(value => !string.Equals(value, token, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (include)
+            {
+                tokens.Add(token);
+            }
+
+            return NormalizeOrDefault(Combine(tokens));
+        }
+
         public static List<string> ParseValues(string rawValue)
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

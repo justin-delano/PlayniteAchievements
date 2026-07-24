@@ -825,19 +825,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return true;
         }
 
-        public bool AddCategoryTypesToSelection(
+        public bool SetCategoryTypeForSelection(
             IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
-            IEnumerable<string> categoryTypesToAdd)
+            string categoryType,
+            bool isSelected)
         {
             if (selectedRows == null || selectedRows.Count == 0)
             {
                 return false;
             }
 
-            var normalizedTypes = AchievementCategoryTypeHelper.Normalize(
-                AchievementCategoryTypeHelper.Combine(categoryTypesToAdd));
-            var selectedCategoryTypes = AchievementCategoryTypeHelper.ParseValues(normalizedTypes);
-            if (selectedCategoryTypes.Count == 0)
+            var normalizedType = AchievementCategoryTypeHelper.Normalize(categoryType);
+            if (string.IsNullOrWhiteSpace(normalizedType))
             {
                 return false;
             }
@@ -854,16 +853,28 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 var currentEffectiveCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType);
-                var mergedCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                    AchievementCategoryTypeHelper.Combine(
-                        AchievementCategoryTypeHelper.ParseValues(currentEffectiveCategoryType)
-                            .Concat(selectedCategoryTypes)));
+                var updatedCategoryType = AchievementCategoryTypeHelper.WithCategoryType(
+                    currentEffectiveCategoryType, normalizedType, isSelected);
 
-                if (!string.Equals(mergedCategoryType, currentEffectiveCategoryType, StringComparison.Ordinal) &&
-                    (!categoryTypeOverrideMap.TryGetValue(apiName, out var existingCategoryType) ||
-                     !string.Equals(existingCategoryType, mergedCategoryType, StringComparison.Ordinal)))
+                if (string.Equals(updatedCategoryType, currentEffectiveCategoryType, StringComparison.Ordinal))
                 {
-                    categoryTypeOverrideMap[apiName] = mergedCategoryType;
+                    continue;
+                }
+
+                var providerCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(item.ProviderCategoryType);
+                if (string.Equals(updatedCategoryType, providerCategoryType, StringComparison.Ordinal))
+                {
+                    // Result matches the provider value: drop the override so the row is no
+                    // longer flagged as customized.
+                    if (categoryTypeOverrideMap.Remove(apiName))
+                    {
+                        categoryTypeChanged = true;
+                    }
+                }
+                else if (!categoryTypeOverrideMap.TryGetValue(apiName, out var existingCategoryType) ||
+                         !string.Equals(existingCategoryType, updatedCategoryType, StringComparison.Ordinal))
+                {
+                    categoryTypeOverrideMap[apiName] = updatedCategoryType;
                     categoryTypeChanged = true;
                 }
             }
@@ -1733,7 +1744,23 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 (categoryOverrideMap?.Count ?? 0) > 0 ||
                 (categoryTypeOverrideMap?.Count ?? 0) > 0;
             RefreshCategoryLabelOptions();
-            ApplyFilter();
+
+            // Rows update their bound Type/Category cells in place via property change, so a
+            // full collection rebuild is unnecessary for an edit that does not change which
+            // rows are visible. Only re-filter when a filter keyed on category, type, or search
+            // text is active; otherwise skip ApplyFilter to avoid the ReplaceAll Reset that
+            // regenerates every DataGrid row and causes a visible flicker.
+            if (IsVisibilityFilteredByCategoryEdit())
+            {
+                ApplyFilter();
+            }
+        }
+
+        private bool IsVisibilityFilteredByCategoryEdit()
+        {
+            return SearchQuery.From(SearchText).HasValue
+                || GetSelectedCategoryTypeFilterValues().Count > 0
+                || _selectedCategoryLabelFilters.Count > 0;
         }
 
         private Dictionary<string, string> GetCurrentCategoryOverrideMap()

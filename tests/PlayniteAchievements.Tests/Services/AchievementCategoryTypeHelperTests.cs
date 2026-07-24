@@ -173,5 +173,70 @@ namespace PlayniteAchievements.Tests.Services
                 "Base",
                 AchievementCategoryTypeHelper.ReplaceGroupTypes(null, new[] { "Base" }));
         }
+
+        [TestMethod]
+        public void WithCategoryType_RemovesAutoAssignedGroupTypeKeepingOthers()
+        {
+            // Deselecting an auto-assigned DLC tag leaves the remaining types intact.
+            Assert.AreEqual(
+                "Update",
+                AchievementCategoryTypeHelper.WithCategoryType("DLC|Update", "DLC", include: false));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_RemovingSoleTypeYieldsDefault()
+        {
+            Assert.AreEqual(
+                "Default",
+                AchievementCategoryTypeHelper.WithCategoryType("DLC", "DLC", include: false));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_RemovalIsCaseInsensitiveViaAlias()
+        {
+            Assert.AreEqual(
+                "Base",
+                AchievementCategoryTypeHelper.WithCategoryType("Base|DLC", "dlc", include: false));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_RemovingAbsentTypeLeavesValueUnchanged()
+        {
+            Assert.AreEqual(
+                "Base|Missable",
+                AchievementCategoryTypeHelper.WithCategoryType("Base|Missable", "DLC", include: false));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_AddsTypeInCanonicalOrder()
+        {
+            Assert.AreEqual(
+                "Base|DLC",
+                AchievementCategoryTypeHelper.WithCategoryType("DLC", "base", include: true));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_AddIsIdempotent()
+        {
+            Assert.AreEqual(
+                "DLC",
+                AchievementCategoryTypeHelper.WithCategoryType("DLC", "DLC", include: true));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_AddingToDefaultReplacesIt()
+        {
+            Assert.AreEqual(
+                "DLC",
+                AchievementCategoryTypeHelper.WithCategoryType("Default", "DLC", include: true));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_BlankTypeLeavesValueNormalizedUnchanged()
+        {
+            Assert.AreEqual(
+                "Base|DLC",
+                AchievementCategoryTypeHelper.WithCategoryType("dlc|base", null, include: false));
+        }
     }
 }

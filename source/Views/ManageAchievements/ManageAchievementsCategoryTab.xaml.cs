@@ -1,11 +1,14 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -43,6 +46,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+
+            // Live sorting repositions only the rows whose sorted-column value changed (via a
+            // Move, not a Reset), and does nothing while no column sort is active. This keeps
+            // in-place category edits flicker-free yet still honors an active sort.
+            EnableLiveSorting(viewModel.AchievementRows);
             DataGridRowReorderBehavior.SetOptions(CategoryManagerDataGrid, new DataGridRowReorderOptions
             {
                 DragDataFormat = CategoryDragDataFormat,
@@ -558,18 +566,26 @@ namespace PlayniteAchievements.Views.ManageAchievements
         {
             var menu = new ContextMenu();
 
-            var addTypeMenu = new MenuItem
+            var rows = ResolveActionRows(contextItem);
+            var typesMenu = new MenuItem
             {
-                Header = L("LOCPlayAch_Common_AddType")
+                Header = L("LOCPlayAch_Common_Label_Type")
             };
             foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
                 var capturedType = categoryType;
-                addTypeMenu.Items.Add(CreateMenuItem(
-                    ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
-                    () => AddTypeFromContext(contextItem, capturedType)));
+                var typeItem = new MenuItem
+                {
+                    Header = ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = IsCategoryTypeOnAllRows(rows, capturedType)
+                };
+                typeItem.Click += (_, __) =>
+                    ViewModel?.SetCategoryTypeForSelection(rows, capturedType, typeItem.IsChecked);
+                typesMenu.Items.Add(typeItem);
             }
-            menu.Items.Add(addTypeMenu);
+            menu.Items.Add(typesMenu);
 
             menu.Items.Add(CreateMenuItem(
                 L("LOCPlayAch_Common_SetLabelEllipsis"),
@@ -589,20 +605,28 @@ namespace PlayniteAchievements.Views.ManageAchievements
             return item;
         }
 
-        private void AddTypeFromContext(ManageAchievementsCategoryItem contextItem, string categoryType)
+        private static void EnableLiveSorting(IEnumerable source)
         {
-            if (ViewModel == null)
+            if (source != null &&
+                CollectionViewSource.GetDefaultView(source) is ICollectionViewLiveShaping live &&
+                live.CanChangeLiveSorting)
             {
-                return;
+                live.IsLiveSorting = true;
+            }
+        }
+
+        private static bool IsCategoryTypeOnAllRows(
+            IReadOnlyList<ManageAchievementsCategoryItem> rows,
+            string categoryType)
+        {
+            if (rows == null || rows.Count == 0)
+            {
+                return false;
             }
 
-            var rows = ResolveActionRows(contextItem);
-            if (rows.Count == 0)
-            {
-                return;
-            }
-
-            ViewModel.AddCategoryTypesToSelection(rows, new[] { categoryType });
+            return rows.All(row => row != null &&
+                AchievementCategoryTypeHelper.ParseValues(row.CategoryType)
+                    .Any(value => string.Equals(value, categoryType, StringComparison.OrdinalIgnoreCase)));
         }
 
         private void SetLabelFromContext(ManageAchievementsCategoryItem contextItem)
