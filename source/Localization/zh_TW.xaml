@@ -11,11 +11,10 @@
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">成就</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Actions">行動</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Actions">操作</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">從統計摘要中排除</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">包含在統計摘要中</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_AddType">新增類型</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">適用於所選</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">套用至所選項目</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Ascending">升序</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_All">全部</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Check">檢查</sys:String>
@@ -47,7 +46,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Merge">合併</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NewLabel">新標籤</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">此遊戲沒有可用的快取成就。</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">此遊戲尚未追蹤成就。按一下「重新整理」按鈕檢查成就資料。</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">尚未追蹤此遊戲的成就。按一下「重新整理」按鈕檢查成就資料。</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">此遊戲可能不支援成就，或成就資料在此平台上不可用。</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">未發現成就</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">未認證</sys:String>
@@ -84,7 +83,7 @@
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} 分</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Prestige">聲望分數</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">已達最高等級</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0}直到{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">還需 {0} 即可達到 {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">分數系統</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">收藏分數與聲望分數</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">收藏分數用來衡量成就收集總量。每項已解鎖成就都會依其稀有度等級獲得固定分數。</sys:String>
@@ -185,9 +184,9 @@
     <!-- 06 Menus -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">更改 Playnite 映射</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">清除Playnite 映射</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">映射到Playnite 遊戲</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">所選的Playnite遊戲與Exophase好友遊戲({0})不在同一平台上。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">清除 Playnite 對應</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">對應至 Playnite 遊戲</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch">所選的 Playnite 遊戲與 Exophase 好友遊戲 ({0}) 不屬於同一平台。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">清除資料</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">清除{0}所選遊戲的資料嗎？&#x0a;&#x0a;這將刪除其快取的成就、圖示以及任何手動連結和解鎖時間。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">清除「{0}」的資料嗎？&#x0a;&#x0a;這將刪除其快取的成就、圖示以及任何手動連結和解鎖時間。</sys:String>
@@ -211,11 +210,11 @@
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">清除{0}的快取成就資料嗎？&#x0a;&#x0a;下次好友重新整理時會再次取得它。</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">近視圖</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">輸入有效的數字遊戲 ID。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">輸入有效的 8 字元十六進位Xenia 標題 ID。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">請輸入有效的 8 位十六進位 Xenia 標題 ID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">輸入有效的 ShadPS4 匹配 ID，例如 CUSA00432 或 NPWR12345_00。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">輸入有效的RPCS3獎盃NP通訊ID，例如NPWR12345_00。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">輸入有效的數字Steam 應用程式 ID。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">輸入有效的PSN NP 通訊 ID，例如NPWR12345_00。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">請輸入有效的 RPCS3 獎盃 NP 通訊 ID，例如 NPWR12345_00。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">請輸入有效的數字 Steam 應用程式 ID。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">請輸入有效的 PSN NP 通訊 ID，例如 NPWR12345_00。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">輸入有效的 Xbox 遊戲 ID（8 個字元的十六進位或十進位）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">重新整理遊戲</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">重新整理好友</sys:String>
@@ -312,19 +311,19 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue">覆寫設定：{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderStatusValue">覆寫設定：{0} - {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid">選擇支援的平台覆寫。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam">Steam應用程式ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam">Steam 應用程式 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RetroAchievements">RetroAchievements遊戲ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4">ShadPS4 匹配 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP 通信 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia">Xenia 標題 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase">Exophase 遊戲 ID 或 Slug</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic">史詩遊戲ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic">Epic 遊戲 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_GOG">GOG 產品 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_PSN">PSN NP 通訊 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xbox">Xbox 遊戲 ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_EA">EA 優惠 ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Hoyoverse">HoYoverse遊戲</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net遊戲</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Hoyoverse">HoYoverse 遊戲</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net 遊戲</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">輸入此覆寫的值。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">為此覆寫選擇有效的遊戲。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">摘要排除</sys:String>
@@ -374,8 +373,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">勾選您已解鎖的成就並設定解鎖時間。按一下「確定」儲存變更。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">無法驗證用於手動連結的 Exophase 認證。請重試，或在外掛程式設定中重新登入 Exophase。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">登入插件設定中的Exophase以使用手動連結。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">登入插件設定中的Steam以取得成就資料。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">請在外掛程式設定中登入 Exophase，以使用手動連結。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">請在外掛程式設定中登入 Steam，以取得成就資料。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">選定的遊戲沒有成就。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">搜尋要從中連結成就的遊戲。選定遊戲的成就會被連結到此 Playnite 遊戲。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">未找到遊戲。請嘗試其他搜尋詞。</sys:String>
@@ -555,7 +554,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_FrameHeader">截圖框</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">解鎖錄影</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockRecordings">解鎖成就時儲存影片剪輯</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RecordingFfmpegPath">ffmpeg路徑</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecordingFfmpegPath">ffmpeg 路徑</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingFfmpegValid">ffmpeg 正在運作（版本{0}）。編碼器：{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingFfmpegInvalid">ffmpeg 不工作：{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectory">錄影資料夾</sys:String>
@@ -570,7 +569,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudio">錄製聲音</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeAudioHint">會錄製電腦播放的所有聲音，而不只是遊戲聲音（包括音樂和語音聊天）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingHint">為每次解鎖儲存一段短片。需要 ffmpeg.exe（請在下方設定路徑）。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Notification_RecordingUnavailable">此會話的解鎖錄製已關閉。檢查ffmpeg路徑、可用磁碟空間和插件日誌。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Notification_RecordingUnavailable">本次工作階段已關閉解鎖錄影。請檢查 ffmpeg 路徑、可用磁碟空間和外掛程式記錄。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverrides">每個平台設置</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverridesHint">預設遵循上述設定。如果完全停用通知或螢幕截圖，則設定為「開」的平台將保持安靜。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Override_On">開</sys:String>
@@ -591,7 +590,7 @@
     <sys:String x:Key="LOCPlayAch_Hotkeys_DuplicateShortcut">該捷徑已指派。</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">啟用成就熱鍵</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_EnableGlobal">啟用全域熱鍵</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalHelp">全域熱鍵在功能鍵和帶有修飾符的快速鍵的Playnite 之外運作。普通字母和數字僅在Playnite聚焦時有效。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalHelp">功能鍵和含修飾鍵的快速鍵可作為全域快速鍵，在 Playnite 之外使用。單一字母和數字則僅在 Playnite 取得焦點時有效。</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">全域捷徑不可用：{0}。另一個應用程式可能已經在使用相同的密鑰。</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">不支援的快捷方式。按下字母、數字、功能鍵或修改的快速鍵。</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">在使用成就熱鍵之前選擇一個遊戲或開始遊戲。</sys:String>
@@ -628,24 +627,24 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">啟用時，Exophase 可以自動追蹤受管平台上遊戲的成就。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">認證 Exophase 以重新整理追蹤資料並使用 Exophase 手動連結。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">受管平台</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">這些平台上的遊戲將使用 Exophase 而不是原生平台支援。檢查您想要Exophase管理的平台。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">這些平台上的遊戲將交由 Exophase 管理，而不使用平台原生支援。請勾選要交由 Exophase 管理的平台。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">注意：對於未勾選平台上的遊戲，請使用「管理成就」單獨包含。</sys:String>
     <sys:String x:Key="LOCPlayAch_Exophase_SelectPlatforms">選擇平台</sys:String>
 
     <!-- Provider: HoYoverse -->
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">啟用原神</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">啟用崩壞：星軌</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">啟用 Zenless 零區</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">啟用 原神</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">啟用 崩壞：星穹铁道</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">啟用 绝区零</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">追蹤器匯出檔案</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">可選的公共追蹤器匯出，用於標記已解鎖的成就。如果沒有匯出檔案，重新整理仍會下載定義並保持成就鎖定。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">如何取得 JSON</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1">1. 開啟{0}並登入。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1">1. 開啟 {0} 並登入。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">StarDB 成就匯入器</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2">2. 下載並執行{0}，然後依照其提示操作，直到匯出 JSON 複製到剪貼簿。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2">2. 下載並執行 {0}，然後依照提示操作，直到匯出的 JSON 複製到剪貼簿。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter">stardb-exporter</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3.將複製的文字另存為.json檔案，然後選擇下面的配對遊戲。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. （可選）也會將複製的 JSON 貼上到 StarDB 中，以便您的 StarDB 追蹤器保持同步。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">支援的格式：stardb-exporter、StarDB、Paimon.moe、SEELIE.me和rng.moe J2，以及 Star Rail Station ⟫X005X⟫</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3. 將複製的文字另存為 .json 檔案，然後在下方為對應遊戲選擇該檔案。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. （選用）也可將複製的 JSON 貼到 StarDB，讓 StarDB 追蹤器保持同步。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">支援的格式：stardb-exporter、StarDB、Paimon.moe、SEELIE.me 和 rng.moe JSON，以及 Star Rail Station .dat 檔案。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">一個或多個設定的匯出檔不存在。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">未設定匯出檔。重新整理將僅匯入鎖定的成就定義。</sys:String>
 
@@ -715,10 +714,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">模擬器與復古</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">手冊和聚合器</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">其他</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">使用{0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">使用 {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">好友</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">自動發現好友</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">選擇可以自動填入此清單的平台。此版本支援Steam。</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">選擇可自動填入此清單的平台。目前版本支援 Steam。</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">使用 Exophase 取得 Steam 好友擁有的遊戲</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">重新整理 Steam 好友擁有的遊戲時，從已合併的 Exophase 個人資料中補上缺少的 Steam 遊戲。需要啟用 Exophase。</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGames">重新整理時包含未擁有的遊戲</sys:String>
@@ -733,9 +732,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">忽略好友後，重新整理時將略過該好友。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">重新整理好友列表</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">使用 Exophase 作為元資料</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">填滿Exophase 中缺少的成就元資料，同時保留本機成就資料。需要Exophase登入。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity">使用Data for Azeroth 獲得魔獸世界稀有度</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help">填滿來自Data for Azeroth網站的全球稀有度百分比，同時保留本地成就資料。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">從 Exophase 補上缺少的成就中繼資料，同時保留平台原生成就資料。需要登入 Exophase。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity">使用 Data for Azeroth 取得《魔獸世界》稀有度</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help">從 Data for Azeroth 網站補上全球稀有度百分比，同時保留平台原生成就資料。</sys:String>
 
     <!-- Provider: PlayStation -->
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">在 PlayStation.com 登入</sys:String>
@@ -749,10 +748,10 @@
     <!-- Provider: FFXIV -->
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterName">角色名稱</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_World">家園世界</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_PublicNote">成就必須在要追蹤的Lodestone 上設定為公開。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_PublicNote">必須在 Lodestone 上將成就設為公開，外掛程式才能追蹤。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">正在檢查字元...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterNotFound">找不到名稱、伺服器和地區均相符的角色。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">已找到角色，但Lodestone 上的成就是私有的。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">已找到角色，但其成就在 Lodestone 上設為私人。</sys:String>
 
     <!-- Provider: RetroAchievements -->
     <sys:String x:Key="LOCPlayAch_Settings_RaUsername">使用者名稱</sys:String>
@@ -773,17 +772,17 @@
 
     <!-- Provider: Steam -->
     <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories">使用 SteamHunters 作為類別</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">在Steam重新整理期間填入SteamHunters的成就類別和基礎/DLC類型。類別藝術預設為Steam商店橫幅（可在管理成就中根據遊戲進行更改）。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">重新整理 Steam 時，從 SteamHunters 補上成就類別及主遊戲/DLC 類型。類別圖片預設使用 Steam 商店橫幅（可在「管理成就」中為各遊戲修改）。</sys:String>
     <!-- Provider: RPCS3 -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">可執行檔路徑</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">rpcs3.exe. 的路徑</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">未找到獎盃資料夾</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">不是有效的RPCS3 安裝（缺少 dev_hdd0home）</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">RPCS3 安裝無效（缺少 dev_hdd0\home）</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">在 dev_hdd0\home 中未找到使用者設定檔</sys:String>
 
     <!-- Provider: ShadPS4 -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">根資料夾</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">您的ShadPS4根資料夾；舊版面配置和新版面都會被偵測到。預設值：%AppData%\shadPS4。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">ShadPS4 根資料夾；可自動辨識舊版和新版目錄結構。預設：%AppData%\shadPS4。</sys:String>
 
     <!-- Provider: Xbox -->
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">下載低解析度圖示</sys:String>
@@ -791,7 +790,7 @@
 
     <!-- Provider: Xenia -->
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPath">帳戶路徑</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">您的Xenia帳戶資料夾：&lt;Xenia Path&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">Xenia 帳戶資料夾：&lt;Xenia Path&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
     <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">不是有效的 Xenia 帳戶路徑（缺少帳戶檔案）</sys:String>
 
     <!-- General Settings (continued): display, maintenance, hotkeys, notifications -->
@@ -871,7 +870,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientEnd">漸變端</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">進階主題資源</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceLabel">Playnite：</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">關注Playnite</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">跟隨 Playnite</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">正文</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextSecondary">輔助文本</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">靜音文本</sys:String>
@@ -968,7 +967,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AllLegacy">全部舊版</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AllModern">全部現代</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} 已針對 PlayniteAchievements 自動更新。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">重新啟動Playnite 以套用變更。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">請重新啟動 Playnite 以套用變更。</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">主題已自動遷移</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Description">將主題從 SuccessStory 遷移到 PlayniteAchievements。</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateLabel">遷移主題</sys:String>
@@ -1045,7 +1044,7 @@
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">定期重新整理失敗。</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">重新整理失敗</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">重新整理失敗: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">無法讀取{0} Steam 解鎖時間。設定插件語言以符合您的Steam語言，然後重新整理。詳細資訊請參閱日誌。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">無法讀取 {0} 個 Steam 解鎖時間。請將外掛程式語言設為與 Steam 語言一致，然後重新整理。詳細資訊請查看記錄。</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0} 認證已過期或無效。按一下開啟設定。</sys:String>
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">成就已解鎖</sys:String>
