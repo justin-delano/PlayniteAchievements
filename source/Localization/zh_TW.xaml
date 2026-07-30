@@ -531,7 +531,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition">通知位置：</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomRight">右下</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomLeft">左下</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopRight">右上角</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopRight">右上</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopLeft">左上</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowHeader">標題行</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowName">成就名稱</sys:String>
@@ -715,7 +715,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">模擬器與復古</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">手冊和聚合器</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">其他</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">用途{0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">使用{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">好友</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">自動發現好友</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">選擇可以自動填入此清單的平台。此版本支援Steam。</sys:String>
