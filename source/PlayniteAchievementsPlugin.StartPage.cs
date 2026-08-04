@@ -15,6 +15,7 @@ using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.ViewModels.StartPage;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.StartPage;
+using PlayniteAchievements.Views.Showcase;
 using StartPage.SDK;
 
 namespace PlayniteAchievements
@@ -97,7 +98,7 @@ namespace PlayniteAchievements
                 viewId,
                 instanceId,
                 definition.ShowcaseWidgetKind.Value);
-            return new StartPageShowcaseWidgetSettingsControl(
+            return new ShowcaseWidgetOptionsControl(
                 settings,
                 PersistSettingsForUi);
         }
@@ -464,37 +465,9 @@ namespace PlayniteAchievements
                 return existing;
             }
 
-            var settings = new ShowcaseWidgetInstanceSettings
-            {
-                InstanceId = instanceId.ToString("N"),
-                Kind = kind
-            };
-            switch (kind)
-            {
-                case ShowcaseWidgetKind.Scores:
-                    settings.SetOption("Mode", ShowcaseScoreMode.Dual);
-                    break;
-                case ShowcaseWidgetKind.Timeline:
-                    ShowcaseTimelineOptions.SetRange(settings, TimelineRange.ThreeMonths);
-                    break;
-                case ShowcaseWidgetKind.NativePoints:
-                    settings.SetOption("Grouping", ShowcasePointsGrouping.Provider);
-                    settings.SetOption("TopN", 8);
-                    break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    settings.SetOption("Source", ShowcaseFavoriteGameSource.ShowcasePins);
-                    break;
-                case ShowcaseWidgetKind.IconMosaic:
-                    settings.SetOption("Source", ShowcaseMosaicSource.Recent);
-                    settings.SetOption("Count", 24);
-                    break;
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    settings.SetOption("Variant", ShowcaseScreenshotVariant.All);
-                    settings.SetOption("Shuffle", true);
-                    settings.SetOption("IntervalSeconds", 8);
-                    settings.SetOption("FitMode", ShowcaseImageFitMode.Fill);
-                    break;
-            }
+            var settings = ShowcaseWidgetSettingsFactory.CreateDefault(
+                kind,
+                instanceId.ToString("N"));
 
             showcase.StartPageInstances[key] = settings;
             PersistSettingsForUi();

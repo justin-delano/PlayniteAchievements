@@ -135,13 +135,40 @@ namespace PlayniteAchievements.Tests.Models
                     RarityTier.UltraRare),
                 UnlockTimeUtc = new DateTime(2026, 7, 28)
             };
+            var timestampLessRare = new AchievementDisplayItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                ApiName = "timestamp-less",
+                DisplayName = "Imported rare unlock",
+                GameName = "Fourth game",
+                Unlocked = true,
+                Rarity = RarityTier.UltraRare,
+                GlobalPercentUnlocked = 0.5,
+                RaritySortValue = AchievementRarityResolver.GetSortValue(
+                    0.5,
+                    RarityTier.UltraRare),
+                UnlockTimeUtc = null
+            };
+            var lockedRare = new AchievementDisplayItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                ApiName = "locked",
+                Unlocked = false,
+                Rarity = RarityTier.UltraRare,
+                GlobalPercentUnlocked = 0.1,
+                RaritySortValue = AchievementRarityResolver.GetSortValue(
+                    0.1,
+                    RarityTier.UltraRare)
+            };
             var snapshot = new OverviewDataSnapshot
             {
                 Achievements = new List<AchievementDisplayItem>
                 {
                     firstAchievement,
                     rareAchievement,
-                    tierOnlyUltraRare
+                    tierOnlyUltraRare,
+                    timestampLessRare,
+                    lockedRare
                 },
                 RecentAchievements = new List<AchievementDisplayItem>
                 {
@@ -177,6 +204,11 @@ namespace PlayniteAchievements.Tests.Models
                         ApiName = "missing",
                         LastKnownGameName = "Removed game",
                         LastKnownAchievementName = "Remembered unlock"
+                    },
+                    new PinnedAchievementReference
+                    {
+                        GameId = lockedRare.PlayniteGameId.Value,
+                        ApiName = lockedRare.ApiName
                     }
                 }
             };
@@ -187,6 +219,7 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreSame(firstAchievement, resolvedPins[0].Achievement);
             Assert.IsTrue(resolvedPins[1].IsMissing);
             Assert.AreEqual("Remembered unlock", resolvedPins[1].Name);
+            Assert.AreSame(lockedRare, resolvedPins[2].Achievement);
 
             var favoriteInstance = new ShowcaseWidgetInstanceSettings
             {
@@ -211,11 +244,17 @@ namespace PlayniteAchievements.Tests.Models
             mosaic.SetOption("Source", ShowcaseMosaicSource.Rarest);
             var rarest = ShowcaseWidgetProjectionService.ResolveMosaic(snapshot, settings, mosaic);
             CollectionAssert.AreEqual(
-                new[] { rareAchievement, tierOnlyUltraRare, firstAchievement },
+                new[]
+                {
+                    timestampLessRare,
+                    rareAchievement,
+                    tierOnlyUltraRare,
+                    firstAchievement
+                },
                 rarest.ToArray());
             mosaic.SetOption("Source", ShowcaseMosaicSource.Pinned);
             var pinnedMosaic = ShowcaseWidgetProjectionService.ResolveMosaic(snapshot, settings, mosaic);
-            CollectionAssert.AreEqual(new[] { firstAchievement }, pinnedMosaic.ToArray());
+            CollectionAssert.AreEqual(new[] { firstAchievement, lockedRare }, pinnedMosaic.ToArray());
         }
 
         private static GameSummaryItem Game(

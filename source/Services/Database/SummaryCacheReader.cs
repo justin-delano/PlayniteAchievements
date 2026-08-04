@@ -77,6 +77,7 @@ namespace PlayniteAchievements.Services.Database
             public long IsCapstone { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public string Rarity { get; set; }
+            public long Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
             public int? ProgressNum { get; set; }
             public int? ProgressDenom { get; set; }
@@ -108,7 +109,10 @@ namespace PlayniteAchievements.Services.Database
                 var timelineRows = LoadCachedUnlockTimelineRows(db);
                 var requestedRecentLimit = recentAchievementDetailLimit > 0 ? recentAchievementDetailLimit : 0;
                 var boundedRecentLimit = requestedRecentLimit > 0 ? requestedRecentLimit + 1 : 0;
-                var recentRows = LoadCachedRecentUnlockRows(db, boundedRecentLimit);
+                var recentRows = LoadCachedRecentUnlockRows(
+                    db,
+                    boundedRecentLimit,
+                    includeAllVisibleAchievements: requestedRecentLimit == 0);
 
                 var result = new CachedSummaryData();
 
@@ -204,7 +208,18 @@ namespace PlayniteAchievements.Services.Database
                     recentRows = recentRows.Take(requestedRecentLimit).ToList();
                 }
 
-                result.RecentUnlocks = MapRecentUnlocks(recentRows);
+                var mappedAchievements = MapAchievementDetails(recentRows);
+                if (requestedRecentLimit == 0)
+                {
+                    result.Achievements = mappedAchievements;
+                    result.RecentUnlocks = mappedAchievements
+                        .Where(item => item?.Unlocked == true && item.UnlockTimeUtc.HasValue)
+                        .ToList();
+                }
+                else
+                {
+                    result.RecentUnlocks = mappedAchievements;
+                }
                 return result;
             });
         }
@@ -399,7 +414,10 @@ namespace PlayniteAchievements.Services.Database
                 ORDER BY UnlockDateUtc DESC, lp.CacheKey;").ToList();
         }
 
-        private static List<CachedRecentUnlockRow> LoadCachedRecentUnlockRows(SQLiteDatabase db, int recentAchievementLimit)
+        private static List<CachedRecentUnlockRow> LoadCachedRecentUnlockRows(
+            SQLiteDatabase db,
+            int recentAchievementLimit,
+            bool includeAllVisibleAchievements)
         {
             var sql = new StringBuilder(
                 @"WITH LatestProgress AS (
@@ -445,14 +463,21 @@ namespace PlayniteAchievements.Services.Database
                     ad.IsCapstone AS IsCapstone,
                     ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                     ad.Rarity AS Rarity,
+                    ua.Unlocked AS Unlocked,
                     ua.UnlockTimeUtc AS UnlockTimeUtc,
                     ua.ProgressNum AS ProgressNum,
                     ua.ProgressDenom AS ProgressDenom
                 FROM LatestProgress lp
                 INNER JOIN UserAchievements ua
-                    ON ua.UserGameProgressId = lp.UserGameProgressId
+                    ON ua.UserGameProgressId = lp.UserGameProgressId");
+            if (!includeAllVisibleAchievements)
+            {
+                sql.Append(@"
                    AND ua.Unlocked = 1
-                   AND ua.UnlockTimeUtc IS NOT NULL
+                   AND ua.UnlockTimeUtc IS NOT NULL");
+            }
+
+            sql.Append(@"
                 INNER JOIN AchievementDefinitions ad ON ad.Id = ua.AchievementDefinitionId
                 WHERE lp.RowNum = 1
                   AND NOT EXISTS (SELECT 1 FROM AchievementFilters af
@@ -471,7 +496,7 @@ namespace PlayniteAchievements.Services.Database
             return db.Load<CachedRecentUnlockRow>(sql.ToString()).ToList();
         }
 
-        private List<CachedRecentUnlockData> MapRecentUnlocks(
+        private List<CachedRecentUnlockData> MapAchievementDetails(
             IEnumerable<CachedRecentUnlockRow> rows)
         {
             var result = new List<CachedRecentUnlockData>();
@@ -510,6 +535,7 @@ namespace PlayniteAchievements.Services.Database
                     IsCapstone = row.IsCapstone != 0,
                     GlobalPercentUnlocked = row.GlobalPercentUnlocked,
                     Rarity = ParseStoredRarity(row.Rarity),
+                    Unlocked = row.Unlocked != 0,
                     UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
                     ProgressNum = row.ProgressNum,
                     ProgressDenom = row.ProgressDenom

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.Showcase
@@ -266,75 +267,13 @@ namespace PlayniteAchievements.Services.Showcase
             var page = FindPage(settings, pageId);
             var first = FindBlock(page, firstBlockId);
             var second = FindBlock(page, secondBlockId);
-            if (first == null || second == null || ReferenceEquals(first, second))
-            {
-                return false;
-            }
-
-            var firstOccupied = !string.IsNullOrWhiteSpace(first.WidgetInstanceId);
-            var secondOccupied = !string.IsNullOrWhiteSpace(second.WidgetInstanceId);
-            if (firstOccupied &&
-                secondOccupied &&
-                !string.Equals(
-                    preferredWidgetInstanceId,
-                    first.WidgetInstanceId,
-                    StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(
-                    preferredWidgetInstanceId,
-                    second.WidgetInstanceId,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            var horizontal =
-                first.Row == second.Row &&
-                first.RowSpan == second.RowSpan &&
-                (first.Column + first.ColumnSpan == second.Column ||
-                 second.Column + second.ColumnSpan == first.Column);
-            var vertical =
-                first.Column == second.Column &&
-                first.ColumnSpan == second.ColumnSpan &&
-                (first.Row + first.RowSpan == second.Row ||
-                 second.Row + second.RowSpan == first.Row);
-            if (!horizontal && !vertical)
-            {
-                return false;
-            }
-
-            var firstWidgetId = first.WidgetInstanceId;
-            var secondWidgetId = second.WidgetInstanceId;
-            var survivorWidgetId = firstOccupied && secondOccupied
-                ? preferredWidgetInstanceId
-                : firstOccupied
-                    ? firstWidgetId
-                    : secondWidgetId;
-            var removedWidgetId = firstOccupied && secondOccupied
-                ? string.Equals(
-                    survivorWidgetId,
-                    firstWidgetId,
-                    StringComparison.OrdinalIgnoreCase)
-                    ? secondWidgetId
-                    : firstWidgetId
-                : null;
-
-            first.Row = Math.Min(first.Row, second.Row);
-            first.Column = Math.Min(first.Column, second.Column);
-            first.RowSpan = horizontal ? first.RowSpan : first.RowSpan + second.RowSpan;
-            first.ColumnSpan = horizontal ? first.ColumnSpan + second.ColumnSpan : first.ColumnSpan;
-            first.WidgetInstanceId = survivorWidgetId;
-            page.Blocks.Remove(second);
-            if (!string.IsNullOrWhiteSpace(removedWidgetId))
-            {
-                var removed = FindWidget(settings, removedWidgetId);
-                if (removed != null)
-                {
-                    settings.WidgetInstances.Remove(removed);
-                }
-            }
-
-            SortBlocks(page);
-            return true;
+            var closure = GetMergeClosureCore(page, first, second);
+            return closure.Count == 2 && TryMergeClosure(
+                settings,
+                page,
+                first,
+                closure,
+                preferredWidgetInstanceId);
         }
 
         public static IReadOnlyList<ShowcaseBlockSettings> GetMergeClosure(
@@ -367,6 +306,26 @@ namespace PlayniteAchievements.Services.Showcase
                 return false;
             }
 
+            return TryMergeClosure(
+                settings,
+                page,
+                first,
+                closure,
+                preferredWidgetInstanceId);
+        }
+
+        private static bool TryMergeClosure(
+            ShowcaseSettings settings,
+            ShowcasePageSettings page,
+            ShowcaseBlockSettings survivor,
+            IReadOnlyList<ShowcaseBlockSettings> closure,
+            string preferredWidgetInstanceId)
+        {
+            if (survivor == null || closure == null || closure.Count < 2)
+            {
+                return false;
+            }
+
             var occupiedWidgetIds = closure
                 .Where(block => !string.IsNullOrWhiteSpace(block.WidgetInstanceId))
                 .Select(block => block.WidgetInstanceId)
@@ -389,12 +348,18 @@ namespace PlayniteAchievements.Services.Showcase
             var column = closure.Min(block => block.Column);
             var rowEnd = closure.Max(block => block.Row + block.RowSpan);
             var columnEnd = closure.Max(block => block.Column + block.ColumnSpan);
-            first.Row = row;
-            first.Column = column;
-            first.RowSpan = rowEnd - row;
-            first.ColumnSpan = columnEnd - column;
-            first.WidgetInstanceId = survivorWidgetId;
-            foreach (var block in closure.Where(block => !ReferenceEquals(block, first)).ToList())
+            var cellCount = closure.Sum(block => block.RowSpan * block.ColumnSpan);
+            if (cellCount != (rowEnd - row) * (columnEnd - column))
+            {
+                return false;
+            }
+
+            survivor.Row = row;
+            survivor.Column = column;
+            survivor.RowSpan = rowEnd - row;
+            survivor.ColumnSpan = columnEnd - column;
+            survivor.WidgetInstanceId = survivorWidgetId;
+            foreach (var block in closure.Where(block => !ReferenceEquals(block, survivor)).ToList())
             {
                 page.Blocks.Remove(block);
             }
@@ -431,7 +396,7 @@ namespace PlayniteAchievements.Services.Showcase
                 return false;
             }
 
-            if (IsSingletonPerPage(widget.Kind) &&
+            if (ShowcaseWidgetCatalog.Get(widget.Kind).SingleInstancePerPage &&
                 page.Blocks.Any(block =>
                     !ReferenceEquals(block, target) &&
                     !string.IsNullOrWhiteSpace(block.WidgetInstanceId) &&
@@ -475,14 +440,13 @@ namespace PlayniteAchievements.Services.Showcase
             return widget;
         }
 
-        private static bool ClearWidgetAssignments(ShowcaseSettings settings, string widgetInstanceId)
+        private static void ClearWidgetAssignments(ShowcaseSettings settings, string widgetInstanceId)
         {
             if (settings?.Pages == null || string.IsNullOrWhiteSpace(widgetInstanceId))
             {
-                return false;
+                return;
             }
 
-            var changed = false;
             foreach (var block in settings.Pages
                 .Where(page => page?.Blocks != null)
                 .SelectMany(page => page.Blocks)
@@ -491,11 +455,8 @@ namespace PlayniteAchievements.Services.Showcase
                 if (string.Equals(block.WidgetInstanceId, widgetInstanceId, StringComparison.OrdinalIgnoreCase))
                 {
                     block.WidgetInstanceId = null;
-                    changed = true;
                 }
             }
-
-            return changed;
         }
 
         public static bool DeleteWidget(ShowcaseSettings settings, string widgetInstanceId)
@@ -579,7 +540,8 @@ namespace PlayniteAchievements.Services.Showcase
 
                     var widget = FindWidget(settings, block.WidgetInstanceId);
                     if (widget == null ||
-                        (IsSingletonPerPage(widget.Kind) && !singletonKinds.Add(widget.Kind)))
+                        (ShowcaseWidgetCatalog.Get(widget.Kind).SingleInstancePerPage &&
+                         !singletonKinds.Add(widget.Kind)))
                     {
                         block.WidgetInstanceId = null;
                         continue;
@@ -711,8 +673,8 @@ namespace PlayniteAchievements.Services.Showcase
             if (showCollectionScore || showPrestigeScore)
             {
                 widget = NewWidget(ShowcaseWidgetKind.Scores);
-                widget.SetOption(
-                    "Mode",
+                ShowcaseWidgetOptions.SetScoreMode(
+                    widget,
                     showCollectionScore && showPrestigeScore
                         ? ShowcaseScoreMode.Dual
                         : showCollectionScore
@@ -740,34 +702,7 @@ namespace PlayniteAchievements.Services.Showcase
 
         private static ShowcaseWidgetInstanceSettings NewWidget(ShowcaseWidgetKind kind)
         {
-            var widget = new ShowcaseWidgetInstanceSettings { Kind = kind };
-            switch (kind)
-            {
-                case ShowcaseWidgetKind.Scores:
-                    widget.SetOption("Mode", ShowcaseScoreMode.Dual);
-                    break;
-                case ShowcaseWidgetKind.Pie:
-                    widget.SetOption("Mode", ShowcasePieMode.CompletedGames);
-                    break;
-                case ShowcaseWidgetKind.NativePoints:
-                    widget.SetOption("Grouping", ShowcasePointsGrouping.Provider);
-                    widget.SetOption("TopN", 8);
-                    break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    widget.SetOption("Source", ShowcaseFavoriteGameSource.ShowcasePins);
-                    break;
-                case ShowcaseWidgetKind.IconMosaic:
-                    widget.SetOption("Source", ShowcaseMosaicSource.Recent);
-                    break;
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    widget.SetOption("Variant", ShowcaseScreenshotVariant.All);
-                    widget.SetOption("Shuffle", true);
-                    widget.SetOption("IntervalSeconds", 8);
-                    widget.SetOption("FitMode", ShowcaseImageFitMode.Fill);
-                    break;
-            }
-
-            return widget;
+            return ShowcaseWidgetSettingsFactory.CreateDefault(kind);
         }
 
         private static ShowcaseBlockSettings NewBlock(
@@ -1026,13 +961,6 @@ namespace PlayniteAchievements.Services.Showcase
                     occupied[row, column] = true;
                 }
             }
-        }
-
-        private static bool IsSingletonPerPage(ShowcaseWidgetKind kind)
-        {
-            return kind == ShowcaseWidgetKind.Profile ||
-                   kind == ShowcaseWidgetKind.PinnedAchievements ||
-                   kind == ShowcaseWidgetKind.FavoriteGames;
         }
 
         private static ShowcasePageSettings FindPage(ShowcaseSettings settings, string pageId)

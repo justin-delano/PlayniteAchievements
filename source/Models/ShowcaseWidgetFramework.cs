@@ -5,12 +5,6 @@ using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Models
 {
-    public enum WidgetHostKind
-    {
-        Showcase,
-        StartPage
-    }
-
     public enum WidgetViewportDensity
     {
         Compact,
@@ -27,19 +21,11 @@ namespace PlayniteAchievements.Models
 
     public sealed class WidgetViewportState
     {
-        public double Width { get; private set; }
-
-        public double Height { get; private set; }
-
         public WidgetViewportDensity Density { get; private set; }
 
         public WidgetViewportOrientation Orientation { get; private set; }
 
-        public bool ShowDescriptions => Density == WidgetViewportDensity.Expanded;
-
         public bool ShowSecondaryStatistics => Density != WidgetViewportDensity.Compact;
-
-        public bool ShowControls => Density == WidgetViewportDensity.Expanded;
 
         public bool ShowLegend => Density != WidgetViewportDensity.Compact;
 
@@ -63,24 +49,10 @@ namespace PlayniteAchievements.Models
 
             return new WidgetViewportState
             {
-                Width = width,
-                Height = height,
                 Density = density,
                 Orientation = orientation
             };
         }
-    }
-
-    public sealed class WidgetHostContext
-    {
-        public WidgetHostKind HostKind { get; set; }
-
-        public string PageId { get; set; }
-
-        public string InstanceId { get; set; }
-
-        public WidgetViewportState Viewport { get; set; } =
-            WidgetViewportState.Classify(0, 0);
     }
 
     public sealed class ShowcaseWidgetDefinition
@@ -182,6 +154,157 @@ namespace PlayniteAchievements.Models
 
             instance.SetOption(RangeOption, range);
             instance.Options?.Remove(LegacyRangeDaysOption);
+        }
+    }
+
+    /// <summary>
+    /// Owns persisted option names, defaults, and defensive range validation.
+    /// Renderers and editors should not interpret the option dictionary directly.
+    /// </summary>
+    public static class ShowcaseWidgetOptions
+    {
+        private const string Mode = "Mode";
+        private const string Grouping = "Grouping";
+        private const string TopN = "TopN";
+        private const string Source = "Source";
+        private const string Count = "Count";
+        private const string Variant = "Variant";
+        private const string IntervalSeconds = "IntervalSeconds";
+        private const string FitMode = "FitMode";
+        private const string Shuffle = "Shuffle";
+
+        public static ShowcaseScoreMode GetScoreMode(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Mode, ShowcaseScoreMode.Dual);
+
+        public static void SetScoreMode(ShowcaseWidgetInstanceSettings settings, ShowcaseScoreMode value) =>
+            settings?.SetOption(Mode, value);
+
+        public static ShowcasePieMode GetPieMode(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Mode, ShowcasePieMode.CompletedGames);
+
+        public static void SetPieMode(ShowcaseWidgetInstanceSettings settings, ShowcasePieMode value) =>
+            settings?.SetOption(Mode, value);
+
+        public static ShowcasePointsGrouping GetPointsGrouping(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Grouping, ShowcasePointsGrouping.Provider);
+
+        public static void SetPointsGrouping(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcasePointsGrouping value) => settings?.SetOption(Grouping, value);
+
+        public static int GetTopN(ShowcaseWidgetInstanceSettings settings) =>
+            Clamp(settings?.GetOption(TopN, 8) ?? 8, 1, 25);
+
+        public static void SetTopN(ShowcaseWidgetInstanceSettings settings, int value) =>
+            settings?.SetOption(TopN, Clamp(value, 1, 25));
+
+        public static ShowcaseFavoriteGameSource GetFavoriteSource(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Source, ShowcaseFavoriteGameSource.ShowcasePins);
+
+        public static void SetFavoriteSource(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseFavoriteGameSource value) => settings?.SetOption(Source, value);
+
+        public static ShowcaseMosaicSource GetMosaicSource(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Source, ShowcaseMosaicSource.Recent);
+
+        public static void SetMosaicSource(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseMosaicSource value) => settings?.SetOption(Source, value);
+
+        public static int GetMosaicCount(ShowcaseWidgetInstanceSettings settings) =>
+            Clamp(settings?.GetOption(Count, 24) ?? 24, 1, 64);
+
+        public static void SetMosaicCount(ShowcaseWidgetInstanceSettings settings, int value) =>
+            settings?.SetOption(Count, Clamp(value, 1, 64));
+
+        public static ShowcaseScreenshotVariant GetScreenshotVariant(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Variant, ShowcaseScreenshotVariant.All);
+
+        public static void SetScreenshotVariant(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseScreenshotVariant value) => settings?.SetOption(Variant, value);
+
+        public static int GetSlideshowIntervalSeconds(ShowcaseWidgetInstanceSettings settings) =>
+            Clamp(settings?.GetOption(IntervalSeconds, 8) ?? 8, 1, 300);
+
+        public static void SetSlideshowIntervalSeconds(
+            ShowcaseWidgetInstanceSettings settings,
+            int value) => settings?.SetOption(IntervalSeconds, Clamp(value, 1, 300));
+
+        public static ShowcaseImageFitMode GetImageFitMode(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, FitMode, ShowcaseImageFitMode.Fill);
+
+        public static void SetImageFitMode(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseImageFitMode value) => settings?.SetOption(FitMode, value);
+
+        public static bool GetShuffle(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(Shuffle, true) ?? true;
+
+        public static void SetShuffle(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(Shuffle, value);
+
+        private static T GetEnum<T>(
+            ShowcaseWidgetInstanceSettings settings,
+            string key,
+            T fallback)
+            where T : struct
+        {
+            var value = settings?.GetOption(key, fallback) ?? fallback;
+            return Enum.IsDefined(typeof(T), value) ? value : fallback;
+        }
+
+        private static int Clamp(int value, int minimum, int maximum) =>
+            Math.Max(minimum, Math.Min(maximum, value));
+    }
+
+    public static class ShowcaseWidgetSettingsFactory
+    {
+        public static ShowcaseWidgetInstanceSettings CreateDefault(
+            ShowcaseWidgetKind kind,
+            string instanceId = null)
+        {
+            var settings = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = kind
+            };
+            if (!string.IsNullOrWhiteSpace(instanceId))
+            {
+                settings.InstanceId = instanceId.Trim();
+            }
+
+            switch (kind)
+            {
+                case ShowcaseWidgetKind.Scores:
+                    ShowcaseWidgetOptions.SetScoreMode(settings, ShowcaseScoreMode.Dual);
+                    break;
+                case ShowcaseWidgetKind.Pie:
+                    ShowcaseWidgetOptions.SetPieMode(settings, ShowcasePieMode.CompletedGames);
+                    break;
+                case ShowcaseWidgetKind.Timeline:
+                    ShowcaseTimelineOptions.SetRange(settings, TimelineRange.ThreeMonths);
+                    break;
+                case ShowcaseWidgetKind.NativePoints:
+                    ShowcaseWidgetOptions.SetPointsGrouping(settings, ShowcasePointsGrouping.Provider);
+                    ShowcaseWidgetOptions.SetTopN(settings, 8);
+                    break;
+                case ShowcaseWidgetKind.FavoriteGames:
+                    ShowcaseWidgetOptions.SetFavoriteSource(settings, ShowcaseFavoriteGameSource.ShowcasePins);
+                    break;
+                case ShowcaseWidgetKind.IconMosaic:
+                    ShowcaseWidgetOptions.SetMosaicSource(settings, ShowcaseMosaicSource.Recent);
+                    ShowcaseWidgetOptions.SetMosaicCount(settings, 24);
+                    break;
+                case ShowcaseWidgetKind.ScreenshotSlideshow:
+                    ShowcaseWidgetOptions.SetScreenshotVariant(settings, ShowcaseScreenshotVariant.All);
+                    ShowcaseWidgetOptions.SetShuffle(settings, true);
+                    ShowcaseWidgetOptions.SetSlideshowIntervalSeconds(settings, 8);
+                    ShowcaseWidgetOptions.SetImageFitMode(settings, ShowcaseImageFitMode.Fill);
+                    break;
+            }
+
+            return settings;
         }
     }
 }

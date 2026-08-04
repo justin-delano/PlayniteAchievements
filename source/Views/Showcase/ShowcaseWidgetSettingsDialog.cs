@@ -10,6 +10,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Views.Helpers;
+using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
 namespace PlayniteAchievements.Views.Showcase
 {
@@ -106,103 +107,23 @@ namespace PlayniteAchievements.Views.Showcase
                 _workingWidget.CustomTitle,
                 Localize("LOCPlayAch_Showcase_CustomTitleHint", "Leave blank to use the widget name."));
 
-            switch (_workingWidget.Kind)
+            if (_workingWidget.Kind == ShowcaseWidgetKind.Profile)
             {
-                case ShowcaseWidgetKind.Profile:
-                    BuildProfileSettings(panel);
-                    break;
-                case ShowcaseWidgetKind.Scores:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Mode", "Mode"),
-                        new[] { ShowcaseScoreMode.Dual, ShowcaseScoreMode.Collection, ShowcaseScoreMode.Prestige },
-                        _workingWidget.GetOption("Mode", ShowcaseScoreMode.Dual),
-                        value => _workingWidget.SetOption("Mode", value),
-                        ScoreModeName);
-                    break;
-                case ShowcaseWidgetKind.Pie:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Mode", "Mode"),
-                        new[]
-                        {
-                            ShowcasePieMode.CompletedGames,
-                            ShowcasePieMode.Provider,
-                            ShowcasePieMode.Rarity,
-                            ShowcasePieMode.Trophy
-                        },
-                        _workingWidget.GetOption("Mode", ShowcasePieMode.CompletedGames),
-                        value => _workingWidget.SetOption("Mode", value),
-                        PieModeName);
-                    break;
-                case ShowcaseWidgetKind.Timeline:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Range", "Range"),
-                        new[]
-                        {
-                            TimelineRange.OneMonth,
-                            TimelineRange.ThreeMonths,
-                            TimelineRange.OneYear,
-                            TimelineRange.All
-                        },
-                        ShowcaseTimelineOptions.GetRange(_workingWidget),
-                        value => ShowcaseTimelineOptions.SetRange(_workingWidget, value),
-                        TimelineRangeName);
-                    break;
-                case ShowcaseWidgetKind.NativePoints:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_GroupBy", "Group by"),
-                        new[] { ShowcasePointsGrouping.Provider, ShowcasePointsGrouping.Game },
-                        _workingWidget.GetOption("Grouping", ShowcasePointsGrouping.Provider),
-                        value => _workingWidget.SetOption("Grouping", value),
-                        PointsGroupingName);
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_TopN", "Top entries"),
-                        new[] { 5, 8, 10, 15, 25 },
-                        _workingWidget.GetOption("TopN", 8),
-                        value => _workingWidget.SetOption("TopN", value),
-                        value => value.ToString("N0", FormattingCulture.Current));
-                    break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Source", "Source"),
-                        new[]
-                        {
-                            ShowcaseFavoriteGameSource.ShowcasePins,
-                            ShowcaseFavoriteGameSource.PlayniteFavorites
-                        },
-                        _workingWidget.GetOption("Source", ShowcaseFavoriteGameSource.ShowcasePins),
-                        value => _workingWidget.SetOption("Source", value),
-                        FavoriteSourceName);
-                    break;
-                case ShowcaseWidgetKind.IconMosaic:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Source", "Source"),
-                        new[] { ShowcaseMosaicSource.Recent, ShowcaseMosaicSource.Rarest, ShowcaseMosaicSource.Pinned },
-                        _workingWidget.GetOption("Source", ShowcaseMosaicSource.Recent),
-                        value => _workingWidget.SetOption("Source", value),
-                        MosaicSourceName);
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_ItemCount", "Item count"),
-                        new[] { 12, 24, 36, 48, 64 },
-                        _workingWidget.GetOption("Count", 24),
-                        value => _workingWidget.SetOption("Count", value),
-                        value => value.ToString("N0", FormattingCulture.Current));
-                    break;
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    BuildScreenshotSettings(panel);
-                    break;
-                default:
-                    panel.Children.Add(CreateHint(Localize(
-                        "LOCPlayAch_Showcase_NoAdditionalSettings",
-                        "This widget has no additional settings.")));
-                    break;
+                BuildProfileSettings(panel);
+            }
+            else if (ShowcaseWidgetOptionsControl.HasOptions(_workingWidget.Kind))
+            {
+                panel.Children.Add(new ShowcaseWidgetOptionsControl(
+                    _workingWidget,
+                    publishChanges: false,
+                    margin: new Thickness(0),
+                    loadStyles: false));
+            }
+            else
+            {
+                panel.Children.Add(CreateHint(Localize(
+                    "LOCPlayAch_Showcase_NoAdditionalSettings",
+                    "This widget has no additional settings.")));
             }
 
             var buttons = new StackPanel
@@ -250,49 +171,6 @@ namespace PlayniteAchievements.Views.Showcase
                 panel,
                 Localize("LOCPlayAch_Showcase_ProfileBackground", "Background"),
                 _workingProfile.BackgroundPath);
-        }
-
-        private void BuildScreenshotSettings(Panel panel)
-        {
-            AddChoice(
-                panel,
-                Localize("LOCPlayAch_Showcase_Variant", "Capture variant"),
-                new[]
-                {
-                    ShowcaseScreenshotVariant.All,
-                    ShowcaseScreenshotVariant.Clean,
-                    ShowcaseScreenshotVariant.Notification,
-                    ShowcaseScreenshotVariant.Framed
-                },
-                _workingWidget.GetOption("Variant", ShowcaseScreenshotVariant.All),
-                value => _workingWidget.SetOption("Variant", value),
-                ScreenshotVariantName);
-            AddChoice(
-                panel,
-                Localize("LOCPlayAch_Showcase_Interval", "Interval"),
-                new[] { 3, 5, 8, 15, 30 },
-                _workingWidget.GetOption("IntervalSeconds", 8),
-                value => _workingWidget.SetOption("IntervalSeconds", value),
-                value => string.Format(
-                    FormattingCulture.Current,
-                    Localize("LOCPlayAch_Showcase_Seconds", "{0} seconds"),
-                    value));
-            AddChoice(
-                panel,
-                Localize("LOCPlayAch_Showcase_FitMode", "Fit"),
-                new[] { ShowcaseImageFitMode.Fit, ShowcaseImageFitMode.Fill },
-                _workingWidget.GetOption("FitMode", ShowcaseImageFitMode.Fill),
-                value => _workingWidget.SetOption("FitMode", value),
-                FitModeName);
-            AddChoice(
-                panel,
-                Localize("LOCPlayAch_Showcase_Shuffle", "Shuffle"),
-                new[] { true, false },
-                _workingWidget.GetOption("Shuffle", true),
-                value => _workingWidget.SetOption("Shuffle", value),
-                value => value
-                    ? Localize("LOCPlayAch_Settings_Override_On", "On")
-                    : Localize("LOCPlayAch_Settings_Override_Off", "Off"));
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -407,39 +285,6 @@ namespace PlayniteAchievements.Views.Showcase
             return box;
         }
 
-        private static void AddChoice<T>(
-            Panel panel,
-            string label,
-            IEnumerable<T> values,
-            T selected,
-            Action<T> apply,
-            Func<T, string> display)
-        {
-            panel.Children.Add(CreateLabel(label));
-            var combo = new ComboBox { MinHeight = 30 };
-            Choice<T> selectedChoice = null;
-            foreach (var value in values)
-            {
-                var choice = new Choice<T> { Value = value, Label = display(value) };
-                combo.Items.Add(choice);
-                if (Equals(value, selected))
-                {
-                    selectedChoice = choice;
-                }
-            }
-
-            combo.DisplayMemberPath = nameof(Choice<T>.Label);
-            combo.SelectedItem = selectedChoice ?? (combo.Items.Count > 0 ? combo.Items[0] : null);
-            combo.SelectionChanged += (_, __) =>
-            {
-                if (combo.SelectedItem is Choice<T> choice)
-                {
-                    apply(choice.Value);
-                }
-            };
-            panel.Children.Add(combo);
-        }
-
         private static TextBlock CreateHeading(string text)
         {
             var block = new TextBlock
@@ -477,57 +322,6 @@ namespace PlayniteAchievements.Views.Showcase
             return block;
         }
 
-        private static string GetWidgetName(ShowcaseWidgetKind kind)
-        {
-            var definition = ShowcaseWidgetCatalog.Get(kind);
-            return Localize(definition.NameKey, kind.ToString());
-        }
-
-        private static string ScoreModeName(ShowcaseScoreMode value) => Localize(
-            $"LOCPlayAch_Showcase_ScoreMode_{value}",
-            value.ToString());
-
-        private static string PieModeName(ShowcasePieMode value) => Localize(
-            $"LOCPlayAch_Showcase_PieMode_{value}",
-            value.ToString());
-
-        private static string PointsGroupingName(ShowcasePointsGrouping value) => Localize(
-            $"LOCPlayAch_Showcase_PointsGrouping_{value}",
-            value.ToString());
-
-        private static string FavoriteSourceName(ShowcaseFavoriteGameSource value) => Localize(
-            $"LOCPlayAch_Showcase_FavoriteSource_{value}",
-            value.ToString());
-
-        private static string MosaicSourceName(ShowcaseMosaicSource value) => Localize(
-            $"LOCPlayAch_Showcase_MosaicSource_{value}",
-            value.ToString());
-
-        private static string ScreenshotVariantName(ShowcaseScreenshotVariant value) => Localize(
-            $"LOCPlayAch_Showcase_ScreenshotVariant_{value}",
-            value.ToString());
-
-        private static string FitModeName(ShowcaseImageFitMode value) => Localize(
-            $"LOCPlayAch_Showcase_ImageFit_{value}",
-            value.ToString());
-
-        private static string TimelineRangeName(TimelineRange range)
-        {
-            switch (range)
-            {
-                case TimelineRange.OneMonth:
-                    return Localize("LOCPlayAch_TimeRange_1M", "1M");
-                case TimelineRange.ThreeMonths:
-                    return Localize("LOCPlayAch_TimeRange_3M", "3M");
-                case TimelineRange.OneYear:
-                    return Localize("LOCPlayAch_TimeRange_1Y", "1Y");
-                case TimelineRange.All:
-                    return Localize("LOCPlayAch_Common_All", "All");
-                default:
-                    return range.ToString();
-            }
-        }
-
         private static double GetEditorHeight(ShowcaseWidgetKind kind)
         {
             switch (kind)
@@ -544,22 +338,5 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        private static string Localize(string key, string fallback)
-        {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ||
-                   string.Equals(value, key, StringComparison.Ordinal) ||
-                   (value.StartsWith("<!", StringComparison.Ordinal) &&
-                    value.EndsWith("!>", StringComparison.Ordinal))
-                ? fallback
-                : value;
-        }
-
-        private sealed class Choice<T>
-        {
-            public T Value { get; set; }
-
-            public string Label { get; set; }
-        }
     }
 }

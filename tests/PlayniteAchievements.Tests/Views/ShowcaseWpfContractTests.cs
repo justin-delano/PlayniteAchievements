@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
@@ -56,6 +57,9 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(xaml, "x:Name=\"EditToolsPanel\"");
             StringAssert.Contains(xaml, "x:Name=\"SplitColumnsButton\"");
             StringAssert.Contains(xaml, "x:Name=\"MergeLeftButton\"");
+            StringAssert.Contains(
+                xaml,
+                "Content=\"{DynamicResource LOCPlayAch_Showcase_MergeLeftLabel}\"");
             Assert.IsFalse(xaml.Contains("BoundaryCanvas"));
             StringAssert.Contains(code, "Focusable = EditLayoutButton.IsChecked == true");
             StringAssert.Contains(code, "TrySplit(");
@@ -63,6 +67,10 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(code, "FindAdjacentBlocks");
             StringAssert.Contains(code, "OpenMergePicker");
             StringAssert.Contains(code, "ShowcaseWidgetSettingsDialog.Show");
+            StringAssert.Contains(code, "Block_DragLeave");
+            StringAssert.Contains(code, "LOCPlayAch_Showcase_DropMoveHere");
+            StringAssert.Contains(code, "LOCPlayAch_Showcase_DropSwap");
+            StringAssert.Contains(code, "LOCPlayAch_Showcase_DropSame");
             Assert.IsFalse(code.Contains("Widget drawer"));
             Assert.IsFalse(code.Contains("UnplaceWidget"));
             StringAssert.Contains(widgetXaml, "{DynamicResource PlayAch.Brush.Surface}");
@@ -116,6 +124,65 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void Showcase_AllReferencedLocalizationKeysExistInEnUs()
+        {
+            var englishPath = FindRepoFile("source", "Localization", "en_US.xaml");
+            var english = File.ReadAllText(englishPath);
+            var showcaseDirectory = Path.GetDirectoryName(FindRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseControl.xaml"));
+            var sourceDirectory = Directory.GetParent(
+                Directory.GetParent(showcaseDirectory).FullName).FullName;
+            var localizationDirectory = Path.Combine(sourceDirectory, "Localization") +
+                Path.DirectorySeparatorChar;
+            var sourceFiles = Directory.GetFiles(
+                    sourceDirectory,
+                    "*.*",
+                    SearchOption.AllDirectories)
+                .Where(path =>
+                    !path.StartsWith(localizationDirectory, StringComparison.OrdinalIgnoreCase) &&
+                    (path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+                     path.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase)));
+            var usedKeys = sourceFiles
+                .SelectMany(path => Regex.Matches(
+                        File.ReadAllText(path),
+                        @"LOCPlayAch_Showcase_[A-Za-z0-9_]+")
+                    .Cast<Match>()
+                    .Select(match => match.Value))
+                .Distinct(StringComparer.Ordinal)
+                .Where(key => !key.EndsWith("_", StringComparison.Ordinal))
+                .OrderBy(key => key, StringComparer.Ordinal)
+                .ToArray();
+
+            foreach (var key in usedKeys)
+            {
+                AssertLocalizationKey(english, key);
+            }
+        }
+
+        [TestMethod]
+        public void RarestMosaic_LoadsTheFullUnlockedSnapshotWithoutDuplicatingAQuery()
+        {
+            var reader = ReadRepoFile(
+                "source",
+                "Services",
+                "Database",
+                "SummaryCacheReader.cs");
+            var builder = ReadRepoFile(
+                "source",
+                "Services",
+                "Overview",
+                "OverviewDataBuilder.cs");
+
+            StringAssert.Contains(reader, "includeAllVisibleAchievements: requestedRecentLimit == 0");
+            StringAssert.Contains(reader, "result.Achievements = mappedAchievements");
+            StringAssert.Contains(builder, "snapshot.Achievements = MaterializeAchievements(");
+            StringAssert.Contains(builder, "item?.Unlocked == true && item.UnlockTimeUtc.HasValue");
+        }
+
+        [TestMethod]
         public void Showcase_PinMenusExcludeFriendOwnedRows()
         {
             var achievements = ReadRepoFile(
@@ -162,6 +229,24 @@ namespace PlayniteAchievements.Tests.Views
                 if (File.Exists(path))
                 {
                     return File.ReadAllText(path);
+                }
+
+                directory = directory.Parent;
+            }
+
+            Assert.Fail("Could not find " + Path.Combine(parts));
+            return null;
+        }
+
+        private static string FindRepoFile(params string[] parts)
+        {
+            var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            while (directory != null)
+            {
+                var path = Path.Combine(new[] { directory.FullName }.Concat(parts).ToArray());
+                if (File.Exists(path))
+                {
+                    return path;
                 }
 
                 directory = directory.Parent;

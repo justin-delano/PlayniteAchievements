@@ -65,5 +65,36 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(TimelineRange.OneYear, ShowcaseTimelineOptions.GetRange(instance));
             Assert.IsFalse(instance.Options.ContainsKey("RangeDays"));
         }
+
+        [TestMethod]
+        public void WidgetOptions_RejectInvalidEnumsAndClampNumericValues()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings();
+            instance.SetOption("Mode", 999);
+            instance.SetOption("TopN", 100);
+            instance.SetOption("Count", -5);
+            instance.SetOption("IntervalSeconds", 1000);
+
+            Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(instance));
+            Assert.AreEqual(25, ShowcaseWidgetOptions.GetTopN(instance));
+            Assert.AreEqual(1, ShowcaseWidgetOptions.GetMosaicCount(instance));
+            Assert.AreEqual(300, ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(instance));
+        }
+
+        [TestMethod]
+        public void WidgetFactory_UsesTheSharedOptionContract()
+        {
+            var instance = ShowcaseWidgetSettingsFactory.CreateDefault(
+                ShowcaseWidgetKind.ScreenshotSlideshow,
+                " slideshow ");
+
+            Assert.AreEqual("slideshow", instance.InstanceId);
+            Assert.AreEqual(ShowcaseScreenshotVariant.All,
+                ShowcaseWidgetOptions.GetScreenshotVariant(instance));
+            Assert.AreEqual(8, ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(instance));
+            Assert.AreEqual(ShowcaseImageFitMode.Fill,
+                ShowcaseWidgetOptions.GetImageFitMode(instance));
+            Assert.IsTrue(ShowcaseWidgetOptions.GetShuffle(instance));
+        }
     }
 }

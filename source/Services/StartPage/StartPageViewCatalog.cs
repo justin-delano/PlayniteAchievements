@@ -115,55 +115,46 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcaseProfileViewId,
                     StartPageWidgetKind.ShowcaseProfile,
                     ShowcaseWidgetKind.Profile,
-                    allowMultiple: false,
                     hasSettings: false),
                 Shared(
                     ShowcaseDualScoresViewId,
                     StartPageWidgetKind.ShowcaseDualScores,
                     ShowcaseWidgetKind.Scores,
-                    allowMultiple: false,
                     hasSettings: false),
                 Shared(
                     ShowcaseTimelineViewId,
                     StartPageWidgetKind.ShowcaseTimeline,
                     ShowcaseWidgetKind.Timeline,
-                    allowMultiple: true,
                     hasSettings: true),
                 Shared(
                     ShowcaseStatisticsViewId,
                     StartPageWidgetKind.ShowcaseStatistics,
                     ShowcaseWidgetKind.Statistics,
-                    allowMultiple: true,
                     hasSettings: false),
                 Shared(
                     ShowcaseNativePointsViewId,
                     StartPageWidgetKind.ShowcaseNativePoints,
                     ShowcaseWidgetKind.NativePoints,
-                    allowMultiple: true,
                     hasSettings: true),
                 Shared(
                     ShowcasePinnedAchievementsViewId,
                     StartPageWidgetKind.ShowcasePinnedAchievements,
                     ShowcaseWidgetKind.PinnedAchievements,
-                    allowMultiple: false,
                     hasSettings: false),
                 Shared(
                     ShowcaseFavoriteGamesViewId,
                     StartPageWidgetKind.ShowcaseFavoriteGames,
                     ShowcaseWidgetKind.FavoriteGames,
-                    allowMultiple: false,
                     hasSettings: true),
                 Shared(
                     ShowcaseIconMosaicViewId,
                     StartPageWidgetKind.ShowcaseIconMosaic,
                     ShowcaseWidgetKind.IconMosaic,
-                    allowMultiple: true,
                     hasSettings: true),
                 Shared(
                     ShowcaseScreenshotSlideshowViewId,
                     StartPageWidgetKind.ShowcaseScreenshotSlideshow,
                     ShowcaseWidgetKind.ScreenshotSlideshow,
-                    allowMultiple: true,
                     hasSettings: true)
             };
 
@@ -187,7 +178,6 @@ namespace PlayniteAchievements.Services.StartPage
             string viewId,
             StartPageWidgetKind startPageKind,
             ShowcaseWidgetKind showcaseKind,
-            bool allowMultiple,
             bool hasSettings)
         {
             var definition = ShowcaseWidgetCatalog.Get(showcaseKind);
@@ -198,7 +188,7 @@ namespace PlayniteAchievements.Services.StartPage
                 ShowcaseWidgetKind = showcaseKind,
                 NameKey = definition.NameKey,
                 DescriptionKey = definition.DescriptionKey,
-                AllowMultipleInstances = allowMultiple,
+                AllowMultipleInstances = definition.AllowMultipleInstances,
                 HasSettings = hasSettings
             };
         }

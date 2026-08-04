@@ -115,12 +115,15 @@ namespace PlayniteAchievements.Services.Overview
 
             var games = queryData.Games ?? new List<CachedGameSummaryData>();
             var recentUnlocks = queryData.RecentUnlocks ?? new List<CachedRecentUnlockData>();
+            var achievements = queryData.Achievements?.Count > 0
+                ? queryData.Achievements
+                : recentUnlocks;
             var referencedGameIds = games
                 .Where(g => g?.PlayniteGameId.HasValue == true)
                 .Select(g => g.PlayniteGameId.Value)
-                .Concat(recentUnlocks
-                    .Where(r => r?.PlayniteGameId.HasValue == true)
-                    .Select(r => r.PlayniteGameId.Value));
+                .Concat(achievements
+                    .Where(item => item?.PlayniteGameId.HasValue == true)
+                    .Select(item => item.PlayniteGameId.Value));
             var presentationByGameId = BuildGamePresentationCache(referencedGameIds);
 
             for (var i = 0; i < games.Count; i++)
@@ -222,11 +225,15 @@ namespace PlayniteAchievements.Services.Overview
                 snapshot.TotalByProvider[providerKey] += game.TotalAchievements;
             }
 
-            snapshot.RecentAchievements = MaterializeRecentAchievements(
+            snapshot.Achievements = MaterializeAchievements(
                 settings,
-                recentUnlocks,
+                achievements,
                 presentationByGameId,
                 cancel);
+            snapshot.RecentAchievements = AchievementSortHelper.CreateDefaultSortedList(
+                snapshot.Achievements.Where(item =>
+                    item?.Unlocked == true && item.UnlockTimeUtc.HasValue),
+                AchievementSortScope.RecentAchievements);
 
             snapshot.GameSummaries = snapshot.GameSummaries
                 .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
@@ -423,99 +430,103 @@ namespace PlayniteAchievements.Services.Overview
             return fragment;
         }
 
-        private List<AchievementDisplayItem> MaterializeRecentAchievements(
+        private List<AchievementDisplayItem> MaterializeAchievements(
             PlayniteAchievementsSettings settings,
-            IEnumerable<CachedRecentUnlockData> recentAchievements,
+            IEnumerable<CachedRecentUnlockData> achievements,
             Dictionary<Guid, GamePresentation> presentationByGameId,
             CancellationToken cancel)
         {
             var items = new List<AchievementDisplayItem>();
-            if (recentAchievements == null)
+            if (achievements == null)
             {
                 return items;
             }
 
             presentationByGameId ??= new Dictionary<Guid, GamePresentation>();
 
-            var recentGameDataByKey = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
+            var gameDataByKey = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
             var appearanceByGameKey = new Dictionary<string, AchievementDisplayItem.AppearanceSettingsSnapshot>(StringComparer.OrdinalIgnoreCase);
-            foreach (var recent in recentAchievements)
+            var categoryMemoByGameKey = new Dictionary<string, AchievementDisplayItem.CategoryPresentationMemo>(StringComparer.OrdinalIgnoreCase);
+            foreach (var achievement in achievements)
             {
                 cancel.ThrowIfCancellationRequested();
 
-                if (recent == null || !recent.UnlockTimeUtc.HasValue)
+                if (achievement == null)
                 {
                     continue;
                 }
 
-                var presentation = ResolveGamePresentation(recent.PlayniteGameId, presentationByGameId);
-                var gameKey = BuildRecentGameKey(recent);
-                if (!recentGameDataByKey.TryGetValue(gameKey, out var gameData))
+                var presentation = ResolveGamePresentation(achievement.PlayniteGameId, presentationByGameId);
+                var gameKey = BuildAchievementGameKey(achievement);
+                if (!gameDataByKey.TryGetValue(gameKey, out var gameData))
                 {
                     gameData = new GameAchievementData
                     {
-                        ProviderKey = recent.ProviderKey,
-                        ProviderPlatformKey = recent.ProviderPlatformKey,
-                        GameName = recent.GameName,
-                        AppId = recent.AppId,
-                        ProviderGameKey = recent.ProviderGameKey,
-                        PlayniteGameId = recent.PlayniteGameId,
+                        ProviderKey = achievement.ProviderKey,
+                        ProviderPlatformKey = achievement.ProviderPlatformKey,
+                        GameName = presentation.DisplayName ?? achievement.GameName,
+                        AppId = achievement.AppId,
+                        ProviderGameKey = achievement.ProviderGameKey,
+                        PlayniteGameId = achievement.PlayniteGameId,
                         Game = presentation.Game,
                         HasAchievements = true,
-                        UseSeparateLockedIconsWhenAvailable = recent.UseSeparateLockedIconsWhenAvailable,
+                        UseSeparateLockedIconsWhenAvailable = achievement.UseSeparateLockedIconsWhenAvailable,
                         Achievements = new List<AchievementDetail>()
                     };
                     AttachCategoryMetadata(gameData, settings);
-                    recentGameDataByKey[gameKey] = gameData;
+                    gameDataByKey[gameKey] = gameData;
 
                     appearanceByGameKey[gameKey] = AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
                         settings,
                         gameData.PlayniteGameId,
                         gameData.UseSeparateLockedIconsWhenAvailable);
+                    categoryMemoByGameKey[gameKey] = new AchievementDisplayItem.CategoryPresentationMemo();
                 }
 
                 var detail = new AchievementDetail
                 {
-                    ApiName = recent.ApiName,
-                    DisplayName = recent.DisplayName,
-                    Description = recent.Description,
-                    UnlockedIconPath = recent.UnlockedIconPath,
-                    LockedIconPath = recent.LockedIconPath,
-                    Points = recent.Points,
-                    ScaledPoints = recent.ScaledPoints,
-                    Category = recent.Category,
-                    CategoryType = recent.CategoryType,
-                    TrophyType = recent.TrophyType,
-                    Hidden = recent.Hidden,
-                    IsCapstone = recent.IsCapstone,
-                    AchievementNote = recent.AchievementNote,
-                    ProviderKey = recent.ProviderKey,
-                    GlobalPercentUnlocked = recent.GlobalPercentUnlocked,
-                    Rarity = recent.Rarity,
-                    Unlocked = true,
-                    UnlockTimeUtc = recent.UnlockTimeUtc,
-                    ProgressNum = recent.ProgressNum,
-                    ProgressDenom = recent.ProgressDenom
+                    ApiName = achievement.ApiName,
+                    DisplayName = achievement.DisplayName,
+                    Description = achievement.Description,
+                    UnlockedIconPath = achievement.UnlockedIconPath,
+                    LockedIconPath = achievement.LockedIconPath,
+                    Points = achievement.Points,
+                    ScaledPoints = achievement.ScaledPoints,
+                    Category = achievement.Category,
+                    CategoryType = achievement.CategoryType,
+                    TrophyType = achievement.TrophyType,
+                    Hidden = achievement.Hidden,
+                    IsCapstone = achievement.IsCapstone,
+                    AchievementNote = achievement.AchievementNote,
+                    ProviderKey = achievement.ProviderKey,
+                    GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
+                    Rarity = achievement.Rarity,
+                    Unlocked = achievement.Unlocked,
+                    UnlockTimeUtc = achievement.UnlockTimeUtc,
+                    ProgressNum = achievement.ProgressNum,
+                    ProgressDenom = achievement.ProgressDenom
                 };
 
-                var item = AchievementDisplayItem.CreateRecent(
+                var item = AchievementDisplayItem.Create(
                     gameData,
                     detail,
                     settings,
-                    presentation.IconPath,
-                    presentation.CoverPath,
-                    appearanceByGameKey.TryGetValue(gameKey, out var appearance)
+                    playniteGameIdOverride: gameData.PlayniteGameId,
+                    appearanceSettings: appearanceByGameKey.TryGetValue(gameKey, out var appearance)
                         ? appearance
+                        : null,
+                    categoryMemo: categoryMemoByGameKey.TryGetValue(gameKey, out var categoryMemo)
+                        ? categoryMemo
                         : null);
                 if (item != null)
                 {
+                    item.GameIconPath = presentation.IconPath;
+                    item.GameCoverPath = presentation.CoverPath;
                     items.Add(item);
                 }
             }
 
-            return AchievementSortHelper.CreateDefaultSortedList(
-                items,
-                AchievementSortScope.RecentAchievements);
+            return items;
         }
 
         private Dictionary<Guid, GamePresentation> BuildGamePresentationCache(IEnumerable<Guid> playniteGameIds)
@@ -618,7 +629,7 @@ namespace PlayniteAchievements.Services.Overview
             return string.IsNullOrWhiteSpace(resolved) ? "Unknown" : resolved.Trim();
         }
 
-        private static string BuildRecentGameKey(CachedRecentUnlockData recent)
+        private static string BuildAchievementGameKey(CachedRecentUnlockData recent)
         {
             if (recent?.PlayniteGameId.HasValue == true)
             {

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
@@ -20,7 +19,7 @@ namespace PlayniteAchievements.Services.Showcase
 
         public double Value { get; set; }
 
-        public string DisplayValue { get; set; }
+        public bool HasValue { get; set; } = true;
     }
 
     public sealed class ShowcaseChartEntry
@@ -119,9 +118,6 @@ namespace PlayniteAchievements.Services.Showcase
                 case ShowcaseWidgetKind.IconMosaic:
                     result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance);
                     break;
-                case ShowcaseWidgetKind.Pie:
-                    result.ChartEntries = BuildPie(snapshot, instance);
-                    break;
                 case ShowcaseWidgetKind.Timeline:
                     var endDate = (now ?? DateTime.Now).Date;
                     var sourceCounts = (snapshot.GlobalUnlockCountsByDate ??
@@ -192,31 +188,26 @@ namespace PlayniteAchievements.Services.Showcase
 
             return new List<ShowcaseStatistic>
             {
-                Stat("unlocked", "LOCPlayAch_Showcase_Stat_Unlocked", "Unlocked", snapshot.TotalUnlocked, snapshot.TotalUnlocked.ToString("N0", FormattingCulture.Current)),
-                Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", "Completion", snapshot.GlobalProgressionPercent, snapshot.GlobalProgressionPercent.ToString("N1", FormattingCulture.Current) + "%"),
-                Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", "Tracked games", snapshot.TotalGames, snapshot.TotalGames.ToString("N0", FormattingCulture.Current)),
-                Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", "Played games", playedGames, playedGames.ToString("N0", FormattingCulture.Current)),
-                Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", "Completed games", snapshot.CompletedGames, snapshot.CompletedGames.ToString("N0", FormattingCulture.Current)),
-                Stat("playtime", "LOCPlayAch_Showcase_Stat_Playtime", "Playtime", totalPlaytime, FormatPlaytime(totalPlaytime)),
+                Stat("unlocked", "LOCPlayAch_Showcase_Stat_Unlocked", "Unlocked", snapshot.TotalUnlocked),
+                Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", "Completion", snapshot.GlobalProgressionPercent),
+                Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", "Tracked games", snapshot.TotalGames),
+                Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", "Played games", playedGames),
+                Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", "Completed games", snapshot.CompletedGames),
+                Stat("playtime", "LOCPlayAch_Showcase_Stat_Playtime", "Playtime", totalPlaytime),
                 Stat(
                     "activeDayRate",
                     "LOCPlayAch_Showcase_Stat_ActiveDayRate",
                     "Unlocks / active day",
-                    activeDays > 0 ? (double)snapshot.TotalUnlocked / activeDays : 0,
-                    activeDays > 0
-                        ? ((double)snapshot.TotalUnlocked / activeDays).ToString("N1", FormattingCulture.Current)
-                        : "0"),
-                Stat("thirtyDayRate", "LOCPlayAch_Showcase_Stat_ThirtyDayRate", "30-day rate", lastThirtyDays / 30d, (lastThirtyDays / 30d).ToString("N1", FormattingCulture.Current) + "/day"),
+                    activeDays > 0 ? (double)snapshot.TotalUnlocked / activeDays : 0),
+                Stat("thirtyDayRate", "LOCPlayAch_Showcase_Stat_ThirtyDayRate", "30-day rate", lastThirtyDays / 30d),
                 Stat(
                     "averageGlobalUnlock",
                     "LOCPlayAch_Showcase_Stat_AverageGlobalUnlock",
                     "Average global unlock",
                     unlockedWithRarity.Count > 0 ? unlockedWithRarity.Average() : 0,
-                    unlockedWithRarity.Count > 0
-                        ? unlockedWithRarity.Average().ToString("N1", FormattingCulture.Current) + "%"
-                        : "—"),
-                Stat("currentStreak", "LOCPlayAch_Showcase_Stat_CurrentStreak", "Current streak", currentStreak, currentStreak.ToString("N0", FormattingCulture.Current) + " days"),
-                Stat("longestStreak", "LOCPlayAch_Showcase_Stat_LongestStreak", "Longest streak", longestStreak, longestStreak.ToString("N0", FormattingCulture.Current) + " days")
+                    hasValue: unlockedWithRarity.Count > 0),
+                Stat("currentStreak", "LOCPlayAch_Showcase_Stat_CurrentStreak", "Current streak", currentStreak),
+                Stat("longestStreak", "LOCPlayAch_Showcase_Stat_LongestStreak", "Longest streak", longestStreak)
             };
         }
 
@@ -225,10 +216,8 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseWidgetInstanceSettings instance)
         {
             var summaries = snapshot?.GameSummaries ?? new List<GameSummaryItem>();
-            var grouping = instance?.GetOption(
-                "Grouping",
-                ShowcasePointsGrouping.Provider) ?? ShowcasePointsGrouping.Provider;
-            var topN = Math.Max(1, Math.Min(25, instance?.GetOption("TopN", 8) ?? 8));
+            var grouping = ShowcaseWidgetOptions.GetPointsGrouping(instance);
+            var topN = ShowcaseWidgetOptions.GetTopN(instance);
 
             IEnumerable<ShowcaseChartEntry> entries;
             if (grouping == ShowcasePointsGrouping.Game)
@@ -294,10 +283,7 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseWidgetInstanceSettings instance)
         {
             var summaries = snapshot?.GameSummaries ?? new List<GameSummaryItem>();
-            var source = instance?.GetOption(
-                "Source",
-                ShowcaseFavoriteGameSource.ShowcasePins) ??
-                ShowcaseFavoriteGameSource.ShowcasePins;
+            var source = ShowcaseWidgetOptions.GetFavoriteSource(instance);
             if (source == ShowcaseFavoriteGameSource.PlayniteFavorites)
             {
                 return summaries
@@ -321,10 +307,8 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseSettings settings,
             ShowcaseWidgetInstanceSettings instance)
         {
-            var source = instance?.GetOption(
-                "Source",
-                ShowcaseMosaicSource.Recent) ?? ShowcaseMosaicSource.Recent;
-            var count = Math.Max(1, Math.Min(64, instance?.GetOption("Count", 24) ?? 24));
+            var source = ShowcaseWidgetOptions.GetMosaicSource(instance);
+            var count = ShowcaseWidgetOptions.GetMosaicCount(instance);
             IEnumerable<AchievementDisplayItem> achievements;
             switch (source)
             {
@@ -350,65 +334,6 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             return achievements.Take(count).ToList();
-        }
-
-        public static IReadOnlyList<ShowcaseChartEntry> BuildPie(
-            OverviewDataSnapshot snapshot,
-            ShowcaseWidgetInstanceSettings instance)
-        {
-            snapshot = snapshot ?? new OverviewDataSnapshot();
-            var mode = instance?.GetOption("Mode", ShowcasePieMode.CompletedGames) ??
-                ShowcasePieMode.CompletedGames;
-            switch (mode)
-            {
-                case ShowcasePieMode.Provider:
-                    var providerLabels = (snapshot.GameSummaries ?? new List<GameSummaryItem>())
-                        .Where(game => game != null && !string.IsNullOrWhiteSpace(game.ProviderKey))
-                        .GroupBy(game => game.ProviderKey, StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(
-                            group => group.Key,
-                            group => group.Select(game => game.Provider)
-                                .FirstOrDefault(label => !string.IsNullOrWhiteSpace(label)) ?? group.Key,
-                            StringComparer.OrdinalIgnoreCase);
-                    return (snapshot.UnlockedByProvider ?? new Dictionary<string, int>())
-                        .OrderByDescending(pair => pair.Value)
-                        .Select(pair => new ShowcaseChartEntry
-                        {
-                            Key = pair.Key,
-                            Label = providerLabels.TryGetValue(pair.Key, out var providerLabel)
-                                ? providerLabel
-                                : pair.Key,
-                            Value = pair.Value,
-                            SecondaryText = string.Format(
-                                FormattingCulture.Current,
-                                "{0:N0}/{1:N0}",
-                                pair.Value,
-                                GetValue(snapshot.TotalByProvider, pair.Key))
-                        }).ToList();
-                case ShowcasePieMode.Rarity:
-                    return new List<ShowcaseChartEntry>
-                    {
-                        Chart("common", "LOCPlayAch_Rarity_Common", "Common", snapshot.TotalCommon),
-                        Chart("uncommon", "LOCPlayAch_Rarity_Uncommon", "Uncommon", snapshot.TotalUncommon),
-                        Chart("rare", "LOCPlayAch_Rarity_Rare", "Rare", snapshot.TotalRare),
-                        Chart("ultraRare", "LOCPlayAch_Rarity_UltraRare", "Ultra rare", snapshot.TotalUltraRare)
-                    }.Where(entry => entry.Value > 0).ToList();
-                case ShowcasePieMode.Trophy:
-                    var games = snapshot.GameSummaries ?? new List<GameSummaryItem>();
-                    return new List<ShowcaseChartEntry>
-                    {
-                        Chart("platinum", "LOCPlayAch_Trophy_Platinum", "Platinum", games.Sum(game => game?.TrophyPlatinumCount ?? 0)),
-                        Chart("gold", "LOCPlayAch_Trophy_Gold", "Gold", games.Sum(game => game?.TrophyGoldCount ?? 0)),
-                        Chart("silver", "LOCPlayAch_Trophy_Silver", "Silver", games.Sum(game => game?.TrophySilverCount ?? 0)),
-                        Chart("bronze", "LOCPlayAch_Trophy_Bronze", "Bronze", games.Sum(game => game?.TrophyBronzeCount ?? 0))
-                    }.Where(entry => entry.Value > 0).ToList();
-                default:
-                    return new List<ShowcaseChartEntry>
-                    {
-                        Chart("completed", "LOCPlayAch_Completed", "Completed", snapshot.CompletedGames),
-                        Chart("incomplete", "LOCPlayAch_Showcase_Incomplete", "Incomplete", Math.Max(0, snapshot.TotalGames - snapshot.CompletedGames))
-                    }.Where(entry => entry.Value > 0).ToList();
-            }
         }
 
         private static IReadOnlyList<ShowcaseChartEntry> ApplyTopN(
@@ -472,7 +397,7 @@ namespace PlayniteAchievements.Services.Showcase
             string labelKey,
             string label,
             double value,
-            string displayValue)
+            bool hasValue = true)
         {
             return new ShowcaseStatistic
             {
@@ -480,36 +405,8 @@ namespace PlayniteAchievements.Services.Showcase
                 LabelKey = labelKey,
                 Label = label,
                 Value = value,
-                DisplayValue = displayValue
+                HasValue = hasValue
             };
-        }
-
-        private static ShowcaseChartEntry Chart(
-            string key,
-            string labelKey,
-            string label,
-            double value)
-        {
-            return new ShowcaseChartEntry
-            {
-                Key = key,
-                LabelKey = labelKey,
-                Label = label,
-                Value = value
-            };
-        }
-
-        private static int GetValue(IDictionary<string, int> values, string key)
-        {
-            return values != null && values.TryGetValue(key, out var value) ? value : 0;
-        }
-
-        private static string FormatPlaytime(double seconds)
-        {
-            var hours = Math.Max(0, seconds) / 3600d;
-            return hours >= 1000
-                ? (hours / 1000d).ToString("N1", FormattingCulture.Current) + "k h"
-                : hours.ToString("N0", FormattingCulture.Current) + " h";
         }
     }
 }

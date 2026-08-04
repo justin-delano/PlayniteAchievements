@@ -24,11 +24,10 @@
 
             <Button x:Name="PreviousPageButton"
                     Grid.Column="0"
-                    Content="&#xE76B;"
-                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                    Content="{DynamicResource LOCPlayAch_Showcase_PreviousPageLabel}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PreviousPage}"
                     Click="PreviousPageButton_Click"
-                    MinWidth="32"/>
+                    MinWidth="72"/>
             <ComboBox x:Name="PageSelector"
                       Grid.Column="1"
                       DisplayMemberPath="Name"
@@ -38,11 +37,10 @@
                       Margin="6,0"/>
             <Button x:Name="NextPageButton"
                     Grid.Column="2"
-                    Content="&#xE76C;"
-                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                    Content="{DynamicResource LOCPlayAch_Showcase_NextPageLabel}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_NextPage}"
                     Click="NextPageButton_Click"
-                    MinWidth="32"/>
+                    MinWidth="72"/>
             <TextBlock x:Name="PageCountText"
                        Grid.Column="3"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
@@ -58,11 +56,10 @@
                           Margin="0,0,6,0"/>
             <Button x:Name="PageActionsButton"
                     Grid.Column="6"
-                    Content="&#xE712;"
-                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                    Content="{DynamicResource LOCPlayAch_Showcase_PageActionsLabel}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PageActions}"
                     Click="PageActionsButton_Click"
-                    MinWidth="32"/>
+                    MinWidth="96"/>
         </Grid>
 
         <Border x:Name="EditToolsPanel"
@@ -111,32 +108,28 @@
                             Click="SplitRowsButton_Click"
                             Margin="4,0,10,0"/>
                     <Button x:Name="MergeLeftButton"
-                            Content="&#xE76B;"
-                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                            Content="{DynamicResource LOCPlayAch_Showcase_MergeLeftLabel}"
                             ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeLeft}"
                             Click="MergeLeftButton_Click"
-                            MinWidth="32"
+                            MinWidth="72"
                             Margin="2,0"/>
                     <Button x:Name="MergeUpButton"
-                            Content="&#xE74A;"
-                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                            Content="{DynamicResource LOCPlayAch_Showcase_MergeUpLabel}"
                             ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeUp}"
                             Click="MergeUpButton_Click"
-                            MinWidth="32"
+                            MinWidth="72"
                             Margin="2,0"/>
                     <Button x:Name="MergeDownButton"
-                            Content="&#xE74B;"
-                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                            Content="{DynamicResource LOCPlayAch_Showcase_MergeDownLabel}"
                             ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeDown}"
                             Click="MergeDownButton_Click"
-                            MinWidth="32"
+                            MinWidth="72"
                             Margin="2,0"/>
                     <Button x:Name="MergeRightButton"
-                            Content="&#xE76C;"
-                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                            Content="{DynamicResource LOCPlayAch_Showcase_MergeRightLabel}"
                             ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeRight}"
                             Click="MergeRightButton_Click"
-                            MinWidth="32"
+                            MinWidth="72"
                             Margin="2,0"/>
                 </WrapPanel>
             </Grid>

@@ -5,10 +5,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Captures;
 using PlayniteAchievements.Views.Helpers;
+using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
 namespace PlayniteAchievements.Views.Showcase
 {
@@ -28,10 +29,8 @@ namespace PlayniteAchievements.Views.Showcase
 
         public ScreenshotSlideshowControl(ShowcaseWidgetInstanceSettings settings)
         {
-            _settings = settings ?? new ShowcaseWidgetInstanceSettings
-            {
-                Kind = ShowcaseWidgetKind.ScreenshotSlideshow
-            };
+            _settings = settings ?? ShowcaseWidgetSettingsFactory.CreateDefault(
+                ShowcaseWidgetKind.ScreenshotSlideshow);
             _image = new Image();
             _status = new TextBlock
             {
@@ -41,8 +40,8 @@ namespace PlayniteAchievements.Views.Showcase
             };
             _status.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             _pause = CreateButton(
-                "Ⅱ",
-                Localize("LOCPlayAch_Showcase_PauseSlideshow", "Pause slideshow"),
+                "LOCPlayAch_Showcase_PauseSlideshow",
+                "Pause slideshow",
                 TogglePause);
             _timer = new DispatcherTimer();
             _timer.Tick += Timer_Tick;
@@ -82,26 +81,30 @@ namespace PlayniteAchievements.Views.Showcase
                 Margin = new Thickness(0, 0, 0, 4)
             };
             controls.Children.Add(CreateButton(
-                "‹",
-                Localize("LOCPlayAch_Showcase_PreviousScreenshot", "Previous screenshot"),
+                "LOCPlayAch_Showcase_PreviousScreenshot",
+                "Previous screenshot",
                 () => Move(-1)));
             controls.Children.Add(_pause);
             controls.Children.Add(CreateButton(
-                "›",
-                Localize("LOCPlayAch_Showcase_NextScreenshot", "Next screenshot"),
+                "LOCPlayAch_Showcase_NextScreenshot",
+                "Next screenshot",
                 () => Move(1)));
             return controls;
         }
 
-        private Button CreateButton(string content, string tooltip, Action action)
+        private static Button CreateButton(
+            string localizationKey,
+            string fallback,
+            Action action)
         {
+            var label = Localize(localizationKey, fallback);
             var button = new Button
             {
-                Content = content,
-                ToolTip = tooltip,
-                MinWidth = 28,
+                Content = label,
+                ToolTip = label,
+                MinWidth = 72,
                 Margin = new Thickness(2),
-                Padding = new Thickness(4, 1, 4, 1)
+                Padding = new Thickness(8, 2, 8, 2)
             };
             button.Click += (_, __) => action();
             return button;
@@ -123,7 +126,7 @@ namespace PlayniteAchievements.Views.Showcase
             Reload();
             _timer.Interval = TimeSpan.FromSeconds(Math.Max(
                 2,
-                Math.Min(300, _settings.GetOption("IntervalSeconds", 8))));
+                ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(_settings)));
             if (!_paused)
             {
                 _timer.Start();
@@ -159,9 +162,7 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void Reload()
         {
-            var selectedVariant = _settings.GetOption(
-                "Variant",
-                ShowcaseScreenshotVariant.All);
+            var selectedVariant = ShowcaseWidgetOptions.GetScreenshotVariant(_settings);
             CaptureVariant? captureVariant = null;
             switch (selectedVariant)
             {
@@ -194,10 +195,11 @@ namespace PlayniteAchievements.Views.Showcase
         private void TogglePause()
         {
             _paused = !_paused;
-            _pause.Content = _paused ? "▶" : "Ⅱ";
-            _pause.ToolTip = _paused
+            var label = _paused
                 ? Localize("LOCPlayAch_Showcase_ResumeSlideshow", "Resume slideshow")
                 : Localize("LOCPlayAch_Showcase_PauseSlideshow", "Pause slideshow");
+            _pause.Content = label;
+            _pause.ToolTip = label;
             if (_paused)
             {
                 _timer.Stop();
@@ -215,7 +217,7 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            if (_settings.GetOption("Shuffle", true) && _paths.Count > 1)
+            if (ShowcaseWidgetOptions.GetShuffle(_settings) && _paths.Count > 1)
             {
                 var next = _index;
                 while (next == _index)
@@ -235,9 +237,8 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void ShowCurrent()
         {
-            _image.Stretch = _settings.GetOption(
-                    "FitMode",
-                    ShowcaseImageFitMode.Fill) == ShowcaseImageFitMode.Fill
+            _image.Stretch = ShowcaseWidgetOptions.GetImageFitMode(_settings) ==
+                ShowcaseImageFitMode.Fill
                 ? Stretch.UniformToFill
                 : Stretch.Uniform;
             if (_paths.Count == 0)
@@ -255,15 +256,5 @@ namespace PlayniteAchievements.Views.Showcase
             _status.Visibility = Visibility.Collapsed;
         }
 
-        private static string Localize(string key, string fallback)
-        {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ||
-                   string.Equals(value, key, StringComparison.Ordinal) ||
-                   (value.StartsWith("<!", StringComparison.Ordinal) &&
-                    value.EndsWith("!>", StringComparison.Ordinal))
-                ? fallback
-                : value;
-        }
     }
 }

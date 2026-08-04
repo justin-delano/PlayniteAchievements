@@ -5,7 +5,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
-using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
@@ -19,6 +18,7 @@ using ChartAxis = LiveCharts.Wpf.Axis;
 using ChartColumnSeries = LiveCharts.Wpf.ColumnSeries;
 using ChartControl = LiveCharts.Wpf.CartesianChart;
 using ChartSeparator = LiveCharts.Wpf.Separator;
+using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
 namespace PlayniteAchievements.Views.Showcase
 {
@@ -207,7 +207,7 @@ namespace PlayniteAchievements.Views.Showcase
         private UIElement BuildScores()
         {
             var snapshot = _projection.Snapshot;
-            var mode = _projection.Instance.GetOption("Mode", ShowcaseScoreMode.Dual);
+            var mode = ShowcaseWidgetOptions.GetScoreMode(_projection.Instance);
             var includeCollection = mode != ShowcaseScoreMode.Prestige;
             var includePrestige = mode != ShowcaseScoreMode.Collection;
             var scoreCount = (includeCollection ? 1 : 0) + (includePrestige ? 1 : 0);
@@ -270,7 +270,7 @@ namespace PlayniteAchievements.Views.Showcase
         private UIElement BuildPie()
         {
             var snapshot = _projection.Snapshot;
-            var mode = _projection.Instance.GetOption("Mode", ShowcasePieMode.CompletedGames);
+            var mode = ShowcaseWidgetOptions.GetPieMode(_projection.Instance);
             var chart = new PieChartViewModel();
             switch (mode)
             {
@@ -499,23 +499,6 @@ namespace PlayniteAchievements.Views.Showcase
             return root;
         }
 
-        private static string TimelineRangeName(TimelineRange range)
-        {
-            switch (range)
-            {
-                case TimelineRange.OneMonth:
-                    return Localize("LOCPlayAch_TimeRange_1M", "1M");
-                case TimelineRange.ThreeMonths:
-                    return Localize("LOCPlayAch_TimeRange_3M", "3M");
-                case TimelineRange.OneYear:
-                    return Localize("LOCPlayAch_TimeRange_1Y", "1Y");
-                case TimelineRange.All:
-                    return Localize("LOCPlayAch_Common_All", "All");
-                default:
-                    return range.ToString();
-            }
-        }
-
         private UIElement BuildPieLegend(IEnumerable<LegendItem> items)
         {
             var panel = new StackPanel
@@ -611,6 +594,18 @@ namespace PlayniteAchievements.Views.Showcase
                     FontWeights.Normal);
                 label.TextTrimming = TextTrimming.CharacterEllipsis;
                 row.Children.Add(label);
+                if (_viewport.ShowSecondaryStatistics &&
+                    !string.IsNullOrWhiteSpace(entry.SecondaryText))
+                {
+                    var secondary = CreateText(
+                        entry.SecondaryText,
+                        9,
+                        FontWeights.Normal,
+                        0.62);
+                    secondary.Margin = new Thickness(0, 14, 0, 0);
+                    secondary.TextTrimming = TextTrimming.CharacterEllipsis;
+                    row.Children.Add(secondary);
+                }
                 var value = CreateText(
                     entry.Value.ToString("N0", FormattingCulture.Current),
                     11,
@@ -623,7 +618,12 @@ namespace PlayniteAchievements.Views.Showcase
                     Maximum = max,
                     Value = entry.Value,
                     Height = 3,
-                    Margin = new Thickness(0, 19, 0, 0),
+                    Margin = new Thickness(
+                        0,
+                        _viewport.ShowSecondaryStatistics &&
+                        !string.IsNullOrWhiteSpace(entry.SecondaryText) ? 31 : 19,
+                        0,
+                        0),
                     VerticalAlignment = VerticalAlignment.Top
                 };
                 Grid.SetColumnSpan(progress, 2);
@@ -685,48 +685,26 @@ namespace PlayniteAchievements.Views.Showcase
                 if (achievement.Pin != null)
                 {
                     var captured = achievement.Pin;
-                    var menu = new ContextMenu();
-                    menu.Items.Add(CreatePinOrderItem(
-                        Localize("LOCPlayAch_Showcase_MoveEarlier", "Move earlier"),
+                    row.ContextMenu = CreatePinMenu(
                         () => ShowcasePinService.MoveAchievement(
-                            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase,
+                            CurrentShowcaseSettings,
                             captured.GameId,
                             captured.ApiName,
-                            -1)));
-                    menu.Items.Add(CreatePinOrderItem(
-                        Localize("LOCPlayAch_Showcase_MoveLater", "Move later"),
+                            -1),
                         () => ShowcasePinService.MoveAchievement(
-                            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase,
+                            CurrentShowcaseSettings,
                             captured.GameId,
                             captured.ApiName,
-                            1)));
-                    menu.Items.Add(new Separator());
-                    var unpin = new MenuItem
-                    {
-                        Header = Localize(
+                            1),
+                        Localize(
                             "LOCPlayAch_Showcase_UnpinAchievement",
-                            "Unpin from Showcase")
-                    };
-                    unpin.Click += (_, __) =>
-                    {
-                        var plugin = PlayniteAchievementsPlugin.Instance;
-                        var settings = plugin?.Settings?.Persisted?.Showcase;
-                        if (settings == null)
-                        {
-                            return;
-                        }
-
-                        ShowcasePinService.ToggleAchievement(
-                            settings,
+                            "Unpin from Showcase"),
+                        () => ShowcasePinService.ToggleAchievement(
+                            CurrentShowcaseSettings,
                             captured.GameId,
                             captured.ApiName,
                             captured.LastKnownGameName,
-                            captured.LastKnownAchievementName);
-                        plugin.PersistSettingsForUi();
-                        ShowcaseConfigurationEvents.RaiseChanged();
-                    };
-                    menu.Items.Add(unpin);
-                    row.ContextMenu = menu;
+                            captured.LastKnownAchievementName));
                 }
 
                 panel.Children.Add(CreateCard(
@@ -761,48 +739,26 @@ namespace PlayniteAchievements.Views.Showcase
                     tile.Children.Add(name);
                 }
 
-                if (_projection.Instance.GetOption(
-                        "Source",
-                        ShowcaseFavoriteGameSource.ShowcasePins) ==
+                if (ShowcaseWidgetOptions.GetFavoriteSource(_projection.Instance) ==
                     ShowcaseFavoriteGameSource.ShowcasePins &&
                     game.PlayniteGameId.HasValue)
                 {
                     var capturedGameId = game.PlayniteGameId.Value;
-                    var menu = new ContextMenu();
-                    menu.Items.Add(CreatePinOrderItem(
-                        Localize("LOCPlayAch_Showcase_MoveEarlier", "Move earlier"),
+                    tile.ContextMenu = CreatePinMenu(
                         () => ShowcasePinService.MoveGame(
-                            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase,
+                            CurrentShowcaseSettings,
                             capturedGameId,
-                            -1)));
-                    menu.Items.Add(CreatePinOrderItem(
-                        Localize("LOCPlayAch_Showcase_MoveLater", "Move later"),
+                            -1),
                         () => ShowcasePinService.MoveGame(
-                            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase,
+                            CurrentShowcaseSettings,
                             capturedGameId,
-                            1)));
-                    menu.Items.Add(new Separator());
-                    var unpin = new MenuItem
-                    {
-                        Header = Localize(
+                            1),
+                        Localize(
                             "LOCPlayAch_Showcase_UnpinGame",
-                            "Unpin game from Showcase")
-                    };
-                    unpin.Click += (_, __) =>
-                    {
-                        var plugin = PlayniteAchievementsPlugin.Instance;
-                        var settings = plugin?.Settings?.Persisted?.Showcase;
-                        if (settings == null)
-                        {
-                            return;
-                        }
-
-                        ShowcasePinService.ToggleGame(settings, capturedGameId);
-                        plugin.PersistSettingsForUi();
-                        ShowcaseConfigurationEvents.RaiseChanged();
-                    };
-                    menu.Items.Add(unpin);
-                    tile.ContextMenu = menu;
+                            "Unpin game from Showcase"),
+                        () => ShowcasePinService.ToggleGame(
+                            CurrentShowcaseSettings,
+                            capturedGameId));
                 }
 
                 panel.Children.Add(CreateCard(
@@ -919,6 +875,13 @@ namespace PlayniteAchievements.Views.Showcase
                         FormattingCulture.Current,
                         Localize("LOCPlayAch_Showcase_PerDay", "{0:N1}/day"),
                         item.Value);
+                case "completion":
+                case "averageGlobalUnlock":
+                    return item.HasValue
+                        ? item.Value.ToString("N1", FormattingCulture.Current) + "%"
+                        : "—";
+                case "activeDayRate":
+                    return item.Value.ToString("N1", FormattingCulture.Current);
                 case "currentStreak":
                 case "longestStreak":
                     var days = (int)Math.Round(item.Value);
@@ -931,7 +894,7 @@ namespace PlayniteAchievements.Views.Showcase
                             days == 1 ? "{0} day" : "{0} days"),
                         days.ToString("N0", FormattingCulture.Current));
                 default:
-                    return item.DisplayValue;
+                    return item.Value.ToString("N0", FormattingCulture.Current);
             }
         }
 
@@ -1002,36 +965,32 @@ namespace PlayniteAchievements.Views.Showcase
             return item;
         }
 
-        private static string Localize(string key, string fallback)
-        {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ||
-                   string.Equals(value, key, StringComparison.Ordinal) ||
-                   (value.StartsWith("<!", StringComparison.Ordinal) &&
-                    value.EndsWith("!>", StringComparison.Ordinal))
-                ? fallback
-                : value;
-        }
+        private static ShowcaseSettings CurrentShowcaseSettings =>
+            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase;
 
-        private static string Humanize(ShowcaseWidgetKind kind)
+        private static ContextMenu CreatePinMenu(
+            Func<bool> moveEarlier,
+            Func<bool> moveLater,
+            string unpinHeader,
+            Action unpin)
         {
-            switch (kind)
+            var menu = new ContextMenu();
+            menu.Items.Add(CreatePinOrderItem(
+                Localize("LOCPlayAch_Showcase_MoveEarlier", "Move earlier"),
+                moveEarlier));
+            menu.Items.Add(CreatePinOrderItem(
+                Localize("LOCPlayAch_Showcase_MoveLater", "Move later"),
+                moveLater));
+            menu.Items.Add(new Separator());
+            var unpinItem = new MenuItem { Header = unpinHeader };
+            unpinItem.Click += (_, __) =>
             {
-                case ShowcaseWidgetKind.NativePoints:
-                    return "Native Points";
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    return "Pinned Achievements";
-                case ShowcaseWidgetKind.FavoriteGames:
-                    return "Favorite Games";
-                case ShowcaseWidgetKind.IconMosaic:
-                    return "Icon Mosaic";
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    return "Screenshot Slideshow";
-                case ShowcaseWidgetKind.Statistics:
-                    return "Overall Statistics";
-                default:
-                    return kind.ToString();
-            }
+                unpin?.Invoke();
+                PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
+                ShowcaseConfigurationEvents.RaiseChanged();
+            };
+            menu.Items.Add(unpinItem);
+            return menu;
         }
 
         private static string GetWidgetGlyph(ShowcaseWidgetKind kind)
