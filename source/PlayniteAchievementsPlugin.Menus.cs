@@ -9,6 +9,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views;
 using Playnite.SDK;
@@ -366,6 +367,26 @@ namespace PlayniteAchievements
                     Action = (a) =>
                     {
                         OpenCapturesViewerForGame(game.Name);
+                    }
+                };
+            }
+
+            var showcase = _settingsViewModel?.Settings?.Persisted?.Showcase;
+            if (showcase != null)
+            {
+                var isPinned = ShowcasePinService.IsGamePinned(showcase, game.Id);
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString(
+                        isPinned
+                            ? "LOCPlayAch_Showcase_UnpinGame"
+                            : "LOCPlayAch_Showcase_PinGame"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = _ =>
+                    {
+                        ShowcasePinService.ToggleGame(showcase, game.Id);
+                        PersistSettingsForUi();
+                        ShowcaseConfigurationEvents.RaiseChanged();
                     }
                 };
             }

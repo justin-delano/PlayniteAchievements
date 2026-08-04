@@ -7,6 +7,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
@@ -52,11 +53,59 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Add(captureItem);
             }
 
+            AppendShowcasePinItem(menu, data, resourceOwner);
             menu.Items.Add(CreateSetCapstoneItem(context, resourceOwner, onChanged));
             menu.Items.Add(CreateCategoriesMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateFiltersMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateNotesMenu(context, resourceOwner, onChanged));
             return true;
+        }
+
+        private static void AppendShowcasePinItem(
+            ContextMenu menu,
+            object data,
+            FrameworkElement resourceOwner)
+        {
+            if (!ShowcasePinService.TryGetAchievementIdentity(
+                    data,
+                    out var gameId,
+                    out var apiName,
+                    out var gameName,
+                    out var achievementName,
+                    out var friendOwned) ||
+                friendOwned)
+            {
+                return;
+            }
+
+            var plugin = PlayniteAchievementsPlugin.Instance;
+            var showcase = plugin?.Settings?.Persisted?.Showcase;
+            if (showcase == null)
+            {
+                return;
+            }
+
+            var pinned = ShowcasePinService.IsAchievementPinned(showcase, gameId, apiName);
+            var item = new MenuItem
+            {
+                Header = L(
+                    resourceOwner,
+                    pinned
+                        ? "LOCPlayAch_Showcase_UnpinAchievement"
+                        : "LOCPlayAch_Showcase_PinAchievement")
+            };
+            item.Click += (_, __) =>
+            {
+                ShowcasePinService.ToggleAchievement(
+                    showcase,
+                    gameId,
+                    apiName,
+                    gameName,
+                    achievementName);
+                plugin.PersistSettingsForUi();
+                ShowcaseConfigurationEvents.RaiseChanged();
+            };
+            menu.Items.Add(item);
         }
 
         private static MenuItem CreateSetCapstoneItem(

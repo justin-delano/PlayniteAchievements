@@ -10,6 +10,15 @@ namespace PlayniteAchievements.Models.Settings
         TrophyPie = 5,
         CollectionScoreCard = 6,
         PrestigeScoreCard = 7,
-        FriendsRecentUnlocksGrid = 8
+        FriendsRecentUnlocksGrid = 8,
+        ShowcaseProfile = 9,
+        ShowcaseDualScores = 10,
+        ShowcaseTimeline = 11,
+        ShowcaseStatistics = 12,
+        ShowcaseNativePoints = 13,
+        ShowcasePinnedAchievements = 14,
+        ShowcaseFavoriteGames = 15,
+        ShowcaseIconMosaic = 16,
+        ShowcaseScreenshotSlideshow = 17
     }
 }

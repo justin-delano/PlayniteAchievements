@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Windows.Media.Imaging;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Images;
@@ -18,7 +20,7 @@ namespace PlayniteAchievements.Services.Captures
     /// <see cref="Invalidate(string)"/> after a successful save and the gallery viewer re-scans fresh
     /// on open.
     /// </summary>
-    internal sealed class CaptureLibraryService
+    internal sealed class CaptureLibraryService : IDisposable
     {
         private readonly Func<PersistedSettings> _settingsAccessor;
         private readonly ILogger _logger;
@@ -26,12 +28,26 @@ namespace PlayniteAchievements.Services.Captures
         private readonly Dictionary<string, GameCaptureSet> _gameCache =
             new Dictionary<string, GameCaptureSet>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> _foldersWithCaptures;
+        private readonly List<FileSystemWatcher> _watchers = new List<FileSystemWatcher>();
+        private readonly HashSet<string> _watchedDirectories =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ImageValidationCacheEntry> _imageValidationCache =
+            new Dictionary<string, ImageValidationCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private string _captureConfigurationKey;
+        private Timer _changeDebounce;
+        private bool _disposed;
 
         public CaptureLibraryService(Func<PersistedSettings> settingsAccessor, ILogger logger)
         {
             _settingsAccessor = settingsAccessor;
             _logger = logger;
         }
+
+        /// <summary>
+        /// Raised after capture files are written, removed, renamed, or changed. Events from the
+        /// filesystem are debounced because one capture commonly produces several notifications.
+        /// </summary>
+        public event EventHandler Changed;
 
         /// <summary>Parses (or returns the cached) capture set for a game. Never throws.</summary>
         public GameCaptureSet ScanGame(string gameName)
@@ -81,6 +97,7 @@ namespace PlayniteAchievements.Services.Captures
         /// <summary>Sanitized folder names (siblings of the Test folder) that contain any capture file.</summary>
         public IReadOnlyCollection<string> GetGameFoldersWithCaptures()
         {
+            EnsureWatchers();
             lock (_lock)
             {
                 if (_foldersWithCaptures != null)
@@ -96,6 +113,41 @@ namespace PlayniteAchievements.Services.Captures
             }
 
             return set;
+        }
+
+        /// <summary>
+        /// Returns parsed, readable screenshots across the capture library. This is the shared
+        /// source for slideshow-style consumers; it intentionally reuses the same configured
+        /// suffix parser and per-game cache as the capture gallery.
+        /// </summary>
+        public IReadOnlyList<CaptureItem> GetScreenshots(
+            CaptureVariant? variant = null,
+            bool forceRefresh = false)
+        {
+            EnsureWatchers();
+            if (forceRefresh)
+            {
+                ClearCaches();
+            }
+
+            var screenshots = new List<CaptureItem>();
+            foreach (var folder in GetGameFoldersWithCaptures())
+            {
+                screenshots.AddRange(
+                    ScanGame(folder)
+                        .Groups
+                        .SelectMany(group => group.Items)
+                        .Where(item => !item.IsVideo)
+                        .Where(item => !variant.HasValue || item.Variant == variant.Value)
+                        .Where(item => IsReadableImage(item.FilePath)));
+            }
+
+            return screenshots
+                .GroupBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .OrderByDescending(item => GetLastWriteTimeUtc(item.FilePath))
+                .ThenBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         /// <summary>Forces a fresh scan of one game (used by the viewer on open) and returns it.</summary>
@@ -117,14 +169,30 @@ namespace PlayniteAchievements.Services.Captures
 
                 _foldersWithCaptures = null;
             }
+
+            SignalChanged();
         }
 
         public void Invalidate()
         {
+            ClearCaches();
+            SignalChanged();
+        }
+
+        public void Dispose()
+        {
             lock (_lock)
             {
-                _gameCache.Clear();
-                _foldersWithCaptures = null;
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                DisposeWatchersLocked();
+                _imageValidationCache.Clear();
+                _changeDebounce?.Dispose();
+                _changeDebounce = null;
             }
         }
 
@@ -152,6 +220,244 @@ namespace PlayniteAchievements.Services.Captures
             }
 
             return dirs;
+        }
+
+        private void EnsureWatchers()
+        {
+            var persisted = _settingsAccessor?.Invoke();
+            var desired = ResolveBaseDirectories()
+                .Where(Directory.Exists)
+                .Select(path =>
+                {
+                    try
+                    {
+                        return Path.GetFullPath(path);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                })
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var configurationKey = string.Join("|", desired) + "\n" +
+                (persisted?.UnlockScreenshotSuffixClean ?? string.Empty) + "\n" +
+                (persisted?.UnlockScreenshotSuffixWithToast ?? string.Empty) + "\n" +
+                (persisted?.UnlockScreenshotSuffixFramed ?? string.Empty);
+
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                var configurationChanged = !string.Equals(
+                    _captureConfigurationKey,
+                    configurationKey,
+                    StringComparison.Ordinal);
+                if (configurationChanged)
+                {
+                    _captureConfigurationKey = configurationKey;
+                    _gameCache.Clear();
+                    _foldersWithCaptures = null;
+                    _imageValidationCache.Clear();
+                }
+
+                if (_watchedDirectories.SetEquals(desired))
+                {
+                    return;
+                }
+
+                DisposeWatchersLocked();
+                foreach (var directory in desired)
+                {
+                    try
+                    {
+                        var watcher = new FileSystemWatcher(directory)
+                        {
+                            IncludeSubdirectories = true,
+                            NotifyFilter = NotifyFilters.FileName |
+                                NotifyFilters.DirectoryName |
+                                NotifyFilters.LastWrite |
+                                NotifyFilters.CreationTime
+                        };
+                        watcher.Created += CaptureFileChanged;
+                        watcher.Changed += CaptureFileChanged;
+                        watcher.Deleted += CaptureFileChanged;
+                        watcher.Renamed += CaptureFileChanged;
+                        watcher.EnableRaisingEvents = true;
+                        _watchers.Add(watcher);
+                        _watchedDirectories.Add(directory);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, $"Capture watcher could not monitor '{directory}'.");
+                    }
+                }
+            }
+        }
+
+        private void CaptureFileChanged(object sender, FileSystemEventArgs e)
+        {
+            if (!IsCaptureFile(e?.FullPath))
+            {
+                return;
+            }
+
+            ClearCaches();
+            SignalChanged();
+        }
+
+        private void SignalChanged()
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (_changeDebounce == null)
+                {
+                    _changeDebounce = new Timer(
+                        _ => RaiseChanged(),
+                        null,
+                        Timeout.Infinite,
+                        Timeout.Infinite);
+                }
+
+                _changeDebounce.Change(200, Timeout.Infinite);
+            }
+        }
+
+        private void RaiseChanged()
+        {
+            var handlers = Changed;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (EventHandler handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Capture library change listener failed.");
+                }
+            }
+        }
+
+        private void ClearCaches()
+        {
+            lock (_lock)
+            {
+                _gameCache.Clear();
+                _foldersWithCaptures = null;
+            }
+        }
+
+        private void DisposeWatchersLocked()
+        {
+            foreach (var watcher in _watchers)
+            {
+                try
+                {
+                    watcher.EnableRaisingEvents = false;
+                    watcher.Created -= CaptureFileChanged;
+                    watcher.Changed -= CaptureFileChanged;
+                    watcher.Deleted -= CaptureFileChanged;
+                    watcher.Renamed -= CaptureFileChanged;
+                    watcher.Dispose();
+                }
+                catch
+                {
+                }
+            }
+
+            _watchers.Clear();
+            _watchedDirectories.Clear();
+        }
+
+        private bool IsReadableImage(string path)
+        {
+            DateTime? lastWriteUtc = null;
+            long? length = null;
+            try
+            {
+                var info = new FileInfo(path);
+                lastWriteUtc = info.LastWriteTimeUtc;
+                length = info.Length;
+                lock (_lock)
+                {
+                    if (_imageValidationCache.TryGetValue(path, out var cached) &&
+                        cached.LastWriteUtc == lastWriteUtc.Value &&
+                        cached.Length == length.Value)
+                    {
+                        return cached.IsReadable;
+                    }
+                }
+
+                using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    var decoder = BitmapDecoder.Create(
+                        stream,
+                        BitmapCreateOptions.PreservePixelFormat,
+                        BitmapCacheOption.OnLoad);
+                    var readable = decoder.Frames.Count > 0 &&
+                        decoder.Frames[0].PixelWidth > 0 &&
+                        decoder.Frames[0].PixelHeight > 0;
+                    CacheImageValidation(path, lastWriteUtc, length, readable);
+                    return readable;
+                }
+            }
+            catch
+            {
+                CacheImageValidation(path, lastWriteUtc, length, isReadable: false);
+                return false;
+            }
+        }
+
+        private void CacheImageValidation(
+            string path,
+            DateTime? lastWriteUtc,
+            long? length,
+            bool isReadable)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !lastWriteUtc.HasValue || !length.HasValue)
+            {
+                return;
+            }
+
+            lock (_lock)
+            {
+                if (!_disposed)
+                {
+                    _imageValidationCache[path] = new ImageValidationCacheEntry
+                    {
+                        LastWriteUtc = lastWriteUtc.Value,
+                        Length = length.Value,
+                        IsReadable = isReadable
+                    };
+                }
+            }
+        }
+
+        private static DateTime GetLastWriteTimeUtc(string path)
+        {
+            try
+            {
+                return File.GetLastWriteTimeUtc(path);
+            }
+            catch
+            {
+                return DateTime.MinValue;
+            }
         }
 
         private HashSet<string> ComputeFoldersWithCaptures()
@@ -255,6 +561,15 @@ namespace PlayniteAchievements.Services.Captures
                 .ToList();
 
             return new GameCaptureSet(groups);
+        }
+
+        private sealed class ImageValidationCacheEntry
+        {
+            public DateTime LastWriteUtc { get; set; }
+
+            public long Length { get; set; }
+
+            public bool IsReadable { get; set; }
         }
     }
 }

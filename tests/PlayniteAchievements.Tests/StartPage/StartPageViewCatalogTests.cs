@@ -9,12 +9,26 @@ namespace PlayniteAchievements.Tests.StartPage
     public class StartPageViewCatalogTests
     {
         [TestMethod]
-        public void Views_RegisterNineWidgetsWithExpectedLocalizationKeys()
+        public void Views_PreserveOriginalNineIdsAndRegisterShowcaseWidgets()
         {
             var views = StartPageViewCatalog.Views;
 
-            Assert.AreEqual(9, views.Count);
-            CollectionAssert.AreEquivalent(
+            Assert.AreEqual(18, views.Count);
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    StartPageViewCatalog.GameSummariesGridViewId,
+                    StartPageViewCatalog.RecentUnlocksGridViewId,
+                    StartPageViewCatalog.FriendsRecentUnlocksGridViewId,
+                    StartPageViewCatalog.CompletedGamesPieViewId,
+                    StartPageViewCatalog.ProviderPieViewId,
+                    StartPageViewCatalog.RarityPieViewId,
+                    StartPageViewCatalog.TrophyPieViewId,
+                    StartPageViewCatalog.CollectionScoreCardViewId,
+                    StartPageViewCatalog.PrestigeScoreCardViewId
+                },
+                views.Take(9).Select(view => view.ViewId).ToArray());
+            CollectionAssert.IsSubsetOf(
                 new[]
                 {
                     StartPageWidgetKind.GameSummariesGrid,
@@ -33,7 +47,21 @@ namespace PlayniteAchievements.Tests.StartPage
                 view.ViewId == StartPageViewCatalog.FriendsRecentUnlocksGridViewId &&
                 view.WidgetKind == StartPageWidgetKind.FriendsRecentUnlocksGrid &&
                 view.NameKey == "LOCPlayAch_StartPage_FriendsRecentAchievements"));
-            Assert.IsTrue(views.All(view => string.IsNullOrWhiteSpace(view.DescriptionKey)));
+            Assert.IsTrue(views
+                .Where(view => !view.ShowcaseWidgetKind.HasValue)
+                .All(view => string.IsNullOrWhiteSpace(view.DescriptionKey)));
+            Assert.IsTrue(views
+                .Where(view => view.ShowcaseWidgetKind.HasValue)
+                .All(view => !string.IsNullOrWhiteSpace(view.DescriptionKey)));
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseTimelineViewId)
+                .AllowMultipleInstances);
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseNativePointsViewId)
+                .HasSettings);
+            Assert.IsFalse(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseProfileViewId)
+                .AllowMultipleInstances);
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
         }
 

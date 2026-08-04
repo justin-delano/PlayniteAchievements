@@ -27,6 +27,8 @@ namespace PlayniteAchievements
 
         public Services.ThemeIntegration.ThemeIntegrationService ThemeIntegrationService { get; set; }
 
+        public Services.Images.DiskImageService DiskImageService { get; set; }
+
         public IPlayniteAPI PlayniteApi { get; set; }
 
         public void SavePluginSettings(PlayniteAchievementsSettings settings)
@@ -81,6 +83,8 @@ namespace PlayniteAchievements.Models.Achievements
         public string ApiName { get; set; }
 
         public string DisplayName { get; set; }
+
+        public string IconPath { get; set; }
 
         public string Description { get; set; }
 
@@ -282,6 +286,10 @@ namespace PlayniteAchievements.ViewModels
         public PlayniteAchievements.Models.Achievements.AchievementDetail Source { get; set; }
 
         public string DisplayName { get; set; }
+
+        public string IconPath { get; set; }
+
+        public string DisplayIcon => IconPath;
 
         public string Name => DisplayName;
 
@@ -593,6 +601,27 @@ namespace PlayniteAchievements.ViewModels
             CategoryOrderIndex = categoryOrderIndex;
             // Mirrors the real display item: no game-asset fallback baked into the art path.
             CategoryArtPath = categoryArtPath ?? source?.CategoryArtPath;
+        }
+    }
+}
+
+namespace PlayniteAchievements.Services.Capture
+{
+    public sealed class WgcWindowCapture : IDisposable
+    {
+        public static bool IsSupported => false;
+
+        public CaptureResult CaptureWindow(IntPtr hwnd) => null;
+
+        public CaptureResult CaptureMonitorForWindow(IntPtr hwnd) => null;
+
+        public void Dispose()
+        {
+        }
+
+        public sealed class CaptureResult
+        {
+            public System.Drawing.Bitmap Bitmap { get; set; }
         }
     }
 }

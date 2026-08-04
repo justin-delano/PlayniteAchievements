@@ -64,6 +64,10 @@ namespace PlayniteAchievements.ViewModels
 
         private readonly HashSet<string> _revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private OverviewDataSnapshot _latestSnapshot;
+
+        public OverviewDataSnapshot LatestSnapshot => _latestSnapshot;
+
+        public event EventHandler SnapshotChanged;
         private bool _hasAppliedSnapshot;
 
         private readonly RefreshHeaderProgressTracker _progressTracker;
@@ -2113,6 +2117,7 @@ namespace PlayniteAchievements.ViewModels
 
             GlobalTimeline.SetCounts(timelineCountsToShow);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+            SnapshotChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void MarkSnapshotApplied()

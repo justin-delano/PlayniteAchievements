@@ -1,0 +1,426 @@
+using System;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Showcase;
+
+namespace PlayniteAchievements.Tests.Models
+{
+    [TestClass]
+    public class ShowcaseLayoutServiceTests
+    {
+        [TestMethod]
+        public void SeededTemplates_AreValidAndNeverContainTimeline()
+        {
+            foreach (ShowcasePageTemplate template in Enum.GetValues(typeof(ShowcasePageTemplate)))
+            {
+                var settings = ShowcaseLayoutService.CreateDefault();
+                settings.Pages.Clear();
+                settings.WidgetInstances.Clear();
+                var page = ShowcaseLayoutService.AddPage(settings, template);
+
+                Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks), template.ToString());
+                Assert.IsFalse(page.Blocks
+                    .Where(block => !string.IsNullOrWhiteSpace(block.WidgetInstanceId))
+                    .Select(block => settings.WidgetInstances.Single(widget =>
+                        widget.InstanceId == block.WidgetInstanceId))
+                    .Any(widget => widget.Kind == ShowcaseWidgetKind.Timeline), template.ToString());
+            }
+        }
+
+        [TestMethod]
+        public void DefaultLayout_UsesRequestedScoreModeAndExpectedGeometry()
+        {
+            var collection = ShowcaseLayoutService.CreateDefault(true, false);
+            var score = collection.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Scores);
+
+            Assert.AreEqual(ShowcaseScoreMode.Collection, score.GetOption("Mode", ShowcaseScoreMode.Dual));
+            Assert.AreEqual(5, collection.Pages.Single().Blocks.Count);
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(collection.Pages.Single().Blocks));
+
+            var none = ShowcaseLayoutService.CreateDefault(false, false);
+            var scoreBlock = none.Pages.Single().Blocks.Single(block =>
+                block.Row == 0 && block.Column == 1 && block.ColumnSpan == 2);
+            Assert.IsNull(scoreBlock.WidgetInstanceId);
+        }
+
+        [TestMethod]
+        public void SplitAndMerge_PreservePartitionAndRejectOccupiedMerge()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var page = settings.Pages.Single();
+            var scoreBlock = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
+
+            Assert.IsTrue(ShowcaseLayoutService.TrySplit(
+                settings, page.PageId, scoreBlock.BlockId, vertical: true, gridLine: 2));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+
+            var left = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
+            var right = page.Blocks.Single(block => block.Row == 0 && block.Column == 2);
+            var extra = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(settings, page.PageId, right.BlockId, extra.InstanceId));
+            Assert.IsFalse(ShowcaseLayoutService.TryMerge(
+                settings, page.PageId, left.BlockId, right.BlockId));
+
+            ShowcaseLayoutService.DeleteWidget(settings, extra.InstanceId);
+            Assert.IsTrue(ShowcaseLayoutService.TryMerge(
+                settings, page.PageId, left.BlockId, right.BlockId));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+        }
+
+        [TestMethod]
+        public void Normalize_RepairsOverlapAndMissingCells()
+        {
+            var settings = new ShowcaseSettings
+            {
+                Pages =
+                {
+                    new ShowcasePageSettings
+                    {
+                        Name = "Broken",
+                        Blocks =
+                        {
+                            new ShowcaseBlockSettings { Row = 0, Column = 0, RowSpan = 2, ColumnSpan = 2 },
+                            new ShowcaseBlockSettings { Row = 1, Column = 1, RowSpan = 2, ColumnSpan = 2 },
+                            new ShowcaseBlockSettings { Row = 9, Column = 9, RowSpan = 1, ColumnSpan = 1 }
+                        }
+                    }
+                }
+            };
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(settings.Pages.Single().Blocks));
+            Assert.AreEqual(6, settings.Pages.Single().Blocks.Count);
+        }
+
+        [TestMethod]
+        public void DuplicateAndDeletePage_DeletesRemovedPageWidgets()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var original = settings.Pages.Single();
+            var duplicate = ShowcaseLayoutService.DuplicatePage(settings, original.PageId);
+            var duplicatedWidgetIds = duplicate.Blocks
+                .Where(block => !string.IsNullOrWhiteSpace(block.WidgetInstanceId))
+                .Select(block => block.WidgetInstanceId)
+                .ToList();
+
+            Assert.AreEqual(2, settings.Pages.Count);
+            Assert.IsTrue(duplicatedWidgetIds.All(id =>
+                settings.WidgetInstances.Any(widget => widget.InstanceId == id)));
+            Assert.IsTrue(ShowcaseLayoutService.DeletePage(settings, duplicate.PageId));
+            Assert.IsTrue(duplicatedWidgetIds.All(id =>
+                settings.WidgetInstances.All(widget => widget.InstanceId != id)));
+            Assert.IsFalse(ShowcaseLayoutService.DeletePage(settings, original.PageId));
+        }
+
+        [TestMethod]
+        public void OccupiedMerge_KeepsSelectedWidgetAndDeletesOtherInstance()
+        {
+            var settings = new ShowcaseSettings();
+            var page = ShowcaseLayoutService.AddPage(settings, ShowcasePageTemplate.Blank);
+            var left = page.Blocks.Single(block => block.Row == 0 && block.Column == 0);
+            var right = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
+            var keep = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Scores);
+            var remove = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, left.BlockId, keep.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, right.BlockId, remove.InstanceId));
+
+            Assert.IsTrue(ShowcaseLayoutService.TryMerge(
+                settings,
+                page.PageId,
+                left.BlockId,
+                right.BlockId,
+                keep.InstanceId));
+
+            Assert.AreEqual(8, page.Blocks.Count);
+            Assert.AreEqual(keep.InstanceId, page.Blocks.Single(block =>
+                block.Row == 0 && block.Column == 0).WidgetInstanceId);
+            Assert.IsFalse(settings.WidgetInstances.Any(widget =>
+                widget.InstanceId == remove.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+        }
+
+        [TestMethod]
+        public void StaggeredEdgeMerge_UsesMinimalRectangularClosureAndChosenSurvivor()
+        {
+            var page = new ShowcasePageSettings
+            {
+                Name = "Staggered",
+                Blocks =
+                {
+                    new ShowcaseBlockSettings { Row = 0, Column = 0, RowSpan = 2, ColumnSpan = 2 },
+                    new ShowcaseBlockSettings { Row = 0, Column = 2, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 1, Column = 2, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 2, Column = 0, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 2, Column = 1, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 2, Column = 2, RowSpan = 1, ColumnSpan = 1 }
+                }
+            };
+            var settings = new ShowcaseSettings { Pages = { page } };
+            var first = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Scores);
+            var second = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
+            var survivor = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Statistics);
+            page.Blocks[0].WidgetInstanceId = first.InstanceId;
+            page.Blocks[1].WidgetInstanceId = second.InstanceId;
+            page.Blocks[2].WidgetInstanceId = survivor.InstanceId;
+
+            var closure = ShowcaseLayoutService.GetMergeClosure(
+                settings,
+                page.PageId,
+                page.Blocks[0].BlockId,
+                page.Blocks[1].BlockId);
+            Assert.AreEqual(3, closure.Count);
+            Assert.IsTrue(ShowcaseLayoutService.TryMergeWithFallback(
+                settings,
+                page.PageId,
+                page.Blocks[0].BlockId,
+                page.Blocks[1].BlockId,
+                survivor.InstanceId));
+
+            Assert.AreEqual(4, page.Blocks.Count);
+            var merged = page.Blocks.Single(block => block.Row == 0 && block.Column == 0);
+            Assert.AreEqual(2, merged.RowSpan);
+            Assert.AreEqual(3, merged.ColumnSpan);
+            Assert.AreEqual(survivor.InstanceId, merged.WidgetInstanceId);
+            Assert.IsFalse(settings.WidgetInstances.Any(widget => widget.InstanceId == first.InstanceId));
+            Assert.IsFalse(settings.WidgetInstances.Any(widget => widget.InstanceId == second.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+        }
+
+        [TestMethod]
+        public void PruneOrphanedWidgets_RemovesReplacedInstanceButKeepsPlacedWidgets()
+        {
+            var settings = new ShowcaseSettings();
+            var page = ShowcaseLayoutService.AddPage(settings, ShowcasePageTemplate.Blank);
+            var block = page.Blocks[0];
+            var original = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
+            var replacement = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Statistics);
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, block.BlockId, original.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, block.BlockId, replacement.InstanceId));
+
+            Assert.AreEqual(1, ShowcaseLayoutService.PruneOrphanedWidgets(settings));
+            Assert.IsFalse(settings.WidgetInstances.Any(widget =>
+                widget.InstanceId == original.InstanceId));
+            Assert.IsTrue(settings.WidgetInstances.Any(widget =>
+                widget.InstanceId == replacement.InstanceId));
+        }
+
+        [TestMethod]
+        public void Clone_IsDeepForPagesWidgetsPinsAndProfile()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            settings.PinnedGameIds.Add(Guid.NewGuid());
+            settings.PinnedAchievements.Add(new PinnedAchievementReference
+            {
+                GameId = Guid.NewGuid(),
+                ApiName = "first",
+                LastKnownAchievementName = "First"
+            });
+            settings.Profile.DisplayName = "Player";
+
+            var clone = settings.Clone();
+            clone.Pages[0].Name = "Changed";
+            clone.WidgetInstances[0].SetOption("Mode", "Changed");
+            clone.PinnedGameIds.Clear();
+            clone.PinnedAchievements[0].ApiName = "changed";
+            clone.Profile.DisplayName = "Changed";
+
+            Assert.AreEqual("Showcase", settings.Pages[0].Name);
+            Assert.AreEqual(1, settings.PinnedGameIds.Count);
+            Assert.AreEqual("first", settings.PinnedAchievements[0].ApiName);
+            Assert.AreEqual("Player", settings.Profile.DisplayName);
+        }
+
+        [TestMethod]
+        public void PageOperations_RenameReorderResetAndProtectLastPage()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var first = settings.Pages.Single();
+            var second = ShowcaseLayoutService.AddPage(
+                settings,
+                ShowcasePageTemplate.Analytics,
+                "Insights");
+
+            Assert.IsTrue(ShowcaseLayoutService.RenamePage(settings, second.PageId, "Stats"));
+            Assert.AreEqual("Stats", second.Name);
+            Assert.IsTrue(ShowcaseLayoutService.MovePage(settings, second.PageId, -1));
+            Assert.AreSame(second, settings.Pages[0]);
+            Assert.IsTrue(ShowcaseLayoutService.ResetPage(
+                settings,
+                second.PageId,
+                ShowcasePageTemplate.Collection));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(settings.Pages[0].Blocks));
+            Assert.IsFalse(settings.Pages[0].Blocks
+                .Where(block => !string.IsNullOrWhiteSpace(block.WidgetInstanceId))
+                .Select(block => settings.WidgetInstances.Single(widget =>
+                    widget.InstanceId == block.WidgetInstanceId))
+                .Any(widget => widget.Kind == ShowcaseWidgetKind.Timeline));
+            Assert.IsTrue(ShowcaseLayoutService.DeletePage(settings, first.PageId));
+            Assert.IsFalse(ShowcaseLayoutService.DeletePage(settings, second.PageId));
+        }
+
+        [TestMethod]
+        public void BoundaryOperations_HandleBothDirectionsAndRejectNonRectangularUnion()
+        {
+            var settings = new ShowcaseSettings();
+            var page = ShowcaseLayoutService.AddPage(settings, ShowcasePageTemplate.Blank);
+            var topLeft = page.Blocks.Single(block => block.Row == 0 && block.Column == 0);
+            var topMiddle = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
+            var middleLeft = page.Blocks.Single(block => block.Row == 1 && block.Column == 0);
+            var middleMiddle = page.Blocks.Single(block => block.Row == 1 && block.Column == 1);
+
+            Assert.IsFalse(ShowcaseLayoutService.TryMerge(
+                settings,
+                page.PageId,
+                topLeft.BlockId,
+                middleMiddle.BlockId));
+            Assert.IsTrue(ShowcaseLayoutService.TryMerge(
+                settings,
+                page.PageId,
+                topLeft.BlockId,
+                topMiddle.BlockId));
+            Assert.IsTrue(ShowcaseLayoutService.TryMerge(
+                settings,
+                page.PageId,
+                middleLeft.BlockId,
+                middleMiddle.BlockId));
+            Assert.IsTrue(ShowcaseLayoutService.TryMerge(
+                settings,
+                page.PageId,
+                topLeft.BlockId,
+                middleLeft.BlockId));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+            Assert.IsTrue(ShowcaseLayoutService.TrySplit(
+                settings,
+                page.PageId,
+                topLeft.BlockId,
+                vertical: false,
+                gridLine: 1));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+        }
+
+        [TestMethod]
+        public void PlaceWidget_SwapsAssignmentsAndEnforcesSingletonKindPerPage()
+        {
+            var settings = new ShowcaseSettings();
+            var page = ShowcaseLayoutService.AddPage(settings, ShowcasePageTemplate.Blank);
+            var first = page.Blocks[0];
+            var second = page.Blocks[1];
+            var firstPie = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
+            var secondPie = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
+
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, first.BlockId, firstPie.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, second.BlockId, secondPie.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, second.BlockId, firstPie.InstanceId));
+            Assert.AreEqual(firstPie.InstanceId, second.WidgetInstanceId);
+            Assert.AreEqual(secondPie.InstanceId, first.WidgetInstanceId);
+
+            var profileOne = ShowcaseLayoutService.CreateWidget(
+                settings,
+                ShowcaseWidgetKind.Profile);
+            var profileTwo = ShowcaseLayoutService.CreateWidget(
+                settings,
+                ShowcaseWidgetKind.Profile);
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, page.Blocks[2].BlockId, profileOne.InstanceId));
+            Assert.IsFalse(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, page.Blocks[3].BlockId, profileTwo.InstanceId));
+        }
+
+        [TestMethod]
+        public void Normalize_PreservesValidLastSelectedPage()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var second = ShowcaseLayoutService.AddPage(
+                settings,
+                ShowcasePageTemplate.Blank,
+                "Second");
+            settings.LastSelectedPageId = second.PageId;
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            Assert.AreEqual(second.PageId, settings.LastSelectedPageId);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, true, (int)ShowcaseScoreMode.Dual)]
+        [DataRow(true, false, (int)ShowcaseScoreMode.Collection)]
+        [DataRow(false, true, (int)ShowcaseScoreMode.Prestige)]
+        [DataRow(false, false, -1)]
+        public void PersistedSettings_MigratesEveryLegacyScoreVisibilityCombinationOnce(
+            bool collectionVisible,
+            bool prestigeVisible,
+            int expectedMode)
+        {
+            var persisted = new PersistedSettings
+            {
+                ShowOverviewCollectionScoreCard = collectionVisible,
+                ShowOverviewPrestigeScoreCard = prestigeVisible
+            };
+
+            var first = persisted.Showcase;
+            var pageId = first.Pages.Single().PageId;
+            var score = first.WidgetInstances.SingleOrDefault(widget =>
+                widget.Kind == ShowcaseWidgetKind.Scores);
+            if (expectedMode < 0)
+            {
+                Assert.IsNull(score);
+            }
+            else
+            {
+                Assert.IsNotNull(score);
+                Assert.AreEqual(
+                    (ShowcaseScoreMode)expectedMode,
+                    score.GetOption("Mode", ShowcaseScoreMode.Dual));
+            }
+
+            Assert.AreSame(first, persisted.Showcase);
+            Assert.AreEqual(pageId, persisted.Showcase.Pages.Single().PageId);
+        }
+
+        [TestMethod]
+        public void Normalize_KeepsOrderedLastKnownPinsAndRemovesDuplicateIdentity()
+        {
+            var gameId = Guid.NewGuid();
+            var otherGameId = Guid.NewGuid();
+            var settings = ShowcaseLayoutService.CreateDefault();
+            settings.PinnedGameIds.Add(gameId);
+            settings.PinnedGameIds.Add(otherGameId);
+            settings.PinnedGameIds.Add(gameId);
+            settings.PinnedAchievements.Add(new PinnedAchievementReference
+            {
+                GameId = gameId,
+                ApiName = "missing-api",
+                LastKnownGameName = "Removed Game",
+                LastKnownAchievementName = "Still Manageable"
+            });
+            settings.PinnedAchievements.Add(new PinnedAchievementReference
+            {
+                GameId = gameId,
+                ApiName = "MISSING-API",
+                LastKnownAchievementName = "Duplicate"
+            });
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            CollectionAssert.AreEqual(
+                new[] { gameId, otherGameId },
+                settings.PinnedGameIds);
+            Assert.AreEqual(1, settings.PinnedAchievements.Count);
+            Assert.AreEqual(
+                "Still Manageable",
+                settings.PinnedAchievements[0].LastKnownAchievementName);
+            Assert.AreEqual(
+                "Removed Game",
+                settings.PinnedAchievements[0].LastKnownGameName);
+        }
+    }
+}

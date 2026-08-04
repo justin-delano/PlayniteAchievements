@@ -24,6 +24,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.Showcase;
 
 namespace PlayniteAchievements.Views
 {
@@ -72,6 +73,9 @@ namespace PlayniteAchievements.Views
         private DataGridRow _pendingRightClickRow;
         private bool _committingOverviewSelection;
         private FriendsOverviewControl _friendsOverview;
+        private ShowcaseControl _showcase;
+        private readonly DispatcherTimer _showcaseDatabaseRefreshTimer;
+        private bool _showcaseDatabaseRefreshPending;
         private DataGrid GameSummariesGrid => GameSummariesGridControl?.InternalDataGrid;
 
         public OverviewControl()
@@ -109,6 +113,11 @@ namespace PlayniteAchievements.Views
             _refreshEntryPoint = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _launchContext = launchContext;
+            _showcaseDatabaseRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(350)
+            };
+            _showcaseDatabaseRefreshTimer.Tick += ShowcaseDatabaseRefreshTimer_Tick;
 
             _viewModel = new OverviewViewModel(
                 refreshRuntime,
@@ -128,14 +137,22 @@ namespace PlayniteAchievements.Views
             ActiveRefreshHeader = _viewModel;
             // Never restore the Friends subview when the feature is disabled; the subview
             // switch is hidden in that state, which would trap the user in the friends view.
-            ActiveSubView = _settings?.Persisted?.EnableFriendsFeatures == false
-                ? OverviewSubView.Overview
-                : _lastSelectedSubView;
+            ActiveSubView =
+                _settings?.Persisted?.EnableFriendsFeatures == false &&
+                _lastSelectedSubView == OverviewSubView.Friends
+                    ? OverviewSubView.Overview
+                    : _lastSelectedSubView;
             ApplyActiveSubView();
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
             if (_settings?.Persisted != null)
             {
                 _settings.Persisted.PropertyChanged += Persisted_PropertyChanged;
+            }
+
+            if (_playniteApi?.Database?.Games != null)
+            {
+                _playniteApi.Database.Games.ItemUpdated += ShowcaseGames_ItemUpdated;
+                _playniteApi.Database.Games.ItemCollectionChanged += ShowcaseGames_ItemCollectionChanged;
             }
         }
 
@@ -174,12 +191,36 @@ namespace PlayniteAchievements.Views
                 EnsureFriendsOverviewCreated();
                 ActiveRefreshHeader = _friendsOverview?.RefreshHeader ?? _viewModel;
             }
+            else if (ActiveSubView == OverviewSubView.Showcase)
+            {
+                EnsureShowcaseCreated();
+                ActiveRefreshHeader = _viewModel;
+                if (_showcaseDatabaseRefreshPending)
+                {
+                    QueueShowcaseDatabaseRefresh();
+                }
+            }
             else
             {
                 ActiveRefreshHeader = _viewModel;
             }
 
             UpdateFriendsClearSelectionState();
+        }
+
+        private void EnsureShowcaseCreated()
+        {
+            if (_showcase != null)
+            {
+                return;
+            }
+
+            _showcase = new ShowcaseControl(
+                _viewModel,
+                _settings,
+                _persistSettingsForUi,
+                _playniteApi);
+            ShowcaseContentHost.Content = _showcase;
         }
 
         private void EnsureFriendsOverviewCreated()
@@ -287,6 +328,12 @@ namespace PlayniteAchievements.Views
                         return;
                     }
 
+                    if (ActiveSubView == OverviewSubView.Showcase)
+                    {
+                        _showcase?.FocusInitialTarget();
+                        return;
+                    }
+
                     if (!FocusLeftFilterArea())
                     {
                         FocusOverviewGrid();
@@ -333,6 +380,13 @@ namespace PlayniteAchievements.Views
                 RecentAchievementsDataGrid?.Dispose();
                 GameAchievementsGrid?.Dispose();
                 _friendsOverview?.Dispose();
+                _showcase?.Dispose();
+                _showcaseDatabaseRefreshTimer?.Stop();
+                if (_playniteApi?.Database?.Games != null)
+                {
+                    _playniteApi.Database.Games.ItemUpdated -= ShowcaseGames_ItemUpdated;
+                    _playniteApi.Database.Games.ItemCollectionChanged -= ShowcaseGames_ItemCollectionChanged;
+                }
                 _viewModel?.Dispose();
             }
             catch (Exception ex)
@@ -421,6 +475,45 @@ namespace PlayniteAchievements.Views
         private void FriendsSubViewButton_Click(object sender, RoutedEventArgs e)
         {
             ActiveSubView = OverviewSubView.Friends;
+        }
+
+        private void ShowcaseSubViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveSubView = OverviewSubView.Showcase;
+        }
+
+        private void ShowcaseGames_ItemUpdated(
+            object sender,
+            ItemUpdatedEventArgs<Playnite.SDK.Models.Game> e) =>
+            QueueShowcaseDatabaseRefresh();
+
+        private void ShowcaseGames_ItemCollectionChanged(
+            object sender,
+            ItemCollectionChangedEventArgs<Playnite.SDK.Models.Game> e) =>
+            QueueShowcaseDatabaseRefresh();
+
+        private void QueueShowcaseDatabaseRefresh()
+        {
+            _showcaseDatabaseRefreshPending = true;
+            if (ActiveSubView != OverviewSubView.Showcase)
+            {
+                return;
+            }
+
+            _showcaseDatabaseRefreshTimer.Stop();
+            _showcaseDatabaseRefreshTimer.Start();
+        }
+
+        private void ShowcaseDatabaseRefreshTimer_Tick(object sender, EventArgs e)
+        {
+            _showcaseDatabaseRefreshTimer.Stop();
+            if (!_showcaseDatabaseRefreshPending || ActiveSubView != OverviewSubView.Showcase)
+            {
+                return;
+            }
+
+            _showcaseDatabaseRefreshPending = false;
+            _ = _viewModel?.RefreshViewAsync();
         }
 
         private void FriendsClearSelectionButton_Click(object sender, RoutedEventArgs e)
@@ -548,6 +641,31 @@ namespace PlayniteAchievements.Views
             if (ActiveSubView == OverviewSubView.Friends)
             {
                 return HandleFriendsControllerInput(input);
+            }
+
+            if (ActiveSubView == OverviewSubView.Showcase)
+            {
+                if (FullscreenControllerNavigationService.IsLeftShoulderInput(input))
+                {
+                    return _showcase?.MovePage(-1) == true;
+                }
+
+                if (FullscreenControllerNavigationService.IsRightShoulderInput(input))
+                {
+                    return _showcase?.MovePage(1) == true;
+                }
+
+                if (FullscreenControllerNavigationService.IsBackInput(input))
+                {
+                    return TryHandleControllerBack();
+                }
+
+                if (FullscreenControllerNavigationService.IsAcceptInput(input))
+                {
+                    return FullscreenControllerNavigationService.ActivateFocusedElement();
+                }
+
+                return false;
             }
 
             if (FullscreenControllerNavigationService.IsBackInput(input))
@@ -1008,6 +1126,7 @@ namespace PlayniteAchievements.Views
             return CloseViewButton?.IsKeyboardFocusWithin == true ||
                    OverviewSubViewButton?.IsKeyboardFocusWithin == true ||
                    FriendsSubViewButton?.IsKeyboardFocusWithin == true ||
+                   ShowcaseSubViewButton?.IsKeyboardFocusWithin == true ||
                    RefreshModeSelectionButton?.IsKeyboardFocusWithin == true ||
                    RefreshActionButton?.IsKeyboardFocusWithin == true ||
                    FriendsClearSelectionButton?.IsKeyboardFocusWithin == true;

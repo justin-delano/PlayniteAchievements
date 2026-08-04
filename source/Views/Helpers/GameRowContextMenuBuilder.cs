@@ -6,6 +6,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -65,6 +66,26 @@ namespace PlayniteAchievements.Views.Helpers
                     captureItem.IsEnabled = PlayniteAchievementsPlugin.Instance?.CaptureLibraryService?
                         .GameHasCaptures(gameSummary.GameName) == true;
                     menu.Items.Add(captureItem);
+                }
+
+                var plugin = PlayniteAchievementsPlugin.Instance;
+                var showcase = plugin?.Settings?.Persisted?.Showcase;
+                if (showcase != null &&
+                    !(data is FriendGameSummaryItem) &&
+                    TryGetGameId(data, out var showcaseGameId))
+                {
+                    var isPinned = ShowcasePinService.IsGamePinned(showcase, showcaseGameId);
+                    menu.Items.Add(CreateMenuItem(
+                        resourceOwner,
+                        isPinned
+                            ? "LOCPlayAch_Showcase_UnpinGame"
+                            : "LOCPlayAch_Showcase_PinGame",
+                        () =>
+                        {
+                            ShowcasePinService.ToggleGame(showcase, showcaseGameId);
+                            plugin.PersistSettingsForUi();
+                            ShowcaseConfigurationEvents.RaiseChanged();
+                        }));
                 }
 
                 menu.Items.Add(new Separator());

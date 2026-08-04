@@ -243,6 +243,16 @@ PlayniteAchievements tables and visualizations can be added to [StartPage](https
 
 ![StartPage dashboard](Images/startpage.png)
 
+## Showcase dashboards
+
+Showcase is the third tab in the achievement Overview window. It provides one or more named 3×3 dashboard pages. Use **Edit layout** to select a block, add, replace, delete, or drag-swap its widget, and use the selected-block controls to split or merge in any direction. A merge automatically includes the smallest rectangular set of neighboring blocks; when that would combine several widgets, choose which widget remains and the others are deleted. Page actions create blank, analytics, or collection templates; pages can also be duplicated, renamed, reordered, reset, and deleted. Controller bumpers move between pages.
+
+The responsive widget catalog includes Profile, Collection and Prestige Scores, Pie Charts, an optional Timeline, Overall Statistics, provider-native points, Pinned Achievements, Favorite Games, Icon Mosaic, and Screenshot Slideshow. Timeline is available from the gallery but is not included in any seeded layout. The slideshow uses the shared capture library and configured filename suffixes, watches the configured capture directories, ignores unreadable captures, and supports capture-variant filters, shuffle, interval, fit, pause, and navigation.
+
+Achievement and game context menus include **Pin to Showcase** actions. Pins are shared across all Showcase pages and compatible StartPage widgets. Achievement pins use the Playnite game ID and achievement API name, retaining their last-known labels if source data becomes unavailable. Favorite Games can instead follow Playnite favorites.
+
+The same responsive widgets are available as individual StartPage views. Timeline, Native Points, and Icon Mosaic allow multiple independently configured instances; their settings are stored by the StartPage instance ID and removed when that view is deleted.
+
 ## Docs
 
 - [Open the wiki](https://github.com/justin-delano/PlayniteAchievements/wiki)

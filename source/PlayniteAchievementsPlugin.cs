@@ -1243,6 +1243,7 @@ namespace PlayniteAchievements
             try { _inGameMonitor?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGameMonitor"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
             try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
+            try { _captureLibraryService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose captureLibraryService"); }
             try { _windowTracker?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowTracker"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
@@ -1552,6 +1553,7 @@ namespace PlayniteAchievements
             // Games added/removed change what the overview and start page project; drop the cached
             // library projection so the next open rebuilds against the current library.
             _libraryProjectionService?.Invalidate();
+            InvalidateStartPageData();
 
             if (e == null)
             {
@@ -1599,6 +1601,7 @@ namespace PlayniteAchievements
             // invalidate so the cached overview/start-page projection is rebuilt with fresh values.
             // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce.
             _libraryProjectionService?.Invalidate();
+            InvalidateStartPageData();
         }
 
         private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)

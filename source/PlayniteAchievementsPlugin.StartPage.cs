@@ -9,6 +9,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.StartPage;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.ViewModels.StartPage;
@@ -41,8 +42,8 @@ namespace PlayniteAchievements
                         Description = string.IsNullOrWhiteSpace(view.DescriptionKey)
                             ? string.Empty
                             : L(view.DescriptionKey, string.Empty),
-                        HasSettings = false,
-                        AllowMultipleInstances = false
+                        HasSettings = view.HasSettings,
+                        AllowMultipleInstances = view.AllowMultipleInstances
                     }).ToList()
             };
         }
@@ -56,13 +57,19 @@ namespace PlayniteAchievements
 
             EnsureAchievementResourcesLoaded();
 
-            var viewModel = CreateStartPageViewModel(definition.WidgetKind);
+            var sharedSettings = definition.ShowcaseWidgetKind.HasValue
+                ? GetOrCreateStartPageWidgetSettings(
+                    viewId,
+                    instanceId,
+                    definition.ShowcaseWidgetKind.Value)
+                : null;
+            var viewModel = CreateStartPageViewModel(definition, sharedSettings);
             if (viewModel == null)
             {
                 return null;
             }
 
-            var view = CreateStartPageView(definition.WidgetKind);
+            var view = CreateStartPageView(definition);
             Common.FormattingCulture.Apply(view);
             view.DataContext = viewModel;
 
@@ -79,12 +86,31 @@ namespace PlayniteAchievements
 
         public Control GetStartPageViewSettings(string viewId, Guid instanceId)
         {
-            return null;
+            if (!StartPageViewCatalog.TryGetDefinition(viewId, out var definition) ||
+                !definition.HasSettings ||
+                !definition.ShowcaseWidgetKind.HasValue)
+            {
+                return null;
+            }
+
+            var settings = GetOrCreateStartPageWidgetSettings(
+                viewId,
+                instanceId,
+                definition.ShowcaseWidgetKind.Value);
+            return new StartPageShowcaseWidgetSettingsControl(
+                settings,
+                PersistSettingsForUi);
         }
 
         public void OnViewRemoved(string viewId, Guid instanceId)
         {
             DisposeStartPageViewModel(GetStartPageInstanceKey(viewId, instanceId));
+            var instances = Settings?.Persisted?.Showcase?.StartPageInstances;
+            if (instances?.Remove(GetStartPageInstanceKey(viewId, instanceId)) == true)
+            {
+                PersistSettingsForUi();
+                ShowcaseConfigurationEvents.RaiseChanged();
+            }
         }
 
         internal ContextMenu BuildStartPageRowContextMenu(
@@ -102,8 +128,20 @@ namespace PlayniteAchievements
             return menu.Items.Count > 0 ? menu : null;
         }
 
-        private IDisposable CreateStartPageViewModel(StartPageWidgetKind widgetKind)
+        private IDisposable CreateStartPageViewModel(
+            StartPageViewDefinition definition,
+            ShowcaseWidgetInstanceSettings sharedSettings)
         {
+            var widgetKind = definition.WidgetKind;
+            if (definition.ShowcaseWidgetKind.HasValue)
+            {
+                return new StartPageShowcaseWidgetViewModel(
+                    sharedSettings,
+                    GetStartPageDataCoordinator(),
+                    Settings,
+                    _logger);
+            }
+
             switch (widgetKind)
             {
                 case StartPageWidgetKind.GameSummariesGrid:
@@ -130,8 +168,14 @@ namespace PlayniteAchievements
             }
         }
 
-        private static Control CreateStartPageView(StartPageWidgetKind widgetKind)
+        private static Control CreateStartPageView(StartPageViewDefinition definition)
         {
+            if (definition.ShowcaseWidgetKind.HasValue)
+            {
+                return new StartPageShowcaseWidgetView();
+            }
+
+            var widgetKind = definition.WidgetKind;
             switch (widgetKind)
             {
                 case StartPageWidgetKind.GameSummariesGrid:
@@ -292,6 +336,24 @@ namespace PlayniteAchievements
                 () => OpenStartPageGameInLibrary(gameId)));
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements",
                 () => OpenManageAchievementsView(gameId)));
+
+            var showcase = Settings?.Persisted?.Showcase;
+            if (showcase != null)
+            {
+                var isPinned = ShowcasePinService.IsGamePinned(showcase, gameId);
+                menu.Items.Add(CreateStartPageMenuItem(
+                    resourceOwner,
+                    isPinned
+                        ? "LOCPlayAch_Showcase_UnpinGame"
+                        : "LOCPlayAch_Showcase_PinGame",
+                    () =>
+                    {
+                        ShowcasePinService.ToggleGame(showcase, gameId);
+                        PersistSettingsForUi();
+                        ShowcaseConfigurationEvents.RaiseChanged();
+                    }));
+            }
+
             menu.Items.Add(new Separator());
 
             var game = PlayniteApi?.Database?.Games?.Get(gameId);
@@ -386,6 +448,57 @@ namespace PlayniteAchievements
         private static string GetStartPageInstanceKey(string viewId, Guid instanceId)
         {
             return $"{viewId}:{instanceId:N}";
+        }
+
+        private ShowcaseWidgetInstanceSettings GetOrCreateStartPageWidgetSettings(
+            string viewId,
+            Guid instanceId,
+            ShowcaseWidgetKind kind)
+        {
+            var showcase = Settings.Persisted.Showcase;
+            var key = GetStartPageInstanceKey(viewId, instanceId);
+            if (showcase.StartPageInstances.TryGetValue(key, out var existing) &&
+                existing != null &&
+                existing.Kind == kind)
+            {
+                return existing;
+            }
+
+            var settings = new ShowcaseWidgetInstanceSettings
+            {
+                InstanceId = instanceId.ToString("N"),
+                Kind = kind
+            };
+            switch (kind)
+            {
+                case ShowcaseWidgetKind.Scores:
+                    settings.SetOption("Mode", ShowcaseScoreMode.Dual);
+                    break;
+                case ShowcaseWidgetKind.Timeline:
+                    ShowcaseTimelineOptions.SetRange(settings, TimelineRange.ThreeMonths);
+                    break;
+                case ShowcaseWidgetKind.NativePoints:
+                    settings.SetOption("Grouping", ShowcasePointsGrouping.Provider);
+                    settings.SetOption("TopN", 8);
+                    break;
+                case ShowcaseWidgetKind.FavoriteGames:
+                    settings.SetOption("Source", ShowcaseFavoriteGameSource.ShowcasePins);
+                    break;
+                case ShowcaseWidgetKind.IconMosaic:
+                    settings.SetOption("Source", ShowcaseMosaicSource.Recent);
+                    settings.SetOption("Count", 24);
+                    break;
+                case ShowcaseWidgetKind.ScreenshotSlideshow:
+                    settings.SetOption("Variant", ShowcaseScreenshotVariant.All);
+                    settings.SetOption("Shuffle", true);
+                    settings.SetOption("IntervalSeconds", 8);
+                    settings.SetOption("FitMode", ShowcaseImageFitMode.Fill);
+                    break;
+            }
+
+            showcase.StartPageInstances[key] = settings;
+            PersistSettingsForUi();
+            return settings;
         }
 
         private static string L(string key)
