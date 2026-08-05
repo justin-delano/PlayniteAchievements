@@ -8,23 +8,15 @@ namespace PlayniteAchievements.Services.Recording
 {
     /// <summary>
     /// Pure clip-window and buffer math over the rolling segment recording, all in UTC. The
-    /// invariant every window upholds: a clip contains BOTH the unlock moment and the toast
-    /// appearing on screen, extending to the observed toast however late it appears and clamped
-    /// only to recorded data. No filesystem access — fully unit-testable.
+    /// invariant every window upholds: a clip contains the unlock moment (with its pre-roll)
+    /// plus a toast-duration slot after it — the toast itself is composited into the clip at
+    /// export, so the window never depends on when the toast actually displayed on screen.
+    /// Clamped only to recorded data. No filesystem access — fully unit-testable.
     /// </summary>
     internal static class SegmentTimeline
     {
         /// <summary>Tolerance (seconds past detection) a trusted unlock timestamp may carry.</summary>
         public const int PreciseLeadSeconds = 5;
-
-        /// <summary>
-        /// Seconds kept after the toast's display duration elapses. Zero ends the clip as the toast
-        /// finishes rather than lingering on post-toast footage.
-        /// </summary>
-        public const int ToastDismissTailSeconds = 0;
-
-        /// <summary>End-anchor fallback (seconds after detection) when no toast ever shows.</summary>
-        public const int NoToastEndFallbackSeconds = 5;
 
         /// <summary>Windows that collapse below this are skipped by the caller.</summary>
         public const int MinimumWindowSeconds = 3;
@@ -46,6 +38,20 @@ namespace PlayniteAchievements.Services.Recording
             public double StartOffsetSeconds { get; set; }
 
             public double DurationSeconds { get; set; }
+        }
+
+        /// <summary>
+        /// A computed clip window plus the moment the toast should appear inside it: the trusted
+        /// unlock time when available, else detection. The toast is composited at export, so the
+        /// anchor is a choice, not an observation — it mimics a zero-latency notification.
+        /// </summary>
+        public sealed class ClipWindow
+        {
+            public DateTime StartUtc { get; set; }
+
+            public DateTime EndUtc { get; set; }
+
+            public DateTime ToastAnchorUtc { get; set; }
         }
 
         /// <summary>
@@ -139,39 +145,34 @@ namespace PlayniteAchievements.Services.Recording
         }
 
         /// <summary>
-        /// Computes the clip window in UTC.
-        /// Start anchor: preRollSeconds (the user's setting) before the unlock moment — the
-        /// precise timestamp when trusted, else pre-roll before detection. A floor keeps the
-        /// start no earlier than one poll interval + pre-roll before detection, so a far-back but
-        /// in-session precise timestamp can't open a runaway clip.
-        /// End anchor: the observed toast's dismissal (shown + display duration + tail), so the
-        /// clip follows the real toast however late it appears (e.g. queued behind other waves);
-        /// when no toast ever shows, detection plus a short fallback tail. Clamped to recorded
-        /// data.
+        /// Computes the clip window in UTC, anchored purely on the unlock — the on-screen toast
+        /// never moves the window because the toast is composited into the clip at export.
+        /// Start: preRollSeconds (the user's setting) before the unlock moment — the precise
+        /// timestamp when trusted, else pre-roll before detection. A floor keeps the start no
+        /// earlier than one poll interval + pre-roll before detection, so a far-back but
+        /// in-session precise timestamp can't open a runaway clip; the start is also clamped to
+        /// recorded data. End: the toast anchor (raised to the clip start when the pre-roll got
+        /// clamped away) plus the toast slot and tail.
         /// </summary>
-        public static (DateTime StartUtc, DateTime EndUtc) ComputeClipWindow(
+        public static ClipWindow ComputeClipWindow(
             DateTime? unlockTimeUtc,
             DateTime detectionUtc,
-            DateTime? toastShownUtc,
             DateTime captureStartUtc,
             DateTime? oldestSegmentStartUtc,
             int pollIntervalSeconds,
             int preRollSeconds,
-            int toastVisibleSeconds)
+            double toastSlotSeconds,
+            double tailSeconds)
         {
-            var end = toastShownUtc.HasValue
-                ? toastShownUtc.Value.AddSeconds(Math.Max(0, toastVisibleSeconds) + ToastDismissTailSeconds)
-                : detectionUtc.AddSeconds(NoToastEndFallbackSeconds);
+            var anchor = IsPreciseUnlockTime(unlockTimeUtc, captureStartUtc, detectionUtc)
+                ? unlockTimeUtc.Value
+                : detectionUtc;
 
             var preRoll = Math.Max(0, preRollSeconds);
-            var start = IsPreciseUnlockTime(unlockTimeUtc, captureStartUtc, detectionUtc)
-                ? unlockTimeUtc.Value.AddSeconds(-preRoll)
-                : detectionUtc.AddSeconds(-preRoll);
+            var start = anchor.AddSeconds(-preRoll);
 
             // Start floor: never open earlier than the oldest moment a promptly-detected unlock
-            // could have occurred (one poll interval back) plus the pre-roll. This bounds only a
-            // pathological far-back precise timestamp; it never slides the start forward for a
-            // late toast, so the clip always keeps its pre-roll and the unlock moment.
+            // could have occurred (one poll interval back) plus the pre-roll.
             var earliest = detectionUtc.AddSeconds(-(Math.Max(0, pollIntervalSeconds) + preRoll));
             if (start < earliest)
             {
@@ -190,12 +191,14 @@ namespace PlayniteAchievements.Services.Recording
                 start = floor;
             }
 
-            if (start > end)
+            // The toast begins at the clip start when the pre-roll got clamped away entirely.
+            if (anchor < start)
             {
-                start = end;
+                anchor = start;
             }
 
-            return (start, end);
+            var end = anchor.AddSeconds(Math.Max(0, toastSlotSeconds) + Math.Max(0, tailSeconds));
+            return new ClipWindow { StartUtc = start, EndUtc = end, ToastAnchorUtc = anchor };
         }
 
         /// <summary>

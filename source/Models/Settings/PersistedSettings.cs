@@ -82,6 +82,9 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, NotificationStyleSettings> _providerNotificationStyles;
         private int _toastDurationSeconds = 6;
         private int _maxConcurrentToasts = 3;
+        private bool _enableControllerVibration = false;
+        private int _controllerVibrationStrengthPercent = 50;
+        private int _controllerVibrationDurationMs = 650;
         private bool _enableUnlockScreenshots = false;
         private bool _unlockScreenshotClean = false;
         private bool _unlockScreenshotWithToast = true;
@@ -169,6 +172,7 @@ namespace PlayniteAchievements.Models.Settings
         private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
         private DateDisplayMode _unlockDateDisplayMode = DateDisplayMode.DateAndTime;
         private PlaytimeDisplayMode _playtimeDisplayMode = PlaytimeDisplayMode.HoursAndMinutes;
+        private FriendNameDisplayMode _friendNameDisplayMode = FriendNameDisplayMode.PersonaAndNickname;
         private bool _enableAchievementCompactListControl = true;
         private bool _enableAchievementDataGridControl = true;
         private bool _enableAchievementCompactUnlockedListControl = true;
@@ -348,7 +352,9 @@ namespace PlayniteAchievements.Models.Settings
                 null,
                 identity.LastRefreshedUtc,
                 null,
-                null);
+                null,
+                identity.ProviderNickname,
+                applyProviderNickname: true);
         }
 
         public FriendSettingsEntry AddOrUpdateFriend(
@@ -361,7 +367,9 @@ namespace PlayniteAchievements.Models.Settings
             IEnumerable<string> selectedPlatforms = null,
             DateTime? lastRefreshedUtc = null,
             DateTime? lastProbedUtc = null,
-            string lastError = null)
+            string lastError = null,
+            string providerNickname = null,
+            bool applyProviderNickname = false)
         {
             providerKey = NormalizeProviderKeyToken(providerKey);
             externalUserId = NormalizeProviderKeyToken(externalUserId);
@@ -403,6 +411,15 @@ namespace PlayniteAchievements.Models.Settings
             if (!string.IsNullOrWhiteSpace(displayName))
             {
                 existing.DisplayName = displayName.Trim();
+            }
+
+            // Overwrite (including to null) only when the caller carries roster data; other
+            // callers (manual add, probe updates) preserve the stored provider nickname.
+            if (applyProviderNickname)
+            {
+                existing.ProviderNickname = string.IsNullOrWhiteSpace(providerNickname)
+                    ? null
+                    : providerNickname.Trim();
             }
 
             if (!string.IsNullOrWhiteSpace(avatarUrl))
@@ -487,6 +504,7 @@ namespace PlayniteAchievements.Models.Settings
                     ProviderKey = entry.ProviderKey,
                     ExternalUserId = entry.ExternalUserId,
                     DisplayName = entry.DisplayName,
+                    ProviderNickname = entry.ProviderNickname,
                     AvatarUrl = entry.AvatarUrl,
                     AvatarPath = entry.AvatarPath,
                     LastRefreshedUtc = entry.LastRefreshedUtc
@@ -1090,6 +1108,33 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _toastPosition;
             set => SetValue(ref _toastPosition, value);
+        }
+
+        /// <summary>
+        /// Pulse connected game controllers when a notification shows.
+        /// </summary>
+        public bool EnableControllerVibration
+        {
+            get => _enableControllerVibration;
+            set => SetValue(ref _enableControllerVibration, value);
+        }
+
+        /// <summary>
+        /// Controller vibration strength as a percentage of full motor speed (0-100).
+        /// </summary>
+        public int ControllerVibrationStrengthPercent
+        {
+            get => _controllerVibrationStrengthPercent;
+            set => SetValue(ref _controllerVibrationStrengthPercent, Math.Max(0, Math.Min(100, value)));
+        }
+
+        /// <summary>
+        /// Controller vibration pulse length in milliseconds (100-5000).
+        /// </summary>
+        public int ControllerVibrationDurationMs
+        {
+            get => _controllerVibrationDurationMs;
+            set => SetValue(ref _controllerVibrationDurationMs, Math.Max(100, Math.Min(5000, value)));
         }
 
         /// <summary>
@@ -1889,6 +1934,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// How friend names combine the provider profile name and the provider-assigned nickname.
+        /// A manual plugin rename always takes precedence over this mode.
+        /// </summary>
+        public FriendNameDisplayMode FriendNameDisplayMode
+        {
+            get => _friendNameDisplayMode;
+            set => SetValue(ref _friendNameDisplayMode, value);
+        }
+
+        /// <summary>
         /// When true, enables the modern compact list control.
         /// </summary>
         public bool EnableAchievementCompactListControl
@@ -2585,6 +2640,9 @@ namespace PlayniteAchievements.Models.Settings
                 ToastDurationSeconds = this.ToastDurationSeconds,
                 MaxConcurrentToasts = this.MaxConcurrentToasts,
                 ToastPosition = this.ToastPosition,
+                EnableControllerVibration = this.EnableControllerVibration,
+                ControllerVibrationStrengthPercent = this.ControllerVibrationStrengthPercent,
+                ControllerVibrationDurationMs = this.ControllerVibrationDurationMs,
                 EnableUnlockScreenshots = this.EnableUnlockScreenshots,
                 UnlockScreenshotClean = this.UnlockScreenshotClean,
                 UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,
@@ -2661,6 +2719,7 @@ namespace PlayniteAchievements.Models.Settings
                 GridCellVerticalAlignment = this.GridCellVerticalAlignment,
                 UnlockDateDisplayMode = this.UnlockDateDisplayMode,
                 PlaytimeDisplayMode = this.PlaytimeDisplayMode,
+                FriendNameDisplayMode = this.FriendNameDisplayMode,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
@@ -2811,6 +2870,7 @@ namespace PlayniteAchievements.Models.Settings
             GridCellVerticalAlignment = defaults.GridCellVerticalAlignment;
             UnlockDateDisplayMode = defaults.UnlockDateDisplayMode;
             PlaytimeDisplayMode = defaults.PlaytimeDisplayMode;
+            FriendNameDisplayMode = defaults.FriendNameDisplayMode;
 
             EnableAchievementCompactListControl = defaults.EnableAchievementCompactListControl;
             EnableAchievementDataGridControl = defaults.EnableAchievementDataGridControl;

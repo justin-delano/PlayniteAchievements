@@ -36,15 +36,20 @@ namespace PlayniteAchievements.Services.Capture
 
         /// <summary>
         /// Writes the trimmed, concatenated clip (video + optional audio) to <paramref name="outputPath"/>.
-        /// Returns false (with one log line) on any failure so the caller can drop the clip cleanly.
+        /// <paramref name="videoLeadSeconds"/> reports how far before the requested window start
+        /// the output begins (the keyframe snap-back) — the overlay re-encode uses it to place
+        /// the toast and to trim the lead back off. Returns false (with one log line) on any
+        /// failure so the caller can drop the clip cleanly.
         /// </summary>
         // The Media Foundation interop can surface native corrupted-state exceptions (access
         // violations from the source reader / sink writer); catch them so a failure degrades to
         // "no clip" with a log line instead of silently faulting the producer task.
         [HandleProcessCorruptedStateExceptions, System.Security.SecurityCritical]
         public bool Export(
-            SegmentTimeline.ClipPlan videoPlan, SegmentTimeline.ClipPlan audioPlan, string outputPath)
+            SegmentTimeline.ClipPlan videoPlan, SegmentTimeline.ClipPlan audioPlan, string outputPath,
+            out double videoLeadSeconds)
         {
+            videoLeadSeconds = 0;
             if (videoPlan?.Segments == null || videoPlan.Segments.Count == 0 || string.IsNullOrEmpty(outputPath))
             {
                 return false;
@@ -75,6 +80,7 @@ namespace PlayniteAchievements.Services.Capture
                     var clipEnd = clipStart + ToTicks(videoPlan.DurationSeconds);
                     var keyframeStart = FindKeyframeStart(videoPlan.Segments[0].Path, clipStart);
                     var videoLead = clipStart - keyframeStart; // ≥ 0
+                    videoLeadSeconds = videoLead / (double)OneSecond100ns;
                     _logger?.Debug($"[Recording] MF export: keyframeStart={keyframeStart / 10000}ms lead={videoLead / 10000}ms; writing video.");
 
                     WriteInterleaved(sink, videoStream, videoPlan, keyframeStart, clipEnd, audioStream, pcmType, audioPlan, videoLead);
@@ -124,31 +130,44 @@ namespace PlayniteAchievements.Services.Capture
             }
         }
 
+        /// <summary>The AAC output type used for clip audio (shared with the overlay re-encoder).</summary>
+        internal static MediaType CreateAacType()
+        {
+            var aacType = new MediaType();
+            aacType.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Audio);
+            aacType.Set(MediaTypeAttributeKeys.Subtype, AudioFormatGuids.Aac);
+            aacType.Set(MediaTypeAttributeKeys.AudioSamplesPerSecond, AudioSampleRate);
+            aacType.Set(MediaTypeAttributeKeys.AudioNumChannels, AudioChannels);
+            aacType.Set(MediaTypeAttributeKeys.AudioBitsPerSample, AudioBitsPerSample);
+            aacType.Set(MediaTypeAttributeKeys.AudioAvgBytesPerSecond, AudioBytesPerAacSecond);
+            return aacType;
+        }
+
+        /// <summary>The 48 kHz stereo 16-bit PCM type used for clip audio (shared with the overlay re-encoder).</summary>
+        internal static MediaType CreatePcmType()
+        {
+            var pcmType = new MediaType();
+            pcmType.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Audio);
+            pcmType.Set(MediaTypeAttributeKeys.Subtype, AudioFormatGuids.Pcm);
+            pcmType.Set(MediaTypeAttributeKeys.AudioSamplesPerSecond, AudioSampleRate);
+            pcmType.Set(MediaTypeAttributeKeys.AudioNumChannels, AudioChannels);
+            pcmType.Set(MediaTypeAttributeKeys.AudioBitsPerSample, AudioBitsPerSample);
+            pcmType.Set(MediaTypeAttributeKeys.AudioBlockAlignment, AudioChannels * AudioBitsPerSample / 8);
+            pcmType.Set(
+                MediaTypeAttributeKeys.AudioAvgBytesPerSecond,
+                AudioSampleRate * AudioChannels * AudioBitsPerSample / 8);
+            return pcmType;
+        }
+
         private int TryAddAudioStream(SinkWriter sink, out MediaType pcmType)
         {
             pcmType = null;
             try
             {
-                using (var aacType = new MediaType())
+                using (var aacType = CreateAacType())
                 {
-                    aacType.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Audio);
-                    aacType.Set(MediaTypeAttributeKeys.Subtype, AudioFormatGuids.Aac);
-                    aacType.Set(MediaTypeAttributeKeys.AudioSamplesPerSecond, AudioSampleRate);
-                    aacType.Set(MediaTypeAttributeKeys.AudioNumChannels, AudioChannels);
-                    aacType.Set(MediaTypeAttributeKeys.AudioBitsPerSample, AudioBitsPerSample);
-                    aacType.Set(MediaTypeAttributeKeys.AudioAvgBytesPerSecond, AudioBytesPerAacSecond);
                     sink.AddStream(aacType, out var streamIndex);
-
-                    pcmType = new MediaType();
-                    pcmType.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Audio);
-                    pcmType.Set(MediaTypeAttributeKeys.Subtype, AudioFormatGuids.Pcm);
-                    pcmType.Set(MediaTypeAttributeKeys.AudioSamplesPerSecond, AudioSampleRate);
-                    pcmType.Set(MediaTypeAttributeKeys.AudioNumChannels, AudioChannels);
-                    pcmType.Set(MediaTypeAttributeKeys.AudioBitsPerSample, AudioBitsPerSample);
-                    pcmType.Set(MediaTypeAttributeKeys.AudioBlockAlignment, AudioChannels * AudioBitsPerSample / 8);
-                    pcmType.Set(
-                        MediaTypeAttributeKeys.AudioAvgBytesPerSecond,
-                        AudioSampleRate * AudioChannels * AudioBitsPerSample / 8);
+                    pcmType = CreatePcmType();
                     sink.SetInputMediaType(streamIndex, pcmType, null);
                     return streamIndex;
                 }
@@ -159,6 +178,65 @@ namespace PlayniteAchievements.Services.Capture
                 pcmType?.Dispose();
                 pcmType = null;
                 return -1;
+            }
+        }
+
+        /// <summary>
+        /// Reads a planned audio window (e.g. the chime sidecar chunks around one wave's unlock
+        /// sound) into one contiguous 48 kHz stereo 16-bit PCM buffer. Returns null on failure or
+        /// when nothing overlaps.
+        /// </summary>
+        [HandleProcessCorruptedStateExceptions, System.Security.SecurityCritical]
+        public static byte[] TryReadPcmWindow(SegmentTimeline.ClipPlan plan, ILogger logger)
+        {
+            if (plan?.Segments == null || plan.Segments.Count == 0)
+            {
+                return null;
+            }
+
+            MediaManager.Startup();
+            try
+            {
+                using (var pcmType = CreatePcmType())
+                using (var stream = new System.IO.MemoryStream())
+                {
+                    foreach (var timed in AudioSamples(plan, pcmType, videoLead: 0))
+                    {
+                        using (var sample = timed.Sample)
+                        using (var buffer = sample.ConvertToContiguousBuffer())
+                        {
+                            var ptr = buffer.Lock(out _, out var length);
+                            try
+                            {
+                                var bytes = new byte[length];
+                                System.Runtime.InteropServices.Marshal.Copy(ptr, bytes, 0, length);
+                                stream.Write(bytes, 0, length);
+                            }
+                            finally
+                            {
+                                buffer.Unlock();
+                            }
+                        }
+                    }
+
+                    return stream.Length > 0 ? stream.ToArray() : null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Debug(ex, "[Recording] Chime PCM window read failed; the clip keeps its audio without the chime.");
+                return null;
+            }
+            finally
+            {
+                try
+                {
+                    MediaManager.Shutdown();
+                }
+                catch
+                {
+                    // Startup/Shutdown are refcounted per process; ignore an unbalanced shutdown.
+                }
             }
         }
 

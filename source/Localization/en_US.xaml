@@ -115,6 +115,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Avatar">Avatar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Primary">Primary</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_PrimaryHint">The account whose avatar and name represent this merged friend.</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Accounts">Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
@@ -539,6 +541,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_MaxConcurrentToasts">Concurrent notifications:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastDurationSeconds">Duration (seconds):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition">Position:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableControllerVibration">Vibrate controller on notification</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ControllerVibrationStrength">Vibration strength (%):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ControllerVibrationDuration">Vibration duration (ms):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomRight">Bottom right</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomLeft">Bottom left</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopRight">Top right</sys:String>
@@ -810,6 +815,11 @@
     <sys:String x:Key="LOCPlayAch_FriendsSettings_NoAutoProviders">No auto-discovery platforms are enabled.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_RefreshCompleteFormat">Friends refreshed: {0:N0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_Unmerge">Unmerge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplay">Friend name display</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayHint">How friend names combine the profile name and the nickname you assigned on the platform. Renames entered in the table below always take priority.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_Persona">Profile name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_Nickname">Nickname</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_PersonaAndNickname">Profile name (nickname)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Ignore friends to skip them during refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>

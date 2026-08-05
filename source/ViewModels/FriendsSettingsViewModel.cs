@@ -181,6 +181,24 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public FriendNameDisplayMode FriendNameDisplayMode
+        {
+            get => _settings?.Persisted?.FriendNameDisplayMode ?? FriendNameDisplayMode.PersonaAndNickname;
+            set
+            {
+                var persisted = _settings?.Persisted;
+                if (persisted == null || persisted.FriendNameDisplayMode == value)
+                {
+                    return;
+                }
+
+                persisted.FriendNameDisplayMode = value;
+                OnPropertyChanged();
+                RebuildFriends();
+                PersistAndNotify(null);
+            }
+        }
+
         public bool IsExophaseProviderEnabled => _exophaseSettings?.IsEnabled == true;
 
         public string ManualExophaseUsername
@@ -348,7 +366,8 @@ namespace PlayniteAchievements.ViewModels
                     ResolveDisabledExophasePlatformTokens(groupEntries),
                     OnPersonRowChanged,
                     OnAccountRowChanged,
-                    OnPersonSelectionChanged));
+                    OnPersonSelectionChanged,
+                    persisted.FriendNameDisplayMode));
             }
 
             foreach (var entry in entries.Where(entry => !groupedKeys.Contains(FriendAccountRef.BuildKey(entry.ProviderKey, entry.ExternalUserId))))
@@ -359,7 +378,8 @@ namespace PlayniteAchievements.ViewModels
                     ResolveDisabledExophasePlatformTokens(new[] { entry }),
                     OnPersonRowChanged,
                     OnAccountRowChanged,
-                    OnPersonSelectionChanged));
+                    OnPersonSelectionChanged,
+                    persisted.FriendNameDisplayMode));
             }
 
             foreach (var row in rows
@@ -961,7 +981,8 @@ namespace PlayniteAchievements.ViewModels
             HashSet<string> disabledExophasePlatformTokens,
             Action<FriendSettingsPersonRowItem> onChanged,
             Action<FriendSettingsAccountItem> onAccountChanged,
-            Action<FriendSettingsPersonRowItem> onSelectionChanged)
+            Action<FriendSettingsPersonRowItem> onSelectionChanged,
+            FriendNameDisplayMode nameMode = FriendNameDisplayMode.PersonaAndNickname)
         {
             MergeGroupId = group?.Id;
             _nickname = group?.Nickname;
@@ -978,7 +999,9 @@ namespace PlayniteAchievements.ViewModels
                         RefreshDerivedProperties();
                         onAccountChanged?.Invoke(account);
                     },
-                    SelectAvatarSource)));
+                    SelectAvatarSource,
+                    nameMode,
+                    isMergedRow: !string.IsNullOrWhiteSpace(group?.Id))));
             SeedAvatarSource(group?.AvatarAccount);
             if (!IsMerged && Accounts.Count == 1)
             {
@@ -995,6 +1018,13 @@ namespace PlayniteAchievements.ViewModels
         public bool IsMerged => !string.IsNullOrWhiteSpace(MergeGroupId);
 
         public bool CanUnmerge => IsMerged;
+
+        // Row-level removal target for the shared actions column. Unmerged rows hold exactly
+        // one account, and merged accounts are never removable, so this is null or that account.
+        public FriendSettingsAccountItem RemovableAccount =>
+            IsMerged ? null : Accounts.FirstOrDefault(account => account.CanRemove);
+
+        public bool CanRemoveAccount => RemovableAccount != null;
 
         public ObservableCollection<FriendSettingsAccountItem> Accounts { get; }
 
@@ -1041,9 +1071,10 @@ namespace PlayniteAchievements.ViewModels
             Nickname,
             DefaultDisplayName);
 
-        // The name shown when no nickname is set: the underlying account's display name (or id).
+        // The name shown when no nickname is set, preferring the primary (avatar-source) account.
         // Used as the faint placeholder inside the nickname text box.
         public string DefaultDisplayName => FirstNonEmpty(
+            Accounts.FirstOrDefault(account => account.IsAvatarSource)?.DisplayName,
             Accounts.Select(account => account.DisplayName).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)),
             Accounts.Select(account => account.ExternalUserId).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)));
 
@@ -1118,6 +1149,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(DefaultDisplayName));
             OnPropertyChanged(nameof(AvatarSource));
             OnPropertyChanged(nameof(AccountsText));
             OnPropertyChanged(nameof(IsIgnored));
@@ -1140,8 +1172,8 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        // Radio-style handler: making one account the avatar source clears the rest, then
-        // refreshes the row avatar and persists the choice.
+        // Radio-style handler: making one account the primary clears the rest, then refreshes
+        // the row's avatar and default name and persists the choice.
         private void SelectAvatarSource(FriendSettingsAccountItem chosen)
         {
             foreach (var account in Accounts)
@@ -1153,6 +1185,8 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(AvatarSource));
+            OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(DefaultDisplayName));
             _onChanged?.Invoke(this);
         }
 
@@ -1173,14 +1207,24 @@ namespace PlayniteAchievements.ViewModels
             FriendSettingsEntry entry,
             HashSet<string> disabledExophasePlatformTokens,
             Action<FriendSettingsAccountItem> onChanged,
-            Action<FriendSettingsAccountItem> onAvatarSourceSelected = null)
+            Action<FriendSettingsAccountItem> onAvatarSourceSelected = null,
+            FriendNameDisplayMode nameMode = FriendNameDisplayMode.PersonaAndNickname,
+            bool isMergedRow = false)
         {
             Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             _onChanged = onChanged;
             _onAvatarSourceSelected = onAvatarSourceSelected;
+            IsInMergedRow = isMergedRow;
             ProviderKey = entry.ProviderKey;
             ExternalUserId = entry.ExternalUserId;
-            DisplayName = string.IsNullOrWhiteSpace(entry.DisplayName) ? entry.ExternalUserId : entry.DisplayName;
+            // Manual nickname deliberately excluded: the nickname text box shows it, and the
+            // person row's DefaultDisplayName is the placeholder behind it.
+            DisplayName = FriendDisplayNameResolver.Resolve(
+                null,
+                entry.DisplayName,
+                entry.ProviderNickname,
+                nameMode,
+                entry.ExternalUserId);
             AvatarSource = !string.IsNullOrWhiteSpace(entry.AvatarPath) ? entry.AvatarPath : entry.AvatarUrl;
             Source = entry.Source;
             _isIgnored = entry.IsIgnored;
@@ -1211,7 +1255,11 @@ namespace PlayniteAchievements.ViewModels
 
         public bool SupportsPlatformSelection => IsExophase;
 
-        public bool CanRemove => Source == FriendSettingsSource.Manual;
+        public bool IsInMergedRow { get; }
+
+        // Accounts inside a merge group cannot be removed directly; the person must be
+        // unmerged first so the removal target is unambiguous.
+        public bool CanRemove => !IsInMergedRow && Source == FriendSettingsSource.Manual;
 
         public string ProviderDisplayName => ProviderRegistry.GetLocalizedName(ProviderKey);
 

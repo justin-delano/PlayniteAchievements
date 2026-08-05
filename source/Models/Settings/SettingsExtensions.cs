@@ -107,6 +107,9 @@ namespace PlayniteAchievements.Models.Settings
             target.ToastDurationSeconds = source.ToastDurationSeconds;
             target.MaxConcurrentToasts = source.MaxConcurrentToasts;
             target.ToastPosition = source.ToastPosition;
+            target.EnableControllerVibration = source.EnableControllerVibration;
+            target.ControllerVibrationStrengthPercent = source.ControllerVibrationStrengthPercent;
+            target.ControllerVibrationDurationMs = source.ControllerVibrationDurationMs;
             target.EnableUnlockScreenshots = source.EnableUnlockScreenshots;
             target.UnlockScreenshotClean = source.UnlockScreenshotClean;
             target.UnlockScreenshotWithToast = source.UnlockScreenshotWithToast;
@@ -187,6 +190,7 @@ namespace PlayniteAchievements.Models.Settings
             target.GridCellVerticalAlignment = source.GridCellVerticalAlignment;
             target.UnlockDateDisplayMode = source.UnlockDateDisplayMode;
             target.PlaytimeDisplayMode = source.PlaytimeDisplayMode;
+            target.FriendNameDisplayMode = source.FriendNameDisplayMode;
             target.EnableAchievementCompactListControl = source.EnableAchievementCompactListControl;
             target.EnableAchievementDataGridControl = source.EnableAchievementDataGridControl;
             target.EnableAchievementCompactUnlockedListControl = source.EnableAchievementCompactUnlockedListControl;

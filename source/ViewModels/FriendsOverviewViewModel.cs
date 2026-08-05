@@ -805,7 +805,8 @@ namespace PlayniteAchievements.ViewModels
                 IsCompareKeySelected,
                 SetCompareKeySelected,
                 GetCompareFriendDisplayName,
-                () => IsCompareAvailable)
+                () => IsCompareAvailable,
+                IsCompareKeyFavorite)
             {
                 Width = 140,
                 ToolTip = ResourceProvider.GetString("LOCPlayAch_Filter_CompareSelectorPlaceholder")
@@ -819,6 +820,14 @@ namespace PlayniteAchievements.ViewModels
                 FriendOverviewProjection.GetFriendScopeKey(_compareFriend),
                 key,
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsCompareKeyFavorite(string key)
+        {
+            return _allFriends.FirstOrDefault(friend => friend != null && string.Equals(
+                FriendOverviewProjection.GetFriendScopeKey(friend),
+                key,
+                StringComparison.OrdinalIgnoreCase))?.IsFavorite == true;
         }
 
         // Single-select semantics over checkable menu items: checking a friend replaces any
@@ -2056,7 +2065,9 @@ namespace PlayniteAchievements.ViewModels
             try
             {
                 rows = await Task
-                    .Run(() => _friendCache.LoadFriendGameAchievementData(gameScope)?.AllAchievements)
+                    .Run(() => FriendOverviewProjection.ApplyMergeIdentity(
+                        _friendCache.LoadFriendGameAchievementData(gameScope),
+                        _settings?.Persisted))
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -2793,7 +2804,8 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (string.IsNullOrWhiteSpace(propertyName) ||
-                propertyName == nameof(PersistedSettings.ShowFriendSpoilers))
+                propertyName == nameof(PersistedSettings.ShowFriendSpoilers) ||
+                propertyName == nameof(PersistedSettings.FriendNameDisplayMode))
             {
                 _friendsOverviewDataCoordinator?.Invalidate();
             }
