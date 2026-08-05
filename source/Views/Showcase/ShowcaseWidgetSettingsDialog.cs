@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Views.Showcase
                     "pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml",
                     UriKind.Absolute)
             });
-            Width = 430;
+            Width = 400;
             Height = GetEditorHeight(widget.Kind);
             Content = BuildContent();
             FormattingCulture.Apply(this);
@@ -70,7 +70,7 @@ namespace PlayniteAchievements.Views.Showcase
                 editor,
                 new WindowOptions
                 {
-                    Width = 430,
+                    Width = 400,
                     Height = height + 25,
                     CanBeResizable = false,
                     ShowCloseButton = true,
@@ -85,7 +85,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var root = new Grid
             {
-                Margin = new Thickness(16),
+                Margin = new Thickness(12),
                 Background = Brushes.Transparent
             };
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -100,12 +100,10 @@ namespace PlayniteAchievements.Views.Showcase
             scroll.Content = panel;
             root.Children.Add(scroll);
 
-            panel.Children.Add(CreateHeading(GetWidgetName(_workingWidget.Kind)));
             _titleBox = AddTextBox(
                 panel,
                 Localize("LOCPlayAch_Showcase_CustomTitle", "Custom title"),
-                _workingWidget.CustomTitle,
-                Localize("LOCPlayAch_Showcase_CustomTitleHint", "Leave blank to use the widget name."));
+                _workingWidget.CustomTitle);
 
             if (_workingWidget.Kind == ShowcaseWidgetKind.Profile)
             {
@@ -119,18 +117,12 @@ namespace PlayniteAchievements.Views.Showcase
                     margin: new Thickness(0),
                     loadStyles: false));
             }
-            else
-            {
-                panel.Children.Add(CreateHint(Localize(
-                    "LOCPlayAch_Showcase_NoAdditionalSettings",
-                    "This widget has no additional settings.")));
-            }
 
             var buttons = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 14, 0, 0)
+                Margin = new Thickness(0, 10, 0, 0)
             };
             var cancel = new Button
             {
@@ -227,31 +219,39 @@ namespace PlayniteAchievements.Views.Showcase
         private static TextBox AddTextBox(
             Panel panel,
             string label,
-            string value,
-            string hint = null)
+            string value)
         {
-            panel.Children.Add(CreateLabel(label));
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var labelBlock = CreateLabel(label);
+            labelBlock.Margin = new Thickness(0, 0, 10, 0);
+            labelBlock.VerticalAlignment = VerticalAlignment.Center;
+            row.Children.Add(labelBlock);
             var box = new TextBox
             {
                 Text = value ?? string.Empty,
                 MinHeight = 30,
                 Padding = new Thickness(7, 4, 7, 4)
             };
-            panel.Children.Add(box);
-            if (!string.IsNullOrWhiteSpace(hint))
-            {
-                panel.Children.Add(CreateHint(hint));
-            }
+            Grid.SetColumn(box, 1);
+            row.Children.Add(box);
+            panel.Children.Add(row);
 
             return box;
         }
 
         private static TextBox AddImagePicker(Panel panel, string label, string value)
         {
-            panel.Children.Add(CreateLabel(label));
-            var row = new Grid();
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var labelBlock = CreateLabel(label);
+            labelBlock.Margin = new Thickness(0, 0, 10, 0);
+            labelBlock.VerticalAlignment = VerticalAlignment.Center;
+            row.Children.Add(labelBlock);
             var box = new TextBox
             {
                 Text = value ?? string.Empty,
@@ -259,6 +259,7 @@ namespace PlayniteAchievements.Views.Showcase
                 MinHeight = 30,
                 Padding = new Thickness(7, 4, 7, 4)
             };
+            Grid.SetColumn(box, 1);
             row.Children.Add(box);
             var browse = new Button
             {
@@ -279,23 +280,19 @@ namespace PlayniteAchievements.Views.Showcase
                     box.Text = dialog.FileName;
                 }
             };
-            Grid.SetColumn(browse, 1);
+            Grid.SetColumn(browse, 2);
             row.Children.Add(browse);
+            var clear = new Button
+            {
+                Content = Localize("LOCPlayAch_Button_Clear", "Clear"),
+                MinWidth = 72,
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+            clear.Click += (_, __) => box.Text = string.Empty;
+            Grid.SetColumn(clear, 3);
+            row.Children.Add(clear);
             panel.Children.Add(row);
             return box;
-        }
-
-        private static TextBlock CreateHeading(string text)
-        {
-            var block = new TextBlock
-            {
-                Text = text,
-                FontSize = 18,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 6)
-            };
-            block.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
-            return block;
         }
 
         private static TextBlock CreateLabel(string text)
@@ -310,31 +307,19 @@ namespace PlayniteAchievements.Views.Showcase
             return block;
         }
 
-        private static TextBlock CreateHint(string text)
-        {
-            var block = new TextBlock
-            {
-                Text = text,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 4, 0, 0)
-            };
-            block.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text.Secondary");
-            return block;
-        }
-
         private static double GetEditorHeight(ShowcaseWidgetKind kind)
         {
             switch (kind)
             {
                 case ShowcaseWidgetKind.Profile:
-                    return 445;
+                    return 300;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    return 410;
+                    return 250;
                 case ShowcaseWidgetKind.NativePoints:
                 case ShowcaseWidgetKind.IconMosaic:
-                    return 315;
+                    return 210;
                 default:
-                    return 255;
+                    return 175;
             }
         }
 

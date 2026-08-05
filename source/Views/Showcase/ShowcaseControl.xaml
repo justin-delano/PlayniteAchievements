@@ -59,7 +59,7 @@
                     Content="{DynamicResource LOCPlayAch_Showcase_PageActionsLabel}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PageActions}"
                     Click="PageActionsButton_Click"
-                    MinWidth="96"/>
+                    MinWidth="72"/>
         </Grid>
 
         <Border x:Name="EditToolsPanel"
@@ -81,56 +81,16 @@
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_LayoutHint}"
-                               Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                               TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
                     <Button x:Name="WidgetActionButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_ChangeWidget}"
+                            Content="{DynamicResource LOCPlayAch_Showcase_Widget}"
                             Click="WidgetActionButton_Click"
                             Margin="4,0"/>
-                    <Button x:Name="WidgetSettingsButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_WidgetSettings}"
-                            Click="WidgetSettingsButton_Click"
+                    <Button x:Name="LayoutActionButton"
+                            Content="{DynamicResource LOCPlayAch_Showcase_Layout}"
+                            Click="LayoutActionButton_Click"
                             Margin="4,0"/>
-                    <Button x:Name="DeleteWidgetButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_DeleteWidget}"
-                            Click="DeleteWidgetButton_Click"
-                            Margin="4,0,10,0"/>
-                    <Button x:Name="SplitColumnsButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_SplitColumns}"
-                            Click="SplitColumnsButton_Click"
-                            Margin="4,0"/>
-                    <Button x:Name="SplitRowsButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_SplitRows}"
-                            Click="SplitRowsButton_Click"
-                            Margin="4,0,10,0"/>
-                    <Button x:Name="MergeLeftButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_MergeLeftLabel}"
-                            ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeLeft}"
-                            Click="MergeLeftButton_Click"
-                            MinWidth="72"
-                            Margin="2,0"/>
-                    <Button x:Name="MergeUpButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_MergeUpLabel}"
-                            ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeUp}"
-                            Click="MergeUpButton_Click"
-                            MinWidth="72"
-                            Margin="2,0"/>
-                    <Button x:Name="MergeDownButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_MergeDownLabel}"
-                            ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeDown}"
-                            Click="MergeDownButton_Click"
-                            MinWidth="72"
-                            Margin="2,0"/>
-                    <Button x:Name="MergeRightButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_MergeRightLabel}"
-                            ToolTip="{DynamicResource LOCPlayAch_Showcase_MergeRight}"
-                            Click="MergeRightButton_Click"
-                            MinWidth="72"
-                            Margin="2,0"/>
                 </WrapPanel>
             </Grid>
         </Border>

@@ -69,6 +69,38 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void Split_KeepsAnOccupiedWidgetInTheLargerResultingBlock()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var page = settings.Pages.Single();
+            var scoreBlock = page.Blocks.Single(block =>
+                block.Row == 0 && block.Column == 1 && block.ColumnSpan == 2);
+            var scoreId = scoreBlock.WidgetInstanceId;
+
+            Assert.IsTrue(ShowcaseLayoutService.TryMerge(
+                settings,
+                page.PageId,
+                page.Blocks.Single(block => block.Row == 0 && block.Column == 0).BlockId,
+                scoreBlock.BlockId,
+                scoreId));
+            var fullWidth = page.Blocks.Single(block => block.Row == 0);
+            Assert.AreEqual(3, fullWidth.ColumnSpan);
+
+            Assert.IsTrue(ShowcaseLayoutService.TrySplit(
+                settings,
+                page.PageId,
+                fullWidth.BlockId,
+                vertical: true,
+                gridLine: 1));
+
+            Assert.IsNull(page.Blocks.Single(block =>
+                block.Row == 0 && block.Column == 0).WidgetInstanceId);
+            Assert.AreEqual(scoreId, page.Blocks.Single(block =>
+                block.Row == 0 && block.Column == 1).WidgetInstanceId);
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
+        }
+
+        [TestMethod]
         public void Normalize_RepairsOverlapAndMissingCells()
         {
             var settings = new ShowcaseSettings
@@ -331,8 +363,14 @@ namespace PlayniteAchievements.Tests.Models
                 ShowcaseWidgetKind.Profile);
             Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
                 settings, page.PageId, page.Blocks[2].BlockId, profileOne.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.CanPlaceWidget(
+                settings, page.PageId, page.Blocks[3].BlockId, profileOne.InstanceId));
+            Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(
+                settings, page.PageId, page.Blocks[3].BlockId, profileOne.InstanceId));
+            Assert.AreEqual(profileOne.InstanceId, page.Blocks[3].WidgetInstanceId);
+            Assert.IsNull(page.Blocks[2].WidgetInstanceId);
             Assert.IsFalse(ShowcaseLayoutService.PlaceWidget(
-                settings, page.PageId, page.Blocks[3].BlockId, profileTwo.InstanceId));
+                settings, page.PageId, page.Blocks[4].BlockId, profileTwo.InstanceId));
         }
 
         [TestMethod]

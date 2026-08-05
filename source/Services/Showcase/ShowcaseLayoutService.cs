@@ -220,6 +220,12 @@ namespace PlayniteAchievements.Services.Showcase
                 right.ColumnSpan = block.Column + block.ColumnSpan - gridLine;
                 right.WidgetInstanceId = null;
                 block.ColumnSpan = gridLine - block.Column;
+                if (right.ColumnSpan > block.ColumnSpan)
+                {
+                    right.WidgetInstanceId = block.WidgetInstanceId;
+                    block.WidgetInstanceId = null;
+                }
+
                 page.Blocks.Add(right);
             }
             else
@@ -235,6 +241,12 @@ namespace PlayniteAchievements.Services.Showcase
                 bottom.RowSpan = block.Row + block.RowSpan - gridLine;
                 bottom.WidgetInstanceId = null;
                 block.RowSpan = gridLine - block.Row;
+                if (bottom.RowSpan > block.RowSpan)
+                {
+                    bottom.WidgetInstanceId = block.WidgetInstanceId;
+                    block.WidgetInstanceId = null;
+                }
+
                 page.Blocks.Add(bottom);
             }
 
@@ -388,39 +400,99 @@ namespace PlayniteAchievements.Services.Showcase
             string widgetInstanceId)
         {
             Normalize(settings);
-            var page = FindPage(settings, pageId);
-            var target = FindBlock(page, blockId);
+            var placement = ResolvePlacement(settings, pageId, blockId, widgetInstanceId);
+            if (!IsPlacementAllowed(settings, placement))
+            {
+                return false;
+            }
+
+            var displaced = placement.Target.WidgetInstanceId;
+            placement.Target.WidgetInstanceId = placement.Widget.InstanceId;
+            if (placement.Source != null &&
+                !ReferenceEquals(placement.Source, placement.Target))
+            {
+                placement.Source.WidgetInstanceId = displaced;
+            }
+
+            return true;
+        }
+
+        public static bool CanPlaceWidget(
+            ShowcaseSettings settings,
+            string pageId,
+            string blockId,
+            string widgetInstanceId)
+        {
+            return IsPlacementAllowed(
+                settings,
+                ResolvePlacement(settings, pageId, blockId, widgetInstanceId));
+        }
+
+        private static WidgetPlacement ResolvePlacement(
+            ShowcaseSettings settings,
+            string pageId,
+            string blockId,
+            string widgetInstanceId)
+        {
+            var targetPage = FindPage(settings, pageId);
+            var target = FindBlock(targetPage, blockId);
             var widget = FindWidget(settings, widgetInstanceId);
             if (target == null || widget == null)
             {
-                return false;
+                return null;
             }
 
-            if (ShowcaseWidgetCatalog.Get(widget.Kind).SingleInstancePerPage &&
-                page.Blocks.Any(block =>
-                    !ReferenceEquals(block, target) &&
-                    !string.IsNullOrWhiteSpace(block.WidgetInstanceId) &&
-                    FindWidget(settings, block.WidgetInstanceId)?.Kind == widget.Kind))
+            var placement = new WidgetPlacement
             {
-                return false;
-            }
-
-            ShowcaseBlockSettings source = null;
-            foreach (var candidatePage in settings.Pages)
+                TargetPage = targetPage,
+                Target = target,
+                Widget = widget
+            };
+            var resolvedWidgetId = widget.InstanceId;
+            foreach (var candidatePage in settings?.Pages ?? new List<ShowcasePageSettings>())
             {
-                source = candidatePage.Blocks.FirstOrDefault(block =>
-                    string.Equals(block.WidgetInstanceId, widget.InstanceId, StringComparison.OrdinalIgnoreCase));
+                var source = candidatePage?.Blocks?.FirstOrDefault(block =>
+                    string.Equals(block.WidgetInstanceId, resolvedWidgetId, StringComparison.OrdinalIgnoreCase));
                 if (source != null)
                 {
+                    placement.SourcePage = candidatePage;
+                    placement.Source = source;
                     break;
                 }
             }
 
-            var displaced = target.WidgetInstanceId;
-            target.WidgetInstanceId = widget.InstanceId;
-            if (source != null && !ReferenceEquals(source, target))
+            return placement;
+        }
+
+        private static bool IsPlacementAllowed(
+            ShowcaseSettings settings,
+            WidgetPlacement placement)
+        {
+            if (placement == null)
             {
-                source.WidgetInstanceId = displaced;
+                return false;
+            }
+
+            if (ShowcaseWidgetCatalog.Get(placement.Widget.Kind).SingleInstancePerPage &&
+                placement.TargetPage.Blocks.Any(block =>
+                    !ReferenceEquals(block, placement.Target) &&
+                    !ReferenceEquals(block, placement.Source) &&
+                    FindWidget(settings, block.WidgetInstanceId)?.Kind == placement.Widget.Kind))
+            {
+                return false;
+            }
+
+            var displaced = FindWidget(settings, placement.Target.WidgetInstanceId);
+            if (placement.Source != null &&
+                !ReferenceEquals(placement.Source, placement.Target) &&
+                displaced != null &&
+                ShowcaseWidgetCatalog.Get(displaced.Kind).SingleInstancePerPage &&
+                placement.SourcePage?.Blocks?.Any(block =>
+                    !ReferenceEquals(block, placement.Source) &&
+                    !ReferenceEquals(block, placement.Target) &&
+                    FindWidget(settings, block.WidgetInstanceId)?.Kind == displaced.Kind) == true)
+            {
+                return false;
             }
 
             return true;
@@ -519,8 +591,12 @@ namespace PlayniteAchievements.Services.Showcase
             var placedWidgetIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (var pageIndex = 0; pageIndex < settings.Pages.Count; pageIndex++)
             {
-                var page = settings.Pages[pageIndex] ?? new ShowcasePageSettings();
-                settings.Pages[pageIndex] = page;
+                var page = settings.Pages[pageIndex];
+                if (page == null)
+                {
+                    page = new ShowcasePageSettings();
+                    settings.Pages[pageIndex] = page;
+                }
                 page.PageId = NormalizeUniqueId(page.PageId, pageIds);
                 page.Name = string.IsNullOrWhiteSpace(page.Name)
                     ? $"Page {pageIndex + 1}"
@@ -1049,6 +1125,19 @@ namespace PlayniteAchievements.Services.Showcase
                 default:
                     return "Showcase";
             }
+        }
+
+        private sealed class WidgetPlacement
+        {
+            public ShowcasePageSettings TargetPage { get; set; }
+
+            public ShowcaseBlockSettings Target { get; set; }
+
+            public ShowcasePageSettings SourcePage { get; set; }
+
+            public ShowcaseBlockSettings Source { get; set; }
+
+            public ShowcaseWidgetInstanceSettings Widget { get; set; }
         }
 
         private static string NewId() => Guid.NewGuid().ToString("N");

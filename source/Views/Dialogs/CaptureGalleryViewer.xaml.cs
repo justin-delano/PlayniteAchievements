@@ -67,28 +67,7 @@ namespace PlayniteAchievements.Views.Dialogs
                 UpdatePlayPauseGlyph();
             }
 
-            var content = new FullscreenMediaViewer(path, isVideo);
-            var window = new Window
-            {
-                WindowStyle = WindowStyle.None,
-                ResizeMode = ResizeMode.NoResize,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = System.Windows.Media.Brushes.Black,
-                ShowInTaskbar = false,
-                Owner = Window.GetWindow(this),
-                Content = content
-            };
-            content.RequestClose += (_, __) => window.Close();
-            window.Loaded += (_, __) => window.WindowState = WindowState.Maximized;
-            window.PreviewKeyDown += (s, args) =>
-            {
-                if (args.Key == Key.Escape)
-                {
-                    window.Close();
-                    args.Handled = true;
-                }
-            };
-            window.ShowDialog();
+            FullscreenMediaViewerPresenter.Show(this, path, isVideo);
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)

@@ -103,6 +103,9 @@ namespace PlayniteAchievements.Services.Showcase
 
             switch (instance.Kind)
             {
+                case ShowcaseWidgetKind.Profile:
+                    result.Statistics = BuildStatistics(snapshot, now ?? DateTime.Now);
+                    break;
                 case ShowcaseWidgetKind.Statistics:
                     result.Statistics = BuildStatistics(snapshot, now ?? DateTime.Now);
                     break;
@@ -173,6 +176,7 @@ namespace PlayniteAchievements.Services.Showcase
             var achievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
             var counts = snapshot.GlobalUnlockCountsByDate ?? new Dictionary<DateTime, int>();
             var activeDays = counts.Where(pair => pair.Value > 0).Select(pair => pair.Key.Date).Distinct().Count();
+            var datedUnlocks = counts.Sum(pair => Math.Max(0, pair.Value));
             var lastThirtyDays = counts
                 .Where(pair => pair.Key.Date >= now.Date.AddDays(-29) && pair.Key.Date <= now.Date)
                 .Sum(pair => Math.Max(0, pair.Value));
@@ -198,7 +202,7 @@ namespace PlayniteAchievements.Services.Showcase
                     "activeDayRate",
                     "LOCPlayAch_Showcase_Stat_ActiveDayRate",
                     "Unlocks / active day",
-                    activeDays > 0 ? (double)snapshot.TotalUnlocked / activeDays : 0),
+                    activeDays > 0 ? (double)datedUnlocks / activeDays : 0),
                 Stat("thirtyDayRate", "LOCPlayAch_Showcase_Stat_ThirtyDayRate", "30-day rate", lastThirtyDays / 30d),
                 Stat(
                     "averageGlobalUnlock",

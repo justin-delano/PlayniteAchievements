@@ -47,12 +47,22 @@ namespace PlayniteAchievements.Tests.Models
 
             Assert.AreEqual(2, statistics.Single(item => item.Key == "currentStreak").Value);
             Assert.AreEqual(2, statistics.Single(item => item.Key == "longestStreak").Value);
-            Assert.AreEqual(4, statistics.Single(item => item.Key == "activeDayRate").Value);
+            // Timestamp-less/imported unlocks can contribute to TotalUnlocked, but cannot be
+            // assigned to an active day. The rate therefore uses the dated timeline numerator.
+            Assert.AreEqual(2, statistics.Single(item => item.Key == "activeDayRate").Value);
             Assert.AreEqual(0.2, statistics.Single(item => item.Key == "thirtyDayRate").Value, 0.001);
             Assert.AreEqual(20, statistics.Single(item => item.Key == "averageGlobalUnlock").Value);
             Assert.AreEqual(2, statistics.Single(item => item.Key == "playedGames").Value);
             Assert.AreEqual(10800, statistics.Single(item => item.Key == "playtime").Value);
             Assert.IsTrue(statistics.All(item => !string.IsNullOrWhiteSpace(item.LabelKey)));
+
+            var profile = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                new ShowcaseSettings(),
+                new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Profile },
+                today);
+            Assert.AreEqual(2, profile.Statistics.Single(item =>
+                item.Key == "currentStreak").Value);
         }
 
         [TestMethod]

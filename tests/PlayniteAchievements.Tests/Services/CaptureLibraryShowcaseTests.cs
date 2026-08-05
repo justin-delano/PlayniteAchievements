@@ -100,5 +100,44 @@ namespace PlayniteAchievements.Tests.Services
                 }
             }
         }
+
+        [TestMethod]
+        public void GetScreenshots_ForceRefreshRevalidatesPreviouslyCorruptImages()
+        {
+            var root = Path.Combine(
+                Path.GetTempPath(),
+                "PlayniteAchievements.Tests",
+                Guid.NewGuid().ToString("N"));
+            var gameDirectory = Path.Combine(root, "Example Game");
+            Directory.CreateDirectory(gameDirectory);
+            var path = Path.Combine(gameDirectory, "001_Repaired_clean.png");
+            try
+            {
+                File.WriteAllText(path, "not an image");
+                var settings = new PersistedSettings
+                {
+                    UnlockScreenshotDirectory = root,
+                    UnlockRecordingDirectory = root
+                };
+                using (var library = new CaptureLibraryService(() => settings, null))
+                {
+                    Assert.AreEqual(0, library.GetScreenshots().Count);
+
+                    File.WriteAllBytes(
+                        path,
+                        Convert.FromBase64String(
+                            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+
+                    Assert.AreEqual(1, library.GetScreenshots(forceRefresh: true).Count);
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(root))
+                {
+                    Directory.Delete(root, recursive: true);
+                }
+            }
+        }
     }
 }

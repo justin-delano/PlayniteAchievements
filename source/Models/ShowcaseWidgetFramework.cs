@@ -61,8 +61,6 @@ namespace PlayniteAchievements.Models
 
         public string NameKey { get; set; }
 
-        public string DescriptionKey { get; set; }
-
         public bool AllowMultipleInstances { get; set; }
 
         public bool SingleInstancePerPage { get; set; }
@@ -102,7 +100,6 @@ namespace PlayniteAchievements.Models
             {
                 Kind = kind,
                 NameKey = nameKey,
-                DescriptionKey = nameKey + "_Description",
                 AllowMultipleInstances = allowMultipleInstances,
                 SingleInstancePerPage = singleInstancePerPage
             };

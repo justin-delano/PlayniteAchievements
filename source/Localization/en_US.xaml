@@ -1186,36 +1186,30 @@
     <sys:String x:Key="LOCPlayAch_Showcase_NextPageLabel">Next</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_EditLayout">Edit layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PageActions">Showcase page actions</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PageActionsLabel">Page actions</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PageActionsLabel">Pages</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AddWidget">Add Widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget">Widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettings">Widget settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettingsTitle">{0} settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_WidgetEditHint">Drag to move or swap. Right-click for widget actions.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_LayoutHint">Select a block, then change its widget or boundaries. Splitting keeps the current widget; merging asks which widget to keep.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Layout">Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SelectBlock">Select a block</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SelectedBlockFormat">{0} · {1}×{2}</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_EmptyBlock">Empty block</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ChangeWidget">Change widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ReplaceWidget">Replace widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DeleteWidget">Delete widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SplitColumns">Split columns</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SplitRows">Split rows</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SplitAtFormat">Split {0} / {1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_MergeLeft">Merge with a block on the left</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_MergeRight">Merge with a block on the right</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_MergeUp">Merge with a block above</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_MergeDown">Merge with a block below</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeLeftLabel">Merge left</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeRightLabel">Merge right</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeUpLabel">Merge up</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeDownLabel">Merge down</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_MergeWithFormat">Merge with {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_MergeKeepWidget">Keep {0} and delete the others</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MergeDeleteConfirm">Merge these blocks and delete the other widgets?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DragMoving">Moving {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DropMoveHere">Move {0} here</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DropSwap">Swap {0} with {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DropSame">{0} is already here</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DropUnavailable">This widget cannot be placed here</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AddPage">Add page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DuplicatePage">Duplicate page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_CopySuffix">Copy</sys:String>
@@ -1239,6 +1233,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFiles">Image files</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AllFiles">All files</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileStats">{0:N0} unlocked · {1:N1}% · {2:N0} completed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileStreaks">{0} current · {1} longest</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PinAchievement">Pin achievement to Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnpinAchievement">Unpin achievement from Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PinGame">Pin game to Showcase</sys:String>
@@ -1264,8 +1259,6 @@
     <sys:String x:Key="LOCPlayAch_Showcase_FitMode">Fit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Shuffle">Shuffle</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_CustomTitle">Custom title</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_CustomTitleHint">Leave blank to use the widget name.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_NoAdditionalSettings">This widget has no additional settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Day">{0} day</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Days">{0} days</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Seconds">{0} seconds</sys:String>
@@ -1273,7 +1266,8 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ThousandsHours">{0:N1}k h</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PerDay">{0:N1}/day</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">Collection and Prestige</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Cards</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">Both</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Collection">Collection</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Prestige">Prestige</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_CompletedGames">Completed games</sys:String>
@@ -1308,31 +1302,22 @@
 
 
     <sys:String x:Key="LOCPlayAch_Showcase_NoScreenshots">No achievement screenshots found</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_LoadingScreenshots">Loading screenshots…</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PreviousScreenshot">Previous screenshot</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NextScreenshot">Next screenshot</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PauseSlideshow">Pause slideshow</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ResumeSlideshow">Resume slideshow</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Profile">Profile</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Profile_Description">Custom profile identity with achievement totals and completion highlights.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">Scores</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores_Description">Responsive Collection and Prestige score cards.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Pie">Pie Chart</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Pie_Description">Completed games, providers, rarity, or trophy distribution.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Timeline">Timeline</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Timeline_Description">Achievement activity over a configurable date range.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics">Overall Statistics</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics_Description">Completion, playtime, rates, averages, and streaks.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_NativePoints">Native Points</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_NativePoints_Description">Unlocked provider-native points grouped by service or game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_PinnedAchievements">Pinned Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_PinnedAchievements_Description">Your ordered, persistent collection of favorite achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_FavoriteGames">Favorite Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FavoriteGames_Description">Showcase game pins or live Playnite favorites.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic">Icon Mosaic</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic_Description">An adaptive mosaic of recent, rare, or pinned achievement icons.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow">Screenshot Slideshow</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow_Description">Watched achievement captures with filtering, shuffle, timing, fit, pause, and navigation.</sys:String>
 
     <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->

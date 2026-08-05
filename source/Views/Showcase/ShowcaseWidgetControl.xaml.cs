@@ -94,10 +94,19 @@ namespace PlayniteAchievements.Views.Showcase
                     ShowcaseWidgetCatalog.Get(_projection.Instance.Kind).NameKey,
                     Humanize(_projection.Instance.Kind));
             GlyphText.Text = GetWidgetGlyph(_projection.Instance.Kind);
+            RootBorder.ToolTip = TitleText.Text;
         }
 
         private void RebuildBody()
         {
+            HeaderBorder.Visibility = _viewport.Density == WidgetViewportDensity.Expanded
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            BodyHost.Margin = _viewport.Density == WidgetViewportDensity.Compact
+                ? new Thickness(6)
+                : _viewport.Density == WidgetViewportDensity.Expanded
+                    ? new Thickness(10)
+                    : new Thickness(8);
             if (_projection?.Instance == null)
             {
                 BodyHost.Content = CreateEmptyText();
@@ -200,6 +209,28 @@ namespace PlayniteAchievements.Views.Showcase
                     0.72));
             }
 
+            if (_viewport.Density == WidgetViewportDensity.Expanded)
+            {
+                var currentStreak = _projection.Statistics?.FirstOrDefault(item =>
+                    string.Equals(item?.Key, "currentStreak", StringComparison.Ordinal));
+                var longestStreak = _projection.Statistics?.FirstOrDefault(item =>
+                    string.Equals(item?.Key, "longestStreak", StringComparison.Ordinal));
+                if (currentStreak != null && longestStreak != null)
+                {
+                    text.Children.Add(CreateText(
+                        string.Format(
+                            FormattingCulture.Current,
+                            Localize(
+                                "LOCPlayAch_Showcase_ProfileStreaks",
+                                "{0} current · {1} longest"),
+                            FormatStatisticDisplayValue(currentStreak),
+                            FormatStatisticDisplayValue(longestStreak)),
+                        11,
+                        FontWeights.Normal,
+                        0.72));
+                }
+            }
+
             panel.Children.Add(text);
             return panel;
         }
@@ -257,9 +288,10 @@ namespace PlayniteAchievements.Views.Showcase
             var control = new ScoreCardControl
             {
                 ScoreCard = presentation,
+                IsFeatured = _viewport.Density != WidgetViewportDensity.Compact,
                 Margin = new Thickness(4),
                 MinWidth = 0,
-                MaxWidth = 360,
+                MaxWidth = _viewport.Density == WidgetViewportDensity.Expanded ? 440 : 360,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -777,18 +809,28 @@ namespace PlayniteAchievements.Views.Showcase
                 return CreateEmptyText();
             }
 
-            var panel = new WrapPanel();
+            var panel = new WrapPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(6)
+            };
             var size = _viewport.Density == WidgetViewportDensity.Compact
-                ? 34
-                : _viewport.Density == WidgetViewportDensity.Expanded ? 58 : 44;
+                ? 32
+                : _viewport.Density == WidgetViewportDensity.Expanded ? 54 : 42;
             var limit = _viewport.Density == WidgetViewportDensity.Compact ? 12 : achievements.Count;
+            var appearance = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
             foreach (var item in achievements.Take(limit))
             {
                 panel.Children.Add(new AchievementCompactItemControl
                 {
                     DataContext = item,
                     IconSize = size,
-                    Margin = new Thickness(3)
+                    ShowRarityGlow = appearance?.ModernCompactListShowRarityGlow ?? true,
+                    AnimateRarityGlows = appearance?.AnimateRarityGlows ?? true,
+                    // The compact rarity effect has an 8px blur radius. Reserve that space
+                    // explicitly so neighboring icons do not paint over the visible halo.
+                    Margin = new Thickness(9)
                 });
             }
 

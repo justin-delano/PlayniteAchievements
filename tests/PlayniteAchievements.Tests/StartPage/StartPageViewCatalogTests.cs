@@ -47,12 +47,8 @@ namespace PlayniteAchievements.Tests.StartPage
                 view.ViewId == StartPageViewCatalog.FriendsRecentUnlocksGridViewId &&
                 view.WidgetKind == StartPageWidgetKind.FriendsRecentUnlocksGrid &&
                 view.NameKey == "LOCPlayAch_StartPage_FriendsRecentAchievements"));
-            Assert.IsTrue(views
-                .Where(view => !view.ShowcaseWidgetKind.HasValue)
-                .All(view => string.IsNullOrWhiteSpace(view.DescriptionKey)));
-            Assert.IsTrue(views
-                .Where(view => view.ShowcaseWidgetKind.HasValue)
-                .All(view => !string.IsNullOrWhiteSpace(view.DescriptionKey)));
+            Assert.IsTrue(views.All(view =>
+                string.IsNullOrWhiteSpace(view.DescriptionKey)));
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseTimelineViewId)
                 .AllowMultipleInstances);

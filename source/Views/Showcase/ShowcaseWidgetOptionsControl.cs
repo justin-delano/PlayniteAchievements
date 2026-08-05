@@ -67,7 +67,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Scores:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Mode", "Mode"),
+                        Localize("LOCPlayAch_Showcase_ScoreCards", "Cards"),
                         new[] { ShowcaseScoreMode.Dual, ShowcaseScoreMode.Collection, ShowcaseScoreMode.Prestige },
                         ShowcaseWidgetOptions.GetScoreMode(_settings),
                         value => ShowcaseWidgetOptions.SetScoreMode(_settings, value),
@@ -202,14 +202,18 @@ namespace PlayniteAchievements.Views.Showcase
             Action<T> apply,
             Func<T, string> display)
         {
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
             var labelBlock = new TextBlock
             {
                 Text = label,
-                Margin = new Thickness(0, 10, 0, 4),
-                FontWeight = FontWeights.SemiBold
+                Margin = new Thickness(0, 0, 10, 0),
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
             };
             labelBlock.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
-            panel.Children.Add(labelBlock);
+            row.Children.Add(labelBlock);
 
             var combo = new ComboBox { MinHeight = 30 };
             Choice<T> selectedChoice = null;
@@ -249,7 +253,9 @@ namespace PlayniteAchievements.Views.Showcase
                     ShowcaseConfigurationEvents.RaiseChanged();
                 }
             };
-            panel.Children.Add(combo);
+            Grid.SetColumn(combo, 1);
+            row.Children.Add(combo);
+            panel.Children.Add(row);
         }
 
         private sealed class Choice<T>

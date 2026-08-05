@@ -187,7 +187,7 @@ namespace PlayniteAchievements.Services.StartPage
                 WidgetKind = startPageKind,
                 ShowcaseWidgetKind = showcaseKind,
                 NameKey = definition.NameKey,
-                DescriptionKey = definition.DescriptionKey,
+                DescriptionKey = null,
                 AllowMultipleInstances = definition.AllowMultipleInstances,
                 HasSettings = hasSettings
             };

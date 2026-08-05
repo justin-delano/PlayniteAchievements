@@ -20,6 +20,20 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(nameof(IconSize), typeof(double), typeof(AchievementCompactItemControl),
                 new PropertyMetadata(48.0, OnIconSizeChanged));
 
+        public static readonly DependencyProperty ShowRarityGlowProperty =
+            DependencyProperty.Register(
+                nameof(ShowRarityGlow),
+                typeof(bool),
+                typeof(AchievementCompactItemControl),
+                new PropertyMetadata(false));
+
+        public static readonly DependencyProperty AnimateRarityGlowsProperty =
+            DependencyProperty.Register(
+                nameof(AnimateRarityGlows),
+                typeof(bool),
+                typeof(AchievementCompactItemControl),
+                new PropertyMetadata(false));
+
         /// <summary>
         /// Gets or sets the size of the achievement icon (both width and height).
         /// Default is 48 to match legacy SuccessStory styling.
@@ -28,6 +42,23 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (double)GetValue(IconSizeProperty);
             set => SetValue(IconSizeProperty, value);
+        }
+
+        /// <summary>
+        /// Gets or sets whether this reusable item renders its rarity glow. Hosts pass their
+        /// established setting explicitly so the item does not depend on a particular ancestor.
+        /// </summary>
+        public bool ShowRarityGlow
+        {
+            get => (bool)GetValue(ShowRarityGlowProperty);
+            set => SetValue(ShowRarityGlowProperty, value);
+        }
+
+        /// <summary>Gets or sets whether the rarity glow gently pulses.</summary>
+        public bool AnimateRarityGlows
+        {
+            get => (bool)GetValue(AnimateRarityGlowsProperty);
+            set => SetValue(AnimateRarityGlowsProperty, value);
         }
 
         private static void OnIconSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

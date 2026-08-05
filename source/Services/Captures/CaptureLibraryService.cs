@@ -359,6 +359,7 @@ namespace PlayniteAchievements.Services.Captures
             {
                 _gameCache.Clear();
                 _foldersWithCaptures = null;
+                _imageValidationCache.Clear();
             }
         }
 
