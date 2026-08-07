@@ -833,7 +833,7 @@ namespace PlayniteAchievements.Views.Showcase
                     // Match the full achievement-grid glow; the surrounding margin keeps its
                     // larger halo visible without changing the shared compact-list default.
                     UseLargeRarityGlow = true,
-                    Margin = new Thickness(9)
+                    Margin = new Thickness(6)
                 });
             }
 
