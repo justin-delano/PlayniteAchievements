@@ -516,9 +516,7 @@ namespace PlayniteAchievements.Views.Showcase
                 button.Click += (_, __) =>
                 {
                     ShowcaseTimelineOptions.SetRange(_projection.Instance, range);
-                    var plugin = PlayniteAchievementsPlugin.Instance;
-                    plugin?.PersistSettingsForUi();
-                    ShowcaseConfigurationEvents.RaiseChanged();
+                    ShowcaseConfigurationCommit.Commit();
                 };
                 controls.Children.Add(button);
             }
@@ -1011,8 +1009,7 @@ namespace PlayniteAchievements.Views.Showcase
                     return;
                 }
 
-                PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
-                ShowcaseConfigurationEvents.RaiseChanged();
+                ShowcaseConfigurationCommit.Commit();
             };
             return item;
         }
@@ -1038,40 +1035,13 @@ namespace PlayniteAchievements.Views.Showcase
             unpinItem.Click += (_, __) =>
             {
                 unpin?.Invoke();
-                PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
-                ShowcaseConfigurationEvents.RaiseChanged();
+                ShowcaseConfigurationCommit.Commit();
             };
             menu.Items.Add(unpinItem);
             return menu;
         }
 
-        private static string GetWidgetGlyph(ShowcaseWidgetKind kind)
-        {
-            switch (kind)
-            {
-                case ShowcaseWidgetKind.Profile:
-                    return "\uE77B";
-                case ShowcaseWidgetKind.Scores:
-                    return "\uE8E5";
-                case ShowcaseWidgetKind.Pie:
-                    return "\uE9D2";
-                case ShowcaseWidgetKind.Timeline:
-                    return "\uE9D9";
-                case ShowcaseWidgetKind.Statistics:
-                    return "\uE9D5";
-                case ShowcaseWidgetKind.NativePoints:
-                    return "\uE8C7";
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    return "\uE7C1";
-                case ShowcaseWidgetKind.FavoriteGames:
-                    return "\uE734";
-                case ShowcaseWidgetKind.IconMosaic:
-                    return "\uE80A";
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    return "\uEB9F";
-                default:
-                    return "\uE946";
-            }
-        }
+        private static string GetWidgetGlyph(ShowcaseWidgetKind kind) =>
+            ShowcaseWidgetCatalog.Get(kind).GlyphKey;
     }
 }

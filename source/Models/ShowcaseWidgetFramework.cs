@@ -61,6 +61,8 @@ namespace PlayniteAchievements.Models
 
         public string NameKey { get; set; }
 
+        public string GlyphKey { get; set; }
+
         public bool AllowMultipleInstances { get; set; }
 
         public bool SingleInstancePerPage { get; set; }
@@ -71,16 +73,16 @@ namespace PlayniteAchievements.Models
         private static readonly IReadOnlyList<ShowcaseWidgetDefinition> DefinitionsValue =
             new List<ShowcaseWidgetDefinition>
             {
-                Define(ShowcaseWidgetKind.Profile, "LOCPlayAch_Showcase_Widget_Profile", false, true),
-                Define(ShowcaseWidgetKind.Scores, "LOCPlayAch_Showcase_Widget_Scores", false, false),
-                Define(ShowcaseWidgetKind.Pie, "LOCPlayAch_Showcase_Widget_Pie", true, false),
-                Define(ShowcaseWidgetKind.Timeline, "LOCPlayAch_Showcase_Widget_Timeline", true, false),
-                Define(ShowcaseWidgetKind.Statistics, "LOCPlayAch_Showcase_Widget_Statistics", true, false),
-                Define(ShowcaseWidgetKind.NativePoints, "LOCPlayAch_Showcase_Widget_NativePoints", true, false),
-                Define(ShowcaseWidgetKind.PinnedAchievements, "LOCPlayAch_Showcase_Widget_PinnedAchievements", false, true),
-                Define(ShowcaseWidgetKind.FavoriteGames, "LOCPlayAch_Showcase_Widget_FavoriteGames", false, true),
-                Define(ShowcaseWidgetKind.IconMosaic, "LOCPlayAch_Showcase_Widget_IconMosaic", true, false),
-                Define(ShowcaseWidgetKind.ScreenshotSlideshow, "LOCPlayAch_Showcase_Widget_ScreenshotSlideshow", true, false)
+                Define(ShowcaseWidgetKind.Profile, "LOCPlayAch_Showcase_Widget_Profile", "", false, true),
+                Define(ShowcaseWidgetKind.Scores, "LOCPlayAch_Showcase_Widget_Scores", "", false, false),
+                Define(ShowcaseWidgetKind.Pie, "LOCPlayAch_Showcase_Widget_Pie", "", true, false),
+                Define(ShowcaseWidgetKind.Timeline, "LOCPlayAch_Showcase_Widget_Timeline", "", true, false),
+                Define(ShowcaseWidgetKind.Statistics, "LOCPlayAch_Showcase_Widget_Statistics", "", true, false),
+                Define(ShowcaseWidgetKind.NativePoints, "LOCPlayAch_Showcase_Widget_NativePoints", "", true, false),
+                Define(ShowcaseWidgetKind.PinnedAchievements, "LOCPlayAch_Showcase_Widget_PinnedAchievements", "", false, true),
+                Define(ShowcaseWidgetKind.FavoriteGames, "LOCPlayAch_Showcase_Widget_FavoriteGames", "", false, true),
+                Define(ShowcaseWidgetKind.IconMosaic, "LOCPlayAch_Showcase_Widget_IconMosaic", "", true, false),
+                Define(ShowcaseWidgetKind.ScreenshotSlideshow, "LOCPlayAch_Showcase_Widget_ScreenshotSlideshow", "", true, false)
             };
 
         public static IReadOnlyList<ShowcaseWidgetDefinition> Definitions => DefinitionsValue;
@@ -93,6 +95,7 @@ namespace PlayniteAchievements.Models
         private static ShowcaseWidgetDefinition Define(
             ShowcaseWidgetKind kind,
             string nameKey,
+            string glyphKey,
             bool allowMultipleInstances,
             bool singleInstancePerPage)
         {
@@ -100,6 +103,7 @@ namespace PlayniteAchievements.Models
             {
                 Kind = kind,
                 NameKey = nameKey,
+                GlyphKey = glyphKey,
                 AllowMultipleInstances = allowMultipleInstances,
                 SingleInstancePerPage = singleInstancePerPage
             };
