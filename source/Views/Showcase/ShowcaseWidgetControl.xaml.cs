@@ -11,6 +11,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.ViewModels.Showcase.Widgets;
 using PlayniteAchievements.Views.Controls;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
@@ -34,6 +35,7 @@ namespace PlayniteAchievements.Views.Showcase
         private ShowcaseWidgetProjection _projection;
         private WidgetViewportState _viewport = WidgetViewportState.Classify(0, 0);
         private TimelineViewModel _timelineViewModel;
+        private ShowcaseWidgetViewModelBase _bodyViewModel;
 
         public ShowcaseWidgetControl()
         {
@@ -126,7 +128,7 @@ namespace PlayniteAchievements.Views.Showcase
                     BodyHost.Content = BuildTimeline();
                     break;
                 case ShowcaseWidgetKind.Statistics:
-                    BodyHost.Content = BuildStatistics();
+                    BodyHost.Content = UpdateBodyViewModel<StatisticsWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     BodyHost.Content = BuildChartRows(_projection.ChartEntries);
@@ -147,6 +149,23 @@ namespace PlayniteAchievements.Views.Showcase
                     BodyHost.Content = CreateEmptyText();
                     break;
             }
+        }
+
+        // Reuses (or lazily creates) the per-kind body view model for this control and feeds it the
+        // current projection and viewport. Implicit templates in ShowcaseWidgetTemplates.xaml render
+        // the returned view model. A control instance renders a single widget kind for its lifetime,
+        // so the view model type never changes once created.
+        private ShowcaseWidgetViewModelBase UpdateBodyViewModel<T>()
+            where T : ShowcaseWidgetViewModelBase, new()
+        {
+            if (!(_bodyViewModel is T typed))
+            {
+                typed = new T();
+                _bodyViewModel = typed;
+            }
+
+            typed.Update(_projection, _viewport);
+            return typed;
         }
 
         private UIElement BuildProfile()
@@ -220,8 +239,8 @@ namespace PlayniteAchievements.Views.Showcase
                         string.Format(
                             FormattingCulture.Current,
                             Localize("LOCPlayAch_Showcase_ProfileStreaks"),
-                            FormatStatisticDisplayValue(currentStreak),
-                            FormatStatisticDisplayValue(longestStreak)),
+                            ShowcaseStatisticFormatter.Format(currentStreak),
+                            ShowcaseStatisticFormatter.Format(longestStreak)),
                         11,
                         FontWeights.Normal,
                         0.72));
@@ -567,41 +586,6 @@ namespace PlayniteAchievements.Views.Showcase
             return panel;
         }
 
-        private UIElement BuildStatistics()
-        {
-            var items = _projection.Statistics ?? Array.Empty<ShowcaseStatistic>();
-            var limit = _viewport.Density == WidgetViewportDensity.Compact
-                ? 3
-                : _viewport.Density == WidgetViewportDensity.Standard
-                    ? 7
-                    : items.Count;
-            var grid = new UniformGrid
-            {
-                Columns = _viewport.Orientation == WidgetViewportOrientation.Tall ? 1 : 2
-            };
-            foreach (var item in items.Take(limit))
-            {
-                var panel = new StackPanel();
-                var value = CreateText(
-                    FormatStatisticDisplayValue(item),
-                    17,
-                    FontWeights.SemiBold);
-                value.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
-                panel.Children.Add(value);
-                panel.Children.Add(CreateText(
-                    Localize(item.LabelKey),
-                    10,
-                    FontWeights.Normal,
-                    0.68));
-                grid.Children.Add(CreateCard(
-                    panel,
-                    new Thickness(3),
-                    new Thickness(8, 6, 8, 6)));
-            }
-
-            return WrapScrollable(grid);
-        }
-
         private UIElement BuildChartRows(IReadOnlyList<ShowcaseChartEntry> entries)
         {
             if (entries == null || entries.Count == 0)
@@ -891,52 +875,6 @@ namespace PlayniteAchievements.Views.Showcase
                 12,
                 FontWeights.Normal,
                 0.62);
-        }
-
-        private static string FormatStatisticDisplayValue(ShowcaseStatistic item)
-        {
-            if (item == null)
-            {
-                return string.Empty;
-            }
-
-            switch (item.Key)
-            {
-                case "playtime":
-                    var hours = Math.Max(0, item.Value) / 3600d;
-                    return hours >= 1000
-                        ? string.Format(
-                            FormattingCulture.Current,
-                            Localize("LOCPlayAch_Showcase_ThousandsHours"),
-                            hours / 1000d)
-                        : string.Format(
-                            FormattingCulture.Current,
-                            Localize("LOCPlayAch_Showcase_Hours"),
-                            hours);
-                case "thirtyDayRate":
-                    return string.Format(
-                        FormattingCulture.Current,
-                        Localize("LOCPlayAch_Showcase_PerDay"),
-                        item.Value);
-                case "completion":
-                case "averageGlobalUnlock":
-                    return item.HasValue
-                        ? item.Value.ToString("N1", FormattingCulture.Current) + "%"
-                        : "—";
-                case "activeDayRate":
-                    return item.Value.ToString("N1", FormattingCulture.Current);
-                case "currentStreak":
-                case "longestStreak":
-                    var days = (int)Math.Round(item.Value);
-                    return string.Format(
-                        FormattingCulture.Current,
-                        Localize(days == 1
-                            ? "LOCPlayAch_Showcase_Day"
-                            : "LOCPlayAch_Showcase_Days"),
-                        days.ToString("N0", FormattingCulture.Current));
-                default:
-                    return item.Value.ToString("N0", FormattingCulture.Current);
-            }
         }
 
         private static TextBlock CreateText(

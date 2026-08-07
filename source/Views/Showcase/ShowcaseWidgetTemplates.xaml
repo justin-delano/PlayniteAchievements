@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:widgets="clr-namespace:PlayniteAchievements.ViewModels.Showcase.Widgets">
+
+    <!-- Implicit templates: the widget host sets BodyHost.Content to a per-kind view model and
+         WPF resolves the matching template by runtime type. One template per kind. -->
+
+    <!-- Statistics: density-capped grid of value/label tiles. -->
+    <DataTemplate DataType="{x:Type widgets:StatisticsWidgetViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Tiles}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding Columns}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                Margin="3"
+                                Padding="8,6"
+                                ClipToBounds="True">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Value}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                                           FontWeight="SemiBold"
+                                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Label}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DataTemplate>
+
+</ResourceDictionary>

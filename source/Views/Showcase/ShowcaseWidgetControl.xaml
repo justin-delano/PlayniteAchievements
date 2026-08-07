@@ -4,6 +4,13 @@
              UseLayoutRounding="True"
              SnapsToDevicePixels="True"
              SizeChanged="OnSizeChanged">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Views/Showcase/ShowcaseWidgetTemplates.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Border x:Name="RootBorder"
             Background="{DynamicResource PlayAch.Brush.Surface}"
             BorderBrush="{DynamicResource PlayAch.Brush.Border}"
