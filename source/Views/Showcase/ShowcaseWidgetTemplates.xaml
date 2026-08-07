@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:widgets="clr-namespace:PlayniteAchievements.ViewModels.Showcase.Widgets">
 
     <!-- Implicit templates: the widget host sets BodyHost.Content to a per-kind view model and
@@ -99,6 +100,80 @@
                                              Height="3"
                                              Margin="0,4,0,0"
                                              VerticalAlignment="Top"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DataTemplate>
+
+    <!-- PinnedAchievements: icon + name (+ game name) rows with a reorder/unpin menu. -->
+    <DataTemplate DataType="{x:Type widgets:PinnedAchievementsWidgetViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                Margin="0,1,0,5"
+                                Padding="7,6"
+                                ClipToBounds="True">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveEarlier}"
+                                              Command="{Binding MoveEarlierCommand}"/>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveLater}"
+                                              Command="{Binding MoveLaterCommand}"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_UnpinAchievement}"
+                                              Command="{Binding UnpinCommand}"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                        CornerRadius="7"
+                                        Padding="2"
+                                        ClipToBounds="True">
+                                    <Image Width="38"
+                                           Height="38"
+                                           Stretch="UniformToFill"
+                                           SnapsToDevicePixels="True"
+                                           Opacity="{Binding IconOpacity}"
+                                           helpers:AsyncImage.Uri="{Binding IconPath}"
+                                           helpers:AsyncImage.DecodePixel="76"/>
+                                </Border>
+                                <StackPanel Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               FontWeight="SemiBold"
+                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding GameName}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                               TextWrapping="Wrap">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ShowGameName}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
                             </Grid>
                         </Border>
                     </DataTemplate>

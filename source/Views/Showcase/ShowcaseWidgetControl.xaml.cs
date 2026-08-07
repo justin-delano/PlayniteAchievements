@@ -136,7 +136,9 @@ namespace PlayniteAchievements.Views.Showcase
                         : CreateEmptyText();
                     break;
                 case ShowcaseWidgetKind.PinnedAchievements:
-                    BodyHost.Content = BuildAchievements(_projection.Achievements);
+                    BodyHost.Content = _projection.Achievements?.Count > 0
+                        ? (object)UpdateBodyViewModel<PinnedAchievementsWidgetViewModel>()
+                        : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
                     break;
                 case ShowcaseWidgetKind.FavoriteGames:
                     BodyHost.Content = BuildGames(_projection.Games);
@@ -586,77 +588,6 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             return panel;
-        }
-
-        private UIElement BuildAchievements(IReadOnlyList<ShowcaseAchievementItem> achievements)
-        {
-            if (achievements == null || achievements.Count == 0)
-            {
-                return CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
-            }
-
-            var panel = new StackPanel();
-            var limit = _viewport.Density == WidgetViewportDensity.Compact ? 2 : achievements.Count;
-            foreach (var achievement in achievements.Take(limit))
-            {
-                var row = new Grid();
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                var image = CreateImage(achievement.IconPath, 38);
-                image.Opacity = achievement.IsMissing ? 0.35 : 1;
-                row.Children.Add(CreateImageFrame(image));
-                var text = new StackPanel { Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-                text.Children.Add(CreateText(
-                    achievement.IsMissing &&
-                    string.IsNullOrWhiteSpace(achievement.Pin?.LastKnownAchievementName)
-                        ? Localize("LOCPlayAch_Showcase_UnavailableAchievement")
-                        : achievement.Name,
-                    11,
-                    FontWeights.SemiBold));
-                if (_viewport.ShowSecondaryStatistics)
-                {
-                    text.Children.Add(CreateText(
-                        achievement.IsMissing &&
-                        string.IsNullOrWhiteSpace(achievement.Pin?.LastKnownGameName)
-                            ? Localize("LOCPlayAch_Showcase_UnavailableGame")
-                            : achievement.GameName,
-                        10,
-                        FontWeights.Normal,
-                        0.68));
-                }
-
-                Grid.SetColumn(text, 1);
-                row.Children.Add(text);
-                if (achievement.Pin != null)
-                {
-                    var captured = achievement.Pin;
-                    row.ContextMenu = CreatePinMenu(
-                        () => ShowcasePinService.MoveAchievement(
-                            CurrentShowcaseSettings,
-                            captured.GameId,
-                            captured.ApiName,
-                            -1),
-                        () => ShowcasePinService.MoveAchievement(
-                            CurrentShowcaseSettings,
-                            captured.GameId,
-                            captured.ApiName,
-                            1),
-                        Localize("LOCPlayAch_Showcase_UnpinAchievement"),
-                        () => ShowcasePinService.ToggleAchievement(
-                            CurrentShowcaseSettings,
-                            captured.GameId,
-                            captured.ApiName,
-                            captured.LastKnownGameName,
-                            captured.LastKnownAchievementName));
-                }
-
-                panel.Children.Add(CreateCard(
-                    row,
-                    new Thickness(0, 1, 0, 5),
-                    new Thickness(7, 6, 7, 6)));
-            }
-
-            return WrapScrollable(panel);
         }
 
         private UIElement BuildGames(IReadOnlyList<GameSummaryItem> games)
