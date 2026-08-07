@@ -194,6 +194,7 @@ namespace PlayniteAchievements.Views.Showcase
             border.GotKeyboardFocus += Block_GotKeyboardFocus;
 
             UIElement content;
+            ShowcaseWidgetControl widgetHost = null;
             var widget = FindWidget(block.WidgetInstanceId);
             if (widget == null)
             {
@@ -237,14 +238,14 @@ namespace PlayniteAchievements.Views.Showcase
             }
             else
             {
-                var host = new ShowcaseWidgetControl();
-                host.Apply(ShowcaseWidgetProjectionService.Build(snapshot, Layout, widget));
+                widgetHost = new ShowcaseWidgetControl();
+                widgetHost.Apply(ShowcaseWidgetProjectionService.Build(snapshot, Layout, widget));
                 if (EditLayoutButton.IsChecked == true)
                 {
-                    host.ContextMenu = BuildPlacedWidgetMenu(block, widget);
+                    widgetHost.ContextMenu = BuildPlacedWidgetMenu(block, widget);
                 }
 
-                content = host;
+                content = widgetHost;
             }
 
             var layers = new Grid();
@@ -295,7 +296,9 @@ namespace PlayniteAchievements.Views.Showcase
                 Container = border,
                 Glow = dropGlow,
                 StatusPanel = dropStatusPanel,
-                Status = dropStatus
+                Status = dropStatus,
+                Host = widgetHost,
+                Widget = widget
             };
             _blockVisuals[block.BlockId] = visualState;
             RefreshBlockChrome(visualState);
@@ -755,7 +758,35 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void Overview_SnapshotChanged(object sender, EventArgs e)
         {
-            Dispatcher.BeginInvoke(new Action(BuildDashboard));
+            Dispatcher.BeginInvoke(new Action(RefreshWidgetData));
+        }
+
+        // A snapshot change carries new data but the same layout, so update each widget host's
+        // projection in place rather than tearing down and rebuilding every block container (which
+        // would re-run the drag wiring and recreate every control). The per-kind view models update
+        // their bindings without discarding their visual tree.
+        private void RefreshWidgetData()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_blockVisuals.Count == 0)
+            {
+                BuildDashboard();
+                return;
+            }
+
+            var snapshot = _overview.LatestSnapshot ?? new OverviewDataSnapshot();
+            foreach (var visual in _blockVisuals.Values)
+            {
+                if (visual?.Host != null && visual.Widget != null)
+                {
+                    visual.Host.Apply(
+                        ShowcaseWidgetProjectionService.Build(snapshot, Layout, visual.Widget));
+                }
+            }
         }
 
         private void ShowcaseConfigurationEvents_Changed(object sender, EventArgs e)
@@ -1332,6 +1363,12 @@ namespace PlayniteAchievements.Views.Showcase
             public TextBlock Status { get; set; }
 
             public DragVisualKind DragVisual { get; set; }
+
+            // Present only for blocks that host a widget; lets a data-only snapshot change refresh
+            // the widget's projection in place instead of rebuilding the block container.
+            public ShowcaseWidgetControl Host { get; set; }
+
+            public ShowcaseWidgetInstanceSettings Widget { get; set; }
         }
 
         private enum DragVisualKind
