@@ -171,52 +171,6 @@ namespace PlayniteAchievements.Views.Showcase
             return typed;
         }
 
-        private static Border CreateCard(
-            UIElement content,
-            Thickness margin,
-            Thickness padding)
-        {
-            var border = new Border
-            {
-                Child = content,
-                Margin = margin,
-                Padding = padding,
-                CornerRadius = new CornerRadius(6),
-                BorderThickness = new Thickness(0),
-                ClipToBounds = true
-            };
-            border.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
-            return border;
-        }
-
-        private static Border CreateImageFrame(
-            Image image,
-            Thickness? margin = null)
-        {
-            var frame = new Border
-            {
-                Child = image,
-                Margin = margin ?? new Thickness(0),
-                Padding = new Thickness(2),
-                CornerRadius = new CornerRadius(7),
-                BorderThickness = new Thickness(1),
-                ClipToBounds = true
-            };
-            frame.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
-            frame.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Border");
-            return frame;
-        }
-
-        private UIElement WrapScrollable(UIElement content)
-        {
-            return new ScrollViewer
-            {
-                Content = content,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
-            };
-        }
-
         private TextBlock CreateEmptyText(string text = null)
         {
             return CreateText(
@@ -242,30 +196,6 @@ namespace PlayniteAchievements.Views.Showcase
             };
             block.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             return block;
-        }
-
-        private static Image CreateImage(string path, double size) =>
-            CreateImage(path, size, size, Stretch.UniformToFill);
-
-        private static Image CreateImage(
-            string path,
-            double width,
-            double height,
-            Stretch stretch)
-        {
-            var image = new Image
-            {
-                Width = width,
-                Height = height,
-                Stretch = stretch,
-                SnapsToDevicePixels = true
-            };
-            AsyncImage.SetDecodePixel(
-                image,
-                Math.Max(64, (int)Math.Ceiling(Math.Max(width, height) * 2)));
-            AsyncImage.SetUri(image, path);
-
-            return image;
         }
 
         private static string GetWidgetGlyph(ShowcaseWidgetKind kind) =>
