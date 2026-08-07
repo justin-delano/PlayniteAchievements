@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
@@ -74,27 +73,23 @@ namespace PlayniteAchievements.Views.Showcase
                 PreviousGlyph,
                 "PlayAch.Capture.NavButtonStyle",
                 "LOCPlayAch_Showcase_PreviousScreenshot",
-                "Previous screenshot",
                 () => Move(-1));
             _previous.Margin = new Thickness(0, 0, 8, 0);
             _next = CreateGlyphButton(
                 NextGlyph,
                 "PlayAch.Capture.NavButtonStyle",
                 "LOCPlayAch_Showcase_NextScreenshot",
-                "Next screenshot",
                 () => Move(1));
             _next.Margin = new Thickness(8, 0, 0, 0);
             _pause = CreateGlyphButton(
                 PauseGlyph,
                 "PlayAch.Capture.GlyphButtonStyle",
                 "LOCPlayAch_Showcase_PauseSlideshow",
-                "Pause slideshow",
                 TogglePause);
             _fullscreen = CreateGlyphButton(
                 FullscreenGlyph,
                 "PlayAch.Capture.GlyphButtonStyle",
                 "LOCPlayAch_Captures_Fullscreen",
-                "Fullscreen",
                 OpenFullscreen);
 
             _transport = BuildTransport();
@@ -215,10 +210,9 @@ namespace PlayniteAchievements.Views.Showcase
             string glyph,
             string styleKey,
             string localizationKey,
-            string fallback,
             Action action)
         {
-            var label = Localize(localizationKey, fallback);
+            var label = Localize(localizationKey);
             var button = new Button
             {
                 Content = glyph,
@@ -303,9 +297,7 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
             }
 
-            _status.Text = Localize(
-                "LOCPlayAch_Showcase_LoadingScreenshots",
-                "Loading screenshots…");
+            _status.Text = Localize("LOCPlayAch_Showcase_LoadingScreenshots");
             _status.Visibility = Visibility.Visible;
 
             IReadOnlyList<CaptureItem> items;
@@ -313,7 +305,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 items = captureLibrary == null
                     ? (IReadOnlyList<CaptureItem>)Array.Empty<CaptureItem>()
-                    : await Task.Run(() => captureLibrary.GetScreenshots(captureVariant).ToList());
+                    : await Task.Run(() => captureLibrary.GetScreenshots(captureVariant));
             }
             catch
             {
@@ -328,9 +320,28 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             var currentPath = Current?.FilePath;
-            _items = items;
+            _items = CreatePlaybackOrder(items);
             _index = ResolveIndex(currentPath);
             ShowCurrent();
+        }
+
+        private IReadOnlyList<CaptureItem> CreatePlaybackOrder(IReadOnlyList<CaptureItem> items)
+        {
+            if (items == null || items.Count < 2 || !ShowcaseWidgetOptions.GetShuffle(_settings))
+            {
+                return items ?? Array.Empty<CaptureItem>();
+            }
+
+            var shuffled = new List<CaptureItem>(items);
+            for (var index = shuffled.Count - 1; index > 0; index--)
+            {
+                var swapIndex = _random.Next(index + 1);
+                var temporary = shuffled[index];
+                shuffled[index] = shuffled[swapIndex];
+                shuffled[swapIndex] = temporary;
+            }
+
+            return shuffled;
         }
 
         private int ResolveIndex(string previousPath)
@@ -366,8 +377,8 @@ namespace PlayniteAchievements.Views.Showcase
         {
             _paused = !_paused;
             var label = _paused
-                ? Localize("LOCPlayAch_Showcase_ResumeSlideshow", "Resume slideshow")
-                : Localize("LOCPlayAch_Showcase_PauseSlideshow", "Pause slideshow");
+                ? Localize("LOCPlayAch_Showcase_ResumeSlideshow")
+                : Localize("LOCPlayAch_Showcase_PauseSlideshow");
             _pause.Content = _paused ? PlayGlyph : PauseGlyph;
             _pause.ToolTip = label;
             AutomationProperties.SetName(_pause, label);
@@ -388,20 +399,7 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            if (ShowcaseWidgetOptions.GetShuffle(_settings))
-            {
-                var next = _index;
-                while (next == _index)
-                {
-                    next = _random.Next(_items.Count);
-                }
-
-                _index = next;
-            }
-            else
-            {
-                _index = (_index + Math.Sign(direction) + _items.Count) % _items.Count;
-            }
+            _index = (_index + Math.Sign(direction) + _items.Count) % _items.Count;
 
             ShowCurrent();
         }
@@ -427,9 +425,7 @@ namespace PlayniteAchievements.Views.Showcase
                 _image.Source = null;
                 _caption.Text = string.Empty;
                 _position.Text = string.Empty;
-                _status.Text = Localize(
-                    "LOCPlayAch_Showcase_NoScreenshots",
-                    "No achievement screenshots found");
+                _status.Text = Localize("LOCPlayAch_Showcase_NoScreenshots");
                 _status.Visibility = Visibility.Visible;
                 UpdateChromeVisibility();
                 return;

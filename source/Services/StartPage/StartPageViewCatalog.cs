@@ -14,8 +14,6 @@ namespace PlayniteAchievements.Services.StartPage
 
         public string NameKey { get; set; }
 
-        public string DescriptionKey { get; set; }
-
         public ShowcaseWidgetKind? ShowcaseWidgetKind { get; set; }
 
         public bool HasSettings { get; set; }
@@ -52,64 +50,55 @@ namespace PlayniteAchievements.Services.StartPage
                 {
                     ViewId = GameSummariesGridViewId,
                     WidgetKind = StartPageWidgetKind.GameSummariesGrid,
-                    NameKey = "LOCPlayAch_Overview_GameSummaries",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Overview_GameSummaries"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = RecentUnlocksGridViewId,
                     WidgetKind = StartPageWidgetKind.RecentUnlocksGrid,
-                    NameKey = "LOCPlayAch_RecentAchievements",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_RecentAchievements"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = FriendsRecentUnlocksGridViewId,
                     WidgetKind = StartPageWidgetKind.FriendsRecentUnlocksGrid,
-                    NameKey = "LOCPlayAch_StartPage_FriendsRecentAchievements",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_StartPage_FriendsRecentAchievements"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = CompletedGamesPieViewId,
                     WidgetKind = StartPageWidgetKind.CompletedGamesPie,
-                    NameKey = "LOCPlayAch_Overview_GamesPieChart",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Overview_GamesPieChart"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = ProviderPieViewId,
                     WidgetKind = StartPageWidgetKind.ProviderPie,
-                    NameKey = "LOCPlayAch_Overview_ProviderDistribution",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Overview_ProviderDistribution"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = RarityPieViewId,
                     WidgetKind = StartPageWidgetKind.RarityPie,
-                    NameKey = "LOCPlayAch_Overview_RarityPieChart",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Overview_RarityPieChart"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = TrophyPieViewId,
                     WidgetKind = StartPageWidgetKind.TrophyPie,
-                    NameKey = "LOCPlayAch_Overview_TrophyPieChart",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Overview_TrophyPieChart"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = CollectionScoreCardViewId,
                     WidgetKind = StartPageWidgetKind.CollectionScoreCard,
-                    NameKey = "LOCPlayAch_Score_Collection",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Score_Collection"
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = PrestigeScoreCardViewId,
                     WidgetKind = StartPageWidgetKind.PrestigeScoreCard,
-                    NameKey = "LOCPlayAch_Score_Prestige",
-                    DescriptionKey = null
+                    NameKey = "LOCPlayAch_Score_Prestige"
                 },
                 Shared(
                     ShowcaseProfileViewId,
@@ -187,7 +176,6 @@ namespace PlayniteAchievements.Services.StartPage
                 WidgetKind = startPageKind,
                 ShowcaseWidgetKind = showcaseKind,
                 NameKey = definition.NameKey,
-                DescriptionKey = null,
                 AllowMultipleInstances = definition.AllowMultipleInstances,
                 HasSettings = hasSettings
             };

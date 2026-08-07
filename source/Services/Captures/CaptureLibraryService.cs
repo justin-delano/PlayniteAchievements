@@ -219,7 +219,14 @@ namespace PlayniteAchievements.Services.Captures
                 }
             }
 
-            return dirs;
+            // A recording directory can be configured separately. Do not let an explicitly
+            // configured <capture root>\Test path reintroduce the reserved test captures through
+            // a second base-directory scan.
+            return dirs
+                .Where(candidate => !dirs.Any(parent =>
+                    !string.Equals(parent, candidate, StringComparison.OrdinalIgnoreCase) &&
+                    IsSamePath(candidate, Path.Combine(parent, UnlockScreenshotService.TestFolderName))))
+                .ToList();
         }
 
         private void EnsureWatchers()
@@ -301,7 +308,7 @@ namespace PlayniteAchievements.Services.Captures
 
         private void CaptureFileChanged(object sender, FileSystemEventArgs e)
         {
-            if (!IsCaptureFile(e?.FullPath))
+            if (!IsCaptureFile(e?.FullPath) || IsReservedTestCapture(sender, e?.FullPath))
             {
                 return;
             }
@@ -509,6 +516,49 @@ namespace PlayniteAchievements.Services.Captures
             var ext = Path.GetExtension(path);
             return string.Equals(ext, ".png", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(ext, ".mp4", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsReservedTestCapture(object sender, string path)
+        {
+            if (!(sender is FileSystemWatcher watcher) || string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                var testRoot = Path.GetFullPath(Path.Combine(
+                    watcher.Path,
+                    UnlockScreenshotService.TestFolderName));
+                var candidate = Path.GetFullPath(path);
+                return candidate.StartsWith(
+                    testRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) +
+                        Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsSamePath(string first, string second)
+        {
+            try
+            {
+                return string.Equals(
+                    Path.GetFullPath(first).TrimEnd(
+                        Path.DirectorySeparatorChar,
+                        Path.AltDirectorySeparatorChar),
+                    Path.GetFullPath(second).TrimEnd(
+                        Path.DirectorySeparatorChar,
+                        Path.AltDirectorySeparatorChar),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private GameCaptureSet ScanGameFolder(string sanitizedFolder)

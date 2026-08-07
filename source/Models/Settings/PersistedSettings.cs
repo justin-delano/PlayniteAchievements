@@ -2106,9 +2106,9 @@ namespace PlayniteAchievements.Models.Settings
                     _showcase = ShowcaseLayoutService.CreateDefault(
                         ShowOverviewCollectionScoreCard,
                         ShowOverviewPrestigeScoreCard);
+                    ShowcaseLayoutService.Normalize(_showcase);
                 }
 
-                ShowcaseLayoutService.Normalize(_showcase);
                 return _showcase;
             }
             set

@@ -76,6 +76,7 @@ namespace PlayniteAchievements.Views
         private ShowcaseControl _showcase;
         private readonly DispatcherTimer _showcaseDatabaseRefreshTimer;
         private bool _showcaseDatabaseRefreshPending;
+        private volatile bool _isDisposed;
         private DataGrid GameSummariesGrid => GameSummariesGridControl?.InternalDataGrid;
 
         public OverviewControl()
@@ -360,6 +361,7 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+            _isDisposed = true;
             try
             {
                 Deactivate();
@@ -494,6 +496,27 @@ namespace PlayniteAchievements.Views
 
         private void QueueShowcaseDatabaseRefresh()
         {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            // Playnite may raise database collection events from a library-update worker.
+            // Marshal before touching dependency properties or the DispatcherTimer, both of
+            // which belong to this control's UI dispatcher.
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(
+                    new Action(QueueShowcaseDatabaseRefresh),
+                    DispatcherPriority.Background);
+                return;
+            }
+
+            if (_isDisposed)
+            {
+                return;
+            }
+
             _showcaseDatabaseRefreshPending = true;
             if (ActiveSubView != OverviewSubView.Showcase)
             {

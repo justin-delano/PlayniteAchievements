@@ -67,7 +67,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Scores:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_ScoreCards", "Cards"),
+                        Localize("LOCPlayAch_Showcase_ScoreCards"),
                         new[] { ShowcaseScoreMode.Dual, ShowcaseScoreMode.Collection, ShowcaseScoreMode.Prestige },
                         ShowcaseWidgetOptions.GetScoreMode(_settings),
                         value => ShowcaseWidgetOptions.SetScoreMode(_settings, value),
@@ -76,7 +76,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Pie:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Mode", "Mode"),
+                        Localize("LOCPlayAch_Showcase_Mode"),
                         new[]
                         {
                             ShowcasePieMode.CompletedGames,
@@ -91,7 +91,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Timeline:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Range", "Range"),
+                        Localize("LOCPlayAch_Showcase_Range"),
                         new[]
                         {
                             TimelineRange.OneMonth,
@@ -106,14 +106,14 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_GroupBy", "Group by"),
+                        Localize("LOCPlayAch_Showcase_GroupBy"),
                         new[] { ShowcasePointsGrouping.Provider, ShowcasePointsGrouping.Game },
                         ShowcaseWidgetOptions.GetPointsGrouping(_settings),
                         value => ShowcaseWidgetOptions.SetPointsGrouping(_settings, value),
                         PointsGroupingName);
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_TopN", "Top entries"),
+                        Localize("LOCPlayAch_Showcase_TopN"),
                         new[] { 5, 8, 10, 15, 25 },
                         ShowcaseWidgetOptions.GetTopN(_settings),
                         value => ShowcaseWidgetOptions.SetTopN(_settings, value),
@@ -122,7 +122,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.FavoriteGames:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Source", "Source"),
+                        Localize("LOCPlayAch_Showcase_Source"),
                         new[]
                         {
                             ShowcaseFavoriteGameSource.ShowcasePins,
@@ -135,14 +135,14 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.IconMosaic:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Source", "Source"),
+                        Localize("LOCPlayAch_Showcase_Source"),
                         new[] { ShowcaseMosaicSource.Recent, ShowcaseMosaicSource.Rarest, ShowcaseMosaicSource.Pinned },
                         ShowcaseWidgetOptions.GetMosaicSource(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicSource(_settings, value),
                         MosaicSourceName);
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_ItemCount", "Item count"),
+                        Localize("LOCPlayAch_Showcase_ItemCount"),
                         new[] { 12, 24, 36, 48, 64 },
                         ShowcaseWidgetOptions.GetMosaicCount(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value),
@@ -151,7 +151,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Variant", "Capture variant"),
+                        Localize("LOCPlayAch_Showcase_Variant"),
                         new[]
                         {
                             ShowcaseScreenshotVariant.All,
@@ -164,30 +164,30 @@ namespace PlayniteAchievements.Views.Showcase
                         ScreenshotVariantName);
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Interval", "Interval"),
+                        Localize("LOCPlayAch_Showcase_Interval"),
                         new[] { 3, 5, 8, 15, 30 },
                         ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(_settings),
                         value => ShowcaseWidgetOptions.SetSlideshowIntervalSeconds(_settings, value),
                         value => string.Format(
                             FormattingCulture.Current,
-                            Localize("LOCPlayAch_Showcase_Seconds", "{0} seconds"),
+                            Localize("LOCPlayAch_Showcase_Seconds"),
                             value));
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_FitMode", "Fit"),
+                        Localize("LOCPlayAch_Showcase_FitMode"),
                         new[] { ShowcaseImageFitMode.Fit, ShowcaseImageFitMode.Fill },
                         ShowcaseWidgetOptions.GetImageFitMode(_settings),
                         value => ShowcaseWidgetOptions.SetImageFitMode(_settings, value),
                         FitModeName);
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Shuffle", "Shuffle"),
+                        Localize("LOCPlayAch_Showcase_Shuffle"),
                         new[] { true, false },
                         ShowcaseWidgetOptions.GetShuffle(_settings),
                         value => ShowcaseWidgetOptions.SetShuffle(_settings, value),
                         value => value
-                            ? Localize("LOCPlayAch_Settings_Override_On", "On")
-                            : Localize("LOCPlayAch_Settings_Override_Off", "Off"));
+                            ? Localize("LOCPlayAch_Settings_Override_On")
+                            : Localize("LOCPlayAch_Settings_Override_Off"));
                     break;
             }
 

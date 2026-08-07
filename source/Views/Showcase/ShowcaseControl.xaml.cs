@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -181,9 +182,12 @@ namespace PlayniteAchievements.Views.Showcase
             border.SetResourceReference(Border.CornerRadiusProperty, "PlayAch.Radius.Section");
             border.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Border");
             border.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.GridSurface");
-            border.Drop += Block_Drop;
-            border.DragOver += Block_DragOver;
-            border.DragLeave += Block_DragLeave;
+            // Widgets can contain buttons, scroll viewers, and charts that consume bubbling
+            // drag events. Tunneling at the block host keeps the illuminated target and the
+            // committing drop on the same reliable path.
+            border.PreviewDrop += Block_Drop;
+            border.PreviewDragOver += Block_DragOver;
+            border.PreviewDragLeave += Block_DragLeave;
             border.PreviewMouseLeftButtonDown += Block_PreviewMouseLeftButtonDown;
             border.PreviewMouseMove += Block_PreviewMouseMove;
             border.GotKeyboardFocus += Block_GotKeyboardFocus;
@@ -209,7 +213,7 @@ namespace PlayniteAchievements.Views.Showcase
                 emptyContent.Children.Add(addGlyph);
                 var addLabel = new TextBlock
                 {
-                    Text = Localize("LOCPlayAch_Showcase_AddWidget", "Add Widget"),
+                    Text = Localize("LOCPlayAch_Showcase_AddWidget"),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 5, 0, 0),
                     Opacity = 0.78
@@ -303,13 +307,13 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var menu = new ContextMenu();
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_WidgetSettings", "Widget settings"),
+                Localize("LOCPlayAch_Showcase_WidgetSettings"),
                 () => OpenWidgetSettings(widget)));
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ReplaceWidget", "Replace widget"),
+                Localize("LOCPlayAch_Showcase_ReplaceWidget"),
                 () => OpenWidgetPicker(block, null)));
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_DeleteWidget", "Delete widget"),
+                Localize("LOCPlayAch_Showcase_DeleteWidget"),
                 () =>
                 {
                     ShowcaseLayoutService.DeleteWidget(Layout, widget.InstanceId);
@@ -381,9 +385,7 @@ namespace PlayniteAchievements.Views.Showcase
                 .Select(group => group.First())
                 .ToList();
             if (widgets.Count > 1 &&
-                !Confirm(
-                    "LOCPlayAch_Showcase_MergeDeleteConfirm",
-                    "Merge these blocks and delete the other widgets?"))
+                !Confirm("LOCPlayAch_Showcase_MergeDeleteConfirm"))
             {
                 return;
             }
@@ -476,7 +478,7 @@ namespace PlayniteAchievements.Views.Showcase
             ShowDragStatus(
                 block.BlockId,
                 string.Format(
-                    Localize("LOCPlayAch_Showcase_DragMoving", "Moving {0}"),
+                    Localize("LOCPlayAch_Showcase_DragMoving"),
                     GetWidgetName(widget)),
                 DragVisualKind.Source);
             try
@@ -512,7 +514,7 @@ namespace PlayniteAchievements.Views.Showcase
                 ShowDragStatus(
                     block.BlockId,
                     string.Format(
-                        Localize("LOCPlayAch_Showcase_DropSame", "{0} is already here"),
+                        Localize("LOCPlayAch_Showcase_DropSame"),
                         movingName),
                     DragVisualKind.InvalidTarget);
             }
@@ -525,9 +527,7 @@ namespace PlayniteAchievements.Views.Showcase
                 e.Effects = DragDropEffects.None;
                 ShowDragStatus(
                     block.BlockId,
-                    Localize(
-                        "LOCPlayAch_Showcase_DropUnavailable",
-                        "This widget cannot be placed here"),
+                    Localize("LOCPlayAch_Showcase_DropUnavailable"),
                     DragVisualKind.InvalidTarget);
             }
             else
@@ -536,10 +536,10 @@ namespace PlayniteAchievements.Views.Showcase
                 var displacedWidget = FindWidget(block.WidgetInstanceId);
                 var message = displacedWidget == null
                     ? string.Format(
-                        Localize("LOCPlayAch_Showcase_DropMoveHere", "Move {0} here"),
+                        Localize("LOCPlayAch_Showcase_DropMoveHere"),
                         movingName)
                     : string.Format(
-                        Localize("LOCPlayAch_Showcase_DropSwap", "Swap {0} with {1}"),
+                        Localize("LOCPlayAch_Showcase_DropSwap"),
                         movingName,
                         GetWidgetName(displacedWidget));
                 ShowDragStatus(block.BlockId, message, DragVisualKind.ValidTarget);
@@ -563,6 +563,8 @@ namespace PlayniteAchievements.Views.Showcase
                 !(border.Tag is ShowcaseBlockSettings block) ||
                 !(e.Data.GetData(WidgetDragFormat) is string instanceId))
             {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
                 return;
             }
 
@@ -614,7 +616,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 var movingWidget = FindWidget(state.Block.WidgetInstanceId);
                 state.Status.Text = string.Format(
-                    Localize("LOCPlayAch_Showcase_DragMoving", "Moving {0}"),
+                    Localize("LOCPlayAch_Showcase_DragMoving"),
                     GetWidgetName(movingWidget));
                 var visualChanged = state.DragVisual != DragVisualKind.Source;
                 state.DragVisual = DragVisualKind.Source;
@@ -800,17 +802,17 @@ namespace PlayniteAchievements.Views.Showcase
             var block = SelectedBlock;
             var widget = FindWidget(block?.WidgetInstanceId);
             SelectedBlockText.Text = block == null
-                ? Localize("LOCPlayAch_Showcase_SelectBlock", "Select a block")
+                ? Localize("LOCPlayAch_Showcase_SelectBlock")
                 : string.Format(
-                    Localize("LOCPlayAch_Showcase_SelectedBlockFormat", "{0} · {1}×{2}"),
+                    Localize("LOCPlayAch_Showcase_SelectedBlockFormat"),
                     widget == null
-                        ? Localize("LOCPlayAch_Showcase_EmptyBlock", "Empty block")
+                        ? Localize("LOCPlayAch_Showcase_EmptyBlock")
                         : GetWidgetName(widget),
                     block.ColumnSpan,
                     block.RowSpan);
             WidgetActionButton.Content = widget == null
-                ? Localize("LOCPlayAch_Showcase_AddWidget", "Add widget")
-                : Localize("LOCPlayAch_Showcase_Widget", "Widget");
+                ? Localize("LOCPlayAch_Showcase_AddWidget")
+                : Localize("LOCPlayAch_Showcase_Widget");
             WidgetActionButton.IsEnabled = block != null;
             LayoutActionButton.IsEnabled = block != null;
         }
@@ -850,24 +852,24 @@ namespace PlayniteAchievements.Views.Showcase
                 Placement = PlacementMode.Bottom
             };
             var splitColumns = MenuItem(
-                Localize("LOCPlayAch_Showcase_SplitColumns", "Split columns"),
+                Localize("LOCPlayAch_Showcase_SplitColumns"),
                 () => OpenSplitPicker(LayoutActionButton, vertical: true));
             splitColumns.IsEnabled = block.ColumnSpan > 1;
             menu.Items.Add(splitColumns);
             var splitRows = MenuItem(
-                Localize("LOCPlayAch_Showcase_SplitRows", "Split rows"),
+                Localize("LOCPlayAch_Showcase_SplitRows"),
                 () => OpenSplitPicker(LayoutActionButton, vertical: false));
             splitRows.IsEnabled = block.RowSpan > 1;
             menu.Items.Add(splitRows);
 
             var merge = new MenuItem
             {
-                Header = Localize("LOCPlayAch_Common_Merge", "Merge")
+                Header = Localize("LOCPlayAch_Common_Merge")
             };
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeLeftLabel", "Merge left", 0, -1);
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeUpLabel", "Merge up", -1, 0);
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeDownLabel", "Merge down", 1, 0);
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeRightLabel", "Merge right", 0, 1);
+            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeLeftLabel", 0, -1);
+            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeUpLabel", -1, 0);
+            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeDownLabel", 1, 0);
+            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeRightLabel", 0, 1);
             merge.IsEnabled = merge.Items.Count > 0;
             menu.Items.Add(merge);
             menu.IsOpen = true;
@@ -876,7 +878,6 @@ namespace PlayniteAchievements.Views.Showcase
         private void AddMergeDirection(
             MenuItem parent,
             string localizationKey,
-            string fallback,
             int rowDirection,
             int columnDirection)
         {
@@ -886,7 +887,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             parent.Items.Add(MenuItem(
-                Localize(localizationKey, fallback),
+                Localize(localizationKey),
                 () => MergeDirectional(rowDirection, columnDirection)));
         }
 
@@ -900,10 +901,12 @@ namespace PlayniteAchievements.Views.Showcase
 
             var start = vertical ? block.Column : block.Row;
             var span = vertical ? block.ColumnSpan : block.RowSpan;
+            var pageId = CurrentPage.PageId;
+            var blockId = block.BlockId;
             var lines = Enumerable.Range(start + 1, Math.Max(0, span - 1)).ToList();
             if (lines.Count == 1)
             {
-                SplitSelectedBlock(vertical, lines[0]);
+                SplitBlock(pageId, blockId, vertical, lines[0]);
                 return;
             }
 
@@ -911,39 +914,102 @@ namespace PlayniteAchievements.Views.Showcase
             foreach (var line in lines)
             {
                 var captured = line;
-                menu.Items.Add(MenuItem(
-                    string.Format(
-                        Localize("LOCPlayAch_Showcase_SplitAtFormat", "Split {0} / {1}"),
-                        line - start,
-                        span - (line - start)),
-                    () => SplitSelectedBlock(vertical, captured)));
+                var firstSpan = line - start;
+                var secondSpan = span - firstSpan;
+                var accessibleName = string.Format(
+                    Localize("LOCPlayAch_Showcase_SplitAtFormat"),
+                    firstSpan,
+                    secondSpan);
+                menu.Items.Add(SplitPreviewItem(
+                    vertical,
+                    new[] { firstSpan, secondSpan },
+                    accessibleName,
+                    () => SplitBlock(
+                        pageId,
+                        blockId,
+                        vertical,
+                        captured)));
+            }
+
+            if (span == ShowcaseLayoutService.GridSize)
+            {
+                var accessibleName = Localize("LOCPlayAch_Showcase_SplitThreeEqual");
+                menu.Items.Insert(1, SplitPreviewItem(
+                    vertical,
+                    new[] { 1, 1, 1 },
+                    accessibleName,
+                    () => SplitBlockThreeWays(pageId, blockId, vertical)));
             }
 
             menu.IsOpen = true;
         }
 
-        private void SplitSelectedBlock(bool vertical, int gridLine)
+        private void SplitBlock(
+            string pageId,
+            string blockId,
+            bool vertical,
+            int gridLine)
         {
-            var block = SelectedBlock;
-            var widgetInstanceId = block?.WidgetInstanceId;
-            if (block != null && ShowcaseLayoutService.TrySplit(
+            ApplySplit(
+                pageId,
+                blockId,
+                () => ShowcaseLayoutService.TrySplit(
                     Layout,
-                    CurrentPage.PageId,
-                    block.BlockId,
+                    pageId,
+                    blockId,
                     vertical,
-                    gridLine))
-            {
-                if (!string.IsNullOrWhiteSpace(widgetInstanceId))
-                {
-                    _selectedBlockId = CurrentPage.Blocks.FirstOrDefault(candidate =>
-                        string.Equals(
-                            candidate.WidgetInstanceId,
-                            widgetInstanceId,
-                            StringComparison.OrdinalIgnoreCase))?.BlockId ?? block.BlockId;
-                }
+                    gridLine));
+        }
 
-                SaveAndRebuild();
+        private void SplitBlockThreeWays(string pageId, string blockId, bool vertical)
+        {
+            ApplySplit(
+                pageId,
+                blockId,
+                () => ShowcaseLayoutService.TrySplitThreeWays(
+                    Layout,
+                    pageId,
+                    blockId,
+                    vertical));
+        }
+
+        private void ApplySplit(string pageId, string blockId, Func<bool> split)
+        {
+            var page = Layout.Pages.FirstOrDefault(candidate => string.Equals(
+                candidate?.PageId,
+                pageId,
+                StringComparison.OrdinalIgnoreCase));
+            var block = page?.Blocks.FirstOrDefault(candidate => string.Equals(
+                candidate?.BlockId,
+                blockId,
+                StringComparison.OrdinalIgnoreCase));
+            var widgetInstanceId = block?.WidgetInstanceId;
+            if (block == null || split == null || !split())
+            {
+                return;
             }
+
+            page = Layout.Pages.FirstOrDefault(candidate => string.Equals(
+                candidate?.PageId,
+                pageId,
+                StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(widgetInstanceId))
+            {
+                _selectedBlockId = page?.Blocks.FirstOrDefault(candidate =>
+                    string.Equals(
+                        candidate.WidgetInstanceId,
+                        widgetInstanceId,
+                        StringComparison.OrdinalIgnoreCase))?.BlockId ?? blockId;
+            }
+            else
+            {
+                _selectedBlockId = page?.Blocks.FirstOrDefault(candidate => string.Equals(
+                    candidate.BlockId,
+                    blockId,
+                    StringComparison.OrdinalIgnoreCase))?.BlockId;
+            }
+
+            SaveAndRebuild();
         }
 
         private bool HasAdjacentBlock(ShowcaseBlockSettings block, int rowDirection, int columnDirection) =>
@@ -1008,38 +1074,38 @@ namespace PlayniteAchievements.Views.Showcase
             };
             var add = new MenuItem
             {
-                Header = Localize("LOCPlayAch_Showcase_AddPage", "Add page")
+                Header = Localize("LOCPlayAch_Showcase_AddPage")
             };
             add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Blank));
             add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Analytics));
             add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Collection));
             menu.Items.Add(add);
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_DuplicatePage", "Duplicate page"),
+                Localize("LOCPlayAch_Showcase_DuplicatePage"),
                 () =>
                 {
                     ShowcaseLayoutService.DuplicatePage(
                         Layout,
                         CurrentPage.PageId,
-                        Localize("LOCPlayAch_Showcase_CopySuffix", "Copy"));
+                        Localize("LOCPlayAch_Showcase_CopySuffix"));
                     SaveAndRebuild();
                 }));
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_RenamePage", "Rename page"),
+                Localize("LOCPlayAch_Showcase_RenamePage"),
                 RenameCurrentPage));
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_EditProfile", "Edit profile"),
+                Localize("LOCPlayAch_Showcase_EditProfile"),
                 OpenProfileSettings));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_MovePageLeft", "Move page left"),
+                Localize("LOCPlayAch_Showcase_MovePageLeft"),
                 () =>
                 {
                     ShowcaseLayoutService.MovePage(Layout, CurrentPage.PageId, -1);
                     SaveAndRebuild();
                 }));
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_MovePageRight", "Move page right"),
+                Localize("LOCPlayAch_Showcase_MovePageRight"),
                 () =>
                 {
                     ShowcaseLayoutService.MovePage(Layout, CurrentPage.PageId, 1);
@@ -1047,12 +1113,10 @@ namespace PlayniteAchievements.Views.Showcase
                 }));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ResetPage", "Reset page"),
+                Localize("LOCPlayAch_Showcase_ResetPage"),
                 () =>
                 {
-                    if (!Confirm(
-                            "LOCPlayAch_Showcase_ResetPageConfirm",
-                            "Reset this page? Its current widgets and layout will be deleted."))
+                    if (!Confirm("LOCPlayAch_Showcase_ResetPageConfirm"))
                     {
                         return;
                     }
@@ -1061,7 +1125,7 @@ namespace PlayniteAchievements.Views.Showcase
                     SaveAndRebuild();
                 }));
             var delete = MenuItem(
-                Localize("LOCPlayAch_Showcase_DeletePage", "Delete page"),
+                Localize("LOCPlayAch_Showcase_DeletePage"),
                 DeleteCurrentPage);
             delete.IsEnabled = Layout.Pages.Count > 1;
             menu.Items.Add(delete);
@@ -1071,17 +1135,13 @@ namespace PlayniteAchievements.Views.Showcase
         private MenuItem PageTemplateItem(ShowcasePageTemplate template)
         {
             return MenuItem(
-                Localize(
-                    $"LOCPlayAch_Showcase_Template_{template}",
-                    template.ToString()),
+                Localize($"LOCPlayAch_Showcase_Template_{template}"),
                 () =>
                 {
                     ShowcaseLayoutService.AddPage(
                         Layout,
                         template,
-                        Localize(
-                            $"LOCPlayAch_Showcase_Template_{template}",
-                            template.ToString()));
+                        Localize($"LOCPlayAch_Showcase_Template_{template}"));
                     SaveAndRebuild();
                 });
         }
@@ -1089,8 +1149,8 @@ namespace PlayniteAchievements.Views.Showcase
         private void RenameCurrentPage()
         {
             var result = _api?.Dialogs?.SelectString(
-                Localize("LOCPlayAch_Showcase_RenamePrompt", "Enter a page name:"),
-                Localize("LOCPlayAch_Showcase_RenamePage", "Rename page"),
+                Localize("LOCPlayAch_Showcase_RenamePrompt"),
+                Localize("LOCPlayAch_Showcase_RenamePage"),
                 CurrentPage.Name);
             var name = result?.Result == true ? result.SelectedString : null;
             if (!string.IsNullOrWhiteSpace(name))
@@ -1127,9 +1187,7 @@ namespace PlayniteAchievements.Views.Showcase
         private void DeleteCurrentPage()
         {
             if (Layout.Pages.Count <= 1 ||
-                !Confirm(
-                    "LOCPlayAch_Showcase_DeletePageConfirm",
-                    "Delete this page and all widgets on it?"))
+                !Confirm("LOCPlayAch_Showcase_DeletePageConfirm"))
             {
                 return;
             }
@@ -1138,11 +1196,11 @@ namespace PlayniteAchievements.Views.Showcase
             SaveAndRebuild();
         }
 
-        private bool Confirm(string messageKey, string fallback)
+        private bool Confirm(string messageKey)
         {
             return _api?.Dialogs?.ShowMessage(
-                       Localize(messageKey, fallback),
-                       Localize("LOCPlayAch_Showcase_Title", "Showcase"),
+                       Localize(messageKey),
+                       Localize("LOCPlayAch_Showcase_Title"),
                        MessageBoxButton.YesNo,
                        MessageBoxImage.Warning) == MessageBoxResult.Yes;
         }
@@ -1161,7 +1219,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             return widget == null
-                ? Localize("LOCPlayAch_Showcase_Widget", "Widget")
+                ? Localize("LOCPlayAch_Showcase_Widget")
                 : ShowcaseUiText.GetWidgetName(widget.Kind);
         }
 
@@ -1172,13 +1230,95 @@ namespace PlayniteAchievements.Views.Showcase
             return item;
         }
 
+        private static MenuItem SplitPreviewItem(
+            bool vertical,
+            IReadOnlyList<int> parts,
+            string accessibleName,
+            Action action)
+        {
+            var previewGrid = new Grid
+            {
+                Width = vertical ? 72 : 42,
+                Height = vertical ? 26 : 48,
+                ClipToBounds = true
+            };
+            foreach (var part in parts)
+            {
+                if (vertical)
+                {
+                    previewGrid.ColumnDefinitions.Add(new ColumnDefinition
+                    {
+                        Width = new GridLength(part, GridUnitType.Star)
+                    });
+                }
+                else
+                {
+                    previewGrid.RowDefinitions.Add(new RowDefinition
+                    {
+                        Height = new GridLength(part, GridUnitType.Star)
+                    });
+                }
+            }
+
+            for (var index = 0; index < parts.Count; index++)
+            {
+                var section = new Border
+                {
+                    Margin = index == 0
+                        ? new Thickness(0)
+                        : vertical
+                            ? new Thickness(2, 0, 0, 0)
+                            : new Thickness(0, 2, 0, 0)
+                };
+                section.SetResourceReference(
+                    Border.BackgroundProperty,
+                    index % 2 == 0 ? "PlayAch.Brush.Accent" : "PlayAch.Brush.Text");
+                if (vertical)
+                {
+                    Grid.SetColumn(section, index);
+                }
+                else
+                {
+                    Grid.SetRow(section, index);
+                }
+
+                previewGrid.Children.Add(section);
+            }
+
+            var frame = new Border
+            {
+                Child = previewGrid,
+                Width = vertical ? 74 : 44,
+                Height = vertical ? 28 : 50,
+                Margin = new Thickness(2, 0, 2, 0),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(2),
+                ClipToBounds = true,
+                ToolTip = accessibleName
+            };
+            frame.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Surface");
+            frame.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Text");
+
+            var item = new MenuItem
+            {
+                Header = frame,
+                ToolTip = accessibleName,
+                MinHeight = vertical ? 32 : 54,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                ClipToBounds = false
+            };
+            AutomationProperties.SetName(item, accessibleName);
+            item.Click += (_, __) => action();
+            return item;
+        }
+
         private static MenuItem WidgetPickerItem(
             ShowcaseWidgetDefinition definition,
             Action action)
         {
             var item = new MenuItem
             {
-                Header = Localize(definition.NameKey, Humanize(definition.Kind))
+                Header = Localize(definition.NameKey)
             };
             item.Click += (_, __) => action();
             return item;

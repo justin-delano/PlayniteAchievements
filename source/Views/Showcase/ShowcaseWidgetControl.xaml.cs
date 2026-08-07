@@ -90,9 +90,7 @@ namespace PlayniteAchievements.Views.Showcase
             var custom = _projection.Instance.CustomTitle?.Trim();
             TitleText.Text = !string.IsNullOrWhiteSpace(custom)
                 ? custom
-                : Localize(
-                    ShowcaseWidgetCatalog.Get(_projection.Instance.Kind).NameKey,
-                    Humanize(_projection.Instance.Kind));
+                : Localize(ShowcaseWidgetCatalog.Get(_projection.Instance.Kind).NameKey);
             GlyphText.Text = GetWidgetGlyph(_projection.Instance.Kind);
             RootBorder.ToolTip = TitleText.Text;
         }
@@ -172,9 +170,12 @@ namespace PlayniteAchievements.Views.Showcase
 
             if (!string.IsNullOrWhiteSpace(profile.AvatarPath))
             {
-                var avatar = CreateImage(profile.AvatarPath, _viewport.Density == WidgetViewportDensity.Compact ? 42 : 72);
+                var avatarSize = _viewport.Density == WidgetViewportDensity.Compact ? 42 : 72;
+                var avatar = CreateImage(profile.AvatarPath, avatarSize);
                 var avatarFrame = CreateImageFrame(avatar);
                 avatarFrame.Margin = new Thickness(0, 0, 12, 0);
+                avatarFrame.CornerRadius = new CornerRadius((avatarSize + 4) / 2);
+                avatarFrame.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Accent");
                 panel.Children.Add(avatarFrame);
             }
 
@@ -182,7 +183,7 @@ namespace PlayniteAchievements.Views.Showcase
             Grid.SetColumn(text, 1);
             text.Children.Add(CreateText(
                 string.IsNullOrWhiteSpace(profile.DisplayName)
-                    ? Localize("LOCPlayAch_Showcase_Profile_DefaultName", "Achievement Showcase")
+                    ? Localize("LOCPlayAch_Showcase_Profile_DefaultName")
                     : profile.DisplayName,
                 18,
                 FontWeights.SemiBold));
@@ -192,15 +193,13 @@ namespace PlayniteAchievements.Views.Showcase
                 text.Children.Add(CreateText(profile.Subtitle, 12, FontWeights.Normal, 0.72));
             }
 
-            if (_viewport.ShowSecondaryStatistics)
+            if (_viewport.Density == WidgetViewportDensity.Expanded)
             {
                 var snapshot = _projection.Snapshot;
                 text.Children.Add(CreateText(
                     string.Format(
                         FormattingCulture.Current,
-                        Localize(
-                            "LOCPlayAch_Showcase_ProfileStats",
-                            "{0:N0} unlocked · {1:N1}% · {2:N0} completed"),
+                        Localize("LOCPlayAch_Showcase_ProfileStats"),
                         snapshot.TotalUnlocked,
                         snapshot.GlobalProgressionPercent,
                         snapshot.CompletedGames),
@@ -220,9 +219,7 @@ namespace PlayniteAchievements.Views.Showcase
                     text.Children.Add(CreateText(
                         string.Format(
                             FormattingCulture.Current,
-                            Localize(
-                                "LOCPlayAch_Showcase_ProfileStreaks",
-                                "{0} current · {1} longest"),
+                            Localize("LOCPlayAch_Showcase_ProfileStreaks"),
                             FormatStatisticDisplayValue(currentStreak),
                             FormatStatisticDisplayValue(longestStreak)),
                         11,
@@ -328,7 +325,7 @@ namespace PlayniteAchievements.Views.Showcase
                         snapshot.UnlockedByProvider,
                         snapshot.TotalByProvider,
                         snapshot.TotalLocked,
-                        Localize("LOCPlayAch_Common_Locked", "Locked"),
+                        Localize("LOCPlayAch_Common_Locked"),
                         metadata,
                         providerNames);
                     break;
@@ -343,11 +340,11 @@ namespace PlayniteAchievements.Views.Showcase
                         snapshot.TotalUncommonPossible,
                         snapshot.TotalRarePossible,
                         snapshot.TotalUltraRarePossible,
-                        Localize("LOCPlayAch_Rarity_Common", "Common"),
-                        Localize("LOCPlayAch_Rarity_Uncommon", "Uncommon"),
-                        Localize("LOCPlayAch_Rarity_Rare", "Rare"),
-                        Localize("LOCPlayAch_Rarity_UltraRare", "Ultra rare"),
-                        Localize("LOCPlayAch_Common_Locked", "Locked"));
+                        Localize("LOCPlayAch_Rarity_Common"),
+                        Localize("LOCPlayAch_Rarity_Uncommon"),
+                        Localize("LOCPlayAch_Rarity_Rare"),
+                        Localize("LOCPlayAch_Rarity_UltraRare"),
+                        Localize("LOCPlayAch_Common_Locked"));
                     break;
                 case ShowcasePieMode.Trophy:
                     var trophyGames = snapshot.GameSummaries ?? new List<GameSummaryItem>();
@@ -360,18 +357,18 @@ namespace PlayniteAchievements.Views.Showcase
                         trophyGames.Sum(game => game?.TrophyGoldTotal ?? 0),
                         trophyGames.Sum(game => game?.TrophySilverTotal ?? 0),
                         trophyGames.Sum(game => game?.TrophyBronzeTotal ?? 0),
-                        Localize("LOCPlayAch_Trophy_Platinum", "Platinum"),
-                        Localize("LOCPlayAch_Trophy_Gold", "Gold"),
-                        Localize("LOCPlayAch_Trophy_Silver", "Silver"),
-                        Localize("LOCPlayAch_Trophy_Bronze", "Bronze"),
-                        Localize("LOCPlayAch_Common_Locked", "Locked"));
+                        Localize("LOCPlayAch_Trophy_Platinum"),
+                        Localize("LOCPlayAch_Trophy_Gold"),
+                        Localize("LOCPlayAch_Trophy_Silver"),
+                        Localize("LOCPlayAch_Trophy_Bronze"),
+                        Localize("LOCPlayAch_Common_Locked"));
                     break;
                 default:
                     chart.SetGameData(
                         snapshot.TotalGames,
                         snapshot.CompletedGames,
-                        Localize("LOCPlayAch_Completed", "Completed"),
-                        Localize("LOCPlayAch_Showcase_Incomplete", "Incomplete"));
+                        Localize("LOCPlayAch_Completed"),
+                        Localize("LOCPlayAch_Showcase_Incomplete"));
                     break;
             }
 
@@ -587,12 +584,14 @@ namespace PlayniteAchievements.Views.Showcase
             foreach (var item in items.Take(limit))
             {
                 var panel = new StackPanel();
-                panel.Children.Add(CreateText(
+                var value = CreateText(
                     FormatStatisticDisplayValue(item),
                     17,
-                    FontWeights.SemiBold));
+                    FontWeights.SemiBold);
+                value.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
+                panel.Children.Add(value);
                 panel.Children.Add(CreateText(
-                    Localize(item.LabelKey, item.Label),
+                    Localize(item.LabelKey),
                     10,
                     FontWeights.Normal,
                     0.68));
@@ -621,7 +620,7 @@ namespace PlayniteAchievements.Views.Showcase
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 var label = CreateText(
-                    Localize(entry.LabelKey, entry.Label),
+                    LocalizeValue(entry.LabelKey, entry.Label),
                     11,
                     FontWeights.Normal);
                 label.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -673,9 +672,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             if (achievements == null || achievements.Count == 0)
             {
-                return CreateEmptyText(Localize(
-                    "LOCPlayAch_Showcase_NoPinnedAchievements",
-                    "Pin achievements to see them here."));
+                return CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
             }
 
             var panel = new StackPanel();
@@ -687,14 +684,12 @@ namespace PlayniteAchievements.Views.Showcase
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 var image = CreateImage(achievement.IconPath, 38);
                 image.Opacity = achievement.IsMissing ? 0.35 : 1;
-                row.Children.Add(image);
+                row.Children.Add(CreateImageFrame(image));
                 var text = new StackPanel { Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
                 text.Children.Add(CreateText(
                     achievement.IsMissing &&
                     string.IsNullOrWhiteSpace(achievement.Pin?.LastKnownAchievementName)
-                        ? Localize(
-                            "LOCPlayAch_Showcase_UnavailableAchievement",
-                            achievement.Name)
+                        ? Localize("LOCPlayAch_Showcase_UnavailableAchievement")
                         : achievement.Name,
                     11,
                     FontWeights.SemiBold));
@@ -703,9 +698,7 @@ namespace PlayniteAchievements.Views.Showcase
                     text.Children.Add(CreateText(
                         achievement.IsMissing &&
                         string.IsNullOrWhiteSpace(achievement.Pin?.LastKnownGameName)
-                            ? Localize(
-                                "LOCPlayAch_Showcase_UnavailableGame",
-                                achievement.GameName)
+                            ? Localize("LOCPlayAch_Showcase_UnavailableGame")
                             : achievement.GameName,
                         10,
                         FontWeights.Normal,
@@ -728,9 +721,7 @@ namespace PlayniteAchievements.Views.Showcase
                             captured.GameId,
                             captured.ApiName,
                             1),
-                        Localize(
-                            "LOCPlayAch_Showcase_UnpinAchievement",
-                            "Unpin from Showcase"),
+                        Localize("LOCPlayAch_Showcase_UnpinAchievement"),
                         () => ShowcasePinService.ToggleAchievement(
                             CurrentShowcaseSettings,
                             captured.GameId,
@@ -752,22 +743,35 @@ namespace PlayniteAchievements.Views.Showcase
         {
             if (games == null || games.Count == 0)
             {
-                return CreateEmptyText(Localize(
-                    "LOCPlayAch_Showcase_NoFavoriteGames",
-                    "Pin games or use Playnite favorites."));
+                return CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
             }
 
-            var panel = new WrapPanel();
-            var size = _viewport.Density == WidgetViewportDensity.Compact ? 54 : 78;
+            var panel = new WrapPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var coverWidth = _viewport.Density == WidgetViewportDensity.Compact
+                ? 42
+                : _viewport.Density == WidgetViewportDensity.Expanded ? 76 : 60;
+            var coverHeight = Math.Round(coverWidth * 1.4);
             foreach (var game in games.Take(_viewport.Density == WidgetViewportDensity.Compact ? 3 : 12))
             {
-                var tile = new StackPanel { Width = size + 10 };
-                tile.Children.Add(CreateImage(game.GameCoverPath ?? game.GameLogo, size));
+                var tile = new StackPanel { Width = coverWidth + 12 };
+                var hasCover = !string.IsNullOrWhiteSpace(game.GameCoverPath);
+                var cover = CreateImage(
+                    hasCover ? game.GameCoverPath : game.GameLogo,
+                    coverWidth,
+                    coverHeight,
+                    hasCover ? Stretch.UniformToFill : Stretch.Uniform);
+                tile.Children.Add(CreateImageFrame(cover));
                 if (_viewport.Density != WidgetViewportDensity.Compact)
                 {
                     var name = CreateText(game.GameName, 10, FontWeights.Normal);
+                    name.Margin = new Thickness(0, 5, 0, 0);
                     name.TextAlignment = TextAlignment.Center;
                     name.TextTrimming = TextTrimming.CharacterEllipsis;
+                    name.TextWrapping = TextWrapping.NoWrap;
                     tile.Children.Add(name);
                 }
 
@@ -785,9 +789,7 @@ namespace PlayniteAchievements.Views.Showcase
                             CurrentShowcaseSettings,
                             capturedGameId,
                             1),
-                        Localize(
-                            "LOCPlayAch_Showcase_UnpinGame",
-                            "Unpin game from Showcase"),
+                        Localize("LOCPlayAch_Showcase_UnpinGame"),
                         () => ShowcasePinService.ToggleGame(
                             CurrentShowcaseSettings,
                             capturedGameId));
@@ -828,8 +830,9 @@ namespace PlayniteAchievements.Views.Showcase
                     IconSize = size,
                     ShowRarityGlow = appearance?.ModernCompactListShowRarityGlow ?? true,
                     AnimateRarityGlows = appearance?.AnimateRarityGlows ?? true,
-                    // The compact rarity effect has an 8px blur radius. Reserve that space
-                    // explicitly so neighboring icons do not paint over the visible halo.
+                    // Match the full achievement-grid glow; the surrounding margin keeps its
+                    // larger halo visible without changing the shared compact-list default.
+                    UseLargeRarityGlow = true,
                     Margin = new Thickness(9)
                 });
             }
@@ -886,7 +889,7 @@ namespace PlayniteAchievements.Views.Showcase
         private TextBlock CreateEmptyText(string text = null)
         {
             return CreateText(
-                text ?? Localize("LOCPlayAch_Showcase_NoData", "No data yet"),
+                text ?? Localize("LOCPlayAch_Showcase_NoData"),
                 12,
                 FontWeights.Normal,
                 0.62);
@@ -906,16 +909,16 @@ namespace PlayniteAchievements.Views.Showcase
                     return hours >= 1000
                         ? string.Format(
                             FormattingCulture.Current,
-                            Localize("LOCPlayAch_Showcase_ThousandsHours", "{0:N1}k h"),
+                            Localize("LOCPlayAch_Showcase_ThousandsHours"),
                             hours / 1000d)
                         : string.Format(
                             FormattingCulture.Current,
-                            Localize("LOCPlayAch_Showcase_Hours", "{0:N0} h"),
+                            Localize("LOCPlayAch_Showcase_Hours"),
                             hours);
                 case "thirtyDayRate":
                     return string.Format(
                         FormattingCulture.Current,
-                        Localize("LOCPlayAch_Showcase_PerDay", "{0:N1}/day"),
+                        Localize("LOCPlayAch_Showcase_PerDay"),
                         item.Value);
                 case "completion":
                 case "averageGlobalUnlock":
@@ -929,11 +932,9 @@ namespace PlayniteAchievements.Views.Showcase
                     var days = (int)Math.Round(item.Value);
                     return string.Format(
                         FormattingCulture.Current,
-                        Localize(
-                            days == 1
-                                ? "LOCPlayAch_Showcase_Day"
-                                : "LOCPlayAch_Showcase_Days",
-                            days == 1 ? "{0} day" : "{0} days"),
+                        Localize(days == 1
+                            ? "LOCPlayAch_Showcase_Day"
+                            : "LOCPlayAch_Showcase_Days"),
                         days.ToString("N0", FormattingCulture.Current));
                 default:
                     return item.Value.ToString("N0", FormattingCulture.Current);
@@ -958,16 +959,25 @@ namespace PlayniteAchievements.Views.Showcase
             return block;
         }
 
-        private static Image CreateImage(string path, double size)
+        private static Image CreateImage(string path, double size) =>
+            CreateImage(path, size, size, Stretch.UniformToFill);
+
+        private static Image CreateImage(
+            string path,
+            double width,
+            double height,
+            Stretch stretch)
         {
             var image = new Image
             {
-                Width = size,
-                Height = size,
-                Stretch = Stretch.UniformToFill,
+                Width = width,
+                Height = height,
+                Stretch = stretch,
                 SnapsToDevicePixels = true
             };
-            AsyncImage.SetDecodePixel(image, Math.Max(64, (int)Math.Ceiling(size * 2)));
+            AsyncImage.SetDecodePixel(
+                image,
+                Math.Max(64, (int)Math.Ceiling(Math.Max(width, height) * 2)));
             AsyncImage.SetUri(image, path);
 
             return image;
@@ -1018,10 +1028,10 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var menu = new ContextMenu();
             menu.Items.Add(CreatePinOrderItem(
-                Localize("LOCPlayAch_Showcase_MoveEarlier", "Move earlier"),
+                Localize("LOCPlayAch_Showcase_MoveEarlier"),
                 moveEarlier));
             menu.Items.Add(CreatePinOrderItem(
-                Localize("LOCPlayAch_Showcase_MoveLater", "Move later"),
+                Localize("LOCPlayAch_Showcase_MoveLater"),
                 moveLater));
             menu.Items.Add(new Separator());
             var unpinItem = new MenuItem { Header = unpinHeader };

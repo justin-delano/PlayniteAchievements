@@ -62,7 +62,7 @@ namespace PlayniteAchievements.Views.Showcase
             var editor = new ShowcaseWidgetSettingsDialog(widget, layout);
             var title = string.Format(
                 FormattingCulture.Current,
-                Localize("LOCPlayAch_Showcase_WidgetSettingsTitle", "{0} settings"),
+                Localize("LOCPlayAch_Showcase_WidgetSettingsTitle"),
                 GetWidgetName(widget.Kind));
             var height = GetEditorHeight(widget.Kind);
             var window = PlayniteUiProvider.CreateExtensionWindow(
@@ -102,7 +102,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             _titleBox = AddTextBox(
                 panel,
-                Localize("LOCPlayAch_Showcase_CustomTitle", "Custom title"),
+                Localize("LOCPlayAch_Showcase_CustomTitle"),
                 _workingWidget.CustomTitle);
 
             if (_workingWidget.Kind == ShowcaseWidgetKind.Profile)
@@ -126,14 +126,14 @@ namespace PlayniteAchievements.Views.Showcase
             };
             var cancel = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Cancel", "Cancel"),
+                Content = Localize("LOCPlayAch_Button_Cancel"),
                 MinWidth = 82,
                 Margin = new Thickness(0, 0, 8, 0)
             };
             cancel.Click += (_, __) => Window.GetWindow(this)?.Close();
             var save = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Save", "Save"),
+                Content = Localize("LOCPlayAch_Button_Save"),
                 MinWidth = 82,
                 IsDefault = true
             };
@@ -149,19 +149,19 @@ namespace PlayniteAchievements.Views.Showcase
         {
             _profileNameBox = AddTextBox(
                 panel,
-                Localize("LOCPlayAch_Showcase_ProfileName", "Display name"),
+                Localize("LOCPlayAch_Showcase_ProfileName"),
                 _workingProfile.DisplayName);
             _profileSubtitleBox = AddTextBox(
                 panel,
-                Localize("LOCPlayAch_Showcase_ProfileSubtitle", "Subtitle"),
+                Localize("LOCPlayAch_Showcase_ProfileSubtitle"),
                 _workingProfile.Subtitle);
             _avatarBox = AddImagePicker(
                 panel,
-                Localize("LOCPlayAch_Showcase_ProfileAvatar", "Avatar"),
+                Localize("LOCPlayAch_Showcase_ProfileAvatar"),
                 _workingProfile.AvatarPath);
             _backgroundBox = AddImagePicker(
                 panel,
-                Localize("LOCPlayAch_Showcase_ProfileBackground", "Background"),
+                Localize("LOCPlayAch_Showcase_ProfileBackground"),
                 _workingProfile.BackgroundPath);
         }
 
@@ -263,7 +263,7 @@ namespace PlayniteAchievements.Views.Showcase
             row.Children.Add(box);
             var browse = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Browse", "Browse…"),
+                Content = Localize("LOCPlayAch_Button_Browse"),
                 MinWidth = 82,
                 Margin = new Thickness(8, 0, 0, 0)
             };
@@ -271,7 +271,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 var dialog = new OpenFileDialog
                 {
-                    Filter = $"{Localize("LOCPlayAch_Showcase_ImageFiles", "Image files")} ({ImagePatterns})|{ImagePatterns}|{Localize("LOCPlayAch_Showcase_AllFiles", "All files")} (*.*)|*.*",
+                    Filter = $"{Localize("LOCPlayAch_Showcase_ImageFiles")} ({ImagePatterns})|{ImagePatterns}|{Localize("LOCPlayAch_Showcase_AllFiles")} (*.*)|*.*",
                     CheckFileExists = true,
                     Multiselect = false
                 };
@@ -284,7 +284,7 @@ namespace PlayniteAchievements.Views.Showcase
             row.Children.Add(browse);
             var clear = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Clear", "Clear"),
+                Content = Localize("LOCPlayAch_Button_Clear"),
                 MinWidth = 72,
                 Margin = new Thickness(8, 0, 0, 0)
             };

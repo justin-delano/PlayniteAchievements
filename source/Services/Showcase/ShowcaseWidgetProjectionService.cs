@@ -15,8 +15,6 @@ namespace PlayniteAchievements.Services.Showcase
 
         public string LabelKey { get; set; }
 
-        public string Label { get; set; }
-
         public double Value { get; set; }
 
         public bool HasValue { get; set; } = true;
@@ -192,26 +190,24 @@ namespace PlayniteAchievements.Services.Showcase
 
             return new List<ShowcaseStatistic>
             {
-                Stat("unlocked", "LOCPlayAch_Showcase_Stat_Unlocked", "Unlocked", snapshot.TotalUnlocked),
-                Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", "Completion", snapshot.GlobalProgressionPercent),
-                Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", "Tracked games", snapshot.TotalGames),
-                Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", "Played games", playedGames),
-                Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", "Completed games", snapshot.CompletedGames),
-                Stat("playtime", "LOCPlayAch_Showcase_Stat_Playtime", "Playtime", totalPlaytime),
+                Stat("unlocked", "LOCPlayAch_Showcase_Stat_Unlocked", snapshot.TotalUnlocked),
+                Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", snapshot.GlobalProgressionPercent),
+                Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", snapshot.TotalGames),
+                Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", playedGames),
+                Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", snapshot.CompletedGames),
+                Stat("playtime", "LOCPlayAch_Showcase_Stat_Playtime", totalPlaytime),
                 Stat(
                     "activeDayRate",
                     "LOCPlayAch_Showcase_Stat_ActiveDayRate",
-                    "Unlocks / active day",
                     activeDays > 0 ? (double)datedUnlocks / activeDays : 0),
-                Stat("thirtyDayRate", "LOCPlayAch_Showcase_Stat_ThirtyDayRate", "30-day rate", lastThirtyDays / 30d),
+                Stat("thirtyDayRate", "LOCPlayAch_Showcase_Stat_ThirtyDayRate", lastThirtyDays / 30d),
                 Stat(
                     "averageGlobalUnlock",
                     "LOCPlayAch_Showcase_Stat_AverageGlobalUnlock",
-                    "Average global unlock",
                     unlockedWithRarity.Count > 0 ? unlockedWithRarity.Average() : 0,
                     hasValue: unlockedWithRarity.Count > 0),
-                Stat("currentStreak", "LOCPlayAch_Showcase_Stat_CurrentStreak", "Current streak", currentStreak),
-                Stat("longestStreak", "LOCPlayAch_Showcase_Stat_LongestStreak", "Longest streak", longestStreak)
+                Stat("currentStreak", "LOCPlayAch_Showcase_Stat_CurrentStreak", currentStreak),
+                Stat("longestStreak", "LOCPlayAch_Showcase_Stat_LongestStreak", longestStreak)
             };
         }
 
@@ -359,7 +355,6 @@ namespace PlayniteAchievements.Services.Showcase
             {
                 Key = "Other",
                 LabelKey = "LOCPlayAch_Showcase_Other",
-                Label = "Other",
                 Value = ordered.Skip(topN).Sum(entry => entry.Value)
             });
             return result;
@@ -399,7 +394,6 @@ namespace PlayniteAchievements.Services.Showcase
         private static ShowcaseStatistic Stat(
             string key,
             string labelKey,
-            string label,
             double value,
             bool hasValue = true)
         {
@@ -407,7 +401,6 @@ namespace PlayniteAchievements.Services.Showcase
             {
                 Key = key,
                 LabelKey = labelKey,
-                Label = label,
                 Value = value,
                 HasValue = hasValue
             };

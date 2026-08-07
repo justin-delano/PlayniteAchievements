@@ -139,5 +139,50 @@ namespace PlayniteAchievements.Tests.Services
                 }
             }
         }
+
+        [TestMethod]
+        public void GetScreenshots_ExcludesReservedTestCapturesFromEveryConfiguredRoot()
+        {
+            var root = Path.Combine(
+                Path.GetTempPath(),
+                "PlayniteAchievements.Tests",
+                Guid.NewGuid().ToString("N"));
+            var gameDirectory = Path.Combine(root, "Real Game");
+            var testRoot = Path.Combine(root, "Test");
+            var testGameDirectory = Path.Combine(testRoot, "Test Game");
+            Directory.CreateDirectory(gameDirectory);
+            Directory.CreateDirectory(testGameDirectory);
+            try
+            {
+                var image = Convert.FromBase64String(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+                File.WriteAllBytes(
+                    Path.Combine(gameDirectory, "001_Real Win_clean.png"),
+                    image);
+                File.WriteAllBytes(
+                    Path.Combine(testGameDirectory, "001_Test Win_notification.png"),
+                    image);
+
+                var settings = new PersistedSettings
+                {
+                    UnlockScreenshotDirectory = root,
+                    UnlockRecordingDirectory = testRoot
+                };
+                using (var library = new CaptureLibraryService(() => settings, null))
+                {
+                    var screenshots = library.GetScreenshots();
+                    Assert.AreEqual(1, screenshots.Count);
+                    StringAssert.Contains(screenshots[0].FilePath, "Real Game");
+                    Assert.AreEqual(0, library.GetScreenshots(CaptureVariant.Notification).Count);
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(root))
+                {
+                    Directory.Delete(root, recursive: true);
+                }
+            }
+        }
     }
 }

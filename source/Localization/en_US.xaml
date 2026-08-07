@@ -1210,6 +1210,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_SplitColumns">Split columns</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SplitRows">Split rows</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SplitAtFormat">Split {0} / {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SplitThreeEqual">Split evenly into three</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeLeftLabel">Merge left</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeRightLabel">Merge right</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MergeUpLabel">Merge up</sys:String>
@@ -1264,11 +1265,11 @@
     <sys:String x:Key="LOCPlayAch_Showcase_TopN">Top entries</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Source">Source</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ItemCount">Item count</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Variant">Capture variant</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Variant">Show</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Interval">Interval</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_FitMode">Fit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Shuffle">Shuffle</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_CustomTitle">Custom title</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_CustomTitle">Title</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Day">{0} day</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Days">{0} days</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Seconds">{0} seconds</sys:String>
@@ -1291,10 +1292,10 @@
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Recent">Recent achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Rarest">Rarest achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Pinned">Pinned achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_All">All captures</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Clean">Clean captures</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Notification">Notification captures</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Framed">Framed captures</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_All">All</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Clean">Clean</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Notification">Notification</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Framed">Framed</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fit">Fit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fill">Fill</sys:String>
 

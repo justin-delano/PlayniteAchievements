@@ -126,9 +126,19 @@
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
                                     <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding UseLargeRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="False"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource CompactPercentToRarityGlow}}"/>
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding UseLargeRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
                             </MultiDataTrigger>
                             <!-- Hardcore achievements use a solid border instead of the soft glow. -->
                             <MultiDataTrigger>

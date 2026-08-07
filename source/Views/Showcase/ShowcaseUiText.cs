@@ -7,47 +7,26 @@ namespace PlayniteAchievements.Views.Showcase
 {
     internal static class ShowcaseUiText
     {
-        public static string Localize(string key, string fallback)
+        public static string Localize(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
-                return fallback;
+                return string.Empty;
             }
 
             var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ||
-                   string.Equals(value, key, StringComparison.Ordinal) ||
-                   (value.StartsWith("<!", StringComparison.Ordinal) &&
-                    value.EndsWith("!>", StringComparison.Ordinal))
-                ? fallback
-                : value;
+            return string.IsNullOrWhiteSpace(value) ? key : value;
+        }
+
+        public static string LocalizeValue(string key, string value)
+        {
+            return string.IsNullOrWhiteSpace(key) ? value ?? string.Empty : Localize(key);
         }
 
         public static string GetWidgetName(ShowcaseWidgetKind kind)
         {
             var definition = ShowcaseWidgetCatalog.Get(kind);
-            return Localize(definition.NameKey, Humanize(kind));
-        }
-
-        public static string Humanize(ShowcaseWidgetKind kind)
-        {
-            switch (kind)
-            {
-                case ShowcaseWidgetKind.NativePoints:
-                    return "Native Points";
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    return "Pinned Achievements";
-                case ShowcaseWidgetKind.FavoriteGames:
-                    return "Favorite Games";
-                case ShowcaseWidgetKind.IconMosaic:
-                    return "Icon Mosaic";
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    return "Screenshot Slideshow";
-                case ShowcaseWidgetKind.Statistics:
-                    return "Overall Statistics";
-                default:
-                    return kind.ToString();
-            }
+            return Localize(definition.NameKey);
         }
 
         public static string ScoreModeName(ShowcaseScoreMode value) =>
@@ -76,13 +55,13 @@ namespace PlayniteAchievements.Views.Showcase
             switch (range)
             {
                 case TimelineRange.OneMonth:
-                    return Localize("LOCPlayAch_TimeRange_1M", "1M");
+                    return Localize("LOCPlayAch_TimeRange_1M");
                 case TimelineRange.ThreeMonths:
-                    return Localize("LOCPlayAch_TimeRange_3M", "3M");
+                    return Localize("LOCPlayAch_TimeRange_3M");
                 case TimelineRange.OneYear:
-                    return Localize("LOCPlayAch_TimeRange_1Y", "1Y");
+                    return Localize("LOCPlayAch_TimeRange_1Y");
                 case TimelineRange.All:
-                    return Localize("LOCPlayAch_Common_All", "All");
+                    return Localize("LOCPlayAch_Common_All");
                 default:
                     return range.ToString();
             }
@@ -90,8 +69,7 @@ namespace PlayniteAchievements.Views.Showcase
 
         private static string EnumValueName<T>(string prefix, T value)
         {
-            var fallback = Convert.ToString(value);
-            return Localize(prefix + fallback, fallback);
+            return Localize(prefix + Convert.ToString(value));
         }
     }
 }

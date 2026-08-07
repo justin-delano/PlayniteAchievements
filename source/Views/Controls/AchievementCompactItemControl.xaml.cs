@@ -34,6 +34,13 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(AchievementCompactItemControl),
                 new PropertyMetadata(false));
 
+        public static readonly DependencyProperty UseLargeRarityGlowProperty =
+            DependencyProperty.Register(
+                nameof(UseLargeRarityGlow),
+                typeof(bool),
+                typeof(AchievementCompactItemControl),
+                new PropertyMetadata(false));
+
         /// <summary>
         /// Gets or sets the size of the achievement icon (both width and height).
         /// Default is 48 to match legacy SuccessStory styling.
@@ -59,6 +66,16 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(AnimateRarityGlowsProperty);
             set => SetValue(AnimateRarityGlowsProperty, value);
+        }
+
+        /// <summary>
+        /// Uses the full achievement-grid glow instead of the compact-list glow. Dense horizontal
+        /// lists retain the compact default; hosts with room around each icon can opt in.
+        /// </summary>
+        public bool UseLargeRarityGlow
+        {
+            get => (bool)GetValue(UseLargeRarityGlowProperty);
+            set => SetValue(UseLargeRarityGlowProperty, value);
         }
 
         private static void OnIconSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

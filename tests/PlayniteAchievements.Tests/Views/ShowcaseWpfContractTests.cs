@@ -33,6 +33,32 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void Overview_ShowcaseDatabaseEventsMarshalToTheUiDispatcher()
+        {
+            var code = ReadRepoFile("source", "Views", "OverviewControl.xaml.cs");
+            var methodStart = code.IndexOf(
+                "private void QueueShowcaseDatabaseRefresh()",
+                StringComparison.Ordinal);
+            var methodEnd = code.IndexOf(
+                "private void ShowcaseDatabaseRefreshTimer_Tick",
+                methodStart,
+                StringComparison.Ordinal);
+            Assert.IsTrue(methodStart >= 0 && methodEnd > methodStart);
+
+            var method = code.Substring(methodStart, methodEnd - methodStart);
+            var marshal = method.IndexOf("if (!Dispatcher.CheckAccess())", StringComparison.Ordinal);
+            var activeSubViewRead = method.IndexOf(
+                "ActiveSubView != OverviewSubView.Showcase",
+                StringComparison.Ordinal);
+
+            Assert.IsTrue(marshal >= 0, "Database event handling must check the UI dispatcher.");
+            StringAssert.Contains(method, "new Action(QueueShowcaseDatabaseRefresh)");
+            Assert.IsTrue(
+                activeSubViewRead > marshal,
+                "Dependency properties must not be read before dispatching to the UI thread.");
+        }
+
+        [TestMethod]
         public void Showcase_ProvidesPageControlsSelectedBlockEditingAndDynamicThemeResources()
         {
             var xaml = ReadRepoFile(
@@ -62,12 +88,26 @@ namespace PlayniteAchievements.Tests.Views
             Assert.IsFalse(xaml.Contains("BoundaryCanvas"));
             StringAssert.Contains(code, "Focusable = EditLayoutButton.IsChecked == true");
             StringAssert.Contains(code, "TrySplit(");
+            StringAssert.Contains(code, "TrySplitThreeWays(");
+            StringAssert.Contains(code, "SplitPreviewItem(");
+            StringAssert.Contains(code, "new[] { 1, 1, 1 }");
+            StringAssert.Contains(code, "AutomationProperties.SetName(item, accessibleName)");
+            StringAssert.Contains(code, "Width = vertical ? 72 : 42");
+            StringAssert.Contains(code, "Height = vertical ? 26 : 48");
+            StringAssert.Contains(code, "MinHeight = vertical ? 32 : 54");
+            StringAssert.Contains(
+                code,
+                "index % 2 == 0 ? \"PlayAch.Brush.Accent\" : \"PlayAch.Brush.Text\"");
+            Assert.IsFalse(code.Contains("Opacity = index % 2"));
             StringAssert.Contains(code, "TryMergeWithFallback(");
             StringAssert.Contains(code, "FindAdjacentBlocks");
             StringAssert.Contains(code, "MergeSelectedWith");
             StringAssert.Contains(code, "CanPlaceWidget");
             StringAssert.Contains(code, "ShowcaseWidgetSettingsDialog.Show");
             StringAssert.Contains(code, "Block_DragLeave");
+            StringAssert.Contains(code, "border.PreviewDrop += Block_Drop");
+            StringAssert.Contains(code, "border.PreviewDragOver += Block_DragOver");
+            Assert.IsFalse(code.Contains("border.Drop += Block_Drop"));
             StringAssert.Contains(code, "LOCPlayAch_Showcase_DropMoveHere");
             StringAssert.Contains(code, "LOCPlayAch_Showcase_DropSwap");
             StringAssert.Contains(code, "LOCPlayAch_Showcase_DropSame");
@@ -98,6 +138,11 @@ namespace PlayniteAchievements.Tests.Views
                 "Showcase",
                 "ShowcaseWidgetSettingsDialog.cs");
             var localization = ReadRepoFile("source", "Localization", "en_US.xaml");
+            var uiText = ReadRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseUiText.cs");
 
             StringAssert.Contains(plugin, "Games_ItemCollectionChanged");
             StringAssert.Contains(plugin, "Games_ItemUpdated");
@@ -107,6 +152,9 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(editor, "LOCPlayAch_Button_Clear");
             StringAssert.Contains(localization, "LOCPlayAch_Showcase_MergeDeleteConfirm");
             StringAssert.Contains(localization, "LOCPlayAch_Showcase_Stat_CurrentStreak");
+            StringAssert.Contains(uiText, "Localize(string key)");
+            Assert.IsFalse(uiText.Contains("Localize(string key, string fallback)"));
+            Assert.IsFalse(editor.Contains("Localize(\"LOCPlayAch_Showcase_CustomTitle\", "));
         }
 
         [TestMethod]
@@ -218,8 +266,11 @@ namespace PlayniteAchievements.Tests.Views
             Assert.IsFalse(itemXaml.Contains("AncestorType=modern:AchievementCompactListControlBase"));
             StringAssert.Contains(itemCode, "ShowRarityGlowProperty");
             StringAssert.Contains(itemCode, "AnimateRarityGlowsProperty");
+            StringAssert.Contains(itemCode, "UseLargeRarityGlowProperty");
+            StringAssert.Contains(itemXaml, "Converter={StaticResource PercentToRarityGlow}");
             StringAssert.Contains(widgetCode, "ShowRarityGlow = appearance?.ModernCompactListShowRarityGlow");
             StringAssert.Contains(widgetCode, "AnimateRarityGlows = appearance?.AnimateRarityGlows");
+            StringAssert.Contains(widgetCode, "UseLargeRarityGlow = true");
             StringAssert.Contains(widgetCode, "Margin = new Thickness(9)");
         }
 
@@ -263,6 +314,11 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(slideshow, "IReadOnlyList<CaptureItem>");
             StringAssert.Contains(slideshow, "FullscreenMediaViewerPresenter.Show");
             StringAssert.Contains(slideshow, "PlayAch.Capture.NavButtonStyle");
+            StringAssert.Contains(slideshow, "CreatePlaybackOrder(items)");
+            StringAssert.Contains(
+                slideshow,
+                "_index = (_index + Math.Sign(direction) + _items.Count) % _items.Count;");
+            Assert.IsFalse(slideshow.Contains("while (next == _index)"));
             StringAssert.Contains(scoreCode, "IsFeaturedProperty");
             StringAssert.Contains(scoreXaml, "Binding IsFeatured, ElementName=Root");
             StringAssert.Contains(widgetCode, "IsFeatured = _viewport.Density != WidgetViewportDensity.Compact");

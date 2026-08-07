@@ -40,9 +40,7 @@ namespace PlayniteAchievements
                     {
                         ViewId = view.ViewId,
                         Name = L(view.NameKey, view.ViewId),
-                        Description = string.IsNullOrWhiteSpace(view.DescriptionKey)
-                            ? string.Empty
-                            : L(view.DescriptionKey, string.Empty),
+                        Description = string.Empty,
                         HasSettings = view.HasSettings,
                         AllowMultipleInstances = view.AllowMultipleInstances
                     }).ToList()
