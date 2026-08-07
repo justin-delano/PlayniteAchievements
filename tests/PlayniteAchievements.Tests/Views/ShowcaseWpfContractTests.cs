@@ -257,21 +257,28 @@ namespace PlayniteAchievements.Tests.Views
                 "Views",
                 "Controls",
                 "AchievementCompactItemControl.xaml.cs");
-            var widgetCode = ReadRepoFile(
+            var mosaicViewModel = ReadRepoFile(
+                "source",
+                "ViewModels",
+                "Showcase",
+                "Widgets",
+                "IconMosaicWidgetViewModel.cs");
+            var widgetTemplates = ReadRepoFile(
                 "source",
                 "Views",
                 "Showcase",
-                "ShowcaseWidgetControl.xaml.cs");
+                "ShowcaseWidgetTemplates.xaml");
 
             Assert.IsFalse(itemXaml.Contains("AncestorType=modern:AchievementCompactListControlBase"));
             StringAssert.Contains(itemCode, "ShowRarityGlowProperty");
             StringAssert.Contains(itemCode, "AnimateRarityGlowsProperty");
             StringAssert.Contains(itemCode, "UseLargeRarityGlowProperty");
             StringAssert.Contains(itemXaml, "Converter={StaticResource PercentToRarityGlow}");
-            StringAssert.Contains(widgetCode, "ShowRarityGlow = appearance?.ModernCompactListShowRarityGlow");
-            StringAssert.Contains(widgetCode, "AnimateRarityGlows = appearance?.AnimateRarityGlows");
-            StringAssert.Contains(widgetCode, "UseLargeRarityGlow = true");
-            StringAssert.Contains(widgetCode, "Margin = new Thickness(9)");
+            StringAssert.Contains(mosaicViewModel, "ModernCompactListShowRarityGlow");
+            StringAssert.Contains(mosaicViewModel, "AnimateRarityGlows");
+            StringAssert.Contains(widgetTemplates, "AchievementCompactItemControl");
+            StringAssert.Contains(widgetTemplates, "UseLargeRarityGlow=\"True\"");
+            StringAssert.Contains(widgetTemplates, "Margin=\"6\"");
         }
 
         [TestMethod]
@@ -301,11 +308,12 @@ namespace PlayniteAchievements.Tests.Views
                 "Views",
                 "Controls",
                 "ScoreCardControl.xaml.cs");
-            var widgetCode = ReadRepoFile(
+            var scoresViewModel = ReadRepoFile(
                 "source",
-                "Views",
+                "ViewModels",
                 "Showcase",
-                "ShowcaseWidgetControl.xaml.cs");
+                "Widgets",
+                "ScoresWidgetViewModel.cs");
 
             StringAssert.Contains(commonResources, "PlayAch.Capture.NavButtonStyle");
             StringAssert.Contains(commonResources, "PlayAch.Capture.GlyphButtonStyle");
@@ -321,7 +329,7 @@ namespace PlayniteAchievements.Tests.Views
             Assert.IsFalse(slideshow.Contains("while (next == _index)"));
             StringAssert.Contains(scoreCode, "IsFeaturedProperty");
             StringAssert.Contains(scoreXaml, "Binding IsFeatured, ElementName=Root");
-            StringAssert.Contains(widgetCode, "IsFeatured = _viewport.Density != WidgetViewportDensity.Compact");
+            StringAssert.Contains(scoresViewModel, "IsFeatured = Density != WidgetViewportDensity.Compact");
         }
 
         [TestMethod]

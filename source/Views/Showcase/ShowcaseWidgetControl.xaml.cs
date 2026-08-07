@@ -146,7 +146,9 @@ namespace PlayniteAchievements.Views.Showcase
                         : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
                     break;
                 case ShowcaseWidgetKind.IconMosaic:
-                    BodyHost.Content = BuildMosaic(_projection.MosaicAchievements);
+                    BodyHost.Content = _projection.MosaicAchievements?.Count > 0
+                        ? (object)UpdateBodyViewModel<IconMosaicWidgetViewModel>()
+                        : CreateEmptyText();
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     BodyHost.Content = new ScreenshotSlideshowControl(_projection.Instance);
@@ -443,42 +445,6 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             return panel;
-        }
-
-        private UIElement BuildMosaic(IReadOnlyList<AchievementDisplayItem> achievements)
-        {
-            if (achievements == null || achievements.Count == 0)
-            {
-                return CreateEmptyText();
-            }
-
-            var panel = new WrapPanel
-            {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(6)
-            };
-            var size = _viewport.Density == WidgetViewportDensity.Compact
-                ? 32
-                : _viewport.Density == WidgetViewportDensity.Expanded ? 54 : 42;
-            var limit = _viewport.Density == WidgetViewportDensity.Compact ? 12 : achievements.Count;
-            var appearance = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
-            foreach (var item in achievements.Take(limit))
-            {
-                panel.Children.Add(new AchievementCompactItemControl
-                {
-                    DataContext = item,
-                    IconSize = size,
-                    ShowRarityGlow = appearance?.ModernCompactListShowRarityGlow ?? true,
-                    AnimateRarityGlows = appearance?.AnimateRarityGlows ?? true,
-                    // Match the full achievement-grid glow; the surrounding margin keeps its
-                    // larger halo visible without changing the shared compact-list default.
-                    UseLargeRarityGlow = true,
-                    Margin = new Thickness(6)
-                });
-            }
-
-            return WrapScrollable(panel);
         }
 
         private static Border CreateCard(

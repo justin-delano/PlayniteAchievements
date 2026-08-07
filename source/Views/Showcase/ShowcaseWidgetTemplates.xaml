@@ -97,6 +97,33 @@
         </ItemsControl>
     </DataTemplate>
 
+    <!-- IconMosaic: centered wrap of reused AchievementCompactItemControl icons. -->
+    <DataTemplate DataType="{x:Type widgets:IconMosaicWidgetViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Items}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Margin="6">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <controls:AchievementCompactItemControl
+                            IconSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            ShowRarityGlow="{Binding DataContext.ShowRarityGlow, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            AnimateRarityGlows="{Binding DataContext.AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            UseLargeRarityGlow="True"
+                            Margin="6"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DataTemplate>
+
     <!-- Statistics: density-capped grid of value/label tiles. -->
     <DataTemplate DataType="{x:Type widgets:StatisticsWidgetViewModel}">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
