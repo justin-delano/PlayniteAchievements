@@ -119,7 +119,7 @@ namespace PlayniteAchievements.Views.Showcase
                     BodyHost.Content = UpdateBodyViewModel<ProfileWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Scores:
-                    BodyHost.Content = BuildScores();
+                    BodyHost.Content = UpdateBodyViewModel<ScoresWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Pie:
                     BodyHost.Content = BuildPie();
@@ -172,70 +172,6 @@ namespace PlayniteAchievements.Views.Showcase
 
             typed.Update(_projection, _viewport);
             return typed;
-        }
-
-        private UIElement BuildScores()
-        {
-            var snapshot = _projection.Snapshot;
-            var mode = ShowcaseWidgetOptions.GetScoreMode(_projection.Instance);
-            var includeCollection = mode != ShowcaseScoreMode.Prestige;
-            var includePrestige = mode != ShowcaseScoreMode.Collection;
-            var scoreCount = (includeCollection ? 1 : 0) + (includePrestige ? 1 : 0);
-            var panel = new UniformGrid
-            {
-                Rows = scoreCount > 1 && _viewport.Orientation == WidgetViewportOrientation.Tall ? 2 : 1,
-                Columns = scoreCount > 1 && _viewport.Orientation != WidgetViewportOrientation.Tall ? 2 : 1,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            if (includeCollection)
-            {
-                panel.Children.Add(BuildScoreCard(
-                    ScoreCardType.Collection,
-                    snapshot.CollectorScore,
-                    snapshot.CollectorLevel,
-                    snapshot.CollectorRank,
-                    snapshot.CollectorLevelProgress));
-            }
-
-            if (includePrestige)
-            {
-                panel.Children.Add(BuildScoreCard(
-                    ScoreCardType.Prestige,
-                    snapshot.PrestigeScore,
-                    snapshot.PrestigeLevel,
-                    snapshot.PrestigeRank,
-                    snapshot.PrestigeLevelProgress));
-            }
-
-            return panel;
-        }
-
-        private UIElement BuildScoreCard(
-            ScoreCardType scoreType,
-            int score,
-            int level,
-            string rank,
-            double progress)
-        {
-            var presentation = new ScoreCardViewModel(scoreType);
-            presentation.Apply(
-                score,
-                level,
-                progress,
-                rank,
-                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
-            var control = new ScoreCardControl
-            {
-                ScoreCard = presentation,
-                IsFeatured = _viewport.Density != WidgetViewportDensity.Compact,
-                Margin = new Thickness(4),
-                MinWidth = 0,
-                MaxWidth = _viewport.Density == WidgetViewportDensity.Expanded ? 440 : 360,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            control.InfoRequested += (_, __) => ScoreInfoDialogPresenter.Show();
-            return control;
         }
 
         private UIElement BuildPie()
