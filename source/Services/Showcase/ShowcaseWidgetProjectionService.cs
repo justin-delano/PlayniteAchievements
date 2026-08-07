@@ -265,13 +265,31 @@ namespace PlayniteAchievements.Services.Showcase
             IEnumerable<PinnedAchievementReference> pins)
         {
             var achievements = snapshot?.Achievements ?? new List<AchievementDisplayItem>();
+
+            // Index by (game id, case-insensitive api name) so each pin resolves in O(1)
+            // instead of scanning every achievement. The first entry wins on a key collision,
+            // mirroring the prior FirstOrDefault; achievements without a Playnite game id cannot
+            // match a pinned reference and are skipped.
+            var lookup = new Dictionary<(Guid, string), AchievementDisplayItem>();
+            foreach (var item in achievements)
+            {
+                if (item?.PlayniteGameId == null)
+                {
+                    continue;
+                }
+
+                var key = (item.PlayniteGameId.Value, item.ApiName?.ToUpperInvariant());
+                if (!lookup.ContainsKey(key))
+                {
+                    lookup[key] = item;
+                }
+            }
+
             return (pins ?? Array.Empty<PinnedAchievementReference>())
                 .Where(pin => pin != null)
                 .Select(pin =>
                 {
-                    var match = achievements.FirstOrDefault(item =>
-                        item?.PlayniteGameId == pin.GameId &&
-                        string.Equals(item.ApiName, pin.ApiName, StringComparison.OrdinalIgnoreCase));
+                    lookup.TryGetValue((pin.GameId, pin.ApiName?.ToUpperInvariant()), out var match);
                     return new ShowcaseAchievementItem { Pin = pin, Achievement = match };
                 })
                 .ToList();
