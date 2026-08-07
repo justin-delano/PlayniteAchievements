@@ -13,6 +13,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
+using static PlayniteAchievements.Services.Showcase.ShowcaseGeometry;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
 namespace PlayniteAchievements.Views.Showcase
@@ -1058,12 +1059,6 @@ namespace PlayniteAchievements.Views.Showcase
 
             MergeSelectedWith(adjacent[0].BlockId);
         }
-
-        private static bool RangesOverlap(int firstStart, int firstSpan, int secondStart, int secondSpan) =>
-            firstStart < secondStart + secondSpan && secondStart < firstStart + firstSpan;
-
-        private static int Overlap(int firstStart, int firstSpan, int secondStart, int secondSpan) =>
-            Math.Max(0, Math.Min(firstStart + firstSpan, secondStart + secondSpan) - Math.Max(firstStart, secondStart));
 
         private void PageActionsButton_Click(object sender, RoutedEventArgs e)
         {

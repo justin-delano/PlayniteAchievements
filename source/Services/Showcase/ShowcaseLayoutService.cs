@@ -1022,25 +1022,12 @@ namespace PlayniteAchievements.Services.Showcase
             var sharesVerticalEdge =
                 (first.Column + first.ColumnSpan == second.Column ||
                  second.Column + second.ColumnSpan == first.Column) &&
-                RangesOverlap(
-                    first.Row,
-                    first.Row + first.RowSpan,
-                    second.Row,
-                    second.Row + second.RowSpan);
+                ShowcaseGeometry.RangesOverlap(first.Row, first.RowSpan, second.Row, second.RowSpan);
             var sharesHorizontalEdge =
                 (first.Row + first.RowSpan == second.Row ||
                  second.Row + second.RowSpan == first.Row) &&
-                RangesOverlap(
-                    first.Column,
-                    first.Column + first.ColumnSpan,
-                    second.Column,
-                    second.Column + second.ColumnSpan);
+                ShowcaseGeometry.RangesOverlap(first.Column, first.ColumnSpan, second.Column, second.ColumnSpan);
             return sharesVerticalEdge || sharesHorizontalEdge;
-        }
-
-        private static bool RangesOverlap(int firstStart, int firstEnd, int secondStart, int secondEnd)
-        {
-            return firstStart < secondEnd && secondStart < firstEnd;
         }
 
         private static bool Intersects(
