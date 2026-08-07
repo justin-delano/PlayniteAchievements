@@ -122,7 +122,7 @@ namespace PlayniteAchievements.Views.Showcase
                     BodyHost.Content = UpdateBodyViewModel<ScoresWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Pie:
-                    BodyHost.Content = BuildPie();
+                    BodyHost.Content = UpdateBodyViewModel<PieWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     BodyHost.Content = BuildTimeline();
@@ -174,107 +174,6 @@ namespace PlayniteAchievements.Views.Showcase
 
             typed.Update(_projection, _viewport);
             return typed;
-        }
-
-        private UIElement BuildPie()
-        {
-            var snapshot = _projection.Snapshot;
-            var mode = ShowcaseWidgetOptions.GetPieMode(_projection.Instance);
-            var chart = new PieChartViewModel();
-            switch (mode)
-            {
-                case ShowcasePieMode.Provider:
-                    var games = snapshot.GameSummaries ?? new List<GameSummaryItem>();
-                    var metadata = games
-                        .Where(game => game != null && !string.IsNullOrWhiteSpace(game.ProviderKey))
-                        .GroupBy(game => game.ProviderKey, StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(
-                            group => group.Key,
-                            group => (
-                                group.Select(game => game.ProviderIconKey).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty,
-                                group.Select(game => game.ProviderColorHex).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "#888888"),
-                            StringComparer.OrdinalIgnoreCase);
-                    var providerNames = games
-                        .Where(game => game != null && !string.IsNullOrWhiteSpace(game.ProviderKey))
-                        .GroupBy(game => game.ProviderKey, StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(
-                            group => group.Key,
-                            group => group.Select(game => game.Provider).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? group.Key,
-                            StringComparer.OrdinalIgnoreCase);
-                    chart.SetProviderData(
-                        snapshot.UnlockedByProvider,
-                        snapshot.TotalByProvider,
-                        snapshot.TotalLocked,
-                        Localize("LOCPlayAch_Common_Locked"),
-                        metadata,
-                        providerNames);
-                    break;
-                case ShowcasePieMode.Rarity:
-                    chart.SetRarityData(
-                        snapshot.TotalCommon,
-                        snapshot.TotalUncommon,
-                        snapshot.TotalRare,
-                        snapshot.TotalUltraRare,
-                        snapshot.TotalLocked,
-                        snapshot.TotalCommonPossible,
-                        snapshot.TotalUncommonPossible,
-                        snapshot.TotalRarePossible,
-                        snapshot.TotalUltraRarePossible,
-                        Localize("LOCPlayAch_Rarity_Common"),
-                        Localize("LOCPlayAch_Rarity_Uncommon"),
-                        Localize("LOCPlayAch_Rarity_Rare"),
-                        Localize("LOCPlayAch_Rarity_UltraRare"),
-                        Localize("LOCPlayAch_Common_Locked"));
-                    break;
-                case ShowcasePieMode.Trophy:
-                    var trophyGames = snapshot.GameSummaries ?? new List<GameSummaryItem>();
-                    chart.SetTrophyData(
-                        trophyGames.Sum(game => game?.TrophyPlatinumCount ?? 0),
-                        trophyGames.Sum(game => game?.TrophyGoldCount ?? 0),
-                        trophyGames.Sum(game => game?.TrophySilverCount ?? 0),
-                        trophyGames.Sum(game => game?.TrophyBronzeCount ?? 0),
-                        trophyGames.Sum(game => game?.TrophyPlatinumTotal ?? 0),
-                        trophyGames.Sum(game => game?.TrophyGoldTotal ?? 0),
-                        trophyGames.Sum(game => game?.TrophySilverTotal ?? 0),
-                        trophyGames.Sum(game => game?.TrophyBronzeTotal ?? 0),
-                        Localize("LOCPlayAch_Trophy_Platinum"),
-                        Localize("LOCPlayAch_Trophy_Gold"),
-                        Localize("LOCPlayAch_Trophy_Silver"),
-                        Localize("LOCPlayAch_Trophy_Bronze"),
-                        Localize("LOCPlayAch_Common_Locked"));
-                    break;
-                default:
-                    chart.SetGameData(
-                        snapshot.TotalGames,
-                        snapshot.CompletedGames,
-                        Localize("LOCPlayAch_Completed"),
-                        Localize("LOCPlayAch_Showcase_Incomplete"));
-                    break;
-            }
-
-            var control = new PieChartWithRadialIcons
-            {
-                PieSeries = chart.PieSeries,
-                LegendItems = chart.LegendItems,
-                HighlightedLabels = chart.HighlightedLabels,
-                ExactUnlockedCount = chart.ExactUnlockedCount,
-                ExactTotalCount = chart.ExactTotalCount,
-                ShowCenterPercentage = true,
-                MinHeight = 70
-            };
-            if (!_viewport.ShowLegend)
-            {
-                return control;
-            }
-
-            var root = new Grid();
-            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-            root.Children.Add(control);
-            var legend = BuildPieLegend(chart.LegendItems);
-            Grid.SetColumn(legend, 1);
-            root.Children.Add(legend);
-            return root;
         }
 
         private UIElement BuildTimeline()
@@ -406,47 +305,6 @@ namespace PlayniteAchievements.Views.Showcase
             return root;
         }
 
-        private UIElement BuildPieLegend(IEnumerable<LegendItem> items)
-        {
-            var panel = new StackPanel
-            {
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(8, 0, 0, 0)
-            };
-            var limit = _viewport.Density == WidgetViewportDensity.Expanded ? 8 : 5;
-            foreach (var item in (items ?? Array.Empty<LegendItem>()).Take(limit))
-            {
-                var row = new Grid { Margin = new Thickness(0, 3, 0, 3) };
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                var swatch = new Border
-                {
-                    Width = 8,
-                    Height = 8,
-                    CornerRadius = new CornerRadius(4),
-                    Margin = new Thickness(0, 0, 7, 0),
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Background = TryCreateBrush(item.ColorHex)
-                };
-                row.Children.Add(swatch);
-                var label = CreateText(item.Label, 10, FontWeights.Normal, 0.74);
-                label.TextTrimming = TextTrimming.CharacterEllipsis;
-                Grid.SetColumn(label, 1);
-                row.Children.Add(label);
-                var count = CreateText(
-                    item.Count.ToString("N0", FormattingCulture.Current),
-                    10,
-                    FontWeights.SemiBold);
-                count.Margin = new Thickness(8, 0, 0, 0);
-                Grid.SetColumn(count, 2);
-                row.Children.Add(count);
-                panel.Children.Add(row);
-            }
-
-            return panel;
-        }
-
         private static Border CreateCard(
             UIElement content,
             Thickness margin,
@@ -542,24 +400,6 @@ namespace PlayniteAchievements.Views.Showcase
             AsyncImage.SetUri(image, path);
 
             return image;
-        }
-
-        private static Brush TryCreateBrush(string color)
-        {
-            try
-            {
-                var brush = new BrushConverter().ConvertFromString(color) as Brush;
-                if (brush?.CanFreeze == true)
-                {
-                    brush.Freeze();
-                }
-
-                return brush ?? Brushes.Gray;
-            }
-            catch
-            {
-                return Brushes.Gray;
-            }
         }
 
         private static string GetWidgetGlyph(ShowcaseWidgetKind kind) =>

@@ -124,6 +124,57 @@
         </ScrollViewer>
     </DataTemplate>
 
+    <!-- Pie: reuses PieChartWithRadialIcons with an optional legend docked right. -->
+    <DataTemplate DataType="{x:Type widgets:PieWidgetViewModel}">
+        <DockPanel>
+            <ItemsControl DockPanel.Dock="Right"
+                          ItemsSource="{Binding LegendRows}"
+                          VerticalAlignment="Center"
+                          Margin="8,0,0,0"
+                          Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="8"
+                                    Height="8"
+                                    CornerRadius="4"
+                                    Margin="0,0,7,0"
+                                    VerticalAlignment="Center"
+                                    Background="{Binding Swatch}"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Label}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Hint}"
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding CountText}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       FontWeight="SemiBold"
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <controls:PieChartWithRadialIcons
+                PieSeries="{Binding Chart.PieSeries}"
+                LegendItems="{Binding Chart.LegendItems}"
+                HighlightedLabels="{Binding Chart.HighlightedLabels}"
+                ExactUnlockedCount="{Binding Chart.ExactUnlockedCount}"
+                ExactTotalCount="{Binding Chart.ExactTotalCount}"
+                ShowCenterPercentage="True"
+                MinHeight="70"/>
+        </DockPanel>
+    </DataTemplate>
+
     <!-- Statistics: density-capped grid of value/label tiles. -->
     <DataTemplate DataType="{x:Type widgets:StatisticsWidgetViewModel}">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
