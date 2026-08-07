@@ -116,7 +116,7 @@ namespace PlayniteAchievements.Views.Showcase
             switch (_projection.Instance.Kind)
             {
                 case ShowcaseWidgetKind.Profile:
-                    BodyHost.Content = BuildProfile();
+                    BodyHost.Content = UpdateBodyViewModel<ProfileWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Scores:
                     BodyHost.Content = BuildScores();
@@ -172,89 +172,6 @@ namespace PlayniteAchievements.Views.Showcase
 
             typed.Update(_projection, _viewport);
             return typed;
-        }
-
-        private UIElement BuildProfile()
-        {
-            var profile = _projection.Profile ?? new ShowcaseProfileSettings();
-            var panel = new Grid();
-            panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            if (!string.IsNullOrWhiteSpace(profile.BackgroundPath))
-            {
-                var background = CreateImage(profile.BackgroundPath, 160);
-                background.Width = double.NaN;
-                background.Height = double.NaN;
-                background.Stretch = Stretch.UniformToFill;
-                background.Opacity = 0.2;
-                background.IsHitTestVisible = false;
-                Grid.SetColumnSpan(background, 2);
-                panel.Children.Add(background);
-            }
-
-            if (!string.IsNullOrWhiteSpace(profile.AvatarPath))
-            {
-                var avatarSize = _viewport.Density == WidgetViewportDensity.Compact ? 42 : 72;
-                var avatar = CreateImage(profile.AvatarPath, avatarSize);
-                var avatarFrame = CreateImageFrame(avatar);
-                avatarFrame.Margin = new Thickness(0, 0, 12, 0);
-                avatarFrame.CornerRadius = new CornerRadius((avatarSize + 4) / 2);
-                avatarFrame.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Accent");
-                panel.Children.Add(avatarFrame);
-            }
-
-            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetColumn(text, 1);
-            text.Children.Add(CreateText(
-                string.IsNullOrWhiteSpace(profile.DisplayName)
-                    ? Localize("LOCPlayAch_Showcase_Profile_DefaultName")
-                    : profile.DisplayName,
-                18,
-                FontWeights.SemiBold));
-            if (!string.IsNullOrWhiteSpace(profile.Subtitle) &&
-                _viewport.Density != WidgetViewportDensity.Compact)
-            {
-                text.Children.Add(CreateText(profile.Subtitle, 12, FontWeights.Normal, 0.72));
-            }
-
-            if (_viewport.Density == WidgetViewportDensity.Expanded)
-            {
-                var snapshot = _projection.Snapshot;
-                text.Children.Add(CreateText(
-                    string.Format(
-                        FormattingCulture.Current,
-                        Localize("LOCPlayAch_Showcase_ProfileStats"),
-                        snapshot.TotalUnlocked,
-                        snapshot.GlobalProgressionPercent,
-                        snapshot.CompletedGames),
-                    11,
-                    FontWeights.Normal,
-                    0.72));
-            }
-
-            if (_viewport.Density == WidgetViewportDensity.Expanded)
-            {
-                var currentStreak = _projection.Statistics?.FirstOrDefault(item =>
-                    string.Equals(item?.Key, "currentStreak", StringComparison.Ordinal));
-                var longestStreak = _projection.Statistics?.FirstOrDefault(item =>
-                    string.Equals(item?.Key, "longestStreak", StringComparison.Ordinal));
-                if (currentStreak != null && longestStreak != null)
-                {
-                    text.Children.Add(CreateText(
-                        string.Format(
-                            FormattingCulture.Current,
-                            Localize("LOCPlayAch_Showcase_ProfileStreaks"),
-                            ShowcaseStatisticFormatter.Format(currentStreak),
-                            ShowcaseStatisticFormatter.Format(longestStreak)),
-                        11,
-                        FontWeights.Normal,
-                        0.72));
-                }
-            }
-
-            panel.Children.Add(text);
-            return panel;
         }
 
         private UIElement BuildScores()
