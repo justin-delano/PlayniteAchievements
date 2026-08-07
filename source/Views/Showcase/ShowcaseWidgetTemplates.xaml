@@ -3,6 +3,7 @@
                     xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                     xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+                    xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
                     xmlns:showcase="clr-namespace:PlayniteAchievements.Views.Showcase"
                     xmlns:widgets="clr-namespace:PlayniteAchievements.ViewModels.Showcase.Widgets">
 
@@ -173,6 +174,96 @@
                 ShowCenterPercentage="True"
                 MinHeight="70"/>
         </DockPanel>
+    </DataTemplate>
+
+    <!-- Timeline: compact bar sparkline, or the reused LiveCharts column chart with range buttons. -->
+    <DataTemplate DataType="{x:Type widgets:TimelineWidgetViewModel}">
+        <Grid>
+            <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_NoData}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
+            <ItemsControl ItemsSource="{Binding SparklineBars}"
+                          VerticalAlignment="Stretch"
+                          Visibility="{Binding ShowSparkline, Converter={StaticResource BoolToVis}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="1,0">
+                            <Border Height="{Binding BarHeight}"
+                                    VerticalAlignment="Bottom"
+                                    CornerRadius="1"
+                                    ToolTip="{Binding Tooltip}"
+                                    Background="{DynamicResource PlayAch.Brush.Accent}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Grid Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <lvc:CartesianChart Series="{Binding Timeline.TimelineSeries}"
+                                    LegendLocation="None"
+                                    Hoverable="True"
+                                    DisableAnimations="True">
+                    <lvc:CartesianChart.Resources>
+                        <Style TargetType="lvc:ColumnSeries">
+                            <Setter Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                        </Style>
+                    </lvc:CartesianChart.Resources>
+                    <lvc:CartesianChart.AxisX>
+                        <lvc:Axis Labels="{Binding Timeline.TimelineLabels}"
+                                  ShowLabels="True"
+                                  LabelsRotation="45"
+                                  FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                  Foreground="{DynamicResource PlayAch.Brush.Text}">
+                            <lvc:Axis.Separator>
+                                <lvc:Separator Step="1" IsEnabled="False"/>
+                            </lvc:Axis.Separator>
+                        </lvc:Axis>
+                    </lvc:CartesianChart.AxisX>
+                    <lvc:CartesianChart.AxisY>
+                        <lvc:Axis MinValue="0"
+                                  LabelFormatter="{Binding Timeline.YAxisFormatter}"
+                                  FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                  Foreground="{DynamicResource PlayAch.Brush.Text}">
+                            <lvc:Axis.Separator>
+                                <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
+                            </lvc:Axis.Separator>
+                        </lvc:Axis>
+                    </lvc:CartesianChart.AxisY>
+                </lvc:CartesianChart>
+                <ItemsControl Grid.Row="1"
+                              ItemsSource="{Binding Ranges}"
+                              HorizontalAlignment="Center"
+                              Margin="0,5,0,0"
+                              Visibility="{Binding ShowRangeButtons, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding Label}"
+                                    Command="{Binding DataContext.SetRangeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding Value}"
+                                    Margin="2,0"
+                                    Padding="6,1"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Grid>
     </DataTemplate>
 
     <!-- Statistics: density-capped grid of value/label tiles. -->

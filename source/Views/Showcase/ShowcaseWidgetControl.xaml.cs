@@ -15,10 +15,6 @@ using PlayniteAchievements.ViewModels.Showcase.Widgets;
 using PlayniteAchievements.Views.Controls;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
-using ChartAxis = LiveCharts.Wpf.Axis;
-using ChartColumnSeries = LiveCharts.Wpf.ColumnSeries;
-using ChartControl = LiveCharts.Wpf.CartesianChart;
-using ChartSeparator = LiveCharts.Wpf.Separator;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
 namespace PlayniteAchievements.Views.Showcase
@@ -34,7 +30,6 @@ namespace PlayniteAchievements.Views.Showcase
 
         private ShowcaseWidgetProjection _projection;
         private WidgetViewportState _viewport = WidgetViewportState.Classify(0, 0);
-        private TimelineViewModel _timelineViewModel;
         private ShowcaseWidgetViewModelBase _bodyViewModel;
 
         public ShowcaseWidgetControl()
@@ -125,7 +120,7 @@ namespace PlayniteAchievements.Views.Showcase
                     BodyHost.Content = UpdateBodyViewModel<PieWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Timeline:
-                    BodyHost.Content = BuildTimeline();
+                    BodyHost.Content = UpdateBodyViewModel<TimelineWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.Statistics:
                     BodyHost.Content = UpdateBodyViewModel<StatisticsWidgetViewModel>();
@@ -174,135 +169,6 @@ namespace PlayniteAchievements.Views.Showcase
 
             typed.Update(_projection, _viewport);
             return typed;
-        }
-
-        private UIElement BuildTimeline()
-        {
-            if (_viewport.Density != WidgetViewportDensity.Compact)
-            {
-                return BuildEstablishedTimeline();
-            }
-
-            var orderedValues = (_projection.Timeline ?? new Dictionary<DateTime, int>())
-                .OrderBy(pair => pair.Key)
-                .Select(pair => Math.Max(0, pair.Value))
-                .ToList();
-            const int desiredCount = 14;
-            var values = orderedValues
-                .Skip(Math.Max(0, orderedValues.Count - desiredCount))
-                .ToList();
-            if (values.Count == 0)
-            {
-                return CreateEmptyText();
-            }
-
-            var maximum = Math.Max(1, values.Max());
-            var chart = new UniformGrid
-            {
-                Rows = 1,
-                VerticalAlignment = VerticalAlignment.Stretch
-            };
-            foreach (var value in values)
-            {
-                var column = new Grid { Margin = new Thickness(1, 0, 1, 0) };
-                var bar = new Border
-                {
-                    Height = Math.Max(2, 80d * value / maximum),
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    CornerRadius = new CornerRadius(1),
-                    ToolTip = value.ToString("N0", FormattingCulture.Current)
-                };
-                bar.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Accent");
-                column.Children.Add(bar);
-                chart.Children.Add(column);
-            }
-
-            return chart;
-        }
-
-        private UIElement BuildEstablishedTimeline()
-        {
-            _timelineViewModel = _timelineViewModel ?? new TimelineViewModel();
-            _timelineViewModel.TimelineRange = ShowcaseTimelineOptions.GetRange(_projection.Instance);
-            _timelineViewModel.SetCounts(
-                (_projection.Timeline ?? new Dictionary<DateTime, int>())
-                    .ToDictionary(pair => pair.Key, pair => pair.Value));
-
-            var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var chart = new ChartControl
-            {
-                Series = _timelineViewModel.TimelineSeries,
-                LegendLocation = LiveCharts.LegendLocation.None,
-                Hoverable = true,
-                DisableAnimations = true
-            };
-            var seriesStyle = new Style(typeof(ChartColumnSeries));
-            seriesStyle.Setters.Add(new Setter(
-                ChartColumnSeries.FillProperty,
-                new DynamicResourceExtension("PlayAch.Brush.Accent")));
-            chart.Resources[typeof(ChartColumnSeries)] = seriesStyle;
-
-            var xAxis = new ChartAxis
-            {
-                Labels = _timelineViewModel.TimelineLabels,
-                ShowLabels = true,
-                LabelsRotation = 45,
-                FontSize = 10,
-                Separator = new ChartSeparator { Step = 1, IsEnabled = false }
-            };
-            xAxis.SetResourceReference(Control.ForegroundProperty, "PlayAch.Brush.Text");
-            chart.AxisX.Add(xAxis);
-            var yAxis = new ChartAxis
-            {
-                MinValue = 0,
-                LabelFormatter = _timelineViewModel.YAxisFormatter,
-                FontSize = 10,
-                Separator = new ChartSeparator { Opacity = 0.2 }
-            };
-            yAxis.SetResourceReference(Control.ForegroundProperty, "PlayAch.Brush.Text");
-            yAxis.Separator.SetResourceReference(ChartSeparator.StrokeProperty, "PlayAch.Brush.Border");
-            chart.AxisY.Add(yAxis);
-            root.Children.Add(chart);
-
-            if (_viewport.Density != WidgetViewportDensity.Expanded)
-            {
-                return root;
-            }
-
-            var controls = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 5, 0, 0)
-            };
-            foreach (var option in new[]
-                     {
-                         TimelineRange.OneMonth,
-                         TimelineRange.ThreeMonths,
-                         TimelineRange.OneYear,
-                         TimelineRange.All
-                     })
-            {
-                var range = option;
-                var button = new Button
-                {
-                    Content = TimelineRangeName(range),
-                    Margin = new Thickness(2, 0, 2, 0),
-                    Padding = new Thickness(6, 1, 6, 1)
-                };
-                button.Click += (_, __) =>
-                {
-                    ShowcaseTimelineOptions.SetRange(_projection.Instance, range);
-                    ShowcaseConfigurationCommit.Commit();
-                };
-                controls.Children.Add(button);
-            }
-
-            Grid.SetRow(controls, 1);
-            root.Children.Add(controls);
-            return root;
         }
 
         private static Border CreateCard(
