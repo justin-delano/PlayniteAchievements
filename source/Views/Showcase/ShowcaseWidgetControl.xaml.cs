@@ -141,7 +141,9 @@ namespace PlayniteAchievements.Views.Showcase
                         : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
                     break;
                 case ShowcaseWidgetKind.FavoriteGames:
-                    BodyHost.Content = BuildGames(_projection.Games);
+                    BodyHost.Content = _projection.Games?.Count > 0
+                        ? (object)UpdateBodyViewModel<FavoriteGamesWidgetViewModel>()
+                        : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
                     break;
                 case ShowcaseWidgetKind.IconMosaic:
                     BodyHost.Content = BuildMosaic(_projection.MosaicAchievements);
@@ -590,71 +592,6 @@ namespace PlayniteAchievements.Views.Showcase
             return panel;
         }
 
-        private UIElement BuildGames(IReadOnlyList<GameSummaryItem> games)
-        {
-            if (games == null || games.Count == 0)
-            {
-                return CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
-            }
-
-            var panel = new WrapPanel
-            {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            var coverWidth = _viewport.Density == WidgetViewportDensity.Compact
-                ? 42
-                : _viewport.Density == WidgetViewportDensity.Expanded ? 76 : 60;
-            var coverHeight = Math.Round(coverWidth * 1.4);
-            foreach (var game in games.Take(_viewport.Density == WidgetViewportDensity.Compact ? 3 : 12))
-            {
-                var tile = new StackPanel { Width = coverWidth + 12 };
-                var hasCover = !string.IsNullOrWhiteSpace(game.GameCoverPath);
-                var cover = CreateImage(
-                    hasCover ? game.GameCoverPath : game.GameLogo,
-                    coverWidth,
-                    coverHeight,
-                    hasCover ? Stretch.UniformToFill : Stretch.Uniform);
-                tile.Children.Add(CreateImageFrame(cover));
-                if (_viewport.Density != WidgetViewportDensity.Compact)
-                {
-                    var name = CreateText(game.GameName, 10, FontWeights.Normal);
-                    name.Margin = new Thickness(0, 5, 0, 0);
-                    name.TextAlignment = TextAlignment.Center;
-                    name.TextTrimming = TextTrimming.CharacterEllipsis;
-                    name.TextWrapping = TextWrapping.NoWrap;
-                    tile.Children.Add(name);
-                }
-
-                if (ShowcaseWidgetOptions.GetFavoriteSource(_projection.Instance) ==
-                    ShowcaseFavoriteGameSource.ShowcasePins &&
-                    game.PlayniteGameId.HasValue)
-                {
-                    var capturedGameId = game.PlayniteGameId.Value;
-                    tile.ContextMenu = CreatePinMenu(
-                        () => ShowcasePinService.MoveGame(
-                            CurrentShowcaseSettings,
-                            capturedGameId,
-                            -1),
-                        () => ShowcasePinService.MoveGame(
-                            CurrentShowcaseSettings,
-                            capturedGameId,
-                            1),
-                        Localize("LOCPlayAch_Showcase_UnpinGame"),
-                        () => ShowcasePinService.ToggleGame(
-                            CurrentShowcaseSettings,
-                            capturedGameId));
-                }
-
-                panel.Children.Add(CreateCard(
-                    tile,
-                    new Thickness(3),
-                    new Thickness(5)));
-            }
-
-            return WrapScrollable(panel);
-        }
-
         private UIElement BuildMosaic(IReadOnlyList<AchievementDisplayItem> achievements)
         {
             if (achievements == null || achievements.Count == 0)
@@ -804,48 +741,6 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 return Brushes.Gray;
             }
-        }
-
-        private static MenuItem CreatePinOrderItem(string header, Func<bool> move)
-        {
-            var item = new MenuItem { Header = header };
-            item.Click += (_, __) =>
-            {
-                if (move?.Invoke() != true)
-                {
-                    return;
-                }
-
-                ShowcaseConfigurationCommit.Commit();
-            };
-            return item;
-        }
-
-        private static ShowcaseSettings CurrentShowcaseSettings =>
-            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase;
-
-        private static ContextMenu CreatePinMenu(
-            Func<bool> moveEarlier,
-            Func<bool> moveLater,
-            string unpinHeader,
-            Action unpin)
-        {
-            var menu = new ContextMenu();
-            menu.Items.Add(CreatePinOrderItem(
-                Localize("LOCPlayAch_Showcase_MoveEarlier"),
-                moveEarlier));
-            menu.Items.Add(CreatePinOrderItem(
-                Localize("LOCPlayAch_Showcase_MoveLater"),
-                moveLater));
-            menu.Items.Add(new Separator());
-            var unpinItem = new MenuItem { Header = unpinHeader };
-            unpinItem.Click += (_, __) =>
-            {
-                unpin?.Invoke();
-                ShowcaseConfigurationCommit.Commit();
-            };
-            menu.Items.Add(unpinItem);
-            return menu;
         }
 
         private static string GetWidgetGlyph(ShowcaseWidgetKind kind) =>

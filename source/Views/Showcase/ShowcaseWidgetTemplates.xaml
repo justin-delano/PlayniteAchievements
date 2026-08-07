@@ -182,4 +182,84 @@
         </ScrollViewer>
     </DataTemplate>
 
+    <!-- FavoriteGames: centered wrap of cover tiles; showcase-pin tiles get a reorder/unpin menu. -->
+    <DataTemplate DataType="{x:Type widgets:FavoriteGamesWidgetViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Tiles}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                Margin="3"
+                                Padding="5"
+                                ClipToBounds="True"
+                                ContextMenuService.IsEnabled="{Binding IsPinnable}">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveEarlier}"
+                                              Command="{Binding MoveEarlierCommand}"/>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveLater}"
+                                              Command="{Binding MoveLaterCommand}"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_UnpinGame}"
+                                              Command="{Binding UnpinCommand}"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <StackPanel Width="{Binding TileWidth}">
+                                <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                        CornerRadius="7"
+                                        Padding="2"
+                                        ClipToBounds="True">
+                                    <Image Width="{Binding CoverWidth}"
+                                           Height="{Binding CoverHeight}"
+                                           SnapsToDevicePixels="True"
+                                           helpers:AsyncImage.Uri="{Binding CoverPath}"
+                                           helpers:AsyncImage.DecodePixel="{Binding DecodePixel}">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Stretch" Value="UniformToFill"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasCover}" Value="False">
+                                                        <Setter Property="Stretch" Value="Uniform"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Border>
+                                <TextBlock Text="{Binding GameName}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                           TextAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"
+                                           Margin="0,5,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowName}" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DataTemplate>
+
 </ResourceDictionary>
