@@ -41,4 +41,70 @@
         </ScrollViewer>
     </DataTemplate>
 
+    <!-- NativePoints: horizontal bars of top-N points by provider or game. -->
+    <DataTemplate DataType="{x:Type widgets:NativePointsWidgetViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                Margin="0,1,0,5"
+                                Padding="8,5"
+                                ClipToBounds="True">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Label}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding ValueText}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               FontWeight="SemiBold"
+                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                               Margin="8,0,0,0"/>
+                                </Grid>
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding SecondaryText}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="0,2,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasSecondary}" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <ProgressBar Grid.Row="2"
+                                             Minimum="0"
+                                             Maximum="1"
+                                             Value="{Binding Fraction}"
+                                             Height="3"
+                                             Margin="0,4,0,0"
+                                             VerticalAlignment="Top"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DataTemplate>
+
 </ResourceDictionary>

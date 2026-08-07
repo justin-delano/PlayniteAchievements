@@ -131,7 +131,9 @@ namespace PlayniteAchievements.Views.Showcase
                     BodyHost.Content = UpdateBodyViewModel<StatisticsWidgetViewModel>();
                     break;
                 case ShowcaseWidgetKind.NativePoints:
-                    BodyHost.Content = BuildChartRows(_projection.ChartEntries);
+                    BodyHost.Content = _projection.ChartEntries?.Count > 0
+                        ? (object)UpdateBodyViewModel<NativePointsWidgetViewModel>()
+                        : CreateEmptyText();
                     break;
                 case ShowcaseWidgetKind.PinnedAchievements:
                     BodyHost.Content = BuildAchievements(_projection.Achievements);
@@ -584,70 +586,6 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             return panel;
-        }
-
-        private UIElement BuildChartRows(IReadOnlyList<ShowcaseChartEntry> entries)
-        {
-            if (entries == null || entries.Count == 0)
-            {
-                return CreateEmptyText();
-            }
-
-            var max = Math.Max(1, entries.Max(item => item.Value));
-            var panel = new StackPanel();
-            var limit = _viewport.Density == WidgetViewportDensity.Compact ? 3 : entries.Count;
-            foreach (var entry in entries.Take(limit))
-            {
-                var row = new Grid();
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                var label = CreateText(
-                    LocalizeValue(entry.LabelKey, entry.Label),
-                    11,
-                    FontWeights.Normal);
-                label.TextTrimming = TextTrimming.CharacterEllipsis;
-                row.Children.Add(label);
-                if (_viewport.ShowSecondaryStatistics &&
-                    !string.IsNullOrWhiteSpace(entry.SecondaryText))
-                {
-                    var secondary = CreateText(
-                        entry.SecondaryText,
-                        9,
-                        FontWeights.Normal,
-                        0.62);
-                    secondary.Margin = new Thickness(0, 14, 0, 0);
-                    secondary.TextTrimming = TextTrimming.CharacterEllipsis;
-                    row.Children.Add(secondary);
-                }
-                var value = CreateText(
-                    entry.Value.ToString("N0", FormattingCulture.Current),
-                    11,
-                    FontWeights.SemiBold);
-                Grid.SetColumn(value, 1);
-                row.Children.Add(value);
-                var progress = new ProgressBar
-                {
-                    Minimum = 0,
-                    Maximum = max,
-                    Value = entry.Value,
-                    Height = 3,
-                    Margin = new Thickness(
-                        0,
-                        _viewport.ShowSecondaryStatistics &&
-                        !string.IsNullOrWhiteSpace(entry.SecondaryText) ? 31 : 19,
-                        0,
-                        0),
-                    VerticalAlignment = VerticalAlignment.Top
-                };
-                Grid.SetColumnSpan(progress, 2);
-                row.Children.Add(progress);
-                panel.Children.Add(CreateCard(
-                    row,
-                    new Thickness(0, 1, 0, 5),
-                    new Thickness(8, 5, 8, 5)));
-            }
-
-            return WrapScrollable(panel);
         }
 
         private UIElement BuildAchievements(IReadOnlyList<ShowcaseAchievementItem> achievements)
