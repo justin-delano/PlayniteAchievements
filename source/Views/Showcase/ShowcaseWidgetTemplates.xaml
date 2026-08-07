@@ -514,6 +514,19 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
+                                <StackPanel Margin="0,4,0,0"
+                                            Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
+                                    <ProgressBar Minimum="0"
+                                                 Maximum="1"
+                                                 Value="{Binding ProgressFraction}"
+                                                 Height="3"/>
+                                    <TextBlock Text="{Binding ProgressText}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                               TextAlignment="Center"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

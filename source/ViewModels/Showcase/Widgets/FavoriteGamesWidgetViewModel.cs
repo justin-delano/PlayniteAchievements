@@ -37,6 +37,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             ShowName = showName;
             IsPinnable = pinnable && game.PlayniteGameId.HasValue;
 
+            HasProgress = showName && game.TotalAchievements > 0;
+            ProgressFraction = game.TotalAchievements > 0
+                ? (double)game.UnlockedAchievements / game.TotalAchievements
+                : 0;
+            ProgressText = game.ProgressionCountText;
+            IsCompleted = game.IsCompleted;
+
             MoveEarlierCommand = new RelayCommand(_ => Move(-1));
             MoveLaterCommand = new RelayCommand(_ => Move(1));
             UnpinCommand = new RelayCommand(_ => Unpin());
@@ -59,6 +66,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public bool ShowName { get; }
 
         public bool IsPinnable { get; }
+
+        public bool HasProgress { get; }
+
+        public double ProgressFraction { get; }
+
+        public string ProgressText { get; }
+
+        public bool IsCompleted { get; }
 
         public RelayCommand MoveEarlierCommand { get; }
 
