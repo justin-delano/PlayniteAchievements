@@ -297,8 +297,7 @@ namespace PlayniteAchievements
                 }
                 menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
                     () => OpenViewAchievementsWindow(gameId)));
-                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
-                    () => OpenStartPageGameInLibrary(gameId)));
+                menu.Items.Add(CreateStartPageOpenMenu(resourceOwner, gameId));
                 return menu;
             }
 
@@ -306,8 +305,7 @@ namespace PlayniteAchievements
             {
                 menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
                     () => OpenViewAchievementsWindow(gameId)));
-                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
-                    () => OpenStartPageGameInLibrary(gameId)));
+                menu.Items.Add(CreateStartPageOpenMenu(resourceOwner, gameId));
             }
 
             return menu;
@@ -331,8 +329,7 @@ namespace PlayniteAchievements
                         gameId)));
             }
 
-            menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
-                () => OpenStartPageGameInLibrary(gameId)));
+            menu.Items.Add(CreateStartPageOpenMenu(resourceOwner, gameId));
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements",
                 () => OpenManageAchievementsView(gameId)));
 
@@ -387,6 +384,16 @@ namespace PlayniteAchievements
                         : "LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData",
                     () => ToggleExcludedFromRefreshesAndRefresh(new[] { game })));
             }
+        }
+
+        private MenuItem CreateStartPageOpenMenu(FrameworkElement resourceOwner, Guid gameId)
+        {
+            return GameRowContextMenuBuilder.CreateOpenMenu(
+                resourceOwner,
+                gameId,
+                () => OpenStartPageGameInLibrary(gameId),
+                PlayniteApi,
+                _logger);
         }
 
         private static MenuItem CreateStartPageMenuItem(

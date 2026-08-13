@@ -108,7 +108,7 @@ namespace PlayniteAchievements.Views.Showcase
             _timer.Stop();
             if (_captureLibrary != null)
             {
-                _captureLibrary.Changed -= CaptureLibrary_Changed;
+                _captureLibrary.CapturesChanged -= CaptureLibrary_Changed;
                 _captureLibrary = null;
             }
         }
@@ -228,13 +228,13 @@ namespace PlayniteAchievements.Views.Showcase
         {
             if (_captureLibrary != null)
             {
-                _captureLibrary.Changed -= CaptureLibrary_Changed;
+                _captureLibrary.CapturesChanged -= CaptureLibrary_Changed;
             }
 
             _captureLibrary = PlayniteAchievementsPlugin.Instance?.CaptureLibraryService;
             if (_captureLibrary != null)
             {
-                _captureLibrary.Changed += CaptureLibrary_Changed;
+                _captureLibrary.CapturesChanged += CaptureLibrary_Changed;
             }
 
             _timer.Interval = TimeSpan.FromSeconds(Math.Max(
@@ -273,7 +273,7 @@ namespace PlayniteAchievements.Views.Showcase
             _fullscreen.IsEnabled = _items.Count > 0;
         }
 
-        private void CaptureLibrary_Changed(object sender, EventArgs e)
+        private void CaptureLibrary_Changed(object sender, CapturesChangedEventArgs e)
         {
             Dispatcher.BeginInvoke(new Action(() => _ = ReloadAsync()));
         }

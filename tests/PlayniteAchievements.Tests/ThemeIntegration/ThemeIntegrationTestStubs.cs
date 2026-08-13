@@ -100,6 +100,10 @@ namespace PlayniteAchievements.Models.Achievements
 
         public bool IsCapstone { get; set; }
 
+        public bool IsGoal { get; set; }
+
+        public int GoalOrderIndex { get; set; } = int.MaxValue;
+
         public bool IsFiltered { get; set; }
 
         public bool IsFilteredFromSummaries { get; set; }
@@ -141,6 +145,10 @@ namespace PlayniteAchievements.Models.Achievements
         public System.Windows.Input.ICommand OpenViewAchievementsWindow { get; set; }
 
         public System.Windows.Input.ICommand OpenManageAchievementsWindow { get; set; }
+
+        public System.Windows.Input.ICommand ToggleAchievementCapstoneCommand { get; set; }
+
+        public System.Windows.Input.ICommand ToggleAchievementGoalCommand { get; set; }
 
         public bool HasRarityPercent => GlobalPercentUnlocked.HasValue;
 
@@ -343,6 +351,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool IsCapstone { get; set; }
 
+        public bool IsGoal { get; set; }
+
+        public int GoalOrderIndex { get; set; } = int.MaxValue;
+
         public bool Hidden { get; set; }
 
         public bool Unlocked { get; set; }
@@ -413,12 +425,24 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ComparisonUnlocked { get; private set; }
 
-        public void ApplyComparison(string friendName, string friendAvatarPath, DateTime? unlockTimeUtc, bool unlocked)
+        public string ComparisonOwnerName { get; private set; }
+
+        public string ComparisonOwnerAvatarPath { get; private set; }
+
+        public void ApplyComparison(
+            string friendName,
+            string friendAvatarPath,
+            DateTime? unlockTimeUtc,
+            bool unlocked,
+            string ownerName = null,
+            string ownerAvatarPath = null)
         {
             ComparisonFriendName = friendName;
             ComparisonFriendAvatarPath = friendAvatarPath;
             ComparisonUnlockTimeUtc = unlockTimeUtc;
             ComparisonUnlocked = unlocked;
+            ComparisonOwnerName = ownerName;
+            ComparisonOwnerAvatarPath = ownerAvatarPath;
             HasComparison = true;
         }
 
@@ -429,6 +453,8 @@ namespace PlayniteAchievements.ViewModels
             ComparisonFriendAvatarPath = null;
             ComparisonUnlockTimeUtc = null;
             ComparisonUnlocked = false;
+            ComparisonOwnerName = null;
+            ComparisonOwnerAvatarPath = null;
         }
 
         public static AchievementDisplayItem Create(
@@ -527,6 +553,8 @@ namespace PlayniteAchievements.ViewModels
                 GameCoverPath = GameCoverPath,
                 Hidden = Hidden,
                 IsCapstone = IsCapstone,
+                IsGoal = IsGoal,
+                GoalOrderIndex = GoalOrderIndex,
                 Unlocked = Unlocked,
                 UnlockTimeUtc = UnlockTimeUtc,
                 GlobalPercentUnlocked = GlobalPercentUnlocked,
@@ -580,6 +608,8 @@ namespace PlayniteAchievements.ViewModels
             CategoryLabel = source?.Category;
             Hidden = source?.Hidden == true;
             IsCapstone = source?.IsCapstone == true;
+            IsGoal = source?.IsGoal == true;
+            GoalOrderIndex = source?.GoalOrderIndex ?? int.MaxValue;
             Unlocked = source?.Unlocked == true;
             UnlockTimeUtc = source?.UnlockTimeUtc;
             GlobalPercentUnlocked = source?.GlobalPercentUnlocked;

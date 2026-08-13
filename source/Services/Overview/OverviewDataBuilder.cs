@@ -446,6 +446,9 @@ namespace PlayniteAchievements.Services.Overview
 
             var gameDataByKey = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
             var appearanceByGameKey = new Dictionary<string, AchievementDisplayItem.AppearanceSettingsSnapshot>(StringComparer.OrdinalIgnoreCase);
+            // One memo per game, matching the memo's documented single-game scope. Recent unlocks
+            // cluster by game, so without it every unlock in the library repeats its game's
+            // category art resolution and disk probing.
             var categoryMemoByGameKey = new Dictionary<string, AchievementDisplayItem.CategoryPresentationMemo>(StringComparer.OrdinalIgnoreCase);
             foreach (var achievement in achievements)
             {
