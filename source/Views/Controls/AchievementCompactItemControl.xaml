@@ -6,6 +6,7 @@
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+             xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.Items"
              mc:Ignorable="d"
              d:DesignHeight="48" d:DesignWidth="48"
