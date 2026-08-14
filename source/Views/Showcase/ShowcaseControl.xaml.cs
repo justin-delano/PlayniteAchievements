@@ -35,6 +35,14 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly Dictionary<string, BlockVisualState> _blockVisuals =
             new Dictionary<string, BlockVisualState>(StringComparer.OrdinalIgnoreCase);
 
+        // Built widget controls keyed by widget instance id, kept alive across dashboard rebuilds
+        // and page switches. Every layout edit (split, merge, page add/delete/rename, widget
+        // settings) otherwise re-inflates each widget body, and the data grids and charts inside
+        // them are expensive to build. Bounded by the number of configured widgets and pruned
+        // whenever the widget instances change.
+        private readonly Dictionary<string, ShowcaseWidgetControl> _hostCache =
+            new Dictionary<string, ShowcaseWidgetControl>(StringComparer.OrdinalIgnoreCase);
+
         internal ShowcaseControl(
             OverviewViewModel overview,
             PlayniteAchievementsSettings settings,
@@ -80,6 +88,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             ClearDragVisuals();
             _disposed = true;
+            _hostCache.Clear();
             _overview.SnapshotChanged -= Overview_SnapshotChanged;
             ShowcaseConfigurationEvents.Changed -= ShowcaseConfigurationEvents_Changed;
         }
@@ -131,6 +140,7 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            HarvestWidgetHosts();
             DashboardGrid.Children.Clear();
             _blockVisuals.Clear();
             DashboardGrid.RowDefinitions.Clear();
@@ -307,14 +317,61 @@ namespace PlayniteAchievements.Views.Showcase
             return border;
         }
 
-        // Builds a widget control and defers its projection (and with it template inflation - data
-        // grids and charts are expensive to build) to background priority, so the click that
-        // triggered the change paints immediately and the widget body fills in right after.
+        // Detaches the built widget controls from the visual tree and parks them in the cache so
+        // the next build can re-adopt them instead of inflating fresh ones.
+        private void HarvestWidgetHosts()
+        {
+            foreach (var state in _blockVisuals.Values)
+            {
+                var host = state.Host;
+                if (host == null || string.IsNullOrWhiteSpace(state.Widget?.InstanceId))
+                {
+                    continue;
+                }
+
+                (host.Parent as Panel)?.Children.Remove(host);
+                _hostCache[state.Widget.InstanceId] = host;
+            }
+        }
+
+        // Drops cached controls for widgets that no longer exist, so deleted widgets do not pin
+        // their (grid-bearing) controls in memory.
+        private void PruneHostCache()
+        {
+            var live = new HashSet<string>(
+                Layout.WidgetInstances
+                    .Where(widget => !string.IsNullOrWhiteSpace(widget?.InstanceId))
+                    .Select(widget => widget.InstanceId),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var staleId in _hostCache.Keys.Where(id => !live.Contains(id)).ToList())
+            {
+                _hostCache.Remove(staleId);
+            }
+        }
+
+        // Reuses the cached control for this widget when there is one, otherwise builds a fresh
+        // control. Either way the projection (and with it template inflation) is deferred to
+        // background priority, so the click that triggered the change paints immediately and the
+        // widget body fills in right after.
         private ShowcaseWidgetControl CreateWidgetHost(
             ShowcaseBlockSettings block,
             ShowcaseWidgetInstanceSettings widget)
         {
-            var host = new ShowcaseWidgetControl();
+            ShowcaseWidgetControl host = null;
+            if (!string.IsNullOrWhiteSpace(widget?.InstanceId) &&
+                _hostCache.TryGetValue(widget.InstanceId, out var cached) &&
+                cached != null)
+            {
+                (cached.Parent as Panel)?.Children.Remove(cached);
+                host = cached;
+            }
+
+            host = host ?? new ShowcaseWidgetControl();
+            if (!string.IsNullOrWhiteSpace(widget?.InstanceId))
+            {
+                _hostCache[widget.InstanceId] = host;
+            }
+
             // While editing, clicks select and drag blocks instead of tunneling into widget
             // content - embedded grids and charts otherwise run hit tests, focus moves, and
             // selection work on every click. The widget menu rides on the block container so
@@ -915,6 +972,7 @@ namespace PlayniteAchievements.Views.Showcase
             ShowcaseLayoutService.Normalize(Layout);
             ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
             ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
+            PruneHostCache();
             _persist();
             _publishingConfigurationChange = true;
             try
@@ -937,6 +995,7 @@ namespace PlayniteAchievements.Views.Showcase
             ShowcaseLayoutService.Normalize(Layout);
             ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
             ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
+            PruneHostCache();
             _persist();
             _publishingConfigurationChange = true;
             try
