@@ -699,6 +699,28 @@ namespace PlayniteAchievements.Models.Settings
             return options;
         }
 
+        public bool RemoveAchievement(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !_achievement.TryGetValue(id, out var options))
+            {
+                return false;
+            }
+
+            DetachOptions(options);
+            return _achievement.Remove(id);
+        }
+
+        public bool RemoveGameSummaries(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !_gameSummaries.TryGetValue(id, out var options))
+            {
+                return false;
+            }
+
+            DetachOptions(options);
+            return _gameSummaries.Remove(id);
+        }
+
         public GridOptionsCatalog Clone()
         {
             return new GridOptionsCatalog
@@ -712,6 +734,13 @@ namespace PlayniteAchievements.Models.Settings
 
         public static string ResolveAchievementId(string columnSettingsKey)
         {
+            // Showcase grid widgets persist under dedicated (per-instance for multi-instance
+            // kinds) surfaces keyed by the raw column settings key.
+            if (ShowcaseGridSurfaces.IsAchievementSurface(columnSettingsKey))
+            {
+                return columnSettingsKey;
+            }
+
             switch (columnSettingsKey)
             {
                 case "DesktopTheme":
@@ -760,6 +789,11 @@ namespace PlayniteAchievements.Models.Settings
 
         public static string ResolveGameSummariesId(string columnSettingsKey)
         {
+            if (ShowcaseGridSurfaces.IsGameSurface(columnSettingsKey))
+            {
+                return columnSettingsKey;
+            }
+
             switch (columnSettingsKey)
             {
                 case "StartPageGameSummaries":
