@@ -378,6 +378,45 @@ namespace PlayniteAchievements.Services.Showcase
             return GetMergeClosureCore(page, first, second);
         }
 
+        /// <summary>
+        /// Non-mutating merge preview: never calls Normalize, never edits blocks or widgets.
+        /// Legality is purely geometric (a rectangular closure of shared-edge neighbors);
+        /// multi-widget closures are still legal because MergeSelectedWith resolves the
+        /// surviving widget behind a confirmation. Used by hover/affordance code that must
+        /// not disturb the layout.
+        /// </summary>
+        public static bool TryGetMergePreview(
+            ShowcaseSettings settings,
+            string pageId,
+            string firstBlockId,
+            string secondBlockId,
+            out IReadOnlyList<ShowcaseBlockSettings> closure)
+        {
+            closure = Array.Empty<ShowcaseBlockSettings>();
+            var page = FindPage(settings, pageId);
+            var first = FindBlock(page, firstBlockId);
+            var second = FindBlock(page, secondBlockId);
+            var core = GetMergeClosureCore(page, first, second);
+            if (core.Count < 2)
+            {
+                return false;
+            }
+
+            // Mirrors TryMergeClosure's rectangularity gate without any of its mutation.
+            var row = core.Min(block => block.Row);
+            var column = core.Min(block => block.Column);
+            var rowEnd = core.Max(block => block.Row + block.RowSpan);
+            var columnEnd = core.Max(block => block.Column + block.ColumnSpan);
+            if (core.Sum(block => block.RowSpan * block.ColumnSpan) !=
+                (rowEnd - row) * (columnEnd - column))
+            {
+                return false;
+            }
+
+            closure = core;
+            return true;
+        }
+
         public static bool TryMergeWithFallback(
             ShowcaseSettings settings,
             string pageId,

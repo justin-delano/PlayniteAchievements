@@ -316,6 +316,110 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void MergePreview_ReturnsRectangularClosureWithoutMutating()
+        {
+            var page = new ShowcasePageSettings
+            {
+                Name = "Staggered",
+                Blocks =
+                {
+                    new ShowcaseBlockSettings { Row = 0, Column = 0, RowSpan = 2, ColumnSpan = 2 },
+                    new ShowcaseBlockSettings { Row = 0, Column = 2, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 1, Column = 2, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 2, Column = 0, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 2, Column = 1, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 2, Column = 2, RowSpan = 1, ColumnSpan = 1 }
+                }
+            };
+            var settings = new ShowcaseSettings { Pages = { page } };
+            var widget = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Scores);
+            page.Blocks[0].WidgetInstanceId = widget.InstanceId;
+            var blocksBefore = page.Blocks
+                .Select(block => (block.BlockId, block.Row, block.Column, block.RowSpan, block.ColumnSpan, block.WidgetInstanceId))
+                .ToList();
+            var widgetCountBefore = settings.WidgetInstances.Count;
+
+            // The staggered pair expands to a three-block rectangular closure.
+            Assert.IsTrue(ShowcaseLayoutService.TryGetMergePreview(
+                settings,
+                page.PageId,
+                page.Blocks[0].BlockId,
+                page.Blocks[1].BlockId,
+                out var closure));
+            Assert.AreEqual(3, closure.Count);
+
+            // The preview mutated nothing: same blocks, same geometry, same widgets.
+            CollectionAssert.AreEqual(
+                blocksBefore,
+                page.Blocks
+                    .Select(block => (block.BlockId, block.Row, block.Column, block.RowSpan, block.ColumnSpan, block.WidgetInstanceId))
+                    .ToList());
+            Assert.AreEqual(widgetCountBefore, settings.WidgetInstances.Count);
+        }
+
+        [TestMethod]
+        public void MergePreview_DoesNotNormalizeBrokenLayouts()
+        {
+            // A page missing cells: Normalize would repair it by adding blocks.
+            var page = new ShowcasePageSettings
+            {
+                Name = "Broken",
+                Blocks =
+                {
+                    new ShowcaseBlockSettings { Row = 0, Column = 0, RowSpan = 1, ColumnSpan = 1 },
+                    new ShowcaseBlockSettings { Row = 0, Column = 1, RowSpan = 1, ColumnSpan = 1 }
+                }
+            };
+            var settings = new ShowcaseSettings { Pages = { page } };
+
+            Assert.IsTrue(ShowcaseLayoutService.TryGetMergePreview(
+                settings,
+                page.PageId,
+                page.Blocks[0].BlockId,
+                page.Blocks[1].BlockId,
+                out var closure));
+            Assert.AreEqual(2, closure.Count);
+
+            // Pure predicate: the broken layout is left exactly as it was.
+            Assert.AreEqual(2, page.Blocks.Count);
+        }
+
+        [TestMethod]
+        public void MergePreview_RejectsNonAdjacentBlocks()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var page = settings.Pages.Single();
+            var corner = page.Blocks.First(block => block.Row == 0 && block.Column == 0);
+            var far = page.Blocks.FirstOrDefault(block =>
+                !ShowcaseGeometry.RangesOverlap(block.Row, block.RowSpan, corner.Row, corner.RowSpan) &&
+                !ShowcaseGeometry.RangesOverlap(block.Column, block.ColumnSpan, corner.Column, corner.ColumnSpan));
+
+            if (far == null)
+            {
+                // Fall back to a hand-built page when the seed layout has no diagonal pair.
+                page = new ShowcasePageSettings
+                {
+                    Blocks =
+                    {
+                        new ShowcaseBlockSettings { Row = 0, Column = 0 },
+                        new ShowcaseBlockSettings { Row = 2, Column = 2 }
+                    }
+                };
+                settings = new ShowcaseSettings { Pages = { page } };
+                corner = page.Blocks[0];
+                far = page.Blocks[1];
+            }
+
+            Assert.IsFalse(ShowcaseLayoutService.TryGetMergePreview(
+                settings,
+                page.PageId,
+                corner.BlockId,
+                far.BlockId,
+                out var closure));
+            Assert.AreEqual(0, closure.Count);
+        }
+
+        [TestMethod]
         public void PruneOrphanedWidgets_RemovesReplacedInstanceButKeepsPlacedWidgets()
         {
             var settings = new ShowcaseSettings();
