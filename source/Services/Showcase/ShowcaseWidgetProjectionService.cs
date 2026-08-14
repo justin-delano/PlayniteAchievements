@@ -786,8 +786,10 @@ namespace PlayniteAchievements.Services.Showcase
                 dailyPrestige.Where(pair => pair.Key < start).Sum(pair => pair.Value);
 
             var rangeDays = Math.Max(1, (endDate - start).Days + 1);
-            // Long ranges emit at most ~a year of points so the chart stays cheap to draw.
-            var step = Math.Max(1, (int)Math.Ceiling(rangeDays / 366.0));
+            // The chart is a couple of hundred pixels wide at most, and a hoverable LiveCharts
+            // series carries a hit-testable shape per point, so emitting a point per day would
+            // cost hundreds of invisible shapes. This is still finer than one point per pixel.
+            var step = Math.Max(1, (int)Math.Ceiling(rangeDays / 120.0));
             var points = new List<ShowcaseScorePoint>();
             var offset = 0;
             foreach (var day in EnumerateDailyWindow(start, endDate, dailyCollection))

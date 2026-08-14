@@ -449,7 +449,7 @@ namespace PlayniteAchievements.Tests.Models
 
             var points = ShowcaseWidgetProjectionService.BuildScoreHistory(snapshot, instance, endDate);
 
-            Assert.IsTrue(points.Count <= 372, $"Expected bounded point count, got {points.Count}");
+            Assert.IsTrue(points.Count <= 130, $"Expected bounded point count, got {points.Count}");
             Assert.AreEqual(endDate, points[points.Count - 1].Date);
             Assert.AreEqual(
                 achievements.Sum(item => item.CollectionScore),
