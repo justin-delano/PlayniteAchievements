@@ -48,17 +48,27 @@ namespace PlayniteAchievements.Services.StartPage
         private static readonly IReadOnlyList<StartPageViewDefinition> ViewDefinitions =
             new List<StartPageViewDefinition>
             {
+                // The two self grids kept their original view ids when they moved onto the
+                // showcase widget path, so widgets already placed on users' start pages keep
+                // working; their per-instance surfaces are seeded from the fixed StartPage
+                // surfaces on first load.
                 new StartPageViewDefinition
                 {
                     ViewId = GameSummariesGridViewId,
                     WidgetKind = StartPageWidgetKind.GameSummariesGrid,
-                    NameKey = "LOCPlayAch_Overview_GameSummaries"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.GameSummaries,
+                    NameKey = "LOCPlayAch_Overview_GameSummaries",
+                    HasSettings = true,
+                    AllowMultipleInstances = true
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = RecentUnlocksGridViewId,
                     WidgetKind = StartPageWidgetKind.RecentUnlocksGrid,
-                    NameKey = "LOCPlayAch_RecentAchievements"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.RecentAchievements,
+                    NameKey = "LOCPlayAch_RecentAchievements",
+                    HasSettings = true,
+                    AllowMultipleInstances = true
                 },
                 new StartPageViewDefinition
                 {

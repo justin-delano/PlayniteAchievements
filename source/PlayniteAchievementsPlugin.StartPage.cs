@@ -144,10 +144,6 @@ namespace PlayniteAchievements
 
             switch (widgetKind)
             {
-                case StartPageWidgetKind.GameSummariesGrid:
-                    return new StartPageGameSummariesGridViewModel(GetStartPageDataCoordinator(), Settings, _logger);
-                case StartPageWidgetKind.RecentUnlocksGrid:
-                    return new StartPageRecentUnlocksGridViewModel(GetStartPageDataCoordinator(), Settings, _logger);
                 case StartPageWidgetKind.FriendsRecentUnlocksGrid:
                     return _friendsRecentUnlocksDataCoordinator == null || !Settings.Persisted.EnableFriendsFeatures
                         ? null
@@ -178,10 +174,6 @@ namespace PlayniteAchievements
             var widgetKind = definition.WidgetKind;
             switch (widgetKind)
             {
-                case StartPageWidgetKind.GameSummariesGrid:
-                    return new StartPageGameSummariesGridView();
-                case StartPageWidgetKind.RecentUnlocksGrid:
-                    return new StartPageRecentUnlocksGridView();
                 case StartPageWidgetKind.FriendsRecentUnlocksGrid:
                     return new StartPageFriendsRecentUnlocksGridView();
                 case StartPageWidgetKind.CompletedGamesPie:
@@ -475,6 +467,21 @@ namespace PlayniteAchievements
             var settings = ShowcaseWidgetSettingsFactory.CreateDefault(
                 kind,
                 instanceId.ToString("N"));
+
+            // Migration: StartPage-hosted grid widgets used to share the fixed StartPage
+            // surfaces edited on the Display tab. Seed each new per-instance surface from
+            // the matching fixed surface so already-placed widgets keep their configured
+            // display options and column layout.
+            var catalog = Settings.Persisted.GridOptions;
+            var surfaceKey = ShowcaseGridSurfaces.ResolveWidgetSurface(kind, settings.InstanceId);
+            if (kind == ShowcaseWidgetKind.RecentAchievements)
+            {
+                catalog.SeedAchievementFrom(surfaceKey, GridOptionKeys.Achievement.StartPageRecent);
+            }
+            else if (kind == ShowcaseWidgetKind.GameSummaries)
+            {
+                catalog.SeedGameSummariesFrom(surfaceKey, GridOptionKeys.GameSummaries.StartPage);
+            }
 
             showcase.StartPageInstances[key] = settings;
             PersistSettingsForUi();

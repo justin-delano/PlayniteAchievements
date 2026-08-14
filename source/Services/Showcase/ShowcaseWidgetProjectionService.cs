@@ -173,7 +173,8 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseSettings settings,
             ShowcaseWidgetInstanceSettings instance,
             DateTime? now = null,
-            GridOptionsCatalog gridOptions = null)
+            GridOptionsCatalog gridOptions = null,
+            Func<IEnumerable<GameSummaryItem>, IEnumerable<GameSummaryItem>> gameSummariesFilter = null)
         {
             snapshot = snapshot ?? new OverviewDataSnapshot();
             settings = settings ?? new ShowcaseSettings();
@@ -231,7 +232,7 @@ namespace PlayniteAchievements.Services.Showcase
                     result.AchievementRows = ResolveRecentAchievements(snapshot);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    result.Games = ResolveGameSummaries(snapshot, instance, gameOptions);
+                    result.Games = ResolveGameSummaries(snapshot, instance, gameOptions, gameSummariesFilter);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
@@ -601,10 +602,19 @@ namespace PlayniteAchievements.Services.Showcase
         public static IReadOnlyList<GameSummaryItem> ResolveGameSummaries(
             OverviewDataSnapshot snapshot,
             ShowcaseWidgetInstanceSettings instance,
-            GameSummaryGridOptions options)
+            GameSummaryGridOptions options,
+            Func<IEnumerable<GameSummaryItem>, IEnumerable<GameSummaryItem>> filter = null)
         {
             var games = (snapshot?.GameSummaries ?? new List<GameSummaryItem>())
                 .Where(game => game != null);
+            // Host-supplied filter (e.g. the StartPage host applies the global activity and
+            // progress scopes) runs before the widget's own options.
+            if (filter != null)
+            {
+                games = (filter(games) ?? Enumerable.Empty<GameSummaryItem>())
+                    .Where(game => game != null);
+            }
+
             if (ShowcaseWidgetOptions.GetHideCompleted(instance))
             {
                 games = games.Where(game => !game.IsCompleted);
