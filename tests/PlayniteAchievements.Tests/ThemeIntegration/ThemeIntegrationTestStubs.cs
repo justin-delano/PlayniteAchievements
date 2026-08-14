@@ -636,24 +636,3 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 }
-
-namespace PlayniteAchievements.Services.Capture
-{
-    public sealed class WgcWindowCapture : IDisposable
-    {
-        public static bool IsSupported => false;
-
-        public CaptureResult CaptureWindow(IntPtr hwnd) => null;
-
-        public CaptureResult CaptureMonitorForWindow(IntPtr hwnd) => null;
-
-        public void Dispose()
-        {
-        }
-
-        public sealed class CaptureResult
-        {
-            public System.Drawing.Bitmap Bitmap { get; set; }
-        }
-    }
-}
