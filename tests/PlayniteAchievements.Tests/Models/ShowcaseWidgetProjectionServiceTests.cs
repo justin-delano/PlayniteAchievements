@@ -285,7 +285,10 @@ namespace PlayniteAchievements.Tests.Models
                 }
             };
 
-            var calendar = ShowcaseWidgetProjectionService.BuildActivityCalendar(snapshot, endDate);
+            var calendar = ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                snapshot,
+                CalendarInstance(TimelineRange.OneYear),
+                endDate);
 
             Assert.AreEqual(DayOfWeek.Sunday, calendar.StartDate.DayOfWeek);
             Assert.IsTrue(calendar.StartDate <= endDate.AddDays(-364));
@@ -322,7 +325,10 @@ namespace PlayniteAchievements.Tests.Models
                 }
             };
 
-            var byDate = ShowcaseWidgetProjectionService.BuildActivityCalendar(snapshot, endDate)
+            var byDate = ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                    snapshot,
+                    CalendarInstance(TimelineRange.OneYear),
+                    endDate)
                 .Days.ToDictionary(day => day.Date);
 
             Assert.AreEqual(4, byDate[endDate].Intensity);
@@ -338,15 +344,34 @@ namespace PlayniteAchievements.Tests.Models
                 {
                     GlobalUnlockCountsByDate = new Dictionary<DateTime, int> { [endDate] = 1 }
                 },
+                CalendarInstance(TimelineRange.OneYear),
                 endDate);
             Assert.AreEqual(4, single.Days.Last().Intensity);
 
             var built = ShowcaseWidgetProjectionService.Build(
                 snapshot,
                 new ShowcaseSettings(),
-                new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.ActivityCalendar },
+                CalendarInstance(TimelineRange.OneYear),
                 endDate);
             Assert.AreEqual(byDate.Count, built.ActivityCalendar.Days.Count);
+
+            // A shorter range narrows the window while keeping the Sunday alignment.
+            var quarter = ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                snapshot,
+                CalendarInstance(TimelineRange.ThreeMonths),
+                endDate);
+            Assert.AreEqual(DayOfWeek.Sunday, quarter.StartDate.DayOfWeek);
+            Assert.IsTrue(quarter.Days.Count < 120);
+        }
+
+        private static ShowcaseWidgetInstanceSettings CalendarInstance(TimelineRange range)
+        {
+            var instance = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.ActivityCalendar
+            };
+            ShowcaseTimelineOptions.SetRange(instance, range);
+            return instance;
         }
 
         [TestMethod]

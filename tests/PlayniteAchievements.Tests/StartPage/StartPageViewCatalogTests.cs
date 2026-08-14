@@ -59,7 +59,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseDualScoresViewId)
                 .HasSettings);
-            Assert.IsFalse(views.Single(view =>
+            Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseActivityCalendarViewId)
                 .HasSettings);
             Assert.IsTrue(views.Single(view =>
