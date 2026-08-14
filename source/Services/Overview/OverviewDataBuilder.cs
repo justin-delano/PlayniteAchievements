@@ -50,18 +50,21 @@ namespace PlayniteAchievements.Services.Overview
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly GameSummaryItemBuilder _summaryBuilder;
+        private readonly Friends.IFriendCacheManager _friendCache;
 
         public OverviewDataBuilder(
             AchievementDataService achievementDataService,
             IReadOnlyList<IDataProvider> providers,
             IPlayniteAPI playniteApi,
-            ILogger logger)
+            ILogger logger,
+            Friends.IFriendCacheManager friendCache = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _providers = providers ?? new List<IDataProvider>();
             _playniteApi = playniteApi;
             _logger = logger;
             _summaryBuilder = new GameSummaryItemBuilder(_providers, _playniteApi, _logger);
+            _friendCache = friendCache;
         }
 
         public OverviewDataSnapshot Build(
@@ -112,6 +115,16 @@ namespace PlayniteAchievements.Services.Overview
                 UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 TotalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
             };
+
+            try
+            {
+                snapshot.CurrentUserIdentities =
+                    _friendCache?.LoadCurrentUserIdentities() ?? new List<Models.Friends.FriendIdentity>();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"[Overview] Failed to load current-user identities: {ex.Message}");
+            }
 
             var games = queryData.Games ?? new List<CachedGameSummaryData>();
             var recentUnlocks = queryData.RecentUnlocks ?? new List<CachedRecentUnlockData>();
