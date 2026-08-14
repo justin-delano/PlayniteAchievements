@@ -814,6 +814,15 @@ namespace PlayniteAchievements.Views.Controls
                 return defaults;
             }
 
+            // Per-instance showcase keys ("<BaseKey>:<instanceId>") share their base key's defaults.
+            var baseKey = ShowcaseGridSurfaces.GetBaseKey(columnSettingsKey);
+            if (!string.IsNullOrWhiteSpace(baseKey) &&
+                !string.Equals(baseKey, columnSettingsKey, StringComparison.Ordinal) &&
+                DefaultVisibilityByColumnSettingsKey.TryGetValue(baseKey, out var baseDefaults))
+            {
+                return baseDefaults;
+            }
+
             return DefaultVisibilityByColumnSettingsKey.TryGetValue("OverviewGameSummaries", out var fallback)
                 ? fallback
                 : null;
@@ -859,16 +868,25 @@ namespace PlayniteAchievements.Views.Controls
         private GameSummarySurfaceSettings GetSurfaceSettings(PlayniteAchievementsSettings settings)
         {
             var persisted = settings?.Persisted;
-            return persisted == null
-                ? null
-                : CreateSurfaceSettings(persisted, ResolveSurface());
+            if (persisted == null)
+            {
+                return null;
+            }
+
+            var surface = ResolveSurface();
+            // Showcase widgets persist column layout under their own (per-instance) surface key;
+            // the remaining per-surface behavior falls back to the Overview surface.
+            var columns = ShowcaseGridSurfaces.IsGameSurface(ColumnSettingsKey)
+                ? persisted.GridOptions.GetGameSummaries(ColumnSettingsKey).Columns
+                : ResolveColumnLayoutOptions(persisted, surface);
+            return CreateSurfaceSettings(persisted, surface, columns);
         }
 
         private static GameSummarySurfaceSettings CreateSurfaceSettings(
             PersistedSettings persisted,
-            GridSurface surface)
+            GridSurface surface,
+            GridColumnLayoutOptions columns)
         {
-            var columns = ResolveColumnLayoutOptions(persisted, surface);
             return new GameSummarySurfaceSettings
             {
                 GetWidths = () => columns?.Widths,
