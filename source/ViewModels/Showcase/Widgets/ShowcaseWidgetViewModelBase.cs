@@ -10,6 +10,8 @@ using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels.Items;
 
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
+
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
