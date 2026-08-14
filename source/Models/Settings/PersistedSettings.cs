@@ -2155,6 +2155,12 @@ namespace PlayniteAchievements.Models.Settings
             set => SetStartPagePieSettings(ref _startPagePieCharts, value, nameof(StartPagePieCharts));
         }
 
+        /// <summary>
+        /// Replace (not populate) on load: the getter lazily seeds a default dashboard, and the
+        /// default object-creation handling would populate that seeded instance - appending the
+        /// saved pages and widgets to the seeded ones, so the dashboard grew a page on every load.
+        /// </summary>
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ShowcaseSettings Showcase
         {
             get
