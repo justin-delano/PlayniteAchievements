@@ -20,6 +20,7 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly Action _persist;
         private readonly bool _publishChanges;
         private System.ComponentModel.INotifyPropertyChanged _gridOptionsRecord;
+        private System.Windows.Threading.DispatcherTimer _gridOptionsPersistTimer;
 
         public ShowcaseWidgetOptionsControl(
             ShowcaseWidgetInstanceSettings settings,
@@ -233,9 +234,11 @@ namespace PlayniteAchievements.Views.Showcase
         /// <summary>
         /// Appends the shared grid display-options editor for the grid widget kinds. The editor
         /// binds the widget's LIVE catalog record (not the dialog's widget clone), so grid
-        /// display edits are instant-apply: they persist and broadcast on every change,
-        /// independent of the host's persist callback and of the dialog's Save/Cancel, which
-        /// govern only the title and the widget's own option bag.
+        /// display edits are instant-apply, independent of the host's persist callback and of
+        /// the dialog's Save/Cancel, which govern only the title and the widget's own option
+        /// bag. Live grids react to the record directly (bindings plus the grid view models'
+        /// record subscriptions), so edits only need persisting - debounced, because a full
+        /// settings write per checkbox toggle makes the editor visibly laggy.
         /// </summary>
         private void AppendGridOptionsEditor(Panel panel)
         {
@@ -285,11 +288,34 @@ namespace PlayniteAchievements.Views.Showcase
         private void OnUnloadedDetachGridOptions(object sender, RoutedEventArgs e)
         {
             _gridOptionsRecord.PropertyChanged -= OnGridOptionsRecordChanged;
+            FlushPendingGridOptionsPersist();
         }
 
         private void OnGridOptionsRecordChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            ShowcaseConfigurationCommit.Commit();
+            if (_gridOptionsPersistTimer == null)
+            {
+                _gridOptionsPersistTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(600)
+                };
+                _gridOptionsPersistTimer.Tick += (_, __) => FlushPendingGridOptionsPersist();
+            }
+
+            // Restart the window on every edit so a burst of toggles produces one write.
+            _gridOptionsPersistTimer.Stop();
+            _gridOptionsPersistTimer.Start();
+        }
+
+        private void FlushPendingGridOptionsPersist()
+        {
+            if (_gridOptionsPersistTimer == null || !_gridOptionsPersistTimer.IsEnabled)
+            {
+                return;
+            }
+
+            _gridOptionsPersistTimer.Stop();
+            PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
         }
 
         private static readonly TimelineRange[] RangeChoices =
