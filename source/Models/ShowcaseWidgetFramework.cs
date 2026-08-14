@@ -82,7 +82,11 @@ namespace PlayniteAchievements.Models
                 Define(ShowcaseWidgetKind.PinnedAchievements, "LOCPlayAch_Showcase_Widget_PinnedAchievements", "", false, true),
                 Define(ShowcaseWidgetKind.FavoriteGames, "LOCPlayAch_Showcase_Widget_FavoriteGames", "", false, true),
                 Define(ShowcaseWidgetKind.IconMosaic, "LOCPlayAch_Showcase_Widget_IconMosaic", "", true, false),
-                Define(ShowcaseWidgetKind.ScreenshotSlideshow, "LOCPlayAch_Showcase_Widget_ScreenshotSlideshow", "", true, false)
+                Define(ShowcaseWidgetKind.ScreenshotSlideshow, "LOCPlayAch_Showcase_Widget_ScreenshotSlideshow", "", true, false),
+                Define(ShowcaseWidgetKind.RecentAchievements, "LOCPlayAch_Showcase_Widget_RecentAchievements", "", true, false),
+                Define(ShowcaseWidgetKind.GameSummaries, "LOCPlayAch_Showcase_Widget_GameSummaries", "", true, false),
+                Define(ShowcaseWidgetKind.GameMosaic, "LOCPlayAch_Showcase_Widget_GameMosaic", "", true, false),
+                Define(ShowcaseWidgetKind.ActivityCalendar, "LOCPlayAch_Showcase_Widget_ActivityCalendar", "", true, false)
             };
 
         public static IReadOnlyList<ShowcaseWidgetDefinition> Definitions => DefinitionsValue;
@@ -173,6 +177,7 @@ namespace PlayniteAchievements.Models
         private const string IntervalSeconds = "IntervalSeconds";
         private const string FitMode = "FitMode";
         private const string Shuffle = "Shuffle";
+        private const string HideCompleted = "HideCompleted";
 
         public static ShowcaseScoreMode GetScoreMode(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Mode, ShowcaseScoreMode.Dual);
@@ -246,6 +251,44 @@ namespace PlayniteAchievements.Models
         public static void SetShuffle(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(Shuffle, value);
 
+        public static int GetRecentCount(ShowcaseWidgetInstanceSettings settings) =>
+            Clamp(settings?.GetOption(Count, 15) ?? 15, 1, 100);
+
+        public static void SetRecentCount(ShowcaseWidgetInstanceSettings settings, int value) =>
+            settings?.SetOption(Count, Clamp(value, 1, 100));
+
+        public static ShowcaseGameListSort GetGameListSort(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Mode, ShowcaseGameListSort.LastUnlock);
+
+        public static void SetGameListSort(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseGameListSort value) => settings?.SetOption(Mode, value);
+
+        public static int GetGameListCount(ShowcaseWidgetInstanceSettings settings) =>
+            Clamp(settings?.GetOption(Count, 50) ?? 50, 1, 200);
+
+        public static void SetGameListCount(ShowcaseWidgetInstanceSettings settings, int value) =>
+            settings?.SetOption(Count, Clamp(value, 1, 200));
+
+        public static bool GetHideCompleted(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(HideCompleted, false) ?? false;
+
+        public static void SetHideCompleted(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(HideCompleted, value);
+
+        public static ShowcaseGameMosaicSource GetGameMosaicSource(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Source, ShowcaseGameMosaicSource.Completed);
+
+        public static void SetGameMosaicSource(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseGameMosaicSource value) => settings?.SetOption(Source, value);
+
+        public static int GetGameMosaicCount(ShowcaseWidgetInstanceSettings settings) =>
+            Clamp(settings?.GetOption(Count, 24) ?? 24, 1, 64);
+
+        public static void SetGameMosaicCount(ShowcaseWidgetInstanceSettings settings, int value) =>
+            settings?.SetOption(Count, Clamp(value, 1, 64));
+
         private static T GetEnum<T>(
             ShowcaseWidgetInstanceSettings settings,
             string key,
@@ -279,6 +322,7 @@ namespace PlayniteAchievements.Models
             {
                 case ShowcaseWidgetKind.Scores:
                     ShowcaseWidgetOptions.SetScoreMode(settings, ShowcaseScoreMode.Dual);
+                    ShowcaseTimelineOptions.SetRange(settings, TimelineRange.ThreeMonths);
                     break;
                 case ShowcaseWidgetKind.Pie:
                     ShowcaseWidgetOptions.SetPieMode(settings, ShowcasePieMode.CompletedGames);
@@ -302,6 +346,18 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetShuffle(settings, true);
                     ShowcaseWidgetOptions.SetSlideshowIntervalSeconds(settings, 8);
                     ShowcaseWidgetOptions.SetImageFitMode(settings, ShowcaseImageFitMode.Fill);
+                    break;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    ShowcaseWidgetOptions.SetRecentCount(settings, 15);
+                    break;
+                case ShowcaseWidgetKind.GameSummaries:
+                    ShowcaseWidgetOptions.SetGameListSort(settings, ShowcaseGameListSort.LastUnlock);
+                    ShowcaseWidgetOptions.SetGameListCount(settings, 50);
+                    ShowcaseWidgetOptions.SetHideCompleted(settings, false);
+                    break;
+                case ShowcaseWidgetKind.GameMosaic:
+                    ShowcaseWidgetOptions.SetGameMosaicSource(settings, ShowcaseGameMosaicSource.Completed);
+                    ShowcaseWidgetOptions.SetGameMosaicCount(settings, 24);
                     break;
             }
 
