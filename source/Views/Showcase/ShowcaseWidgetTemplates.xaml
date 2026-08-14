@@ -627,32 +627,13 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
-                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Weeks}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel>
-                                        <!-- Fixed label slot the width of one cell box; longer text
-                                             paints past the slot without widening the column. -->
-                                        <TextBlock Text="{Binding MonthLabel}"
-                                                   Height="14"
-                                                   Width="12"
-                                                   TextWrapping="NoWrap"
-                                                   HorizontalAlignment="Left"
-                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                                   FontSize="9"
-                                                   Visibility="{Binding DataContext.ShowMonthLabels, Converter={StaticResource BoolToVis}, RelativeSource={RelativeSource AncestorType=Viewbox}}"/>
-                                        <ItemsControl ItemsSource="{Binding Days}"
-                                                      ItemTemplate="{StaticResource ShowcaseActivityCellTemplate}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <!-- Single custom-drawn visual: one element for the whole grid of cells,
+                             with tooltips served from hit tests. -->
+                        <showcase:ActivityCalendarHeatmap Grid.Column="1"
+                                                          Weeks="{Binding Weeks}"
+                                                          CellBox="{Binding WeekdayRowHeight}"
+                                                          ShowMonthLabels="{Binding ShowMonthLabels}"
+                                                          VerticalAlignment="Top"/>
                     </Grid>
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right"
