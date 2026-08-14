@@ -8,21 +8,54 @@ using PlayniteAchievements.Services.Showcase;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
-    /// <summary>A single heatmap cell. Intensity -1 marks a placeholder that pads a partial week.</summary>
+    /// <summary>
+    /// A single heatmap cell. Intensity -1 marks a placeholder that pads a partial week.
+    /// The tooltip is formatted on demand (only the hovered cell needs one), so a year of
+    /// cells costs no string work.
+    /// </summary>
     public sealed class ActivityCalendarDayViewModel
     {
-        public ActivityCalendarDayViewModel(int intensity, string tooltip, double size)
+        private static readonly ActivityCalendarDayViewModel PlaceholderCell =
+            new ActivityCalendarDayViewModel(-1, default(DateTime), 0);
+
+        private ActivityCalendarDayViewModel(int intensity, DateTime date, int count)
         {
             Intensity = intensity;
-            Tooltip = tooltip;
-            Size = size;
+            Date = date;
+            Count = count;
         }
+
+        public static ActivityCalendarDayViewModel Placeholder => PlaceholderCell;
+
+        public static ActivityCalendarDayViewModel ForDay(ShowcaseActivityDay day) =>
+            new ActivityCalendarDayViewModel(day.Intensity, day.Date, day.Count);
+
+        public static ActivityCalendarDayViewModel ForLegend(int intensity) =>
+            new ActivityCalendarDayViewModel(intensity, default(DateTime), 0);
 
         public int Intensity { get; }
 
-        public string Tooltip { get; }
+        public DateTime Date { get; }
 
-        public double Size { get; }
+        public int Count { get; }
+
+        public string Tooltip
+        {
+            get
+            {
+                if (Intensity < 0 || Date == default(DateTime))
+                {
+                    return null;
+                }
+
+                var culture = FormattingCulture.Current;
+                return string.Format(
+                    culture,
+                    ResourceProvider.GetString("LOCPlayAch_Showcase_ActivityTooltipFormat"),
+                    Date.ToString("d", culture),
+                    Count);
+            }
+        }
     }
 
     /// <summary>One Sunday-first week column with an optional month label.</summary>
@@ -43,18 +76,34 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
     /// <summary>
     /// Backs the ActivityCalendar widget: a contributions-style heatmap of unlocks per
-    /// day. Density controls the trailing window (weeks), cell size, and label/legend
-    /// visibility; the projection owns counts and intensity bucketing.
+    /// day. Density decides whether the labels and legend have room; the projection owns
+    /// the window, the counts, and the intensity bucketing.
     /// </summary>
     public sealed class ActivityCalendarWidgetViewModel : ShowcaseWidgetViewModelBase
     {
-        private double _weekdayRowHeight = 12;
-        private bool _showMonthLabels = true;
-        private bool _showWeekdayLabels = true;
-        private bool _showLegend = true;
-        private bool _showEmpty;
         private IReadOnlyList<ActivityCalendarWeekViewModel> _weeks =
             Array.Empty<ActivityCalendarWeekViewModel>();
+        private bool _showChrome = true;
+        private bool _showEmpty;
+
+        public ActivityCalendarWidgetViewModel()
+        {
+            LegendCells = Enumerable.Range(0, 5)
+                .Select(ActivityCalendarDayViewModel.ForLegend)
+                .ToList();
+
+            var dayNames = FormattingCulture.Current.DateTimeFormat.AbbreviatedDayNames;
+            WeekdayLabels = new[]
+            {
+                string.Empty,
+                dayNames[(int)DayOfWeek.Monday],
+                string.Empty,
+                dayNames[(int)DayOfWeek.Wednesday],
+                string.Empty,
+                dayNames[(int)DayOfWeek.Friday],
+                string.Empty
+            };
+        }
 
         /// <summary>
         /// Replaced wholesale on refresh so the custom-drawn heatmap re-renders on the
@@ -66,35 +115,17 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             private set => SetValue(ref _weeks, value);
         }
 
-        public BulkObservableCollection<string> WeekdayLabels { get; } =
-            new BulkObservableCollection<string>();
+        /// <summary>The five intensity swatches of the Less-to-More legend; never changes.</summary>
+        public IReadOnlyList<ActivityCalendarDayViewModel> LegendCells { get; }
 
-        public BulkObservableCollection<ActivityCalendarDayViewModel> LegendCells { get; } =
-            new BulkObservableCollection<ActivityCalendarDayViewModel>();
+        /// <summary>Sunday-first weekday labels, blank except Mon/Wed/Fri; never changes.</summary>
+        public IReadOnlyList<string> WeekdayLabels { get; }
 
-        /// <summary>Cell box height including margins, so weekday labels stay row-aligned.</summary>
-        public double WeekdayRowHeight
+        /// <summary>Month labels, weekday labels, and the legend only fit outside compact.</summary>
+        public bool ShowChrome
         {
-            get => _weekdayRowHeight;
-            private set => SetValue(ref _weekdayRowHeight, value);
-        }
-
-        public bool ShowMonthLabels
-        {
-            get => _showMonthLabels;
-            private set => SetValue(ref _showMonthLabels, value);
-        }
-
-        public bool ShowWeekdayLabels
-        {
-            get => _showWeekdayLabels;
-            private set => SetValue(ref _showWeekdayLabels, value);
-        }
-
-        public bool ShowLegend
-        {
-            get => _showLegend;
-            private set => SetValue(ref _showLegend, value);
+            get => _showChrome;
+            private set => SetValue(ref _showChrome, value);
         }
 
         public bool ShowEmpty
@@ -106,21 +137,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         protected override void Refresh()
         {
             var calendar = Projection?.ActivityCalendar ?? new ShowcaseActivityCalendar();
-            var compact = Density == WidgetViewportDensity.Compact;
-            // Fixed base cell size: the template scales the whole calendar to the widget
-            // through a Viewbox, so density only gates the labels and legend.
-            const double cellSize = 10d;
-            WeekdayRowHeight = cellSize + 2;
-            ShowMonthLabels = !compact;
-            ShowWeekdayLabels = !compact;
-            ShowLegend = !compact;
+            ShowChrome = base.ShowChrome;
             ShowEmpty = calendar.TotalCount == 0;
 
             var culture = FormattingCulture.Current;
-            var tooltipFormat = ResourceProvider.GetString("LOCPlayAch_Showcase_ActivityTooltipFormat");
-
             var days = calendar.Days ?? Array.Empty<ShowcaseActivityDay>();
-            var weeks = new List<ActivityCalendarWeekViewModel>();
+            var weeks = new List<ActivityCalendarWeekViewModel>((days.Count / 7) + 1);
             var yearShown = false;
             for (var index = 0; index < days.Count; index += 7)
             {
@@ -131,7 +153,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     var dayIndex = index + offset;
                     if (dayIndex >= days.Count)
                     {
-                        cells.Add(new ActivityCalendarDayViewModel(-1, null, cellSize));
+                        cells.Add(ActivityCalendarDayViewModel.Placeholder);
                         continue;
                     }
 
@@ -145,32 +167,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                         yearShown = true;
                     }
 
-                    var tooltip = string.Format(
-                        culture,
-                        tooltipFormat,
-                        day.Date.ToString("d", culture),
-                        day.Count);
-                    cells.Add(new ActivityCalendarDayViewModel(day.Intensity, tooltip, cellSize));
+                    cells.Add(ActivityCalendarDayViewModel.ForDay(day));
                 }
 
                 weeks.Add(new ActivityCalendarWeekViewModel(monthLabel, cells));
             }
 
             Weeks = weeks;
-            LegendCells.ReplaceAll(Enumerable.Range(0, 5)
-                .Select(intensity => new ActivityCalendarDayViewModel(intensity, null, cellSize)));
-
-            var dayNames = culture.DateTimeFormat.AbbreviatedDayNames;
-            WeekdayLabels.ReplaceAll(new[]
-            {
-                string.Empty,
-                dayNames[(int)DayOfWeek.Monday],
-                string.Empty,
-                dayNames[(int)DayOfWeek.Wednesday],
-                string.Empty,
-                dayNames[(int)DayOfWeek.Friday],
-                string.Empty
-            });
         }
     }
 }
