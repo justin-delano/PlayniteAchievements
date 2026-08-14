@@ -53,9 +53,18 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private bool _showWeekdayLabels = true;
         private bool _showLegend = true;
         private bool _showEmpty;
+        private IReadOnlyList<ActivityCalendarWeekViewModel> _weeks =
+            Array.Empty<ActivityCalendarWeekViewModel>();
 
-        public BulkObservableCollection<ActivityCalendarWeekViewModel> Weeks { get; } =
-            new BulkObservableCollection<ActivityCalendarWeekViewModel>();
+        /// <summary>
+        /// Replaced wholesale on refresh so the custom-drawn heatmap re-renders on the
+        /// property change (it draws the list itself rather than templating items).
+        /// </summary>
+        public IReadOnlyList<ActivityCalendarWeekViewModel> Weeks
+        {
+            get => _weeks;
+            private set => SetValue(ref _weeks, value);
+        }
 
         public BulkObservableCollection<string> WeekdayLabels { get; } =
             new BulkObservableCollection<string>();
@@ -147,7 +156,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 weeks.Add(new ActivityCalendarWeekViewModel(monthLabel, cells));
             }
 
-            Weeks.ReplaceAll(weeks);
+            Weeks = weeks;
             LegendCells.ReplaceAll(Enumerable.Range(0, 5)
                 .Select(intensity => new ActivityCalendarDayViewModel(intensity, null, cellSize)));
 
