@@ -7,7 +7,6 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
-using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
@@ -131,22 +130,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(OverviewDataSnapshot snapshot)
         {
-            var summaries = snapshot.GameSummaries ?? new List<GameSummaryItem>();
-            var trophyPlatinum = summaries.Sum(game => game?.TrophyPlatinumCount ?? 0);
-            var trophyGold = summaries.Sum(game => game?.TrophyGoldCount ?? 0);
-            var trophySilver = summaries.Sum(game => game?.TrophySilverCount ?? 0);
-            var trophyBronze = summaries.Sum(game => game?.TrophyBronzeCount ?? 0);
-
             var medals = new List<ProfileMedalViewModel>();
             AddMedal(medals, "BadgeRarityUltraRare", snapshot.TotalUltraRare);
             AddMedal(medals, "BadgeRarityRare", snapshot.TotalRare);
             AddMedal(medals, "BadgeRarityUncommon", snapshot.TotalUncommon);
             AddMedal(medals, "BadgeRarityCommon", snapshot.TotalCommon);
             AddMedal(medals, "BadgeCompletedGame", snapshot.CompletedGames);
-            AddMedal(medals, "TrophyPlatinum", trophyPlatinum);
-            AddMedal(medals, "TrophyGold", trophyGold);
-            AddMedal(medals, "TrophySilver", trophySilver);
-            AddMedal(medals, "TrophyBronze", trophyBronze);
             return medals;
         }
 
