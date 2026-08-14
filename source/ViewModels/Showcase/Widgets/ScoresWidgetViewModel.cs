@@ -65,6 +65,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private double _maxCardWidth = 360;
         private double _chartHeight = 60;
 
+        // What the cards were last built from. Rebuilding the collection makes LiveCharts throw
+        // away and re-plot every series, so an unrelated refresh (a pin toggle, another widget's
+        // option, a resize that keeps the same density) must not touch it.
+        private IReadOnlyList<ShowcaseScorePoint> _builtHistory;
+        private OverviewDataSnapshot _builtSnapshot;
+        private ShowcaseScoreMode _builtMode;
+        private bool _builtShowChart;
+
         public BulkObservableCollection<ScoreCardWithHistoryViewModel> Cards { get; } =
             new BulkObservableCollection<ScoreCardWithHistoryViewModel>();
 
@@ -95,6 +103,20 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
             var showChart = Density != WidgetViewportDensity.Compact && history.Count >= 2;
+            if (Cards.Count > 0 &&
+                ReferenceEquals(_builtHistory, history) &&
+                ReferenceEquals(_builtSnapshot, Projection?.Snapshot) &&
+                _builtMode == mode &&
+                _builtShowChart == showChart)
+            {
+                return;
+            }
+
+            _builtHistory = history;
+            _builtSnapshot = Projection?.Snapshot;
+            _builtMode = mode;
+            _builtShowChart = showChart;
+
             var rangeCaption = TimelineRangeText.Describe(
                 ShowcaseTimelineOptions.GetRange(Projection?.Instance));
             var culture = FormattingCulture.Current;

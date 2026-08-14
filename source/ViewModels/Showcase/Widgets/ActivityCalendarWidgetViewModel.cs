@@ -86,6 +86,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private bool _showChrome = true;
         private bool _showEmpty;
 
+        // The calendar the week columns were built from; rebuilding them re-renders the whole
+        // heatmap, so an unrelated refresh must leave them alone.
+        private ShowcaseActivityCalendar _builtCalendar;
+
         public ActivityCalendarWidgetViewModel()
         {
             LegendCells = Enumerable.Range(0, 5)
@@ -139,7 +143,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var calendar = Projection?.ActivityCalendar ?? new ShowcaseActivityCalendar();
             ShowChrome = base.ShowChrome;
             ShowEmpty = calendar.TotalCount == 0;
+            if (ReferenceEquals(_builtCalendar, calendar))
+            {
+                return;
+            }
 
+            _builtCalendar = calendar;
             var culture = FormattingCulture.Current;
             var days = calendar.Days ?? Array.Empty<ShowcaseActivityDay>();
             var weeks = new List<ActivityCalendarWeekViewModel>((days.Count / 7) + 1);
