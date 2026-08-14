@@ -114,6 +114,118 @@ namespace PlayniteAchievements.Models
         }
     }
 
+    /// <summary>
+    /// Builds and maintains the grid surface keys used by showcase grid widgets. Multi-instance
+    /// grid kinds persist column layout per widget instance under "&lt;BaseKey&gt;:&lt;instanceId&gt;";
+    /// the single-instance pinned widgets keep their bare base key so re-adding them retains the
+    /// layout. Orphaned per-instance surfaces are pruned against the live widget instances.
+    /// </summary>
+    public static class ShowcaseGridSurfaces
+    {
+        public const string PinnedAchievements = "ShowcasePinnedAchievements";
+        public const string RecentAchievements = "ShowcaseRecentAchievements";
+        public const string PinnedGames = "ShowcasePinnedGames";
+        public const string GameSummaries = "ShowcaseGameSummaries";
+
+        private const char InstanceSeparator = ':';
+
+        public static string ForInstance(string baseKey, string instanceId)
+        {
+            return string.IsNullOrWhiteSpace(instanceId)
+                ? baseKey
+                : baseKey + InstanceSeparator + instanceId.Trim();
+        }
+
+        public static string GetBaseKey(string columnSettingsKey)
+        {
+            if (string.IsNullOrWhiteSpace(columnSettingsKey))
+            {
+                return columnSettingsKey;
+            }
+
+            var separator = columnSettingsKey.IndexOf(InstanceSeparator);
+            return separator < 0 ? columnSettingsKey : columnSettingsKey.Substring(0, separator);
+        }
+
+        public static bool IsAchievementSurface(string columnSettingsKey)
+        {
+            var baseKey = GetBaseKey(columnSettingsKey);
+            return string.Equals(baseKey, PinnedAchievements, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(baseKey, RecentAchievements, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsGameSurface(string columnSettingsKey)
+        {
+            var baseKey = GetBaseKey(columnSettingsKey);
+            return string.Equals(baseKey, PinnedGames, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(baseKey, GameSummaries, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Removes persisted per-instance grid surfaces whose widget instance no longer exists
+        /// (dashboard or start-page hosted). Bare base keys are never pruned.
+        /// </summary>
+        public static void PruneOrphaned(GridOptionsCatalog catalog, ShowcaseSettings showcase)
+        {
+            if (catalog == null || showcase == null)
+            {
+                return;
+            }
+
+            var live = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var widget in showcase.WidgetInstances ?? new List<ShowcaseWidgetInstanceSettings>())
+            {
+                if (!string.IsNullOrWhiteSpace(widget?.InstanceId))
+                {
+                    live.Add(widget.InstanceId.Trim());
+                }
+            }
+
+            foreach (var widget in (showcase.StartPageInstances ??
+                new Dictionary<string, ShowcaseWidgetInstanceSettings>()).Values)
+            {
+                if (!string.IsNullOrWhiteSpace(widget?.InstanceId))
+                {
+                    live.Add(widget.InstanceId.Trim());
+                }
+            }
+
+            foreach (var key in catalog.Achievement.Keys
+                .Where(key => IsOrphanedInstanceKey(key, IsAchievementSurface, live))
+                .ToList())
+            {
+                catalog.RemoveAchievement(key);
+            }
+
+            foreach (var key in catalog.GameSummaries.Keys
+                .Where(key => IsOrphanedInstanceKey(key, IsGameSurface, live))
+                .ToList())
+            {
+                catalog.RemoveGameSummaries(key);
+            }
+        }
+
+        private static bool IsOrphanedInstanceKey(
+            string key,
+            Func<string, bool> isShowcaseSurface,
+            HashSet<string> liveInstanceIds)
+        {
+            if (string.IsNullOrWhiteSpace(key) || !isShowcaseSurface(key))
+            {
+                return false;
+            }
+
+            var separator = key.IndexOf(InstanceSeparator);
+            if (separator < 0)
+            {
+                return false;
+            }
+
+            var instanceId = key.Substring(separator + 1).Trim();
+            return instanceId.Length > 0 && !liveInstanceIds.Contains(instanceId);
+        }
+    }
+
     public static class ShowcaseTimelineOptions
     {
         private const string RangeOption = "TimelineRange";
