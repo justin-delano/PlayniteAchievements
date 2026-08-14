@@ -232,7 +232,7 @@ namespace PlayniteAchievements.Services.Showcase
                     result.AchievementRows = ResolveRecentAchievements(snapshot);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    result.Games = ResolveGameSummaries(snapshot, instance, gameOptions, gameSummariesFilter);
+                    result.Games = ResolveGameSummaries(snapshot, instance, gameSummariesFilter);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
@@ -602,7 +602,6 @@ namespace PlayniteAchievements.Services.Showcase
         public static IReadOnlyList<GameSummaryItem> ResolveGameSummaries(
             OverviewDataSnapshot snapshot,
             ShowcaseWidgetInstanceSettings instance,
-            GameSummaryGridOptions options,
             Func<IEnumerable<GameSummaryItem>, IEnumerable<GameSummaryItem>> filter = null)
         {
             var games = (snapshot?.GameSummaries ?? new List<GameSummaryItem>())
@@ -620,15 +619,10 @@ namespace PlayniteAchievements.Services.Showcase
                 games = games.Where(game => !game.IsCompleted);
             }
 
-            var list = games.ToList();
-            GameSummariesSortHelper.Sort(
-                list,
-                options?.SortMode ?? GameSummariesSortMode.RecentUnlock,
-                options?.SortDescending == false
-                    ? System.ComponentModel.ListSortDirection.Ascending
-                    : System.ComponentModel.ListSortDirection.Descending);
-            // The MaxRows cap applies in the widget view model, after its control-bar filters.
-            return list;
+            // Sorting and the MaxRows cap apply in the widget view model (alongside its
+            // control-bar filters), so editing those options re-orders one widget's rows
+            // instead of re-projecting the whole dashboard.
+            return games.ToList();
         }
 
         public static IReadOnlyList<GameSummaryItem> ResolveGameMosaic(

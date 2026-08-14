@@ -508,7 +508,7 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
-        public void GameSummaries_SortModesHideCompletedAndUncappedRows()
+        public void GameSummaries_AppliesHostFilterAndHideCompletedWithoutSortingOrCapping()
         {
             var oldest = new GameSummaryItem
             {
@@ -550,37 +550,27 @@ namespace PlayniteAchievements.Tests.Models
                 GameSummaries = new List<GameSummaryItem> { oldest, newest, completed, neverUnlocked }
             };
             var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.GameSummaries };
-            var options = new GameSummaryGridOptions();
 
-            var byLastUnlock = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options);
+            // Sorting and the MaxRows cap live in the widget view model; the resolver keeps
+            // snapshot order and only applies the host filter and HideCompleted.
+            var resolved = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
             CollectionAssert.AreEqual(
-                new[] { newest, completed, oldest, neverUnlocked },
-                byLastUnlock.ToArray());
+                new[] { oldest, newest, completed, neverUnlocked },
+                resolved.ToArray());
 
-            options.SortMode = GameSummariesSortMode.Progress;
-            Assert.AreSame(completed,
-                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options)[0]);
-
-            options.SortMode = GameSummariesSortMode.Alphabetical;
-            options.SortDescending = false;
-            Assert.AreSame(oldest,
-                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options)[0]);
-
-            options.SortMode = GameSummariesSortMode.RecentUnlock;
-            options.SortDescending = true;
             instance.SetOption("HideCompleted", true);
-            var withoutCompleted = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options);
+            var withoutCompleted = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
             Assert.IsFalse(withoutCompleted.Contains(completed));
+            Assert.AreEqual(3, withoutCompleted.Count);
 
-            // MaxRows does not cap here: the widget view model applies it after its
-            // control-bar filters so searching reaches rows beyond the cap.
             instance.SetOption("HideCompleted", false);
-            options.MaxRows = 2;
-            Assert.AreEqual(4, ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options).Count);
-
-            Assert.AreEqual(
-                4,
-                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, null).Count);
+            var hostFiltered = ShowcaseWidgetProjectionService.ResolveGameSummaries(
+                snapshot,
+                instance,
+                items => items.Where(game => game.LastUnlockUtc.HasValue));
+            CollectionAssert.AreEqual(
+                new[] { oldest, newest, completed },
+                hostFiltered.ToArray());
         }
 
         [TestMethod]

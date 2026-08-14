@@ -82,13 +82,35 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         /// <summary>
         /// The live display-options record for this widget's grid surface
         /// (AchievementGridOptions or GameSummaryGridOptions). Templates bind grid display
-        /// DPs through it; the record raises its own PropertyChanged, so edits from the
-        /// widget editor propagate without re-projection.
+        /// DPs through it, and the view model listens to it for the row-shaping members
+        /// (MaxRows, per-kind sort), so edits from the widget editor propagate without
+        /// re-projection or any global change broadcast.
         /// </summary>
         public object GridOptions
         {
             get => _gridOptions;
-            private set => SetValue(ref _gridOptions, value);
+            private set
+            {
+                if (ReferenceEquals(_gridOptions, value))
+                {
+                    return;
+                }
+
+                // Weak subscription: the persisted record outlives replaced widget view
+                // models, so a strong handler would keep dead view models reachable.
+                if (_gridOptions is System.ComponentModel.INotifyPropertyChanged previous)
+                {
+                    System.ComponentModel.PropertyChangedEventManager.RemoveHandler(
+                        previous, GridOptions_PropertyChanged, string.Empty);
+                }
+
+                SetValue(ref _gridOptions, value);
+                if (_gridOptions is System.ComponentModel.INotifyPropertyChanged next)
+                {
+                    System.ComponentModel.PropertyChangedEventManager.AddHandler(
+                        next, GridOptions_PropertyChanged, string.Empty);
+                }
+            }
         }
 
         /// <summary>The widget kind's surface key, shared by every instance of that kind.</summary>
@@ -112,18 +134,36 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             RefreshItems();
         }
 
-        /// <summary>Filter hook for the control bar; runs before the MaxRows cap.</summary>
+        /// <summary>Filter hook for the control bar; runs before the sort and the MaxRows cap.</summary>
         protected virtual IEnumerable<TItem> FilterItems(IEnumerable<TItem> items) => items;
 
+        /// <summary>Sort hook applied between the filter and the MaxRows cap; identity by default.</summary>
+        protected virtual IEnumerable<TItem> OrderItems(IEnumerable<TItem> items) => items;
+
+        /// <summary>The grid-options members whose edits require re-running <see cref="RefreshItems"/>.</summary>
+        protected virtual bool ShouldRefreshItemsFor(string propertyName)
+        {
+            return string.IsNullOrEmpty(propertyName) ||
+                propertyName == nameof(GridCommonOptions.MaxRows);
+        }
+
+        private void GridOptions_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (ShouldRefreshItemsFor(e?.PropertyName))
+            {
+                RefreshItems();
+            }
+        }
+
         /// <summary>
-        /// Re-applies the control-bar filter and the surface's MaxRows cap over the projected
-        /// rows. The filter runs before the cap so searching reaches rows beyond the cap.
+        /// Re-applies the control-bar filter, the sort, and the surface's MaxRows cap over the
+        /// projected rows. The filter runs before the cap so searching reaches rows beyond it.
         /// </summary>
         protected void RefreshItems()
         {
             var items = SelectItems(Projection) ?? Array.Empty<TItem>();
             var visible = DisplayGridRowLimitHelper.Limit(
-                FilterItems(items),
+                OrderItems(FilterItems(items)),
                 (GridOptions as GridCommonOptions)?.MaxRows);
 
             // Replacing the collection resets the grid, which rebuilds every row (and re-resolves
