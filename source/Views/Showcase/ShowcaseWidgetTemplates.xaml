@@ -368,82 +368,42 @@
         </ScrollViewer>
     </DataTemplate>
 
-    <!-- PinnedAchievements: icon + name (+ game name) rows with a reorder/unpin menu. -->
+    <!-- PinnedAchievements: the shared achievement grid over pinned rows with pin reordering. -->
     <DataTemplate DataType="{x:Type widgets:PinnedAchievementsWidgetViewModel}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Items}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                Margin="0,1,0,5"
-                                Padding="7,6"
-                                ClipToBounds="True">
-                            <Border.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveEarlier}"
-                                              Command="{Binding MoveEarlierCommand}"/>
-                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveLater}"
-                                              Command="{Binding MoveLaterCommand}"/>
-                                    <Separator/>
-                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_UnpinAchievement}"
-                                              Command="{Binding UnpinCommand}"/>
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                        CornerRadius="7"
-                                        Padding="2"
-                                        ClipToBounds="True">
-                                    <Image Width="38"
-                                           Height="38"
-                                           Stretch="UniformToFill"
-                                           SnapsToDevicePixels="True"
-                                           Opacity="{Binding IconOpacity}"
-                                           helpers:AsyncImage.Uri="{Binding IconPath}"
-                                           helpers:AsyncImage.DecodePixel="76"/>
-                                </Border>
-                                <StackPanel Grid.Column="1"
-                                            Margin="8,0,0,0"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding DisplayName}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               FontWeight="SemiBold"
-                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                               TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding GameName}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                               TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding ShowGameName}" Value="False">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
+                                                 ColumnSettingsKey="ShowcasePinnedAchievements"
+                                                 EnablePinReorder="True"
+                                                 ShowColumnHeaders="{Binding ShowColumnHeaders}"
+                                                 FixedRowHeight="{Binding RowHeight}"/>
     </DataTemplate>
 
-    <!-- FavoriteGames: centered wrap of cover tiles; showcase-pin tiles get a reorder/unpin menu. -->
+    <!-- Pinned games: the shared game-summaries grid over pinned (or favorite) games. -->
     <DataTemplate DataType="{x:Type widgets:FavoriteGamesWidgetViewModel}">
+        <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
+                                          ColumnSettingsKey="ShowcasePinnedGames"
+                                          EnablePinReorder="{Binding PinReorderEnabled}"
+                                          ShowColumnHeaders="{Binding ShowColumnHeaders}"
+                                          FixedRowHeight="{Binding RowHeight}"/>
+    </DataTemplate>
+
+    <!-- RecentAchievements: the shared achievement grid over the latest unlocks. -->
+    <DataTemplate DataType="{x:Type widgets:RecentAchievementsWidgetViewModel}">
+        <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
+                                                 ColumnSettingsKey="ShowcaseRecentAchievements"
+                                                 ShowColumnHeaders="{Binding ShowColumnHeaders}"
+                                                 FixedRowHeight="{Binding RowHeight}"/>
+    </DataTemplate>
+
+    <!-- GameSummaries: the shared game-summaries grid over the whole library. -->
+    <DataTemplate DataType="{x:Type widgets:GameSummariesWidgetViewModel}">
+        <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
+                                          ColumnSettingsKey="ShowcaseGameSummaries"
+                                          ShowColumnHeaders="{Binding ShowColumnHeaders}"
+                                          FixedRowHeight="{Binding RowHeight}"/>
+    </DataTemplate>
+
+    <!-- GameMosaic: dense wrap of game cover tiles; pinned-source tiles get a reorder/unpin menu. -->
+    <DataTemplate DataType="{x:Type widgets:GameMosaicWidgetViewModel}">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Tiles}"
@@ -457,10 +417,10 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                 Margin="3"
-                                Padding="5"
                                 ClipToBounds="True"
+                                ToolTip="{Binding GameName}"
                                 ContextMenuService.IsEnabled="{Binding IsPinnable}">
                             <Border.ContextMenu>
                                 <ContextMenu>
@@ -473,66 +433,144 @@
                                               Command="{Binding UnpinCommand}"/>
                                 </ContextMenu>
                             </Border.ContextMenu>
-                            <StackPanel Width="{Binding TileWidth}">
-                                <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                        CornerRadius="7"
-                                        Padding="2"
-                                        ClipToBounds="True">
-                                    <Image Width="{Binding CoverWidth}"
-                                           Height="{Binding CoverHeight}"
-                                           SnapsToDevicePixels="True"
-                                           helpers:AsyncImage.Uri="{Binding CoverPath}"
-                                           helpers:AsyncImage.DecodePixel="{Binding DecodePixel}">
-                                        <Image.Style>
-                                            <Style TargetType="Image">
-                                                <Setter Property="Stretch" Value="UniformToFill"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasCover}" Value="False">
-                                                        <Setter Property="Stretch" Value="Uniform"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                </Border>
-                                <TextBlock Text="{Binding GameName}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                           TextAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           TextWrapping="NoWrap"
-                                           Margin="0,5,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ShowName}" Value="False">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <StackPanel Margin="0,4,0,0"
-                                            Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
-                                    <ProgressBar Minimum="0"
-                                                 Maximum="1"
-                                                 Value="{Binding ProgressFraction}"
-                                                 Height="3"/>
-                                    <TextBlock Text="{Binding ProgressText}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                               TextAlignment="Center"
-                                               Margin="0,2,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
+                            <Image Width="{Binding CoverWidth}"
+                                   Height="{Binding CoverHeight}"
+                                   SnapsToDevicePixels="True"
+                                   helpers:AsyncImage.Uri="{Binding CoverPath}"
+                                   helpers:AsyncImage.DecodePixel="{Binding DecodePixel}">
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Setter Property="Stretch" Value="UniformToFill"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasCover}" Value="False">
+                                                <Setter Property="Stretch" Value="Uniform"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+    </DataTemplate>
+
+    <!-- ActivityCalendar: contributions-style heatmap of unlocks per day. -->
+    <Style x:Key="ShowcaseActivityCellStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+        <Setter Property="CornerRadius" Value="2"/>
+        <Setter Property="Margin" Value="1"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Intensity}" Value="-1">
+                <Setter Property="Background" Value="Transparent"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Intensity}" Value="0">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Intensity}" Value="1">
+                <Setter Property="Opacity" Value="0.30"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Intensity}" Value="2">
+                <Setter Property="Opacity" Value="0.55"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Intensity}" Value="3">
+                <Setter Property="Opacity" Value="0.78"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <DataTemplate x:Key="ShowcaseActivityCellTemplate" DataType="{x:Type widgets:ActivityCalendarDayViewModel}">
+        <Border Width="{Binding Size}"
+                Height="{Binding Size}"
+                ToolTip="{Binding Tooltip}"
+                Style="{StaticResource ShowcaseActivityCellStyle}"/>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type widgets:ActivityCalendarWidgetViewModel}">
+        <Grid>
+            <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_NoData}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,4,0"
+                                    Visibility="{Binding ShowWeekdayLabels, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Height="14"
+                                       Visibility="{Binding ShowMonthLabels, Converter={StaticResource BoolToVis}}"/>
+                            <ItemsControl ItemsSource="{Binding WeekdayLabels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Height="{Binding DataContext.WeekdayRowHeight, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                                   FontSize="9"
+                                                   VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Weeks}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding MonthLabel}"
+                                                   Height="14"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                                   FontSize="9"
+                                                   Visibility="{Binding DataContext.ShowMonthLabels, Converter={StaticResource BoolToVis}, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"/>
+                                        <ItemsControl ItemsSource="{Binding Days}"
+                                                      ItemTemplate="{StaticResource ShowcaseActivityCellTemplate}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,4,0,0"
+                                Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_Less}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                   FontSize="9"
+                                   Margin="0,0,4,0"
+                                   VerticalAlignment="Center"/>
+                        <ItemsControl ItemsSource="{Binding LegendCells}"
+                                      ItemTemplate="{StaticResource ShowcaseActivityCellTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_More}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                   FontSize="9"
+                                   Margin="4,0,0,0"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
     </DataTemplate>
 
 </ResourceDictionary>
