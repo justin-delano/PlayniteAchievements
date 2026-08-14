@@ -190,22 +190,47 @@ namespace PlayniteAchievements.Services.Showcase
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     var endDate = (now ?? DateTime.Now).Date;
-                    var sourceCounts = (snapshot.GlobalUnlockCountsByDate ??
-                            new Dictionary<DateTime, int>())
-                        .GroupBy(pair => pair.Key.Date)
-                        .ToDictionary(group => group.Key, group => group.Sum(pair => Math.Max(0, pair.Value)));
-                    var range = ShowcaseTimelineOptions.GetRange(instance);
-                    var minimumDate = GetTimelineStartDate(range, endDate, sourceCounts);
-                    var rangeDays = Math.Max(1, (endDate - minimumDate).Days + 1);
-                    result.Timeline = Enumerable.Range(0, rangeDays)
-                        .Select(offset => minimumDate.AddDays(offset))
-                        .ToDictionary(
-                            date => date,
-                            date => sourceCounts.TryGetValue(date, out var count) ? count : 0);
+                    var sourceCounts = NormalizeDailyCounts(snapshot);
+                    var startDate = ResolveWindowStart(instance, endDate, sourceCounts);
+                    result.Timeline = EnumerateDailyWindow(startDate, endDate, sourceCounts)
+                        .ToDictionary(day => day.Date, day => day.Count);
                     break;
             }
 
             return result;
+        }
+
+        /// <summary>Per-day unlock counts collapsed onto date keys, with negatives clamped away.</summary>
+        private static Dictionary<DateTime, int> NormalizeDailyCounts(OverviewDataSnapshot snapshot)
+        {
+            return (snapshot?.GlobalUnlockCountsByDate ?? new Dictionary<DateTime, int>())
+                .GroupBy(pair => pair.Key.Date)
+                .ToDictionary(group => group.Key, group => group.Sum(pair => Math.Max(0, pair.Value)));
+        }
+
+        /// <summary>Start of the instance's configured range, never past the end date.</summary>
+        private static DateTime ResolveWindowStart(
+            ShowcaseWidgetInstanceSettings instance,
+            DateTime endDate,
+            IReadOnlyDictionary<DateTime, int> counts)
+        {
+            var start = GetTimelineStartDate(ShowcaseTimelineOptions.GetRange(instance), endDate, counts);
+            return start > endDate ? endDate : start;
+        }
+
+        /// <summary>Every day from start to end inclusive, with missing days reported as zero.</summary>
+        private static IEnumerable<(DateTime Date, int Count)> EnumerateDailyWindow(
+            DateTime start,
+            DateTime end,
+            IReadOnlyDictionary<DateTime, int> counts)
+        {
+            var days = Math.Max(1, (end - start).Days + 1);
+            for (var offset = 0; offset < days; offset++)
+            {
+                var date = start.AddDays(offset);
+                counts.TryGetValue(date, out var count);
+                yield return (date, count);
+            }
         }
 
         private static DateTime GetTimelineStartDate(
@@ -242,20 +267,60 @@ namespace PlayniteAchievements.Services.Showcase
             var summaries = snapshot.GameSummaries ?? new List<GameSummaryItem>();
             var achievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
             var counts = snapshot.GlobalUnlockCountsByDate ?? new Dictionary<DateTime, int>();
-            var activeDays = counts.Where(pair => pair.Value > 0).Select(pair => pair.Key.Date).Distinct().Count();
-            var datedUnlocks = counts.Sum(pair => Math.Max(0, pair.Value));
-            var lastThirtyDays = counts
-                .Where(pair => pair.Key.Date >= now.Date.AddDays(-29) && pair.Key.Date <= now.Date)
-                .Sum(pair => Math.Max(0, pair.Value));
-            var unlockedWithRarity = achievements
-                .Where(item => item?.Unlocked == true && item.GlobalPercentUnlocked.HasValue)
-                .Select(item => item.GlobalPercentUnlocked.Value)
-                .ToList();
+
+            // One pass over the day counts: the library can hold years of them and this runs for
+            // every Profile and Statistics widget on the page.
+            var thirtyDayStart = now.Date.AddDays(-29);
+            var activeDays = 0;
+            var datedUnlocks = 0;
+            var lastThirtyDays = 0;
+            foreach (var pair in counts)
+            {
+                var value = Math.Max(0, pair.Value);
+                if (value <= 0)
+                {
+                    continue;
+                }
+
+                activeDays++;
+                datedUnlocks += value;
+                if (pair.Key.Date >= thirtyDayStart && pair.Key.Date <= now.Date)
+                {
+                    lastThirtyDays += value;
+                }
+            }
+
+            // One pass over the achievements, accumulating instead of materializing the
+            // ~tens of thousands of rarity percentages just to average them.
+            var rarityCount = 0;
+            var raritySum = 0d;
+            foreach (var item in achievements)
+            {
+                if (item?.Unlocked == true && item.GlobalPercentUnlocked.HasValue)
+                {
+                    rarityCount++;
+                    raritySum += item.GlobalPercentUnlocked.Value;
+                }
+            }
+
             CalculateStreaks(counts, now.Date, out var currentStreak, out var longestStreak);
 
-            var playedGames = summaries.Count(game =>
-                game != null && (game.PlaytimeSeconds > 0 || game.LastPlayed.HasValue));
-            var totalPlaytime = summaries.Where(game => game != null).Sum(game => (double)game.PlaytimeSeconds);
+            var playedGames = 0;
+            var totalPlaytime = 0d;
+            foreach (var game in summaries)
+            {
+                if (game == null)
+                {
+                    continue;
+                }
+
+                if (game.PlaytimeSeconds > 0 || game.LastPlayed.HasValue)
+                {
+                    playedGames++;
+                }
+
+                totalPlaytime += game.PlaytimeSeconds;
+            }
 
             return new List<ShowcaseStatistic>
             {
@@ -273,8 +338,8 @@ namespace PlayniteAchievements.Services.Showcase
                 Stat(
                     "averageGlobalUnlock",
                     "LOCPlayAch_Showcase_Stat_AverageGlobalUnlock",
-                    unlockedWithRarity.Count > 0 ? unlockedWithRarity.Average() : 0,
-                    hasValue: unlockedWithRarity.Count > 0),
+                    rarityCount > 0 ? raritySum / rarityCount : 0,
+                    hasValue: rarityCount > 0),
                 Stat("currentStreak", "LOCPlayAch_Showcase_Stat_CurrentStreak", currentStreak),
                 Stat("longestStreak", "LOCPlayAch_Showcase_Stat_LongestStreak", longestStreak)
             };
@@ -505,40 +570,29 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseWidgetInstanceSettings instance,
             DateTime endDate)
         {
-            var counts = (snapshot?.GlobalUnlockCountsByDate ?? new Dictionary<DateTime, int>())
-                .GroupBy(pair => pair.Key.Date)
-                .ToDictionary(group => group.Key, group => group.Sum(pair => Math.Max(0, pair.Value)));
-
             endDate = endDate.Date;
-            var range = ShowcaseTimelineOptions.GetRange(instance);
-            var start = GetTimelineStartDate(range, endDate, counts);
-            if (start > endDate)
-            {
-                start = endDate;
-            }
-
+            var counts = NormalizeDailyCounts(snapshot);
+            var start = ResolveWindowStart(instance, endDate, counts);
+            // Weeks render as Sunday-first columns, so the window starts on a Sunday.
             while (start.DayOfWeek != DayOfWeek.Sunday)
             {
                 start = start.AddDays(-1);
             }
 
-            var totalDays = (endDate - start).Days + 1;
-            var days = new List<ShowcaseActivityDay>(totalDays);
+            var days = new List<ShowcaseActivityDay>();
             var max = 0;
             var total = 0;
             var activeDays = 0;
-            for (var offset = 0; offset < totalDays; offset++)
+            foreach (var day in EnumerateDailyWindow(start, endDate, counts))
             {
-                var date = start.AddDays(offset);
-                counts.TryGetValue(date, out var count);
-                max = Math.Max(max, count);
-                total += count;
-                if (count > 0)
+                max = Math.Max(max, day.Count);
+                total += day.Count;
+                if (day.Count > 0)
                 {
                     activeDays++;
                 }
 
-                days.Add(new ShowcaseActivityDay { Date = date, Count = count });
+                days.Add(new ShowcaseActivityDay { Date = day.Date, Count = day.Count });
             }
 
             foreach (var day in days)
@@ -580,20 +634,21 @@ namespace PlayniteAchievements.Services.Showcase
             DateTime endDate)
         {
             endDate = endDate.Date;
-            var unlocked = (snapshot?.Achievements ?? new List<AchievementDisplayItem>())
-                .Where(item => item?.Unlocked == true)
-                .ToList();
-            if (unlocked.Count == 0)
-            {
-                return Array.Empty<ShowcaseScorePoint>();
-            }
-
             var baselineCollection = 0;
             var baselinePrestige = 0;
             var dailyCollection = new Dictionary<DateTime, int>();
             var dailyPrestige = new Dictionary<DateTime, int>();
-            foreach (var item in unlocked)
+            // Single pass over the full achievement list - materializing the unlocked subset
+            // would allocate a list the size of the user's whole unlock history.
+            var sawUnlocked = false;
+            foreach (var item in snapshot?.Achievements ?? new List<AchievementDisplayItem>())
             {
+                if (item?.Unlocked != true)
+                {
+                    continue;
+                }
+
+                sawUnlocked = true;
                 if (item.UnlockTimeUtc.HasValue)
                 {
                     var day = item.UnlockTimeUtc.Value.Date;
@@ -609,32 +664,29 @@ namespace PlayniteAchievements.Services.Showcase
                 }
             }
 
-            var range = ShowcaseTimelineOptions.GetRange(instance);
-            var start = GetTimelineStartDate(range, endDate, dailyCollection);
-            if (start > endDate)
+            if (!sawUnlocked)
             {
-                start = endDate;
+                return Array.Empty<ShowcaseScorePoint>();
             }
 
-            var preWindowCollection = baselineCollection +
+            var start = ResolveWindowStart(instance, endDate, dailyCollection);
+
+            // Unlocks before the window still count toward the running totals, so the first
+            // point starts from the score already earned rather than from zero.
+            var cumulativeCollection = baselineCollection +
                 dailyCollection.Where(pair => pair.Key < start).Sum(pair => pair.Value);
-            var preWindowPrestige = baselinePrestige +
+            var cumulativePrestige = baselinePrestige +
                 dailyPrestige.Where(pair => pair.Key < start).Sum(pair => pair.Value);
 
-            var rangeDays = (endDate - start).Days + 1;
+            var rangeDays = Math.Max(1, (endDate - start).Days + 1);
+            // Long ranges emit at most ~a year of points so the chart stays cheap to draw.
             var step = Math.Max(1, (int)Math.Ceiling(rangeDays / 366.0));
             var points = new List<ShowcaseScorePoint>();
-            var cumulativeCollection = preWindowCollection;
-            var cumulativePrestige = preWindowPrestige;
-            for (var offset = 0; offset < rangeDays; offset++)
+            var offset = 0;
+            foreach (var day in EnumerateDailyWindow(start, endDate, dailyCollection))
             {
-                var date = start.AddDays(offset);
-                if (dailyCollection.TryGetValue(date, out var collection))
-                {
-                    cumulativeCollection += collection;
-                }
-
-                if (dailyPrestige.TryGetValue(date, out var prestige))
+                cumulativeCollection += day.Count;
+                if (dailyPrestige.TryGetValue(day.Date, out var prestige))
                 {
                     cumulativePrestige += prestige;
                 }
@@ -643,11 +695,13 @@ namespace PlayniteAchievements.Services.Showcase
                 {
                     points.Add(new ShowcaseScorePoint
                     {
-                        Date = date,
+                        Date = day.Date,
                         CollectionScore = cumulativeCollection,
                         PrestigeScore = cumulativePrestige
                     });
                 }
+
+                offset++;
             }
 
             return points;
