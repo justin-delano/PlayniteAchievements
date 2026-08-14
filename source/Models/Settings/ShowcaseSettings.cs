@@ -240,7 +240,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// The page's grid dimension (3..5, normalized by ShowcaseLayoutService). Every page
-        /// is created on the finest 5x5 lattice; seeded layouts are merely authored coarsely.
+        /// is created on the 5x5 lattice; templates are authored directly in its coordinates.
         /// </summary>
         public int GridSize { get; set; } = 5;
 

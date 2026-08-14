@@ -787,39 +787,37 @@ namespace PlayniteAchievements.Services.Showcase
                 Name = MakeUniquePageName(
                     settings,
                     string.IsNullOrWhiteSpace(name) ? GetDefaultPageName(template) : name.Trim()),
-                GridSize = MaxGridSize,
-                RowWeights = CreateThirdsWeights(),
-                ColumnWeights = CreateThirdsWeights()
+                GridSize = MaxGridSize
             };
 
-            // Seeded layouts are authored in coarse thirds on the 5x5 lattice (see ThirdStart);
-            // users refine from there with cuts, merges, and the track grippers.
+            // Templates are authored directly on the 5x5 lattice with equal tracks (null
+            // weights); users refine from there with cuts, merges, and the track grippers.
             switch (template)
             {
                 case ShowcasePageTemplate.Showcase:
-                    AddBlock(settings, page, 0, 0, 1, 2, ShowcaseWidgetKind.Profile);
-                    AddScoreBlock(settings, page, 0, 2, 1, 1, showCollectionScore, showPrestigeScore);
-                    AddBlock(settings, page, 1, 0, 2, 2, ShowcaseWidgetKind.PinnedAchievements);
-                    AddBlock(settings, page, 1, 2, 1, 1, ShowcaseWidgetKind.Statistics);
-                    AddBlock(settings, page, 2, 2, 1, 1, ShowcaseWidgetKind.FavoriteGames);
+                    AddBlock(settings, page, 0, 0, 2, 3, ShowcaseWidgetKind.Profile);
+                    AddScoreBlock(settings, page, 0, 3, 2, 2, showCollectionScore, showPrestigeScore);
+                    AddBlock(settings, page, 2, 0, 3, 3, ShowcaseWidgetKind.PinnedAchievements);
+                    AddBlock(settings, page, 2, 3, 2, 2, ShowcaseWidgetKind.Statistics);
+                    AddBlock(settings, page, 4, 3, 1, 2, ShowcaseWidgetKind.FavoriteGames);
                     break;
                 case ShowcasePageTemplate.Analytics:
-                    AddScoreBlock(settings, page, 0, 0, 1, 3, true, true);
-                    AddBlock(settings, page, 1, 0, 2, 2, ShowcaseWidgetKind.NativePoints);
-                    AddBlock(settings, page, 1, 2, 1, 1, ShowcaseWidgetKind.Statistics);
-                    AddBlock(settings, page, 2, 2, 1, 1, ShowcaseWidgetKind.Pie);
+                    AddScoreBlock(settings, page, 0, 0, 2, 5, true, true);
+                    AddBlock(settings, page, 2, 0, 3, 3, ShowcaseWidgetKind.NativePoints);
+                    AddBlock(settings, page, 2, 3, 1, 2, ShowcaseWidgetKind.Statistics);
+                    AddBlock(settings, page, 3, 3, 2, 2, ShowcaseWidgetKind.Pie);
                     break;
                 case ShowcasePageTemplate.Collection:
-                    AddBlock(settings, page, 0, 0, 2, 2, ShowcaseWidgetKind.PinnedAchievements);
-                    AddBlock(settings, page, 0, 2, 2, 1, ShowcaseWidgetKind.FavoriteGames);
-                    AddBlock(settings, page, 2, 0, 1, 3, ShowcaseWidgetKind.GameMosaic);
+                    AddBlock(settings, page, 0, 0, 3, 3, ShowcaseWidgetKind.PinnedAchievements);
+                    AddBlock(settings, page, 0, 3, 3, 2, ShowcaseWidgetKind.FavoriteGames);
+                    AddBlock(settings, page, 3, 0, 2, 5, ShowcaseWidgetKind.GameMosaic);
                     break;
                 default:
-                    for (var row = 0; row < 3; row++)
+                    for (var row = 0; row < MaxGridSize; row++)
                     {
-                        for (var column = 0; column < 3; column++)
+                        for (var column = 0; column < MaxGridSize; column++)
                         {
-                            page.Blocks.Add(NewThirdsBlock(row, column, 1, 1, null));
+                            page.Blocks.Add(NewBlock(row, column, 1, 1, null));
                         }
                     }
 
@@ -828,38 +826,6 @@ namespace PlayniteAchievements.Services.Showcase
 
             SortBlocks(page);
             return page;
-        }
-
-        // Maps coarse third indices onto the 5x5 lattice: the first two thirds take two
-        // tracks each and the last takes one. The seeded [1,1,1,1,2] track weights make
-        // those groups render as equal thirds until the user resizes them.
-        private static readonly int[] ThirdStartTracks = { 0, 2, 4, 5 };
-
-        private static int ThirdStart(int third)
-        {
-            return ThirdStartTracks[Math.Max(0, Math.Min(ThirdStartTracks.Length - 1, third))];
-        }
-
-        private static List<double> CreateThirdsWeights()
-        {
-            return new List<double> { 1, 1, 1, 1, 2 };
-        }
-
-        private static ShowcaseBlockSettings NewThirdsBlock(
-            int thirdRow,
-            int thirdColumn,
-            int thirdRowSpan,
-            int thirdColumnSpan,
-            string widgetInstanceId)
-        {
-            var row = ThirdStart(thirdRow);
-            var column = ThirdStart(thirdColumn);
-            return NewBlock(
-                row,
-                column,
-                ThirdStart(thirdRow + thirdRowSpan) - row,
-                ThirdStart(thirdColumn + thirdColumnSpan) - column,
-                widgetInstanceId);
         }
 
         private static void AddScoreBlock(
@@ -886,7 +852,7 @@ namespace PlayniteAchievements.Services.Showcase
                 settings.WidgetInstances.Add(widget);
             }
 
-            page.Blocks.Add(NewThirdsBlock(row, column, rowSpan, columnSpan, widget?.InstanceId));
+            page.Blocks.Add(NewBlock(row, column, rowSpan, columnSpan, widget?.InstanceId));
         }
 
         private static void AddBlock(
@@ -900,7 +866,7 @@ namespace PlayniteAchievements.Services.Showcase
         {
             var widget = NewWidget(kind);
             settings.WidgetInstances.Add(widget);
-            page.Blocks.Add(NewThirdsBlock(row, column, rowSpan, columnSpan, widget.InstanceId));
+            page.Blocks.Add(NewBlock(row, column, rowSpan, columnSpan, widget.InstanceId));
         }
 
         private static ShowcaseWidgetInstanceSettings NewWidget(ShowcaseWidgetKind kind)
