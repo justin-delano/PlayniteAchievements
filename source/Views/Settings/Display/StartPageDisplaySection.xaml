@@ -93,31 +93,9 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource SectionBorderStyle}">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[StartPage]}"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource SectionBorderStyle}">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[StartPageRecent]}"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
+            <!-- The recent-unlocks and game-summaries grids are showcase-backed widgets whose
+                 display options live in each widget's own StartPage settings; only the friends
+                 grid still edits its (single, fixed) surface here. -->
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_StartPage_FriendsRecentAchievements}"
