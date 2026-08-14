@@ -591,7 +591,12 @@
 
     <DataTemplate DataType="{x:Type widgets:ActivityCalendarWidgetViewModel}">
         <Grid>
-            <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_NoData}"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.RowSpan="2"
+                       Text="{DynamicResource LOCPlayAch_Showcase_NoData}"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                        Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                        FontSize="{DynamicResource PlayAch.FontSize.Caption}"
@@ -600,11 +605,11 @@
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
             <!-- Horizontal-only scrolling: the Viewbox sees a constrained height and infinite
                  width, so it scales the calendar to fill the widget's height and long ranges
-                 overflow into a horizontal scrollbar instead of shrinking. -->
+                 overflow into a horizontal scrollbar instead of shrinking. The legend sits
+                 outside the scroll area so it stays put while the calendar scrolls. -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
-            <Viewbox Stretch="Uniform" StretchDirection="Both">
-                <StackPanel>
+                <Viewbox Stretch="Uniform" StretchDirection="Both">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -635,34 +640,35 @@
                                                           ShowMonthLabels="{Binding ShowMonthLabels}"
                                                           VerticalAlignment="Top"/>
                     </Grid>
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Right"
-                                Margin="0,4,0,0"
-                                Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_Less}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                   FontSize="9"
-                                   Margin="0,0,4,0"
-                                   VerticalAlignment="Center"/>
-                        <ItemsControl ItemsSource="{Binding LegendCells}"
-                                      ItemTemplate="{StaticResource ShowcaseActivityCellTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_More}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                   FontSize="9"
-                                   Margin="4,0,0,0"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </StackPanel>
-            </Viewbox>
+                </Viewbox>
             </ScrollViewer>
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,4,0,0"
+                        Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_Less}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                           Margin="0,0,4,0"
+                           VerticalAlignment="Center"/>
+                <ItemsControl ItemsSource="{Binding LegendCells}"
+                              ItemTemplate="{StaticResource ShowcaseActivityCellTemplate}"
+                              VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_More}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                           Margin="4,0,0,0"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
         </Grid>
     </DataTemplate>
 
