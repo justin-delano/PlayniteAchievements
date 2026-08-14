@@ -95,7 +95,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
             var showChart = Density != WidgetViewportDensity.Compact && history.Count >= 2;
-            var rangeCaption = RangeCaption(ShowcaseTimelineOptions.GetRange(Projection?.Instance));
+            var rangeCaption = TimelineRangeText.Describe(
+                ShowcaseTimelineOptions.GetRange(Projection?.Instance));
             var culture = FormattingCulture.Current;
             var historyLabels = history
                 .Select(point => point.Date.ToString("d", culture))
@@ -147,23 +148,5 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             Cards.ReplaceAll(cards);
         }
 
-        private static string RangeCaption(TimelineRange range)
-        {
-            switch (range)
-            {
-                case TimelineRange.SevenDays:
-                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_7D");
-                case TimelineRange.FourteenDays:
-                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_14D");
-                case TimelineRange.OneMonth:
-                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_1M");
-                case TimelineRange.OneYear:
-                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_1Y");
-                case TimelineRange.All:
-                    return ResourceProvider.GetString("LOCPlayAch_Common_All");
-                default:
-                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_3M");
-            }
-        }
     }
 }

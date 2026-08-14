@@ -56,22 +56,7 @@ namespace PlayniteAchievements.Views.Showcase
         public static string FitModeName(ShowcaseImageFitMode value) =>
             EnumValueName("LOCPlayAch_Showcase_ImageFit_", value);
 
-        public static string TimelineRangeName(TimelineRange range)
-        {
-            switch (range)
-            {
-                case TimelineRange.OneMonth:
-                    return Localize("LOCPlayAch_TimeRange_1M");
-                case TimelineRange.ThreeMonths:
-                    return Localize("LOCPlayAch_TimeRange_3M");
-                case TimelineRange.OneYear:
-                    return Localize("LOCPlayAch_TimeRange_1Y");
-                case TimelineRange.All:
-                    return Localize("LOCPlayAch_Common_All");
-                default:
-                    return range.ToString();
-            }
-        }
+        public static string TimelineRangeName(TimelineRange range) => TimelineRangeText.Describe(range);
 
         private static string EnumValueName<T>(string prefix, T value)
         {
