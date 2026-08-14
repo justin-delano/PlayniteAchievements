@@ -42,6 +42,8 @@ namespace PlayniteAchievements.Services.StartPage
         public const string ShowcaseFavoriteGamesViewId = "PlayniteAchievements_Showcase_FavoriteGames";
         public const string ShowcaseIconMosaicViewId = "PlayniteAchievements_Showcase_IconMosaic";
         public const string ShowcaseScreenshotSlideshowViewId = "PlayniteAchievements_Showcase_ScreenshotSlideshow";
+        public const string ShowcaseActivityCalendarViewId = "PlayniteAchievements_Showcase_ActivityCalendar";
+        public const string ShowcaseGameMosaicViewId = "PlayniteAchievements_Showcase_GameMosaic";
 
         private static readonly IReadOnlyList<StartPageViewDefinition> ViewDefinitions =
             new List<StartPageViewDefinition>
@@ -109,7 +111,7 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcaseDualScoresViewId,
                     StartPageWidgetKind.ShowcaseDualScores,
                     ShowcaseWidgetKind.Scores,
-                    hasSettings: false),
+                    hasSettings: true),
                 Shared(
                     ShowcaseTimelineViewId,
                     StartPageWidgetKind.ShowcaseTimeline,
@@ -144,6 +146,16 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcaseScreenshotSlideshowViewId,
                     StartPageWidgetKind.ShowcaseScreenshotSlideshow,
                     ShowcaseWidgetKind.ScreenshotSlideshow,
+                    hasSettings: true),
+                Shared(
+                    ShowcaseActivityCalendarViewId,
+                    StartPageWidgetKind.ShowcaseActivityCalendar,
+                    ShowcaseWidgetKind.ActivityCalendar,
+                    hasSettings: false),
+                Shared(
+                    ShowcaseGameMosaicViewId,
+                    StartPageWidgetKind.ShowcaseGameMosaic,
+                    ShowcaseWidgetKind.GameMosaic,
                     hasSettings: true)
             };
 
