@@ -5,10 +5,30 @@
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
                     xmlns:showcase="clr-namespace:PlayniteAchievements.Views.Showcase"
-                    xmlns:widgets="clr-namespace:PlayniteAchievements.ViewModels.Showcase.Widgets">
+                    xmlns:widgets="clr-namespace:PlayniteAchievements.ViewModels.Showcase.Widgets"
+                    xmlns:wpftk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel">
 
     <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
     <converters:ResourceKeyToImageSourceConverter x:Key="ShowcaseResourceKeyToImage"/>
+
+    <!-- Mosaics can hold 64 tiles, each carrying artwork, a glow effect, and a ray burst that
+         redraws while it is on screen. A plain ItemsControl in a ScrollViewer realizes all of
+         them at once; this container virtualizes so only the tiles in view exist, while keeping
+         the item chrome invisible (the tiles draw themselves). -->
+    <Style x:Key="ShowcaseMosaicItemStyle" TargetType="ListBoxItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <ContentPresenter/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <!-- Shared value/label tile used by the Statistics widget and the Profile stat strip. -->
     <DataTemplate x:Key="ShowcaseStatTileTemplate">
@@ -203,29 +223,34 @@
 
     <!-- IconMosaic: centered wrap of reused AchievementCompactItemControl icons. -->
     <DataTemplate DataType="{x:Type widgets:IconMosaicWidgetViewModel}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Items}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Margin="6">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Center"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <controls:AchievementCompactItemControl
-                            IconSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                            ShowRarityGlow="{Binding DataContext.ShowRarityGlow, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                            AnimateRarityGlows="{Binding DataContext.AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                            UseLargeRarityGlow="True"
-                            Margin="6"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <ListBox ItemsSource="{Binding Items}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="6"
+                 ItemContainerStyle="{StaticResource ShowcaseMosaicItemStyle}"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.CanContentScroll="True"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <wpftk:VirtualizingWrapPanel Orientation="Horizontal"
+                                                 VirtualizingPanel.CacheLengthUnit="Item"
+                                                 VirtualizingPanel.VirtualizationMode="Recycling"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <controls:AchievementCompactItemControl
+                        IconSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        ShowRarityGlow="{Binding DataContext.ShowRarityGlow, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        AnimateRarityGlows="{Binding DataContext.AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        UseLargeRarityGlow="True"
+                        Margin="6"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </DataTemplate>
 
     <!-- Pie: reuses PieChartWithRadialIcons with an optional legend docked right. -->
@@ -486,17 +511,24 @@
 
     <!-- GameMosaic: dense wrap of game cover tiles; pinned-source tiles get a reorder/unpin menu. -->
     <DataTemplate DataType="{x:Type widgets:GameMosaicWidgetViewModel}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Tiles}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Center"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+        <ListBox ItemsSource="{Binding Tiles}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="0"
+                 ItemContainerStyle="{StaticResource ShowcaseMosaicItemStyle}"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.CanContentScroll="True"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <wpftk:VirtualizingWrapPanel Orientation="Horizontal"
+                                                 VirtualizingPanel.CacheLengthUnit="Item"
+                                                 VirtualizingPanel.VirtualizationMode="Recycling"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
                                 CornerRadius="{StaticResource PlayAch.Radius.Small}"
@@ -533,9 +565,8 @@
                             </Image>
                         </Border>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </DataTemplate>
 
     <!-- ActivityCalendar: contributions-style heatmap of unlocks per day. -->
