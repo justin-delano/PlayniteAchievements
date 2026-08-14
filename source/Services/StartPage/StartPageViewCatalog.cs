@@ -151,7 +151,7 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcaseActivityCalendarViewId,
                     StartPageWidgetKind.ShowcaseActivityCalendar,
                     ShowcaseWidgetKind.ActivityCalendar,
-                    hasSettings: false),
+                    hasSettings: true),
                 Shared(
                     ShowcaseGameMosaicViewId,
                     StartPageWidgetKind.ShowcaseGameMosaic,
