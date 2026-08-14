@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Services.StartPage;
-using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.StartPage
 {
@@ -36,24 +34,11 @@ namespace PlayniteAchievements.ViewModels.StartPage
         protected override void ApplySnapshot(OverviewDataSnapshot snapshot)
         {
             _latestSnapshot = snapshot ?? new OverviewDataSnapshot();
-
-            // StartPage-hosted game summaries honor the global StartPage activity and
-            // progress scopes, matching the retired dedicated StartPage grid widget.
-            Func<IEnumerable<GameSummaryItem>, IEnumerable<GameSummaryItem>> scopeFilter = null;
-            if (_instance.Kind == ShowcaseWidgetKind.GameSummaries)
-            {
-                scopeFilter = items => StartPageWidgetProjection.FilterGameSummariesForStartPage(
-                    items,
-                    PersistedSettings,
-                    includeProgressScope: true);
-            }
-
             Projection = ShowcaseWidgetProjectionService.Build(
                 _latestSnapshot,
                 PersistedSettings?.Showcase,
                 _instance,
-                gridOptions: PersistedSettings?.GridOptions,
-                gameSummariesFilter: scopeFilter);
+                gridOptions: PersistedSettings?.GridOptions);
         }
 
         public override void Dispose()

@@ -173,8 +173,7 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseSettings settings,
             ShowcaseWidgetInstanceSettings instance,
             DateTime? now = null,
-            GridOptionsCatalog gridOptions = null,
-            Func<IEnumerable<GameSummaryItem>, IEnumerable<GameSummaryItem>> gameSummariesFilter = null)
+            GridOptionsCatalog gridOptions = null)
         {
             snapshot = snapshot ?? new OverviewDataSnapshot();
             settings = settings ?? new ShowcaseSettings();
@@ -232,7 +231,7 @@ namespace PlayniteAchievements.Services.Showcase
                     result.AchievementRows = ResolveRecentAchievements(snapshot);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    result.Games = ResolveGameSummaries(snapshot, instance, gameSummariesFilter);
+                    result.Games = ResolveGameSummaries(snapshot, instance);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
@@ -601,17 +600,19 @@ namespace PlayniteAchievements.Services.Showcase
 
         public static IReadOnlyList<GameSummaryItem> ResolveGameSummaries(
             OverviewDataSnapshot snapshot,
-            ShowcaseWidgetInstanceSettings instance,
-            Func<IEnumerable<GameSummaryItem>, IEnumerable<GameSummaryItem>> filter = null)
+            ShowcaseWidgetInstanceSettings instance)
         {
             var games = (snapshot?.GameSummaries ?? new List<GameSummaryItem>())
                 .Where(game => game != null);
-            // Host-supplied filter (e.g. the StartPage host applies the global activity and
-            // progress scopes) runs before the widget's own options.
-            if (filter != null)
+
+            // Per-widget scope: which games qualify by played/unplayed activity.
+            var activityScope = ShowcaseWidgetOptions.GetGameActivityScope(instance);
+            if (activityScope != GameActivityScope.All && activityScope != GameActivityScope.None)
             {
-                games = (filter(games) ?? Enumerable.Empty<GameSummaryItem>())
-                    .Where(game => game != null);
+                games = OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
+                    games,
+                    activityScope,
+                    GameProgressScope.None);
             }
 
             if (ShowcaseWidgetOptions.GetHideCompleted(instance))

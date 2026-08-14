@@ -323,7 +323,7 @@ namespace PlayniteAchievements.Views.Showcase
             switch (kind)
             {
                 case ShowcaseWidgetKind.GameSummaries:
-                    return 620;
+                    return 650;
                 case ShowcaseWidgetKind.FavoriteGames:
                     return 560;
                 case ShowcaseWidgetKind.PinnedAchievements:
@@ -332,9 +332,10 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Profile:
                     return 300;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
+                case ShowcaseWidgetKind.Pie:
+                case ShowcaseWidgetKind.IconMosaic:
                     return 250;
                 case ShowcaseWidgetKind.NativePoints:
-                case ShowcaseWidgetKind.IconMosaic:
                 case ShowcaseWidgetKind.Scores:
                 case ShowcaseWidgetKind.GameMosaic:
                     return 210;

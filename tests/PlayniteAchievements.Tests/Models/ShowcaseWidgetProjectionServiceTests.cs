@@ -508,7 +508,7 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
-        public void GameSummaries_AppliesHostFilterAndHideCompletedWithoutSortingOrCapping()
+        public void GameSummaries_AppliesActivityScopeAndHideCompletedWithoutSortingOrCapping()
         {
             var oldest = new GameSummaryItem
             {
@@ -552,7 +552,7 @@ namespace PlayniteAchievements.Tests.Models
             var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.GameSummaries };
 
             // Sorting and the MaxRows cap live in the widget view model; the resolver keeps
-            // snapshot order and only applies the host filter and HideCompleted.
+            // snapshot order and only applies the activity scope and HideCompleted options.
             var resolved = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
             CollectionAssert.AreEqual(
                 new[] { oldest, newest, completed, neverUnlocked },
@@ -564,13 +564,15 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(3, withoutCompleted.Count);
 
             instance.SetOption("HideCompleted", false);
-            var hostFiltered = ShowcaseWidgetProjectionService.ResolveGameSummaries(
-                snapshot,
-                instance,
-                items => items.Where(game => game.LastUnlockUtc.HasValue));
+            ShowcaseWidgetOptions.SetGameActivityScope(instance, GameActivityScope.Played);
             CollectionAssert.AreEqual(
                 new[] { oldest, newest, completed },
-                hostFiltered.ToArray());
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance).ToArray());
+
+            ShowcaseWidgetOptions.SetGameActivityScope(instance, GameActivityScope.Unplayed);
+            CollectionAssert.AreEqual(
+                new[] { neverUnlocked },
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance).ToArray());
         }
 
         [TestMethod]

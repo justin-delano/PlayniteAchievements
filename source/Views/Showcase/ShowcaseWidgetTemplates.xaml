@@ -299,7 +299,7 @@
                 HighlightedLabels="{Binding Chart.HighlightedLabels}"
                 ExactUnlockedCount="{Binding Chart.ExactUnlockedCount}"
                 ExactTotalCount="{Binding Chart.ExactTotalCount}"
-                ShowCenterPercentage="True"
+                ShowCenterPercentage="{Binding ShowCenterPercentage}"
                 MinHeight="70"/>
         </DockPanel>
     </DataTemplate>
@@ -638,44 +638,32 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
-            <!-- Horizontal-only scrolling: the Viewbox sees a constrained height and infinite
-                 width, so it scales the calendar to fill the widget's height and long ranges
-                 overflow into a horizontal scrollbar instead of shrinking. The legend sits
-                 outside the scroll area so it stays put while the calendar scrolls. -->
-            <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Disabled">
-                <Viewbox Stretch="Uniform" StretchDirection="Both">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,4,0"
-                                    Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}">
-                            <!-- Spacer matching the heatmap's month-label band. -->
-                            <TextBlock Height="14"/>
-                            <ItemsControl ItemsSource="{Binding WeekdayLabels}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}"
-                                                   Height="12"
-                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                                   FontSize="9"
-                                                   VerticalAlignment="Center"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                        <!-- Single custom-drawn visual: one element for the whole grid of cells,
-                             with tooltips served from hit tests. -->
-                        <showcase:ActivityCalendarHeatmap Grid.Column="1"
-                                                          Weeks="{Binding Weeks}"
-                                                          ShowMonthLabels="{Binding ShowChrome}"
-                                                          VerticalAlignment="Top"/>
-                    </Grid>
-                </Viewbox>
-            </ScrollViewer>
+            <!-- The calendar sizes itself from the plugin's caption font size (see
+                 ActivityCalendarMetrics) instead of stretching to fill the widget; long
+                 ranges overflow into a horizontal scrollbar. The weekday gutter and the
+                 legend sit outside the scroll area so they stay put while the calendar
+                 scrolls, and the gutter shares the heatmap's metrics so its rows line up. -->
+            <Grid TextElement.FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                  VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <showcase:ActivityCalendarDayGutter Labels="{Binding WeekdayLabels}"
+                                                    ShowMonthBand="{Binding ShowChrome}"
+                                                    VerticalAlignment="Top"
+                                                    Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}"/>
+                <ScrollViewer Grid.Column="1"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <!-- Single custom-drawn visual: one element for the whole grid of cells,
+                         with tooltips served from hit tests. -->
+                    <showcase:ActivityCalendarHeatmap Weeks="{Binding Weeks}"
+                                                      ShowMonthLabels="{Binding ShowChrome}"
+                                                      HorizontalAlignment="Left"
+                                                      VerticalAlignment="Top"/>
+                </ScrollViewer>
+            </Grid>
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"

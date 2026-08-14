@@ -312,6 +312,10 @@ namespace PlayniteAchievements.Models
         private const string FitMode = "FitMode";
         private const string Shuffle = "Shuffle";
         private const string HideCompleted = "HideCompleted";
+        private const string ShowRarityGlow = "ShowRarityGlow";
+        private const string ShowCenterPercentage = "ShowCenterPercentage";
+        private const string SmallSliceMode = "SmallSliceMode";
+        private const string ActivityScope = "ActivityScope";
 
         public static ShowcaseScoreMode GetScoreMode(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Mode, ShowcaseScoreMode.Dual);
@@ -324,6 +328,26 @@ namespace PlayniteAchievements.Models
 
         public static void SetPieMode(ShowcaseWidgetInstanceSettings settings, ShowcasePieMode value) =>
             settings?.SetOption(Mode, value);
+
+        public static bool GetPieShowCenterPercentage(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowCenterPercentage, true) ?? true;
+
+        public static void SetPieShowCenterPercentage(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ShowCenterPercentage, value);
+
+        public static OverviewPieSmallSliceMode GetPieSmallSliceMode(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, SmallSliceMode, OverviewPieSmallSliceMode.Round);
+
+        public static void SetPieSmallSliceMode(
+            ShowcaseWidgetInstanceSettings settings,
+            OverviewPieSmallSliceMode value) => settings?.SetOption(SmallSliceMode, value);
+
+        public static GameActivityScope GetGameActivityScope(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, ActivityScope, GameActivityScope.All);
+
+        public static void SetGameActivityScope(
+            ShowcaseWidgetInstanceSettings settings,
+            GameActivityScope value) => settings?.SetOption(ActivityScope, value);
 
         public static ShowcasePointsGrouping GetPointsGrouping(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Grouping, ShowcasePointsGrouping.Provider);
@@ -357,6 +381,12 @@ namespace PlayniteAchievements.Models
 
         public static void SetMosaicCount(ShowcaseWidgetInstanceSettings settings, int value) =>
             settings?.SetOption(Count, Clamp(value, 1, 64));
+
+        public static bool GetMosaicShowRarityGlow(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowRarityGlow, true) ?? true;
+
+        public static void SetMosaicShowRarityGlow(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ShowRarityGlow, value);
 
         public static ShowcaseScreenshotVariant GetScreenshotVariant(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Variant, ShowcaseScreenshotVariant.All);
@@ -441,6 +471,8 @@ namespace PlayniteAchievements.Models
                     break;
                 case ShowcaseWidgetKind.Pie:
                     ShowcaseWidgetOptions.SetPieMode(settings, ShowcasePieMode.CompletedGames);
+                    ShowcaseWidgetOptions.SetPieShowCenterPercentage(settings, true);
+                    ShowcaseWidgetOptions.SetPieSmallSliceMode(settings, OverviewPieSmallSliceMode.Round);
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     ShowcaseTimelineOptions.SetRange(settings, TimelineRange.ThreeMonths);
@@ -455,6 +487,7 @@ namespace PlayniteAchievements.Models
                 case ShowcaseWidgetKind.IconMosaic:
                     ShowcaseWidgetOptions.SetMosaicSource(settings, ShowcaseMosaicSource.Recent);
                     ShowcaseWidgetOptions.SetMosaicCount(settings, 24);
+                    ShowcaseWidgetOptions.SetMosaicShowRarityGlow(settings, true);
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     ShowcaseWidgetOptions.SetScreenshotVariant(settings, ShowcaseScreenshotVariant.All);
@@ -464,6 +497,7 @@ namespace PlayniteAchievements.Models
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
                     ShowcaseWidgetOptions.SetHideCompleted(settings, false);
+                    ShowcaseWidgetOptions.SetGameActivityScope(settings, GameActivityScope.All);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     ShowcaseWidgetOptions.SetGameMosaicSource(settings, ShowcaseGameMosaicSource.Completed);

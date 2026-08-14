@@ -64,10 +64,18 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     {
         private PieChartViewModel _chart = new PieChartViewModel();
         private bool _showLegend;
+        private bool _showCenterPercentage = true;
 
         public PieChartViewModel Chart { get => _chart; private set => SetValue(ref _chart, value); }
 
         public bool ShowLegend { get => _showLegend; private set => SetValue(ref _showLegend, value); }
+
+        /// <summary>Per-widget option; replaces the retired global pie display settings.</summary>
+        public bool ShowCenterPercentage
+        {
+            get => _showCenterPercentage;
+            private set => SetValue(ref _showCenterPercentage, value);
+        }
 
         public BulkObservableCollection<PieLegendRowViewModel> LegendRows { get; } =
             new BulkObservableCollection<PieLegendRowViewModel>();
@@ -76,7 +84,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         {
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
-            var chart = new PieChartViewModel();
+            ShowCenterPercentage = ShowcaseWidgetOptions.GetPieShowCenterPercentage(Projection?.Instance);
+            var chart = new PieChartViewModel
+            {
+                // Applied by each Set*Data call, so it must be assigned before the data.
+                SmallSliceMode = ShowcaseWidgetOptions.GetPieSmallSliceMode(Projection?.Instance)
+            };
             switch (mode)
             {
                 case ShowcasePieMode.Provider:

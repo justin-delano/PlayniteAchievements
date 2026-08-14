@@ -9,7 +9,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// <summary>
     /// Backs the IconMosaic widget by reusing AchievementCompactItemControl for each achievement.
     /// Icon size follows density (compact 32 / standard 42 / expanded 54) and compact caps the wrap
-    /// at 12 icons; rarity-glow appearance mirrors the shared compact-list settings.
+    /// at 12 icons; rarity-glow appearance comes from the widget's own per-instance options.
     /// </summary>
     public sealed class IconMosaicWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -32,9 +32,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var compact = Density == WidgetViewportDensity.Compact;
             IconSize = compact ? 32 : Density == WidgetViewportDensity.Expanded ? 54 : 42;
 
-            var appearance = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
-            ShowRarityGlow = appearance?.ModernCompactListShowRarityGlow ?? true;
-            AnimateRarityGlows = appearance?.AnimateRarityGlows ?? true;
+            // Glow on/off is a per-widget option; the glow ANIMATION stays a global setting.
+            ShowRarityGlow = ShowcaseWidgetOptions.GetMosaicShowRarityGlow(Projection?.Instance);
+            AnimateRarityGlows =
+                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.AnimateRarityGlows ?? true;
 
             var limit = compact ? 12 : achievements.Count;
             Items.ReplaceAll(achievements.Take(limit));

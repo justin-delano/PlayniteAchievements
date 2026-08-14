@@ -97,6 +97,25 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetPieMode(_settings),
                         value => ShowcaseWidgetOptions.SetPieMode(_settings, value),
                         PieModeName);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_ShowOverviewPiePercentages"),
+                        new[] { true, false },
+                        ShowcaseWidgetOptions.GetPieShowCenterPercentage(_settings),
+                        value => ShowcaseWidgetOptions.SetPieShowCenterPercentage(_settings, value),
+                        OnOffLabel);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_OverviewPieSmallSliceMode"),
+                        new[]
+                        {
+                            OverviewPieSmallSliceMode.Round,
+                            OverviewPieSmallSliceMode.Exact,
+                            OverviewPieSmallSliceMode.Hide
+                        },
+                        ShowcaseWidgetOptions.GetPieSmallSliceMode(_settings),
+                        value => ShowcaseWidgetOptions.SetPieSmallSliceMode(_settings, value),
+                        SmallSliceModeName);
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     AddRangeChoice(panel);
@@ -146,6 +165,13 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetMosaicCount(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value),
                         CountLabel);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_ToastShowRarityGlow"),
+                        new[] { true, false },
+                        ShowcaseWidgetOptions.GetMosaicShowRarityGlow(_settings),
+                        value => ShowcaseWidgetOptions.SetMosaicShowRarityGlow(_settings, value),
+                        OnOffLabel);
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     AddChoice(
@@ -184,20 +210,28 @@ namespace PlayniteAchievements.Views.Showcase
                         new[] { true, false },
                         ShowcaseWidgetOptions.GetShuffle(_settings),
                         value => ShowcaseWidgetOptions.SetShuffle(_settings, value),
-                        value => value
-                            ? Localize("LOCPlayAch_Settings_Override_On")
-                            : Localize("LOCPlayAch_Settings_Override_Off"));
+                        OnOffLabel);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Filter_ActivitySelectorPlaceholder"),
+                        new[]
+                        {
+                            GameActivityScope.All,
+                            GameActivityScope.Played,
+                            GameActivityScope.Unplayed
+                        },
+                        ShowcaseWidgetOptions.GetGameActivityScope(_settings),
+                        value => ShowcaseWidgetOptions.SetGameActivityScope(_settings, value),
+                        ActivityScopeName);
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_HideCompleted"),
                         new[] { false, true },
                         ShowcaseWidgetOptions.GetHideCompleted(_settings),
                         value => ShowcaseWidgetOptions.SetHideCompleted(_settings, value),
-                        value => value
-                            ? Localize("LOCPlayAch_Settings_Override_On")
-                            : Localize("LOCPlayAch_Settings_Override_Off"));
+                        OnOffLabel);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     AddRangeChoice(panel);
@@ -339,6 +373,36 @@ namespace PlayniteAchievements.Views.Showcase
         }
 
         private static string CountLabel(int value) => value.ToString("N0", FormattingCulture.Current);
+
+        private static string OnOffLabel(bool value) => value
+            ? Localize("LOCPlayAch_Settings_Override_On")
+            : Localize("LOCPlayAch_Settings_Override_Off");
+
+        private static string ActivityScopeName(GameActivityScope value)
+        {
+            switch (value)
+            {
+                case GameActivityScope.Played:
+                    return Localize("LOCPlayAch_Filter_Played");
+                case GameActivityScope.Unplayed:
+                    return Localize("LOCPlayAch_Filter_Unplayed");
+                default:
+                    return Localize("LOCPlayAch_Common_All");
+            }
+        }
+
+        private static string SmallSliceModeName(OverviewPieSmallSliceMode value)
+        {
+            switch (value)
+            {
+                case OverviewPieSmallSliceMode.Exact:
+                    return Localize("LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact");
+                case OverviewPieSmallSliceMode.Hide:
+                    return Localize("LOCPlayAch_Common_Hide");
+                default:
+                    return Localize("LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round");
+            }
+        }
 
         private void AddChoice<T>(
             Panel panel,
