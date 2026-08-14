@@ -127,6 +127,65 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void GridSurfaces_BuildPerInstanceKeysAndResolveToDedicatedSurfaces()
+        {
+            var key = ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.RecentAchievements, " abc ");
+            Assert.AreEqual("ShowcaseRecentAchievements:abc", key);
+            Assert.AreEqual(ShowcaseGridSurfaces.RecentAchievements, ShowcaseGridSurfaces.GetBaseKey(key));
+            Assert.AreEqual(
+                ShowcaseGridSurfaces.PinnedGames,
+                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.PinnedGames, null));
+
+            Assert.IsTrue(ShowcaseGridSurfaces.IsAchievementSurface(key));
+            Assert.IsTrue(ShowcaseGridSurfaces.IsAchievementSurface(ShowcaseGridSurfaces.PinnedAchievements));
+            Assert.IsFalse(ShowcaseGridSurfaces.IsAchievementSurface("OverviewRecentAchievements"));
+            Assert.IsTrue(ShowcaseGridSurfaces.IsGameSurface("ShowcaseGameSummaries:123"));
+            Assert.IsFalse(ShowcaseGridSurfaces.IsGameSurface("StartPageGameSummaries"));
+
+            // Showcase keys are their own persisted surface ids; other keys keep their mappings.
+            Assert.AreEqual(key, PlayniteAchievements.Models.Settings.GridOptionsCatalog.ResolveAchievementId(key));
+            Assert.AreEqual(
+                "ShowcaseGameSummaries:123",
+                PlayniteAchievements.Models.Settings.GridOptionsCatalog.ResolveGameSummariesId("ShowcaseGameSummaries:123"));
+            Assert.AreNotEqual(
+                "SomeUnknownKey",
+                PlayniteAchievements.Models.Settings.GridOptionsCatalog.ResolveAchievementId("SomeUnknownKey"));
+        }
+
+        [TestMethod]
+        public void GridSurfaces_PruneRemovesOrphanedInstanceSurfacesOnly()
+        {
+            var catalog = new PlayniteAchievements.Models.Settings.GridOptionsCatalog();
+            catalog.GetAchievement("ShowcaseRecentAchievements:live");
+            catalog.GetAchievement("ShowcaseRecentAchievements:gone");
+            catalog.GetAchievement(ShowcaseGridSurfaces.PinnedAchievements);
+            catalog.GetGameSummaries("ShowcaseGameSummaries:startpage");
+            catalog.GetGameSummaries("ShowcaseGameSummaries:gone");
+            catalog.GetGameSummaries("OverviewGameSummaries");
+
+            var showcase = new ShowcaseSettings
+            {
+                WidgetInstances = new System.Collections.Generic.List<ShowcaseWidgetInstanceSettings>
+                {
+                    new ShowcaseWidgetInstanceSettings { InstanceId = "live" }
+                }
+            };
+            showcase.StartPageInstances["view:one"] = new ShowcaseWidgetInstanceSettings
+            {
+                InstanceId = "startpage"
+            };
+
+            ShowcaseGridSurfaces.PruneOrphaned(catalog, showcase);
+
+            Assert.IsTrue(catalog.Achievement.ContainsKey("ShowcaseRecentAchievements:live"));
+            Assert.IsFalse(catalog.Achievement.ContainsKey("ShowcaseRecentAchievements:gone"));
+            Assert.IsTrue(catalog.Achievement.ContainsKey(ShowcaseGridSurfaces.PinnedAchievements));
+            Assert.IsTrue(catalog.GameSummaries.ContainsKey("ShowcaseGameSummaries:startpage"));
+            Assert.IsFalse(catalog.GameSummaries.ContainsKey("ShowcaseGameSummaries:gone"));
+            Assert.IsTrue(catalog.GameSummaries.ContainsKey("OverviewGameSummaries"));
+        }
+
+        [TestMethod]
         public void WidgetFactory_UsesTheSharedOptionContract()
         {
             var instance = ShowcaseWidgetSettingsFactory.CreateDefault(
