@@ -78,14 +78,6 @@ namespace PlayniteAchievements.Models.Settings
         Fill = 1
     }
 
-    public enum ShowcaseGameListSort
-    {
-        LastUnlock = 0,
-        Completion = 1,
-        Name = 2,
-        Playtime = 3
-    }
-
     public enum ShowcaseGameMosaicSource
     {
         Completed = 0,

@@ -373,7 +373,8 @@ namespace PlayniteAchievements.Views.Showcase
                     host.Apply(ShowcaseWidgetProjectionService.Build(
                         _overview.LatestSnapshot ?? new OverviewDataSnapshot(),
                         Layout,
-                        widget));
+                        widget,
+                        gridOptions: _settings.Persisted?.GridOptions));
                 }),
                 System.Windows.Threading.DispatcherPriority.Background);
             return host;
@@ -1022,7 +1023,11 @@ namespace PlayniteAchievements.Views.Showcase
                 if (visual?.Host != null && visual.Widget != null)
                 {
                     visual.Host.Apply(
-                        ShowcaseWidgetProjectionService.Build(snapshot, Layout, visual.Widget));
+                        ShowcaseWidgetProjectionService.Build(
+                            snapshot,
+                            Layout,
+                            visual.Widget,
+                            gridOptions: _settings.Persisted?.GridOptions));
                 }
             }
         }

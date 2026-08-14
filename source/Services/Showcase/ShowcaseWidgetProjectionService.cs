@@ -130,6 +130,14 @@ namespace PlayniteAchievements.Services.Showcase
             Array.Empty<ShowcaseScorePoint>();
 
         public ShowcaseProfileProjection ResolvedProfile { get; set; }
+
+        /// <summary>
+        /// Live grid display options record for grid widget kinds
+        /// (<see cref="AchievementGridOptions"/> or <see cref="GameSummaryGridOptions"/>,
+        /// resolved from the widget's surface key); null for non-grid kinds or when no
+        /// catalog was supplied.
+        /// </summary>
+        public object GridWidgetOptions { get; set; }
     }
 
     public static class ShowcaseWidgetProjectionService
@@ -164,7 +172,8 @@ namespace PlayniteAchievements.Services.Showcase
             OverviewDataSnapshot snapshot,
             ShowcaseSettings settings,
             ShowcaseWidgetInstanceSettings instance,
-            DateTime? now = null)
+            DateTime? now = null,
+            GridOptionsCatalog gridOptions = null)
         {
             snapshot = snapshot ?? new OverviewDataSnapshot();
             settings = settings ?? new ShowcaseSettings();
@@ -176,6 +185,23 @@ namespace PlayniteAchievements.Services.Showcase
                 Snapshot = snapshot,
                 Profile = settings.Profile ?? new ShowcaseProfileSettings()
             };
+
+            AchievementGridOptions achievementOptions = null;
+            GameSummaryGridOptions gameOptions = null;
+            var surfaceKey = ShowcaseGridSurfaces.ResolveWidgetSurface(instance.Kind, instance.InstanceId);
+            if (surfaceKey != null && gridOptions != null)
+            {
+                if (ShowcaseGridSurfaces.IsAchievementSurface(surfaceKey))
+                {
+                    achievementOptions = gridOptions.GetAchievement(surfaceKey);
+                    result.GridWidgetOptions = achievementOptions;
+                }
+                else
+                {
+                    gameOptions = gridOptions.GetGameSummaries(surfaceKey);
+                    result.GridWidgetOptions = gameOptions;
+                }
+            }
 
             switch (instance.Kind)
             {
@@ -193,19 +219,23 @@ namespace PlayniteAchievements.Services.Showcase
                     break;
                 case ShowcaseWidgetKind.PinnedAchievements:
                     result.Achievements = ResolvePinnedAchievements(snapshot, settings.PinnedAchievements);
-                    result.AchievementRows = MaterializePinRows(result.Achievements);
+                    result.AchievementRows = DisplayGridRowLimitHelper.Limit(
+                        MaterializePinRows(result.Achievements),
+                        achievementOptions?.MaxRows);
                     break;
                 case ShowcaseWidgetKind.FavoriteGames:
-                    result.Games = ResolveFavoriteGames(snapshot, settings, instance);
+                    result.Games = DisplayGridRowLimitHelper.Limit(
+                        ResolveFavoriteGames(snapshot, settings, instance),
+                        gameOptions?.MaxRows);
                     break;
                 case ShowcaseWidgetKind.IconMosaic:
                     result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
-                    result.AchievementRows = ResolveRecentAchievements(snapshot, instance);
+                    result.AchievementRows = ResolveRecentAchievements(snapshot, achievementOptions);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    result.Games = ResolveGameSummaries(snapshot, instance);
+                    result.Games = ResolveGameSummaries(snapshot, instance, gameOptions);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
@@ -563,19 +593,20 @@ namespace PlayniteAchievements.Services.Showcase
 
         public static IReadOnlyList<AchievementDisplayItem> ResolveRecentAchievements(
             OverviewDataSnapshot snapshot,
-            ShowcaseWidgetInstanceSettings instance)
+            AchievementGridOptions options)
         {
             // RecentAchievements is already sorted upstream (AchievementSortHelper,
             // scope RecentAchievements) - do not re-sort.
-            return (snapshot?.RecentAchievements ?? new List<AchievementDisplayItem>())
-                .Where(item => item != null)
-                .Take(ShowcaseWidgetOptions.GetRecentCount(instance))
-                .ToList();
+            return DisplayGridRowLimitHelper.Limit(
+                (snapshot?.RecentAchievements ?? new List<AchievementDisplayItem>())
+                    .Where(item => item != null),
+                options?.MaxRows);
         }
 
         public static IReadOnlyList<GameSummaryItem> ResolveGameSummaries(
             OverviewDataSnapshot snapshot,
-            ShowcaseWidgetInstanceSettings instance)
+            ShowcaseWidgetInstanceSettings instance,
+            GameSummaryGridOptions options)
         {
             var games = (snapshot?.GameSummaries ?? new List<GameSummaryItem>())
                 .Where(game => game != null);
@@ -584,29 +615,14 @@ namespace PlayniteAchievements.Services.Showcase
                 games = games.Where(game => !game.IsCompleted);
             }
 
-            switch (ShowcaseWidgetOptions.GetGameListSort(instance))
-            {
-                case ShowcaseGameListSort.Completion:
-                    games = games
-                        .OrderByDescending(game => game.Progression)
-                        .ThenBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase);
-                    break;
-                case ShowcaseGameListSort.Name:
-                    games = games.OrderBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase);
-                    break;
-                case ShowcaseGameListSort.Playtime:
-                    games = games
-                        .OrderByDescending(game => game.PlaytimeSeconds)
-                        .ThenBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase);
-                    break;
-                default:
-                    games = games
-                        .OrderByDescending(game => game.LastUnlockUtc ?? DateTime.MinValue)
-                        .ThenBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase);
-                    break;
-            }
-
-            return games.Take(ShowcaseWidgetOptions.GetGameListCount(instance)).ToList();
+            var list = games.ToList();
+            GameSummariesSortHelper.Sort(
+                list,
+                options?.SortMode ?? GameSummariesSortMode.RecentUnlock,
+                options?.SortDescending == false
+                    ? System.ComponentModel.ListSortDirection.Ascending
+                    : System.ComponentModel.ListSortDirection.Descending);
+            return DisplayGridRowLimitHelper.Limit(list, options?.MaxRows);
         }
 
         public static IReadOnlyList<GameSummaryItem> ResolveGameMosaic(

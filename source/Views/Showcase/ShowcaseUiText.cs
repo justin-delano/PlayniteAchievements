@@ -47,9 +47,6 @@ namespace PlayniteAchievements.Views.Showcase
         public static string ScreenshotVariantName(ShowcaseScreenshotVariant value) =>
             EnumValueName("LOCPlayAch_Showcase_ScreenshotVariant_", value);
 
-        public static string GameListSortName(ShowcaseGameListSort value) =>
-            EnumValueName("LOCPlayAch_Showcase_GameListSort_", value);
-
         public static string GameMosaicSourceName(ShowcaseGameMosaicSource value) =>
             EnumValueName("LOCPlayAch_Showcase_GameMosaicSource_", value);
 

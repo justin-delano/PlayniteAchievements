@@ -475,7 +475,7 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
-        public void RecentAchievements_RespectCountOptionAndKeepSnapshotOrder()
+        public void RecentAchievements_RespectMaxRowsOptionAndKeepSnapshotOrder()
         {
             var items = Enumerable.Range(0, 30)
                 .Select(i => new AchievementDisplayItem
@@ -487,22 +487,34 @@ namespace PlayniteAchievements.Tests.Models
                 .ToList();
             var snapshot = new OverviewDataSnapshot { RecentAchievements = items };
             var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.RecentAchievements };
-            instance.SetOption("Count", 5);
 
-            var rows = ShowcaseWidgetProjectionService.ResolveRecentAchievements(snapshot, instance);
+            var rows = ShowcaseWidgetProjectionService.ResolveRecentAchievements(
+                snapshot,
+                new AchievementGridOptions { MaxRows = 5 });
 
             Assert.AreEqual(5, rows.Count);
             CollectionAssert.AreEqual(items.Take(5).ToList(), rows.ToList());
 
+            Assert.AreEqual(
+                items.Count,
+                ShowcaseWidgetProjectionService.ResolveRecentAchievements(snapshot, null).Count);
+
+            var catalog = new GridOptionsCatalog();
+            var surfaceKey = ShowcaseGridSurfaces.ForInstance(
+                ShowcaseGridSurfaces.RecentAchievements,
+                instance.InstanceId);
+            catalog.GetAchievement(surfaceKey).MaxRows = 5;
             var built = ShowcaseWidgetProjectionService.Build(
                 snapshot,
                 new ShowcaseSettings(),
-                instance);
+                instance,
+                gridOptions: catalog);
             Assert.AreEqual(5, built.AchievementRows.Count);
+            Assert.AreSame(catalog.GetAchievement(surfaceKey), built.GridWidgetOptions);
         }
 
         [TestMethod]
-        public void GameSummaries_SortModesHideCompletedAndCountClamp()
+        public void GameSummaries_SortModesHideCompletedAndMaxRows()
         {
             var oldest = new GameSummaryItem
             {
@@ -544,32 +556,35 @@ namespace PlayniteAchievements.Tests.Models
                 GameSummaries = new List<GameSummaryItem> { oldest, newest, completed, neverUnlocked }
             };
             var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.GameSummaries };
+            var options = new GameSummaryGridOptions();
 
-            var byLastUnlock = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
+            var byLastUnlock = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options);
             CollectionAssert.AreEqual(
                 new[] { newest, completed, oldest, neverUnlocked },
                 byLastUnlock.ToArray());
 
-            instance.SetOption("Mode", ShowcaseGameListSort.Completion);
+            options.SortMode = GameSummariesSortMode.Progress;
             Assert.AreSame(completed,
-                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance)[0]);
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options)[0]);
 
-            instance.SetOption("Mode", ShowcaseGameListSort.Name);
+            options.SortMode = GameSummariesSortMode.Alphabetical;
+            options.SortDescending = false;
             Assert.AreSame(oldest,
-                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance)[0]);
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options)[0]);
 
-            instance.SetOption("Mode", ShowcaseGameListSort.Playtime);
-            Assert.AreSame(neverUnlocked,
-                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance)[0]);
-
-            instance.SetOption("Mode", ShowcaseGameListSort.LastUnlock);
+            options.SortMode = GameSummariesSortMode.RecentUnlock;
+            options.SortDescending = true;
             instance.SetOption("HideCompleted", true);
-            var withoutCompleted = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
+            var withoutCompleted = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options);
             Assert.IsFalse(withoutCompleted.Contains(completed));
 
             instance.SetOption("HideCompleted", false);
-            instance.SetOption("Count", 2);
-            Assert.AreEqual(2, ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance).Count);
+            options.MaxRows = 2;
+            Assert.AreEqual(2, ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options).Count);
+
+            Assert.AreEqual(
+                4,
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, null).Count);
         }
 
         [TestMethod]

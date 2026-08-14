@@ -37,7 +37,8 @@ namespace PlayniteAchievements.ViewModels.StartPage
             Projection = ShowcaseWidgetProjectionService.Build(
                 _latestSnapshot,
                 PersistedSettings?.Showcase,
-                _instance);
+                _instance,
+                gridOptions: PersistedSettings?.GridOptions);
         }
 
         public override void Dispose()

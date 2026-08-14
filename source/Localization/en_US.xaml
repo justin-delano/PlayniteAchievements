@@ -1320,10 +1320,6 @@
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Recent">Recent achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Rarest">Rarest achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Pinned">Pinned achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_LastUnlock">Last unlock</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_Completion">Completion</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_Name">Name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_Playtime">Playtime</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Completed">Completed games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_All">All games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Pinned">Pinned games</sys:String>

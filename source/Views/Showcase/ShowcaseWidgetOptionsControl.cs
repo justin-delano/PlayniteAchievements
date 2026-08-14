@@ -184,36 +184,7 @@ namespace PlayniteAchievements.Views.Showcase
                             ? Localize("LOCPlayAch_Settings_Override_On")
                             : Localize("LOCPlayAch_Settings_Override_Off"));
                     break;
-                case ShowcaseWidgetKind.RecentAchievements:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_ItemCount"),
-                        new[] { 5, 10, 15, 25, 50, 100 },
-                        ShowcaseWidgetOptions.GetRecentCount(_settings),
-                        value => ShowcaseWidgetOptions.SetRecentCount(_settings, value),
-                        CountLabel);
-                    break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Settings_SortBy"),
-                        new[]
-                        {
-                            ShowcaseGameListSort.LastUnlock,
-                            ShowcaseGameListSort.Completion,
-                            ShowcaseGameListSort.Name,
-                            ShowcaseGameListSort.Playtime
-                        },
-                        ShowcaseWidgetOptions.GetGameListSort(_settings),
-                        value => ShowcaseWidgetOptions.SetGameListSort(_settings, value),
-                        GameListSortName);
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_ItemCount"),
-                        new[] { 10, 25, 50, 100, 200 },
-                        ShowcaseWidgetOptions.GetGameListCount(_settings),
-                        value => ShowcaseWidgetOptions.SetGameListCount(_settings, value),
-                        CountLabel);
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_HideCompleted"),

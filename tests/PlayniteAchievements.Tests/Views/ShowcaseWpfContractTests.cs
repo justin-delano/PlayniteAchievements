@@ -177,7 +177,6 @@ namespace PlayniteAchievements.Tests.Views
             AssertEnumKeys<ShowcaseMosaicSource>(localization, "LOCPlayAch_Showcase_MosaicSource_");
             AssertEnumKeys<ShowcaseScreenshotVariant>(localization, "LOCPlayAch_Showcase_ScreenshotVariant_");
             AssertEnumKeys<ShowcaseImageFitMode>(localization, "LOCPlayAch_Showcase_ImageFit_");
-            AssertEnumKeys<ShowcaseGameListSort>(localization, "LOCPlayAch_Showcase_GameListSort_");
             AssertEnumKeys<ShowcaseGameMosaicSource>(localization, "LOCPlayAch_Showcase_GameMosaicSource_");
         }
 

@@ -385,25 +385,6 @@ namespace PlayniteAchievements.Models
         public static void SetShuffle(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(Shuffle, value);
 
-        public static int GetRecentCount(ShowcaseWidgetInstanceSettings settings) =>
-            Clamp(settings?.GetOption(Count, 15) ?? 15, 1, 100);
-
-        public static void SetRecentCount(ShowcaseWidgetInstanceSettings settings, int value) =>
-            settings?.SetOption(Count, Clamp(value, 1, 100));
-
-        public static ShowcaseGameListSort GetGameListSort(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, Mode, ShowcaseGameListSort.LastUnlock);
-
-        public static void SetGameListSort(
-            ShowcaseWidgetInstanceSettings settings,
-            ShowcaseGameListSort value) => settings?.SetOption(Mode, value);
-
-        public static int GetGameListCount(ShowcaseWidgetInstanceSettings settings) =>
-            Clamp(settings?.GetOption(Count, 50) ?? 50, 1, 200);
-
-        public static void SetGameListCount(ShowcaseWidgetInstanceSettings settings, int value) =>
-            settings?.SetOption(Count, Clamp(value, 1, 200));
-
         public static bool GetHideCompleted(ShowcaseWidgetInstanceSettings settings) =>
             settings?.GetOption(HideCompleted, false) ?? false;
 
@@ -481,12 +462,7 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetSlideshowIntervalSeconds(settings, 8);
                     ShowcaseWidgetOptions.SetImageFitMode(settings, ShowcaseImageFitMode.Fill);
                     break;
-                case ShowcaseWidgetKind.RecentAchievements:
-                    ShowcaseWidgetOptions.SetRecentCount(settings, 15);
-                    break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    ShowcaseWidgetOptions.SetGameListSort(settings, ShowcaseGameListSort.LastUnlock);
-                    ShowcaseWidgetOptions.SetGameListCount(settings, 50);
                     ShowcaseWidgetOptions.SetHideCompleted(settings, false);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
