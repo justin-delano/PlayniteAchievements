@@ -76,19 +76,8 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetScoreMode(_settings),
                         value => ShowcaseWidgetOptions.SetScoreMode(_settings, value),
                         ScoreModeName);
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Range"),
-                        new[]
-                        {
-                            TimelineRange.OneMonth,
-                            TimelineRange.ThreeMonths,
-                            TimelineRange.OneYear,
-                            TimelineRange.All
-                        },
-                        ShowcaseTimelineOptions.GetRange(_settings),
-                        value => ShowcaseTimelineOptions.SetRange(_settings, value),
-                        TimelineRangeName);
+                    AddRangeChoice(panel);
+
                     break;
                 case ShowcaseWidgetKind.Pie:
                     AddChoice(
@@ -106,19 +95,8 @@ namespace PlayniteAchievements.Views.Showcase
                         PieModeName);
                     break;
                 case ShowcaseWidgetKind.Timeline:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Range"),
-                        new[]
-                        {
-                            TimelineRange.OneMonth,
-                            TimelineRange.ThreeMonths,
-                            TimelineRange.OneYear,
-                            TimelineRange.All
-                        },
-                        ShowcaseTimelineOptions.GetRange(_settings),
-                        value => ShowcaseTimelineOptions.SetRange(_settings, value),
-                        TimelineRangeName);
+                    AddRangeChoice(panel);
+
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(
@@ -134,7 +112,7 @@ namespace PlayniteAchievements.Views.Showcase
                         new[] { 5, 8, 10, 15, 25 },
                         ShowcaseWidgetOptions.GetTopN(_settings),
                         value => ShowcaseWidgetOptions.SetTopN(_settings, value),
-                        value => value.ToString("N0", FormattingCulture.Current));
+                        CountLabel);
                     break;
                 case ShowcaseWidgetKind.FavoriteGames:
                     AddChoice(
@@ -163,7 +141,7 @@ namespace PlayniteAchievements.Views.Showcase
                         new[] { 12, 24, 36, 48, 64 },
                         ShowcaseWidgetOptions.GetMosaicCount(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value),
-                        value => value.ToString("N0", FormattingCulture.Current));
+                        CountLabel);
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     AddChoice(
@@ -213,7 +191,7 @@ namespace PlayniteAchievements.Views.Showcase
                         new[] { 5, 10, 15, 25, 50, 100 },
                         ShowcaseWidgetOptions.GetRecentCount(_settings),
                         value => ShowcaseWidgetOptions.SetRecentCount(_settings, value),
-                        value => value.ToString("N0", FormattingCulture.Current));
+                        CountLabel);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
                     AddChoice(
@@ -235,7 +213,7 @@ namespace PlayniteAchievements.Views.Showcase
                         new[] { 10, 25, 50, 100, 200 },
                         ShowcaseWidgetOptions.GetGameListCount(_settings),
                         value => ShowcaseWidgetOptions.SetGameListCount(_settings, value),
-                        value => value.ToString("N0", FormattingCulture.Current));
+                        CountLabel);
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_HideCompleted"),
@@ -247,19 +225,8 @@ namespace PlayniteAchievements.Views.Showcase
                             : Localize("LOCPlayAch_Settings_Override_Off"));
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_Range"),
-                        new[]
-                        {
-                            TimelineRange.OneMonth,
-                            TimelineRange.ThreeMonths,
-                            TimelineRange.OneYear,
-                            TimelineRange.All
-                        },
-                        ShowcaseTimelineOptions.GetRange(_settings),
-                        value => ShowcaseTimelineOptions.SetRange(_settings, value),
-                        TimelineRangeName);
+                    AddRangeChoice(panel);
+
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     AddChoice(
@@ -281,12 +248,34 @@ namespace PlayniteAchievements.Views.Showcase
                         new[] { 12, 24, 36, 48, 64 },
                         ShowcaseWidgetOptions.GetGameMosaicCount(_settings),
                         value => ShowcaseWidgetOptions.SetGameMosaicCount(_settings, value),
-                        value => value.ToString("N0", FormattingCulture.Current));
+                        CountLabel);
                     break;
             }
 
             return panel;
         }
+
+        private static readonly TimelineRange[] RangeChoices =
+        {
+            TimelineRange.OneMonth,
+            TimelineRange.ThreeMonths,
+            TimelineRange.OneYear,
+            TimelineRange.All
+        };
+
+        /// <summary>The shared time-range picker used by every range-windowed widget.</summary>
+        private void AddRangeChoice(Panel panel)
+        {
+            AddChoice(
+                panel,
+                Localize("LOCPlayAch_Showcase_Range"),
+                RangeChoices,
+                ShowcaseTimelineOptions.GetRange(_settings),
+                value => ShowcaseTimelineOptions.SetRange(_settings, value),
+                TimelineRangeName);
+        }
+
+        private static string CountLabel(int value) => value.ToString("N0", FormattingCulture.Current);
 
         private void AddChoice<T>(
             Panel panel,
