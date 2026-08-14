@@ -1015,11 +1015,6 @@ namespace PlayniteAchievements.Views.Showcase
             else
             {
                 widgetHost = CreateWidgetHost(block, widget);
-                if (EditLayoutButton.IsChecked == true)
-                {
-                    border.ContextMenu = BuildPlacedWidgetMenu(block, widget);
-                }
-
                 content = widgetHost;
             }
 
@@ -1034,6 +1029,43 @@ namespace PlayniteAchievements.Views.Showcase
             editChrome.SetResourceReference(Border.CornerRadiusProperty, "PlayAch.Radius.Section");
             editChrome.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Border");
             layers.Children.Add(editChrome);
+
+            // Edit-mode corner actions replace the old right-click menu: gear (settings) in the
+            // top-left, trash (delete) in the top-right. Created for every block and shown by
+            // RefreshBlockChrome only while editing a block that hosts a widget, so the widget
+            // move/swap fast path just re-resolves visibility.
+            var blockId = block.BlockId;
+            var settingsButton = CreateBlockActionButton(
+                "\uE713",
+                "LOCPlayAch_Showcase_WidgetSettings",
+                HorizontalAlignment.Left);
+            settingsButton.Click += (_, __) =>
+            {
+                var current = CurrentPage.Blocks.FirstOrDefault(candidate =>
+                    string.Equals(candidate.BlockId, blockId, StringComparison.OrdinalIgnoreCase));
+                var currentWidget = FindWidget(current?.WidgetInstanceId);
+                if (currentWidget != null)
+                {
+                    OpenWidgetSettings(currentWidget);
+                }
+            };
+            layers.Children.Add(settingsButton);
+            var deleteButton = CreateBlockActionButton(
+                "\uE74D",
+                "LOCPlayAch_Showcase_DeleteWidget",
+                HorizontalAlignment.Right);
+            deleteButton.Click += (_, __) =>
+            {
+                var current = CurrentPage.Blocks.FirstOrDefault(candidate =>
+                    string.Equals(candidate.BlockId, blockId, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(current?.WidgetInstanceId))
+                {
+                    ShowcaseLayoutService.DeleteWidget(Layout, current.WidgetInstanceId);
+                    SaveAndReassignWidgets();
+                }
+            };
+            layers.Children.Add(deleteButton);
+
             var dropGlow = new Border
             {
                 Visibility = Visibility.Collapsed,
@@ -1079,6 +1111,8 @@ namespace PlayniteAchievements.Views.Showcase
                 Block = block,
                 Container = border,
                 EditChrome = editChrome,
+                SettingsButton = settingsButton,
+                DeleteButton = deleteButton,
                 Glow = dropGlow,
                 StatusPanel = dropStatusPanel,
                 Status = dropStatus,
@@ -1187,25 +1221,31 @@ namespace PlayniteAchievements.Views.Showcase
             return add;
         }
 
-        private ContextMenu BuildPlacedWidgetMenu(
-            ShowcaseBlockSettings block,
-            ShowcaseWidgetInstanceSettings widget)
+        // Small glyph button pinned to a top corner of a widget block in edit mode.
+        private Button CreateBlockActionButton(
+            string glyph,
+            string labelKey,
+            HorizontalAlignment alignment)
         {
-            var menu = new ContextMenu();
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_WidgetSettings"),
-                () => OpenWidgetSettings(widget)));
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ReplaceWidget"),
-                () => OpenWidgetPicker(block, null)));
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_DeleteWidget"),
-                () =>
-                {
-                    ShowcaseLayoutService.DeleteWidget(Layout, widget.InstanceId);
-                    SaveAndReassignWidgets();
-                }));
-            return menu;
+            var button = new Button
+            {
+                Content = glyph,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize = 12,
+                Width = 26,
+                Height = 26,
+                Focusable = false,
+                HorizontalAlignment = alignment,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(8),
+                ToolTip = Localize(labelKey),
+                BorderThickness = new Thickness(0),
+                Visibility = Visibility.Collapsed
+            };
+            button.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Surface");
+            System.Windows.Automation.AutomationProperties.SetName(button, Localize(labelKey));
+            Panel.SetZIndex(button, 5);
+            return button;
         }
 
         private void AddWidgetButton_Click(object sender, RoutedEventArgs e)
@@ -1604,6 +1644,20 @@ namespace PlayniteAchievements.Views.Showcase
             state.EditChrome.SetResourceReference(
                 Border.BorderBrushProperty,
                 emphasized ? "PlayAch.Brush.Accent" : "PlayAch.Brush.Border");
+
+            var actionVisibility = editing &&
+                !string.IsNullOrWhiteSpace(state.Block.WidgetInstanceId)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            if (state.SettingsButton != null)
+            {
+                state.SettingsButton.Visibility = actionVisibility;
+            }
+
+            if (state.DeleteButton != null)
+            {
+                state.DeleteButton.Visibility = actionVisibility;
+            }
         }
 
         private void SelectPage(ShowcasePageSettings page)
@@ -1704,10 +1758,6 @@ namespace PlayniteAchievements.Views.Showcase
 
                 assignment.State.Host = assignment.Host;
                 assignment.State.Widget = assignment.Widget;
-                assignment.State.Container.ContextMenu =
-                    EditLayoutButton.IsChecked == true && assignment.Widget != null
-                        ? BuildPlacedWidgetMenu(assignment.State.Block, assignment.Widget)
-                        : null;
                 RefreshBlockChrome(assignment.State);
             }
 
@@ -1869,9 +1919,6 @@ namespace PlayniteAchievements.Views.Showcase
                 if (state.Host != null)
                 {
                     state.Host.IsHitTestVisible = !editing;
-                    state.Container.ContextMenu = editing
-                        ? BuildPlacedWidgetMenu(state.Block, state.Widget)
-                        : null;
                 }
 
                 if (state.AddButton != null)
@@ -2089,10 +2136,22 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            var path = _api?.Dialogs?.SaveFile("PNG|*.png");
-            if (string.IsNullOrWhiteSpace(path))
+            // WinForms picker (repo convention on net462) so a default filename can be offered.
+            string path;
+            using (var dialog = new System.Windows.Forms.SaveFileDialog
             {
-                return;
+                FileName = "PlayniteAchievementsShowcase.png",
+                Filter = "PNG|*.png",
+                OverwritePrompt = true
+            })
+            {
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK ||
+                    string.IsNullOrWhiteSpace(dialog.FileName))
+                {
+                    return;
+                }
+
+                path = dialog.FileName;
             }
 
             try
@@ -2204,6 +2263,12 @@ namespace PlayniteAchievements.Views.Showcase
             // Non-hit-testable overlay that draws the edit-mode outline; keeping the outline
             // off the container means toggling edit mode never changes the widget layout.
             public Border EditChrome { get; set; }
+
+            // Edit-mode corner actions for blocks hosting a widget: gear opens settings,
+            // trash deletes. Visibility is owned by RefreshBlockChrome.
+            public Button SettingsButton { get; set; }
+
+            public Button DeleteButton { get; set; }
 
             public Border Glow { get; set; }
 
