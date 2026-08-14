@@ -1,20 +1,20 @@
-<UserControl x:Class="PlayniteAchievements.Views.Showcase.ShowcaseGameGridControl"
+<showcase:ShowcaseGridHostBase x:Class="PlayniteAchievements.Views.Showcase.ShowcaseGameGridControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
-             x:Name="Root"
+             xmlns:showcase="clr-namespace:PlayniteAchievements.Views.Showcase"
              UseLayoutRounding="True"
              SnapsToDevicePixels="True">
     <controls:GameSummariesGridControl x:Name="InnerGrid"
-                                       ItemsSource="{Binding ItemsSource, ElementName=Root}"
-                                       ColumnSettingsKey="{Binding ColumnSettingsKey, ElementName=Root}"
-                                       UseCoverImages="{Binding UseCoverImages, ElementName=Root}"
-                                       ShowColumnHeaders="{Binding ShowColumnHeaders, ElementName=Root}"
-                                       FixedRowHeight="{Binding FixedRowHeight, ElementName=Root}"
+                                       ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
+                                       ColumnSettingsKey="{Binding ColumnSettingsKey, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
+                                       UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
+                                       ShowColumnHeaders="{Binding ShowColumnHeaders, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
+                                       FixedRowHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
                                        ShowCompletionGlow="True"
                                        DisableRowSelection="True"
                                        ShowControlBar="False"
                                        DelayInitialRenderUntilNormalized="True"
                                        RowPreviewMouseRightButtonDown="GridRow_PreviewMouseRightButtonDown"
                                        RowPreviewMouseRightButtonUp="GridRow_PreviewMouseRightButtonUp"/>
-</UserControl>
+</showcase:ShowcaseGridHostBase>
