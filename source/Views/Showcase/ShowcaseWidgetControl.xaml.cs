@@ -131,7 +131,7 @@ namespace PlayniteAchievements.Views.Showcase
                         : CreateEmptyText();
                     break;
                 case ShowcaseWidgetKind.PinnedAchievements:
-                    BodyHost.Content = _projection.Achievements?.Count > 0
+                    BodyHost.Content = _projection.AchievementRows?.Count > 0
                         ? (object)UpdateBodyViewModel<PinnedAchievementsWidgetViewModel>()
                         : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
                     break;
@@ -147,6 +147,24 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     BodyHost.Content = new ScreenshotSlideshowControl(_projection.Instance);
+                    break;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    BodyHost.Content = _projection.AchievementRows?.Count > 0
+                        ? (object)UpdateBodyViewModel<RecentAchievementsWidgetViewModel>()
+                        : CreateEmptyText();
+                    break;
+                case ShowcaseWidgetKind.GameSummaries:
+                    BodyHost.Content = _projection.Games?.Count > 0
+                        ? (object)UpdateBodyViewModel<GameSummariesWidgetViewModel>()
+                        : CreateEmptyText();
+                    break;
+                case ShowcaseWidgetKind.GameMosaic:
+                    BodyHost.Content = _projection.Games?.Count > 0
+                        ? (object)UpdateBodyViewModel<GameMosaicWidgetViewModel>()
+                        : CreateEmptyText();
+                    break;
+                case ShowcaseWidgetKind.ActivityCalendar:
+                    BodyHost.Content = UpdateBodyViewModel<ActivityCalendarWidgetViewModel>();
                     break;
                 default:
                     BodyHost.Content = CreateEmptyText();
