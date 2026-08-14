@@ -1146,41 +1146,36 @@ namespace PlayniteAchievements.Views.Showcase
 
         private Button CreateAddWidgetButton(ShowcaseBlockSettings block)
         {
-            var emptyContent = new StackPanel
-            {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
             var addGlyph = new TextBlock
             {
                 Text = "",
-                FontSize = 22,
+                FontSize = 34,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Opacity = 0.72
+                VerticalAlignment = VerticalAlignment.Center,
+                Opacity = 0.85
             };
             addGlyph.SetResourceReference(TextBlock.FontFamilyProperty, "PlayAch.FontFamily.Icon");
             addGlyph.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
-            emptyContent.Children.Add(addGlyph);
-            var addLabel = new TextBlock
-            {
-                Text = Localize("LOCPlayAch_Showcase_AddWidget"),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 5, 0, 0),
-                Opacity = 0.78
-            };
-            addLabel.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
-            emptyContent.Children.Add(addLabel);
+            // A fixed-size centered target instead of a block-filling one: clicking anywhere
+            // else in the empty block only selects it, keeping the cut lines reachable.
             var add = new Button
             {
-                Content = emptyContent,
+                Content = addGlyph,
                 Tag = block,
-                Margin = new Thickness(8),
+                Width = 68,
+                Height = 68,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = Localize("LOCPlayAch_Showcase_AddWidget"),
                 BorderThickness = new Thickness(0),
                 Visibility = EditLayoutButton.IsChecked == true
                     ? Visibility.Visible
                     : Visibility.Collapsed
             };
             add.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
+            System.Windows.Automation.AutomationProperties.SetName(
+                add,
+                Localize("LOCPlayAch_Showcase_AddWidget"));
             add.Click += AddWidgetButton_Click;
             return add;
         }
