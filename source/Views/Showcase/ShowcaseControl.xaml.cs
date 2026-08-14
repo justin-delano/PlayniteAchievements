@@ -193,8 +193,10 @@ namespace PlayniteAchievements.Views.Showcase
             UpdateEditTools();
         }
 
-        // Half of each handle hangs outside the grid, into the margin edit mode reserves.
-        private const double TrackGripperOverhang = 16;
+        // The handles sit entirely outside the grid, in the margin edit mode reserves, so
+        // they never overlap the selected block's cut lines and merge chevrons.
+        private const double TrackGripperSize = 24;
+        private const double TrackGripperGap = 4;
 
         // Grab handles straddling the page's outer edges, one pair per internal boundary:
         // column handles sit on the top and bottom edges, row handles on the left and right
@@ -225,29 +227,31 @@ namespace PlayniteAchievements.Views.Showcase
                 Template = CreateTrackGripperTemplate(vertical)
             };
             var lastCell = ShowcaseLayoutService.GridSize - 1;
+            var outwardOffset = TrackGripperSize + TrackGripperGap;
             if (vertical)
             {
-                // Straddles the column boundary on the top (near) or bottom (far) edge.
+                // Straddles the column boundary, fully above the top (near) or below the
+                // bottom (far) edge.
                 thumb.Width = 22;
-                thumb.Height = TrackGripperOverhang * 2;
+                thumb.Height = TrackGripperSize;
                 thumb.HorizontalAlignment = HorizontalAlignment.Right;
                 thumb.VerticalAlignment = nearEdge ? VerticalAlignment.Top : VerticalAlignment.Bottom;
                 thumb.Margin = nearEdge
-                    ? new Thickness(0, -TrackGripperOverhang, -11, 0)
-                    : new Thickness(0, 0, -11, -TrackGripperOverhang);
+                    ? new Thickness(0, -outwardOffset, -11, 0)
+                    : new Thickness(0, 0, -11, -outwardOffset);
                 Grid.SetColumn(thumb, boundary);
                 Grid.SetRow(thumb, nearEdge ? 0 : lastCell);
             }
             else
             {
-                // Straddles the row boundary on the left (near) or right (far) edge.
-                thumb.Width = TrackGripperOverhang * 2;
+                // Straddles the row boundary, fully outside the left (near) or right (far) edge.
+                thumb.Width = TrackGripperSize;
                 thumb.Height = 22;
                 thumb.VerticalAlignment = VerticalAlignment.Bottom;
                 thumb.HorizontalAlignment = nearEdge ? HorizontalAlignment.Left : HorizontalAlignment.Right;
                 thumb.Margin = nearEdge
-                    ? new Thickness(-TrackGripperOverhang, 0, 0, -11)
-                    : new Thickness(0, 0, -TrackGripperOverhang, -11);
+                    ? new Thickness(-outwardOffset, 0, 0, -11)
+                    : new Thickness(0, 0, -outwardOffset, -11);
                 Grid.SetRow(thumb, boundary);
                 Grid.SetColumn(thumb, nearEdge ? 0 : lastCell);
             }
@@ -269,8 +273,8 @@ namespace PlayniteAchievements.Views.Showcase
             var root = new FrameworkElementFactory(typeof(Grid));
             root.SetValue(Panel.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
             var bar = new FrameworkElementFactory(typeof(Border));
-            bar.SetValue(WidthProperty, vertical ? 8d : 26d);
-            bar.SetValue(HeightProperty, vertical ? 26d : 8d);
+            bar.SetValue(WidthProperty, vertical ? 8d : 18d);
+            bar.SetValue(HeightProperty, vertical ? 18d : 8d);
             bar.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
             bar.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
             bar.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
@@ -287,9 +291,9 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var editing = EditLayoutButton.IsChecked == true;
 
-            // Edit mode insets the grid so the handles' outside halves have room to render.
+            // Edit mode insets the grid so the fully-outside handles have room to render.
             DashboardGrid.Margin = editing
-                ? new Thickness(TrackGripperOverhang)
+                ? new Thickness(TrackGripperSize + TrackGripperGap + 2)
                 : new Thickness(0);
             foreach (var gripper in _trackGrippers)
             {
@@ -421,7 +425,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var thumb = new System.Windows.Controls.Primitives.Thumb
             {
-                Cursor = vertical ? Cursors.SizeWE : Cursors.SizeNS,
+                Cursor = CutCursor.Value,
                 Focusable = false,
                 Template = CreateCutLineTemplate(vertical),
                 ToolTip = FormatSplitName(block, vertical, boundary)
@@ -548,6 +552,90 @@ namespace PlayniteAchievements.Views.Showcase
             hover.Setters.Add(new Setter(System.Windows.Shapes.Shape.StrokeThicknessProperty, 3d, "CutLine"));
             template.Triggers.Add(hover);
             return template;
+        }
+
+        // Scissors cursor for the cut lines, generated once from the Segoe MDL2 "Cut" glyph
+        // (WPF ships no scissors cursor). Falls back to the crosshair if anything fails.
+        private static readonly Lazy<Cursor> CutCursor =
+            new Lazy<Cursor>(CreateCutCursor);
+
+        private static Cursor CreateCutCursor()
+        {
+            try
+            {
+                const int size = 24;
+                var typeface = new System.Windows.Media.Typeface("Segoe MDL2 Assets");
+                var visual = new System.Windows.Media.DrawingVisual();
+                using (var context = visual.RenderOpen())
+                {
+                    // Dark halo behind a light glyph keeps the cursor readable on any theme.
+                    foreach (var offset in new[]
+                             {
+                                 new Point(0, 1), new Point(2, 1), new Point(1, 0), new Point(1, 2)
+                             })
+                    {
+                        context.DrawText(
+                            CreateCutGlyph(typeface, System.Windows.Media.Brushes.Black),
+                            offset);
+                    }
+
+                    context.DrawText(
+                        CreateCutGlyph(typeface, System.Windows.Media.Brushes.White),
+                        new Point(1, 1));
+                }
+
+                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                    size, size, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                bitmap.Render(visual);
+                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                byte[] png;
+                using (var pngStream = new System.IO.MemoryStream())
+                {
+                    encoder.Save(pngStream);
+                    png = pngStream.ToArray();
+                }
+
+                // Minimal .cur container: ICONDIR + one entry (hotspot at the glyph center)
+                // + the PNG payload (supported for cursors since Windows Vista).
+                using (var stream = new System.IO.MemoryStream())
+                using (var writer = new System.IO.BinaryWriter(stream))
+                {
+                    writer.Write((ushort)0);            // reserved
+                    writer.Write((ushort)2);            // type: cursor
+                    writer.Write((ushort)1);            // image count
+                    writer.Write((byte)size);           // width
+                    writer.Write((byte)size);           // height
+                    writer.Write((byte)0);              // palette
+                    writer.Write((byte)0);              // reserved
+                    writer.Write((ushort)(size / 2));   // hotspot x
+                    writer.Write((ushort)(size / 2));   // hotspot y
+                    writer.Write(png.Length);           // payload size
+                    writer.Write(22);                   // payload offset
+                    writer.Write(png);
+                    writer.Flush();
+                    stream.Position = 0;
+                    return new Cursor(stream);
+                }
+            }
+            catch (Exception)
+            {
+                return Cursors.Cross;
+            }
+        }
+
+        private static System.Windows.Media.FormattedText CreateCutGlyph(
+            System.Windows.Media.Typeface typeface,
+            System.Windows.Media.Brush brush)
+        {
+            return new System.Windows.Media.FormattedText(
+                "\uE8C6",
+                System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                20,
+                brush,
+                1.0);
         }
 
         /// <summary>Pixel offset of an absolute grid line, from live track sizes (weight-proof).</summary>
