@@ -15,7 +15,11 @@ namespace PlayniteAchievements.Models.Settings
         PinnedAchievements = 6,
         FavoriteGames = 7,
         IconMosaic = 8,
-        ScreenshotSlideshow = 9
+        ScreenshotSlideshow = 9,
+        RecentAchievements = 10,
+        GameSummaries = 11,
+        GameMosaic = 12,
+        ActivityCalendar = 13
     }
 
     public enum ShowcasePageTemplate
@@ -72,6 +76,22 @@ namespace PlayniteAchievements.Models.Settings
     {
         Fit = 0,
         Fill = 1
+    }
+
+    public enum ShowcaseGameListSort
+    {
+        LastUnlock = 0,
+        Completion = 1,
+        Name = 2,
+        Playtime = 3
+    }
+
+    public enum ShowcaseGameMosaicSource
+    {
+        Completed = 0,
+        All = 1,
+        Pinned = 2,
+        PlayniteFavorites = 3
     }
 
     public sealed class ShowcaseProfileSettings
