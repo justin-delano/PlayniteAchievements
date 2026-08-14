@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -48,6 +49,11 @@ namespace PlayniteAchievements.Services.Overview
         /// Total locked achievements across all providers (for the locked section of provider pie chart).
         /// </summary>
         public int TotalLocked { get; set; }
+
+        /// <summary>
+        /// Current-user identities persisted by the friends providers (empty when never scanned).
+        /// </summary>
+        public List<FriendIdentity> CurrentUserIdentities { get; set; } = new List<FriendIdentity>();
 
         // Total rarity counts (including locked achievements) for "unlocked / total" display
         public int TotalCommonPossible { get; set; }
