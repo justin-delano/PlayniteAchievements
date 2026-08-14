@@ -77,25 +77,25 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void UpdateTitle()
         {
-            if (_projection?.Instance == null)
+            // The header only appears when the user gave the widget a custom title;
+            // widgets are otherwise chrome-free at every density (large StartPage-hosted
+            // widgets used to auto-show the kind name at expanded density).
+            var custom = _projection?.Instance?.CustomTitle?.Trim();
+            if (string.IsNullOrWhiteSpace(custom))
             {
                 TitleText.Text = string.Empty;
                 GlyphText.Text = string.Empty;
+                HeaderBorder.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            var custom = _projection.Instance.CustomTitle?.Trim();
-            TitleText.Text = !string.IsNullOrWhiteSpace(custom)
-                ? custom
-                : Localize(ShowcaseWidgetCatalog.Get(_projection.Instance.Kind).NameKey);
+            TitleText.Text = custom;
             GlyphText.Text = GetWidgetGlyph(_projection.Instance.Kind);
+            HeaderBorder.Visibility = Visibility.Visible;
         }
 
         private void RebuildBody()
         {
-            HeaderBorder.Visibility = _viewport.Density == WidgetViewportDensity.Expanded
-                ? Visibility.Visible
-                : Visibility.Collapsed;
             BodyHost.Margin = _viewport.Density == WidgetViewportDensity.Compact
                 ? new Thickness(6)
                 : _viewport.Density == WidgetViewportDensity.Expanded
