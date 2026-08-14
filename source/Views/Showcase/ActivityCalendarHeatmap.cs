@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -10,6 +11,34 @@ using PlayniteAchievements.ViewModels.Showcase.Widgets;
 namespace PlayniteAchievements.Views.Showcase
 {
     /// <summary>
+    /// Cell and label sizes shared by the heatmap and its weekday gutter, derived from the
+    /// element's inherited font size so the calendar scales with the plugin's text sizing
+    /// instead of stretching to fill the widget.
+    /// </summary>
+    internal readonly struct ActivityCalendarMetrics
+    {
+        public ActivityCalendarMetrics(double fontSize)
+        {
+            var baseline = Math.Max(8, double.IsNaN(fontSize) ? 12 : fontSize);
+            CellBox = Math.Ceiling(baseline) + 2;
+            LabelFontSize = Math.Max(7, Math.Round(baseline * 0.75));
+            MonthBandHeight = Math.Ceiling(LabelFontSize) + 5;
+        }
+
+        /// <summary>Cell box size including margins; also the weekday label row height.</summary>
+        public double CellBox { get; }
+
+        public double LabelFontSize { get; }
+
+        public double MonthBandHeight { get; }
+
+        public static ActivityCalendarMetrics For(FrameworkElement element)
+        {
+            return new ActivityCalendarMetrics(TextElement.GetFontSize(element));
+        }
+    }
+
+    /// <summary>
     /// Draws the activity heatmap as a single visual instead of one element per day cell.
     /// A year (or more) of cells as retained Border elements makes page switches and
     /// scrolling drag; OnRender keeps the whole calendar one drawing and serves tooltips
@@ -17,8 +46,6 @@ namespace PlayniteAchievements.Views.Showcase
     /// </summary>
     public sealed class ActivityCalendarHeatmap : FrameworkElement
     {
-        private const double MonthLabelHeight = 14;
-        private const double MonthLabelFontSize = 9;
         private const double CellCornerRadius = 2;
         private const double CellMargin = 1;
         private static readonly double[] IntensityOpacity = { 0.30, 0.55, 0.78, 1.0 };
@@ -37,23 +64,6 @@ namespace PlayniteAchievements.Views.Showcase
         {
             get => (IReadOnlyList<ActivityCalendarWeekViewModel>)GetValue(WeeksProperty);
             set => SetValue(WeeksProperty, value);
-        }
-
-        /// <summary>Cell box size including margins; matches the view model's weekday row height.</summary>
-        public static readonly DependencyProperty CellBoxProperty =
-            DependencyProperty.Register(
-                nameof(CellBox),
-                typeof(double),
-                typeof(ActivityCalendarHeatmap),
-                new FrameworkPropertyMetadata(
-                    12d,
-                    FrameworkPropertyMetadataOptions.AffectsMeasure |
-                    FrameworkPropertyMetadataOptions.AffectsRender));
-
-        public double CellBox
-        {
-            get => (double)GetValue(CellBoxProperty);
-            set => SetValue(CellBoxProperty, value);
         }
 
         public static readonly DependencyProperty ShowMonthLabelsProperty =
@@ -78,6 +88,21 @@ namespace PlayniteAchievements.Views.Showcase
                 .AppearanceChanged += OnAppearanceChanged;
             Unloaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
                 .AppearanceChanged -= OnAppearanceChanged;
+
+            // The tooltip service only arms its hover timer when the pointer enters an element
+            // that ALREADY has a tooltip; a value first assigned during MouseMove never opens
+            // until something (like scrolling) re-enters the element. Arm with an empty value
+            // and suppress it when the pointer is not over a day cell.
+            ToolTip = string.Empty;
+            ToolTipOpening += OnToolTipOpening;
+        }
+
+        private void OnToolTipOpening(object sender, ToolTipEventArgs e)
+        {
+            if (!(ToolTip is string tooltip) || string.IsNullOrEmpty(tooltip))
+            {
+                e.Handled = true;
+            }
         }
 
         private void OnAppearanceChanged(object sender, EventArgs e)
@@ -88,9 +113,9 @@ namespace PlayniteAchievements.Views.Showcase
 
         protected override Size MeasureOverride(Size availableSize)
         {
-            var cellBox = Math.Max(1, CellBox);
-            var width = (Weeks?.Count ?? 0) * cellBox;
-            var height = (ShowMonthLabels ? MonthLabelHeight : 0) + 7 * cellBox;
+            var metrics = ActivityCalendarMetrics.For(this);
+            var width = (Weeks?.Count ?? 0) * metrics.CellBox;
+            var height = (ShowMonthLabels ? metrics.MonthBandHeight : 0) + 7 * metrics.CellBox;
             return new Size(Math.Max(0, width), Math.Max(0, height));
         }
 
@@ -108,9 +133,10 @@ namespace PlayniteAchievements.Views.Showcase
                 null,
                 new Rect(0, 0, RenderSize.Width, RenderSize.Height));
 
-            var cellBox = Math.Max(1, CellBox);
+            var metrics = ActivityCalendarMetrics.For(this);
+            var cellBox = metrics.CellBox;
             var cell = Math.Max(1, cellBox - CellMargin * 2);
-            var top = ShowMonthLabels ? MonthLabelHeight : 0;
+            var top = ShowMonthLabels ? metrics.MonthBandHeight : 0;
 
             EnsureRenderResources();
             var empty = _emptyBrush;
@@ -135,7 +161,7 @@ namespace PlayniteAchievements.Views.Showcase
                         CultureInfo.CurrentCulture,
                         FlowDirection.LeftToRight,
                         typeface,
-                        MonthLabelFontSize,
+                        metrics.LabelFontSize,
                         text,
                         pixelsPerDip);
                     drawingContext.PushOpacity(0.7);
@@ -208,7 +234,8 @@ namespace PlayniteAchievements.Views.Showcase
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            ToolTip = HitTestTooltip(e.GetPosition(this));
+            // Never assign null: the empty string keeps the tooltip service armed (see ctor).
+            ToolTip = HitTestTooltip(e.GetPosition(this)) ?? string.Empty;
         }
 
         private string HitTestTooltip(Point position)
@@ -219,8 +246,9 @@ namespace PlayniteAchievements.Views.Showcase
                 return null;
             }
 
-            var cellBox = Math.Max(1, CellBox);
-            var top = ShowMonthLabels ? MonthLabelHeight : 0;
+            var metrics = ActivityCalendarMetrics.For(this);
+            var cellBox = metrics.CellBox;
+            var top = ShowMonthLabels ? metrics.MonthBandHeight : 0;
             var weekIndex = (int)(position.X / cellBox);
             var dayIndex = (int)((position.Y - top) / cellBox);
             if (weekIndex < 0 || weekIndex >= weeks.Count || dayIndex < 0 || dayIndex >= 7)
@@ -258,6 +286,111 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             return brushes;
+        }
+    }
+
+    /// <summary>
+    /// Draws the weekday labels beside the heatmap using the same font-derived metrics, so
+    /// the label rows line up with the cell rows. A separate element lets the labels sit
+    /// outside the horizontal scroll area and stay visible while the calendar scrolls.
+    /// </summary>
+    public sealed class ActivityCalendarDayGutter : FrameworkElement
+    {
+        private const double RightPadding = 4;
+
+        public static readonly DependencyProperty LabelsProperty =
+            DependencyProperty.Register(
+                nameof(Labels),
+                typeof(IReadOnlyList<string>),
+                typeof(ActivityCalendarDayGutter),
+                new FrameworkPropertyMetadata(
+                    null,
+                    FrameworkPropertyMetadataOptions.AffectsMeasure |
+                    FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public IReadOnlyList<string> Labels
+        {
+            get => (IReadOnlyList<string>)GetValue(LabelsProperty);
+            set => SetValue(LabelsProperty, value);
+        }
+
+        /// <summary>Reserves the heatmap's month-label band so the first rows align.</summary>
+        public static readonly DependencyProperty ShowMonthBandProperty =
+            DependencyProperty.Register(
+                nameof(ShowMonthBand),
+                typeof(bool),
+                typeof(ActivityCalendarDayGutter),
+                new FrameworkPropertyMetadata(
+                    true,
+                    FrameworkPropertyMetadataOptions.AffectsMeasure |
+                    FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public bool ShowMonthBand
+        {
+            get => (bool)GetValue(ShowMonthBandProperty);
+            set => SetValue(ShowMonthBandProperty, value);
+        }
+
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            var labels = Labels;
+            if (labels == null || labels.Count == 0)
+            {
+                return new Size(0, 0);
+            }
+
+            var metrics = ActivityCalendarMetrics.For(this);
+            var width = 0d;
+            foreach (var text in BuildLabelTexts(metrics))
+            {
+                width = Math.Max(width, text.Width);
+            }
+
+            return new Size(
+                width + RightPadding,
+                (ShowMonthBand ? metrics.MonthBandHeight : 0) + 7 * metrics.CellBox);
+        }
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            var labels = Labels;
+            if (labels == null || labels.Count == 0)
+            {
+                return;
+            }
+
+            var metrics = ActivityCalendarMetrics.For(this);
+            var top = ShowMonthBand ? metrics.MonthBandHeight : 0;
+            var index = 0;
+            drawingContext.PushOpacity(0.7);
+            foreach (var text in BuildLabelTexts(metrics))
+            {
+                var y = top + index * metrics.CellBox + (metrics.CellBox - text.Height) / 2;
+                drawingContext.DrawText(text, new Point(0, y));
+                index++;
+            }
+
+            drawingContext.Pop();
+        }
+
+        private IEnumerable<FormattedText> BuildLabelTexts(ActivityCalendarMetrics metrics)
+        {
+            var labels = Labels;
+            var textBrush = TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.Gray;
+            var fontFamily = TextElement.GetFontFamily(this) ?? new FontFamily("Segoe UI");
+            var typeface = new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+            var pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            for (var index = 0; index < labels.Count && index < 7; index++)
+            {
+                yield return new FormattedText(
+                    labels[index] ?? string.Empty,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    typeface,
+                    metrics.LabelFontSize,
+                    textBrush,
+                    pixelsPerDip);
+            }
         }
     }
 }

@@ -99,13 +99,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var dayNames = FormattingCulture.Current.DateTimeFormat.AbbreviatedDayNames;
             WeekdayLabels = new[]
             {
-                string.Empty,
+                dayNames[(int)DayOfWeek.Sunday],
                 dayNames[(int)DayOfWeek.Monday],
-                string.Empty,
+                dayNames[(int)DayOfWeek.Tuesday],
                 dayNames[(int)DayOfWeek.Wednesday],
-                string.Empty,
+                dayNames[(int)DayOfWeek.Thursday],
                 dayNames[(int)DayOfWeek.Friday],
-                string.Empty
+                dayNames[(int)DayOfWeek.Saturday]
             };
         }
 
@@ -122,7 +122,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         /// <summary>The five intensity swatches of the Less-to-More legend; never changes.</summary>
         public IReadOnlyList<ActivityCalendarDayViewModel> LegendCells { get; }
 
-        /// <summary>Sunday-first weekday labels, blank except Mon/Wed/Fri; never changes.</summary>
+        /// <summary>Sunday-first weekday labels, one per row; never changes.</summary>
         public IReadOnlyList<string> WeekdayLabels { get; }
 
         /// <summary>Month labels, weekday labels, and the legend only fit outside compact.</summary>
