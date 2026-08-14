@@ -235,44 +235,8 @@ namespace PlayniteAchievements.Views.Showcase
             var widget = FindWidget(block.WidgetInstanceId);
             if (widget == null)
             {
-                var emptyContent = new StackPanel
-                {
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-                var addGlyph = new TextBlock
-                {
-                    Text = "\uE710",
-                    FontSize = 22,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Opacity = 0.72
-                };
-                addGlyph.SetResourceReference(TextBlock.FontFamilyProperty, "PlayAch.FontFamily.Icon");
-                addGlyph.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
-                emptyContent.Children.Add(addGlyph);
-                var addLabel = new TextBlock
-                {
-                    Text = Localize("LOCPlayAch_Showcase_AddWidget"),
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Margin = new Thickness(0, 5, 0, 0),
-                    Opacity = 0.78
-                };
-                addLabel.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
-                emptyContent.Children.Add(addLabel);
-                var add = new Button
-                {
-                    Content = emptyContent,
-                    Tag = block,
-                    Margin = new Thickness(8),
-                    BorderThickness = new Thickness(0),
-                    Visibility = EditLayoutButton.IsChecked == true
-                        ? Visibility.Visible
-                        : Visibility.Collapsed
-                };
-                add.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
-                add.Click += AddWidgetButton_Click;
-                addButton = add;
-                content = add;
+                addButton = CreateAddWidgetButton(block);
+                content = addButton;
             }
             else
             {
@@ -368,6 +332,47 @@ namespace PlayniteAchievements.Views.Showcase
             _blockVisuals[block.BlockId] = visualState;
             RefreshBlockChrome(visualState);
             return border;
+        }
+
+        private Button CreateAddWidgetButton(ShowcaseBlockSettings block)
+        {
+            var emptyContent = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var addGlyph = new TextBlock
+            {
+                Text = "",
+                FontSize = 22,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Opacity = 0.72
+            };
+            addGlyph.SetResourceReference(TextBlock.FontFamilyProperty, "PlayAch.FontFamily.Icon");
+            addGlyph.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
+            emptyContent.Children.Add(addGlyph);
+            var addLabel = new TextBlock
+            {
+                Text = Localize("LOCPlayAch_Showcase_AddWidget"),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 5, 0, 0),
+                Opacity = 0.78
+            };
+            addLabel.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
+            emptyContent.Children.Add(addLabel);
+            var add = new Button
+            {
+                Content = emptyContent,
+                Tag = block,
+                Margin = new Thickness(8),
+                BorderThickness = new Thickness(0),
+                Visibility = EditLayoutButton.IsChecked == true
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+            };
+            add.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
+            add.Click += AddWidgetButton_Click;
+            return add;
         }
 
         private ContextMenu BuildPlacedWidgetMenu(
@@ -645,10 +650,10 @@ namespace PlayniteAchievements.Views.Showcase
                     block.BlockId,
                     instanceId))
             {
-                // Stop the target clock before rebuilding the visual tree. The drag source's
-                // finally block also clears the newly built states after WPF ends the operation.
+                // Stop the target clock before the visuals change. The drag source's finally
+                // block also clears the states after WPF ends the operation.
                 ClearDragVisuals();
-                SaveAndRebuild();
+                SaveAndReassignWidgets();
             }
 
             e.Handled = true;
@@ -797,6 +802,126 @@ namespace PlayniteAchievements.Views.Showcase
 
             Layout.LastSelectedPageId = page.PageId;
             SaveAndRebuild();
+        }
+
+        // A widget move or swap keeps the block partition intact and only changes which widget each
+        // block hosts, so the existing widget controls are re-parented between block containers
+        // instead of being recreated - rebuilding would re-inflate every data grid and chart on the
+        // page. Returns false (and leaves the visuals untouched) if anything about the page no
+        // longer lines up, so the caller can fall back to a full rebuild.
+        private bool TryReassignWidgetHostsInPlace()
+        {
+            if (_disposed || _blockVisuals.Count == 0)
+            {
+                return false;
+            }
+
+            var blocks = CurrentPage.Blocks;
+            if (blocks.Count != _blockVisuals.Count ||
+                blocks.Any(block => !_blockVisuals.ContainsKey(block.BlockId)))
+            {
+                return false;
+            }
+
+            var hostsByInstanceId = new Dictionary<string, ShowcaseWidgetControl>(StringComparer.OrdinalIgnoreCase);
+            foreach (var state in _blockVisuals.Values)
+            {
+                if (state.Host != null && !string.IsNullOrWhiteSpace(state.Widget?.InstanceId))
+                {
+                    hostsByInstanceId[state.Widget.InstanceId] = state.Host;
+                }
+            }
+
+            var assignments = new List<(BlockVisualState State, ShowcaseWidgetInstanceSettings Widget, ShowcaseWidgetControl Host)>();
+            foreach (var block in blocks)
+            {
+                var state = _blockVisuals[block.BlockId];
+                var widget = FindWidget(block.WidgetInstanceId);
+                ShowcaseWidgetControl host = null;
+                if (widget != null &&
+                    !hostsByInstanceId.TryGetValue(widget.InstanceId, out host))
+                {
+                    // The block gained a widget that has no built control (added elsewhere).
+                    return false;
+                }
+
+                assignments.Add((state, widget, host));
+            }
+
+            foreach (var assignment in assignments)
+            {
+                var layers = assignment.State.Container?.Child as Grid;
+                if (layers == null || layers.Children.Count == 0)
+                {
+                    return false;
+                }
+
+                var currentContent = layers.Children[0];
+                UIElement nextContent;
+                if (assignment.Host != null)
+                {
+                    // Detach from whichever block currently owns it before re-parenting.
+                    if (assignment.Host.Parent is Grid previousLayers && !ReferenceEquals(previousLayers, layers))
+                    {
+                        previousLayers.Children.Remove(assignment.Host);
+                    }
+
+                    assignment.Host.IsHitTestVisible = EditLayoutButton.IsChecked != true;
+                    nextContent = assignment.Host;
+                    assignment.State.AddButton = null;
+                }
+                else
+                {
+                    var add = assignment.State.AddButton ?? CreateAddWidgetButton(assignment.State.Block);
+                    add.Tag = assignment.State.Block;
+                    add.Visibility = EditLayoutButton.IsChecked == true
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+                    assignment.State.AddButton = add;
+                    nextContent = add;
+                }
+
+                if (!ReferenceEquals(currentContent, nextContent))
+                {
+                    layers.Children.RemoveAt(0);
+                    layers.Children.Insert(0, nextContent);
+                }
+
+                assignment.State.Host = assignment.Host;
+                assignment.State.Widget = assignment.Widget;
+                assignment.State.Container.ContextMenu =
+                    EditLayoutButton.IsChecked == true && assignment.Widget != null
+                        ? BuildPlacedWidgetMenu(assignment.State.Block, assignment.Widget)
+                        : null;
+                RefreshBlockChrome(assignment.State);
+            }
+
+            _layoutSignature = ComputeLayoutSignature();
+            UpdateEditTools();
+            return true;
+        }
+
+        // Persists and broadcasts a widget move/swap, keeping the built widget controls alive.
+        private void SaveAndReassignWidgets()
+        {
+            ShowcaseLayoutService.Normalize(Layout);
+            ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
+            ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
+            _persist();
+            _publishingConfigurationChange = true;
+            try
+            {
+                ShowcaseConfigurationEvents.RaiseChanged();
+            }
+            finally
+            {
+                _publishingConfigurationChange = false;
+            }
+
+            if (!TryReassignWidgetHostsInPlace())
+            {
+                Rebuild();
+            }
         }
 
         private void SaveAndRebuild()
