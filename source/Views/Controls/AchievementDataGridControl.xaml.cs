@@ -2397,6 +2397,15 @@ namespace PlayniteAchievements.Views.Controls
                 return defaults;
             }
 
+            // Per-instance showcase keys ("<BaseKey>:<instanceId>") share their base key's defaults.
+            var baseKey = ShowcaseGridSurfaces.GetBaseKey(columnSettingsKey);
+            if (!string.IsNullOrWhiteSpace(baseKey) &&
+                !string.Equals(baseKey, columnSettingsKey, StringComparison.Ordinal) &&
+                DefaultVisibilityByColumnSettingsKey.TryGetValue(baseKey, out var baseDefaults))
+            {
+                return baseDefaults;
+            }
+
             return DefaultVisibilityByColumnSettingsKey.TryGetValue("Default", out var fallback)
                 ? fallback
                 : null;
