@@ -231,6 +231,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             UIElement content;
             ShowcaseWidgetControl widgetHost = null;
+            Button addButton = null;
             var widget = FindWidget(block.WidgetInstanceId);
             if (widget == null)
             {
@@ -270,12 +271,34 @@ namespace PlayniteAchievements.Views.Showcase
                 };
                 add.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
                 add.Click += AddWidgetButton_Click;
+                addButton = add;
                 content = add;
             }
             else
             {
                 widgetHost = new ShowcaseWidgetControl();
-                widgetHost.Apply(ShowcaseWidgetProjectionService.Build(snapshot, Layout, widget));
+                // Defer the projection (and with it template inflation - data grids and charts are
+                // expensive to build) to background priority so page switches and rebuilds paint
+                // the dashboard frame immediately and widgets fill in without blocking the click.
+                var deferredHost = widgetHost;
+                var deferredWidget = widget;
+                var deferredBlockId = block.BlockId;
+                Dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        if (_disposed ||
+                            !_blockVisuals.TryGetValue(deferredBlockId, out var current) ||
+                            !ReferenceEquals(current?.Host, deferredHost))
+                        {
+                            return;
+                        }
+
+                        deferredHost.Apply(ShowcaseWidgetProjectionService.Build(
+                            _overview.LatestSnapshot ?? new OverviewDataSnapshot(),
+                            Layout,
+                            deferredWidget));
+                    }),
+                    System.Windows.Threading.DispatcherPriority.Background);
                 if (EditLayoutButton.IsChecked == true)
                 {
                     widgetHost.ContextMenu = BuildPlacedWidgetMenu(block, widget);
@@ -334,7 +357,8 @@ namespace PlayniteAchievements.Views.Showcase
                 StatusPanel = dropStatusPanel,
                 Status = dropStatus,
                 Host = widgetHost,
-                Widget = widget
+                Widget = widget,
+                AddButton = addButton
             };
             _blockVisuals[block.BlockId] = visualState;
             RefreshBlockChrome(visualState);
@@ -874,7 +898,35 @@ namespace PlayniteAchievements.Views.Showcase
                 _selectedBlockId = CurrentPage.Blocks.FirstOrDefault()?.BlockId;
             }
 
-            BuildDashboard();
+            if (_blockVisuals.Count == 0)
+            {
+                BuildDashboard();
+                return;
+            }
+
+            // Toggling edit mode only changes block chrome and affordances; a full rebuild would
+            // recreate every widget control (including the embedded data grids) and stall the click.
+            var editing = EditLayoutButton.IsChecked == true;
+            foreach (var state in _blockVisuals.Values)
+            {
+                state.Container.Focusable = editing;
+                state.Container.Padding = editing ? new Thickness(2) : new Thickness(0);
+                if (state.Host != null)
+                {
+                    state.Host.ContextMenu = editing
+                        ? BuildPlacedWidgetMenu(state.Block, state.Widget)
+                        : null;
+                }
+
+                if (state.AddButton != null)
+                {
+                    state.AddButton.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+                }
+
+                RefreshBlockChrome(state);
+            }
+
+            UpdateEditTools();
         }
 
         private ShowcaseBlockSettings SelectedBlock => CurrentPage.Blocks.FirstOrDefault(block =>
@@ -1427,6 +1479,10 @@ namespace PlayniteAchievements.Views.Showcase
             public ShowcaseWidgetControl Host { get; set; }
 
             public ShowcaseWidgetInstanceSettings Widget { get; set; }
+
+            // Present only for empty blocks; lets the edit-mode toggle show and hide the add
+            // affordance without rebuilding the block container.
+            public Button AddButton { get; set; }
         }
 
         private enum DragVisualKind
