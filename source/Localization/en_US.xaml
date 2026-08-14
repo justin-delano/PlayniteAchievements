@@ -1269,6 +1269,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileSubtitle">Subtitle</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileAvatar">Avatar</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileBackground">Background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileProviderHint">Leave blank to use your provider profile</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFiles">Image files</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AllFiles">All files</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileStats">{0:N0} unlocked · {1:N1}% · {2:N0} completed</sys:String>
@@ -1297,6 +1298,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Interval">Interval</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_FitMode">Fit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Shuffle">Shuffle</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_HideCompleted">Hide completed games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_CustomTitle">Title</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Day">{0} day</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Days">{0} days</sys:String>
@@ -1320,12 +1322,23 @@
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Recent">Recent achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Rarest">Rarest achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Pinned">Pinned achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_LastUnlock">Last unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_Completion">Completion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_Name">Name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameListSort_Playtime">Playtime</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Completed">Completed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_All">All games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Pinned">Pinned games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_PlayniteFavorites">Playnite favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_All">All</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Clean">Clean</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Notification">Notification</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Framed">Framed</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fit">Fit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fill">Fill</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityTooltipFormat">{0} — {1} unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_Less">Less</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_More">More</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_Completion">Completion</sys:String>
@@ -1354,9 +1367,13 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics">Overall Statistics</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_NativePoints">Native Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_PinnedAchievements">Pinned Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FavoriteGames">Favorite Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FavoriteGames">Pinned Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic">Icon Mosaic</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow">Screenshot Slideshow</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_RecentAchievements">Recent Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameMosaic">Game Mosaic</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">Activity Calendar</sys:String>
 
     <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->
