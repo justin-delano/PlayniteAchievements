@@ -267,6 +267,419 @@ namespace PlayniteAchievements.Tests.Models
             CollectionAssert.AreEqual(new[] { firstAchievement, lockedRare }, pinnedMosaic.ToArray());
         }
 
+        [TestMethod]
+        public void ActivityCalendar_DensifiesSundayAlignedTrailingYear()
+        {
+            var endDate = new DateTime(2026, 7, 31); // a Friday
+            var snapshot = new OverviewDataSnapshot
+            {
+                GlobalUnlockCountsByDate = new Dictionary<DateTime, int>
+                {
+                    [endDate] = 2,
+                    [endDate.AddHours(-30)] = 3,           // same day as endDate-2 once dated
+                    [endDate.AddDays(-1).AddHours(6)] = 1, // duplicate-day key collapses
+                    [endDate.AddDays(-1)] = 4,
+                    [endDate.AddDays(-500)] = 99,          // outside the window
+                    [endDate.AddDays(-3)] = -7             // negative clamps to zero
+                }
+            };
+
+            var calendar = ShowcaseWidgetProjectionService.BuildActivityCalendar(snapshot, endDate);
+
+            Assert.AreEqual(DayOfWeek.Sunday, calendar.StartDate.DayOfWeek);
+            Assert.IsTrue(calendar.StartDate <= endDate.AddDays(-364));
+            Assert.IsTrue(calendar.StartDate > endDate.AddDays(-364 - 7));
+            Assert.AreEqual(endDate, calendar.EndDate);
+            Assert.AreEqual((endDate - calendar.StartDate).Days + 1, calendar.Days.Count);
+            Assert.AreEqual(calendar.StartDate, calendar.Days[0].Date);
+            Assert.AreEqual(endDate, calendar.Days[calendar.Days.Count - 1].Date);
+
+            var byDate = calendar.Days.ToDictionary(day => day.Date);
+            Assert.AreEqual(5, byDate[endDate.AddDays(-1)].Count);
+            Assert.AreEqual(2, byDate[endDate].Count);
+            Assert.AreEqual(0, byDate[endDate.AddDays(-3)].Count);
+            Assert.AreEqual(0, byDate[endDate.AddDays(-10)].Count);
+            Assert.AreEqual(5, calendar.MaxCount);
+            Assert.AreEqual(10, calendar.TotalCount);
+            Assert.AreEqual(3, calendar.ActiveDayCount);
+        }
+
+        [TestMethod]
+        public void ActivityCalendar_BucketsIntensityAtMaxRelativeQuartiles()
+        {
+            var endDate = new DateTime(2026, 7, 31);
+            var snapshot = new OverviewDataSnapshot
+            {
+                GlobalUnlockCountsByDate = new Dictionary<DateTime, int>
+                {
+                    [endDate] = 8,
+                    [endDate.AddDays(-1)] = 1,
+                    [endDate.AddDays(-2)] = 2,
+                    [endDate.AddDays(-3)] = 3,
+                    [endDate.AddDays(-4)] = 5,
+                    [endDate.AddDays(-5)] = 7
+                }
+            };
+
+            var byDate = ShowcaseWidgetProjectionService.BuildActivityCalendar(snapshot, endDate)
+                .Days.ToDictionary(day => day.Date);
+
+            Assert.AreEqual(4, byDate[endDate].Intensity);
+            Assert.AreEqual(1, byDate[endDate.AddDays(-1)].Intensity);
+            Assert.AreEqual(1, byDate[endDate.AddDays(-2)].Intensity);
+            Assert.AreEqual(2, byDate[endDate.AddDays(-3)].Intensity);
+            Assert.AreEqual(3, byDate[endDate.AddDays(-4)].Intensity);
+            Assert.AreEqual(4, byDate[endDate.AddDays(-5)].Intensity);
+            Assert.AreEqual(0, byDate[endDate.AddDays(-6)].Intensity);
+
+            var single = ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                new OverviewDataSnapshot
+                {
+                    GlobalUnlockCountsByDate = new Dictionary<DateTime, int> { [endDate] = 1 }
+                },
+                endDate);
+            Assert.AreEqual(4, single.Days.Last().Intensity);
+
+            var built = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                new ShowcaseSettings(),
+                new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.ActivityCalendar },
+                endDate);
+            Assert.AreEqual(byDate.Count, built.ActivityCalendar.Days.Count);
+        }
+
+        [TestMethod]
+        public void ScoreHistory_AccumulatesPerAchievementScoresWithUndatedBaseline()
+        {
+            var endDate = new DateTime(2026, 7, 31);
+            var dated = new AchievementDisplayItem
+            {
+                Unlocked = true,
+                Rarity = RarityTier.UltraRare,
+                GlobalPercentUnlocked = 1,
+                UnlockTimeUtc = endDate.AddDays(-2)
+            };
+            var datedSameDay = new AchievementDisplayItem
+            {
+                Unlocked = true,
+                Rarity = RarityTier.Common,
+                GlobalPercentUnlocked = 60,
+                UnlockTimeUtc = endDate.AddDays(-2).AddHours(5)
+            };
+            var undated = new AchievementDisplayItem
+            {
+                Unlocked = true,
+                Rarity = RarityTier.Rare,
+                GlobalPercentUnlocked = 10,
+                UnlockTimeUtc = null
+            };
+            var locked = new AchievementDisplayItem
+            {
+                Unlocked = false,
+                Rarity = RarityTier.UltraRare,
+                GlobalPercentUnlocked = 0.2
+            };
+            var snapshot = new OverviewDataSnapshot
+            {
+                Achievements = new List<AchievementDisplayItem> { dated, datedSameDay, undated, locked }
+            };
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Scores };
+
+            var points = ShowcaseWidgetProjectionService.BuildScoreHistory(snapshot, instance, endDate);
+
+            Assert.IsTrue(points.Count >= 2);
+            var expectedCollection = dated.CollectionScore + datedSameDay.CollectionScore + undated.CollectionScore;
+            var expectedPrestige = dated.PrestigeScore + datedSameDay.PrestigeScore + undated.PrestigeScore;
+            var last = points[points.Count - 1];
+            Assert.AreEqual(endDate, last.Date);
+            Assert.AreEqual(expectedCollection, last.CollectionScore);
+            Assert.AreEqual(expectedPrestige, last.PrestigeScore);
+            // The undated baseline is present from the very first point.
+            Assert.AreEqual(undated.CollectionScore, points[0].CollectionScore);
+            // Gap days carry the cumulative value forward.
+            var afterUnlock = points.First(point => point.Date >= endDate.AddDays(-1));
+            Assert.AreEqual(expectedCollection, afterUnlock.CollectionScore);
+        }
+
+        [TestMethod]
+        public void ScoreHistory_DownsamplesAllTimeToBoundedPointCount()
+        {
+            var endDate = new DateTime(2026, 7, 31);
+            var achievements = new List<AchievementDisplayItem>();
+            for (var i = 0; i < 60; i++)
+            {
+                achievements.Add(new AchievementDisplayItem
+                {
+                    Unlocked = true,
+                    Rarity = RarityTier.Common,
+                    GlobalPercentUnlocked = 70,
+                    UnlockTimeUtc = endDate.AddDays(-i * 30) // spans ~5 years
+                });
+            }
+
+            var snapshot = new OverviewDataSnapshot { Achievements = achievements };
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Scores };
+            instance.SetOption("TimelineRange", TimelineRange.All);
+
+            var points = ShowcaseWidgetProjectionService.BuildScoreHistory(snapshot, instance, endDate);
+
+            Assert.IsTrue(points.Count <= 372, $"Expected bounded point count, got {points.Count}");
+            Assert.AreEqual(endDate, points[points.Count - 1].Date);
+            Assert.AreEqual(
+                achievements.Sum(item => item.CollectionScore),
+                points[points.Count - 1].CollectionScore);
+            for (var i = 1; i < points.Count; i++)
+            {
+                Assert.IsTrue(points[i].CollectionScore >= points[i - 1].CollectionScore);
+            }
+
+            Assert.AreEqual(
+                0,
+                ShowcaseWidgetProjectionService.BuildScoreHistory(
+                    new OverviewDataSnapshot(),
+                    instance,
+                    endDate).Count);
+
+            var built = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                new ShowcaseSettings(),
+                instance,
+                endDate);
+            Assert.AreEqual(points.Count, built.ScoreHistory.Count);
+        }
+
+        [TestMethod]
+        public void RecentAchievements_RespectCountOptionAndKeepSnapshotOrder()
+        {
+            var items = Enumerable.Range(0, 30)
+                .Select(i => new AchievementDisplayItem
+                {
+                    ApiName = $"a{i}",
+                    Unlocked = true,
+                    UnlockTimeUtc = new DateTime(2026, 7, 1).AddDays(-i)
+                })
+                .ToList();
+            var snapshot = new OverviewDataSnapshot { RecentAchievements = items };
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.RecentAchievements };
+            instance.SetOption("Count", 5);
+
+            var rows = ShowcaseWidgetProjectionService.ResolveRecentAchievements(snapshot, instance);
+
+            Assert.AreEqual(5, rows.Count);
+            CollectionAssert.AreEqual(items.Take(5).ToList(), rows.ToList());
+
+            var built = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                new ShowcaseSettings(),
+                instance);
+            Assert.AreEqual(5, built.AchievementRows.Count);
+        }
+
+        [TestMethod]
+        public void GameSummaries_SortModesHideCompletedAndCountClamp()
+        {
+            var oldest = new GameSummaryItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                GameName = "Alpha",
+                Progression = 40,
+                PlaytimeSeconds = 50,
+                LastUnlockUtc = new DateTime(2026, 1, 1)
+            };
+            var newest = new GameSummaryItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                GameName = "Beta",
+                Progression = 90,
+                PlaytimeSeconds = 500,
+                LastUnlockUtc = new DateTime(2026, 7, 1)
+            };
+            var completed = new GameSummaryItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                GameName = "Gamma",
+                Progression = 100,
+                IsCompleted = true,
+                PlaytimeSeconds = 5,
+                LastUnlockUtc = new DateTime(2026, 6, 1)
+            };
+            var neverUnlocked = new GameSummaryItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                GameName = "Delta",
+                Progression = 0,
+                PlaytimeSeconds = 5000
+            };
+            var snapshot = new OverviewDataSnapshot
+            {
+                GameSummaries = new List<GameSummaryItem> { oldest, newest, completed, neverUnlocked }
+            };
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.GameSummaries };
+
+            var byLastUnlock = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
+            CollectionAssert.AreEqual(
+                new[] { newest, completed, oldest, neverUnlocked },
+                byLastUnlock.ToArray());
+
+            instance.SetOption("Mode", ShowcaseGameListSort.Completion);
+            Assert.AreSame(completed,
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance)[0]);
+
+            instance.SetOption("Mode", ShowcaseGameListSort.Name);
+            Assert.AreSame(oldest,
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance)[0]);
+
+            instance.SetOption("Mode", ShowcaseGameListSort.Playtime);
+            Assert.AreSame(neverUnlocked,
+                ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance)[0]);
+
+            instance.SetOption("Mode", ShowcaseGameListSort.LastUnlock);
+            instance.SetOption("HideCompleted", true);
+            var withoutCompleted = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance);
+            Assert.IsFalse(withoutCompleted.Contains(completed));
+
+            instance.SetOption("HideCompleted", false);
+            instance.SetOption("Count", 2);
+            Assert.AreEqual(2, ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance).Count);
+        }
+
+        [TestMethod]
+        public void GameMosaic_SourcesFilterAndOrder()
+        {
+            var pinnedFirst = Guid.NewGuid();
+            var pinnedSecond = Guid.NewGuid();
+            var completedOld = new GameSummaryItem
+            {
+                PlayniteGameId = pinnedSecond,
+                GameName = "Old completed",
+                IsCompleted = true,
+                LastUnlockUtc = new DateTime(2026, 1, 1)
+            };
+            var completedNew = new GameSummaryItem
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                GameName = "New completed",
+                IsCompleted = true,
+                LastUnlockUtc = new DateTime(2026, 7, 1)
+            };
+            var favorite = new GameSummaryItem
+            {
+                PlayniteGameId = pinnedFirst,
+                GameName = "A favorite",
+                IsFavorite = true,
+                LastUnlockUtc = new DateTime(2026, 3, 1)
+            };
+            var snapshot = new OverviewDataSnapshot
+            {
+                GameSummaries = new List<GameSummaryItem> { completedOld, completedNew, favorite }
+            };
+            var settings = new ShowcaseSettings
+            {
+                PinnedGameIds = new List<Guid> { pinnedFirst, pinnedSecond }
+            };
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.GameMosaic };
+
+            var completed = ShowcaseWidgetProjectionService.ResolveGameMosaic(snapshot, settings, instance);
+            CollectionAssert.AreEqual(new[] { completedNew, completedOld }, completed.ToArray());
+
+            instance.SetOption("Source", ShowcaseGameMosaicSource.All);
+            var all = ShowcaseWidgetProjectionService.ResolveGameMosaic(snapshot, settings, instance);
+            Assert.AreEqual(3, all.Count);
+            Assert.AreSame(completedNew, all[0]);
+
+            instance.SetOption("Source", ShowcaseGameMosaicSource.Pinned);
+            CollectionAssert.AreEqual(
+                new[] { favorite, completedOld },
+                ShowcaseWidgetProjectionService.ResolveGameMosaic(snapshot, settings, instance).ToArray());
+
+            instance.SetOption("Source", ShowcaseGameMosaicSource.PlayniteFavorites);
+            Assert.AreSame(favorite,
+                ShowcaseWidgetProjectionService.ResolveGameMosaic(snapshot, settings, instance).Single());
+
+            instance.SetOption("Source", ShowcaseGameMosaicSource.All);
+            instance.SetOption("Count", 2);
+            Assert.AreEqual(2,
+                ShowcaseWidgetProjectionService.ResolveGameMosaic(snapshot, settings, instance).Count);
+        }
+
+        [TestMethod]
+        public void PinRows_MaterializeMissingPinsAsPlaceholders()
+        {
+            var gameId = Guid.NewGuid();
+            var missingGameId = Guid.NewGuid();
+            var resolved = new AchievementDisplayItem
+            {
+                PlayniteGameId = gameId,
+                ApiName = "real",
+                DisplayName = "Real unlock",
+                GameName = "Real game",
+                Unlocked = true
+            };
+            var snapshot = new OverviewDataSnapshot
+            {
+                Achievements = new List<AchievementDisplayItem> { resolved }
+            };
+            var pins = new List<PinnedAchievementReference>
+            {
+                new PinnedAchievementReference { GameId = gameId, ApiName = "real" },
+                new PinnedAchievementReference
+                {
+                    GameId = missingGameId,
+                    ApiName = "gone",
+                    LastKnownGameName = "Removed game",
+                    LastKnownAchievementName = "Remembered unlock"
+                }
+            };
+
+            var rows = ShowcaseWidgetProjectionService.MaterializePinRows(
+                ShowcaseWidgetProjectionService.ResolvePinnedAchievements(snapshot, pins));
+
+            Assert.AreEqual(2, rows.Count);
+            Assert.AreSame(resolved, rows[0]);
+            Assert.AreEqual(missingGameId, rows[1].PlayniteGameId);
+            Assert.AreEqual("gone", rows[1].ApiName);
+            Assert.AreEqual("Remembered unlock", rows[1].DisplayName);
+            Assert.AreEqual("Removed game", rows[1].GameName);
+            Assert.IsFalse(rows[1].Unlocked);
+
+            var built = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                new ShowcaseSettings { PinnedAchievements = pins },
+                new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.PinnedAchievements });
+            Assert.AreEqual(2, built.AchievementRows.Count);
+        }
+
+        [TestMethod]
+        public void Profile_ResolvedProfilePrefersProviderIdentityWithManualOverride()
+        {
+            var snapshot = new OverviewDataSnapshot
+            {
+                CurrentUserIdentities = new List<PlayniteAchievements.Models.Friends.FriendIdentity>
+                {
+                    new PlayniteAchievements.Models.Friends.FriendIdentity
+                    {
+                        ProviderKey = "Steam",
+                        DisplayName = "SteamName",
+                        AvatarPath = @"C:\avatar.png"
+                    }
+                }
+            };
+            var settings = new ShowcaseSettings
+            {
+                Profile = new ShowcaseProfileSettings { Subtitle = "Completionist" }
+            };
+
+            var built = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                settings,
+                new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Profile });
+
+            Assert.AreEqual("SteamName", built.ResolvedProfile.DisplayName);
+            Assert.AreEqual(@"C:\avatar.png", built.ResolvedProfile.AvatarPath);
+            Assert.AreEqual("Completionist", built.ResolvedProfile.Subtitle);
+            Assert.IsTrue(built.ResolvedProfile.FromProviderIdentity);
+        }
+
         private static GameSummaryItem Game(
             string name,
             string provider,
