@@ -40,7 +40,7 @@ namespace PlayniteAchievements.Tests.Models
 
             var none = ShowcaseLayoutService.CreateDefault(false, false);
             var scoreBlock = none.Pages.Single().Blocks.Single(block =>
-                block.Row == 0 && block.Column == 1 && block.ColumnSpan == 2);
+                block.Row == 0 && block.Column == 2 && block.ColumnSpan == 1);
             Assert.IsNull(scoreBlock.WidgetInstanceId);
         }
 
@@ -49,14 +49,14 @@ namespace PlayniteAchievements.Tests.Models
         {
             var settings = ShowcaseLayoutService.CreateDefault();
             var page = settings.Pages.Single();
-            var scoreBlock = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
+            var profileBlock = page.Blocks.Single(block => block.Row == 0 && block.Column == 0);
 
             Assert.IsTrue(ShowcaseLayoutService.TrySplit(
-                settings, page.PageId, scoreBlock.BlockId, vertical: true, gridLine: 2));
+                settings, page.PageId, profileBlock.BlockId, vertical: true, gridLine: 1));
             Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
 
-            var left = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
-            var right = page.Blocks.Single(block => block.Row == 0 && block.Column == 2);
+            var left = page.Blocks.Single(block => block.Row == 0 && block.Column == 0);
+            var right = page.Blocks.Single(block => block.Row == 0 && block.Column == 1);
             var extra = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Pie);
             Assert.IsTrue(ShowcaseLayoutService.PlaceWidget(settings, page.PageId, right.BlockId, extra.InstanceId));
             Assert.IsFalse(ShowcaseLayoutService.TryMerge(
