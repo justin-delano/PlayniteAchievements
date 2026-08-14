@@ -342,12 +342,11 @@
     <Compile Include="..\..\source\Models\Settings\OverviewSettingsMigration.cs" Link="Source\Models\Settings\OverviewSettingsMigration.cs" />
     <Compile Include="..\..\source\Models\Settings\GridOptionsSettingsMigration.cs" Link="Source\Models\Settings\GridOptionsSettingsMigration.cs" />
     <Compile Include="..\..\source\Models\Settings\AppearanceSettingsMigration.cs" Link="Source\Models\Settings\AppearanceSettingsMigration.cs" />
-    <Compile Include="..\..\source\Models\Settings\FrameVignetteStyle.cs" Link="Source\Models\Settings\FrameVignetteStyle.cs" />
-    <Compile Include="..\..\source\Models\Settings\NotificationLineEmphasis.cs" Link="Source\Models\Settings\NotificationLineEmphasis.cs" />
     <Compile Include="..\..\source\Models\Settings\StartPageWidgetKind.cs" Link="Source\Models\Settings\StartPageWidgetKind.cs" />
     <Compile Include="..\..\source\Models\Settings\StartPageWidgetSettings.cs" Link="Source\Models\Settings\StartPageWidgetSettings.cs" />
     <Compile Include="..\..\source\Models\Settings\ShowcaseSettings.cs" Link="Source\Models\Settings\ShowcaseSettings.cs" />
     <Compile Include="..\..\source\Models\ShowcaseWidgetFramework.cs" Link="Source\Models\ShowcaseWidgetFramework.cs" />
+    <Compile Include="..\..\source\Services\Showcase\ShowcaseGeometry.cs" Link="Source\Services\Showcase\ShowcaseGeometry.cs" />
     <Compile Include="..\..\source\Services\Showcase\ShowcaseLayoutService.cs" Link="Source\Services\Showcase\ShowcaseLayoutService.cs" />
     <Compile Include="..\..\source\Services\Showcase\ShowcaseWidgetProjectionService.cs" Link="Source\Services\Showcase\ShowcaseWidgetProjectionService.cs" />
     <Compile Include="..\..\source\Services\Showcase\ShowcaseProfileResolver.cs" Link="Source\Services\Showcase\ShowcaseProfileResolver.cs" />
