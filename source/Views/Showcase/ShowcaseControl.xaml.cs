@@ -182,9 +182,10 @@ namespace PlayniteAchievements.Views.Showcase
             UpdateEditTools();
         }
 
-        // Full-length drag bands over the two internal row and two internal column boundaries.
-        // They straddle the block gaps above the block layer and only show in edit mode, so they
-        // never compete with block drag/split/merge gestures outside it.
+        // Small grab handles at the page's outer edge, one per internal boundary: column
+        // handles sit on the top edge, row handles on the left edge. They straddle the
+        // boundary line above the block layer and only show in edit mode, so they never
+        // compete with block drag/split/merge gestures.
         private void AddTrackGrippers()
         {
             for (var boundary = 0; boundary < ShowcaseLayoutService.GridSize - 1; boundary++)
@@ -206,21 +207,23 @@ namespace PlayniteAchievements.Views.Showcase
             };
             if (vertical)
             {
-                thumb.Width = 10;
+                thumb.Width = 16;
+                thumb.Height = 24;
                 thumb.HorizontalAlignment = HorizontalAlignment.Right;
-                thumb.Margin = new Thickness(0, 0, -5, 0);
+                thumb.VerticalAlignment = VerticalAlignment.Top;
+                thumb.Margin = new Thickness(0, 0, -8, 0);
                 Grid.SetColumn(thumb, boundary);
                 Grid.SetRow(thumb, 0);
-                Grid.SetRowSpan(thumb, ShowcaseLayoutService.GridSize);
             }
             else
             {
-                thumb.Height = 10;
+                thumb.Width = 24;
+                thumb.Height = 16;
+                thumb.HorizontalAlignment = HorizontalAlignment.Left;
                 thumb.VerticalAlignment = VerticalAlignment.Bottom;
-                thumb.Margin = new Thickness(0, 0, 0, -5);
+                thumb.Margin = new Thickness(0, 0, 0, -8);
                 Grid.SetRow(thumb, boundary);
                 Grid.SetColumn(thumb, 0);
-                Grid.SetColumnSpan(thumb, ShowcaseLayoutService.GridSize);
             }
 
             Panel.SetZIndex(thumb, 40);
@@ -235,19 +238,17 @@ namespace PlayniteAchievements.Views.Showcase
 
         private static ControlTemplate CreateTrackGripperTemplate(bool vertical)
         {
-            // Transparent band for a comfortable grab target, with a slim accent bar on the line.
+            // Transparent pad for a comfortable grab target, with a small accent pill
+            // centered on the boundary line.
             var root = new FrameworkElementFactory(typeof(Grid));
             root.SetValue(Panel.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
             var bar = new FrameworkElementFactory(typeof(Border));
-            bar.SetValue(vertical ? WidthProperty : HeightProperty, 4d);
-            bar.SetValue(
-                HorizontalAlignmentProperty,
-                vertical ? HorizontalAlignment.Center : HorizontalAlignment.Stretch);
-            bar.SetValue(
-                VerticalAlignmentProperty,
-                vertical ? VerticalAlignment.Stretch : VerticalAlignment.Center);
-            bar.SetValue(Border.CornerRadiusProperty, new CornerRadius(2));
-            bar.SetValue(OpacityProperty, 0.55);
+            bar.SetValue(WidthProperty, vertical ? 5d : 18d);
+            bar.SetValue(HeightProperty, vertical ? 18d : 5d);
+            bar.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            bar.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+            bar.SetValue(Border.CornerRadiusProperty, new CornerRadius(2.5));
+            bar.SetValue(OpacityProperty, 0.7);
             bar.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Accent");
             root.AppendChild(bar);
             return new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb))
