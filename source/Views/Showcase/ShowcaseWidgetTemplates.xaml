@@ -482,7 +482,7 @@
     <!-- RecentAchievements: the shared achievement grid over the latest unlocks. -->
     <DataTemplate DataType="{x:Type widgets:RecentAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
-                                                 ColumnSettingsKey="ShowcaseRecentAchievements"
+                                                 ColumnSettingsKey="{Binding ColumnSettingsKey}"
                                                  ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                                  FixedRowHeight="{Binding RowHeight}"/>
     </DataTemplate>
@@ -490,7 +490,7 @@
     <!-- GameSummaries: the shared game-summaries grid over the whole library. -->
     <DataTemplate DataType="{x:Type widgets:GameSummariesWidgetViewModel}">
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
-                                          ColumnSettingsKey="ShowcaseGameSummaries"
+                                          ColumnSettingsKey="{Binding ColumnSettingsKey}"
                                           ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                           FixedRowHeight="{Binding RowHeight}"/>
     </DataTemplate>
@@ -589,6 +589,11 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
+            <!-- Horizontal-only scrolling: the Viewbox sees a constrained height and infinite
+                 width, so it scales the calendar to fill the widget's height and long ranges
+                 overflow into a horizontal scrollbar instead of shrinking. -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
             <Viewbox Stretch="Uniform" StretchDirection="Both">
                 <StackPanel>
                     <Grid>
@@ -667,6 +672,7 @@
                     </StackPanel>
                 </StackPanel>
             </Viewbox>
+            </ScrollViewer>
         </Grid>
     </DataTemplate>
 
