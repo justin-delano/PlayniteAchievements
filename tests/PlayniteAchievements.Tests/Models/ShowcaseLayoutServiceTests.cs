@@ -176,6 +176,50 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void NormalizeTrackWeights_ClampsRepairsAndDefaultsToEqualThirds()
+        {
+            CollectionAssert.AreEqual(
+                new[] { 1d, 1d, 1d },
+                ShowcaseLayoutService.NormalizeTrackWeights(null));
+            CollectionAssert.AreEqual(
+                new[] { 1d, 1d, 1d },
+                ShowcaseLayoutService.NormalizeTrackWeights(new double[0]));
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    ShowcaseLayoutService.MinTrackWeight,
+                    ShowcaseLayoutService.MaxTrackWeight,
+                    1d
+                },
+                ShowcaseLayoutService.NormalizeTrackWeights(new[] { 0.1, 99d, double.NaN }));
+            CollectionAssert.AreEqual(
+                new[] { 0.5, 1.5, 1d },
+                ShowcaseLayoutService.NormalizeTrackWeights(new[] { 0.5, 1.5, 1d }));
+        }
+
+        [TestMethod]
+        public void Normalize_RepairsPageTrackWeightsAndKeepsAbsentOnesNull()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var page = settings.Pages.Single();
+            page.RowWeights = new System.Collections.Generic.List<double> { 0.1, 2d };
+            Assert.IsNull(page.ColumnWeights);
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            CollectionAssert.AreEqual(
+                new[] { ShowcaseLayoutService.MinTrackWeight, 2d, 1d },
+                page.RowWeights);
+            Assert.IsNull(page.ColumnWeights);
+
+            var clone = page.Clone();
+            CollectionAssert.AreEqual(page.RowWeights, clone.RowWeights);
+            Assert.IsNull(clone.ColumnWeights);
+            clone.RowWeights[0] = 3d;
+            Assert.AreEqual(ShowcaseLayoutService.MinTrackWeight, page.RowWeights[0]);
+        }
+
+        [TestMethod]
         public void DuplicateAndDeletePage_DeletesRemovedPageWidgets()
         {
             var settings = ShowcaseLayoutService.CreateDefault();

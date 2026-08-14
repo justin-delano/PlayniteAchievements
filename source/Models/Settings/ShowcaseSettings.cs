@@ -238,6 +238,12 @@ namespace PlayniteAchievements.Models.Settings
         public List<ShowcaseBlockSettings> Blocks { get; set; } =
             new List<ShowcaseBlockSettings>();
 
+        /// <summary>Star weights for the grid's rows; null means equal thirds.</summary>
+        public List<double> RowWeights { get; set; }
+
+        /// <summary>Star weights for the grid's columns; null means equal thirds.</summary>
+        public List<double> ColumnWeights { get; set; }
+
         public ShowcasePageSettings Clone()
         {
             return new ShowcasePageSettings
@@ -247,7 +253,9 @@ namespace PlayniteAchievements.Models.Settings
                 Blocks = (Blocks ?? new List<ShowcaseBlockSettings>())
                     .Where(block => block != null)
                     .Select(block => block.Clone())
-                    .ToList()
+                    .ToList(),
+                RowWeights = RowWeights?.ToList(),
+                ColumnWeights = ColumnWeights?.ToList()
             };
         }
     }

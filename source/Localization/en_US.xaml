@@ -1254,6 +1254,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_RenamePrompt">Enter a page name:</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MovePageLeft">Move page left</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MovePageRight">Move page right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ResetTrackSizes">Reset row and column sizes</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ResetPage">Reset page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ResetPageConfirm">Reset this page? Its current widgets and layout will be deleted.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DeletePage">Delete page</sys:String>

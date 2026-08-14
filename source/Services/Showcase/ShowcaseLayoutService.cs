@@ -10,6 +10,38 @@ namespace PlayniteAchievements.Services.Showcase
     {
         public const int GridSize = 3;
 
+        /// <summary>Track weight bounds: no row or column can collapse or dominate the page.</summary>
+        public const double MinTrackWeight = 0.4;
+        public const double MaxTrackWeight = 3.0;
+
+        /// <summary>
+        /// Resolves a page's persisted row or column star weights to exactly
+        /// <see cref="GridSize"/> values clamped to [<see cref="MinTrackWeight"/>,
+        /// <see cref="MaxTrackWeight"/>]. Null, missing, or invalid entries fall back to 1.
+        /// </summary>
+        public static double[] NormalizeTrackWeights(IReadOnlyList<double> weights)
+        {
+            var result = new double[GridSize];
+            for (var index = 0; index < GridSize; index++)
+            {
+                var value = weights != null && index < weights.Count ? weights[index] : 1d;
+                if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
+                {
+                    value = 1d;
+                }
+
+                result[index] = Math.Min(MaxTrackWeight, Math.Max(MinTrackWeight, value));
+            }
+
+            return result;
+        }
+
+        /// <summary>Normalized copy of a persisted weight list; null stays null (equal thirds).</summary>
+        private static List<double> NormalizeTrackWeightList(List<double> weights)
+        {
+            return weights == null ? null : new List<double>(NormalizeTrackWeights(weights));
+        }
+
         public static ShowcaseSettings CreateDefault(
             bool showCollectionScore = true,
             bool showPrestigeScore = true)
@@ -647,6 +679,8 @@ namespace PlayniteAchievements.Services.Showcase
                     ? $"Page {pageIndex + 1}"
                     : page.Name.Trim();
                 page.Blocks = NormalizeBlocks(page.Blocks, blockIds);
+                page.RowWeights = NormalizeTrackWeightList(page.RowWeights);
+                page.ColumnWeights = NormalizeTrackWeightList(page.ColumnWeights);
 
                 var singletonKinds = new HashSet<ShowcaseWidgetKind>();
                 foreach (var block in page.Blocks)

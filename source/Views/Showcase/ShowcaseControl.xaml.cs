@@ -34,6 +34,8 @@ namespace PlayniteAchievements.Views.Showcase
         private string _dragSourceBlockId;
         private readonly Dictionary<string, BlockVisualState> _blockVisuals =
             new Dictionary<string, BlockVisualState>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<System.Windows.Controls.Primitives.Thumb> _trackGrippers =
+            new List<System.Windows.Controls.Primitives.Thumb>();
 
         // Built widget controls keyed by widget instance id, kept alive across dashboard rebuilds
         // and page switches. Every layout edit (split, merge, page add/delete/rename, widget
@@ -142,14 +144,17 @@ namespace PlayniteAchievements.Views.Showcase
 
             DashboardGrid.Children.Clear();
             _blockVisuals.Clear();
+            _trackGrippers.Clear();
             DashboardGrid.RowDefinitions.Clear();
             DashboardGrid.ColumnDefinitions.Clear();
+            var rowWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights);
+            var columnWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.ColumnWeights);
             for (var index = 0; index < ShowcaseLayoutService.GridSize; index++)
             {
                 DashboardGrid.RowDefinitions.Add(
-                    new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                    new RowDefinition { Height = new GridLength(rowWeights[index], GridUnitType.Star) });
                 DashboardGrid.ColumnDefinitions.Add(
-                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    new ColumnDefinition { Width = new GridLength(columnWeights[index], GridUnitType.Star) });
             }
 
             var snapshot = _overview.LatestSnapshot ?? new OverviewDataSnapshot();
@@ -172,8 +177,167 @@ namespace PlayniteAchievements.Views.Showcase
                 DashboardGrid.Children.Add(container);
             }
 
+            AddTrackGrippers();
             _layoutSignature = ComputeLayoutSignature();
             UpdateEditTools();
+        }
+
+        // Full-length drag bands over the two internal row and two internal column boundaries.
+        // They straddle the block gaps above the block layer and only show in edit mode, so they
+        // never compete with block drag/split/merge gestures outside it.
+        private void AddTrackGrippers()
+        {
+            for (var boundary = 0; boundary < ShowcaseLayoutService.GridSize - 1; boundary++)
+            {
+                DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary));
+                DashboardGrid.Children.Add(CreateTrackGripper(vertical: false, boundary));
+            }
+
+            UpdateTrackGripperVisibility();
+        }
+
+        private System.Windows.Controls.Primitives.Thumb CreateTrackGripper(bool vertical, int boundary)
+        {
+            var thumb = new System.Windows.Controls.Primitives.Thumb
+            {
+                Cursor = vertical ? Cursors.SizeWE : Cursors.SizeNS,
+                Focusable = false,
+                Template = CreateTrackGripperTemplate(vertical)
+            };
+            if (vertical)
+            {
+                thumb.Width = 10;
+                thumb.HorizontalAlignment = HorizontalAlignment.Right;
+                thumb.Margin = new Thickness(0, 0, -5, 0);
+                Grid.SetColumn(thumb, boundary);
+                Grid.SetRow(thumb, 0);
+                Grid.SetRowSpan(thumb, ShowcaseLayoutService.GridSize);
+            }
+            else
+            {
+                thumb.Height = 10;
+                thumb.VerticalAlignment = VerticalAlignment.Bottom;
+                thumb.Margin = new Thickness(0, 0, 0, -5);
+                Grid.SetRow(thumb, boundary);
+                Grid.SetColumn(thumb, 0);
+                Grid.SetColumnSpan(thumb, ShowcaseLayoutService.GridSize);
+            }
+
+            Panel.SetZIndex(thumb, 40);
+            thumb.DragDelta += (_, args) => AdjustTrackWeights(
+                vertical,
+                boundary,
+                vertical ? args.HorizontalChange : args.VerticalChange);
+            thumb.DragCompleted += (_, __) => CommitTrackWeights();
+            _trackGrippers.Add(thumb);
+            return thumb;
+        }
+
+        private static ControlTemplate CreateTrackGripperTemplate(bool vertical)
+        {
+            // Transparent band for a comfortable grab target, with a slim accent bar on the line.
+            var root = new FrameworkElementFactory(typeof(Grid));
+            root.SetValue(Panel.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
+            var bar = new FrameworkElementFactory(typeof(Border));
+            bar.SetValue(vertical ? WidthProperty : HeightProperty, 4d);
+            bar.SetValue(
+                HorizontalAlignmentProperty,
+                vertical ? HorizontalAlignment.Center : HorizontalAlignment.Stretch);
+            bar.SetValue(
+                VerticalAlignmentProperty,
+                vertical ? VerticalAlignment.Stretch : VerticalAlignment.Center);
+            bar.SetValue(Border.CornerRadiusProperty, new CornerRadius(2));
+            bar.SetValue(OpacityProperty, 0.55);
+            bar.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Accent");
+            root.AppendChild(bar);
+            return new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb))
+            {
+                VisualTree = root
+            };
+        }
+
+        private void UpdateTrackGripperVisibility()
+        {
+            var editing = EditLayoutButton.IsChecked == true;
+            foreach (var gripper in _trackGrippers)
+            {
+                gripper.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private void AdjustTrackWeights(bool vertical, int boundary, double pixelDelta)
+        {
+            var totalPixels = vertical ? DashboardGrid.ActualWidth : DashboardGrid.ActualHeight;
+            if (totalPixels <= 0 || double.IsNaN(pixelDelta) || pixelDelta == 0)
+            {
+                return;
+            }
+
+            var weights = ReadTrackWeights(vertical);
+            var sum = weights.Sum();
+            if (sum <= 0)
+            {
+                return;
+            }
+
+            // Convert the pixel drag into star units and move weight between the two tracks
+            // that meet at this boundary, clamping both while keeping their total unchanged.
+            var deltaStars = pixelDelta / (totalPixels / sum);
+            var pairSum = weights[boundary] + weights[boundary + 1];
+            var lower = Math.Max(
+                ShowcaseLayoutService.MinTrackWeight,
+                pairSum - ShowcaseLayoutService.MaxTrackWeight);
+            var upper = Math.Min(
+                ShowcaseLayoutService.MaxTrackWeight,
+                pairSum - ShowcaseLayoutService.MinTrackWeight);
+            var first = Math.Min(upper, Math.Max(lower, weights[boundary] + deltaStars));
+            weights[boundary] = first;
+            weights[boundary + 1] = pairSum - first;
+            ApplyTrackWeights(vertical, weights);
+        }
+
+        private double[] ReadTrackWeights(bool vertical)
+        {
+            return vertical
+                ? DashboardGrid.ColumnDefinitions.Select(definition => definition.Width.Value).ToArray()
+                : DashboardGrid.RowDefinitions.Select(definition => definition.Height.Value).ToArray();
+        }
+
+        private void ApplyTrackWeights(bool vertical, double[] weights)
+        {
+            for (var index = 0; index < weights.Length; index++)
+            {
+                if (vertical)
+                {
+                    DashboardGrid.ColumnDefinitions[index].Width =
+                        new GridLength(weights[index], GridUnitType.Star);
+                }
+                else
+                {
+                    DashboardGrid.RowDefinitions[index].Height =
+                        new GridLength(weights[index], GridUnitType.Star);
+                }
+            }
+        }
+
+        // The drag already resized the live definitions, so persist and refresh the signature
+        // in place instead of rebuilding the dashboard.
+        private void CommitTrackWeights()
+        {
+            CurrentPage.RowWeights = ReadTrackWeights(vertical: false).ToList();
+            CurrentPage.ColumnWeights = ReadTrackWeights(vertical: true).ToList();
+            SaveAndPublish();
+            _layoutSignature = ComputeLayoutSignature();
+        }
+
+        private void ResetTrackSizes()
+        {
+            CurrentPage.RowWeights = null;
+            CurrentPage.ColumnWeights = null;
+            ApplyTrackWeights(vertical: false, ShowcaseLayoutService.NormalizeTrackWeights(null));
+            ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(null));
+            SaveAndPublish();
+            _layoutSignature = ComputeLayoutSignature();
         }
 
         // Captures everything that forces block containers to be recreated: the page set, the
@@ -207,7 +371,25 @@ namespace PlayniteAchievements.Views.Showcase
                 }
             }
 
+            // Track weights participate so an externally changed page layout rebuilds; local
+            // gripper drags refresh the stored signature themselves after applying in place.
+            builder.Append('#');
+            AppendTrackWeights(builder, current.RowWeights);
+            builder.Append('/');
+            AppendTrackWeights(builder, current.ColumnWeights);
             return builder.ToString();
+        }
+
+        private static void AppendTrackWeights(
+            System.Text.StringBuilder builder,
+            List<double> weights)
+        {
+            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(weights))
+            {
+                builder
+                    .Append(weight.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(',');
+            }
         }
 
         private FrameworkElement CreateBlockContainer(
@@ -1088,6 +1270,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             // Toggling edit mode only changes block chrome and affordances; a full rebuild would
             // recreate every widget control (including the embedded data grids) and stall the click.
+            UpdateTrackGripperVisibility();
             var editing = EditLayoutButton.IsChecked == true;
             foreach (var state in _blockVisuals.Values)
             {
@@ -1431,6 +1614,9 @@ namespace PlayniteAchievements.Views.Showcase
                     SaveAndRebuild();
                 }));
             menu.Items.Add(new Separator());
+            menu.Items.Add(MenuItem(
+                Localize("LOCPlayAch_Showcase_ResetTrackSizes"),
+                ResetTrackSizes));
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_ResetPage"),
                 () =>
