@@ -114,9 +114,13 @@ namespace PlayniteAchievements.Views
             _refreshEntryPoint = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _launchContext = launchContext;
+            // Playnite raises ItemUpdated for every game property change - playtime ticks while a
+            // game runs, install state, metadata edits - and a library sync fires them in bursts.
+            // Each refresh rebuilds the whole projection, so the window is long enough that a
+            // burst collapses into one rebuild rather than one every few hundred milliseconds.
             _showcaseDatabaseRefreshTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(350)
+                Interval = TimeSpan.FromMilliseconds(2000)
             };
             _showcaseDatabaseRefreshTimer.Tick += ShowcaseDatabaseRefreshTimer_Tick;
 
@@ -154,6 +158,7 @@ namespace PlayniteAchievements.Views
             {
                 _playniteApi.Database.Games.ItemUpdated += ShowcaseGames_ItemUpdated;
                 _playniteApi.Database.Games.ItemCollectionChanged += ShowcaseGames_ItemCollectionChanged;
+                IsVisibleChanged += Showcase_IsVisibleChanged;
             }
         }
 
@@ -389,6 +394,8 @@ namespace PlayniteAchievements.Views
                     _playniteApi.Database.Games.ItemUpdated -= ShowcaseGames_ItemUpdated;
                     _playniteApi.Database.Games.ItemCollectionChanged -= ShowcaseGames_ItemCollectionChanged;
                 }
+
+                IsVisibleChanged -= Showcase_IsVisibleChanged;
                 _viewModel?.Dispose();
             }
             catch (Exception ex)
@@ -494,6 +501,15 @@ namespace PlayniteAchievements.Views
             ItemCollectionChangedEventArgs<Playnite.SDK.Models.Game> e) =>
             QueueShowcaseDatabaseRefresh();
 
+        // Picks up work deferred while the dashboard was hidden.
+        private void Showcase_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible && _showcaseDatabaseRefreshPending)
+            {
+                QueueShowcaseDatabaseRefresh();
+            }
+        }
+
         private void QueueShowcaseDatabaseRefresh()
         {
             if (_isDisposed)
@@ -518,7 +534,11 @@ namespace PlayniteAchievements.Views
             }
 
             _showcaseDatabaseRefreshPending = true;
-            if (ActiveSubView != OverviewSubView.Showcase)
+
+            // Only rebuild for a dashboard the user is actually looking at. A hidden control
+            // (another Playnite view, a minimized window) keeps the pending flag and refreshes
+            // when it comes back, so background library activity costs nothing until then.
+            if (ActiveSubView != OverviewSubView.Showcase || !IsVisible)
             {
                 return;
             }
@@ -530,7 +550,7 @@ namespace PlayniteAchievements.Views
         private void ShowcaseDatabaseRefreshTimer_Tick(object sender, EventArgs e)
         {
             _showcaseDatabaseRefreshTimer.Stop();
-            if (!_showcaseDatabaseRefreshPending || ActiveSubView != OverviewSubView.Showcase)
+            if (!_showcaseDatabaseRefreshPending || ActiveSubView != OverviewSubView.Showcase || !IsVisible)
             {
                 return;
             }
