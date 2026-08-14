@@ -1842,6 +1842,10 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void EditLayoutButton_Changed(object sender, RoutedEventArgs e)
         {
+            // The button names the mode a click switches to.
+            EditLayoutButton.Content = Localize(EditLayoutButton.IsChecked == true
+                ? "LOCPlayAch_Common_View"
+                : "LOCPlayAch_Common_Edit");
             if (EditLayoutButton.IsChecked == true && string.IsNullOrWhiteSpace(_selectedBlockId))
             {
                 _selectedBlockId = CurrentPage.Blocks.FirstOrDefault()?.BlockId;
