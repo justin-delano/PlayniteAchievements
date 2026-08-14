@@ -724,6 +724,52 @@ namespace PlayniteAchievements.Models.Settings
             return _gameSummaries.Remove(id);
         }
 
+        /// <summary>
+        /// Creates the surface by cloning the donor's record (display options and column layout)
+        /// when the surface does not exist yet; no-op when it does. Used to migrate a user's
+        /// configured look onto a new per-instance surface.
+        /// </summary>
+        public void SeedAchievementFrom(string id, string donorId)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            EnsureDefaults();
+            if (_achievement.TryGetValue(id, out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var options = GetAchievement(donorId).Clone();
+            _achievement[id] = options;
+            AttachOptions(AchievementKindName, id, options);
+        }
+
+        /// <summary>
+        /// Creates the surface by cloning the donor's record (display options and column layout)
+        /// when the surface does not exist yet; no-op when it does. Used to migrate a user's
+        /// configured look onto a new per-instance surface.
+        /// </summary>
+        public void SeedGameSummariesFrom(string id, string donorId)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            EnsureDefaults();
+            if (_gameSummaries.TryGetValue(id, out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var options = GetGameSummaries(donorId).Clone();
+            _gameSummaries[id] = options;
+            AttachOptions(GameSummariesKindName, id, options);
+        }
+
         public GridOptionsCatalog Clone()
         {
             return new GridOptionsCatalog

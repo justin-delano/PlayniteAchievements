@@ -220,6 +220,44 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void GridSurfaces_SeedFromClonesDonorOnlyWhenAbsent()
+        {
+            var catalog = new PlayniteAchievements.Models.Settings.GridOptionsCatalog();
+            var donor = catalog.GetAchievement(
+                PlayniteAchievements.Models.Settings.GridOptionKeys.Achievement.StartPageRecent);
+            donor.ColorNamesByRarity = true;
+            donor.MaxRows = 7;
+            donor.Columns.Widths["Name"] = 123d;
+
+            catalog.SeedAchievementFrom(
+                "ShowcaseRecentAchievements:abc",
+                PlayniteAchievements.Models.Settings.GridOptionKeys.Achievement.StartPageRecent);
+            var seeded = catalog.GetAchievement("ShowcaseRecentAchievements:abc");
+            Assert.AreNotSame(donor, seeded);
+            Assert.IsTrue(seeded.ColorNamesByRarity);
+            Assert.AreEqual(7, seeded.MaxRows);
+            Assert.AreEqual(123d, seeded.Columns.Widths["Name"]);
+
+            // The clone is independent, and an existing surface is never overwritten.
+            seeded.ColorNamesByRarity = false;
+            Assert.IsTrue(donor.ColorNamesByRarity);
+            catalog.SeedAchievementFrom(
+                "ShowcaseRecentAchievements:abc",
+                PlayniteAchievements.Models.Settings.GridOptionKeys.Achievement.StartPageRecent);
+            Assert.IsFalse(catalog.GetAchievement("ShowcaseRecentAchievements:abc").ColorNamesByRarity);
+
+            var summariesDonor = catalog.GetGameSummaries(
+                PlayniteAchievements.Models.Settings.GridOptionKeys.GameSummaries.StartPage);
+            summariesDonor.ShowCompletionGlow = false;
+            catalog.SeedGameSummariesFrom(
+                "ShowcaseGameSummaries:abc",
+                PlayniteAchievements.Models.Settings.GridOptionKeys.GameSummaries.StartPage);
+            var seededSummaries = catalog.GetGameSummaries("ShowcaseGameSummaries:abc");
+            Assert.AreNotSame(summariesDonor, seededSummaries);
+            Assert.IsFalse(seededSummaries.ShowCompletionGlow);
+        }
+
+        [TestMethod]
         public void WidgetFactory_UsesTheSharedOptionContract()
         {
             var instance = ShowcaseWidgetSettingsFactory.CreateDefault(
