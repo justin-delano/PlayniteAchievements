@@ -20,22 +20,35 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public ScoreCardWithHistoryViewModel(
             ScoreCardViewModel card,
             ChartValues<int> historyValues,
+            IList<string> historyLabels,
             bool showChart,
-            string historyCaption)
+            string historyCaption,
+            string historyStartText,
+            string historyEndText)
         {
             Card = card;
             HistoryValues = historyValues;
+            HistoryLabels = historyLabels;
             ShowChart = showChart;
             HistoryCaption = historyCaption;
+            HistoryStartText = historyStartText;
+            HistoryEndText = historyEndText;
         }
 
         public ScoreCardViewModel Card { get; }
 
         public ChartValues<int> HistoryValues { get; }
 
+        /// <summary>Per-point date labels; hidden on the axis, surfaced by the hover tooltip.</summary>
+        public IList<string> HistoryLabels { get; }
+
         public bool ShowChart { get; }
 
         public string HistoryCaption { get; }
+
+        public string HistoryStartText { get; }
+
+        public string HistoryEndText { get; }
     }
 
     /// <summary>
@@ -83,6 +96,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
             var showChart = Density != WidgetViewportDensity.Compact && history.Count >= 2;
             var rangeCaption = RangeCaption(ShowcaseTimelineOptions.GetRange(Projection?.Instance));
+            var culture = FormattingCulture.Current;
+            var historyLabels = history
+                .Select(point => point.Date.ToString("d", culture))
+                .ToList();
+            var historyStart = history.Count > 0 ? historyLabels[0] : string.Empty;
+            var historyEnd = history.Count > 0 ? historyLabels[historyLabels.Count - 1] : string.Empty;
 
             var uniformBadges = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?
                 .UseUniformRarityBadges ?? false;
@@ -99,8 +118,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 cards.Add(new ScoreCardWithHistoryViewModel(
                     card,
                     new ChartValues<int>(history.Select(point => point.CollectionScore)),
+                    historyLabels,
                     showChart,
-                    rangeCaption));
+                    rangeCaption,
+                    historyStart,
+                    historyEnd));
             }
 
             if (includePrestige)
@@ -115,8 +137,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 cards.Add(new ScoreCardWithHistoryViewModel(
                     card,
                     new ChartValues<int>(history.Select(point => point.PrestigeScore)),
+                    historyLabels,
                     showChart,
-                    rangeCaption));
+                    rangeCaption,
+                    historyStart,
+                    historyEnd));
             }
 
             Cards.ReplaceAll(cards);
