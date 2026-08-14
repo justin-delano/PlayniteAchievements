@@ -10,6 +10,28 @@
     <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
     <converters:ResourceKeyToImageSourceConverter x:Key="ShowcaseResourceKeyToImage"/>
 
+    <!-- Shared value/label tile used by the Statistics widget and the Profile stat strip. -->
+    <DataTemplate x:Key="ShowcaseStatTileTemplate">
+        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                Margin="3"
+                Padding="8,6"
+                ClipToBounds="True">
+            <StackPanel>
+                <TextBlock Text="{Binding Value}"
+                           Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                           FontWeight="SemiBold"
+                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Label}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
     <!-- Implicit templates: the widget host sets BodyHost.Content to a per-kind view model and
          WPF resolves the matching template by runtime type. One template per kind. -->
 
@@ -90,34 +112,13 @@
             <ItemsControl Grid.Row="1"
                           ItemsSource="{Binding Stats}"
                           Margin="0,6,0,0"
+                          ItemTemplate="{StaticResource ShowcaseStatTileTemplate}"
                           Visibility="{Binding ShowStatStrip, Converter={StaticResource BoolToVis}}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid Columns="4"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                Margin="3"
-                                Padding="8,6"
-                                ClipToBounds="True">
-                            <StackPanel>
-                                <TextBlock Text="{Binding Value}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                                           FontWeight="SemiBold"
-                                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
-                                           TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding Label}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
             </ItemsControl>
         </Grid>
     </DataTemplate>
@@ -234,7 +235,7 @@
                           ItemsSource="{Binding LegendRows}"
                           VerticalAlignment="Center"
                           Margin="8,0,0,0"
-                          Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
+                          Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,3">
@@ -372,34 +373,13 @@
     <DataTemplate DataType="{x:Type widgets:StatisticsWidgetViewModel}">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Tiles}">
+            <ItemsControl ItemsSource="{Binding Tiles}"
+                          ItemTemplate="{StaticResource ShowcaseStatTileTemplate}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid Columns="{Binding Columns}"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                Margin="3"
-                                Padding="8,6"
-                                ClipToBounds="True">
-                            <StackPanel>
-                                <TextBlock Text="{Binding Value}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                                           FontWeight="SemiBold"
-                                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
-                                           TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding Label}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
     </DataTemplate>
@@ -473,7 +453,7 @@
     <!-- PinnedAchievements: the shared achievement grid over pinned rows with pin reordering. -->
     <DataTemplate DataType="{x:Type widgets:PinnedAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
-                                                 ColumnSettingsKey="ShowcasePinnedAchievements"
+                                                 ColumnSettingsKey="{Binding ColumnSettingsKey}"
                                                  EnablePinReorder="True"
                                                  ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                                  FixedRowHeight="{Binding RowHeight}"/>
@@ -482,7 +462,7 @@
     <!-- Pinned games: the shared game-summaries grid over pinned (or favorite) games. -->
     <DataTemplate DataType="{x:Type widgets:FavoriteGamesWidgetViewModel}">
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
-                                          ColumnSettingsKey="ShowcasePinnedGames"
+                                          ColumnSettingsKey="{Binding ColumnSettingsKey}"
                                           EnablePinReorder="{Binding PinReorderEnabled}"
                                           ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                           FixedRowHeight="{Binding RowHeight}"/>
@@ -559,34 +539,30 @@
     </DataTemplate>
 
     <!-- ActivityCalendar: contributions-style heatmap of unlocks per day. -->
-    <Style x:Key="ShowcaseActivityCellStyle" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-        <Setter Property="CornerRadius" Value="2"/>
-        <Setter Property="Margin" Value="1"/>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding Intensity}" Value="-1">
-                <Setter Property="Background" Value="Transparent"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Intensity}" Value="0">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Intensity}" Value="1">
-                <Setter Property="Opacity" Value="0.30"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Intensity}" Value="2">
-                <Setter Property="Opacity" Value="0.55"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding Intensity}" Value="3">
-                <Setter Property="Opacity" Value="0.78"/>
-            </DataTrigger>
-        </Style.Triggers>
-    </Style>
-
+    <!-- Legend swatches only; the calendar grid itself is drawn by ActivityCalendarHeatmap,
+         which owns the matching intensity ramp. -->
     <DataTemplate x:Key="ShowcaseActivityCellTemplate" DataType="{x:Type widgets:ActivityCalendarDayViewModel}">
-        <Border Width="{Binding Size}"
-                Height="{Binding Size}"
-                ToolTip="{Binding Tooltip}"
-                Style="{StaticResource ShowcaseActivityCellStyle}"/>
+        <Border Width="10" Height="10" CornerRadius="2" Margin="1">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Intensity}" Value="0">
+                            <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Intensity}" Value="1">
+                            <Setter Property="Opacity" Value="0.30"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Intensity}" Value="2">
+                            <Setter Property="Opacity" Value="0.55"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Intensity}" Value="3">
+                            <Setter Property="Opacity" Value="0.78"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+        </Border>
     </DataTemplate>
 
     <DataTemplate DataType="{x:Type widgets:ActivityCalendarWidgetViewModel}">
@@ -616,14 +592,14 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Margin="0,0,4,0"
-                                    Visibility="{Binding ShowWeekdayLabels, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Height="14"
-                                       Visibility="{Binding ShowMonthLabels, Converter={StaticResource BoolToVis}}"/>
+                                    Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}">
+                            <!-- Spacer matching the heatmap's month-label band. -->
+                            <TextBlock Height="14"/>
                             <ItemsControl ItemsSource="{Binding WeekdayLabels}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding}"
-                                                   Height="{Binding DataContext.WeekdayRowHeight, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   Height="12"
                                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                    FontSize="9"
@@ -636,8 +612,7 @@
                              with tooltips served from hit tests. -->
                         <showcase:ActivityCalendarHeatmap Grid.Column="1"
                                                           Weeks="{Binding Weeks}"
-                                                          CellBox="{Binding WeekdayRowHeight}"
-                                                          ShowMonthLabels="{Binding ShowMonthLabels}"
+                                                          ShowMonthLabels="{Binding ShowChrome}"
                                                           VerticalAlignment="Top"/>
                     </Grid>
                 </Viewbox>
@@ -646,7 +621,7 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,4,0,0"
-                        Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
+                        Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_Less}"
                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                            Opacity="{StaticResource PlayAch.Opacity.Subtle}"
