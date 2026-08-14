@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Views.Showcase
         private bool _updatingPageSelector;
         private bool _publishingConfigurationChange;
         private bool _disposed;
+        private string _layoutSignature;
         private Point _dragStart;
         private string _selectedBlockId;
         private string _dragSourceBlockId;
@@ -162,7 +163,42 @@ namespace PlayniteAchievements.Views.Showcase
                 DashboardGrid.Children.Add(container);
             }
 
+            _layoutSignature = ComputeLayoutSignature();
             UpdateEditTools();
+        }
+
+        // Captures everything that forces block containers to be recreated: the page set, the
+        // current page's block partition, and which widget instance (and kind) each block hosts.
+        // Widget options and custom titles are deliberately excluded - Apply() refreshes those in
+        // place through the projection without discarding the visual tree.
+        private string ComputeLayoutSignature()
+        {
+            var builder = new System.Text.StringBuilder();
+            foreach (var page in Layout.Pages)
+            {
+                builder.Append(page.PageId).Append('|').Append(page.Name).Append(';');
+            }
+
+            var current = CurrentPage;
+            builder.Append('#').Append(current.PageId);
+            foreach (var block in current.Blocks)
+            {
+                builder.Append('#')
+                    .Append(block.BlockId).Append(',')
+                    .Append(block.Row).Append(',')
+                    .Append(block.Column).Append(',')
+                    .Append(block.RowSpan).Append(',')
+                    .Append(block.ColumnSpan).Append(',')
+                    .Append(block.WidgetInstanceId ?? string.Empty);
+                var widget = Layout.WidgetInstances.FirstOrDefault(instance =>
+                    string.Equals(instance.InstanceId, block.WidgetInstanceId, StringComparison.OrdinalIgnoreCase));
+                if (widget != null)
+                {
+                    builder.Append(',').Append((int)widget.Kind);
+                }
+            }
+
+            return builder.ToString();
         }
 
         private FrameworkElement CreateBlockContainer(
@@ -793,8 +829,29 @@ namespace PlayniteAchievements.Views.Showcase
         {
             if (!_publishingConfigurationChange)
             {
-                Dispatcher.BeginInvoke(new Action(Rebuild));
+                Dispatcher.BeginInvoke(new Action(RefreshAfterExternalConfigurationChange));
             }
+        }
+
+        // External configuration changes (pin toggles, widget options, row-menu edits) usually keep
+        // the block layout intact, so refresh projections in place; a full rebuild - which recreates
+        // every widget control, including embedded data grids - only runs when the layout signature
+        // actually changed.
+        private void RefreshAfterExternalConfigurationChange()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            EnsureLayout();
+            if (string.Equals(ComputeLayoutSignature(), _layoutSignature, StringComparison.Ordinal))
+            {
+                RefreshWidgetData();
+                return;
+            }
+
+            Rebuild();
         }
 
         private void PageSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
