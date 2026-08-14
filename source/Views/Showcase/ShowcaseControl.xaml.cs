@@ -193,10 +193,9 @@ namespace PlayniteAchievements.Views.Showcase
             _layoutSignature = ComputeLayoutSignature();
         }
 
-        // The handles sit entirely outside the grid, in the margin edit mode reserves, so
-        // they never overlap the selected block's cut lines and merge chevrons.
+        // Each handle's grab pad is centered on the grid's outer edge so edit mode never
+        // resizes the dashboard; the handles render above the block layer (ZIndex 40).
         private const double TrackGripperSize = 24;
-        private const double TrackGripperGap = 4;
 
         // Grab handles straddling the page's outer edges, one pair per internal boundary:
         // column handles sit on the top and bottom edges, row handles on the left and right
@@ -230,31 +229,31 @@ namespace PlayniteAchievements.Views.Showcase
                 Template = CreateTrackGripperTemplate(vertical)
             };
             var lastCell = PageGridSize - 1;
-            var outwardOffset = TrackGripperSize + TrackGripperGap;
+            var edgeOffset = TrackGripperSize / 2;
             if (vertical)
             {
-                // Straddles the column boundary, fully above the top (near) or below the
-                // bottom (far) edge.
+                // Straddles the column boundary, centered on the top (near) or bottom (far)
+                // edge of the grid.
                 thumb.Width = 22;
                 thumb.Height = TrackGripperSize;
                 thumb.HorizontalAlignment = HorizontalAlignment.Right;
                 thumb.VerticalAlignment = nearEdge ? VerticalAlignment.Top : VerticalAlignment.Bottom;
                 thumb.Margin = nearEdge
-                    ? new Thickness(0, -outwardOffset, -11, 0)
-                    : new Thickness(0, 0, -11, -outwardOffset);
+                    ? new Thickness(0, -edgeOffset, -11, 0)
+                    : new Thickness(0, 0, -11, -edgeOffset);
                 Grid.SetColumn(thumb, boundary);
                 Grid.SetRow(thumb, nearEdge ? 0 : lastCell);
             }
             else
             {
-                // Straddles the row boundary, fully outside the left (near) or right (far) edge.
+                // Straddles the row boundary, centered on the left (near) or right (far) edge.
                 thumb.Width = TrackGripperSize;
                 thumb.Height = 22;
                 thumb.VerticalAlignment = VerticalAlignment.Bottom;
                 thumb.HorizontalAlignment = nearEdge ? HorizontalAlignment.Left : HorizontalAlignment.Right;
                 thumb.Margin = nearEdge
-                    ? new Thickness(-outwardOffset, 0, 0, -11)
-                    : new Thickness(0, 0, -outwardOffset, -11);
+                    ? new Thickness(-edgeOffset, 0, 0, -11)
+                    : new Thickness(0, 0, -edgeOffset, -11);
                 Grid.SetRow(thumb, boundary);
                 Grid.SetColumn(thumb, nearEdge ? 0 : lastCell);
             }
@@ -293,11 +292,6 @@ namespace PlayniteAchievements.Views.Showcase
         private void UpdateTrackGripperVisibility()
         {
             var editing = EditLayoutButton.IsChecked == true;
-
-            // Edit mode insets the grid so the fully-outside handles have room to render.
-            DashboardGrid.Margin = editing
-                ? new Thickness(TrackGripperSize + TrackGripperGap + 2)
-                : new Thickness(0);
             foreach (var gripper in _trackGrippers)
             {
                 gripper.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
