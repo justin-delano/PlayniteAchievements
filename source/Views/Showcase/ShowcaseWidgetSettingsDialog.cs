@@ -314,9 +314,12 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Profile:
                     return 300;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
+                case ShowcaseWidgetKind.GameSummaries:
                     return 250;
                 case ShowcaseWidgetKind.NativePoints:
                 case ShowcaseWidgetKind.IconMosaic:
+                case ShowcaseWidgetKind.Scores:
+                case ShowcaseWidgetKind.GameMosaic:
                     return 210;
                 default:
                     return 175;
