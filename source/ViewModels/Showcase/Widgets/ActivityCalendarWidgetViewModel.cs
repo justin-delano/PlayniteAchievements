@@ -98,8 +98,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         {
             var calendar = Projection?.ActivityCalendar ?? new ShowcaseActivityCalendar();
             var compact = Density == WidgetViewportDensity.Compact;
-            var weeksToShow = Density == WidgetViewportDensity.Expanded ? 53 : compact ? 13 : 26;
-            var cellSize = Density == WidgetViewportDensity.Expanded ? 13d : compact ? 7d : 10d;
+            // Fixed base cell size: the template scales the whole calendar to the widget
+            // through a Viewbox, so density only gates the labels and legend.
+            const double cellSize = 10d;
             WeekdayRowHeight = cellSize + 2;
             ShowMonthLabels = !compact;
             ShowWeekdayLabels = !compact;
@@ -111,6 +112,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             var days = calendar.Days ?? Array.Empty<ShowcaseActivityDay>();
             var weeks = new List<ActivityCalendarWeekViewModel>();
+            var yearShown = false;
             for (var index = 0; index < days.Count; index += 7)
             {
                 var cells = new List<ActivityCalendarDayViewModel>(7);
@@ -127,7 +129,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     var day = days[dayIndex];
                     if (day.Date.Day == 1)
                     {
-                        monthLabel = day.Date.ToString("MMM", culture);
+                        // The first label of the window and every January carry the year so
+                        // long ranges stay readable across year boundaries.
+                        var withYear = !yearShown || day.Date.Month == 1;
+                        monthLabel = day.Date.ToString(withYear ? "MMM yyyy" : "MMM", culture);
+                        yearShown = true;
                     }
 
                     var tooltip = string.Format(
@@ -139,11 +145,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 }
 
                 weeks.Add(new ActivityCalendarWeekViewModel(monthLabel, cells));
-            }
-
-            if (weeks.Count > weeksToShow)
-            {
-                weeks = weeks.Skip(weeks.Count - weeksToShow).ToList();
             }
 
             Weeks.ReplaceAll(weeks);
