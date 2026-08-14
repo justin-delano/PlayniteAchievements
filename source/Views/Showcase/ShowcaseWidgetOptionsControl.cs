@@ -53,6 +53,9 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.FavoriteGames:
                 case ShowcaseWidgetKind.IconMosaic:
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
+                case ShowcaseWidgetKind.RecentAchievements:
+                case ShowcaseWidgetKind.GameSummaries:
+                case ShowcaseWidgetKind.GameMosaic:
                     return true;
                 default:
                     return false;
@@ -72,6 +75,19 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetScoreMode(_settings),
                         value => ShowcaseWidgetOptions.SetScoreMode(_settings, value),
                         ScoreModeName);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_Range"),
+                        new[]
+                        {
+                            TimelineRange.OneMonth,
+                            TimelineRange.ThreeMonths,
+                            TimelineRange.OneYear,
+                            TimelineRange.All
+                        },
+                        ShowcaseTimelineOptions.GetRange(_settings),
+                        value => ShowcaseTimelineOptions.SetRange(_settings, value),
+                        TimelineRangeName);
                     break;
                 case ShowcaseWidgetKind.Pie:
                     AddChoice(
@@ -188,6 +204,68 @@ namespace PlayniteAchievements.Views.Showcase
                         value => value
                             ? Localize("LOCPlayAch_Settings_Override_On")
                             : Localize("LOCPlayAch_Settings_Override_Off"));
+                    break;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_ItemCount"),
+                        new[] { 5, 10, 15, 25, 50, 100 },
+                        ShowcaseWidgetOptions.GetRecentCount(_settings),
+                        value => ShowcaseWidgetOptions.SetRecentCount(_settings, value),
+                        value => value.ToString("N0", FormattingCulture.Current));
+                    break;
+                case ShowcaseWidgetKind.GameSummaries:
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_SortBy"),
+                        new[]
+                        {
+                            ShowcaseGameListSort.LastUnlock,
+                            ShowcaseGameListSort.Completion,
+                            ShowcaseGameListSort.Name,
+                            ShowcaseGameListSort.Playtime
+                        },
+                        ShowcaseWidgetOptions.GetGameListSort(_settings),
+                        value => ShowcaseWidgetOptions.SetGameListSort(_settings, value),
+                        GameListSortName);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_ItemCount"),
+                        new[] { 10, 25, 50, 100, 200 },
+                        ShowcaseWidgetOptions.GetGameListCount(_settings),
+                        value => ShowcaseWidgetOptions.SetGameListCount(_settings, value),
+                        value => value.ToString("N0", FormattingCulture.Current));
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_HideCompleted"),
+                        new[] { false, true },
+                        ShowcaseWidgetOptions.GetHideCompleted(_settings),
+                        value => ShowcaseWidgetOptions.SetHideCompleted(_settings, value),
+                        value => value
+                            ? Localize("LOCPlayAch_Settings_Override_On")
+                            : Localize("LOCPlayAch_Settings_Override_Off"));
+                    break;
+                case ShowcaseWidgetKind.GameMosaic:
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_Source"),
+                        new[]
+                        {
+                            ShowcaseGameMosaicSource.Completed,
+                            ShowcaseGameMosaicSource.All,
+                            ShowcaseGameMosaicSource.Pinned,
+                            ShowcaseGameMosaicSource.PlayniteFavorites
+                        },
+                        ShowcaseWidgetOptions.GetGameMosaicSource(_settings),
+                        value => ShowcaseWidgetOptions.SetGameMosaicSource(_settings, value),
+                        GameMosaicSourceName);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_ItemCount"),
+                        new[] { 12, 24, 36, 48, 64 },
+                        ShowcaseWidgetOptions.GetGameMosaicCount(_settings),
+                        value => ShowcaseWidgetOptions.SetGameMosaicCount(_settings, value),
+                        value => value.ToString("N0", FormattingCulture.Current));
                     break;
             }
 
