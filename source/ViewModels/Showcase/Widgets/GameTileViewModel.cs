@@ -17,11 +17,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public GameTileViewModel(
             GameSummaryItem game,
-            bool showName,
             bool pinnable,
             double coverWidth,
             double coverHeight,
-            double tileWidth,
             int decodePixel)
         {
             _gameId = game.PlayniteGameId;
@@ -29,18 +27,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             CoverPath = HasCover ? game.GameCoverPath : game.GameLogo;
             CoverWidth = coverWidth;
             CoverHeight = coverHeight;
-            TileWidth = tileWidth;
             DecodePixel = decodePixel;
             GameName = game.GameName;
-            ShowName = showName;
             IsPinnable = pinnable && game.PlayniteGameId.HasValue;
-
-            HasProgress = showName && game.TotalAchievements > 0;
-            ProgressFraction = game.TotalAchievements > 0
-                ? (double)game.UnlockedAchievements / game.TotalAchievements
-                : 0;
-            ProgressText = game.ProgressionCountText;
-            IsCompleted = game.IsCompleted;
 
             MoveEarlierCommand = new RelayCommand(_ => Move(-1));
             MoveLaterCommand = new RelayCommand(_ => Move(1));
@@ -55,23 +44,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public double CoverHeight { get; }
 
-        public double TileWidth { get; }
-
         public int DecodePixel { get; }
 
         public string GameName { get; }
 
-        public bool ShowName { get; }
-
         public bool IsPinnable { get; }
-
-        public bool HasProgress { get; }
-
-        public double ProgressFraction { get; }
-
-        public string ProgressText { get; }
-
-        public bool IsCompleted { get; }
 
         public RelayCommand MoveEarlierCommand { get; }
 

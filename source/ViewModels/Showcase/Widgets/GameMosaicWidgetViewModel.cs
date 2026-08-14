@@ -30,11 +30,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 .Take(limit)
                 .Select(game => new GameTileViewModel(
                     game,
-                    showName: false,
                     pinnable,
                     coverWidth,
                     coverHeight,
-                    tileWidth: coverWidth,
                     decodePixel)));
         }
     }
