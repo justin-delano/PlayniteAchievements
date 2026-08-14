@@ -36,7 +36,8 @@ namespace PlayniteAchievements.Services.Widgets
             IReadOnlyList<IDataProvider> providers,
             IPlayniteAPI playniteApi,
             ILogger logger,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            Friends.IFriendCacheManager friendCache = null)
             : this(
                 () =>
                 {
@@ -51,7 +52,8 @@ namespace PlayniteAchievements.Services.Widgets
                         achievementDataService,
                         providers,
                         playniteApi,
-                        logger);
+                        logger,
+                        friendCache);
                     return builder.Build(settings, CancellationToken.None);
                 },
                 logger)

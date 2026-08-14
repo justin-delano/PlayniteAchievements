@@ -206,7 +206,8 @@ namespace PlayniteAchievements
                     Providers,
                     PlayniteApi,
                     _logger,
-                    Settings);
+                    Settings,
+                    FriendCacheManager);
             }
 
             return _startPageDataCoordinator;

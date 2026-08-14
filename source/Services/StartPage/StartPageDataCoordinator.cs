@@ -25,14 +25,16 @@ namespace PlayniteAchievements.Services.StartPage
             IReadOnlyList<IDataProvider> providers,
             IPlayniteAPI playniteApi,
             ILogger logger,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            Friends.IFriendCacheManager friendCache = null)
             : base(
                 achievementDataService,
                 libraryProjectionService,
                 providers,
                 playniteApi,
                 logger,
-                settings)
+                settings,
+                friendCache)
         {
         }
 #endif
