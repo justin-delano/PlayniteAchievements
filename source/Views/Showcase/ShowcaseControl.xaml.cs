@@ -182,22 +182,30 @@ namespace PlayniteAchievements.Views.Showcase
             UpdateEditTools();
         }
 
-        // Small grab handles at the page's outer edge, one per internal boundary: column
-        // handles sit on the top edge, row handles on the left edge. They straddle the
-        // boundary line above the block layer and only show in edit mode, so they never
-        // compete with block drag/split/merge gestures.
+        // Half of each handle hangs outside the grid, into the margin edit mode reserves.
+        private const double TrackGripperOverhang = 16;
+
+        // Grab handles straddling the page's outer edges, one pair per internal boundary:
+        // column handles sit on the top and bottom edges, row handles on the left and right
+        // edges. They hang half outside the grid, render above the block layer, and only
+        // show in edit mode, so they never compete with block drag/split/merge gestures.
         private void AddTrackGrippers()
         {
             for (var boundary = 0; boundary < ShowcaseLayoutService.GridSize - 1; boundary++)
             {
-                DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary));
-                DashboardGrid.Children.Add(CreateTrackGripper(vertical: false, boundary));
+                DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary, nearEdge: true));
+                DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary, nearEdge: false));
+                DashboardGrid.Children.Add(CreateTrackGripper(vertical: false, boundary, nearEdge: true));
+                DashboardGrid.Children.Add(CreateTrackGripper(vertical: false, boundary, nearEdge: false));
             }
 
             UpdateTrackGripperVisibility();
         }
 
-        private System.Windows.Controls.Primitives.Thumb CreateTrackGripper(bool vertical, int boundary)
+        private System.Windows.Controls.Primitives.Thumb CreateTrackGripper(
+            bool vertical,
+            int boundary,
+            bool nearEdge)
         {
             var thumb = new System.Windows.Controls.Primitives.Thumb
             {
@@ -205,25 +213,32 @@ namespace PlayniteAchievements.Views.Showcase
                 Focusable = false,
                 Template = CreateTrackGripperTemplate(vertical)
             };
+            var lastCell = ShowcaseLayoutService.GridSize - 1;
             if (vertical)
             {
-                thumb.Width = 16;
-                thumb.Height = 24;
+                // Straddles the column boundary on the top (near) or bottom (far) edge.
+                thumb.Width = 22;
+                thumb.Height = TrackGripperOverhang * 2;
                 thumb.HorizontalAlignment = HorizontalAlignment.Right;
-                thumb.VerticalAlignment = VerticalAlignment.Top;
-                thumb.Margin = new Thickness(0, 0, -8, 0);
+                thumb.VerticalAlignment = nearEdge ? VerticalAlignment.Top : VerticalAlignment.Bottom;
+                thumb.Margin = nearEdge
+                    ? new Thickness(0, -TrackGripperOverhang, -11, 0)
+                    : new Thickness(0, 0, -11, -TrackGripperOverhang);
                 Grid.SetColumn(thumb, boundary);
-                Grid.SetRow(thumb, 0);
+                Grid.SetRow(thumb, nearEdge ? 0 : lastCell);
             }
             else
             {
-                thumb.Width = 24;
-                thumb.Height = 16;
-                thumb.HorizontalAlignment = HorizontalAlignment.Left;
+                // Straddles the row boundary on the left (near) or right (far) edge.
+                thumb.Width = TrackGripperOverhang * 2;
+                thumb.Height = 22;
                 thumb.VerticalAlignment = VerticalAlignment.Bottom;
-                thumb.Margin = new Thickness(0, 0, 0, -8);
+                thumb.HorizontalAlignment = nearEdge ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+                thumb.Margin = nearEdge
+                    ? new Thickness(-TrackGripperOverhang, 0, 0, -11)
+                    : new Thickness(0, 0, -TrackGripperOverhang, -11);
                 Grid.SetRow(thumb, boundary);
-                Grid.SetColumn(thumb, 0);
+                Grid.SetColumn(thumb, nearEdge ? 0 : lastCell);
             }
 
             Panel.SetZIndex(thumb, 40);
@@ -243,12 +258,12 @@ namespace PlayniteAchievements.Views.Showcase
             var root = new FrameworkElementFactory(typeof(Grid));
             root.SetValue(Panel.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
             var bar = new FrameworkElementFactory(typeof(Border));
-            bar.SetValue(WidthProperty, vertical ? 5d : 18d);
-            bar.SetValue(HeightProperty, vertical ? 18d : 5d);
+            bar.SetValue(WidthProperty, vertical ? 8d : 26d);
+            bar.SetValue(HeightProperty, vertical ? 26d : 8d);
             bar.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
             bar.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
-            bar.SetValue(Border.CornerRadiusProperty, new CornerRadius(2.5));
-            bar.SetValue(OpacityProperty, 0.7);
+            bar.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+            bar.SetValue(OpacityProperty, 0.8);
             bar.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Accent");
             root.AppendChild(bar);
             return new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb))
@@ -260,6 +275,11 @@ namespace PlayniteAchievements.Views.Showcase
         private void UpdateTrackGripperVisibility()
         {
             var editing = EditLayoutButton.IsChecked == true;
+
+            // Edit mode insets the grid so the handles' outside halves have room to render.
+            DashboardGrid.Margin = editing
+                ? new Thickness(TrackGripperOverhang)
+                : new Thickness(0);
             foreach (var gripper in _trackGrippers)
             {
                 gripper.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
