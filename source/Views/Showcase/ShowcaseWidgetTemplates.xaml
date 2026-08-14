@@ -72,7 +72,8 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Scores: reuses ScoreCardControl for the collection and/or prestige card. -->
+    <!-- Scores: reuses ScoreCardControl for the collection and/or prestige card, with a
+         cumulative score-over-time line under each card outside compact. -->
     <DataTemplate DataType="{x:Type widgets:ScoresWidgetViewModel}">
         <ItemsControl ItemsSource="{Binding Cards}" VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>
@@ -84,15 +85,57 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <controls:ScoreCardControl
-                        ScoreCard="{Binding}"
-                        IsFeatured="{Binding DataContext.IsFeatured, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                        MaxWidth="{Binding DataContext.MaxCardWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                        MinWidth="0"
-                        Margin="4"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Center"
-                        showcase:ScoreCardInfoBehavior.Enabled="True"/>
+                    <StackPanel Margin="4"
+                                MaxWidth="{Binding DataContext.MaxCardWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                VerticalAlignment="Center">
+                        <controls:ScoreCardControl
+                            ScoreCard="{Binding Card}"
+                            IsFeatured="{Binding DataContext.IsFeatured, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            ShowNextLevelText="True"
+                            MinWidth="0"
+                            HorizontalAlignment="Stretch"
+                            showcase:ScoreCardInfoBehavior.Enabled="True"/>
+                        <Border Margin="0,4,0,0"
+                                Padding="8,6"
+                                Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding HistoryCaption}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
+                                <lvc:CartesianChart Height="{Binding DataContext.ChartHeight, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    LegendLocation="None"
+                                                    Hoverable="False"
+                                                    DisableAnimations="True"
+                                                    Margin="0,2,0,0">
+                                    <lvc:CartesianChart.Series>
+                                        <lvc:LineSeries Values="{Binding HistoryValues}"
+                                                        Stroke="{Binding Card.AccentBrush}"
+                                                        Fill="{Binding Card.AccentBackgroundBrush}"
+                                                        StrokeThickness="2"
+                                                        PointGeometry="{x:Null}"
+                                                        LineSmoothness="0.3"/>
+                                    </lvc:CartesianChart.Series>
+                                    <lvc:CartesianChart.AxisX>
+                                        <lvc:Axis ShowLabels="False">
+                                            <lvc:Axis.Separator>
+                                                <lvc:Separator IsEnabled="False"/>
+                                            </lvc:Axis.Separator>
+                                        </lvc:Axis>
+                                    </lvc:CartesianChart.AxisX>
+                                    <lvc:CartesianChart.AxisY>
+                                        <lvc:Axis ShowLabels="False">
+                                            <lvc:Axis.Separator>
+                                                <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
+                                            </lvc:Axis.Separator>
+                                        </lvc:Axis>
+                                    </lvc:CartesianChart.AxisY>
+                                </lvc:CartesianChart>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
