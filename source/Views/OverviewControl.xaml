@@ -407,6 +407,17 @@
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Left"
                                 Margin="18,0,0,0">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                    <!-- The showcase renders cached data only; refresh controls
+                                         apply to the overview and friends views. -->
+                                    <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Showcase}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
                         <Button x:Name="RefreshModeSelectionButton"
                                 Style="{StaticResource AchievementSelectorButtonStyle}"
                                 Content="{Binding ActiveRefreshHeader.RefreshModeSelectionText, ElementName=OverviewControlRoot}"
