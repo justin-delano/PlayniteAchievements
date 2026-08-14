@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -41,6 +42,27 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(AchievementCompactItemControl),
                 new PropertyMetadata(false));
 
+        public static readonly DependencyProperty SoftGlowTiersProperty =
+            DependencyProperty.Register(
+                nameof(SoftGlowTiers),
+                typeof(RaritySelection),
+                typeof(AchievementCompactItemControl),
+                new PropertyMetadata(RaritySelection.All));
+
+        public static readonly DependencyProperty RayGlowTiersProperty =
+            DependencyProperty.Register(
+                nameof(RayGlowTiers),
+                typeof(RaritySelection),
+                typeof(AchievementCompactItemControl),
+                new PropertyMetadata(RaritySelection.None));
+
+        public static readonly DependencyProperty ShowHardcoreBorderProperty =
+            DependencyProperty.Register(
+                nameof(ShowHardcoreBorder),
+                typeof(bool),
+                typeof(AchievementCompactItemControl),
+                new PropertyMetadata(true));
+
         /// <summary>
         /// Gets or sets the size of the achievement icon (both width and height).
         /// Default is 48 to match legacy SuccessStory styling.
@@ -78,6 +100,30 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(UseLargeRarityGlowProperty, value);
         }
 
+        /// <summary>
+        /// Which tiers show the soft halo. Bound to the global setting in the constructor so the
+        /// item renders the same glow wherever it is hosted, with or without a list ancestor.
+        /// </summary>
+        public RaritySelection SoftGlowTiers
+        {
+            get => (RaritySelection)GetValue(SoftGlowTiersProperty);
+            set => SetValue(SoftGlowTiersProperty, value);
+        }
+
+        /// <summary>Ray counterpart to <see cref="SoftGlowTiers"/>.</summary>
+        public RaritySelection RayGlowTiers
+        {
+            get => (RaritySelection)GetValue(RayGlowTiersProperty);
+            set => SetValue(RayGlowTiersProperty, value);
+        }
+
+        /// <summary>Whether hardcore unlocks trade the glow for a solid border.</summary>
+        public bool ShowHardcoreBorder
+        {
+            get => (bool)GetValue(ShowHardcoreBorderProperty);
+            set => SetValue(ShowHardcoreBorderProperty, value);
+        }
+
         private static void OnIconSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is AchievementCompactItemControl control && e.NewValue is double size)
@@ -93,6 +139,13 @@ namespace PlayniteAchievements.Views.Controls
             InitializeComponent();
             Width = IconSize;
             Height = IconSize;
+
+            // The glow tiers and hardcore border are global appearance settings, so the item
+            // sources them itself instead of reaching for a hosting list that may not exist
+            // (the showcase mosaic hosts these icons with no list ancestor).
+            RarityAppearanceHelper.BindSoftGlowTiers(this, SoftGlowTiersProperty);
+            RarityAppearanceHelper.BindRayGlowTiers(this, RayGlowTiersProperty);
+            RarityAppearanceHelper.BindShowHardcoreBorder(this, ShowHardcoreBorderProperty);
 
             // Handle click to reveal hidden achievements
             PreviewMouseLeftButtonDown += OnPreviewMouseLeftButtonDown;

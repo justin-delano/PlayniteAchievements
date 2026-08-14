@@ -6,7 +6,6 @@
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
-             xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.Items"
              mc:Ignorable="d"
              d:DesignHeight="48" d:DesignWidth="48"
@@ -119,15 +118,15 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                             </MultiDataTrigger>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
-                                    <Condition Binding="{Binding AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="IsActive" Value="True"/>
                             </MultiDataTrigger>
@@ -136,7 +135,7 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
-                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Setter Property="IsActive" Value="False"/>
@@ -172,7 +171,7 @@
                                     <Setter.Value>
                                         <MultiBinding Converter="{StaticResource RarityGlowForTiers}" ConverterParameter="8">
                                             <Binding Path="Rarity"/>
-                                            <Binding Path="SoftGlowTiers" RelativeSource="{RelativeSource AncestorType=modern:AchievementCompactListControlBase}"/>
+                                            <Binding Path="SoftGlowTiers" RelativeSource="{RelativeSource AncestorType=controls:AchievementCompactItemControl}"/>
                                         </MultiBinding>
                                     </Setter.Value>
                                 </Setter>
@@ -192,7 +191,7 @@
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
                                     <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
-                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Setter Property="Effect" Value="{x:Null}"/>
@@ -230,14 +229,14 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Setter Property="Effect">
                                     <Setter.Value>
                                         <MultiBinding Converter="{StaticResource RarityGlowForTiers}" ConverterParameter="3">
                                             <Binding Path="Rarity"/>
-                                            <Binding Path="RayGlowTiers" RelativeSource="{RelativeSource AncestorType=modern:AchievementCompactListControlBase}"/>
+                                            <Binding Path="RayGlowTiers" RelativeSource="{RelativeSource AncestorType=controls:AchievementCompactItemControl}"/>
                                         </MultiBinding>
                                     </Setter.Value>
                                 </Setter>
@@ -246,9 +245,9 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
-                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Setter Property="Effect" Value="{x:Null}"/>
@@ -283,7 +282,7 @@
                                     <Condition Binding="{Binding Unlocked}" Value="True"/>
                                     <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
-                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                             </MultiDataTrigger>
