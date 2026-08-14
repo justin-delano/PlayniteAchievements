@@ -13,6 +13,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     {
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
+        private string _columnSettingsKey = ShowcaseGridSurfaces.GameSummaries;
 
         public BulkObservableCollection<GameSummaryItem> Items { get; } =
             new BulkObservableCollection<GameSummaryItem>();
@@ -29,10 +30,20 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             private set => SetValue(ref _rowHeight, value);
         }
 
+        /// <summary>Per-instance surface key so each placed widget keeps its own column layout.</summary>
+        public string ColumnSettingsKey
+        {
+            get => _columnSettingsKey;
+            private set => SetValue(ref _columnSettingsKey, value);
+        }
+
         protected override void Refresh()
         {
             ShowColumnHeaders = Density != WidgetViewportDensity.Compact;
             RowHeight = Density == WidgetViewportDensity.Compact ? 32d : (double?)null;
+            ColumnSettingsKey = ShowcaseGridSurfaces.ForInstance(
+                ShowcaseGridSurfaces.GameSummaries,
+                Projection?.Instance?.InstanceId);
             Items.ReplaceAll(Projection?.Games ?? Array.Empty<GameSummaryItem>());
         }
     }
