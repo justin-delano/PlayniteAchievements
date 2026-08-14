@@ -72,6 +72,20 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(ShowMonthLabelsProperty, value);
         }
 
+        public ActivityCalendarHeatmap()
+        {
+            Loaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                .AppearanceChanged += OnAppearanceChanged;
+            Unloaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                .AppearanceChanged -= OnAppearanceChanged;
+        }
+
+        private void OnAppearanceChanged(object sender, EventArgs e)
+        {
+            _intensityBrushes = null;
+            InvalidateVisual();
+        }
+
         protected override Size MeasureOverride(Size availableSize)
         {
             var cellBox = Math.Max(1, CellBox);
@@ -98,15 +112,12 @@ namespace PlayniteAchievements.Views.Showcase
             var cell = Math.Max(1, cellBox - CellMargin * 2);
             var top = ShowMonthLabels ? MonthLabelHeight : 0;
 
-            var accent = TryFindResource("PlayAch.Brush.Accent") as Brush ?? Brushes.SteelBlue;
-            var empty = TryFindResource("PlayAch.Brush.Overlay.Tint.08") as Brush ??
-                new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
-            var text = TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.Gray;
-            var intensityBrushes = BuildIntensityBrushes(accent);
-
-            var fontFamily = TextElement.GetFontFamily(this) ?? new FontFamily("Segoe UI");
-            var typeface = new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-            var pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            EnsureRenderResources();
+            var empty = _emptyBrush;
+            var text = _textBrush;
+            var intensityBrushes = _intensityBrushes;
+            var typeface = _typeface;
+            var pixelsPerDip = _pixelsPerDip;
 
             for (var weekIndex = 0; weekIndex < weeks.Count; weekIndex++)
             {
@@ -157,6 +168,41 @@ namespace PlayniteAchievements.Views.Showcase
                     drawingContext.DrawRoundedRectangle(brush, null, rect, CellCornerRadius, CellCornerRadius);
                 }
             }
+        }
+
+        private Brush _emptyBrush;
+        private Brush _textBrush;
+        private Brush[] _intensityBrushes;
+        private Typeface _typeface;
+        private double _pixelsPerDip;
+
+        /// <summary>
+        /// Resolves the theme brushes, the derived intensity ramp, and the typeface once instead
+        /// of on every render pass. Dropped when the appearance changes so a recolor is picked up.
+        /// </summary>
+        private void EnsureRenderResources()
+        {
+            if (_intensityBrushes != null)
+            {
+                return;
+            }
+
+            var accent = TryFindResource("PlayAch.Brush.Accent") as Brush ?? Brushes.SteelBlue;
+            _emptyBrush = TryFindResource("PlayAch.Brush.Overlay.Tint.08") as Brush ??
+                new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
+            _textBrush = TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.Gray;
+            _intensityBrushes = BuildIntensityBrushes(accent);
+
+            var fontFamily = TextElement.GetFontFamily(this) ?? new FontFamily("Segoe UI");
+            _typeface = new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+            _pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        }
+
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            _intensityBrushes = null;
+            InvalidateVisual();
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
