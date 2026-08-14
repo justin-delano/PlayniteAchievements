@@ -1,7 +1,8 @@
-using System;
+using System.Collections.Generic;
+using System.Linq;
 using Playnite.SDK;
-using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
@@ -12,33 +13,26 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// grid row menu can still unpin and reorder them; blank placeholder names are
     /// substituted with the localized "unavailable" strings here.
     /// </summary>
-    public sealed class PinnedAchievementsWidgetViewModel : ShowcaseWidgetViewModelBase
+    public sealed class PinnedAchievementsWidgetViewModel
+        : ShowcaseGridWidgetViewModelBase<AchievementDisplayItem>
     {
-        private bool _showColumnHeaders = true;
-        private double? _rowHeight;
+        protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedAchievements;
 
-        public BulkObservableCollection<AchievementDisplayItem> Items { get; } =
-            new BulkObservableCollection<AchievementDisplayItem>();
+        protected override double CompactRowHeight => 30d;
 
-        public bool ShowColumnHeaders
+        // One instance per dashboard, so the pins keep a single stable column layout.
+        protected override bool UsesPerInstanceSurface => false;
+
+        protected override IEnumerable<AchievementDisplayItem> SelectItems(
+            ShowcaseWidgetProjection projection)
         {
-            get => _showColumnHeaders;
-            private set => SetValue(ref _showColumnHeaders, value);
-        }
+            var rows = projection?.AchievementRows;
+            if (rows == null)
+            {
+                return null;
+            }
 
-        public double? RowHeight
-        {
-            get => _rowHeight;
-            private set => SetValue(ref _rowHeight, value);
-        }
-
-        protected override void Refresh()
-        {
-            ShowColumnHeaders = Density != WidgetViewportDensity.Compact;
-            RowHeight = Density == WidgetViewportDensity.Compact ? 30d : (double?)null;
-
-            var rows = Projection?.AchievementRows ?? Array.Empty<AchievementDisplayItem>();
-            foreach (var row in rows)
+            foreach (var row in rows.Where(row => row != null))
             {
                 if (string.IsNullOrWhiteSpace(row.DisplayName))
                 {
@@ -51,7 +45,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 }
             }
 
-            Items.ReplaceAll(rows);
+            return rows;
         }
     }
 }

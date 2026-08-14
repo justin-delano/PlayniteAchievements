@@ -1,6 +1,6 @@
-using System;
-using PlayniteAchievements.Common;
+using System.Collections.Generic;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
@@ -9,42 +9,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// Backs the RecentAchievements widget: the shared achievement grid over the
     /// snapshot's recent unlocks, capped by the per-instance item count option.
     /// </summary>
-    public sealed class RecentAchievementsWidgetViewModel : ShowcaseWidgetViewModelBase
+    public sealed class RecentAchievementsWidgetViewModel
+        : ShowcaseGridWidgetViewModelBase<AchievementDisplayItem>
     {
-        private bool _showColumnHeaders = true;
-        private double? _rowHeight;
-        private string _columnSettingsKey = ShowcaseGridSurfaces.RecentAchievements;
+        protected override string BaseSurfaceKey => ShowcaseGridSurfaces.RecentAchievements;
 
-        public BulkObservableCollection<AchievementDisplayItem> Items { get; } =
-            new BulkObservableCollection<AchievementDisplayItem>();
+        protected override double CompactRowHeight => 30d;
 
-        public bool ShowColumnHeaders
-        {
-            get => _showColumnHeaders;
-            private set => SetValue(ref _showColumnHeaders, value);
-        }
-
-        public double? RowHeight
-        {
-            get => _rowHeight;
-            private set => SetValue(ref _rowHeight, value);
-        }
-
-        /// <summary>Per-instance surface key so each placed widget keeps its own column layout.</summary>
-        public string ColumnSettingsKey
-        {
-            get => _columnSettingsKey;
-            private set => SetValue(ref _columnSettingsKey, value);
-        }
-
-        protected override void Refresh()
-        {
-            ShowColumnHeaders = Density != WidgetViewportDensity.Compact;
-            RowHeight = Density == WidgetViewportDensity.Compact ? 30d : (double?)null;
-            ColumnSettingsKey = ShowcaseGridSurfaces.ForInstance(
-                ShowcaseGridSurfaces.RecentAchievements,
-                Projection?.Instance?.InstanceId);
-            Items.ReplaceAll(Projection?.AchievementRows ?? Array.Empty<AchievementDisplayItem>());
-        }
+        protected override IEnumerable<AchievementDisplayItem> SelectItems(
+            ShowcaseWidgetProjection projection) => projection?.AchievementRows;
     }
 }
