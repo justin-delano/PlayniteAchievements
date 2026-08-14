@@ -160,7 +160,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                         snapshot.TotalGames,
                         snapshot.CompletedGames,
                         Localize("LOCPlayAch_Completed"),
-                        Localize("LOCPlayAch_Showcase_Incomplete"));
+                        Localize("LOCPlayAch_Overview_Incomplete"));
                     break;
             }
 

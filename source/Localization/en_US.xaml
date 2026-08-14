@@ -146,7 +146,6 @@
     <sys:String x:Key="LOCPlayAch_Column_Captures">Captures</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Category Art</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Use for Game Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Merge">Merge</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -729,9 +728,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Sign in to Epic in your default browser when it opens&#10;2. After signing in, find the &quot;authorizationCode&quot; value on the page&#10;3. Copy and paste that value in the next dialog</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Sign-In</sys:String>
 
-    <!-- Provider: Exophase -->
+    <!-- Provider: Game Jolt -->
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">Log in to Game Jolt in the browser window to read your unlocked trophies. Game Jolt achievements are only tracked for games added by the Game Jolt Library extension, or for games given a manual Game Jolt game ID in Manage Achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">Note: Only your own unlocked trophies are read; Game Jolt does not expose achievements without signing in.</sys:String>
+
+    <!-- Provider: Exophase -->
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
@@ -795,7 +796,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateAndTime">Date and time</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateOnly">Date only</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_Relative">Relative</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">Date format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Last played format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Unlock date format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Playtime format</sys:String>
@@ -893,8 +893,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe.</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophy folder not found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation (missing dev_hdd0home)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
 
     <!-- Provider: ShadPS4 -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Root Folder</sys:String>
@@ -934,8 +932,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completed Games Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPiePercentages">Show Pie Percentages</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Show Platform Pie Chart</sys:String>
@@ -1063,7 +1059,6 @@
     <sys:String x:Key="LOCPlayAch_FriendsOverview_AllProviders">All Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearSelection">Clear Selection</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendAchievements">{0} Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievements">{0} Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendGameAchievements">{0} - {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievementCount">({0}/{1} {2})</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
@@ -1162,7 +1157,6 @@
     <sys:String x:Key="LOCPlayAch_TimeRange_7D">7D</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_HoursMinutes">{0}h{1}m</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_Hours">{0}h</sys:String>
-    <sys:String x:Key="LOCPlayAch_Playtime_Minutes">{0}m</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_LessThanOneHour">&lt;1h</sys:String>
 
     <!-- ================================================================= -->
@@ -1265,7 +1259,6 @@
     <sys:String x:Key="LOCPlayAch_Showcase_NoPinnedAchievements">Pin achievements to see them here.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoFavoriteGames">Pin games or use Playnite favorites.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoData">No data yet</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Incomplete">Incomplete</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Other">Other</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnknownProvider">Unknown provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnavailableAchievement">Unavailable achievement</sys:String>

@@ -628,7 +628,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SelectedGame != null)
                 {
                     return string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedGameAchievements"),
+                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedFriendAchievements"),
                         SelectedGame.GameName);
                 }
 

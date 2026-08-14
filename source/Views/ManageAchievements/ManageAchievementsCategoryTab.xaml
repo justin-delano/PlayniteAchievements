@@ -619,7 +619,7 @@
                                                 MinWidth="90"
                                                 CanUserResize="False"
                                                 CanUserSort="False"
-                                                Header="{DynamicResource LOCPlayAch_Column_Merge}">
+                                                Header="{DynamicResource LOCPlayAch_Common_Merge}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Content="{DynamicResource LOCPlayAch_Common_Merge}"
