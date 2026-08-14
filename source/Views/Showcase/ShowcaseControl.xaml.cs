@@ -774,6 +774,11 @@ namespace PlayniteAchievements.Views.Showcase
             var vertical = columnDirection != 0;
             if (vertical)
             {
+                // Centered on the edge segment actually shared with the target: with
+                // staggered neighbors the block's full edge can span several of them, and
+                // a chevron centered on it would point between blocks instead of at one.
+                var sharedStart = Math.Max(block.Row, target.Row);
+                var sharedEnd = Math.Min(block.Row + block.RowSpan, target.Row + target.RowSpan);
                 chevron.Width = 28;
                 chevron.Height = 28;
                 chevron.VerticalAlignment = VerticalAlignment.Center;
@@ -784,11 +789,15 @@ namespace PlayniteAchievements.Views.Showcase
                     ? new Thickness(-14, 0, 0, 0)
                     : new Thickness(0, 0, -14, 0);
                 Grid.SetColumn(chevron, columnDirection < 0 ? block.Column : block.Column + block.ColumnSpan - 1);
-                Grid.SetRow(chevron, block.Row);
-                Grid.SetRowSpan(chevron, block.RowSpan);
+                Grid.SetRow(chevron, sharedStart);
+                Grid.SetRowSpan(chevron, Math.Max(1, sharedEnd - sharedStart));
             }
             else
             {
+                var sharedStart = Math.Max(block.Column, target.Column);
+                var sharedEnd = Math.Min(
+                    block.Column + block.ColumnSpan,
+                    target.Column + target.ColumnSpan);
                 chevron.Width = 28;
                 chevron.Height = 28;
                 chevron.HorizontalAlignment = HorizontalAlignment.Center;
@@ -799,8 +808,8 @@ namespace PlayniteAchievements.Views.Showcase
                     ? new Thickness(0, -14, 0, 0)
                     : new Thickness(0, 0, 0, -14);
                 Grid.SetRow(chevron, rowDirection < 0 ? block.Row : block.Row + block.RowSpan - 1);
-                Grid.SetColumn(chevron, block.Column);
-                Grid.SetColumnSpan(chevron, block.ColumnSpan);
+                Grid.SetColumn(chevron, sharedStart);
+                Grid.SetColumnSpan(chevron, Math.Max(1, sharedEnd - sharedStart));
             }
 
             Panel.SetZIndex(chevron, 39);
