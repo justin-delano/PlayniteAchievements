@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
@@ -132,6 +134,32 @@ namespace PlayniteAchievements.Services.Showcase
 
     public static class ShowcaseWidgetProjectionService
     {
+        // Derived series keyed by the snapshot that produced them. Rebuilding the dashboard for an
+        // unrelated change (a pin toggle, a widget option, a resize) re-enters Build for every
+        // widget; without this the score history and activity calendar would rescan the whole
+        // library each time and hand the charts a new collection, forcing a re-plot. Entries die
+        // with their snapshot, so a real data refresh recomputes exactly once.
+        private static readonly ConditionalWeakTable<OverviewDataSnapshot, DerivedSeriesCache> DerivedCache =
+            new ConditionalWeakTable<OverviewDataSnapshot, DerivedSeriesCache>();
+
+        private sealed class DerivedSeriesCache
+        {
+            public readonly Dictionary<string, IReadOnlyList<ShowcaseScorePoint>> ScoreHistory =
+                new Dictionary<string, IReadOnlyList<ShowcaseScorePoint>>(StringComparer.Ordinal);
+
+            public readonly Dictionary<string, ShowcaseActivityCalendar> ActivityCalendars =
+                new Dictionary<string, ShowcaseActivityCalendar>(StringComparer.Ordinal);
+
+            public IReadOnlyList<ShowcaseStatistic> Statistics;
+
+            public DateTime StatisticsDay;
+
+            public DailyScoreDeltas ScoreDeltas;
+        }
+
+        private static string WindowKey(TimelineRange range, DateTime endDate) =>
+            ((int)range).ToString(CultureInfo.InvariantCulture) + "@" + endDate.Ticks.ToString(CultureInfo.InvariantCulture);
+
         public static ShowcaseWidgetProjection Build(
             OverviewDataSnapshot snapshot,
             ShowcaseSettings settings,
@@ -152,13 +180,13 @@ namespace PlayniteAchievements.Services.Showcase
             switch (instance.Kind)
             {
                 case ShowcaseWidgetKind.Profile:
-                    result.Statistics = BuildStatistics(snapshot, now ?? DateTime.Now);
+                    result.Statistics = GetStatistics(snapshot, now ?? DateTime.Now);
                     result.ResolvedProfile = ShowcaseProfileResolver.Resolve(
                         settings.Profile,
                         snapshot.CurrentUserIdentities);
                     break;
                 case ShowcaseWidgetKind.Statistics:
-                    result.Statistics = BuildStatistics(snapshot, now ?? DateTime.Now);
+                    result.Statistics = GetStatistics(snapshot, now ?? DateTime.Now);
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     result.ChartEntries = BuildNativePoints(snapshot, instance);
@@ -183,10 +211,10 @@ namespace PlayniteAchievements.Services.Showcase
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    result.ActivityCalendar = BuildActivityCalendar(snapshot, instance, (now ?? DateTime.Now).Date);
+                    result.ActivityCalendar = GetActivityCalendar(snapshot, instance, (now ?? DateTime.Now).Date);
                     break;
                 case ShowcaseWidgetKind.Scores:
-                    result.ScoreHistory = BuildScoreHistory(snapshot, instance, (now ?? DateTime.Now).Date);
+                    result.ScoreHistory = GetScoreHistory(snapshot, instance, (now ?? DateTime.Now).Date);
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     var endDate = (now ?? DateTime.Now).Date;
@@ -198,6 +226,55 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             return result;
+        }
+
+        // The cached accessors below hand back the same instance for the same snapshot and window,
+        // so repeated dashboard rebuilds neither rescan the library nor hand the charts a new
+        // collection to re-plot.
+        private static IReadOnlyList<ShowcaseStatistic> GetStatistics(
+            OverviewDataSnapshot snapshot,
+            DateTime now)
+        {
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            if (cache.Statistics == null || cache.StatisticsDay != now.Date)
+            {
+                cache.Statistics = BuildStatistics(snapshot, now);
+                cache.StatisticsDay = now.Date;
+            }
+
+            return cache.Statistics;
+        }
+
+        private static IReadOnlyList<ShowcaseScorePoint> GetScoreHistory(
+            OverviewDataSnapshot snapshot,
+            ShowcaseWidgetInstanceSettings instance,
+            DateTime endDate)
+        {
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            var key = WindowKey(ShowcaseTimelineOptions.GetRange(instance), endDate);
+            if (!cache.ScoreHistory.TryGetValue(key, out var history))
+            {
+                history = BuildScoreHistory(snapshot, instance, endDate);
+                cache.ScoreHistory[key] = history;
+            }
+
+            return history;
+        }
+
+        private static ShowcaseActivityCalendar GetActivityCalendar(
+            OverviewDataSnapshot snapshot,
+            ShowcaseWidgetInstanceSettings instance,
+            DateTime endDate)
+        {
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            var key = WindowKey(ShowcaseTimelineOptions.GetRange(instance), endDate);
+            if (!cache.ActivityCalendars.TryGetValue(key, out var calendar))
+            {
+                calendar = BuildActivityCalendar(snapshot, instance, endDate);
+                cache.ActivityCalendars[key] = calendar;
+            }
+
+            return calendar;
         }
 
         /// <summary>Per-day unlock counts collapsed onto date keys, with negatives clamped away.</summary>
@@ -623,6 +700,63 @@ namespace PlayniteAchievements.Services.Showcase
             return ratio <= 0.25 ? 1 : ratio <= 0.5 ? 2 : ratio <= 0.75 ? 3 : 4;
         }
 
+        private sealed class DailyScoreDeltas
+        {
+            public readonly Dictionary<DateTime, int> Collection = new Dictionary<DateTime, int>();
+            public readonly Dictionary<DateTime, int> Prestige = new Dictionary<DateTime, int>();
+            public int BaselineCollection;
+            public int BaselinePrestige;
+            public bool SawUnlocked;
+        }
+
+        /// <summary>
+        /// Per-day score earned, folded out of the achievement list once per snapshot. This is the
+        /// only step that scales with the library, so changing a chart's range re-windows these
+        /// deltas instead of rescanning every achievement.
+        /// </summary>
+        private static DailyScoreDeltas GetDailyScoreDeltas(OverviewDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return new DailyScoreDeltas();
+            }
+
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            if (cache.ScoreDeltas != null)
+            {
+                return cache.ScoreDeltas;
+            }
+
+            var deltas = new DailyScoreDeltas();
+            // Single pass over the full achievement list - materializing the unlocked subset
+            // would allocate a list the size of the user's whole unlock history.
+            foreach (var item in snapshot.Achievements ?? new List<AchievementDisplayItem>())
+            {
+                if (item?.Unlocked != true)
+                {
+                    continue;
+                }
+
+                deltas.SawUnlocked = true;
+                if (item.UnlockTimeUtc.HasValue)
+                {
+                    var day = item.UnlockTimeUtc.Value.Date;
+                    deltas.Collection.TryGetValue(day, out var collection);
+                    deltas.Collection[day] = collection + item.CollectionScore;
+                    deltas.Prestige.TryGetValue(day, out var prestige);
+                    deltas.Prestige[day] = prestige + item.PrestigeScore;
+                }
+                else
+                {
+                    deltas.BaselineCollection += item.CollectionScore;
+                    deltas.BaselinePrestige += item.PrestigeScore;
+                }
+            }
+
+            cache.ScoreDeltas = deltas;
+            return deltas;
+        }
+
         /// <summary>
         /// Cumulative score per day, reconstructed retroactively from unlock timestamps
         /// with today's per-achievement score values. Unlocks without a timestamp form a
@@ -634,48 +768,21 @@ namespace PlayniteAchievements.Services.Showcase
             DateTime endDate)
         {
             endDate = endDate.Date;
-            var baselineCollection = 0;
-            var baselinePrestige = 0;
-            var dailyCollection = new Dictionary<DateTime, int>();
-            var dailyPrestige = new Dictionary<DateTime, int>();
-            // Single pass over the full achievement list - materializing the unlocked subset
-            // would allocate a list the size of the user's whole unlock history.
-            var sawUnlocked = false;
-            foreach (var item in snapshot?.Achievements ?? new List<AchievementDisplayItem>())
-            {
-                if (item?.Unlocked != true)
-                {
-                    continue;
-                }
-
-                sawUnlocked = true;
-                if (item.UnlockTimeUtc.HasValue)
-                {
-                    var day = item.UnlockTimeUtc.Value.Date;
-                    dailyCollection.TryGetValue(day, out var collection);
-                    dailyCollection[day] = collection + item.CollectionScore;
-                    dailyPrestige.TryGetValue(day, out var prestige);
-                    dailyPrestige[day] = prestige + item.PrestigeScore;
-                }
-                else
-                {
-                    baselineCollection += item.CollectionScore;
-                    baselinePrestige += item.PrestigeScore;
-                }
-            }
-
-            if (!sawUnlocked)
+            var deltas = GetDailyScoreDeltas(snapshot);
+            if (!deltas.SawUnlocked)
             {
                 return Array.Empty<ShowcaseScorePoint>();
             }
 
+            var dailyCollection = deltas.Collection;
+            var dailyPrestige = deltas.Prestige;
             var start = ResolveWindowStart(instance, endDate, dailyCollection);
 
             // Unlocks before the window still count toward the running totals, so the first
             // point starts from the score already earned rather than from zero.
-            var cumulativeCollection = baselineCollection +
+            var cumulativeCollection = deltas.BaselineCollection +
                 dailyCollection.Where(pair => pair.Key < start).Sum(pair => pair.Value);
-            var cumulativePrestige = baselinePrestige +
+            var cumulativePrestige = deltas.BaselinePrestige +
                 dailyPrestige.Where(pair => pair.Key < start).Sum(pair => pair.Value);
 
             var rangeDays = Math.Max(1, (endDate - start).Days + 1);
