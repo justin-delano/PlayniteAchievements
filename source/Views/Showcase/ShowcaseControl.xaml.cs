@@ -426,9 +426,10 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 Cursor = CutCursor.Value,
                 Focusable = false,
-                Template = CreateCutLineTemplate(vertical),
-                ToolTip = FormatSplitName(block, vertical, boundary)
+                Template = CreateCutLineTemplate(vertical)
             };
+            // Automation name only; the scissors cursor already communicates the action,
+            // so no tooltip.
             System.Windows.Automation.AutomationProperties.SetName(
                 thumb,
                 FormatSplitName(block, vertical, boundary));

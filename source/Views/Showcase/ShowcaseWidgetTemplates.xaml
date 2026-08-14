@@ -463,7 +463,7 @@
                                 <ProgressBar Grid.Row="2"
                                              Minimum="0"
                                              Maximum="1"
-                                             Value="{Binding Fraction}"
+                                             Value="{Binding Fraction, Mode=OneWay}"
                                              Height="3"
                                              Margin="0,4,0,0"
                                              VerticalAlignment="Top"/>
