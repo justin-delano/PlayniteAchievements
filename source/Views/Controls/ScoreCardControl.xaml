@@ -218,6 +218,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
@@ -247,7 +248,16 @@
                                  BorderBrush="{Binding AccentBrush}"
                                  Foreground="{Binding AccentBrush}"/>
 
-                    <Grid Grid.Row="3" ClipToBounds="True">
+                    <TextBlock Grid.Row="3"
+                               Text="{Binding PointsUntilNextLevelText}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="0.62"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="0,0,0,3"
+                               Visibility="{Binding ShowNextLevelText, ElementName=Root, Converter={StaticResource BoolToVis}}"/>
+
+                    <Grid Grid.Row="4" ClipToBounds="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>

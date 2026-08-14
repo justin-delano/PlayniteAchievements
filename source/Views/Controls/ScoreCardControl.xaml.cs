@@ -20,6 +20,13 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(ScoreCardControl),
                 new PropertyMetadata(false));
 
+        public static readonly DependencyProperty ShowNextLevelTextProperty =
+            DependencyProperty.Register(
+                nameof(ShowNextLevelText),
+                typeof(bool),
+                typeof(ScoreCardControl),
+                new PropertyMetadata(false));
+
         public ScoreCardControl()
         {
             InitializeComponent();
@@ -37,6 +44,13 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(IsFeaturedProperty);
             set => SetValue(IsFeaturedProperty, value);
+        }
+
+        /// <summary>Shows the points-until-next-level line inline under the progress bar.</summary>
+        public bool ShowNextLevelText
+        {
+            get => (bool)GetValue(ShowNextLevelTextProperty);
+            set => SetValue(ShowNextLevelTextProperty, value);
         }
 
         private void ScoreInfoButton_Click(object sender, RoutedEventArgs e)
