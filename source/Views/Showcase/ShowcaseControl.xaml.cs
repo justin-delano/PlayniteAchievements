@@ -42,6 +42,10 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly List<FrameworkElement> _layoutHandles = new List<FrameworkElement>();
         private readonly List<string> _mergePreviewBlockIds = new List<string>();
         private FrameworkElement _cutGhost;
+
+        // The selected empty block's in-block + button, hidden while an overlay copy takes
+        // hit-test priority over the cut lines; restored on the next handle rebuild.
+        private Button _suppressedAddButton;
         private int _cutCandidate;
         private double _cutPixels;
 
@@ -171,6 +175,7 @@ namespace PlayniteAchievements.Views.Showcase
             _trackGrippers.Clear();
             _layoutHandles.Clear();
             _cutGhost = null;
+            _suppressedAddButton = null;
             DashboardGrid.RowDefinitions.Clear();
             DashboardGrid.ColumnDefinitions.Clear();
             var gridSize = PageGridSize;
@@ -406,6 +411,13 @@ namespace PlayniteAchievements.Views.Showcase
             _layoutHandles.Clear();
             HideCutGhost();
             ClearMergePreviewGlow();
+            if (_suppressedAddButton != null)
+            {
+                _suppressedAddButton.Visibility = EditLayoutButton.IsChecked == true
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+                _suppressedAddButton = null;
+            }
 
             var block = SelectedBlock;
             if (EditLayoutButton.IsChecked != true || block == null)
@@ -424,6 +436,29 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             AddMergeChevrons(block);
+
+            // An empty selected block's + button must win over the cut lines crossing it, but
+            // it lives inside the block container (ZIndex 0) while cut lines are grid siblings
+            // at 39 — nesting can't outrank them. So the selected block's + is re-hosted in
+            // the overlay layer (above lines and grippers, below the non-hit-testable ghost)
+            // and the in-block one is hidden until selection moves on.
+            if (string.IsNullOrWhiteSpace(block.WidgetInstanceId))
+            {
+                var overlayAdd = CreateAddWidgetButton(block);
+                overlayAdd.Visibility = Visibility.Visible;
+                Grid.SetRow(overlayAdd, block.Row);
+                Grid.SetColumn(overlayAdd, block.Column);
+                Grid.SetRowSpan(overlayAdd, block.RowSpan);
+                Grid.SetColumnSpan(overlayAdd, block.ColumnSpan);
+                Panel.SetZIndex(overlayAdd, 44);
+                AddLayoutHandle(overlayAdd);
+                if (_blockVisuals.TryGetValue(block.BlockId, out var state) &&
+                    state.AddButton != null)
+                {
+                    state.AddButton.Visibility = Visibility.Collapsed;
+                    _suppressedAddButton = state.AddButton;
+                }
+            }
         }
 
         private void AddLayoutHandle(FrameworkElement handle)
@@ -1645,7 +1680,11 @@ namespace PlayniteAchievements.Views.Showcase
                 Border.BorderBrushProperty,
                 emphasized ? "PlayAch.Brush.Accent" : "PlayAch.Brush.Border");
 
-            var actionVisibility = editing &&
+            var isSelected = string.Equals(
+                state.Block.BlockId,
+                _selectedBlockId,
+                StringComparison.OrdinalIgnoreCase);
+            var actionVisibility = editing && isSelected &&
                 !string.IsNullOrWhiteSpace(state.Block.WidgetInstanceId)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -1911,7 +1950,6 @@ namespace PlayniteAchievements.Views.Showcase
             // Toggling edit mode only changes block chrome and affordances; a full rebuild would
             // recreate every widget control (including the embedded data grids) and stall the click.
             UpdateTrackGripperVisibility();
-            UpdateLayoutHandles();
             var editing = EditLayoutButton.IsChecked == true;
             foreach (var state in _blockVisuals.Values)
             {
@@ -1929,6 +1967,9 @@ namespace PlayniteAchievements.Views.Showcase
                 RefreshBlockChrome(state);
             }
 
+            // After the loop: the handle rebuild may suppress the selected empty block's own
+            // + button in favor of the overlay copy, and the loop above resets visibility.
+            UpdateLayoutHandles();
         }
 
         private ShowcaseBlockSettings SelectedBlock => CurrentPage.Blocks.FirstOrDefault(block =>
