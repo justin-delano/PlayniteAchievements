@@ -589,9 +589,8 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Auto">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Viewbox Stretch="Uniform" StretchDirection="Both">
+                <StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -623,12 +622,17 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel>
+                                        <!-- Fixed label slot the width of one cell box; longer text
+                                             paints past the slot without widening the column. -->
                                         <TextBlock Text="{Binding MonthLabel}"
                                                    Height="14"
+                                                   Width="12"
+                                                   TextWrapping="NoWrap"
+                                                   HorizontalAlignment="Left"
                                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                    FontSize="9"
-                                                   Visibility="{Binding DataContext.ShowMonthLabels, Converter={StaticResource BoolToVis}, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"/>
+                                                   Visibility="{Binding DataContext.ShowMonthLabels, Converter={StaticResource BoolToVis}, RelativeSource={RelativeSource AncestorType=Viewbox}}"/>
                                         <ItemsControl ItemsSource="{Binding Days}"
                                                       ItemTemplate="{StaticResource ShowcaseActivityCellTemplate}"/>
                                     </StackPanel>
@@ -662,7 +666,7 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>
-            </ScrollViewer>
+            </Viewbox>
         </Grid>
     </DataTemplate>
 
