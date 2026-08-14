@@ -22,32 +22,41 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- Header actions speak in glyphs; localized text lives in the tooltips. -->
-            <Button x:Name="PreviousPageButton"
+            <Button x:Name="CapturePageButton"
                     Grid.Column="0"
+                    Content="&#xE722;"
+                    FontFamily="Segoe MDL2 Assets"
+                    ToolTip="{DynamicResource LOCPlayAch_Button_Save}"
+                    Click="CapturePageButton_Click"
+                    MinWidth="36"
+                    Margin="0,0,6,0"/>
+            <Button x:Name="PreviousPageButton"
+                    Grid.Column="1"
                     Content="&#xE76B;"
                     FontFamily="Segoe MDL2 Assets"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PreviousPage}"
                     Click="PreviousPageButton_Click"
                     MinWidth="36"/>
             <ComboBox x:Name="PageSelector"
-                      Grid.Column="1"
+                      Grid.Column="2"
                       DisplayMemberPath="Name"
                       SelectionChanged="PageSelector_SelectionChanged"
                       MinWidth="150"
                       MaxWidth="320"
                       Margin="6,0"/>
             <Button x:Name="NextPageButton"
-                    Grid.Column="2"
+                    Grid.Column="3"
                     Content="&#xE76C;"
                     FontFamily="Segoe MDL2 Assets"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_NextPage}"
                     Click="NextPageButton_Click"
                     MinWidth="36"/>
             <TextBlock x:Name="PageCountText"
-                       Grid.Column="3"
+                       Grid.Column="4"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                        Opacity="0.7"
                        VerticalAlignment="Center"
@@ -56,7 +65,7 @@
             <!-- Shows the mode a click switches to: a pencil while viewing, an eye while
                  editing. Glyph and tooltip are swapped in EditLayoutButton_Changed. -->
             <ToggleButton x:Name="EditLayoutButton"
-                          Grid.Column="5"
+                          Grid.Column="6"
                           Content="&#xE70F;"
                           FontFamily="Segoe MDL2 Assets"
                           ToolTip="{DynamicResource LOCPlayAch_Common_Edit}"
@@ -65,7 +74,7 @@
                           MinWidth="36"
                           Margin="18,0,6,0"/>
             <Button x:Name="PageActionsButton"
-                    Grid.Column="6"
+                    Grid.Column="7"
                     Content="&#xE712;"
                     FontFamily="Segoe MDL2 Assets"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PageActions}"

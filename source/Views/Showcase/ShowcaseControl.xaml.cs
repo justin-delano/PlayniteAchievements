@@ -2000,9 +2000,6 @@ namespace PlayniteAchievements.Views.Showcase
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_RenamePage"),
                 RenameCurrentPage));
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_EditProfile"),
-                OpenProfileSettings));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_MovePageLeft"),
@@ -2078,19 +2075,62 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        private void OpenProfileSettings()
+        // Captures the current page as it renders on screen and saves it as a PNG the user
+        // picks a location for. Rendering through a VisualBrush (instead of the element
+        // directly) avoids the layout-offset blank margin RenderTargetBitmap adds, and the
+        // capture is composed over the grid surface brush so gaps are not transparent.
+        private void CapturePageButton_Click(object sender, RoutedEventArgs e)
         {
-            var profileWidget = Layout.WidgetInstances.FirstOrDefault(widget =>
-                widget?.Kind == ShowcaseWidgetKind.Profile);
-            if (profileWidget == null)
+            if (DashboardGrid.ActualWidth < 1 || DashboardGrid.ActualHeight < 1)
             {
-                profileWidget = ShowcaseWidgetSettingsFactory.CreateDefault(
-                    ShowcaseWidgetKind.Profile);
+                return;
             }
 
-            if (ShowcaseWidgetSettingsDialog.Show(profileWidget, Layout))
+            var path = _api?.Dialogs?.SaveFile("PNG|*.png");
+            if (string.IsNullOrWhiteSpace(path))
             {
-                SaveAndRebuild();
+                return;
+            }
+
+            try
+            {
+                var width = DashboardGrid.ActualWidth;
+                var height = DashboardGrid.ActualHeight;
+                var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(DashboardGrid);
+                var bounds = new Rect(0, 0, width, height);
+                var visual = new System.Windows.Media.DrawingVisual();
+                using (var context = visual.RenderOpen())
+                {
+                    if (TryFindResource("PlayAch.Brush.GridSurface")
+                        is System.Windows.Media.Brush backdrop)
+                    {
+                        context.DrawRectangle(backdrop, null, bounds);
+                    }
+
+                    context.DrawRectangle(
+                        new System.Windows.Media.VisualBrush(DashboardGrid),
+                        null,
+                        bounds);
+                }
+
+                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                    (int)Math.Ceiling(width * dpi.DpiScaleX),
+                    (int)Math.Ceiling(height * dpi.DpiScaleY),
+                    dpi.PixelsPerInchX,
+                    dpi.PixelsPerInchY,
+                    System.Windows.Media.PixelFormats.Pbgra32);
+                bitmap.Render(visual);
+
+                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                using (var stream = System.IO.File.Create(path))
+                {
+                    encoder.Save(stream);
+                }
+            }
+            catch (Exception exception)
+            {
+                _api?.Dialogs?.ShowErrorMessage(exception.Message, string.Empty);
             }
         }
 

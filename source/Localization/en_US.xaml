@@ -1250,7 +1250,6 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Template_Blank">Blank</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Template_Analytics">Analytics</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Template_Collection">Collection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_EditProfile">Edit profile</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Profile_DefaultName">Achievement Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileName">Display name</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileSubtitle">Subtitle</sys:String>
