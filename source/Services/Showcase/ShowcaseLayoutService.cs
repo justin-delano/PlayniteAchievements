@@ -286,51 +286,6 @@ namespace PlayniteAchievements.Services.Showcase
             return true;
         }
 
-        public static bool TrySplitThreeWays(
-            ShowcaseSettings settings,
-            string pageId,
-            string blockId,
-            bool vertical)
-        {
-            Normalize(settings);
-            var page = FindPage(settings, pageId);
-            var block = FindBlock(page, blockId);
-            var span = vertical ? block?.ColumnSpan ?? 0 : block?.RowSpan ?? 0;
-            if (block == null || span != GridSize)
-            {
-                return false;
-            }
-
-            var middle = block.Clone();
-            middle.BlockId = NewId();
-            middle.WidgetInstanceId = null;
-            var last = block.Clone();
-            last.BlockId = NewId();
-            last.WidgetInstanceId = null;
-
-            if (vertical)
-            {
-                block.ColumnSpan = 1;
-                middle.Column = block.Column + 1;
-                middle.ColumnSpan = 1;
-                last.Column = block.Column + 2;
-                last.ColumnSpan = 1;
-            }
-            else
-            {
-                block.RowSpan = 1;
-                middle.Row = block.Row + 1;
-                middle.RowSpan = 1;
-                last.Row = block.Row + 2;
-                last.RowSpan = 1;
-            }
-
-            page.Blocks.Add(middle);
-            page.Blocks.Add(last);
-            SortBlocks(page);
-            return true;
-        }
-
         public static bool TryMerge(
             ShowcaseSettings settings,
             string pageId,

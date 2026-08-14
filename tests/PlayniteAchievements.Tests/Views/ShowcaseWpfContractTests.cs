@@ -82,23 +82,24 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(xaml, "x:Name=\"NextPageButton\"");
             StringAssert.Contains(xaml, "x:Name=\"EditToolsPanel\"");
             StringAssert.Contains(xaml, "x:Name=\"WidgetActionButton\"");
-            StringAssert.Contains(xaml, "x:Name=\"LayoutActionButton\"");
+            // The Layout menu is gone: split/merge is tactile, on the selected block itself.
+            Assert.IsFalse(xaml.Contains("LayoutActionButton"));
             Assert.IsFalse(xaml.Contains("x:Name=\"SplitColumnsButton\""));
             Assert.IsFalse(xaml.Contains("x:Name=\"MergeLeftButton\""));
             Assert.IsFalse(xaml.Contains("BoundaryCanvas"));
+            Assert.IsFalse(code.Contains("OpenSplitPicker"));
+            Assert.IsFalse(code.Contains("TrySplitThreeWays"));
+            Assert.IsFalse(code.Contains("SplitPreviewItem"));
             StringAssert.Contains(code, "Focusable = EditLayoutButton.IsChecked == true");
             StringAssert.Contains(code, "TrySplit(");
-            StringAssert.Contains(code, "TrySplitThreeWays(");
-            StringAssert.Contains(code, "SplitPreviewItem(");
-            StringAssert.Contains(code, "new[] { 1, 1, 1 }");
-            StringAssert.Contains(code, "AutomationProperties.SetName(item, accessibleName)");
-            StringAssert.Contains(code, "Width = vertical ? 72 : 42");
-            StringAssert.Contains(code, "Height = vertical ? 26 : 48");
-            StringAssert.Contains(code, "MinHeight = vertical ? 32 : 54");
-            StringAssert.Contains(
-                code,
-                "index % 2 == 0 ? \"PlayAch.Brush.Accent\" : \"PlayAch.Brush.Text\"");
-            Assert.IsFalse(code.Contains("Opacity = index % 2"));
+            StringAssert.Contains(code, "CreateCutLine(");
+            StringAssert.Contains(code, "AddMergeChevron(");
+            StringAssert.Contains(code, "StrokeDashArrayProperty");
+            StringAssert.Contains(code, "TryGetMergePreview(");
+            StringAssert.Contains(code, "LOCPlayAch_Showcase_SplitAtFormat");
+            StringAssert.Contains(code, "LOCPlayAch_Showcase_MergeLeftLabel");
+            StringAssert.Contains(code, "Panel.SetZIndex(thumb, 39)");
+            StringAssert.Contains(code, "args.Canceled");
             StringAssert.Contains(code, "TryMergeWithFallback(");
             StringAssert.Contains(code, "FindAdjacentBlocks");
             StringAssert.Contains(code, "MergeSelectedWith");

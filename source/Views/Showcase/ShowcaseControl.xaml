@@ -87,10 +87,6 @@
                             Content="{DynamicResource LOCPlayAch_Showcase_Widget}"
                             Click="WidgetActionButton_Click"
                             Margin="4,0"/>
-                    <Button x:Name="LayoutActionButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_Layout}"
-                            Click="LayoutActionButton_Click"
-                            Margin="4,0"/>
                 </WrapPanel>
             </Grid>
         </Border>

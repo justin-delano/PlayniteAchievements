@@ -1799,7 +1799,6 @@ namespace PlayniteAchievements.Views.Showcase
                 ? Localize("LOCPlayAch_Showcase_AddWidget")
                 : Localize("LOCPlayAch_Showcase_Widget");
             WidgetActionButton.IsEnabled = block != null;
-            LayoutActionButton.IsEnabled = block != null;
         }
 
         private void WidgetActionButton_Click(object sender, RoutedEventArgs e)
@@ -1823,112 +1822,6 @@ namespace PlayniteAchievements.Views.Showcase
             menu.IsOpen = true;
         }
 
-        private void LayoutActionButton_Click(object sender, RoutedEventArgs e)
-        {
-            var block = SelectedBlock;
-            if (block == null)
-            {
-                return;
-            }
-
-            var menu = new ContextMenu
-            {
-                PlacementTarget = LayoutActionButton,
-                Placement = PlacementMode.Bottom
-            };
-            var splitColumns = MenuItem(
-                Localize("LOCPlayAch_Showcase_SplitColumns"),
-                () => OpenSplitPicker(LayoutActionButton, vertical: true));
-            splitColumns.IsEnabled = block.ColumnSpan > 1;
-            menu.Items.Add(splitColumns);
-            var splitRows = MenuItem(
-                Localize("LOCPlayAch_Showcase_SplitRows"),
-                () => OpenSplitPicker(LayoutActionButton, vertical: false));
-            splitRows.IsEnabled = block.RowSpan > 1;
-            menu.Items.Add(splitRows);
-
-            var merge = new MenuItem
-            {
-                Header = Localize("LOCPlayAch_Common_Merge")
-            };
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeLeftLabel", 0, -1);
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeUpLabel", -1, 0);
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeDownLabel", 1, 0);
-            AddMergeDirection(merge, "LOCPlayAch_Showcase_MergeRightLabel", 0, 1);
-            merge.IsEnabled = merge.Items.Count > 0;
-            menu.Items.Add(merge);
-            menu.IsOpen = true;
-        }
-
-        private void AddMergeDirection(
-            MenuItem parent,
-            string localizationKey,
-            int rowDirection,
-            int columnDirection)
-        {
-            if (!HasAdjacentBlock(SelectedBlock, rowDirection, columnDirection))
-            {
-                return;
-            }
-
-            parent.Items.Add(MenuItem(
-                Localize(localizationKey),
-                () => MergeDirectional(rowDirection, columnDirection)));
-        }
-
-        private void OpenSplitPicker(Button target, bool vertical)
-        {
-            var block = SelectedBlock;
-            if (block == null)
-            {
-                return;
-            }
-
-            var start = vertical ? block.Column : block.Row;
-            var span = vertical ? block.ColumnSpan : block.RowSpan;
-            var pageId = CurrentPage.PageId;
-            var blockId = block.BlockId;
-            var lines = Enumerable.Range(start + 1, Math.Max(0, span - 1)).ToList();
-            if (lines.Count == 1)
-            {
-                SplitBlock(pageId, blockId, vertical, lines[0]);
-                return;
-            }
-
-            var menu = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Bottom };
-            foreach (var line in lines)
-            {
-                var captured = line;
-                var firstSpan = line - start;
-                var secondSpan = span - firstSpan;
-                var accessibleName = string.Format(
-                    Localize("LOCPlayAch_Showcase_SplitAtFormat"),
-                    firstSpan,
-                    secondSpan);
-                menu.Items.Add(SplitPreviewItem(
-                    vertical,
-                    new[] { firstSpan, secondSpan },
-                    accessibleName,
-                    () => SplitBlock(
-                        pageId,
-                        blockId,
-                        vertical,
-                        captured)));
-            }
-
-            if (span == ShowcaseLayoutService.GridSize)
-            {
-                var accessibleName = Localize("LOCPlayAch_Showcase_SplitThreeEqual");
-                menu.Items.Insert(1, SplitPreviewItem(
-                    vertical,
-                    new[] { 1, 1, 1 },
-                    accessibleName,
-                    () => SplitBlockThreeWays(pageId, blockId, vertical)));
-            }
-
-            menu.IsOpen = true;
-        }
-
         private void SplitBlock(
             string pageId,
             string blockId,
@@ -1944,18 +1837,6 @@ namespace PlayniteAchievements.Views.Showcase
                     blockId,
                     vertical,
                     gridLine));
-        }
-
-        private void SplitBlockThreeWays(string pageId, string blockId, bool vertical)
-        {
-            ApplySplit(
-                pageId,
-                blockId,
-                () => ShowcaseLayoutService.TrySplitThreeWays(
-                    Layout,
-                    pageId,
-                    blockId,
-                    vertical));
         }
 
         private void ApplySplit(string pageId, string blockId, Func<bool> split)
@@ -1997,9 +1878,6 @@ namespace PlayniteAchievements.Views.Showcase
             SaveAndRebuild();
         }
 
-        private bool HasAdjacentBlock(ShowcaseBlockSettings block, int rowDirection, int columnDirection) =>
-            FindAdjacentBlocks(block, rowDirection, columnDirection).Count > 0;
-
         private List<ShowcaseBlockSettings> FindAdjacentBlocks(
             ShowcaseBlockSettings block,
             int rowDirection,
@@ -2030,18 +1908,6 @@ namespace PlayniteAchievements.Views.Showcase
                 .ThenBy(candidate => candidate.Row)
                 .ThenBy(candidate => candidate.Column)
                 .ToList();
-        }
-
-        private void MergeDirectional(int rowDirection, int columnDirection)
-        {
-            var block = SelectedBlock;
-            var adjacent = FindAdjacentBlocks(block, rowDirection, columnDirection);
-            if (block == null || adjacent.Count == 0)
-            {
-                return;
-            }
-
-            MergeSelectedWith(adjacent[0].BlockId);
         }
 
         private void PageActionsButton_Click(object sender, RoutedEventArgs e)
@@ -2208,88 +2074,6 @@ namespace PlayniteAchievements.Views.Showcase
         private static MenuItem MenuItem(string header, Action action)
         {
             var item = new MenuItem { Header = header };
-            item.Click += (_, __) => action();
-            return item;
-        }
-
-        private static MenuItem SplitPreviewItem(
-            bool vertical,
-            IReadOnlyList<int> parts,
-            string accessibleName,
-            Action action)
-        {
-            var previewGrid = new Grid
-            {
-                Width = vertical ? 72 : 42,
-                Height = vertical ? 26 : 48,
-                ClipToBounds = true
-            };
-            foreach (var part in parts)
-            {
-                if (vertical)
-                {
-                    previewGrid.ColumnDefinitions.Add(new ColumnDefinition
-                    {
-                        Width = new GridLength(part, GridUnitType.Star)
-                    });
-                }
-                else
-                {
-                    previewGrid.RowDefinitions.Add(new RowDefinition
-                    {
-                        Height = new GridLength(part, GridUnitType.Star)
-                    });
-                }
-            }
-
-            for (var index = 0; index < parts.Count; index++)
-            {
-                var section = new Border
-                {
-                    Margin = index == 0
-                        ? new Thickness(0)
-                        : vertical
-                            ? new Thickness(2, 0, 0, 0)
-                            : new Thickness(0, 2, 0, 0)
-                };
-                section.SetResourceReference(
-                    Border.BackgroundProperty,
-                    index % 2 == 0 ? "PlayAch.Brush.Accent" : "PlayAch.Brush.Text");
-                if (vertical)
-                {
-                    Grid.SetColumn(section, index);
-                }
-                else
-                {
-                    Grid.SetRow(section, index);
-                }
-
-                previewGrid.Children.Add(section);
-            }
-
-            var frame = new Border
-            {
-                Child = previewGrid,
-                Width = vertical ? 74 : 44,
-                Height = vertical ? 28 : 50,
-                Margin = new Thickness(2, 0, 2, 0),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(2),
-                ClipToBounds = true,
-                ToolTip = accessibleName
-            };
-            frame.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Surface");
-            frame.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Text");
-
-            var item = new MenuItem
-            {
-                Header = frame,
-                ToolTip = accessibleName,
-                MinHeight = vertical ? 32 : 54,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                ClipToBounds = false
-            };
-            AutomationProperties.SetName(item, accessibleName);
             item.Click += (_, __) => action();
             return item;
         }

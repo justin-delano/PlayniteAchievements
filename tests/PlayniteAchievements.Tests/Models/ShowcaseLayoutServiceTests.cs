@@ -100,55 +100,6 @@ namespace PlayniteAchievements.Tests.Models
             Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
         }
 
-        [DataTestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public void SplitThreeWays_CreatesEqualBlocksAndKeepsTheWidget(bool vertical)
-        {
-            var settings = new ShowcaseSettings();
-            var page = new ShowcasePageSettings { Name = "Equal split" };
-            settings.Pages.Add(page);
-            var target = new ShowcaseBlockSettings
-            {
-                Row = 0,
-                Column = 0,
-                RowSpan = vertical ? 1 : 3,
-                ColumnSpan = vertical ? 3 : 1
-            };
-            page.Blocks.Add(target);
-            for (var row = 0; row < ShowcaseLayoutService.GridSize; row++)
-            {
-                for (var column = 0; column < ShowcaseLayoutService.GridSize; column++)
-                {
-                    if ((vertical && row == 0) || (!vertical && column == 0))
-                    {
-                        continue;
-                    }
-
-                    page.Blocks.Add(new ShowcaseBlockSettings
-                    {
-                        Row = row,
-                        Column = column
-                    });
-                }
-            }
-
-            var widget = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Scores);
-            target.WidgetInstanceId = widget.InstanceId;
-
-            Assert.IsTrue(ShowcaseLayoutService.TrySplitThreeWays(
-                settings,
-                page.PageId,
-                target.BlockId,
-                vertical));
-
-            Assert.AreEqual(9, page.Blocks.Count);
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks));
-            Assert.AreEqual(1, page.Blocks.Count(block => block.WidgetInstanceId == widget.InstanceId));
-            Assert.AreEqual(widget.InstanceId, page.Blocks.Single(block =>
-                block.Row == 0 && block.Column == 0).WidgetInstanceId);
-        }
-
         [TestMethod]
         public void Normalize_RepairsOverlapAndMissingCells()
         {
