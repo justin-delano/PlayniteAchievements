@@ -183,7 +183,7 @@ namespace PlayniteAchievements.Services.Showcase
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    result.ActivityCalendar = BuildActivityCalendar(snapshot, (now ?? DateTime.Now).Date);
+                    result.ActivityCalendar = BuildActivityCalendar(snapshot, instance, (now ?? DateTime.Now).Date);
                     break;
                 case ShowcaseWidgetKind.Scores:
                     result.ScoreHistory = BuildScoreHistory(snapshot, instance, (now ?? DateTime.Now).Date);
@@ -502,6 +502,7 @@ namespace PlayniteAchievements.Services.Showcase
 
         public static ShowcaseActivityCalendar BuildActivityCalendar(
             OverviewDataSnapshot snapshot,
+            ShowcaseWidgetInstanceSettings instance,
             DateTime endDate)
         {
             var counts = (snapshot?.GlobalUnlockCountsByDate ?? new Dictionary<DateTime, int>())
@@ -509,7 +510,13 @@ namespace PlayniteAchievements.Services.Showcase
                 .ToDictionary(group => group.Key, group => group.Sum(pair => Math.Max(0, pair.Value)));
 
             endDate = endDate.Date;
-            var start = endDate.AddDays(-364);
+            var range = ShowcaseTimelineOptions.GetRange(instance);
+            var start = GetTimelineStartDate(range, endDate, counts);
+            if (start > endDate)
+            {
+                start = endDate;
+            }
+
             while (start.DayOfWeek != DayOfWeek.Sunday)
             {
                 start = start.AddDays(-1);
