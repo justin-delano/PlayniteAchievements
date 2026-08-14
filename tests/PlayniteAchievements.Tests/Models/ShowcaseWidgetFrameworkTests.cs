@@ -82,6 +82,51 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void WidgetOptions_ClampGridAndGameMosaicValues()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings();
+            instance.SetOption("Count", 999);
+            instance.SetOption("Mode", 999);
+            instance.SetOption("Source", 999);
+
+            Assert.AreEqual(100, ShowcaseWidgetOptions.GetRecentCount(instance));
+            Assert.AreEqual(200, ShowcaseWidgetOptions.GetGameListCount(instance));
+            Assert.AreEqual(64, ShowcaseWidgetOptions.GetGameMosaicCount(instance));
+            Assert.AreEqual(ShowcaseGameListSort.LastUnlock, ShowcaseWidgetOptions.GetGameListSort(instance));
+            Assert.AreEqual(ShowcaseGameMosaicSource.Completed, ShowcaseWidgetOptions.GetGameMosaicSource(instance));
+            Assert.IsFalse(ShowcaseWidgetOptions.GetHideCompleted(instance));
+
+            instance.SetOption("Count", 0);
+            Assert.AreEqual(1, ShowcaseWidgetOptions.GetRecentCount(instance));
+            Assert.AreEqual(1, ShowcaseWidgetOptions.GetGameListCount(instance));
+            Assert.AreEqual(1, ShowcaseWidgetOptions.GetGameMosaicCount(instance));
+        }
+
+        [TestMethod]
+        public void WidgetFactory_SeedsDefaultsForGridMosaicAndCalendarKinds()
+        {
+            var recent = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.RecentAchievements);
+            Assert.AreEqual(15, ShowcaseWidgetOptions.GetRecentCount(recent));
+
+            var summaries = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.GameSummaries);
+            Assert.AreEqual(ShowcaseGameListSort.LastUnlock, ShowcaseWidgetOptions.GetGameListSort(summaries));
+            Assert.AreEqual(50, ShowcaseWidgetOptions.GetGameListCount(summaries));
+            Assert.IsFalse(ShowcaseWidgetOptions.GetHideCompleted(summaries));
+
+            var mosaic = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.GameMosaic);
+            Assert.AreEqual(ShowcaseGameMosaicSource.Completed, ShowcaseWidgetOptions.GetGameMosaicSource(mosaic));
+            Assert.AreEqual(24, ShowcaseWidgetOptions.GetGameMosaicCount(mosaic));
+
+            var scores = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.Scores);
+            Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(scores));
+            Assert.AreEqual(TimelineRange.ThreeMonths, ShowcaseTimelineOptions.GetRange(scores));
+
+            var calendar = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.ActivityCalendar);
+            Assert.AreEqual(0, calendar.Options.Count);
+            Assert.IsTrue(ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.ActivityCalendar).AllowMultipleInstances);
+        }
+
+        [TestMethod]
         public void WidgetFactory_UsesTheSharedOptionContract()
         {
             var instance = ShowcaseWidgetSettingsFactory.CreateDefault(
