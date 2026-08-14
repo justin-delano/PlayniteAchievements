@@ -638,12 +638,12 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
-            <!-- The calendar sizes itself from the plugin's caption font size (see
+            <!-- The calendar sizes itself from the plugin's body font size (see
                  ActivityCalendarMetrics) instead of stretching to fill the widget; long
                  ranges overflow into a horizontal scrollbar. The weekday gutter and the
                  legend sit outside the scroll area so they stay put while the calendar
                  scrolls, and the gutter shares the heatmap's metrics so its rows line up. -->
-            <Grid TextElement.FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+            <Grid TextElement.FontSize="{DynamicResource PlayAch.FontSize.Body}"
                   VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

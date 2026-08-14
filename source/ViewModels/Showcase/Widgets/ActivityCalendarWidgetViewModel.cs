@@ -125,8 +125,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         /// <summary>Sunday-first weekday labels, one per row; never changes.</summary>
         public IReadOnlyList<string> WeekdayLabels { get; }
 
-        /// <summary>Month labels, weekday labels, and the legend only fit outside compact.</summary>
-        public bool ShowChrome
+        /// <summary>
+        /// Month labels, weekday labels, and the legend only fit outside compact. Intentionally
+        /// shadows the base's protected computed value with a bindable snapshot refreshed per
+        /// Update, so the template re-evaluates it on density changes.
+        /// </summary>
+        public new bool ShowChrome
         {
             get => _showChrome;
             private set => SetValue(ref _showChrome, value);
