@@ -37,6 +37,14 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly List<System.Windows.Controls.Primitives.Thumb> _trackGrippers =
             new List<System.Windows.Controls.Primitives.Thumb>();
 
+        // Tactile layout affordances for the selected block: dashed cut lines on its interior
+        // boundaries and merge chevrons on its legal shared edges, plus the drag ghost line.
+        private readonly List<FrameworkElement> _layoutHandles = new List<FrameworkElement>();
+        private readonly List<string> _mergePreviewBlockIds = new List<string>();
+        private FrameworkElement _cutGhost;
+        private int _cutCandidate;
+        private double _cutPixels;
+
         // Built widget controls keyed by widget instance id, kept alive across dashboard rebuilds
         // and page switches. Every layout edit (split, merge, page add/delete/rename, widget
         // settings) otherwise re-inflates each widget body, and the data grids and charts inside
@@ -145,6 +153,8 @@ namespace PlayniteAchievements.Views.Showcase
             DashboardGrid.Children.Clear();
             _blockVisuals.Clear();
             _trackGrippers.Clear();
+            _layoutHandles.Clear();
+            _cutGhost = null;
             DashboardGrid.RowDefinitions.Clear();
             DashboardGrid.ColumnDefinitions.Clear();
             var rowWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights);
@@ -178,6 +188,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             AddTrackGrippers();
+            UpdateLayoutHandles();
             _layoutSignature = ComputeLayoutSignature();
             UpdateEditTools();
         }
@@ -359,6 +370,274 @@ namespace PlayniteAchievements.Views.Showcase
             ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(null));
             SaveAndPublish();
             _layoutSignature = ComputeLayoutSignature();
+        }
+
+        // Rebuilds the selected block's tactile layout affordances: dashed cut lines on each of
+        // its interior cell boundaries (click cuts there; drag slides a ghost that snaps across
+        // the block's boundaries and cuts on release) and merge chevrons on legal shared edges.
+        // Handles are DashboardGrid siblings above the block layer, because block containers use
+        // tunneling Preview* handlers that children could not pre-empt. Child order matters for
+        // equal-ZIndex overlap resolution: cut lines first, chevrons second, ghost last.
+        private void UpdateLayoutHandles()
+        {
+            foreach (var handle in _layoutHandles)
+            {
+                DashboardGrid.Children.Remove(handle);
+            }
+
+            _layoutHandles.Clear();
+            HideCutGhost();
+            ClearMergePreviewGlow();
+
+            var block = SelectedBlock;
+            if (EditLayoutButton.IsChecked != true || block == null)
+            {
+                return;
+            }
+
+            for (var line = block.Column + 1; line < block.Column + block.ColumnSpan; line++)
+            {
+                AddLayoutHandle(CreateCutLine(block, vertical: true, line));
+            }
+
+            for (var line = block.Row + 1; line < block.Row + block.RowSpan; line++)
+            {
+                AddLayoutHandle(CreateCutLine(block, vertical: false, line));
+            }
+
+            AddMergeChevrons(block);
+        }
+
+        private void AddLayoutHandle(FrameworkElement handle)
+        {
+            _layoutHandles.Add(handle);
+            DashboardGrid.Children.Add(handle);
+        }
+
+        private System.Windows.Controls.Primitives.Thumb CreateCutLine(
+            ShowcaseBlockSettings block,
+            bool vertical,
+            int boundary)
+        {
+            var thumb = new System.Windows.Controls.Primitives.Thumb
+            {
+                Cursor = vertical ? Cursors.SizeWE : Cursors.SizeNS,
+                Focusable = false,
+                Template = CreateCutLineTemplate(vertical),
+                ToolTip = FormatSplitName(block, vertical, boundary)
+            };
+            System.Windows.Automation.AutomationProperties.SetName(
+                thumb,
+                FormatSplitName(block, vertical, boundary));
+            if (vertical)
+            {
+                thumb.Width = 12;
+                thumb.HorizontalAlignment = HorizontalAlignment.Right;
+                thumb.Margin = new Thickness(0, 6, -6, 6);
+                Grid.SetColumn(thumb, boundary - 1);
+                Grid.SetRow(thumb, block.Row);
+                Grid.SetRowSpan(thumb, block.RowSpan);
+            }
+            else
+            {
+                thumb.Height = 12;
+                thumb.VerticalAlignment = VerticalAlignment.Bottom;
+                thumb.Margin = new Thickness(6, 0, 6, -6);
+                Grid.SetRow(thumb, boundary - 1);
+                Grid.SetColumn(thumb, block.Column);
+                Grid.SetColumnSpan(thumb, block.ColumnSpan);
+            }
+
+            // One below the track grippers (40): in the one outer band where they can overlap,
+            // the gripper wins while the cut line stays grabbable along its remaining length.
+            Panel.SetZIndex(thumb, 39);
+            var pageId = CurrentPage.PageId;
+            thumb.DragStarted += (_, __) =>
+            {
+                _cutCandidate = boundary;
+                _cutPixels = BoundaryOffset(vertical, boundary);
+                thumb.Opacity = 0.15;
+                ShowCutGhost(block, vertical, boundary);
+            };
+            thumb.DragDelta += (_, args) =>
+            {
+                _cutPixels += vertical ? args.HorizontalChange : args.VerticalChange;
+                var start = vertical ? block.Column : block.Row;
+                var span = vertical ? block.ColumnSpan : block.RowSpan;
+                var best = _cutCandidate;
+                var bestDistance = double.MaxValue;
+                for (var line = start + 1; line < start + span; line++)
+                {
+                    var distance = Math.Abs(BoundaryOffset(vertical, line) - _cutPixels);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        best = line;
+                    }
+                }
+
+                if (best != _cutCandidate)
+                {
+                    _cutCandidate = best;
+                    MoveCutGhost(vertical, best);
+                }
+            };
+            thumb.DragCompleted += (_, args) =>
+            {
+                HideCutGhost();
+                thumb.Opacity = 1.0;
+                if (!args.Canceled)
+                {
+                    // Click and drag share one commit: with no movement the candidate is
+                    // still this line's own boundary.
+                    SplitBlock(pageId, block.BlockId, vertical, _cutCandidate);
+                }
+                else
+                {
+                    UpdateLayoutHandles();
+                }
+            };
+            return thumb;
+        }
+
+        private string FormatSplitName(ShowcaseBlockSettings block, bool vertical, int boundary)
+        {
+            var start = vertical ? block.Column : block.Row;
+            var span = vertical ? block.ColumnSpan : block.RowSpan;
+            return string.Format(
+                Localize("LOCPlayAch_Showcase_SplitAtFormat"),
+                boundary - start,
+                start + span - boundary);
+        }
+
+        private static ControlTemplate CreateCutLineTemplate(bool vertical)
+        {
+            // Transparent pad for a comfortable grab target; the dashed accent line reads as
+            // "cut here" and brightens on hover.
+            var root = new FrameworkElementFactory(typeof(Grid));
+            root.SetValue(Panel.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
+            var line = new FrameworkElementFactory(typeof(System.Windows.Shapes.Line)) { Name = "CutLine" };
+            line.SetValue(System.Windows.Shapes.Line.X1Property, 0d);
+            line.SetValue(System.Windows.Shapes.Line.Y1Property, 0d);
+            line.SetValue(System.Windows.Shapes.Line.X2Property, vertical ? 0d : 1d);
+            line.SetValue(System.Windows.Shapes.Line.Y2Property, vertical ? 1d : 0d);
+            line.SetValue(System.Windows.Shapes.Shape.StretchProperty, System.Windows.Media.Stretch.Fill);
+            line.SetValue(System.Windows.Shapes.Shape.StrokeThicknessProperty, 2d);
+            line.SetValue(
+                System.Windows.Shapes.Shape.StrokeDashArrayProperty,
+                new System.Windows.Media.DoubleCollection { 4d, 3d });
+            line.SetValue(
+                System.Windows.Shapes.Shape.StrokeDashCapProperty,
+                System.Windows.Media.PenLineCap.Round);
+            line.SetValue(
+                HorizontalAlignmentProperty,
+                vertical ? HorizontalAlignment.Center : HorizontalAlignment.Stretch);
+            line.SetValue(
+                VerticalAlignmentProperty,
+                vertical ? VerticalAlignment.Stretch : VerticalAlignment.Center);
+            line.SetValue(OpacityProperty, 0.55);
+            line.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PlayAch.Brush.Accent");
+            root.AppendChild(line);
+
+            var template = new ControlTemplate(typeof(System.Windows.Controls.Primitives.Thumb))
+            {
+                VisualTree = root
+            };
+            var hover = new Trigger { Property = IsMouseOverProperty, Value = true };
+            hover.Setters.Add(new Setter(OpacityProperty, 1.0, "CutLine"));
+            hover.Setters.Add(new Setter(System.Windows.Shapes.Shape.StrokeThicknessProperty, 3d, "CutLine"));
+            template.Triggers.Add(hover);
+            return template;
+        }
+
+        /// <summary>Pixel offset of an absolute grid line, from live track sizes (weight-proof).</summary>
+        private double BoundaryOffset(bool vertical, int line)
+        {
+            var offset = 0d;
+            for (var index = 0; index < line && index < ShowcaseLayoutService.GridSize; index++)
+            {
+                offset += vertical
+                    ? DashboardGrid.ColumnDefinitions[index].ActualWidth
+                    : DashboardGrid.RowDefinitions[index].ActualHeight;
+            }
+
+            return offset;
+        }
+
+        private void ShowCutGhost(ShowcaseBlockSettings block, bool vertical, int boundary)
+        {
+            HideCutGhost();
+            var ghost = new System.Windows.Shapes.Line
+            {
+                X1 = 0,
+                Y1 = 0,
+                X2 = vertical ? 0 : 1,
+                Y2 = vertical ? 1 : 0,
+                Stretch = System.Windows.Media.Stretch.Fill,
+                StrokeThickness = 3,
+                StrokeDashArray = new System.Windows.Media.DoubleCollection { 4d, 3d },
+                StrokeDashCap = System.Windows.Media.PenLineCap.Round,
+                IsHitTestVisible = false
+            };
+            ghost.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PlayAch.Brush.Accent");
+            if (vertical)
+            {
+                ghost.HorizontalAlignment = HorizontalAlignment.Right;
+                ghost.Margin = new Thickness(0, 6, -1, 6);
+                Grid.SetRow(ghost, block.Row);
+                Grid.SetRowSpan(ghost, block.RowSpan);
+            }
+            else
+            {
+                ghost.VerticalAlignment = VerticalAlignment.Bottom;
+                ghost.Margin = new Thickness(6, 0, 6, -1);
+                Grid.SetColumn(ghost, block.Column);
+                Grid.SetColumnSpan(ghost, block.ColumnSpan);
+            }
+
+            Panel.SetZIndex(ghost, 45);
+            _cutGhost = ghost;
+            DashboardGrid.Children.Add(ghost);
+            MoveCutGhost(vertical, boundary);
+        }
+
+        // Discrete snap: the ghost only ever sits on a boundary, moved by cell assignment
+        // (no per-pixel transforms, no allocation while dragging).
+        private void MoveCutGhost(bool vertical, int boundary)
+        {
+            if (_cutGhost == null)
+            {
+                return;
+            }
+
+            if (vertical)
+            {
+                Grid.SetColumn(_cutGhost, boundary - 1);
+            }
+            else
+            {
+                Grid.SetRow(_cutGhost, boundary - 1);
+            }
+        }
+
+        private void HideCutGhost()
+        {
+            if (_cutGhost != null)
+            {
+                DashboardGrid.Children.Remove(_cutGhost);
+                _cutGhost = null;
+            }
+        }
+
+        private void AddMergeChevrons(ShowcaseBlockSettings block)
+        {
+            // Chevrons arrive in commit 3; kept as a seam so UpdateLayoutHandles stays stable.
+        }
+
+        private void ClearMergePreviewGlow()
+        {
+            // Chevrons arrive in commit 3.
+            _mergePreviewBlockIds.Clear();
         }
 
         // Captures everything that forces block containers to be recreated: the page set, the
@@ -776,6 +1055,7 @@ namespace PlayniteAchievements.Views.Showcase
                 RefreshBlockChrome(state);
             }
 
+            UpdateLayoutHandles();
             UpdateEditTools();
         }
 
@@ -1292,6 +1572,7 @@ namespace PlayniteAchievements.Views.Showcase
             // Toggling edit mode only changes block chrome and affordances; a full rebuild would
             // recreate every widget control (including the embedded data grids) and stall the click.
             UpdateTrackGripperVisibility();
+            UpdateLayoutHandles();
             var editing = EditLayoutButton.IsChecked == true;
             foreach (var state in _blockVisuals.Values)
             {
