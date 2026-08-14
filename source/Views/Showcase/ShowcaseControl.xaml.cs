@@ -829,10 +829,20 @@ namespace PlayniteAchievements.Views.Showcase
             pill.SetValue(OpacityProperty, 0.8);
             pill.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Accent");
 
+            // Direction-specific geometry authored centered inside a fixed box, with round
+            // caps AND joins so the stroke extends symmetrically. Explicit Width/Height give
+            // integer centering offsets inside the pill; a rotated shared glyph lands on
+            // different subpixels per direction and reads as misaligned.
+            var geometry = columnDirection < 0 ? "M 6,1 L 2,5 L 6,9"
+                : columnDirection > 0 ? "M 2,1 L 6,5 L 2,9"
+                : rowDirection < 0 ? "M 1,6 L 5,2 L 9,6"
+                : "M 1,2 L 5,6 L 9,2";
             var arrow = new FrameworkElementFactory(typeof(System.Windows.Shapes.Path));
             arrow.SetValue(
                 System.Windows.Shapes.Path.DataProperty,
-                System.Windows.Media.Geometry.Parse("M 0,0 L 4,4 L 0,8"));
+                System.Windows.Media.Geometry.Parse(geometry));
+            arrow.SetValue(WidthProperty, vertical ? 8d : 10d);
+            arrow.SetValue(HeightProperty, vertical ? 10d : 8d);
             arrow.SetValue(System.Windows.Shapes.Shape.StrokeThicknessProperty, 1.5d);
             arrow.SetValue(
                 System.Windows.Shapes.Shape.StrokeStartLineCapProperty,
@@ -840,22 +850,13 @@ namespace PlayniteAchievements.Views.Showcase
             arrow.SetValue(
                 System.Windows.Shapes.Shape.StrokeEndLineCapProperty,
                 System.Windows.Media.PenLineCap.Round);
+            arrow.SetValue(
+                System.Windows.Shapes.Shape.StrokeLineJoinProperty,
+                System.Windows.Media.PenLineJoin.Round);
             arrow.SetValue(System.Windows.Shapes.Shape.StretchProperty, System.Windows.Media.Stretch.None);
             arrow.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
             arrow.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
             arrow.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PlayAch.Brush.Surface");
-
-            // The base glyph points right; rotate it to point outward for the direction.
-            var angle = columnDirection < 0 ? 180d
-                : columnDirection > 0 ? 0d
-                : rowDirection < 0 ? 270d : 90d;
-            if (angle != 0d)
-            {
-                arrow.SetValue(RenderTransformOriginProperty, new Point(0.5, 0.5));
-                arrow.SetValue(
-                    RenderTransformProperty,
-                    new System.Windows.Media.RotateTransform(angle));
-            }
 
             pill.AppendChild(arrow);
             root.AppendChild(pill);
