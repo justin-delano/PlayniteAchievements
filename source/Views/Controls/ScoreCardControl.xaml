@@ -61,12 +61,22 @@
                 <Setter Property="Padding" Value="9,7"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!-- Background and border live in the style (not local values) so the Flat
+                     trigger below can strip them for hosts that provide their own chrome. -->
+                <Setter Property="Background" Value="{Binding AccentBackgroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{Binding AccentBrush}"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
                         <Setter Property="CornerRadius" Value="10"/>
                         <Setter Property="BorderThickness" Value="1"/>
                         <Setter Property="Padding" Value="15,13"/>
                         <Setter Property="MinHeight" Value="112"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Flat, ElementName=Root}" Value="True">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="MinHeight" Value="0"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -168,9 +178,7 @@
     </UserControl.Resources>
 
     <Grid DataContext="{Binding ScoreCard, ElementName=Root}">
-        <Border Style="{StaticResource ScoreCardPanelStyle}"
-                Background="{Binding AccentBackgroundBrush}"
-                BorderBrush="{Binding AccentBrush}">
+        <Border Style="{StaticResource ScoreCardPanelStyle}">
             <Border.ToolTip>
                 <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
                          Placement="Bottom"

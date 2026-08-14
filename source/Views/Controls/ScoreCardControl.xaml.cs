@@ -27,6 +27,13 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(ScoreCardControl),
                 new PropertyMetadata(false));
 
+        public static readonly DependencyProperty FlatProperty =
+            DependencyProperty.Register(
+                nameof(Flat),
+                typeof(bool),
+                typeof(ScoreCardControl),
+                new PropertyMetadata(false));
+
         public ScoreCardControl()
         {
             InitializeComponent();
@@ -51,6 +58,16 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(ShowNextLevelTextProperty);
             set => SetValue(ShowNextLevelTextProperty, value);
+        }
+
+        /// <summary>
+        /// Drops the card's own accent background and border for hosts that already provide
+        /// chrome (showcase widget blocks).
+        /// </summary>
+        public bool Flat
+        {
+            get => (bool)GetValue(FlatProperty);
+            set => SetValue(FlatProperty, value);
         }
 
         private void ScoreInfoButton_Click(object sender, RoutedEventArgs e)
