@@ -773,6 +773,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             ShowcaseLayoutService.Normalize(Layout);
             ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
+            ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
             _persist();
             _publishingConfigurationChange = true;
             try

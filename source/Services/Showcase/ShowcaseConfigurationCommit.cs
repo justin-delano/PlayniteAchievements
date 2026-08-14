@@ -1,3 +1,5 @@
+using PlayniteAchievements.Models;
+
 namespace PlayniteAchievements.Services.Showcase
 {
     /// <summary>
@@ -8,6 +10,12 @@ namespace PlayniteAchievements.Services.Showcase
     {
         public static void Commit()
         {
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                ShowcaseGridSurfaces.PruneOrphaned(persisted.GridOptions, persisted.Showcase);
+            }
+
             PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
             ShowcaseConfigurationEvents.RaiseChanged();
         }

@@ -104,9 +104,10 @@ namespace PlayniteAchievements
         public void OnViewRemoved(string viewId, Guid instanceId)
         {
             DisposeStartPageViewModel(GetStartPageInstanceKey(viewId, instanceId));
-            var instances = Settings?.Persisted?.Showcase?.StartPageInstances;
-            if (instances?.Remove(GetStartPageInstanceKey(viewId, instanceId)) == true)
+            var persisted = Settings?.Persisted;
+            if (persisted?.Showcase?.StartPageInstances?.Remove(GetStartPageInstanceKey(viewId, instanceId)) == true)
             {
+                ShowcaseGridSurfaces.PruneOrphaned(persisted.GridOptions, persisted.Showcase);
                 PersistSettingsForUi();
                 ShowcaseConfigurationEvents.RaiseChanged();
             }
