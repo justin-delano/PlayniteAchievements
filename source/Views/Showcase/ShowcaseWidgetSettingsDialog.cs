@@ -42,8 +42,8 @@ namespace PlayniteAchievements.Views.Showcase
                     "pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml",
                     UriKind.Absolute)
             });
-            Width = 400;
-            Height = GetEditorHeight(widget.Kind);
+            // No fixed size on the control itself: the window is resizable and the content
+            // should stretch with it (the option list scrolls when it overflows).
             Content = BuildContent();
             FormattingCulture.Apply(this);
         }
@@ -70,9 +70,9 @@ namespace PlayniteAchievements.Views.Showcase
                 editor,
                 new WindowOptions
                 {
-                    Width = 400,
+                    Width = 460,
                     Height = height + 25,
-                    CanBeResizable = false,
+                    CanBeResizable = true,
                     ShowCloseButton = true,
                     ShowMinimizeButton = false,
                     ShowMaximizeButton = false
@@ -322,10 +322,16 @@ namespace PlayniteAchievements.Views.Showcase
         {
             switch (kind)
             {
+                case ShowcaseWidgetKind.GameSummaries:
+                    return 620;
+                case ShowcaseWidgetKind.FavoriteGames:
+                    return 560;
+                case ShowcaseWidgetKind.PinnedAchievements:
+                case ShowcaseWidgetKind.RecentAchievements:
+                    return 520;
                 case ShowcaseWidgetKind.Profile:
                     return 300;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
-                case ShowcaseWidgetKind.GameSummaries:
                     return 250;
                 case ShowcaseWidgetKind.NativePoints:
                 case ShowcaseWidgetKind.IconMosaic:

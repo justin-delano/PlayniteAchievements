@@ -131,7 +131,7 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcasePinnedAchievementsViewId,
                     StartPageWidgetKind.ShowcasePinnedAchievements,
                     ShowcaseWidgetKind.PinnedAchievements,
-                    hasSettings: false),
+                    hasSettings: true),
                 Shared(
                     ShowcaseFavoriteGamesViewId,
                     StartPageWidgetKind.ShowcaseFavoriteGames,

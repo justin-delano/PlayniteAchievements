@@ -5,6 +5,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Showcase;
+using PlayniteAchievements.Views.Settings.Controls;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
 namespace PlayniteAchievements.Views.Showcase
@@ -18,6 +19,7 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly ShowcaseWidgetInstanceSettings _settings;
         private readonly Action _persist;
         private readonly bool _publishChanges;
+        private System.ComponentModel.INotifyPropertyChanged _gridOptionsRecord;
 
         public ShowcaseWidgetOptionsControl(
             ShowcaseWidgetInstanceSettings settings,
@@ -50,6 +52,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Pie:
                 case ShowcaseWidgetKind.Timeline:
                 case ShowcaseWidgetKind.NativePoints:
+                case ShowcaseWidgetKind.PinnedAchievements:
                 case ShowcaseWidgetKind.FavoriteGames:
                 case ShowcaseWidgetKind.IconMosaic:
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
@@ -223,7 +226,71 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
             }
 
+            AppendGridOptionsEditor(panel);
             return panel;
+        }
+
+        /// <summary>
+        /// Appends the shared grid display-options editor for the grid widget kinds. The editor
+        /// binds the widget's LIVE catalog record (not the dialog's widget clone), so grid
+        /// display edits are instant-apply: they persist and broadcast on every change,
+        /// independent of the host's persist callback and of the dialog's Save/Cancel, which
+        /// govern only the title and the widget's own option bag.
+        /// </summary>
+        private void AppendGridOptionsEditor(Panel panel)
+        {
+            var catalog = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.GridOptions;
+            var surfaceKey = ShowcaseGridSurfaces.ResolveWidgetSurface(_settings.Kind, _settings.InstanceId);
+            if (catalog == null || surfaceKey == null)
+            {
+                return;
+            }
+
+            var editor = new GridOptionsEditor
+            {
+                Margin = new Thickness(0, 8, 0, 0),
+                ShowControlBarRow = false
+            };
+            object options;
+            if (ShowcaseGridSurfaces.IsAchievementSurface(surfaceKey))
+            {
+                options = catalog.GetAchievement(surfaceKey);
+                // Pinned rows keep pin order and recent rows keep unlock recency;
+                // AchievementGridOptions.SortMode is not consumed on showcase surfaces.
+                editor.ShowSortRow = false;
+            }
+            else
+            {
+                options = catalog.GetGameSummaries(surfaceKey);
+                // Pinned/favorite games keep their projection-defined order.
+                editor.ShowSortRow = _settings.Kind == ShowcaseWidgetKind.GameSummaries;
+            }
+
+            editor.Options = options;
+            _gridOptionsRecord = options as System.ComponentModel.INotifyPropertyChanged;
+            if (_gridOptionsRecord != null)
+            {
+                Loaded += OnLoadedAttachGridOptions;
+                Unloaded += OnUnloadedDetachGridOptions;
+            }
+
+            panel.Children.Add(editor);
+        }
+
+        private void OnLoadedAttachGridOptions(object sender, RoutedEventArgs e)
+        {
+            _gridOptionsRecord.PropertyChanged -= OnGridOptionsRecordChanged;
+            _gridOptionsRecord.PropertyChanged += OnGridOptionsRecordChanged;
+        }
+
+        private void OnUnloadedDetachGridOptions(object sender, RoutedEventArgs e)
+        {
+            _gridOptionsRecord.PropertyChanged -= OnGridOptionsRecordChanged;
+        }
+
+        private void OnGridOptionsRecordChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            ShowcaseConfigurationCommit.Commit();
         }
 
         private static readonly TimelineRange[] RangeChoices =
