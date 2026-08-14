@@ -558,6 +558,9 @@ namespace PlayniteAchievements.Models.Settings
         internal const string FriendSummariesKindName = "FriendSummaries";
         internal const string CategorySummariesKindName = "CategorySummaries";
 
+        public const int DefaultShowcaseRecentMaxRows = 15;
+        public const int DefaultShowcaseGameSummariesMaxRows = 50;
+
         private Dictionary<string, AchievementGridOptions> _achievement =
             new Dictionary<string, AchievementGridOptions>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GameSummaryGridOptions> _gameSummaries =
@@ -963,6 +966,15 @@ namespace PlayniteAchievements.Models.Settings
                 options.ShowControlBar = false;
             }
 
+            if (ShowcaseGridSurfaces.IsAchievementSurface(key))
+            {
+                options.ShowControlBar = false;
+                if (string.Equals(ShowcaseGridSurfaces.GetBaseKey(key), ShowcaseGridSurfaces.RecentAchievements, StringComparison.OrdinalIgnoreCase))
+                {
+                    options.MaxRows = DefaultShowcaseRecentMaxRows;
+                }
+            }
+
             return options;
         }
 
@@ -984,6 +996,15 @@ namespace PlayniteAchievements.Models.Settings
                      string.Equals(key, GridOptionKeys.GameSummaries.DesktopTheme, StringComparison.OrdinalIgnoreCase))
             {
                 options.UseCoverImages = false;
+            }
+
+            if (ShowcaseGridSurfaces.IsGameSurface(key))
+            {
+                options.ShowControlBar = false;
+                if (string.Equals(ShowcaseGridSurfaces.GetBaseKey(key), ShowcaseGridSurfaces.GameSummaries, StringComparison.OrdinalIgnoreCase))
+                {
+                    options.MaxRows = DefaultShowcaseGameSummariesMaxRows;
+                }
             }
 
             return options;
