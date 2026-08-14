@@ -629,14 +629,189 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
+        // A chevron per direction whose merge is geometrically legal (rectangular closure);
+        // hover previews the closure with a glow, click commits through MergeSelectedWith
+        // (which owns the multi-widget confirmation and survivor choice).
         private void AddMergeChevrons(ShowcaseBlockSettings block)
         {
-            // Chevrons arrive in commit 3; kept as a seam so UpdateLayoutHandles stays stable.
+            AddMergeChevron(block, rowDirection: 0, columnDirection: -1, "LOCPlayAch_Showcase_MergeLeftLabel");
+            AddMergeChevron(block, rowDirection: -1, columnDirection: 0, "LOCPlayAch_Showcase_MergeUpLabel");
+            AddMergeChevron(block, rowDirection: 1, columnDirection: 0, "LOCPlayAch_Showcase_MergeDownLabel");
+            AddMergeChevron(block, rowDirection: 0, columnDirection: 1, "LOCPlayAch_Showcase_MergeRightLabel");
+        }
+
+        private void AddMergeChevron(
+            ShowcaseBlockSettings block,
+            int rowDirection,
+            int columnDirection,
+            string labelKey)
+        {
+            var target = FindAdjacentBlocks(block, rowDirection, columnDirection).FirstOrDefault();
+            if (target == null ||
+                !ShowcaseLayoutService.TryGetMergePreview(
+                    Layout,
+                    CurrentPage.PageId,
+                    block.BlockId,
+                    target.BlockId,
+                    out _))
+            {
+                return;
+            }
+
+            var chevron = new Button
+            {
+                Focusable = false,
+                Template = CreateMergeChevronTemplate(rowDirection, columnDirection),
+                ToolTip = Localize(labelKey)
+            };
+            System.Windows.Automation.AutomationProperties.SetName(chevron, Localize(labelKey));
+            var vertical = columnDirection != 0;
+            if (vertical)
+            {
+                chevron.Width = 28;
+                chevron.Height = 28;
+                chevron.VerticalAlignment = VerticalAlignment.Center;
+                chevron.HorizontalAlignment = columnDirection < 0
+                    ? HorizontalAlignment.Left
+                    : HorizontalAlignment.Right;
+                chevron.Margin = columnDirection < 0
+                    ? new Thickness(-14, 0, 0, 0)
+                    : new Thickness(0, 0, -14, 0);
+                Grid.SetColumn(chevron, columnDirection < 0 ? block.Column : block.Column + block.ColumnSpan - 1);
+                Grid.SetRow(chevron, block.Row);
+                Grid.SetRowSpan(chevron, block.RowSpan);
+            }
+            else
+            {
+                chevron.Width = 28;
+                chevron.Height = 28;
+                chevron.HorizontalAlignment = HorizontalAlignment.Center;
+                chevron.VerticalAlignment = rowDirection < 0
+                    ? VerticalAlignment.Top
+                    : VerticalAlignment.Bottom;
+                chevron.Margin = rowDirection < 0
+                    ? new Thickness(0, -14, 0, 0)
+                    : new Thickness(0, 0, 0, -14);
+                Grid.SetRow(chevron, rowDirection < 0 ? block.Row : block.Row + block.RowSpan - 1);
+                Grid.SetColumn(chevron, block.Column);
+                Grid.SetColumnSpan(chevron, block.ColumnSpan);
+            }
+
+            Panel.SetZIndex(chevron, 39);
+            var targetBlockId = target.BlockId;
+            var blockId = block.BlockId;
+            chevron.MouseEnter += (_, __) => ShowMergePreviewGlow(blockId, targetBlockId);
+            chevron.MouseLeave += (_, __) => ClearMergePreviewGlow();
+            chevron.Click += (_, __) => MergeSelectedWith(targetBlockId);
+            AddLayoutHandle(chevron);
+        }
+
+        private static ControlTemplate CreateMergeChevronTemplate(int rowDirection, int columnDirection)
+        {
+            // Accent pill with an outward-pointing chevron, on a transparent grab pad.
+            var root = new FrameworkElementFactory(typeof(Grid));
+            root.SetValue(Panel.BackgroundProperty, System.Windows.Media.Brushes.Transparent);
+            var pill = new FrameworkElementFactory(typeof(Border)) { Name = "ChevronPill" };
+            var vertical = columnDirection != 0;
+            pill.SetValue(WidthProperty, vertical ? 16d : 26d);
+            pill.SetValue(HeightProperty, vertical ? 26d : 16d);
+            pill.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            pill.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+            pill.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+            pill.SetValue(OpacityProperty, 0.8);
+            pill.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Accent");
+
+            var arrow = new FrameworkElementFactory(typeof(System.Windows.Shapes.Path));
+            arrow.SetValue(
+                System.Windows.Shapes.Path.DataProperty,
+                System.Windows.Media.Geometry.Parse("M 0,0 L 4,4 L 0,8"));
+            arrow.SetValue(System.Windows.Shapes.Shape.StrokeThicknessProperty, 1.5d);
+            arrow.SetValue(
+                System.Windows.Shapes.Shape.StrokeStartLineCapProperty,
+                System.Windows.Media.PenLineCap.Round);
+            arrow.SetValue(
+                System.Windows.Shapes.Shape.StrokeEndLineCapProperty,
+                System.Windows.Media.PenLineCap.Round);
+            arrow.SetValue(System.Windows.Shapes.Shape.StretchProperty, System.Windows.Media.Stretch.None);
+            arrow.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            arrow.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+            arrow.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "PlayAch.Brush.Surface");
+
+            // The base glyph points right; rotate it to point outward for the direction.
+            var angle = columnDirection < 0 ? 180d
+                : columnDirection > 0 ? 0d
+                : rowDirection < 0 ? 270d : 90d;
+            if (angle != 0d)
+            {
+                arrow.SetValue(RenderTransformOriginProperty, new Point(0.5, 0.5));
+                arrow.SetValue(
+                    RenderTransformProperty,
+                    new System.Windows.Media.RotateTransform(angle));
+            }
+
+            pill.AppendChild(arrow);
+            root.AppendChild(pill);
+            var template = new ControlTemplate(typeof(Button)) { VisualTree = root };
+            var hover = new Trigger { Property = IsMouseOverProperty, Value = true };
+            hover.Setters.Add(new Setter(OpacityProperty, 1.0, "ChevronPill"));
+            template.Triggers.Add(hover);
+            return template;
+        }
+
+        // Lights the closure that WOULD merge using each block's existing drop-glow layer.
+        // Guarded by DragVisualKind.None on set and clear so a hover can never restyle or
+        // clear live drag-and-drop visuals.
+        private void ShowMergePreviewGlow(string firstBlockId, string secondBlockId)
+        {
+            ClearMergePreviewGlow();
+            if (!ShowcaseLayoutService.TryGetMergePreview(
+                    Layout,
+                    CurrentPage.PageId,
+                    firstBlockId,
+                    secondBlockId,
+                    out var closure))
+            {
+                return;
+            }
+
+            foreach (var member in closure)
+            {
+                if (!_blockVisuals.TryGetValue(member.BlockId, out var state) ||
+                    state?.Glow == null ||
+                    state.DragVisual != DragVisualKind.None)
+                {
+                    continue;
+                }
+
+                _mergePreviewBlockIds.Add(member.BlockId);
+                state.Glow.Visibility = Visibility.Visible;
+                var wash = new System.Windows.Media.Animation.DoubleAnimation(
+                    0,
+                    0.22,
+                    TimeSpan.FromMilliseconds(120));
+                state.Glow.BeginAnimation(
+                    OpacityProperty,
+                    wash,
+                    System.Windows.Media.Animation.HandoffBehavior.SnapshotAndReplace);
+            }
         }
 
         private void ClearMergePreviewGlow()
         {
-            // Chevrons arrive in commit 3.
+            foreach (var blockId in _mergePreviewBlockIds)
+            {
+                if (!_blockVisuals.TryGetValue(blockId, out var state) ||
+                    state?.Glow == null ||
+                    state.DragVisual != DragVisualKind.None)
+                {
+                    continue;
+                }
+
+                state.Glow.BeginAnimation(OpacityProperty, null);
+                state.Glow.Opacity = 0;
+                state.Glow.Visibility = Visibility.Collapsed;
+            }
+
             _mergePreviewBlockIds.Clear();
         }
 
