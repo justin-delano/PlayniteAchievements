@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Tests.StartPage
         {
             var views = StartPageViewCatalog.Views;
 
-            Assert.AreEqual(18, views.Count);
+            Assert.AreEqual(20, views.Count);
             CollectionAssert.AreEqual(
                 new[]
                 {
@@ -56,6 +56,15 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsFalse(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseProfileViewId)
                 .AllowMultipleInstances);
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseDualScoresViewId)
+                .HasSettings);
+            Assert.IsFalse(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseActivityCalendarViewId)
+                .HasSettings);
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseGameMosaicViewId)
+                .HasSettings);
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
         }
 
