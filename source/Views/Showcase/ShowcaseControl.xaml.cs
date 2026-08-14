@@ -299,9 +299,14 @@ namespace PlayniteAchievements.Views.Showcase
                             deferredWidget));
                     }),
                     System.Windows.Threading.DispatcherPriority.Background);
+                // While editing, clicks select and drag blocks instead of tunneling into widget
+                // content - embedded grids and charts otherwise run hit tests, focus moves, and
+                // selection work on every click. The widget menu rides on the block container so
+                // it stays reachable with the body inert.
+                widgetHost.IsHitTestVisible = EditLayoutButton.IsChecked != true;
                 if (EditLayoutButton.IsChecked == true)
                 {
-                    widgetHost.ContextMenu = BuildPlacedWidgetMenu(block, widget);
+                    border.ContextMenu = BuildPlacedWidgetMenu(block, widget);
                 }
 
                 content = widgetHost;
@@ -505,7 +510,8 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void SelectBlock(ShowcaseBlockSettings block)
         {
-            if (block == null)
+            if (block == null ||
+                string.Equals(_selectedBlockId, block.BlockId, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -913,7 +919,8 @@ namespace PlayniteAchievements.Views.Showcase
                 state.Container.Padding = editing ? new Thickness(2) : new Thickness(0);
                 if (state.Host != null)
                 {
-                    state.Host.ContextMenu = editing
+                    state.Host.IsHitTestVisible = !editing;
+                    state.Container.ContextMenu = editing
                         ? BuildPlacedWidgetMenu(state.Block, state.Widget)
                         : null;
                 }
