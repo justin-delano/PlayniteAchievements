@@ -154,6 +154,8 @@ namespace PlayniteAchievements.Views.Controls
                 // Category-summaries surfaces: full game-summary set, Cover kept, platform/playtime/
                 // last-played dropped (no per-category meaning). Friend-only columns are excluded at
                 // attach time since category rows are plain GameSummaryItem.
+                ["ShowcasePinnedGames"] = CreateGameSummaryVisibility(),
+                ["ShowcaseGameSummaries"] = CreateGameSummaryVisibility(lastUnlock: true),
                 ["ViewAchievementsCategorySummaries"] = CreateCategorySummaryVisibility(),
                 ["OverviewSelectedGameCategorySummaries"] = CreateCategorySummaryVisibility(),
                 ["FriendsOverviewCategorySummaries"] = CreateCategorySummaryVisibility(),

@@ -140,7 +140,9 @@ namespace PlayniteAchievements.Views.Controls
                     game: true,
                     friendAvatar: true,
                     friend: true,
-                    unlockDate: true)
+                    unlockDate: true),
+                ["ShowcasePinnedAchievements"] = CreateAchievementVisibility(status: false, game: true),
+                ["ShowcaseRecentAchievements"] = CreateAchievementVisibility(status: false, game: true)
             };
 
         private static IReadOnlyDictionary<string, bool> CreateAchievementVisibility(
