@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
@@ -482,7 +483,8 @@ namespace PlayniteAchievements.Tests.Models
             {
                 PlayniteGameId = Guid.NewGuid(),
                 GameName = "Alpha",
-                Progression = 40,
+                UnlockedAchievements = 4,
+                TotalAchievements = 10,
                 PlaytimeSeconds = 50,
                 LastUnlockUtc = new DateTime(2026, 1, 1)
             };
@@ -490,7 +492,8 @@ namespace PlayniteAchievements.Tests.Models
             {
                 PlayniteGameId = Guid.NewGuid(),
                 GameName = "Beta",
-                Progression = 90,
+                UnlockedAchievements = 9,
+                TotalAchievements = 10,
                 PlaytimeSeconds = 500,
                 LastUnlockUtc = new DateTime(2026, 7, 1)
             };
@@ -498,7 +501,8 @@ namespace PlayniteAchievements.Tests.Models
             {
                 PlayniteGameId = Guid.NewGuid(),
                 GameName = "Gamma",
-                Progression = 100,
+                UnlockedAchievements = 10,
+                TotalAchievements = 10,
                 IsCompleted = true,
                 PlaytimeSeconds = 5,
                 LastUnlockUtc = new DateTime(2026, 6, 1)
@@ -507,7 +511,7 @@ namespace PlayniteAchievements.Tests.Models
             {
                 PlayniteGameId = Guid.NewGuid(),
                 GameName = "Delta",
-                Progression = 0,
+                TotalAchievements = 10,
                 PlaytimeSeconds = 5000
             };
             var snapshot = new OverviewDataSnapshot
