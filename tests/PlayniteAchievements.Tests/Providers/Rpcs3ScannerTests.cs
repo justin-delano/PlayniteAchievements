@@ -515,6 +515,166 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_TropdirMultiSet_NeverBooted_AggregatesAsCollectionFromTrps()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var gameRoot = Path.Combine(tempDir, "Jak Trilogy");
+
+            try
+            {
+                // Empty trophy cache: no sub-game has ever been booted in RPCS3.
+                File.WriteAllBytes(Path.Combine(CreateRpcs3Root(rpcs3Root), "rpcs3.exe"), new byte[] { 0 });
+
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "PS3_GAME", "TROPDIR", "NPWR01818_00", "TROPHY.TRP"),
+                    "NPWR01818_00",
+                    "Jak and Daxter: The Precursor Legacy",
+                    "Jak 1 Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "PS3_GAME", "TROPDIR", "NPWR01819_00", "TROPHY.TRP"),
+                    "NPWR01819_00",
+                    "Jak II",
+                    "Jak 2 Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "PS3_GAME", "TROPDIR", "NPWR01820_00", "TROPHY.TRP"),
+                    "NPWR01820_00",
+                    "Jak 3",
+                    "Jak 3 Disc Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Jak and Daxter Trilogy",
+                    InstallDirectory = gameRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(3, data.Achievements.Count);
+                Assert.AreEqual("NPWR01818_00+NPWR01819_00+NPWR01820_00", data.ProviderGameKey);
+                CollectionAssert.AreEquivalent(
+                    new[] { "NPWR01818_00:0", "NPWR01819_00:0", "NPWR01820_00:0" },
+                    data.Achievements.Select(achievement => achievement.ApiName).ToArray());
+                CollectionAssert.AreEquivalent(
+                    new[] { "Jak and Daxter: The Precursor Legacy", "Jak II", "Jak 3" },
+                    data.Achievements.Select(achievement => achievement.Category).ToArray());
+                Assert.IsTrue(data.Achievements.All(achievement => !achievement.Unlocked));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_TropdirMultiSet_PartiallyBooted_AggregatesAsCollection()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var gameRoot = Path.Combine(tempDir, "Jak Trilogy");
+
+            try
+            {
+                // Only the first sub-game has been booted in RPCS3.
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01818_00", "Jak and Daxter: The Precursor Legacy", "Jak 1 Cache Trophy");
+
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "PS3_GAME", "TROPDIR", "NPWR01818_00", "TROPHY.TRP"),
+                    "NPWR01818_00",
+                    "Jak and Daxter: The Precursor Legacy",
+                    "Jak 1 Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "PS3_GAME", "TROPDIR", "NPWR01819_00", "TROPHY.TRP"),
+                    "NPWR01819_00",
+                    "Jak II",
+                    "Jak 2 Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "PS3_GAME", "TROPDIR", "NPWR01820_00", "TROPHY.TRP"),
+                    "NPWR01820_00",
+                    "Jak 3",
+                    "Jak 3 Disc Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Jak and Daxter Trilogy",
+                    InstallDirectory = gameRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(3, data.Achievements.Count);
+                CollectionAssert.AreEquivalent(
+                    new[] { "NPWR01818_00:0", "NPWR01819_00:0", "NPWR01820_00:0" },
+                    data.Achievements.Select(achievement => achievement.ApiName).ToArray());
+
+                // The booted sub-game reads from the RPCS3 trophy folder, the never-booted
+                // ones fall back to their on-disk TROPHY.TRP.
+                var bootedTrophy = data.Achievements.Single(achievement => achievement.ApiName == "NPWR01818_00:0");
+                Assert.AreEqual("Jak 1 Cache Trophy", bootedTrophy.DisplayName);
+                CollectionAssert.AreEquivalent(
+                    new[] { "Jak 2 Disc Trophy", "Jak 3 Disc Trophy" },
+                    data.Achievements
+                        .Where(achievement => achievement.ApiName != "NPWR01818_00:0")
+                        .Select(achievement => achievement.DisplayName)
+                        .ToArray());
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_MultiRegionTropdir_NeverBooted_RemainsUnmatched()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var gameRoot = Path.Combine(tempDir, "Demons Souls");
+
+            try
+            {
+                // Empty trophy cache: same-title region variants stay ambiguous because
+                // no trophy folder identifies which region the user actually plays.
+                File.WriteAllBytes(Path.Combine(CreateRpcs3Root(rpcs3Root), "rpcs3.exe"), new byte[] { 0 });
+
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "TROPDIR", "NPWR00011_00", "TROPHY.TRP"),
+                    "NPWR00011_00",
+                    "Demon's Souls",
+                    "JAP Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(gameRoot, "TROPDIR", "NPWR00033_00", "TROPHY.TRP"),
+                    "NPWR00033_00",
+                    "Demon's Souls",
+                    "EUR Disc Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Demon's Souls",
+                    InstallDirectory = gameRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNull(data);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_NpwrOverride_DisablesCollectionExpansion()
         {
             var tempDir = CreateTempDirectory();
@@ -1121,6 +1281,155 @@ namespace PlayniteAchievements.Providers.Tests
                 Assert.IsTrue(data.HasAchievements);
                 Assert.AreEqual("Bridge Trophy", data.Achievements[0].DisplayName);
                 Assert.AreEqual("NPWR00001_00", data.ProviderGameKey);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_SerialBridge_PkgMultiSetTropdir_AggregatesAsCollection()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+
+            try
+            {
+                // PKG multipack under RPCS3's own install root: TROPDIR carries one
+                // trophy set per sub-game and only the first was ever booted.
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01818_00", "Jak and Daxter: The Precursor Legacy", "Jak 1 Cache Trophy");
+
+                var installedTropdir = Path.Combine(rpcs3Root, "dev_hdd0", "game", "NPUA80643", "TROPDIR");
+                CreateTrpFile(
+                    Path.Combine(installedTropdir, "NPWR01818_00", "TROPHY.TRP"),
+                    "NPWR01818_00",
+                    "Jak and Daxter: The Precursor Legacy",
+                    "Jak 1 Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(installedTropdir, "NPWR01819_00", "TROPHY.TRP"),
+                    "NPWR01819_00",
+                    "Jak II",
+                    "Jak 2 Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(installedTropdir, "NPWR01820_00", "TROPHY.TRP"),
+                    "NPWR01820_00",
+                    "Jak 3",
+                    "Jak 3 Disc Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Renamed PKG Trilogy",
+                    InstallDirectory = Path.Combine(tempDir, "pkg", "NPUA80643")
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(3, data.Achievements.Count);
+                Assert.AreEqual("NPWR01818_00+NPWR01819_00+NPWR01820_00", data.ProviderGameKey);
+                CollectionAssert.AreEquivalent(
+                    new[] { "NPWR01818_00:0", "NPWR01819_00:0", "NPWR01820_00:0" },
+                    data.Achievements.Select(achievement => achievement.ApiName).ToArray());
+                CollectionAssert.AreEquivalent(
+                    new[] { "Jak and Daxter: The Precursor Legacy", "Jak II", "Jak 3" },
+                    data.Achievements.Select(achievement => achievement.Category).ToArray());
+                Assert.AreEqual(
+                    "Jak 1 Cache Trophy",
+                    data.Achievements.Single(achievement => achievement.ApiName == "NPWR01818_00:0").DisplayName);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_SerialBridge_PkgSameTitleRegionSets_PrefersBootedSet()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+
+            try
+            {
+                // Multi-region PKG layout: two same-title trophy sets, only one booted.
+                // The booted region must win and stay a single (unprefixed) set.
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR00200_00", "Region Game", "EUR Cache Trophy");
+
+                var installedTropdir = Path.Combine(rpcs3Root, "dev_hdd0", "game", "NPUA80644", "TROPDIR");
+                CreateTrpFile(
+                    Path.Combine(installedTropdir, "NPWR00100_00", "TROPHY.TRP"),
+                    "NPWR00100_00",
+                    "Region Game",
+                    "JAP Disc Trophy");
+                CreateTrpFile(
+                    Path.Combine(installedTropdir, "NPWR00200_00", "TROPHY.TRP"),
+                    "NPWR00200_00",
+                    "Region Game",
+                    "EUR Disc Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Renamed Region Game",
+                    InstallDirectory = Path.Combine(tempDir, "pkg", "NPUA80644")
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+                Assert.AreEqual("0", data.Achievements[0].ApiName);
+                Assert.AreEqual("EUR Cache Trophy", data.Achievements[0].DisplayName);
+                Assert.AreEqual("NPWR00200_00", data.ProviderGameKey);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void InGameTracking_PartiallyBootedCollection_WatchesOnlyExistingTrophyFolders()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+
+            try
+            {
+                // Only the first sub-game of the collection has a trophy folder.
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01818_00", "Jak and Daxter: The Precursor Legacy", "Jak 1 Cache Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Jak and Daxter Trilogy",
+                    InstallDirectory = Path.Combine(tempDir, "pkg", "NPUA80643")
+                };
+                var schema = new GameAchievementData
+                {
+                    ProviderKey = "RPCS3",
+                    ProviderGameKey = "NPWR01818_00+NPWR01819_00",
+                    Achievements = new List<AchievementDetail>
+                    {
+                        new AchievementDetail { ApiName = "NPWR01818_00:0" },
+                        new AchievementDetail { ApiName = "NPWR01819_00:0" }
+                    }
+                };
+
+                var registration = ((IInGameProgressSource)provider).TryRegister(game, schema);
+
+                Assert.IsNotNull(registration);
+                Assert.AreEqual(1, registration.WatchTargets.Count);
+                StringAssert.EndsWith(
+                    registration.WatchTargets[0],
+                    Path.Combine("NPWR01818_00", "TROPUSR.DAT"));
             }
             finally
             {
