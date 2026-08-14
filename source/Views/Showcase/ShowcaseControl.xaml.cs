@@ -140,7 +140,6 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            HarvestWidgetHosts();
             DashboardGrid.Children.Clear();
             _blockVisuals.Clear();
             DashboardGrid.RowDefinitions.Clear();
@@ -315,23 +314,6 @@ namespace PlayniteAchievements.Views.Showcase
             _blockVisuals[block.BlockId] = visualState;
             RefreshBlockChrome(visualState);
             return border;
-        }
-
-        // Detaches the built widget controls from the visual tree and parks them in the cache so
-        // the next build can re-adopt them instead of inflating fresh ones.
-        private void HarvestWidgetHosts()
-        {
-            foreach (var state in _blockVisuals.Values)
-            {
-                var host = state.Host;
-                if (host == null || string.IsNullOrWhiteSpace(state.Widget?.InstanceId))
-                {
-                    continue;
-                }
-
-                (host.Parent as Panel)?.Children.Remove(host);
-                _hostCache[state.Widget.InstanceId] = host;
-            }
         }
 
         // Drops cached controls for widgets that no longer exist, so deleted widgets do not pin
@@ -966,8 +948,9 @@ namespace PlayniteAchievements.Views.Showcase
             return true;
         }
 
-        // Persists and broadcasts a widget move/swap, keeping the built widget controls alive.
-        private void SaveAndReassignWidgets()
+        // Normalizes, persists, and broadcasts the layout. The flag keeps our own broadcast from
+        // bouncing back in as an external change and rebuilding a second time.
+        private void SaveAndPublish()
         {
             ShowcaseLayoutService.Normalize(Layout);
             ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
@@ -983,7 +966,12 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 _publishingConfigurationChange = false;
             }
+        }
 
+        // Persists a widget add/move/swap/delete, keeping the built widget controls in place.
+        private void SaveAndReassignWidgets()
+        {
+            SaveAndPublish();
             if (!TryReassignWidgetHostsInPlace())
             {
                 Rebuild();
@@ -992,27 +980,18 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void SaveAndRebuild()
         {
-            ShowcaseLayoutService.Normalize(Layout);
-            ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
-            ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
-            PruneHostCache();
-            _persist();
-            _publishingConfigurationChange = true;
-            try
-            {
-                ShowcaseConfigurationEvents.RaiseChanged();
-            }
-            finally
-            {
-                _publishingConfigurationChange = false;
-            }
-
+            SaveAndPublish();
             Rebuild();
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            Rebuild();
+            // The constructor already built the dashboard; rebuilding here would re-project
+            // every widget a second time before the first paint.
+            if (_blockVisuals.Count == 0)
+            {
+                Rebuild();
+            }
         }
 
         private void Overview_SnapshotChanged(object sender, EventArgs e)
