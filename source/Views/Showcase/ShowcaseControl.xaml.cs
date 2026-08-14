@@ -772,59 +772,37 @@ namespace PlayniteAchievements.Views.Showcase
             };
             System.Windows.Automation.AutomationProperties.SetName(chevron, Localize(labelKey));
             // Sits just inside the widget's own edge (like the cut lines, nothing hangs into
-            // the gap). Along the edge it rides the block's middle interior boundary — the
-            // same line the crossing cut line sits on — so the two always align; a block
-            // with no interior boundary centers on the edge instead.
+            // the gap), centered along that edge.
             var vertical = columnDirection != 0;
             if (vertical)
             {
                 chevron.Width = 28;
                 chevron.Height = 28;
+                chevron.VerticalAlignment = VerticalAlignment.Center;
                 chevron.HorizontalAlignment = columnDirection < 0
                     ? HorizontalAlignment.Left
                     : HorizontalAlignment.Right;
-                Grid.SetColumn(chevron, columnDirection < 0 ? block.Column : block.Column + block.ColumnSpan - 1);
-                var inset = columnDirection < 0
+                chevron.Margin = columnDirection < 0
                     ? new Thickness(6, 0, 0, 0)
                     : new Thickness(0, 0, 6, 0);
-                if (block.RowSpan > 1)
-                {
-                    var line = block.Row + block.RowSpan / 2;
-                    chevron.VerticalAlignment = VerticalAlignment.Bottom;
-                    chevron.Margin = new Thickness(inset.Left, 0, inset.Right, -14);
-                    Grid.SetRow(chevron, line - 1);
-                }
-                else
-                {
-                    chevron.VerticalAlignment = VerticalAlignment.Center;
-                    chevron.Margin = inset;
-                    Grid.SetRow(chevron, block.Row);
-                }
+                Grid.SetColumn(chevron, columnDirection < 0 ? block.Column : block.Column + block.ColumnSpan - 1);
+                Grid.SetRow(chevron, block.Row);
+                Grid.SetRowSpan(chevron, block.RowSpan);
             }
             else
             {
                 chevron.Width = 28;
                 chevron.Height = 28;
+                chevron.HorizontalAlignment = HorizontalAlignment.Center;
                 chevron.VerticalAlignment = rowDirection < 0
                     ? VerticalAlignment.Top
                     : VerticalAlignment.Bottom;
-                Grid.SetRow(chevron, rowDirection < 0 ? block.Row : block.Row + block.RowSpan - 1);
-                var inset = rowDirection < 0
+                chevron.Margin = rowDirection < 0
                     ? new Thickness(0, 6, 0, 0)
                     : new Thickness(0, 0, 0, 6);
-                if (block.ColumnSpan > 1)
-                {
-                    var line = block.Column + block.ColumnSpan / 2;
-                    chevron.HorizontalAlignment = HorizontalAlignment.Right;
-                    chevron.Margin = new Thickness(0, inset.Top, -14, inset.Bottom);
-                    Grid.SetColumn(chevron, line - 1);
-                }
-                else
-                {
-                    chevron.HorizontalAlignment = HorizontalAlignment.Center;
-                    chevron.Margin = inset;
-                    Grid.SetColumn(chevron, block.Column);
-                }
+                Grid.SetRow(chevron, rowDirection < 0 ? block.Row : block.Row + block.RowSpan - 1);
+                Grid.SetColumn(chevron, block.Column);
+                Grid.SetColumnSpan(chevron, block.ColumnSpan);
             }
 
             Panel.SetZIndex(chevron, 39);
