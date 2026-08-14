@@ -310,6 +310,7 @@ namespace PlayniteAchievements.Models
         private const string HideCompleted = "HideCompleted";
         private const string ShowRarityGlow = "ShowRarityGlow";
         private const string ShowCenterPercentage = "ShowCenterPercentage";
+        private const string ShowLegend = "ShowLegend";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
 
@@ -330,6 +331,12 @@ namespace PlayniteAchievements.Models
 
         public static void SetPieShowCenterPercentage(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowCenterPercentage, value);
+
+        public static bool GetPieShowLegend(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowLegend, true) ?? true;
+
+        public static void SetPieShowLegend(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ShowLegend, value);
 
         public static OverviewPieSmallSliceMode GetPieSmallSliceMode(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, SmallSliceMode, OverviewPieSmallSliceMode.Round);
@@ -468,6 +475,7 @@ namespace PlayniteAchievements.Models
                 case ShowcaseWidgetKind.Pie:
                     ShowcaseWidgetOptions.SetPieMode(settings, ShowcasePieMode.CompletedGames);
                     ShowcaseWidgetOptions.SetPieShowCenterPercentage(settings, true);
+                    ShowcaseWidgetOptions.SetPieShowLegend(settings, true);
                     ShowcaseWidgetOptions.SetPieSmallSliceMode(settings, OverviewPieSmallSliceMode.Round);
                     break;
                 case ShowcaseWidgetKind.Timeline:

@@ -259,7 +259,8 @@
             <ItemsControl DockPanel.Dock="Right"
                           ItemsSource="{Binding LegendRows}"
                           VerticalAlignment="Center"
-                          Margin="8,0,0,0">
+                          Margin="8,0,0,0"
+                          Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,3">

@@ -106,6 +106,13 @@ namespace PlayniteAchievements.Views.Showcase
                         OnOffLabel);
                     AddChoice(
                         panel,
+                        Localize("LOCPlayAch_Showcase_ShowLegend"),
+                        new[] { true, false },
+                        ShowcaseWidgetOptions.GetPieShowLegend(_settings),
+                        value => ShowcaseWidgetOptions.SetPieShowLegend(_settings, value),
+                        OnOffLabel);
+                    AddChoice(
+                        panel,
                         Localize("LOCPlayAch_Settings_OverviewPieSmallSliceMode"),
                         new[]
                         {
