@@ -359,6 +359,9 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetGameMosaicSource(settings, ShowcaseGameMosaicSource.Completed);
                     ShowcaseWidgetOptions.SetGameMosaicCount(settings, 24);
                     break;
+                case ShowcaseWidgetKind.ActivityCalendar:
+                    ShowcaseTimelineOptions.SetRange(settings, TimelineRange.OneYear);
+                    break;
             }
 
             return settings;
