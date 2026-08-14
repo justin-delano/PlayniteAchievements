@@ -978,19 +978,17 @@ namespace PlayniteAchievements.Views.Showcase
             ShowcaseBlockSettings block,
             OverviewDataSnapshot snapshot)
         {
+            // The container never changes BorderThickness or Padding: edit-mode chrome is drawn
+            // by an overlay layer so toggling edit mode cannot shift the widget layout.
             var border = new Border
             {
                 Margin = new Thickness(4),
                 AllowDrop = true,
                 Tag = block,
                 Focusable = EditLayoutButton.IsChecked == true,
-                BorderThickness = new Thickness(0),
-                Padding = EditLayoutButton.IsChecked == true
-                    ? new Thickness(2)
-                    : new Thickness(0)
+                BorderThickness = new Thickness(0)
             };
             border.SetResourceReference(Border.CornerRadiusProperty, "PlayAch.Radius.Section");
-            border.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Border");
             border.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.GridSurface");
             // Widgets can contain buttons, scroll viewers, and charts that consume bubbling
             // drag events. Tunneling at the block host keeps the illuminated target and the
@@ -1024,6 +1022,15 @@ namespace PlayniteAchievements.Views.Showcase
 
             var layers = new Grid();
             layers.Children.Add(content);
+            var editChrome = new Border
+            {
+                Visibility = Visibility.Collapsed,
+                IsHitTestVisible = false,
+                BorderThickness = new Thickness(2)
+            };
+            editChrome.SetResourceReference(Border.CornerRadiusProperty, "PlayAch.Radius.Section");
+            editChrome.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Border");
+            layers.Children.Add(editChrome);
             var dropGlow = new Border
             {
                 Visibility = Visibility.Collapsed,
@@ -1068,6 +1075,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 Block = block,
                 Container = border,
+                EditChrome = editChrome,
                 Glow = dropGlow,
                 StatusPanel = dropStatusPanel,
                 Status = dropStatus,
@@ -1588,12 +1596,13 @@ namespace PlayniteAchievements.Views.Showcase
                     state.Block.BlockId,
                     _selectedBlockId,
                     StringComparison.OrdinalIgnoreCase));
-            state.Container.BorderThickness = isValidTarget
+            state.EditChrome.Visibility = editing || isValidTarget
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            state.EditChrome.BorderThickness = isValidTarget
                 ? new Thickness(3)
-                : editing
-                    ? new Thickness(2)
-                    : new Thickness(0);
-            state.Container.SetResourceReference(
+                : new Thickness(2);
+            state.EditChrome.SetResourceReference(
                 Border.BorderBrushProperty,
                 emphasized ? "PlayAch.Brush.Accent" : "PlayAch.Brush.Border");
         }
@@ -1852,7 +1861,6 @@ namespace PlayniteAchievements.Views.Showcase
             foreach (var state in _blockVisuals.Values)
             {
                 state.Container.Focusable = editing;
-                state.Container.Padding = editing ? new Thickness(2) : new Thickness(0);
                 if (state.Host != null)
                 {
                     state.Host.IsHitTestVisible = !editing;
@@ -2147,6 +2155,10 @@ namespace PlayniteAchievements.Views.Showcase
             public ShowcaseBlockSettings Block { get; set; }
 
             public Border Container { get; set; }
+
+            // Non-hit-testable overlay that draws the edit-mode outline; keeping the outline
+            // off the container means toggling edit mode never changes the widget layout.
+            public Border EditChrome { get; set; }
 
             public Border Glow { get; set; }
 
