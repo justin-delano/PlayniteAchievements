@@ -80,9 +80,10 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(xaml, "x:Name=\"PreviousPageButton\"");
             StringAssert.Contains(xaml, "x:Name=\"PageSelector\"");
             StringAssert.Contains(xaml, "x:Name=\"NextPageButton\"");
-            StringAssert.Contains(xaml, "x:Name=\"EditToolsPanel\"");
-            StringAssert.Contains(xaml, "x:Name=\"WidgetActionButton\"");
-            // The Layout menu is gone: split/merge is tactile, on the selected block itself.
+            // The edit toolbar is gone: widget actions live on the blocks (add button and
+            // right-click menu) and split/merge is tactile, on the selected block itself.
+            Assert.IsFalse(xaml.Contains("EditToolsPanel"));
+            Assert.IsFalse(xaml.Contains("WidgetActionButton"));
             Assert.IsFalse(xaml.Contains("LayoutActionButton"));
             Assert.IsFalse(xaml.Contains("x:Name=\"SplitColumnsButton\""));
             Assert.IsFalse(xaml.Contains("x:Name=\"MergeLeftButton\""));

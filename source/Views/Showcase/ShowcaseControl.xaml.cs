@@ -190,7 +190,6 @@ namespace PlayniteAchievements.Views.Showcase
             AddTrackGrippers();
             UpdateLayoutHandles();
             _layoutSignature = ComputeLayoutSignature();
-            UpdateEditTools();
         }
 
         // The handles sit entirely outside the grid, in the margin edit mode reserves, so
@@ -1319,7 +1318,6 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             UpdateLayoutHandles();
-            UpdateEditTools();
         }
 
         private void Block_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -1691,7 +1689,6 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             _layoutSignature = ComputeLayoutSignature();
-            UpdateEditTools();
             return true;
         }
 
@@ -1857,58 +1854,10 @@ namespace PlayniteAchievements.Views.Showcase
                 RefreshBlockChrome(state);
             }
 
-            UpdateEditTools();
         }
 
         private ShowcaseBlockSettings SelectedBlock => CurrentPage.Blocks.FirstOrDefault(block =>
             string.Equals(block.BlockId, _selectedBlockId, StringComparison.OrdinalIgnoreCase));
-
-        private void UpdateEditTools()
-        {
-            var editing = EditLayoutButton.IsChecked == true;
-            EditToolsPanel.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
-            if (!editing)
-            {
-                return;
-            }
-
-            var block = SelectedBlock;
-            var widget = FindWidget(block?.WidgetInstanceId);
-            SelectedBlockText.Text = block == null
-                ? Localize("LOCPlayAch_Showcase_SelectBlock")
-                : string.Format(
-                    Localize("LOCPlayAch_Showcase_SelectedBlockFormat"),
-                    widget == null
-                        ? Localize("LOCPlayAch_Showcase_EmptyBlock")
-                        : GetWidgetName(widget),
-                    block.ColumnSpan,
-                    block.RowSpan);
-            WidgetActionButton.Content = widget == null
-                ? Localize("LOCPlayAch_Showcase_AddWidget")
-                : Localize("LOCPlayAch_Showcase_Widget");
-            WidgetActionButton.IsEnabled = block != null;
-        }
-
-        private void WidgetActionButton_Click(object sender, RoutedEventArgs e)
-        {
-            var block = SelectedBlock;
-            if (block == null)
-            {
-                return;
-            }
-
-            var widget = FindWidget(block.WidgetInstanceId);
-            if (widget == null)
-            {
-                OpenWidgetPicker(block, WidgetActionButton);
-                return;
-            }
-
-            var menu = BuildPlacedWidgetMenu(block, widget);
-            menu.PlacementTarget = WidgetActionButton;
-            menu.Placement = PlacementMode.Bottom;
-            menu.IsOpen = true;
-        }
 
         private void SplitBlock(
             string pageId,

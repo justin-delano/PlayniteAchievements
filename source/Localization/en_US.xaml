@@ -1227,9 +1227,6 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Widget">Widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettings">Widget settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettingsTitle">{0} settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_SelectBlock">Select a block</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_SelectedBlockFormat">{0} · {1}×{2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_EmptyBlock">Empty block</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ReplaceWidget">Replace widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DeleteWidget">Delete widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SplitAtFormat">Split {0} / {1}</sys:String>

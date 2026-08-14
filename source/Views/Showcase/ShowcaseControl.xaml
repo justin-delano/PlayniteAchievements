@@ -62,35 +62,6 @@
                     MinWidth="72"/>
         </Grid>
 
-        <Border x:Name="EditToolsPanel"
-                Grid.Row="1"
-                Visibility="Collapsed"
-                Background="{StaticResource PlayAch.Brush.Overlay.Tint.08}"
-                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                Padding="8,6"
-                Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="2*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="SelectedBlockText"
-                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis"/>
-                </StackPanel>
-                <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
-                    <Button x:Name="WidgetActionButton"
-                            Content="{DynamicResource LOCPlayAch_Showcase_Widget}"
-                            Click="WidgetActionButton_Click"
-                            Margin="4,0"/>
-                </WrapPanel>
-            </Grid>
-        </Border>
-
         <Grid x:Name="DashboardSurface"
               Grid.Row="2">
             <Grid x:Name="DashboardGrid"/>
