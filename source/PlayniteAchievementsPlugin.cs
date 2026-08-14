@@ -79,7 +79,6 @@ namespace PlayniteAchievements
         private readonly IFriendCacheManager _friendCacheManager;
         private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
-        private readonly FriendsRecentUnlocksDataCoordinator _friendsRecentUnlocksDataCoordinator;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly RayTrackService _rayTrackService;
@@ -495,11 +494,6 @@ namespace PlayniteAchievements
                         _logger);
                     _friendGameAchievementsDataCoordinator = new FriendGameAchievementsDataCoordinator(
                         _friendCacheManager,
-                        () => _settingsViewModel?.Settings?.Persisted,
-                        _logger);
-                    _friendsRecentUnlocksDataCoordinator = new FriendsRecentUnlocksDataCoordinator(
-                        _friendCacheManager,
-                        _friendsOverviewDataCoordinator,
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
                     if (_friendCacheManager != null)
@@ -1202,7 +1196,6 @@ namespace PlayniteAchievements
         private void FriendsOverviewDataCoordinator_SnapshotReleased(object sender, EventArgs e)
         {
             _friendGameAchievementsDataCoordinator?.Invalidate();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         // Settings-driven callers pass no args (projection-affecting settings need a full
@@ -1212,7 +1205,6 @@ namespace PlayniteAchievements
         {
             _friendsOverviewDataCoordinator?.Invalidate(args);
             _friendGameAchievementsDataCoordinator?.Invalidate();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         private static bool ShouldInvalidateFriendDataForSetting(string propertyName)
@@ -1306,7 +1298,6 @@ namespace PlayniteAchievements
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
-            try { _friendsRecentUnlocksDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsRecentUnlocksDataCoordinator"); }
             try { _friendGameAchievementsDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendGameAchievementsDataCoordinator"); }
             try { _friendsOverviewDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsOverviewDataCoordinator"); }
             DisposeStartPageViews();

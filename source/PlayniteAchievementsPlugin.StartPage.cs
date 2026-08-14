@@ -34,8 +34,6 @@ namespace PlayniteAchievements
             {
                 ExtensionName = L("LOCPlayAch_Title_PluginName"),
                 Views = StartPageViewCatalog.Views
-                    .Where(view => view.WidgetKind != StartPageWidgetKind.FriendsRecentUnlocksGrid
-                        || Settings.Persisted.EnableFriendsFeatures)
                     .Select(view => new StartPageViewArgsBase
                     {
                         ViewId = view.ViewId,
@@ -144,18 +142,6 @@ namespace PlayniteAchievements
 
             switch (widgetKind)
             {
-                case StartPageWidgetKind.FriendsRecentUnlocksGrid:
-                    return _friendsRecentUnlocksDataCoordinator == null || !Settings.Persisted.EnableFriendsFeatures
-                        ? null
-                        : new StartPageFriendsRecentUnlocksGridViewModel(
-                            _friendsRecentUnlocksDataCoordinator,
-                            Settings,
-                            _logger);
-                case StartPageWidgetKind.CompletedGamesPie:
-                case StartPageWidgetKind.ProviderPie:
-                case StartPageWidgetKind.RarityPie:
-                case StartPageWidgetKind.TrophyPie:
-                    return new StartPagePieWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
                 case StartPageWidgetKind.CollectionScoreCard:
                 case StartPageWidgetKind.PrestigeScoreCard:
                     return new StartPageScoreCardWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
@@ -174,13 +160,6 @@ namespace PlayniteAchievements
             var widgetKind = definition.WidgetKind;
             switch (widgetKind)
             {
-                case StartPageWidgetKind.FriendsRecentUnlocksGrid:
-                    return new StartPageFriendsRecentUnlocksGridView();
-                case StartPageWidgetKind.CompletedGamesPie:
-                case StartPageWidgetKind.ProviderPie:
-                case StartPageWidgetKind.RarityPie:
-                case StartPageWidgetKind.TrophyPie:
-                    return new StartPagePieWidgetView();
                 case StartPageWidgetKind.CollectionScoreCard:
                 case StartPageWidgetKind.PrestigeScoreCard:
                     return new StartPageScoreCardWidgetView();
@@ -214,7 +193,6 @@ namespace PlayniteAchievements
         internal void InvalidateStartPageDataForUi()
         {
             InvalidateStartPageData();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         private void DisposeStartPageViews()
@@ -468,6 +446,13 @@ namespace PlayniteAchievements
                 kind,
                 instanceId.ToString("N"));
 
+            // The four pie views share the showcase Pie kind; each seeds the distribution
+            // its view id has always shown.
+            if (kind == ShowcaseWidgetKind.Pie)
+            {
+                ShowcaseWidgetOptions.SetPieMode(settings, ResolvePieModeForView(viewId));
+            }
+
             // Migration: StartPage-hosted grid widgets used to share the fixed StartPage
             // surfaces edited on the Display tab. Seed each new per-instance surface from
             // the matching fixed surface so already-placed widgets keep their configured
@@ -486,6 +471,21 @@ namespace PlayniteAchievements
             showcase.StartPageInstances[key] = settings;
             PersistSettingsForUi();
             return settings;
+        }
+
+        private static ShowcasePieMode ResolvePieModeForView(string viewId)
+        {
+            switch (viewId)
+            {
+                case StartPageViewCatalog.ProviderPieViewId:
+                    return ShowcasePieMode.Provider;
+                case StartPageViewCatalog.RarityPieViewId:
+                    return ShowcasePieMode.Rarity;
+                case StartPageViewCatalog.TrophyPieViewId:
+                    return ShowcasePieMode.Trophy;
+                default:
+                    return ShowcasePieMode.CompletedGames;
+            }
         }
 
         private static string L(string key)

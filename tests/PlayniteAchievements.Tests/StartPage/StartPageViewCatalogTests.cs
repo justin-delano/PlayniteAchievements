@@ -13,13 +13,12 @@ namespace PlayniteAchievements.Tests.StartPage
         {
             var views = StartPageViewCatalog.Views;
 
-            Assert.AreEqual(20, views.Count);
+            Assert.AreEqual(19, views.Count);
             CollectionAssert.AreEqual(
                 new[]
                 {
                     StartPageViewCatalog.GameSummariesGridViewId,
                     StartPageViewCatalog.RecentUnlocksGridViewId,
-                    StartPageViewCatalog.FriendsRecentUnlocksGridViewId,
                     StartPageViewCatalog.CompletedGamesPieViewId,
                     StartPageViewCatalog.ProviderPieViewId,
                     StartPageViewCatalog.RarityPieViewId,
@@ -27,13 +26,12 @@ namespace PlayniteAchievements.Tests.StartPage
                     StartPageViewCatalog.CollectionScoreCardViewId,
                     StartPageViewCatalog.PrestigeScoreCardViewId
                 },
-                views.Take(9).Select(view => view.ViewId).ToArray());
+                views.Take(8).Select(view => view.ViewId).ToArray());
             CollectionAssert.IsSubsetOf(
                 new[]
                 {
                     StartPageWidgetKind.GameSummariesGrid,
                     StartPageWidgetKind.RecentUnlocksGrid,
-                    StartPageWidgetKind.FriendsRecentUnlocksGrid,
                     StartPageWidgetKind.CompletedGamesPie,
                     StartPageWidgetKind.ProviderPie,
                     StartPageWidgetKind.RarityPie,
@@ -43,10 +41,17 @@ namespace PlayniteAchievements.Tests.StartPage
                 },
                 views.Select(view => view.WidgetKind).ToArray());
 
-            Assert.IsTrue(views.Any(view =>
-                view.ViewId == StartPageViewCatalog.FriendsRecentUnlocksGridViewId &&
-                view.WidgetKind == StartPageWidgetKind.FriendsRecentUnlocksGrid &&
-                view.NameKey == "LOCPlayAch_StartPage_FriendsRecentAchievements"));
+            // The grid and pie views ride the showcase widget path under their original ids.
+            Assert.IsTrue(views
+                .Where(view => view.ViewId == StartPageViewCatalog.RecentUnlocksGridViewId ||
+                    view.ViewId == StartPageViewCatalog.GameSummariesGridViewId ||
+                    view.ViewId == StartPageViewCatalog.CompletedGamesPieViewId ||
+                    view.ViewId == StartPageViewCatalog.ProviderPieViewId ||
+                    view.ViewId == StartPageViewCatalog.RarityPieViewId ||
+                    view.ViewId == StartPageViewCatalog.TrophyPieViewId)
+                .All(view => view.ShowcaseWidgetKind.HasValue &&
+                    view.HasSettings &&
+                    view.AllowMultipleInstances));
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseTimelineViewId)
                 .AllowMultipleInstances);

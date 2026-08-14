@@ -26,7 +26,6 @@ namespace PlayniteAchievements.Services.StartPage
         public const string GameSummariesGridViewId = "PlayniteAchievements_GameSummariesGrid";
         public const string LegacyGamesOverviewGridViewId = "PlayniteAchievements_GamesOverviewGrid";
         public const string RecentUnlocksGridViewId = "PlayniteAchievements_RecentUnlocksGrid";
-        public const string FriendsRecentUnlocksGridViewId = "PlayniteAchievements_FriendsRecentUnlocksGrid";
         public const string CompletedGamesPieViewId = "PlayniteAchievements_CompletedGamesPie";
         public const string ProviderPieViewId = "PlayniteAchievements_ProviderPie";
         public const string RarityPieViewId = "PlayniteAchievements_RarityPie";
@@ -70,35 +69,44 @@ namespace PlayniteAchievements.Services.StartPage
                     HasSettings = true,
                     AllowMultipleInstances = true
                 },
-                new StartPageViewDefinition
-                {
-                    ViewId = FriendsRecentUnlocksGridViewId,
-                    WidgetKind = StartPageWidgetKind.FriendsRecentUnlocksGrid,
-                    NameKey = "LOCPlayAch_StartPage_FriendsRecentAchievements"
-                },
+                // The four pie views ride the showcase Pie widget under their original view
+                // ids; each seeds its pie mode at instance creation (see
+                // GetOrCreateStartPageWidgetSettings) and edits per-widget pie options.
                 new StartPageViewDefinition
                 {
                     ViewId = CompletedGamesPieViewId,
                     WidgetKind = StartPageWidgetKind.CompletedGamesPie,
-                    NameKey = "LOCPlayAch_Overview_GamesPieChart"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
+                    NameKey = "LOCPlayAch_Overview_GamesPieChart",
+                    HasSettings = true,
+                    AllowMultipleInstances = true
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = ProviderPieViewId,
                     WidgetKind = StartPageWidgetKind.ProviderPie,
-                    NameKey = "LOCPlayAch_Overview_ProviderDistribution"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
+                    NameKey = "LOCPlayAch_Overview_ProviderDistribution",
+                    HasSettings = true,
+                    AllowMultipleInstances = true
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = RarityPieViewId,
                     WidgetKind = StartPageWidgetKind.RarityPie,
-                    NameKey = "LOCPlayAch_Overview_RarityPieChart"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
+                    NameKey = "LOCPlayAch_Overview_RarityPieChart",
+                    HasSettings = true,
+                    AllowMultipleInstances = true
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = TrophyPieViewId,
                     WidgetKind = StartPageWidgetKind.TrophyPie,
-                    NameKey = "LOCPlayAch_Overview_TrophyPieChart"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
+                    NameKey = "LOCPlayAch_Overview_TrophyPieChart",
+                    HasSettings = true,
+                    AllowMultipleInstances = true
                 },
                 new StartPageViewDefinition
                 {
