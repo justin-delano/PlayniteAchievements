@@ -70,6 +70,22 @@ namespace PlayniteAchievements.Views.Showcase
             Rebuild();
         }
 
+        /// <summary>
+        /// Removes the page/edit control bar from this control's layout and returns it so the
+        /// host can place it elsewhere (the overview window hosts it in its header's top-right
+        /// slot). The named controls keep working wherever the bar lives.
+        /// </summary>
+        internal FrameworkElement DetachHeaderBar()
+        {
+            if (HeaderBar.Parent is Panel parent)
+            {
+                parent.Children.Remove(HeaderBar);
+                HeaderBar.Margin = new Thickness(0);
+            }
+
+            return HeaderBar;
+        }
+
         public void FocusInitialTarget()
         {
             PageSelector?.Focus();

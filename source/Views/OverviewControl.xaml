@@ -439,6 +439,26 @@
                     </StackPanel>
                 </StackPanel>
 
+                <!-- Right: showcase page/edit controls, re-hosted from ShowcaseControl so the
+                     dashboard below keeps the full tab-content height. -->
+                <ContentControl x:Name="ShowcaseHeaderHost"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Focusable="False">
+                    <ContentControl.Style>
+                        <Style TargetType="ContentControl">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Showcase}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ContentControl.Style>
+                </ContentControl>
+
                 <Button x:Name="FriendsClearSelectionButton"
                         Grid.Row="1"
                         Grid.Column="1"

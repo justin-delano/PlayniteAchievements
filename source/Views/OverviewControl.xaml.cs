@@ -226,6 +226,7 @@ namespace PlayniteAchievements.Views
                 _settings,
                 _persistSettingsForUi,
                 _playniteApi);
+            ShowcaseHeaderHost.Content = _showcase.DetachHeaderBar();
             ShowcaseContentHost.Content = _showcase;
         }
 

@@ -11,13 +11,15 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,8">
+        <!-- Detached by OverviewControl and re-hosted in the window header's top-right
+             slot so the dashboard gets the full height of the tab content area. -->
+        <Grid x:Name="HeaderBar" Grid.Row="0" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
@@ -53,7 +55,7 @@
                           Content="{DynamicResource LOCPlayAch_Showcase_EditLayout}"
                           Checked="EditLayoutButton_Changed"
                           Unchecked="EditLayoutButton_Changed"
-                          Margin="0,0,6,0"/>
+                          Margin="18,0,6,0"/>
             <Button x:Name="PageActionsButton"
                     Grid.Column="6"
                     Content="{DynamicResource LOCPlayAch_Showcase_PageActionsLabel}"
