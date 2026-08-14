@@ -131,11 +131,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(OverviewDataSnapshot snapshot)
         {
             var medals = new List<ProfileMedalViewModel>();
+            AddMedal(medals, "BadgeCompletedGame", snapshot.CompletedGames);
             AddMedal(medals, "BadgeRarityUltraRare", snapshot.TotalUltraRare);
             AddMedal(medals, "BadgeRarityRare", snapshot.TotalRare);
             AddMedal(medals, "BadgeRarityUncommon", snapshot.TotalUncommon);
             AddMedal(medals, "BadgeRarityCommon", snapshot.TotalCommon);
-            AddMedal(medals, "BadgeCompletedGame", snapshot.CompletedGames);
             return medals;
         }
 
