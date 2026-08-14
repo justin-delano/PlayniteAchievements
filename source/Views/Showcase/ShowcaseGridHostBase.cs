@@ -82,6 +82,32 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(FixedRowHeightProperty, value);
         }
 
+        public static readonly DependencyProperty ControlBarProperty =
+            DependencyProperty.Register(
+                nameof(ControlBar),
+                typeof(PlayniteAchievements.ViewModels.Items.GridControlBarViewModel),
+                typeof(ShowcaseGridHostBase),
+                new PropertyMetadata(null));
+
+        public PlayniteAchievements.ViewModels.Items.GridControlBarViewModel ControlBar
+        {
+            get => (PlayniteAchievements.ViewModels.Items.GridControlBarViewModel)GetValue(ControlBarProperty);
+            set => SetValue(ControlBarProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowControlBarProperty =
+            DependencyProperty.Register(
+                nameof(ShowControlBar),
+                typeof(bool),
+                typeof(ShowcaseGridHostBase),
+                new PropertyMetadata(false));
+
+        public bool ShowControlBar
+        {
+            get => (bool)GetValue(ShowControlBarProperty);
+            set => SetValue(ShowControlBarProperty, value);
+        }
+
         public static readonly DependencyProperty EnablePinReorderProperty =
             DependencyProperty.Register(
                 nameof(EnablePinReorder),

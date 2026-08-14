@@ -219,20 +219,16 @@ namespace PlayniteAchievements.Services.Showcase
                     break;
                 case ShowcaseWidgetKind.PinnedAchievements:
                     result.Achievements = ResolvePinnedAchievements(snapshot, settings.PinnedAchievements);
-                    result.AchievementRows = DisplayGridRowLimitHelper.Limit(
-                        MaterializePinRows(result.Achievements),
-                        achievementOptions?.MaxRows);
+                    result.AchievementRows = MaterializePinRows(result.Achievements);
                     break;
                 case ShowcaseWidgetKind.FavoriteGames:
-                    result.Games = DisplayGridRowLimitHelper.Limit(
-                        ResolveFavoriteGames(snapshot, settings, instance),
-                        gameOptions?.MaxRows);
+                    result.Games = ResolveFavoriteGames(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.IconMosaic:
                     result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
-                    result.AchievementRows = ResolveRecentAchievements(snapshot, achievementOptions);
+                    result.AchievementRows = ResolveRecentAchievements(snapshot);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
                     result.Games = ResolveGameSummaries(snapshot, instance, gameOptions);
@@ -592,15 +588,14 @@ namespace PlayniteAchievements.Services.Showcase
         }
 
         public static IReadOnlyList<AchievementDisplayItem> ResolveRecentAchievements(
-            OverviewDataSnapshot snapshot,
-            AchievementGridOptions options)
+            OverviewDataSnapshot snapshot)
         {
             // RecentAchievements is already sorted upstream (AchievementSortHelper,
-            // scope RecentAchievements) - do not re-sort.
-            return DisplayGridRowLimitHelper.Limit(
-                (snapshot?.RecentAchievements ?? new List<AchievementDisplayItem>())
-                    .Where(item => item != null),
-                options?.MaxRows);
+            // scope RecentAchievements) - do not re-sort. The MaxRows cap applies in the
+            // widget view model, after its control-bar search filter.
+            return (snapshot?.RecentAchievements ?? new List<AchievementDisplayItem>())
+                .Where(item => item != null)
+                .ToList();
         }
 
         public static IReadOnlyList<GameSummaryItem> ResolveGameSummaries(
@@ -622,7 +617,8 @@ namespace PlayniteAchievements.Services.Showcase
                 options?.SortDescending == false
                     ? System.ComponentModel.ListSortDirection.Ascending
                     : System.ComponentModel.ListSortDirection.Descending);
-            return DisplayGridRowLimitHelper.Limit(list, options?.MaxRows);
+            // The MaxRows cap applies in the widget view model, after its control-bar filters.
+            return list;
         }
 
         public static IReadOnlyList<GameSummaryItem> ResolveGameMosaic(

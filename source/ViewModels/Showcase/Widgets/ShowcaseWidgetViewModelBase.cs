@@ -1,7 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.Showcase;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
@@ -44,6 +51,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     {
         private string _columnSettingsKey;
         private object _gridOptions;
+        private GridControlBarViewModel _controlBar;
 
         protected ShowcaseGridWidgetViewModelBase()
         {
@@ -51,6 +59,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         }
 
         public BulkObservableCollection<TItem> Items { get; } = new BulkObservableCollection<TItem>();
+
+        /// <summary>Search/filter bar shown when the surface's ShowControlBar option is on.</summary>
+        public GridControlBarViewModel ControlBar
+        {
+            get => _controlBar;
+            protected set => SetValue(ref _controlBar, value);
+        }
 
         /// <summary>
         /// Persisted column-layout surface. Widgets that allow multiple instances get one
@@ -92,16 +107,30 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 ? ShowcaseGridSurfaces.ForInstance(BaseSurfaceKey, Projection?.Instance?.InstanceId)
                 : BaseSurfaceKey;
             GridOptions = Projection?.GridWidgetOptions;
+            RefreshItems();
+        }
 
+        /// <summary>Filter hook for the control bar; runs before the MaxRows cap.</summary>
+        protected virtual IEnumerable<TItem> FilterItems(IEnumerable<TItem> items) => items;
+
+        /// <summary>
+        /// Re-applies the control-bar filter and the surface's MaxRows cap over the projected
+        /// rows. The filter runs before the cap so searching reaches rows beyond the cap.
+        /// </summary>
+        protected void RefreshItems()
+        {
             var items = SelectItems(Projection) ?? Array.Empty<TItem>();
+            var visible = DisplayGridRowLimitHelper.Limit(
+                FilterItems(items),
+                (GridOptions as GridCommonOptions)?.MaxRows);
 
             // Replacing the collection resets the grid, which rebuilds every row (and re-resolves
             // its art). The projection hands back the same row objects when nothing changed, so
             // an unrelated refresh - another widget's option, a resize, a pin toggle - leaves the
             // grid alone.
-            if (!SameRows(items))
+            if (!SameRows(visible))
             {
-                Items.ReplaceAll(items);
+                Items.ReplaceAll(visible);
             }
         }
 
@@ -119,6 +148,92 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             }
 
             return index == Items.Count;
+        }
+    }
+
+    /// <summary>
+    /// Grid widget base for achievement rows: contributes a search box that filters by game
+    /// and achievement name before the MaxRows cap.
+    /// </summary>
+    public abstract class ShowcaseAchievementGridWidgetViewModelBase
+        : ShowcaseGridWidgetViewModelBase<AchievementDisplayItem>
+    {
+        private readonly SearchTextIndex<AchievementDisplayItem> _searchIndex =
+            new SearchTextIndex<AchievementDisplayItem>(item =>
+                SearchTextBuilder.ForRecentAchievement(item?.GameName, item?.DisplayName));
+        private string _searchText = string.Empty;
+
+        protected ShowcaseAchievementGridWidgetViewModelBase()
+        {
+            ControlBar = new GridControlBarViewModel
+            {
+                Search = new GridSearchControl(
+                    this,
+                    nameof(SearchText),
+                    () => SearchText,
+                    value => SearchText = value,
+                    ResourceProvider.GetString("LOCPlayAch_Filter_Achievements"),
+                    () => SearchText = string.Empty)
+            };
+        }
+
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                var normalized = value ?? string.Empty;
+                if (string.Equals(_searchText, normalized, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _searchText = normalized;
+                OnPropertyChanged(nameof(SearchText));
+                RefreshItems();
+            }
+        }
+
+        protected override IEnumerable<AchievementDisplayItem> FilterItems(
+            IEnumerable<AchievementDisplayItem> items)
+        {
+            var query = SearchQuery.From(SearchText);
+            if (!query.HasValue)
+            {
+                return items;
+            }
+
+            var list = (items ?? Enumerable.Empty<AchievementDisplayItem>())
+                .Where(item => item != null)
+                .ToList();
+            _searchIndex.Rebuild(list);
+            return list.Where(item => _searchIndex.Matches(item, query));
+        }
+    }
+
+    /// <summary>
+    /// Grid widget base for game rows: contributes the shared game-summaries control bar
+    /// (search plus provider, progress and activity filters) applied before the MaxRows cap.
+    /// </summary>
+    public abstract class ShowcaseGameGridWidgetViewModelBase
+        : ShowcaseGridWidgetViewModelBase<GameSummaryItem>
+    {
+        private readonly GameSummaryGridControlBarAdapter _controlBarAdapter =
+            new GameSummaryGridControlBarAdapter();
+
+        protected ShowcaseGameGridWidgetViewModelBase()
+        {
+            _controlBarAdapter.FilterChanged += (_, __) => RefreshItems();
+            ControlBar = _controlBarAdapter.ControlBar;
+        }
+
+        protected override IEnumerable<GameSummaryItem> FilterItems(IEnumerable<GameSummaryItem> items)
+        {
+            var list = (items ?? Enumerable.Empty<GameSummaryItem>())
+                .Where(item => item != null)
+                .ToList();
+            _controlBarAdapter.UpdateOptions(list);
+            return _controlBarAdapter.Apply(list);
         }
     }
 }

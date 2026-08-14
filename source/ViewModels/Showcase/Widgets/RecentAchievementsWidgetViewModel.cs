@@ -7,10 +7,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
     /// Backs the RecentAchievements widget: the shared achievement grid over the
-    /// snapshot's recent unlocks, capped by the per-instance item count option.
+    /// snapshot's recent unlocks, searched and capped by the per-instance grid options.
     /// </summary>
     public sealed class RecentAchievementsWidgetViewModel
-        : ShowcaseGridWidgetViewModelBase<AchievementDisplayItem>
+        : ShowcaseAchievementGridWidgetViewModelBase
     {
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.RecentAchievements;
 

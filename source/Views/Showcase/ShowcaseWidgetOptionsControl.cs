@@ -248,8 +248,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             var editor = new GridOptionsEditor
             {
-                Margin = new Thickness(0, 8, 0, 0),
-                ShowControlBarRow = false
+                Margin = new Thickness(0, 8, 0, 0)
             };
             object options;
             if (ShowcaseGridSurfaces.IsAchievementSurface(surfaceKey))

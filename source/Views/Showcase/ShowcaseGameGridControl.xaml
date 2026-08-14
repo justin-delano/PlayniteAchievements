@@ -16,7 +16,8 @@
                                        ShowMetadataPlaytime="{Binding ShowMetadataPlaytime, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
                                        ShowMetadataRegion="{Binding ShowMetadataRegion, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
                                        DisableRowSelection="True"
-                                       ShowControlBar="False"
+                                       ControlBar="{Binding ControlBar, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
+                                       ShowControlBar="{Binding ShowControlBar, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseGridHostBase}}"
                                        DelayInitialRenderUntilNormalized="True"
                                        RowPreviewMouseRightButtonDown="GridRow_PreviewMouseRightButtonDown"
                                        RowPreviewMouseRightButtonUp="GridRow_PreviewMouseRightButtonUp"/>

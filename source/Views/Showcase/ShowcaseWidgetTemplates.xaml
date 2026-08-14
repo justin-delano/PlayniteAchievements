@@ -481,6 +481,8 @@
     <DataTemplate DataType="{x:Type widgets:PinnedAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
                                                  ColumnSettingsKey="{Binding ColumnSettingsKey}"
+                                                 ControlBar="{Binding ControlBar}"
+                                                 ShowControlBar="{Binding GridOptions.ShowControlBar, FallbackValue=False}"
                                                  EnablePinReorder="True"
                                                  ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
                                                  FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
@@ -494,6 +496,8 @@
     <DataTemplate DataType="{x:Type widgets:FavoriteGamesWidgetViewModel}">
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
                                           ColumnSettingsKey="{Binding ColumnSettingsKey}"
+                                          ControlBar="{Binding ControlBar}"
+                                          ShowControlBar="{Binding GridOptions.ShowControlBar, FallbackValue=False}"
                                           EnablePinReorder="{Binding PinReorderEnabled}"
                                           ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
                                           FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
@@ -508,6 +512,8 @@
     <DataTemplate DataType="{x:Type widgets:RecentAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
                                                  ColumnSettingsKey="{Binding ColumnSettingsKey}"
+                                                 ControlBar="{Binding ControlBar}"
+                                                 ShowControlBar="{Binding GridOptions.ShowControlBar, FallbackValue=False}"
                                                  ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
                                                  FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
                                                  UseCoverImages="{Binding GridOptions.UseCoverImages, FallbackValue=False}"
@@ -520,6 +526,8 @@
     <DataTemplate DataType="{x:Type widgets:GameSummariesWidgetViewModel}">
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
                                           ColumnSettingsKey="{Binding ColumnSettingsKey}"
+                                          ControlBar="{Binding ControlBar}"
+                                          ShowControlBar="{Binding GridOptions.ShowControlBar, FallbackValue=False}"
                                           ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
                                           FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
                                           UseCoverImages="{Binding GridOptions.UseCoverImages, FallbackValue=False}"

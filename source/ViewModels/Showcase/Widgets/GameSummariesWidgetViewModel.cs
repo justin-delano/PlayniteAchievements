@@ -7,10 +7,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
     /// Backs the GameSummaries widget: the shared game-summaries grid over the snapshot's
-    /// game summaries, sorted/filtered/capped by the per-instance options.
+    /// game summaries, sorted/searched/capped by the per-instance options.
     /// </summary>
     public sealed class GameSummariesWidgetViewModel
-        : ShowcaseGridWidgetViewModelBase<GameSummaryItem>
+        : ShowcaseGameGridWidgetViewModelBase
     {
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.GameSummaries;
 

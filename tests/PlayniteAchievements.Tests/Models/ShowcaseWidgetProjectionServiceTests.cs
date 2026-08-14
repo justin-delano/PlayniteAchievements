@@ -475,7 +475,7 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
-        public void RecentAchievements_RespectMaxRowsOptionAndKeepSnapshotOrder()
+        public void RecentAchievements_ProjectUncappedAndResolvePerInstanceGridOptions()
         {
             var items = Enumerable.Range(0, 30)
                 .Select(i => new AchievementDisplayItem
@@ -488,33 +488,27 @@ namespace PlayniteAchievements.Tests.Models
             var snapshot = new OverviewDataSnapshot { RecentAchievements = items };
             var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.RecentAchievements };
 
-            var rows = ShowcaseWidgetProjectionService.ResolveRecentAchievements(
-                snapshot,
-                new AchievementGridOptions { MaxRows = 5 });
-
-            Assert.AreEqual(5, rows.Count);
-            CollectionAssert.AreEqual(items.Take(5).ToList(), rows.ToList());
-
-            Assert.AreEqual(
-                items.Count,
-                ShowcaseWidgetProjectionService.ResolveRecentAchievements(snapshot, null).Count);
+            // The resolver hands back the full snapshot order uncapped; the widget view model
+            // applies the MaxRows cap after its control-bar search filter.
+            var rows = ShowcaseWidgetProjectionService.ResolveRecentAchievements(snapshot);
+            Assert.AreEqual(items.Count, rows.Count);
+            CollectionAssert.AreEqual(items, rows.ToList());
 
             var catalog = new GridOptionsCatalog();
             var surfaceKey = ShowcaseGridSurfaces.ForInstance(
                 ShowcaseGridSurfaces.RecentAchievements,
                 instance.InstanceId);
-            catalog.GetAchievement(surfaceKey).MaxRows = 5;
             var built = ShowcaseWidgetProjectionService.Build(
                 snapshot,
                 new ShowcaseSettings(),
                 instance,
                 gridOptions: catalog);
-            Assert.AreEqual(5, built.AchievementRows.Count);
+            Assert.AreEqual(items.Count, built.AchievementRows.Count);
             Assert.AreSame(catalog.GetAchievement(surfaceKey), built.GridWidgetOptions);
         }
 
         [TestMethod]
-        public void GameSummaries_SortModesHideCompletedAndMaxRows()
+        public void GameSummaries_SortModesHideCompletedAndUncappedRows()
         {
             var oldest = new GameSummaryItem
             {
@@ -578,9 +572,11 @@ namespace PlayniteAchievements.Tests.Models
             var withoutCompleted = ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options);
             Assert.IsFalse(withoutCompleted.Contains(completed));
 
+            // MaxRows does not cap here: the widget view model applies it after its
+            // control-bar filters so searching reaches rows beyond the cap.
             instance.SetOption("HideCompleted", false);
             options.MaxRows = 2;
-            Assert.AreEqual(2, ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options).Count);
+            Assert.AreEqual(4, ShowcaseWidgetProjectionService.ResolveGameSummaries(snapshot, instance, options).Count);
 
             Assert.AreEqual(
                 4,

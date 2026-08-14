@@ -14,7 +14,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// substituted with the localized "unavailable" strings here.
     /// </summary>
     public sealed class PinnedAchievementsWidgetViewModel
-        : ShowcaseGridWidgetViewModelBase<AchievementDisplayItem>
+        : ShowcaseAchievementGridWidgetViewModelBase
     {
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedAchievements;
 

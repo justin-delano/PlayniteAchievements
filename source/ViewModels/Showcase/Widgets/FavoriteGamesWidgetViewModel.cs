@@ -13,7 +13,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// draws from showcase pins, whose order is user-controlled.
     /// </summary>
     public sealed class FavoriteGamesWidgetViewModel
-        : ShowcaseGridWidgetViewModelBase<GameSummaryItem>
+        : ShowcaseGameGridWidgetViewModelBase
     {
         private bool _pinReorderEnabled;
 
