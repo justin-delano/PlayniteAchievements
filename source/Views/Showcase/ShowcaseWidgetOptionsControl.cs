@@ -56,6 +56,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.RecentAchievements:
                 case ShowcaseWidgetKind.GameSummaries:
                 case ShowcaseWidgetKind.GameMosaic:
+                case ShowcaseWidgetKind.ActivityCalendar:
                     return true;
                 default:
                     return false;
@@ -244,6 +245,21 @@ namespace PlayniteAchievements.Views.Showcase
                         value => value
                             ? Localize("LOCPlayAch_Settings_Override_On")
                             : Localize("LOCPlayAch_Settings_Override_Off"));
+                    break;
+                case ShowcaseWidgetKind.ActivityCalendar:
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_Range"),
+                        new[]
+                        {
+                            TimelineRange.OneMonth,
+                            TimelineRange.ThreeMonths,
+                            TimelineRange.OneYear,
+                            TimelineRange.All
+                        },
+                        ShowcaseTimelineOptions.GetRange(_settings),
+                        value => ShowcaseTimelineOptions.SetRange(_settings, value),
+                        TimelineRangeName);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
                     AddChoice(
