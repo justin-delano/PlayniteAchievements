@@ -89,7 +89,6 @@ namespace PlayniteAchievements.Views.Showcase
                 ? custom
                 : Localize(ShowcaseWidgetCatalog.Get(_projection.Instance.Kind).NameKey);
             GlyphText.Text = GetWidgetGlyph(_projection.Instance.Kind);
-            RootBorder.ToolTip = TitleText.Text;
         }
 
         private void RebuildBody()
