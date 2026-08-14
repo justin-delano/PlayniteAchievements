@@ -74,7 +74,7 @@ namespace PlayniteAchievements.Tests.Models
             var settings = ShowcaseLayoutService.CreateDefault();
             var page = settings.Pages.Single();
             var scoreBlock = page.Blocks.Single(block =>
-                block.Row == 0 && block.Column == 1 && block.ColumnSpan == 2);
+                block.Row == 0 && block.Column == 2 && block.ColumnSpan == 1);
             var scoreId = scoreBlock.WidgetInstanceId;
 
             Assert.IsTrue(ShowcaseLayoutService.TryMerge(
