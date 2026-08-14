@@ -8,67 +8,117 @@
                     xmlns:widgets="clr-namespace:PlayniteAchievements.ViewModels.Showcase.Widgets">
 
     <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
+    <converters:ResourceKeyToImageSourceConverter x:Key="ShowcaseResourceKeyToImage"/>
 
     <!-- Implicit templates: the widget host sets BodyHost.Content to a per-kind view model and
          WPF resolves the matching template by runtime type. One template per kind. -->
 
-    <!-- Profile: avatar + name/subtitle, with expanded stats and streak lines. -->
+    <!-- Profile: avatar + name/subtitle over the provider identity (manual overrides win),
+         with a medal-count row outside compact and a stat strip when expanded. -->
     <DataTemplate DataType="{x:Type widgets:ProfileWidgetViewModel}">
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Image Grid.ColumnSpan="2"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Image Grid.RowSpan="2"
                    Stretch="UniformToFill"
                    Opacity="0.2"
                    IsHitTestVisible="False"
                    Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}"
                    helpers:AsyncImage.Uri="{Binding BackgroundPath}"
                    helpers:AsyncImage.DecodePixel="320"/>
-            <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                    BorderBrush="{DynamicResource PlayAch.Brush.Accent}"
-                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                    CornerRadius="{Binding AvatarCornerRadius}"
-                    Padding="2"
-                    Margin="0,0,12,0"
-                    VerticalAlignment="Center"
-                    ClipToBounds="True"
-                    Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVis}}">
-                <Image Width="{Binding AvatarSize}"
-                       Height="{Binding AvatarSize}"
-                       Stretch="UniformToFill"
-                       SnapsToDevicePixels="True"
-                       helpers:AsyncImage.Uri="{Binding AvatarPath}"
-                       helpers:AsyncImage.DecodePixel="{Binding AvatarDecodePixel}"/>
-            </Border>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="{Binding DisplayName}"
-                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                           FontWeight="SemiBold"
-                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
-                           TextWrapping="Wrap"/>
-                <TextBlock Text="{Binding Subtitle}"
-                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                           TextWrapping="Wrap"
-                           Visibility="{Binding ShowSubtitle, Converter={StaticResource BoolToVis}}"/>
-                <TextBlock Text="{Binding StatsLine}"
-                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                           TextWrapping="Wrap"
-                           Margin="0,2,0,0"
-                           Visibility="{Binding ShowStats, Converter={StaticResource BoolToVis}}"/>
-                <TextBlock Text="{Binding StreaksLine}"
-                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                           TextWrapping="Wrap"
-                           Margin="0,2,0,0"
-                           Visibility="{Binding ShowStreaks, Converter={StaticResource BoolToVis}}"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                        BorderBrush="{DynamicResource PlayAch.Brush.Accent}"
+                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                        CornerRadius="{Binding AvatarCornerRadius}"
+                        Padding="2"
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center"
+                        ClipToBounds="True"
+                        Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVis}}">
+                    <Image Width="{Binding AvatarSize}"
+                           Height="{Binding AvatarSize}"
+                           Stretch="UniformToFill"
+                           SnapsToDevicePixels="True"
+                           helpers:AsyncImage.Uri="{Binding AvatarPath}"
+                           helpers:AsyncImage.DecodePixel="{Binding AvatarDecodePixel}"/>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding DisplayName}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               FontWeight="SemiBold"
+                               FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Subtitle}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               TextWrapping="Wrap"
+                               Visibility="{Binding ShowSubtitle, Converter={StaticResource BoolToVis}}"/>
+                    <ItemsControl ItemsSource="{Binding Medals}"
+                                  Margin="0,5,0,0"
+                                  Visibility="{Binding ShowMedals, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,10,2">
+                                    <Image Source="{Binding IconKey, Converter={StaticResource ShowcaseResourceKeyToImage}}"
+                                           Width="16"
+                                           Height="16"
+                                           VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CountText}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                               Margin="4,0,0,0"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+            <ItemsControl Grid.Row="1"
+                          ItemsSource="{Binding Stats}"
+                          Margin="0,6,0,0"
+                          Visibility="{Binding ShowStatStrip, Converter={StaticResource BoolToVis}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                Margin="3"
+                                Padding="8,6"
+                                ClipToBounds="True">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Value}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                                           FontWeight="SemiBold"
+                                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Label}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </Grid>
     </DataTemplate>
 
