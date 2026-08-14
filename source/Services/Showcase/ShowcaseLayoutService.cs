@@ -747,8 +747,8 @@ namespace PlayniteAchievements.Services.Showcase
             switch (template)
             {
                 case ShowcasePageTemplate.Showcase:
-                    AddBlock(settings, page, 0, 0, 1, 1, ShowcaseWidgetKind.Profile);
-                    AddScoreBlock(settings, page, 0, 1, 1, 2, showCollectionScore, showPrestigeScore);
+                    AddBlock(settings, page, 0, 0, 1, 2, ShowcaseWidgetKind.Profile);
+                    AddScoreBlock(settings, page, 0, 2, 1, 1, showCollectionScore, showPrestigeScore);
                     AddBlock(settings, page, 1, 0, 2, 2, ShowcaseWidgetKind.PinnedAchievements);
                     AddBlock(settings, page, 1, 2, 1, 1, ShowcaseWidgetKind.Statistics);
                     AddBlock(settings, page, 2, 2, 1, 1, ShowcaseWidgetKind.FavoriteGames);
@@ -762,7 +762,7 @@ namespace PlayniteAchievements.Services.Showcase
                 case ShowcasePageTemplate.Collection:
                     AddBlock(settings, page, 0, 0, 2, 2, ShowcaseWidgetKind.PinnedAchievements);
                     AddBlock(settings, page, 0, 2, 2, 1, ShowcaseWidgetKind.FavoriteGames);
-                    AddBlock(settings, page, 2, 0, 1, 3, ShowcaseWidgetKind.IconMosaic);
+                    AddBlock(settings, page, 2, 0, 1, 3, ShowcaseWidgetKind.GameMosaic);
                     break;
                 default:
                     for (var row = 0; row < GridSize; row++)
