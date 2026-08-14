@@ -238,7 +238,13 @@ namespace PlayniteAchievements.Models.Settings
         public List<ShowcaseBlockSettings> Blocks { get; set; } =
             new List<ShowcaseBlockSettings>();
 
-        /// <summary>Star weights for the grid's rows; null means equal thirds.</summary>
+        /// <summary>
+        /// The page's grid dimension (3..5, normalized by ShowcaseLayoutService). Every page
+        /// is created on the finest 5x5 lattice; seeded layouts are merely authored coarsely.
+        /// </summary>
+        public int GridSize { get; set; } = 5;
+
+        /// <summary>Star weights for the grid's rows; null means equal shares.</summary>
         public List<double> RowWeights { get; set; }
 
         /// <summary>Star weights for the grid's columns; null means equal thirds.</summary>
@@ -250,6 +256,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 PageId = PageId,
                 Name = Name,
+                GridSize = GridSize,
                 Blocks = (Blocks ?? new List<ShowcaseBlockSettings>())
                     .Where(block => block != null)
                     .Select(block => block.Clone())

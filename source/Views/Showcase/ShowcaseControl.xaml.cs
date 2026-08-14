@@ -157,9 +157,10 @@ namespace PlayniteAchievements.Views.Showcase
             _cutGhost = null;
             DashboardGrid.RowDefinitions.Clear();
             DashboardGrid.ColumnDefinitions.Clear();
-            var rowWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights);
-            var columnWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.ColumnWeights);
-            for (var index = 0; index < ShowcaseLayoutService.GridSize; index++)
+            var gridSize = PageGridSize;
+            var rowWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights, gridSize);
+            var columnWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.ColumnWeights, gridSize);
+            for (var index = 0; index < gridSize; index++)
             {
                 DashboardGrid.RowDefinitions.Add(
                     new RowDefinition { Height = new GridLength(rowWeights[index], GridUnitType.Star) });
@@ -201,9 +202,12 @@ namespace PlayniteAchievements.Views.Showcase
         // column handles sit on the top and bottom edges, row handles on the left and right
         // edges. They hang half outside the grid, render above the block layer, and only
         // show in edit mode, so they never compete with block drag/split/merge gestures.
+        /// <summary>The current page's normalized grid dimension.</summary>
+        private int PageGridSize => ShowcaseLayoutService.NormalizeGridSize(CurrentPage?.GridSize ?? 0);
+
         private void AddTrackGrippers()
         {
-            for (var boundary = 0; boundary < ShowcaseLayoutService.GridSize - 1; boundary++)
+            for (var boundary = 0; boundary < PageGridSize - 1; boundary++)
             {
                 DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary, nearEdge: true));
                 DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary, nearEdge: false));
@@ -225,7 +229,7 @@ namespace PlayniteAchievements.Views.Showcase
                 Focusable = false,
                 Template = CreateTrackGripperTemplate(vertical)
             };
-            var lastCell = ShowcaseLayoutService.GridSize - 1;
+            var lastCell = PageGridSize - 1;
             var outwardOffset = TrackGripperSize + TrackGripperGap;
             if (vertical)
             {
@@ -369,11 +373,12 @@ namespace PlayniteAchievements.Views.Showcase
         {
             CurrentPage.RowWeights = null;
             CurrentPage.ColumnWeights = null;
-            ApplyTrackWeights(vertical: false, ShowcaseLayoutService.NormalizeTrackWeights(null));
-            ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(null));
+            ApplyTrackWeights(vertical: false, ShowcaseLayoutService.NormalizeTrackWeights(null, PageGridSize));
+            ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(null, PageGridSize));
             SaveAndPublish();
             _layoutSignature = ComputeLayoutSignature();
         }
+
 
         // Rebuilds the selected block's tactile layout affordances: dashed cut lines on each of
         // its interior cell boundaries (click cuts there; drag slides a ghost that snaps across
@@ -642,7 +647,10 @@ namespace PlayniteAchievements.Views.Showcase
         private double BoundaryOffset(bool vertical, int line)
         {
             var offset = 0d;
-            for (var index = 0; index < line && index < ShowcaseLayoutService.GridSize; index++)
+            var trackCount = vertical
+                ? DashboardGrid.ColumnDefinitions.Count
+                : DashboardGrid.RowDefinitions.Count;
+            for (var index = 0; index < line && index < trackCount; index++)
             {
                 offset += vertical
                     ? DashboardGrid.ColumnDefinitions[index].ActualWidth
@@ -934,20 +942,21 @@ namespace PlayniteAchievements.Views.Showcase
                 }
             }
 
-            // Track weights participate so an externally changed page layout rebuilds; local
-            // gripper drags refresh the stored signature themselves after applying in place.
-            builder.Append('#');
+            // Grid size and track weights participate so an externally changed page layout
+            // rebuilds; local gripper drags refresh the stored signature themselves after
+            // applying in place.
+            builder.Append('#').Append(PageGridSize).Append('#');
             AppendTrackWeights(builder, current.RowWeights);
             builder.Append('/');
             AppendTrackWeights(builder, current.ColumnWeights);
             return builder.ToString();
         }
 
-        private static void AppendTrackWeights(
+        private void AppendTrackWeights(
             System.Text.StringBuilder builder,
             List<double> weights)
         {
-            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(weights))
+            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(weights, PageGridSize))
             {
                 builder
                     .Append(weight.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))
