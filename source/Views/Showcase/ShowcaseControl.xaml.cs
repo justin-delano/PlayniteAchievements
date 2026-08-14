@@ -771,6 +771,8 @@ namespace PlayniteAchievements.Views.Showcase
                 ToolTip = Localize(labelKey)
             };
             System.Windows.Automation.AutomationProperties.SetName(chevron, Localize(labelKey));
+            // Sits just inside the widget's own edge (like the cut lines, nothing hangs into
+            // the gap), centered along that edge.
             var vertical = columnDirection != 0;
             if (vertical)
             {
@@ -781,8 +783,8 @@ namespace PlayniteAchievements.Views.Showcase
                     ? HorizontalAlignment.Left
                     : HorizontalAlignment.Right;
                 chevron.Margin = columnDirection < 0
-                    ? new Thickness(-14, 0, 0, 0)
-                    : new Thickness(0, 0, -14, 0);
+                    ? new Thickness(6, 0, 0, 0)
+                    : new Thickness(0, 0, 6, 0);
                 Grid.SetColumn(chevron, columnDirection < 0 ? block.Column : block.Column + block.ColumnSpan - 1);
                 Grid.SetRow(chevron, block.Row);
                 Grid.SetRowSpan(chevron, block.RowSpan);
@@ -796,8 +798,8 @@ namespace PlayniteAchievements.Views.Showcase
                     ? VerticalAlignment.Top
                     : VerticalAlignment.Bottom;
                 chevron.Margin = rowDirection < 0
-                    ? new Thickness(0, -14, 0, 0)
-                    : new Thickness(0, 0, 0, -14);
+                    ? new Thickness(0, 6, 0, 0)
+                    : new Thickness(0, 0, 0, 6);
                 Grid.SetRow(chevron, rowDirection < 0 ? block.Row : block.Row + block.RowSpan - 1);
                 Grid.SetColumn(chevron, block.Column);
                 Grid.SetColumnSpan(chevron, block.ColumnSpan);
