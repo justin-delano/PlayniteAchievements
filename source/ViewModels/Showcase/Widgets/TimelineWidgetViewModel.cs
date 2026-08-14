@@ -11,20 +11,6 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
-    /// <summary>One compact-sparkline bar: pixel height and a count tooltip.</summary>
-    public sealed class TimelineBarViewModel
-    {
-        public TimelineBarViewModel(double barHeight, string tooltip)
-        {
-            BarHeight = barHeight;
-            Tooltip = tooltip;
-        }
-
-        public double BarHeight { get; }
-
-        public string Tooltip { get; }
-    }
-
     /// <summary>A selectable timeline range button.</summary>
     public sealed class TimelineRangeOptionViewModel
     {
@@ -40,18 +26,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     }
 
     /// <summary>
-    /// Backs the Timeline widget. Compact shows a hand-rolled bar sparkline; larger viewports reuse
-    /// the existing LiveCharts column chart via TimelineViewModel, with range buttons when expanded.
+    /// Backs the Timeline widget: the reused LiveCharts column chart via TimelineViewModel with
+    /// range buttons, identical at every size.
     /// </summary>
     public sealed class TimelineWidgetViewModel : ShowcaseWidgetViewModelBase
     {
-        private const double SparklineMaxHeight = 80d;
-
         private readonly TimelineViewModel _timeline = new TimelineViewModel();
-        private bool _isCompact;
-        private bool _showRangeButtons;
         private bool _showChart;
-        private bool _showSparkline;
         private bool _showEmpty;
 
         public TimelineWidgetViewModel()
@@ -70,14 +51,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public bool ShowChart { get => _showChart; private set => SetValue(ref _showChart, value); }
 
-        public bool ShowSparkline { get => _showSparkline; private set => SetValue(ref _showSparkline, value); }
-
         public bool ShowEmpty { get => _showEmpty; private set => SetValue(ref _showEmpty, value); }
-
-        public bool ShowRangeButtons { get => _showRangeButtons; private set => SetValue(ref _showRangeButtons, value); }
-
-        public BulkObservableCollection<TimelineBarViewModel> SparklineBars { get; } =
-            new BulkObservableCollection<TimelineBarViewModel>();
 
         public IReadOnlyList<TimelineRangeOptionViewModel> Ranges { get; }
 
@@ -89,31 +63,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             _timeline.TimelineRange = ShowcaseTimelineOptions.GetRange(Projection?.Instance);
             _timeline.SetCounts(counts.ToDictionary(pair => pair.Key, pair => pair.Value));
 
-            _isCompact = Density == WidgetViewportDensity.Compact;
-            ShowRangeButtons = Density == WidgetViewportDensity.Expanded;
-
-            if (_isCompact)
-            {
-                var values = counts
-                    .OrderBy(pair => pair.Key)
-                    .Select(pair => Math.Max(0, pair.Value))
-                    .ToList();
-                values = values.Skip(Math.Max(0, values.Count - 14)).ToList();
-                var maximum = values.Count > 0 ? Math.Max(1, values.Max()) : 1;
-                SparklineBars.ReplaceAll(values.Select(value => new TimelineBarViewModel(
-                    Math.Max(2, SparklineMaxHeight * value / maximum),
-                    value.ToString("N0", FormattingCulture.Current))));
-                ShowSparkline = values.Count > 0;
-                ShowEmpty = values.Count == 0;
-                ShowChart = false;
-            }
-            else
-            {
-                SparklineBars.Clear();
-                ShowSparkline = false;
-                ShowEmpty = false;
-                ShowChart = true;
-            }
+            ShowEmpty = counts.Count == 0;
+            ShowChart = counts.Count > 0;
         }
 
         private void SetRange(object parameter)

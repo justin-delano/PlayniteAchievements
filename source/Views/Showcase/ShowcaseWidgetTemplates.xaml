@@ -259,8 +259,7 @@
             <ItemsControl DockPanel.Dock="Right"
                           ItemsSource="{Binding LegendRows}"
                           VerticalAlignment="Center"
-                          Margin="8,0,0,0"
-                          Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}">
+                          Margin="8,0,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,3">
@@ -304,7 +303,7 @@
         </DockPanel>
     </DataTemplate>
 
-    <!-- Timeline: compact bar sparkline, or the reused LiveCharts column chart with range buttons. -->
+    <!-- Timeline: the reused LiveCharts column chart with range buttons, identical at every size. -->
     <DataTemplate DataType="{x:Type widgets:TimelineWidgetViewModel}">
         <Grid>
             <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_NoData}"
@@ -314,26 +313,6 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
-            <ItemsControl ItemsSource="{Binding SparklineBars}"
-                          VerticalAlignment="Stretch"
-                          Visibility="{Binding ShowSparkline, Converter={StaticResource BoolToVis}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Rows="1"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="1,0">
-                            <Border Height="{Binding BarHeight}"
-                                    VerticalAlignment="Bottom"
-                                    CornerRadius="1"
-                                    ToolTip="{Binding Tooltip}"
-                                    Background="{DynamicResource PlayAch.Brush.Accent}"/>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
             <Grid Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -373,8 +352,7 @@
                 <ItemsControl Grid.Row="1"
                               ItemsSource="{Binding Ranges}"
                               HorizontalAlignment="Center"
-                              Margin="0,5,0,0"
-                              Visibility="{Binding ShowRangeButtons, Converter={StaticResource BoolToVis}}">
+                              Margin="0,5,0,0">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal"/>
@@ -394,7 +372,7 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Statistics: density-capped grid of value/label tiles. -->
+    <!-- Statistics: scrolling grid of value/label tiles. -->
     <DataTemplate DataType="{x:Type widgets:StatisticsWidgetViewModel}">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
@@ -650,16 +628,15 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <showcase:ActivityCalendarDayGutter Labels="{Binding WeekdayLabels}"
-                                                    ShowMonthBand="{Binding ShowChrome}"
-                                                    VerticalAlignment="Top"
-                                                    Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}"/>
+                                                    ShowMonthBand="True"
+                                                    VerticalAlignment="Top"/>
                 <ScrollViewer Grid.Column="1"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled">
                     <!-- Single custom-drawn visual: one element for the whole grid of cells,
                          with tooltips served from hit tests. -->
                     <showcase:ActivityCalendarHeatmap Weeks="{Binding Weeks}"
-                                                      ShowMonthLabels="{Binding ShowChrome}"
+                                                      ShowMonthLabels="True"
                                                       HorizontalAlignment="Left"
                                                       VerticalAlignment="Top"/>
                 </ScrollViewer>
@@ -667,8 +644,7 @@
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
-                        Margin="0,4,0,0"
-                        Visibility="{Binding ShowChrome, Converter={StaticResource BoolToVis}}">
+                        Margin="0,4,0,0">
                 <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_ActivityLegend_Less}"
                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                            Opacity="{StaticResource PlayAch.Opacity.Subtle}"

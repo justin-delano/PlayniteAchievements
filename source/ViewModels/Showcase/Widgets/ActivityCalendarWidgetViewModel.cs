@@ -76,14 +76,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
     /// <summary>
     /// Backs the ActivityCalendar widget: a contributions-style heatmap of unlocks per
-    /// day. Density decides whether the labels and legend have room; the projection owns
-    /// the window, the counts, and the intensity bucketing.
+    /// day, with its labels and legend at every size; the projection owns the window,
+    /// the counts, and the intensity bucketing.
     /// </summary>
     public sealed class ActivityCalendarWidgetViewModel : ShowcaseWidgetViewModelBase
     {
         private IReadOnlyList<ActivityCalendarWeekViewModel> _weeks =
             Array.Empty<ActivityCalendarWeekViewModel>();
-        private bool _showChrome = true;
         private bool _showEmpty;
 
         // The calendar the week columns were built from; rebuilding them re-renders the whole
@@ -125,17 +124,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         /// <summary>Sunday-first weekday labels, one per row; never changes.</summary>
         public IReadOnlyList<string> WeekdayLabels { get; }
 
-        /// <summary>
-        /// Month labels, weekday labels, and the legend only fit outside compact. Intentionally
-        /// shadows the base's protected computed value with a bindable snapshot refreshed per
-        /// Update, so the template re-evaluates it on density changes.
-        /// </summary>
-        public new bool ShowChrome
-        {
-            get => _showChrome;
-            private set => SetValue(ref _showChrome, value);
-        }
-
         public bool ShowEmpty
         {
             get => _showEmpty;
@@ -145,7 +133,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         protected override void Refresh()
         {
             var calendar = Projection?.ActivityCalendar ?? new ShowcaseActivityCalendar();
-            ShowChrome = base.ShowChrome;
             ShowEmpty = calendar.TotalCount == 0;
             if (ReferenceEquals(_builtCalendar, calendar))
             {

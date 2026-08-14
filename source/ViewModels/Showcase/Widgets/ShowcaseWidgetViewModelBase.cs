@@ -31,9 +31,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         protected WidgetViewportOrientation Orientation => _viewport.Orientation;
 
-        /// <summary>True outside compact, where widgets have room for labels and chrome.</summary>
-        protected bool ShowChrome => Density != WidgetViewportDensity.Compact;
-
         public void Update(ShowcaseWidgetProjection projection, WidgetViewportState viewport)
         {
             _projection = projection;

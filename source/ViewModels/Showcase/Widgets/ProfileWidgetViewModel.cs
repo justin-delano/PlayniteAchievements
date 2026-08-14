@@ -41,7 +41,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// <summary>
     /// Backs the Profile widget: avatar, display name, and background resolved from the
     /// provider identity with manual overrides, plus a medal-count row (rarity, completed,
-    /// trophies) outside compact and a four-tile stat strip when expanded.
+    /// trophies) and a four-tile stat strip. Density only scales the avatar; the same
+    /// content shows at every size.
     /// </summary>
     public sealed class ProfileWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -103,7 +104,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 Projection?.Snapshot?.CurrentUserIdentities);
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
             var compact = Density == WidgetViewportDensity.Compact;
-            var expanded = Density == WidgetViewportDensity.Expanded;
 
             BackgroundPath = resolved.BackgroundPath;
             HasBackground = !string.IsNullOrWhiteSpace(resolved.BackgroundPath);
@@ -119,13 +119,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 : resolved.DisplayName;
 
             Subtitle = resolved.Subtitle;
-            ShowSubtitle = !string.IsNullOrWhiteSpace(resolved.Subtitle) && !compact;
+            ShowSubtitle = !string.IsNullOrWhiteSpace(resolved.Subtitle);
 
             Medals.ReplaceAll(BuildMedals(snapshot));
-            ShowMedals = !compact && Medals.Count > 0;
+            ShowMedals = Medals.Count > 0;
 
             Stats.ReplaceAll(BuildStatStrip());
-            ShowStatStrip = expanded && Stats.Count > 0;
+            ShowStatStrip = Stats.Count > 0;
         }
 
         private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(OverviewDataSnapshot snapshot)

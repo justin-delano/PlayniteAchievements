@@ -56,19 +56,16 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
     /// <summary>
     /// Backs the Pie widget by reusing PieChartWithRadialIcons/PieChartViewModel. Builds the chart
-    /// for the configured distribution (completed games / provider / rarity / trophy) and, outside
-    /// compact, a legend capped to 8 (expanded) or 5 rows. A fresh chart is produced per refresh so
-    /// the bound control always reflects the latest data.
+    /// for the configured distribution (completed games / provider / rarity / trophy) plus a legend
+    /// capped to 8 rows at every size. A fresh chart is produced per refresh so the bound control
+    /// always reflects the latest data.
     /// </summary>
     public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase
     {
         private PieChartViewModel _chart = new PieChartViewModel();
-        private bool _showLegend;
         private bool _showCenterPercentage = true;
 
         public PieChartViewModel Chart { get => _chart; private set => SetValue(ref _chart, value); }
-
-        public bool ShowLegend { get => _showLegend; private set => SetValue(ref _showLegend, value); }
 
         /// <summary>Per-widget option; replaces the retired global pie display settings.</summary>
         public bool ShowCenterPercentage
@@ -163,10 +160,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             }
 
             Chart = chart;
-            ShowLegend = Density != WidgetViewportDensity.Compact;
-            var limit = Density == WidgetViewportDensity.Expanded ? 8 : 5;
             LegendRows.ReplaceAll((chart.LegendItems ?? Enumerable.Empty<LegendItem>())
-                .Take(limit)
+                .Take(8)
                 .Select(item => new PieLegendRowViewModel(item)));
         }
 

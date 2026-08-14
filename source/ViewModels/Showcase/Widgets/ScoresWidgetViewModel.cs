@@ -54,8 +54,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// <summary>
     /// Backs the Scores widget by reusing the existing <see cref="ScoreCardViewModel"/> /
     /// ScoreCardControl. Shows the collection and/or prestige card per the score mode, laid out in
-    /// a UniformGrid whose orientation follows the viewport, and featured outside compact. Each
-    /// card carries a cumulative score history line derived from the projection.
+    /// a UniformGrid whose orientation follows the viewport. Each card carries a cumulative score
+    /// history line derived from the projection; density only scales the card and chart sizes.
     /// </summary>
     public sealed class ScoresWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -97,12 +97,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             Rows = count > 1 && tall ? 2 : 1;
             Columns = count > 1 && !tall ? 2 : 1;
-            IsFeatured = Density != WidgetViewportDensity.Compact;
+            IsFeatured = true;
             MaxCardWidth = Density == WidgetViewportDensity.Expanded ? 440 : 360;
             ChartHeight = Density == WidgetViewportDensity.Expanded ? 90 : 60;
 
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
-            var showChart = Density != WidgetViewportDensity.Compact && history.Count >= 2;
+            var showChart = history.Count >= 2;
             if (Cards.Count > 0 &&
                 ReferenceEquals(_builtHistory, history) &&
                 ReferenceEquals(_builtSnapshot, Projection?.Snapshot) &&

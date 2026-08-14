@@ -25,10 +25,6 @@ namespace PlayniteAchievements.Models
 
         public WidgetViewportOrientation Orientation { get; private set; }
 
-        public bool ShowSecondaryStatistics => Density != WidgetViewportDensity.Compact;
-
-        public bool ShowLegend => Density != WidgetViewportDensity.Compact;
-
         public static WidgetViewportState Classify(double width, double height)
         {
             width = Math.Max(0, width);

@@ -22,8 +22,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     }
 
     /// <summary>
-    /// Backs the Statistics widget: a density-capped grid of stat tiles. Compact shows 3, Standard
-    /// 7, Expanded all; a Tall viewport uses a single column.
+    /// Backs the Statistics widget: a grid of stat tiles. Every size shows all tiles (the
+    /// body scrolls); a Tall viewport arranges them in a single column.
     /// </summary>
     public sealed class StatisticsWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -41,14 +41,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         protected override void Refresh()
         {
             var items = Projection?.Statistics ?? Array.Empty<ShowcaseStatistic>();
-            var limit = Density == WidgetViewportDensity.Compact
-                ? 3
-                : Density == WidgetViewportDensity.Standard
-                    ? 7
-                    : items.Count;
             Columns = Orientation == WidgetViewportOrientation.Tall ? 1 : 2;
             Tiles.ReplaceAll(items
-                .Take(limit)
                 .Select(item => new StatTileViewModel(
                     ShowcaseStatisticFormatter.Format(item),
                     ResourceProvider.GetString(item.LabelKey))));

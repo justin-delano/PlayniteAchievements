@@ -19,15 +19,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         protected override void Refresh()
         {
             var games = Projection?.Games ?? Array.Empty<GameSummaryItem>();
-            var compact = Density == WidgetViewportDensity.Compact;
-            var coverWidth = compact ? 44d : Density == WidgetViewportDensity.Expanded ? 72d : 56d;
+            var coverWidth = Density == WidgetViewportDensity.Compact
+                ? 44d
+                : Density == WidgetViewportDensity.Expanded ? 72d : 56d;
             var coverHeight = Math.Round(coverWidth * 1.4);
             var decodePixel = Math.Max(64, (int)Math.Ceiling(coverHeight * 2));
             var pinnable = ShowcaseWidgetOptions.GetGameMosaicSource(Projection?.Instance) ==
                 ShowcaseGameMosaicSource.Pinned;
-            var limit = compact ? 8 : games.Count;
             Tiles.ReplaceAll(games
-                .Take(limit)
                 .Select(game => new GameTileViewModel(
                     game,
                     pinnable,

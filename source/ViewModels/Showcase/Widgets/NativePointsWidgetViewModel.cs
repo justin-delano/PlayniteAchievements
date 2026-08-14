@@ -37,8 +37,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     }
 
     /// <summary>
-    /// Backs the NativePoints widget: horizontal bars of top-N provider or per-game points, capped
-    /// to 3 rows when compact and hiding the provider caption below the secondary-statistics band.
+    /// Backs the NativePoints widget: horizontal bars of provider or per-game points with their
+    /// provider captions, identical at every size (the body scrolls when short).
     /// </summary>
     public sealed class NativePointsWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -55,17 +55,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             }
 
             var max = Math.Max(1, entries.Max(entry => entry.Value));
-            var limit = Density == WidgetViewportDensity.Compact ? 3 : entries.Count;
-            var showSecondary = Density != WidgetViewportDensity.Compact;
             Rows.ReplaceAll(entries
-                .Take(limit)
                 .Select(entry => new ChartRowViewModel(
                     string.IsNullOrWhiteSpace(entry.LabelKey)
                         ? entry.Label ?? string.Empty
                         : ResourceProvider.GetString(entry.LabelKey),
                     entry.Value.ToString("N0", FormattingCulture.Current),
                     entry.SecondaryText,
-                    showSecondary,
+                    showSecondary: true,
                     entry.Value / max)));
         }
     }

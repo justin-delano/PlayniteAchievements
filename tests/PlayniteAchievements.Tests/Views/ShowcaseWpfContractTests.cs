@@ -332,7 +332,9 @@ namespace PlayniteAchievements.Tests.Views
             Assert.IsFalse(slideshow.Contains("while (next == _index)"));
             StringAssert.Contains(scoreCode, "IsFeaturedProperty");
             StringAssert.Contains(scoreXaml, "Binding IsFeatured, ElementName=Root");
-            StringAssert.Contains(scoresViewModel, "IsFeatured = Density != WidgetViewportDensity.Compact");
+            // Widgets show the same content at every size; density only scales presentation.
+            StringAssert.Contains(scoresViewModel, "IsFeatured = true;");
+            Assert.IsFalse(scoresViewModel.Contains("IsFeatured = Density"));
         }
 
         [TestMethod]

@@ -42,7 +42,6 @@ namespace PlayniteAchievements.Views.Showcase
         private int _index;
         private int _reloadVersion;
         private bool _paused;
-        private bool _showChrome;
 
         public ScreenshotSlideshowControl(ShowcaseWidgetInstanceSettings settings)
         {
@@ -99,7 +98,6 @@ namespace PlayniteAchievements.Views.Showcase
             Content = Build();
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-            SizeChanged += OnSizeChanged;
         }
 
         public void Dispose()
@@ -245,28 +243,19 @@ namespace PlayniteAchievements.Views.Showcase
                 _timer.Start();
             }
 
-            UpdateResponsiveChrome(ActualWidth, ActualHeight);
+            UpdateChromeVisibility();
             _ = ReloadAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) => Dispose();
 
-        private void OnSizeChanged(object sender, SizeChangedEventArgs e) =>
-            UpdateResponsiveChrome(e.NewSize.Width, e.NewSize.Height);
-
-        private void UpdateResponsiveChrome(double width, double height)
-        {
-            _showChrome = width >= 260 && height >= 160;
-            UpdateChromeVisibility();
-        }
-
         private void UpdateChromeVisibility()
         {
-            var canNavigate = _showChrome && _items.Count > 1;
+            var canNavigate = _items.Count > 1;
             _previous.Visibility = canNavigate ? Visibility.Visible : Visibility.Collapsed;
             _next.Visibility = canNavigate ? Visibility.Visible : Visibility.Collapsed;
-            _captionBar.Visibility = _showChrome ? Visibility.Visible : Visibility.Collapsed;
-            _transport.Visibility = _showChrome && _items.Count > 0
+            _captionBar.Visibility = Visibility.Visible;
+            _transport.Visibility = _items.Count > 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
             _pause.IsEnabled = _items.Count > 1;
