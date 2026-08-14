@@ -162,6 +162,28 @@ namespace PlayniteAchievements.Models
         }
 
         /// <summary>
+        /// Resolves the grid surface key owned by a widget instance, or null for kinds that do
+        /// not host a grid. Single-instance kinds keep their bare base key; multi-instance kinds
+        /// get a per-instance key.
+        /// </summary>
+        public static string ResolveWidgetSurface(ShowcaseWidgetKind kind, string instanceId)
+        {
+            switch (kind)
+            {
+                case ShowcaseWidgetKind.PinnedAchievements:
+                    return PinnedAchievements;
+                case ShowcaseWidgetKind.FavoriteGames:
+                    return PinnedGames;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    return ForInstance(RecentAchievements, instanceId);
+                case ShowcaseWidgetKind.GameSummaries:
+                    return ForInstance(GameSummaries, instanceId);
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
         /// Removes persisted per-instance grid surfaces whose widget instance no longer exists
         /// (dashboard or start-page hosted). Bare base keys are never pruned.
         /// </summary>
