@@ -12,6 +12,58 @@ namespace PlayniteAchievements.Views.Showcase
     /// </summary>
     public partial class ShowcaseGameGridControl : ShowcaseGridHostBase
     {
+        public static readonly DependencyProperty ShowMetadataPlatformProperty =
+            DependencyProperty.Register(
+                nameof(ShowMetadataPlatform),
+                typeof(bool),
+                typeof(ShowcaseGameGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowMetadataPlatform
+        {
+            get => (bool)GetValue(ShowMetadataPlatformProperty);
+            set => SetValue(ShowMetadataPlatformProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowMetadataPlaytimeProperty =
+            DependencyProperty.Register(
+                nameof(ShowMetadataPlaytime),
+                typeof(bool),
+                typeof(ShowcaseGameGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowMetadataPlaytime
+        {
+            get => (bool)GetValue(ShowMetadataPlaytimeProperty);
+            set => SetValue(ShowMetadataPlaytimeProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowMetadataRegionProperty =
+            DependencyProperty.Register(
+                nameof(ShowMetadataRegion),
+                typeof(bool),
+                typeof(ShowcaseGameGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowMetadataRegion
+        {
+            get => (bool)GetValue(ShowMetadataRegionProperty);
+            set => SetValue(ShowMetadataRegionProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowCompletionGlowProperty =
+            DependencyProperty.Register(
+                nameof(ShowCompletionGlow),
+                typeof(bool),
+                typeof(ShowcaseGameGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowCompletionGlow
+        {
+            get => (bool)GetValue(ShowCompletionGlowProperty);
+            set => SetValue(ShowCompletionGlowProperty, value);
+        }
+
         public ShowcaseGameGridControl()
         {
             InitializeComponent();

@@ -14,8 +14,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     {
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.GameSummaries;
 
-        protected override double CompactRowHeight => 32d;
-
         protected override IEnumerable<GameSummaryItem> SelectItems(
             ShowcaseWidgetProjection projection) => projection?.Games;
     }

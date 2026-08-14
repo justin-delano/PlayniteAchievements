@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Views.Controls
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
         private PersistedSettings _subscribedPersisted;
+        private GameSummaryGridOptions _subscribedShowcaseOptions;
         private const double DefaultCoverColumnWidth = 96;
         private const double DefaultPlatformColumnWidth = 44;
         private const double DefaultCapturesColumnWidth = 56;
@@ -377,7 +378,7 @@ namespace PlayniteAchievements.Views.Controls
                 nameof(ColumnSettingsKey),
                 typeof(string),
                 typeof(GameSummariesGridControl),
-                new PropertyMetadata("OverviewGameSummaries"));
+                new PropertyMetadata("OverviewGameSummaries", OnColumnSettingsKeyChanged));
 
         public string ColumnSettingsKey
         {
@@ -583,6 +584,7 @@ namespace PlayniteAchievements.Views.Controls
             UpdateLastPlayedDateMode(settings);
             UpdateColorRarityColumnsByRarity(settings);
             UpdateShowNameAboveProgress(settings);
+            UpdateShowcaseOptionsSubscription(settings);
             if (_subscribedPersisted == null)
             {
                 _subscribedPersisted = settings.Persisted;
@@ -874,18 +876,23 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             var surface = ResolveSurface();
-            // Showcase widgets persist column layout under their own (per-instance) surface key;
-            // the remaining per-surface behavior falls back to the Overview surface.
-            var columns = ShowcaseGridSurfaces.IsGameSurface(ColumnSettingsKey)
-                ? persisted.GridOptions.GetGameSummaries(ColumnSettingsKey).Columns
+            // Showcase widgets persist their whole grid-options record (columns and display
+            // options) under their own (per-instance) surface key; other surfaces resolve
+            // per-surface behavior through the GridSurface switches below.
+            var showcaseOptions = ShowcaseGridSurfaces.IsGameSurface(ColumnSettingsKey)
+                ? persisted.GridOptions.GetGameSummaries(ColumnSettingsKey)
+                : null;
+            var columns = showcaseOptions != null
+                ? showcaseOptions.Columns
                 : ResolveColumnLayoutOptions(persisted, surface);
-            return CreateSurfaceSettings(persisted, surface, columns);
+            return CreateSurfaceSettings(persisted, surface, columns, showcaseOptions);
         }
 
         private static GameSummarySurfaceSettings CreateSurfaceSettings(
             PersistedSettings persisted,
             GridSurface surface,
-            GridColumnLayoutOptions columns)
+            GridColumnLayoutOptions columns,
+            GameSummaryGridOptions showcaseOptions)
         {
             return new GameSummarySurfaceSettings
             {
@@ -937,9 +944,12 @@ namespace PlayniteAchievements.Views.Controls
                         columns.HeaderAlignments = map;
                     }
                 },
-                GetLastPlayedDateMode = () => ResolveLastPlayedDateMode(persisted, surface),
-                GetColorRarityColumnsByRarity = () => ResolveColorRarityColumnsByRarity(persisted, surface),
-                GetShowNameAboveProgress = () => ResolveShowNameAboveProgress(persisted, surface)
+                GetLastPlayedDateMode = () => showcaseOptions?.LastPlayedDateMode ??
+                    ResolveLastPlayedDateMode(persisted, surface),
+                GetColorRarityColumnsByRarity = () => showcaseOptions?.ColorRarityColumnsByRarity ??
+                    ResolveColorRarityColumnsByRarity(persisted, surface),
+                GetShowNameAboveProgress = () => showcaseOptions?.ShowNameAboveProgress ??
+                    ResolveShowNameAboveProgress(persisted, surface)
             };
         }
 
@@ -1341,6 +1351,62 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        // Showcase surfaces have no flat compatibility names, so PersistedSettings.PropertyChanged
+        // never fires for their edits; the control listens to the surface's option record directly.
+        private void UpdateShowcaseOptionsSubscription(PlayniteAchievementsSettings settings)
+        {
+            var options = ShowcaseGridSurfaces.IsGameSurface(ColumnSettingsKey)
+                ? settings?.Persisted?.GridOptions?.GetGameSummaries(ColumnSettingsKey)
+                : null;
+            if (ReferenceEquals(_subscribedShowcaseOptions, options))
+            {
+                return;
+            }
+
+            if (_subscribedShowcaseOptions != null)
+            {
+                _subscribedShowcaseOptions.PropertyChanged -= OnShowcaseOptionsChanged;
+            }
+
+            _subscribedShowcaseOptions = options;
+            if (_subscribedShowcaseOptions != null)
+            {
+                _subscribedShowcaseOptions.PropertyChanged += OnShowcaseOptionsChanged;
+            }
+        }
+
+        private void OnShowcaseOptionsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(GameSummaryGridOptions.LastPlayedDateMode))
+            {
+                UpdateLastPlayedDateMode(settings);
+            }
+
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(GameSummaryGridOptions.ColorRarityColumnsByRarity))
+            {
+                UpdateColorRarityColumnsByRarity(settings);
+            }
+
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(GameSummaryGridOptions.ShowNameAboveProgress))
+            {
+                UpdateShowNameAboveProgress(settings);
+            }
+        }
+
+        private static void OnColumnSettingsKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (GameSummariesGridControl)d;
+            var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+            control.UpdateShowcaseOptionsSubscription(settings);
+            control.UpdateLastPlayedDateMode(settings);
+            control.UpdateColorRarityColumnsByRarity(settings);
+            control.UpdateShowNameAboveProgress(settings);
+        }
+
         private static bool IsLegacyImageColumnRuntimeDefaultWidth(string key, double width)
         {
             return !string.IsNullOrWhiteSpace(key) &&
@@ -1596,6 +1662,11 @@ namespace PlayniteAchievements.Views.Controls
             {
                 _subscribedPersisted.PropertyChanged -= OnPersistedSettingsChanged;
                 _subscribedPersisted = null;
+            }
+            if (_subscribedShowcaseOptions != null)
+            {
+                _subscribedShowcaseOptions.PropertyChanged -= OnShowcaseOptionsChanged;
+                _subscribedShowcaseOptions = null;
             }
             RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GameSummariesGrid, null);

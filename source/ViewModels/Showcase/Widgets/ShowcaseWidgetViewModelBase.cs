@@ -38,13 +38,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// <summary>
     /// Base for the widgets that render one of the shared data grids. They differ only in the
     /// row type, which projection slice feeds them, and their persisted column surface; the
-    /// density-driven chrome and the per-instance surface key are handled here.
+    /// per-instance surface key and the grid's display-options record are handled here.
     /// </summary>
     public abstract class ShowcaseGridWidgetViewModelBase<TItem> : ShowcaseWidgetViewModelBase
     {
-        private bool _showColumnHeaders = true;
-        private double? _rowHeight;
         private string _columnSettingsKey;
+        private object _gridOptions;
 
         protected ShowcaseGridWidgetViewModelBase()
         {
@@ -52,18 +51,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         }
 
         public BulkObservableCollection<TItem> Items { get; } = new BulkObservableCollection<TItem>();
-
-        public bool ShowColumnHeaders
-        {
-            get => _showColumnHeaders;
-            private set => SetValue(ref _showColumnHeaders, value);
-        }
-
-        public double? RowHeight
-        {
-            get => _rowHeight;
-            private set => SetValue(ref _rowHeight, value);
-        }
 
         /// <summary>
         /// Persisted column-layout surface. Widgets that allow multiple instances get one
@@ -75,11 +62,20 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             private set => SetValue(ref _columnSettingsKey, value);
         }
 
+        /// <summary>
+        /// The live display-options record for this widget's grid surface
+        /// (AchievementGridOptions or GameSummaryGridOptions). Templates bind grid display
+        /// DPs through it; the record raises its own PropertyChanged, so edits from the
+        /// widget editor propagate without re-projection.
+        /// </summary>
+        public object GridOptions
+        {
+            get => _gridOptions;
+            private set => SetValue(ref _gridOptions, value);
+        }
+
         /// <summary>The widget kind's surface key, shared by every instance of that kind.</summary>
         protected abstract string BaseSurfaceKey { get; }
-
-        /// <summary>Row height applied when the widget is too small for comfortable rows.</summary>
-        protected abstract double CompactRowHeight { get; }
 
         /// <summary>False for single-instance widgets, whose surface never needs an instance suffix.</summary>
         protected virtual bool UsesPerInstanceSurface => true;
@@ -89,11 +85,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         protected override void Refresh()
         {
-            ShowColumnHeaders = ShowChrome;
-            RowHeight = ShowChrome ? (double?)null : CompactRowHeight;
+            // Must match ShowcaseGridSurfaces.ResolveWidgetSurface for this widget's kind:
+            // the projection resolves GridWidgetOptions from that key, and the grid persists
+            // its column layout under this one.
             ColumnSettingsKey = UsesPerInstanceSurface
                 ? ShowcaseGridSurfaces.ForInstance(BaseSurfaceKey, Projection?.Instance?.InstanceId)
                 : BaseSurfaceKey;
+            GridOptions = Projection?.GridWidgetOptions;
 
             var items = SelectItems(Projection) ?? Array.Empty<TItem>();
 

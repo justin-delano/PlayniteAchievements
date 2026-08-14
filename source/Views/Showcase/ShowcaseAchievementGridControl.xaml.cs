@@ -11,6 +11,45 @@ namespace PlayniteAchievements.Views.Showcase
     /// </summary>
     public partial class ShowcaseAchievementGridControl : ShowcaseGridHostBase
     {
+        public static readonly DependencyProperty ShowRarityGlowProperty =
+            DependencyProperty.Register(
+                nameof(ShowRarityGlow),
+                typeof(bool),
+                typeof(ShowcaseAchievementGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowRarityGlow
+        {
+            get => (bool)GetValue(ShowRarityGlowProperty);
+            set => SetValue(ShowRarityGlowProperty, value);
+        }
+
+        public static readonly DependencyProperty ColorNamesByRarityProperty =
+            DependencyProperty.Register(
+                nameof(ColorNamesByRarity),
+                typeof(bool),
+                typeof(ShowcaseAchievementGridControl),
+                new PropertyMetadata(false));
+
+        public bool ColorNamesByRarity
+        {
+            get => (bool)GetValue(ColorNamesByRarityProperty);
+            set => SetValue(ColorNamesByRarityProperty, value);
+        }
+
+        public static readonly DependencyProperty ColorRarityColumnsByRarityProperty =
+            DependencyProperty.Register(
+                nameof(ColorRarityColumnsByRarity),
+                typeof(bool),
+                typeof(ShowcaseAchievementGridControl),
+                new PropertyMetadata(false));
+
+        public bool ColorRarityColumnsByRarity
+        {
+            get => (bool)GetValue(ColorRarityColumnsByRarityProperty);
+            set => SetValue(ColorRarityColumnsByRarityProperty, value);
+        }
+
         public ShowcaseAchievementGridControl()
         {
             InitializeComponent();

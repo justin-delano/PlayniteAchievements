@@ -18,8 +18,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     {
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedAchievements;
 
-        protected override double CompactRowHeight => 30d;
-
         // One instance per dashboard, so the pins keep a single stable column layout.
         protected override bool UsesPerInstanceSurface => false;
 

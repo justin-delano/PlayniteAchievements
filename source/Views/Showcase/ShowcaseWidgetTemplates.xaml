@@ -475,13 +475,19 @@
         </ScrollViewer>
     </DataTemplate>
 
-    <!-- PinnedAchievements: the shared achievement grid over pinned rows with pin reordering. -->
+    <!-- PinnedAchievements: the shared achievement grid over pinned rows with pin reordering.
+         Display DPs bind through GridOptions, the widget's live grid-options record; when it is
+         null (no catalog supplied) each DP keeps its default. -->
     <DataTemplate DataType="{x:Type widgets:PinnedAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
                                                  ColumnSettingsKey="{Binding ColumnSettingsKey}"
                                                  EnablePinReorder="True"
-                                                 ShowColumnHeaders="{Binding ShowColumnHeaders}"
-                                                 FixedRowHeight="{Binding RowHeight}"/>
+                                                 ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
+                                                 FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
+                                                 UseCoverImages="{Binding GridOptions.UseCoverImages, FallbackValue=False}"
+                                                 ShowRarityGlow="{Binding GridOptions.ShowRarityGlow, FallbackValue=True}"
+                                                 ColorNamesByRarity="{Binding GridOptions.ColorNamesByRarity, FallbackValue=False}"
+                                                 ColorRarityColumnsByRarity="{Binding GridOptions.ColorRarityColumnsByRarity, FallbackValue=False}"/>
     </DataTemplate>
 
     <!-- Pinned games: the shared game-summaries grid over pinned (or favorite) games. -->
@@ -489,24 +495,38 @@
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
                                           ColumnSettingsKey="{Binding ColumnSettingsKey}"
                                           EnablePinReorder="{Binding PinReorderEnabled}"
-                                          ShowColumnHeaders="{Binding ShowColumnHeaders}"
-                                          FixedRowHeight="{Binding RowHeight}"/>
+                                          ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
+                                          FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
+                                          UseCoverImages="{Binding GridOptions.UseCoverImages, FallbackValue=False}"
+                                          ShowCompletionGlow="{Binding GridOptions.ShowCompletionGlow, FallbackValue=True}"
+                                          ShowMetadataPlatform="{Binding GridOptions.ShowMetadataPlatform, FallbackValue=True}"
+                                          ShowMetadataPlaytime="{Binding GridOptions.ShowMetadataPlaytime, FallbackValue=True}"
+                                          ShowMetadataRegion="{Binding GridOptions.ShowMetadataRegion, FallbackValue=True}"/>
     </DataTemplate>
 
     <!-- RecentAchievements: the shared achievement grid over the latest unlocks. -->
     <DataTemplate DataType="{x:Type widgets:RecentAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
                                                  ColumnSettingsKey="{Binding ColumnSettingsKey}"
-                                                 ShowColumnHeaders="{Binding ShowColumnHeaders}"
-                                                 FixedRowHeight="{Binding RowHeight}"/>
+                                                 ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
+                                                 FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
+                                                 UseCoverImages="{Binding GridOptions.UseCoverImages, FallbackValue=False}"
+                                                 ShowRarityGlow="{Binding GridOptions.ShowRarityGlow, FallbackValue=True}"
+                                                 ColorNamesByRarity="{Binding GridOptions.ColorNamesByRarity, FallbackValue=False}"
+                                                 ColorRarityColumnsByRarity="{Binding GridOptions.ColorRarityColumnsByRarity, FallbackValue=False}"/>
     </DataTemplate>
 
     <!-- GameSummaries: the shared game-summaries grid over the whole library. -->
     <DataTemplate DataType="{x:Type widgets:GameSummariesWidgetViewModel}">
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
                                           ColumnSettingsKey="{Binding ColumnSettingsKey}"
-                                          ShowColumnHeaders="{Binding ShowColumnHeaders}"
-                                          FixedRowHeight="{Binding RowHeight}"/>
+                                          ShowColumnHeaders="{Binding GridOptions.ShowColumnHeaders, FallbackValue=True}"
+                                          FixedRowHeight="{Binding GridOptions.RowHeight, FallbackValue={x:Null}}"
+                                          UseCoverImages="{Binding GridOptions.UseCoverImages, FallbackValue=False}"
+                                          ShowCompletionGlow="{Binding GridOptions.ShowCompletionGlow, FallbackValue=True}"
+                                          ShowMetadataPlatform="{Binding GridOptions.ShowMetadataPlatform, FallbackValue=True}"
+                                          ShowMetadataPlaytime="{Binding GridOptions.ShowMetadataPlaytime, FallbackValue=True}"
+                                          ShowMetadataRegion="{Binding GridOptions.ShowMetadataRegion, FallbackValue=True}"/>
     </DataTemplate>
 
     <!-- GameMosaic: dense wrap of game cover tiles; pinned-source tiles get a reorder/unpin menu. -->
