@@ -1156,13 +1156,13 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var addGlyph = new TextBlock
             {
-                Text = "",
+                Text = "\uE710",
                 FontSize = 34,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity = 0.85
             };
-            addGlyph.SetResourceReference(TextBlock.FontFamilyProperty, "PlayAch.FontFamily.Icon");
             addGlyph.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
             // A fixed-size centered target instead of a block-filling one: clicking anywhere
             // else in the empty block only selects it, keeping the cut lines reachable.
@@ -1174,16 +1174,12 @@ namespace PlayniteAchievements.Views.Showcase
                 Height = 68,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                ToolTip = Localize("LOCPlayAch_Showcase_AddWidget"),
                 BorderThickness = new Thickness(0),
                 Visibility = EditLayoutButton.IsChecked == true
                     ? Visibility.Visible
                     : Visibility.Collapsed
             };
             add.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
-            System.Windows.Automation.AutomationProperties.SetName(
-                add,
-                Localize("LOCPlayAch_Showcase_AddWidget"));
             add.Click += AddWidgetButton_Click;
             return add;
         }
@@ -1842,10 +1838,12 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void EditLayoutButton_Changed(object sender, RoutedEventArgs e)
         {
-            // The button names the mode a click switches to.
-            EditLayoutButton.Content = Localize(EditLayoutButton.IsChecked == true
-                ? "LOCPlayAch_Common_View"
-                : "LOCPlayAch_Common_Edit");
+            // The button shows the mode a click switches to: pencil (edit) or eye (view).
+            var switchingToEdit = EditLayoutButton.IsChecked != true;
+            EditLayoutButton.Content = switchingToEdit ? "\uE70F" : "\uE890";
+            EditLayoutButton.ToolTip = Localize(switchingToEdit
+                ? "LOCPlayAch_Common_Edit"
+                : "LOCPlayAch_Common_View");
             if (EditLayoutButton.IsChecked == true && string.IsNullOrWhiteSpace(_selectedBlockId))
             {
                 _selectedBlockId = CurrentPage.Blocks.FirstOrDefault()?.BlockId;

@@ -24,12 +24,14 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Header actions speak in glyphs; localized text lives in the tooltips. -->
             <Button x:Name="PreviousPageButton"
                     Grid.Column="0"
-                    Content="{DynamicResource LOCPlayAch_Showcase_PreviousPageLabel}"
+                    Content="&#xE76B;"
+                    FontFamily="Segoe MDL2 Assets"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PreviousPage}"
                     Click="PreviousPageButton_Click"
-                    MinWidth="72"/>
+                    MinWidth="36"/>
             <ComboBox x:Name="PageSelector"
                       Grid.Column="1"
                       DisplayMemberPath="Name"
@@ -39,10 +41,11 @@
                       Margin="6,0"/>
             <Button x:Name="NextPageButton"
                     Grid.Column="2"
-                    Content="{DynamicResource LOCPlayAch_Showcase_NextPageLabel}"
+                    Content="&#xE76C;"
+                    FontFamily="Segoe MDL2 Assets"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_NextPage}"
                     Click="NextPageButton_Click"
-                    MinWidth="72"/>
+                    MinWidth="36"/>
             <TextBlock x:Name="PageCountText"
                        Grid.Column="3"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
@@ -50,22 +53,24 @@
                        VerticalAlignment="Center"
                        Margin="10,0,0,0"/>
 
-            <!-- Shows the mode a click switches to: Edit while viewing, View while editing.
-                 The label is swapped in EditLayoutButton_Changed; MinWidth keeps the header
-                 from shifting between the two labels. -->
+            <!-- Shows the mode a click switches to: a pencil while viewing, an eye while
+                 editing. Glyph and tooltip are swapped in EditLayoutButton_Changed. -->
             <ToggleButton x:Name="EditLayoutButton"
                           Grid.Column="5"
-                          Content="{DynamicResource LOCPlayAch_Common_Edit}"
+                          Content="&#xE70F;"
+                          FontFamily="Segoe MDL2 Assets"
+                          ToolTip="{DynamicResource LOCPlayAch_Common_Edit}"
                           Checked="EditLayoutButton_Changed"
                           Unchecked="EditLayoutButton_Changed"
-                          MinWidth="56"
+                          MinWidth="36"
                           Margin="18,0,6,0"/>
             <Button x:Name="PageActionsButton"
                     Grid.Column="6"
-                    Content="{DynamicResource LOCPlayAch_Showcase_PageActionsLabel}"
+                    Content="&#xE712;"
+                    FontFamily="Segoe MDL2 Assets"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PageActions}"
                     Click="PageActionsButton_Click"
-                    MinWidth="72"/>
+                    MinWidth="36"/>
         </Grid>
 
         <Grid x:Name="DashboardSurface"

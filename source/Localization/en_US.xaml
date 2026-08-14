@@ -1218,11 +1218,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Title">Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PreviousPage">Previous Showcase page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NextPage">Next Showcase page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PreviousPageLabel">Previous</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_NextPageLabel">Next</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PageActions">Showcase page actions</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PageActionsLabel">Pages</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_AddWidget">Add Widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget">Widget</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettings">Widget settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettingsTitle">{0} settings</sys:String>
