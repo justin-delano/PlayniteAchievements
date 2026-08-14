@@ -145,7 +145,7 @@ namespace PlayniteAchievements.ViewModels
                 _refreshService.Providers,
                 _playniteApi,
                 _logger,
-                friendCache);
+                () => friendCache?.LoadCurrentUserIdentities());
             _selectedGamePipeline = new AchievementSelectionPipeline(_achievementDataService, _settings);
 
             // Initialize debounce timer

@@ -50,21 +50,21 @@ namespace PlayniteAchievements.Services.Overview
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly GameSummaryItemBuilder _summaryBuilder;
-        private readonly Friends.IFriendCacheManager _friendCache;
+        private readonly Func<List<Models.Friends.FriendIdentity>> _currentUserIdentityLoader;
 
         public OverviewDataBuilder(
             AchievementDataService achievementDataService,
             IReadOnlyList<IDataProvider> providers,
             IPlayniteAPI playniteApi,
             ILogger logger,
-            Friends.IFriendCacheManager friendCache = null)
+            Func<List<Models.Friends.FriendIdentity>> currentUserIdentityLoader = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _providers = providers ?? new List<IDataProvider>();
             _playniteApi = playniteApi;
             _logger = logger;
             _summaryBuilder = new GameSummaryItemBuilder(_providers, _playniteApi, _logger);
-            _friendCache = friendCache;
+            _currentUserIdentityLoader = currentUserIdentityLoader;
         }
 
         public OverviewDataSnapshot Build(
@@ -119,7 +119,7 @@ namespace PlayniteAchievements.Services.Overview
             try
             {
                 snapshot.CurrentUserIdentities =
-                    _friendCache?.LoadCurrentUserIdentities() ?? new List<Models.Friends.FriendIdentity>();
+                    _currentUserIdentityLoader?.Invoke() ?? new List<Models.Friends.FriendIdentity>();
             }
             catch (Exception ex)
             {

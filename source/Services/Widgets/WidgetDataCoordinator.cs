@@ -37,7 +37,7 @@ namespace PlayniteAchievements.Services.Widgets
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            Friends.IFriendCacheManager friendCache = null)
+            Func<List<PlayniteAchievements.Models.Friends.FriendIdentity>> currentUserIdentityLoader = null)
             : this(
                 () =>
                 {
@@ -53,7 +53,7 @@ namespace PlayniteAchievements.Services.Widgets
                         providers,
                         playniteApi,
                         logger,
-                        friendCache);
+                        currentUserIdentityLoader);
                     return builder.Build(settings, CancellationToken.None);
                 },
                 logger)

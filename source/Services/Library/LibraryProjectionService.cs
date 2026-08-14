@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Services.Library
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Func<bool> _isRefreshActive;
         private readonly ILogger _logger;
-        private readonly Friends.IFriendCacheManager _friendCache;
+        private readonly Func<List<Models.Friends.FriendIdentity>> _currentUserIdentityLoader;
         private readonly Dictionary<string, LibraryProjectionSnapshot> _cache =
             new Dictionary<string, LibraryProjectionSnapshot>(StringComparer.Ordinal);
         private readonly Dictionary<string, InFlightBuild> _inFlight =
@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Services.Library
             GameCustomDataStore customDataStore,
             ILogger logger,
             Func<bool> isRefreshActive = null,
-            Friends.IFriendCacheManager friendCache = null)
+            Func<List<Models.Friends.FriendIdentity>> currentUserIdentityLoader = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _providers = providers ?? new List<IDataProvider>();
@@ -61,7 +61,7 @@ namespace PlayniteAchievements.Services.Library
             _settings = settings;
             _isRefreshActive = isRefreshActive;
             _logger = logger;
-            _friendCache = friendCache;
+            _currentUserIdentityLoader = currentUserIdentityLoader;
 
             if (_cacheManager != null)
             {
@@ -283,7 +283,7 @@ namespace PlayniteAchievements.Services.Library
                 _providers,
                 _api,
                 _logger,
-                _friendCache);
+                _currentUserIdentityLoader);
 
             return new LibraryProjectionSnapshot
             {

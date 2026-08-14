@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Services.StartPage
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            Friends.IFriendCacheManager friendCache = null)
+            Func<List<PlayniteAchievements.Models.Friends.FriendIdentity>> currentUserIdentityLoader = null)
             : base(
                 achievementDataService,
                 libraryProjectionService,
@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Services.StartPage
                 playniteApi,
                 logger,
                 settings,
-                friendCache)
+                currentUserIdentityLoader)
         {
         }
 #endif

@@ -207,7 +207,7 @@ namespace PlayniteAchievements
                     PlayniteApi,
                     _logger,
                     Settings,
-                    FriendCacheManager);
+                    () => FriendCacheManager?.LoadCurrentUserIdentities());
             }
 
             return _startPageDataCoordinator;
