@@ -19,6 +19,8 @@ namespace PlayniteAchievements.Models.Settings
         ShowcasePinnedAchievements = 14,
         ShowcaseFavoriteGames = 15,
         ShowcaseIconMosaic = 16,
-        ShowcaseScreenshotSlideshow = 17
+        ShowcaseScreenshotSlideshow = 17,
+        ShowcaseActivityCalendar = 18,
+        ShowcaseGameMosaic = 19
     }
 }
