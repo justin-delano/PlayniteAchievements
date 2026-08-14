@@ -240,34 +240,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
             else
             {
-                widgetHost = new ShowcaseWidgetControl();
-                // Defer the projection (and with it template inflation - data grids and charts are
-                // expensive to build) to background priority so page switches and rebuilds paint
-                // the dashboard frame immediately and widgets fill in without blocking the click.
-                var deferredHost = widgetHost;
-                var deferredWidget = widget;
-                var deferredBlockId = block.BlockId;
-                Dispatcher.BeginInvoke(
-                    new Action(() =>
-                    {
-                        if (_disposed ||
-                            !_blockVisuals.TryGetValue(deferredBlockId, out var current) ||
-                            !ReferenceEquals(current?.Host, deferredHost))
-                        {
-                            return;
-                        }
-
-                        deferredHost.Apply(ShowcaseWidgetProjectionService.Build(
-                            _overview.LatestSnapshot ?? new OverviewDataSnapshot(),
-                            Layout,
-                            deferredWidget));
-                    }),
-                    System.Windows.Threading.DispatcherPriority.Background);
-                // While editing, clicks select and drag blocks instead of tunneling into widget
-                // content - embedded grids and charts otherwise run hit tests, focus moves, and
-                // selection work on every click. The widget menu rides on the block container so
-                // it stays reachable with the body inert.
-                widgetHost.IsHitTestVisible = EditLayoutButton.IsChecked != true;
+                widgetHost = CreateWidgetHost(block, widget);
                 if (EditLayoutButton.IsChecked == true)
                 {
                     border.ContextMenu = BuildPlacedWidgetMenu(block, widget);
@@ -334,6 +307,39 @@ namespace PlayniteAchievements.Views.Showcase
             return border;
         }
 
+        // Builds a widget control and defers its projection (and with it template inflation - data
+        // grids and charts are expensive to build) to background priority, so the click that
+        // triggered the change paints immediately and the widget body fills in right after.
+        private ShowcaseWidgetControl CreateWidgetHost(
+            ShowcaseBlockSettings block,
+            ShowcaseWidgetInstanceSettings widget)
+        {
+            var host = new ShowcaseWidgetControl();
+            // While editing, clicks select and drag blocks instead of tunneling into widget
+            // content - embedded grids and charts otherwise run hit tests, focus moves, and
+            // selection work on every click. The widget menu rides on the block container so
+            // it stays reachable with the body inert.
+            host.IsHitTestVisible = EditLayoutButton.IsChecked != true;
+            var blockId = block.BlockId;
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (_disposed ||
+                        !_blockVisuals.TryGetValue(blockId, out var current) ||
+                        !ReferenceEquals(current?.Host, host))
+                    {
+                        return;
+                    }
+
+                    host.Apply(ShowcaseWidgetProjectionService.Build(
+                        _overview.LatestSnapshot ?? new OverviewDataSnapshot(),
+                        Layout,
+                        widget));
+                }),
+                System.Windows.Threading.DispatcherPriority.Background);
+            return host;
+        }
+
         private Button CreateAddWidgetButton(ShowcaseBlockSettings block)
         {
             var emptyContent = new StackPanel
@@ -391,7 +397,7 @@ namespace PlayniteAchievements.Views.Showcase
                 () =>
                 {
                     ShowcaseLayoutService.DeleteWidget(Layout, widget.InstanceId);
-                    SaveAndRebuild();
+                    SaveAndReassignWidgets();
                 }));
             return menu;
         }
@@ -425,7 +431,7 @@ namespace PlayniteAchievements.Views.Showcase
                             return;
                         }
 
-                        SaveAndRebuild();
+                        SaveAndReassignWidgets();
                     });
                 item.IsEnabled = !captured.SingleInstancePerPage ||
                     !CurrentPage.Blocks
@@ -841,8 +847,10 @@ namespace PlayniteAchievements.Views.Showcase
                 if (widget != null &&
                     !hostsByInstanceId.TryGetValue(widget.InstanceId, out host))
                 {
-                    // The block gained a widget that has no built control (added elsewhere).
-                    return false;
+                    // A widget with no built control yet (just added): build only this one and
+                    // let the rest of the page keep its existing controls.
+                    host = CreateWidgetHost(block, widget);
+                    hostsByInstanceId[widget.InstanceId] = host;
                 }
 
                 assignments.Add((state, widget, host));
