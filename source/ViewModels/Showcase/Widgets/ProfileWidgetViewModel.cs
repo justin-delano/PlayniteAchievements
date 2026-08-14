@@ -1,22 +1,59 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
+    /// <summary>A medal-count entry: a runtime badge resource key plus its formatted count.</summary>
+    public sealed class ProfileMedalViewModel
+    {
+        public ProfileMedalViewModel(string iconKey, string countText)
+        {
+            IconKey = iconKey;
+            CountText = countText;
+        }
+
+        public string IconKey { get; }
+
+        public string CountText { get; }
+    }
+
+    /// <summary>A stat-strip tile: formatted value plus localized label.</summary>
+    public sealed class ProfileStatViewModel
+    {
+        public ProfileStatViewModel(string value, string label)
+        {
+            Value = value;
+            Label = label;
+        }
+
+        public string Value { get; }
+
+        public string Label { get; }
+    }
+
     /// <summary>
-    /// Backs the Profile widget: avatar, display name, and (outside compact) subtitle, with an
-    /// expanded stats line and streak line. Properties notify so the reused view model updates in
-    /// place when the viewport density changes.
+    /// Backs the Profile widget: avatar, display name, and background resolved from the
+    /// provider identity with manual overrides, plus a medal-count row (rarity, completed,
+    /// trophies) outside compact and a four-tile stat strip when expanded.
     /// </summary>
     public sealed class ProfileWidgetViewModel : ShowcaseWidgetViewModelBase
     {
+        private static readonly string[] StatStripKeys =
+        {
+            "completedGames",
+            "completion",
+            "playtime",
+            "activeDayRate"
+        };
+
         private string _backgroundPath;
         private bool _hasBackground;
         private string _avatarPath;
@@ -27,10 +64,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private string _displayName;
         private string _subtitle;
         private bool _showSubtitle;
-        private string _statsLine;
-        private bool _showStats;
-        private string _streaksLine;
-        private bool _showStreaks;
+        private bool _showMedals;
+        private bool _showStatStrip;
+
+        public BulkObservableCollection<ProfileMedalViewModel> Medals { get; } =
+            new BulkObservableCollection<ProfileMedalViewModel>();
+
+        public BulkObservableCollection<ProfileStatViewModel> Stats { get; } =
+            new BulkObservableCollection<ProfileStatViewModel>();
 
         public string BackgroundPath { get => _backgroundPath; private set => SetValue(ref _backgroundPath, value); }
 
@@ -52,59 +93,92 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public bool ShowSubtitle { get => _showSubtitle; private set => SetValue(ref _showSubtitle, value); }
 
-        public string StatsLine { get => _statsLine; private set => SetValue(ref _statsLine, value); }
+        public bool ShowMedals { get => _showMedals; private set => SetValue(ref _showMedals, value); }
 
-        public bool ShowStats { get => _showStats; private set => SetValue(ref _showStats, value); }
-
-        public string StreaksLine { get => _streaksLine; private set => SetValue(ref _streaksLine, value); }
-
-        public bool ShowStreaks { get => _showStreaks; private set => SetValue(ref _showStreaks, value); }
+        public bool ShowStatStrip { get => _showStatStrip; private set => SetValue(ref _showStatStrip, value); }
 
         protected override void Refresh()
         {
-            var profile = Projection?.Profile ?? new ShowcaseProfileSettings();
+            var resolved = Projection?.ResolvedProfile ?? ShowcaseProfileResolver.Resolve(
+                Projection?.Profile,
+                Projection?.Snapshot?.CurrentUserIdentities);
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
             var compact = Density == WidgetViewportDensity.Compact;
             var expanded = Density == WidgetViewportDensity.Expanded;
 
-            BackgroundPath = profile.BackgroundPath;
-            HasBackground = !string.IsNullOrWhiteSpace(profile.BackgroundPath);
+            BackgroundPath = resolved.BackgroundPath;
+            HasBackground = !string.IsNullOrWhiteSpace(resolved.BackgroundPath);
 
-            AvatarPath = profile.AvatarPath;
-            HasAvatar = !string.IsNullOrWhiteSpace(profile.AvatarPath);
+            AvatarPath = resolved.AvatarPath;
+            HasAvatar = !string.IsNullOrWhiteSpace(resolved.AvatarPath);
             AvatarSize = compact ? 42 : 72;
             AvatarCornerRadius = new CornerRadius((AvatarSize + 4) / 2);
             AvatarDecodePixel = Math.Max(64, (int)Math.Ceiling(AvatarSize * 2));
 
-            DisplayName = string.IsNullOrWhiteSpace(profile.DisplayName)
+            DisplayName = string.IsNullOrWhiteSpace(resolved.DisplayName)
                 ? ResourceProvider.GetString("LOCPlayAch_Showcase_Profile_DefaultName")
-                : profile.DisplayName;
+                : resolved.DisplayName;
 
-            Subtitle = profile.Subtitle;
-            ShowSubtitle = !string.IsNullOrWhiteSpace(profile.Subtitle) && !compact;
+            Subtitle = resolved.Subtitle;
+            ShowSubtitle = !string.IsNullOrWhiteSpace(resolved.Subtitle) && !compact;
 
-            ShowStats = expanded;
-            StatsLine = expanded
-                ? string.Format(
-                    FormattingCulture.Current,
-                    ResourceProvider.GetString("LOCPlayAch_Showcase_ProfileStats"),
-                    snapshot.TotalUnlocked,
-                    snapshot.GlobalProgressionPercent,
-                    snapshot.CompletedGames)
-                : string.Empty;
+            Medals.ReplaceAll(BuildMedals(snapshot));
+            ShowMedals = !compact && Medals.Count > 0;
 
-            var currentStreak = Projection?.Statistics?.FirstOrDefault(item =>
-                string.Equals(item?.Key, "currentStreak", StringComparison.Ordinal));
-            var longestStreak = Projection?.Statistics?.FirstOrDefault(item =>
-                string.Equals(item?.Key, "longestStreak", StringComparison.Ordinal));
-            ShowStreaks = expanded && currentStreak != null && longestStreak != null;
-            StreaksLine = ShowStreaks
-                ? string.Format(
-                    FormattingCulture.Current,
-                    ResourceProvider.GetString("LOCPlayAch_Showcase_ProfileStreaks"),
-                    ShowcaseStatisticFormatter.Format(currentStreak),
-                    ShowcaseStatisticFormatter.Format(longestStreak))
-                : string.Empty;
+            Stats.ReplaceAll(BuildStatStrip());
+            ShowStatStrip = expanded && Stats.Count > 0;
+        }
+
+        private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(OverviewDataSnapshot snapshot)
+        {
+            var summaries = snapshot.GameSummaries ?? new List<GameSummaryItem>();
+            var trophyPlatinum = summaries.Sum(game => game?.TrophyPlatinumCount ?? 0);
+            var trophyGold = summaries.Sum(game => game?.TrophyGoldCount ?? 0);
+            var trophySilver = summaries.Sum(game => game?.TrophySilverCount ?? 0);
+            var trophyBronze = summaries.Sum(game => game?.TrophyBronzeCount ?? 0);
+
+            var medals = new List<ProfileMedalViewModel>();
+            AddMedal(medals, "BadgeRarityUltraRare", snapshot.TotalUltraRare);
+            AddMedal(medals, "BadgeRarityRare", snapshot.TotalRare);
+            AddMedal(medals, "BadgeRarityUncommon", snapshot.TotalUncommon);
+            AddMedal(medals, "BadgeRarityCommon", snapshot.TotalCommon);
+            AddMedal(medals, "BadgeCompletedGame", snapshot.CompletedGames);
+            AddMedal(medals, "TrophyPlatinum", trophyPlatinum);
+            AddMedal(medals, "TrophyGold", trophyGold);
+            AddMedal(medals, "TrophySilver", trophySilver);
+            AddMedal(medals, "TrophyBronze", trophyBronze);
+            return medals;
+        }
+
+        private static void AddMedal(List<ProfileMedalViewModel> medals, string iconKey, int count)
+        {
+            if (count > 0)
+            {
+                medals.Add(new ProfileMedalViewModel(
+                    iconKey,
+                    count.ToString("N0", FormattingCulture.Current)));
+            }
+        }
+
+        private IReadOnlyList<ProfileStatViewModel> BuildStatStrip()
+        {
+            var statistics = Projection?.Statistics ?? Array.Empty<ShowcaseStatistic>();
+            var tiles = new List<ProfileStatViewModel>();
+            foreach (var key in StatStripKeys)
+            {
+                var stat = statistics.FirstOrDefault(item =>
+                    item != null && string.Equals(item.Key, key, StringComparison.Ordinal));
+                if (stat == null || !stat.HasValue)
+                {
+                    continue;
+                }
+
+                tiles.Add(new ProfileStatViewModel(
+                    ShowcaseStatisticFormatter.Format(stat),
+                    ResourceProvider.GetString(stat.LabelKey)));
+            }
+
+            return tiles;
         }
     }
 }
