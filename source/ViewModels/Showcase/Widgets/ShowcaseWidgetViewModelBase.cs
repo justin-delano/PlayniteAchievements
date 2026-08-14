@@ -94,7 +94,33 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             ColumnSettingsKey = UsesPerInstanceSurface
                 ? ShowcaseGridSurfaces.ForInstance(BaseSurfaceKey, Projection?.Instance?.InstanceId)
                 : BaseSurfaceKey;
-            Items.ReplaceAll(SelectItems(Projection) ?? Array.Empty<TItem>());
+
+            var items = SelectItems(Projection) ?? Array.Empty<TItem>();
+
+            // Replacing the collection resets the grid, which rebuilds every row (and re-resolves
+            // its art). The projection hands back the same row objects when nothing changed, so
+            // an unrelated refresh - another widget's option, a resize, a pin toggle - leaves the
+            // grid alone.
+            if (!SameRows(items))
+            {
+                Items.ReplaceAll(items);
+            }
+        }
+
+        private bool SameRows(System.Collections.Generic.IEnumerable<TItem> items)
+        {
+            var index = 0;
+            foreach (var item in items)
+            {
+                if (index >= Items.Count || !ReferenceEquals(Items[index], item))
+                {
+                    return false;
+                }
+
+                index++;
+            }
+
+            return index == Items.Count;
         }
     }
 }
