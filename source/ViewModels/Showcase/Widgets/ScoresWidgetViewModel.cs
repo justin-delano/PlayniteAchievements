@@ -1,16 +1,48 @@
 using System.Collections.Generic;
+using System.Linq;
+using LiveCharts;
+using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
+    /// One score card plus its cumulative score-over-time series for the mini line chart
+    /// rendered under the card.
+    /// </summary>
+    public sealed class ScoreCardWithHistoryViewModel
+    {
+        public ScoreCardWithHistoryViewModel(
+            ScoreCardViewModel card,
+            ChartValues<int> historyValues,
+            bool showChart,
+            string historyCaption)
+        {
+            Card = card;
+            HistoryValues = historyValues;
+            ShowChart = showChart;
+            HistoryCaption = historyCaption;
+        }
+
+        public ScoreCardViewModel Card { get; }
+
+        public ChartValues<int> HistoryValues { get; }
+
+        public bool ShowChart { get; }
+
+        public string HistoryCaption { get; }
+    }
+
+    /// <summary>
     /// Backs the Scores widget by reusing the existing <see cref="ScoreCardViewModel"/> /
     /// ScoreCardControl. Shows the collection and/or prestige card per the score mode, laid out in
-    /// a UniformGrid whose orientation follows the viewport, and featured outside compact.
+    /// a UniformGrid whose orientation follows the viewport, and featured outside compact. Each
+    /// card carries a cumulative score history line derived from the projection.
     /// </summary>
     public sealed class ScoresWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -18,9 +50,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private int _columns = 1;
         private bool _isFeatured = true;
         private double _maxCardWidth = 360;
+        private double _chartHeight = 60;
 
-        public BulkObservableCollection<ScoreCardViewModel> Cards { get; } =
-            new BulkObservableCollection<ScoreCardViewModel>();
+        public BulkObservableCollection<ScoreCardWithHistoryViewModel> Cards { get; } =
+            new BulkObservableCollection<ScoreCardWithHistoryViewModel>();
 
         public int Rows { get => _rows; private set => SetValue(ref _rows, value); }
 
@@ -29,6 +62,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public bool IsFeatured { get => _isFeatured; private set => SetValue(ref _isFeatured, value); }
 
         public double MaxCardWidth { get => _maxCardWidth; private set => SetValue(ref _maxCardWidth, value); }
+
+        public double ChartHeight { get => _chartHeight; private set => SetValue(ref _chartHeight, value); }
 
         protected override void Refresh()
         {
@@ -43,10 +78,15 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             Columns = count > 1 && !tall ? 2 : 1;
             IsFeatured = Density != WidgetViewportDensity.Compact;
             MaxCardWidth = Density == WidgetViewportDensity.Expanded ? 440 : 360;
+            ChartHeight = Density == WidgetViewportDensity.Expanded ? 90 : 60;
+
+            var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
+            var showChart = Density != WidgetViewportDensity.Compact && history.Count >= 2;
+            var rangeCaption = RangeCaption(ShowcaseTimelineOptions.GetRange(Projection?.Instance));
 
             var uniformBadges = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?
                 .UseUniformRarityBadges ?? false;
-            var cards = new List<ScoreCardViewModel>();
+            var cards = new List<ScoreCardWithHistoryViewModel>();
             if (includeCollection)
             {
                 var card = new ScoreCardViewModel(ScoreCardType.Collection);
@@ -56,7 +96,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     snapshot.CollectorLevelProgress,
                     snapshot.CollectorRank,
                     uniformBadges);
-                cards.Add(card);
+                cards.Add(new ScoreCardWithHistoryViewModel(
+                    card,
+                    new ChartValues<int>(history.Select(point => point.CollectionScore)),
+                    showChart,
+                    rangeCaption));
             }
 
             if (includePrestige)
@@ -68,10 +112,33 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     snapshot.PrestigeLevelProgress,
                     snapshot.PrestigeRank,
                     uniformBadges);
-                cards.Add(card);
+                cards.Add(new ScoreCardWithHistoryViewModel(
+                    card,
+                    new ChartValues<int>(history.Select(point => point.PrestigeScore)),
+                    showChart,
+                    rangeCaption));
             }
 
             Cards.ReplaceAll(cards);
+        }
+
+        private static string RangeCaption(TimelineRange range)
+        {
+            switch (range)
+            {
+                case TimelineRange.SevenDays:
+                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_7D");
+                case TimelineRange.FourteenDays:
+                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_14D");
+                case TimelineRange.OneMonth:
+                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_1M");
+                case TimelineRange.OneYear:
+                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_1Y");
+                case TimelineRange.All:
+                    return ResourceProvider.GetString("LOCPlayAch_Common_All");
+                default:
+                    return ResourceProvider.GetString("LOCPlayAch_TimeRange_3M");
+            }
         }
     }
 }
