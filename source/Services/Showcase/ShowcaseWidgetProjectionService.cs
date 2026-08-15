@@ -138,6 +138,12 @@ namespace PlayniteAchievements.Services.Showcase
         /// catalog was supplied.
         /// </summary>
         public object GridWidgetOptions { get; set; }
+
+        /// <summary>
+        /// Collection actually used by a pinned-source widget after falling back to the
+        /// protected Default collection. Reorder and unpin commands use this stable id.
+        /// </summary>
+        public string ResolvedPinCollectionId { get; set; }
     }
 
     public static class ShowcaseWidgetProjectionService
@@ -218,13 +224,30 @@ namespace PlayniteAchievements.Services.Showcase
                     result.ChartEntries = BuildNativePoints(snapshot, instance);
                     break;
                 case ShowcaseWidgetKind.PinnedAchievements:
-                    result.Achievements = ResolvePinnedAchievements(snapshot, settings.PinnedAchievements);
+                    var achievementCollection = ShowcasePinService.ResolveAchievementCollection(
+                        settings,
+                        ShowcaseWidgetOptions.GetPinCollectionId(instance));
+                    result.ResolvedPinCollectionId = achievementCollection?.CollectionId;
+                    result.Achievements = ResolvePinnedAchievements(snapshot, achievementCollection?.Pins);
                     result.AchievementRows = MaterializePinRows(result.Achievements);
                     break;
                 case ShowcaseWidgetKind.FavoriteGames:
+                    if (ShowcaseWidgetOptions.GetFavoriteSource(instance) ==
+                        ShowcaseFavoriteGameSource.ShowcasePins)
+                    {
+                        result.ResolvedPinCollectionId = ShowcasePinService.ResolveGameCollection(
+                            settings,
+                            ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
+                    }
                     result.Games = ResolveFavoriteGames(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.IconMosaic:
+                    if (ShowcaseWidgetOptions.GetMosaicSource(instance) == ShowcaseMosaicSource.Pinned)
+                    {
+                        result.ResolvedPinCollectionId = ShowcasePinService.ResolveAchievementCollection(
+                            settings,
+                            ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
+                    }
                     result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
@@ -234,6 +257,12 @@ namespace PlayniteAchievements.Services.Showcase
                     result.Games = ResolveGameSummaries(snapshot, instance);
                     break;
                 case ShowcaseWidgetKind.GameMosaic:
+                    if (ShowcaseWidgetOptions.GetGameMosaicSource(instance) == ShowcaseGameMosaicSource.Pinned)
+                    {
+                        result.ResolvedPinCollectionId = ShowcasePinService.ResolveGameCollection(
+                            settings,
+                            ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
+                    }
                     result.Games = ResolveGameMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
@@ -547,19 +576,22 @@ namespace PlayniteAchievements.Services.Showcase
                     .ToList();
             }
 
-            return ResolvePinnedGameSummaries(summaries, settings);
+            var collection = ShowcasePinService.ResolveGameCollection(
+                settings,
+                ShowcaseWidgetOptions.GetPinCollectionId(instance));
+            return ResolvePinnedGameSummaries(summaries, collection?.GameIds);
         }
 
         /// <summary>Pinned games in pin order; unknown ids are skipped.</summary>
         private static IReadOnlyList<GameSummaryItem> ResolvePinnedGameSummaries(
             IReadOnlyList<GameSummaryItem> summaries,
-            ShowcaseSettings settings)
+            IEnumerable<Guid> pinnedGameIds)
         {
             var byId = (summaries ?? Array.Empty<GameSummaryItem>())
                 .Where(game => game?.PlayniteGameId.HasValue == true)
                 .GroupBy(game => game.PlayniteGameId.Value)
                 .ToDictionary(group => group.Key, group => group.First());
-            return (settings?.PinnedGameIds ?? new List<Guid>())
+            return (pinnedGameIds ?? Array.Empty<Guid>())
                 .Where(byId.ContainsKey)
                 .Select(id => byId[id])
                 .ToList();
@@ -642,7 +674,11 @@ namespace PlayniteAchievements.Services.Showcase
                         .OrderByDescending(game => game.LastUnlockUtc ?? DateTime.MinValue);
                     break;
                 case ShowcaseGameMosaicSource.Pinned:
-                    games = ResolvePinnedGameSummaries(summaries, settings);
+                    games = ResolvePinnedGameSummaries(
+                        summaries,
+                        ShowcasePinService.ResolveGameCollection(
+                            settings,
+                            ShowcaseWidgetOptions.GetPinCollectionId(instance))?.GameIds);
                     break;
                 case ShowcaseGameMosaicSource.PlayniteFavorites:
                     games = summaries
@@ -853,7 +889,11 @@ namespace PlayniteAchievements.Services.Showcase
                         .ThenByDescending(item => item.UnlockTimeUtc);
                     break;
                 case ShowcaseMosaicSource.Pinned:
-                    achievements = ResolvePinnedAchievements(snapshot, settings?.PinnedAchievements)
+                    achievements = ResolvePinnedAchievements(
+                            snapshot,
+                            ShowcasePinService.ResolveAchievementCollection(
+                                settings,
+                                ShowcaseWidgetOptions.GetPinCollectionId(instance))?.Pins)
                         .Where(item => !item.IsMissing)
                         .Select(item => item.Achievement);
                     break;

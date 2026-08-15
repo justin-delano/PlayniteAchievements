@@ -8,8 +8,8 @@ using PlayniteAchievements.ViewModels.Items;
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
-    /// Backs the PinnedAchievements widget: the shared achievement grid over the pinned
-    /// rows. Missing pins arrive as placeholder rows that keep the pin identity, so the
+    /// Backs a PinnedAchievements widget instance: its grid and selected pin collection
+    /// are independent from every other placement. Missing pins arrive as placeholder rows, so the
     /// grid row menu can still unpin and reorder them; blank placeholder names are
     /// substituted with the localized "unavailable" strings here.
     /// </summary>
@@ -17,9 +17,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         : ShowcaseAchievementGridWidgetViewModelBase
     {
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedAchievements;
-
-        // One instance per dashboard, so the pins keep a single stable column layout.
-        protected override bool UsesPerInstanceSurface => false;
 
         protected override IEnumerable<AchievementDisplayItem> SelectItems(
             ShowcaseWidgetProjection projection)

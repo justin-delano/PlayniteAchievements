@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
@@ -49,6 +50,40 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(1, loaded.Showcase.Pages.Count);
             Assert.AreEqual("Mine", loaded.Showcase.Pages.Single().Name);
             Assert.AreEqual(authored.Blocks.Count, loaded.Showcase.Pages.Single().Blocks.Count);
+        }
+
+        [TestMethod]
+        public void Showcase_PinCollectionsAndWidgetSelectionsRoundTrip()
+        {
+            var settings = new PersistedSettings();
+            var showcase = settings.Showcase;
+            var gameId = Guid.NewGuid();
+            var collection = new PinnedGameCollection
+            {
+                CollectionId = "weekend-games",
+                Name = "Weekend",
+                GameIds = { gameId }
+            };
+            showcase.GamePinCollections.Add(collection);
+            var widget = PlayniteAchievements.Services.Showcase.ShowcaseLayoutService.CreateWidget(
+                showcase,
+                ShowcaseWidgetKind.FavoriteGames);
+            PlayniteAchievements.Models.ShowcaseWidgetOptions.SetPinCollectionId(
+                widget,
+                collection.CollectionId);
+
+            var json = JsonConvert.SerializeObject(settings);
+            var loaded = JsonConvert.DeserializeObject<PersistedSettings>(json);
+
+            var loadedCollection = loaded.Showcase.GamePinCollections.Single(item =>
+                item.CollectionId == collection.CollectionId);
+            Assert.AreEqual("Weekend", loadedCollection.Name);
+            CollectionAssert.AreEqual(new[] { gameId }, loadedCollection.GameIds);
+            Assert.AreEqual(
+                collection.CollectionId,
+                PlayniteAchievements.Models.ShowcaseWidgetOptions.GetPinCollectionId(
+                    loaded.Showcase.WidgetInstances.Single(item =>
+                        item.InstanceId == widget.InstanceId)));
         }
 
         private static class ShowcaseLayoutServiceAccess

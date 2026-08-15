@@ -100,34 +100,13 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            var plugin = PlayniteAchievementsPlugin.Instance;
-            var showcase = plugin?.Settings?.Persisted?.Showcase;
-            if (showcase == null)
-            {
-                return;
-            }
-
-            var pinned = ShowcasePinService.IsAchievementPinned(showcase, gameId, apiName);
-            var item = new MenuItem
-            {
-                Header = L(
-                    resourceOwner,
-                    pinned
-                        ? "LOCPlayAch_Showcase_UnpinAchievement"
-                        : "LOCPlayAch_Showcase_PinAchievement")
-            };
-            item.Click += (_, __) =>
-            {
-                ShowcasePinService.ToggleAchievement(
-                    showcase,
-                    gameId,
-                    apiName,
-                    gameName,
-                    achievementName);
-                plugin.PersistSettingsForUi();
-                ShowcaseConfigurationEvents.RaiseChanged();
-            };
-            menu.Items.Add(item);
+            ShowcasePinMenuBuilder.AppendAchievementMenu(
+                menu,
+                resourceOwner,
+                gameId,
+                apiName,
+                gameName,
+                achievementName);
         }
 
         private static MenuItem CreateSetGoalItem(

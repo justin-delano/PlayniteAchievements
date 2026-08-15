@@ -135,6 +135,48 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 
+    public sealed class PinnedAchievementCollection
+    {
+        public string CollectionId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public string Name { get; set; } = "Default";
+
+        public List<PinnedAchievementReference> Pins { get; set; } =
+            new List<PinnedAchievementReference>();
+
+        public PinnedAchievementCollection Clone()
+        {
+            return new PinnedAchievementCollection
+            {
+                CollectionId = CollectionId,
+                Name = Name,
+                Pins = (Pins ?? new List<PinnedAchievementReference>())
+                    .Where(pin => pin != null)
+                    .Select(pin => pin.Clone())
+                    .ToList()
+            };
+        }
+    }
+
+    public sealed class PinnedGameCollection
+    {
+        public string CollectionId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public string Name { get; set; } = "Default";
+
+        public List<Guid> GameIds { get; set; } = new List<Guid>();
+
+        public PinnedGameCollection Clone()
+        {
+            return new PinnedGameCollection
+            {
+                CollectionId = CollectionId,
+                Name = Name,
+                GameIds = (GameIds ?? new List<Guid>()).ToList()
+            };
+        }
+    }
+
     public sealed class ShowcaseWidgetInstanceSettings
     {
         public string InstanceId { get; set; } = Guid.NewGuid().ToString("N");
@@ -271,6 +313,10 @@ namespace PlayniteAchievements.Models.Settings
     {
         public const int CurrentLayoutVersion = 1;
 
+        public const string BuiltInAchievementCollectionId = "default-achievements";
+
+        public const string BuiltInGameCollectionId = "default-games";
+
         public int LayoutVersion { get; set; } = CurrentLayoutVersion;
 
         public string LastSelectedPageId { get; set; }
@@ -281,10 +327,31 @@ namespace PlayniteAchievements.Models.Settings
         public List<ShowcaseWidgetInstanceSettings> WidgetInstances { get; set; } =
             new List<ShowcaseWidgetInstanceSettings>();
 
-        public List<Guid> PinnedGameIds { get; set; } = new List<Guid>();
+        public string DefaultAchievementPinCollectionId { get; set; } =
+            BuiltInAchievementCollectionId;
 
-        public List<PinnedAchievementReference> PinnedAchievements { get; set; } =
-            new List<PinnedAchievementReference>();
+        public string DefaultGamePinCollectionId { get; set; } =
+            BuiltInGameCollectionId;
+
+        public List<PinnedAchievementCollection> AchievementPinCollections { get; set; } =
+            new List<PinnedAchievementCollection>
+            {
+                new PinnedAchievementCollection
+                {
+                    CollectionId = BuiltInAchievementCollectionId,
+                    Name = "Default"
+                }
+            };
+
+        public List<PinnedGameCollection> GamePinCollections { get; set; } =
+            new List<PinnedGameCollection>
+            {
+                new PinnedGameCollection
+                {
+                    CollectionId = BuiltInGameCollectionId,
+                    Name = "Default"
+                }
+            };
 
         public ShowcaseProfileSettings Profile { get; set; } =
             new ShowcaseProfileSettings();
@@ -306,10 +373,16 @@ namespace PlayniteAchievements.Models.Settings
                     .Where(widget => widget != null)
                     .Select(widget => widget.Clone())
                     .ToList(),
-                PinnedGameIds = (PinnedGameIds ?? new List<Guid>()).ToList(),
-                PinnedAchievements = (PinnedAchievements ?? new List<PinnedAchievementReference>())
-                    .Where(pin => pin != null)
-                    .Select(pin => pin.Clone())
+                DefaultAchievementPinCollectionId = DefaultAchievementPinCollectionId,
+                DefaultGamePinCollectionId = DefaultGamePinCollectionId,
+                AchievementPinCollections = (AchievementPinCollections ??
+                    new List<PinnedAchievementCollection>())
+                    .Where(collection => collection != null)
+                    .Select(collection => collection.Clone())
+                    .ToList(),
+                GamePinCollections = (GamePinCollections ?? new List<PinnedGameCollection>())
+                    .Where(collection => collection != null)
+                    .Select(collection => collection.Clone())
                     .ToList(),
                 Profile = Profile?.Clone() ?? new ShowcaseProfileSettings(),
                 StartPageInstances = (StartPageInstances ??

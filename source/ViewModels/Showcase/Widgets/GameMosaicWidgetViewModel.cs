@@ -30,6 +30,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 .Select(game => new GameTileViewModel(
                     game,
                     pinnable,
+                    Projection?.ResolvedPinCollectionId,
                     coverWidth,
                     coverHeight,
                     decodePixel)));

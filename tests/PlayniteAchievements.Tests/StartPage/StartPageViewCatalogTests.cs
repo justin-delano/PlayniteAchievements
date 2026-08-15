@@ -70,6 +70,12 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseGameMosaicViewId)
                 .HasSettings);
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcasePinnedAchievementsViewId)
+                .AllowMultipleInstances);
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseFavoriteGamesViewId)
+                .AllowMultipleInstances);
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
         }
 

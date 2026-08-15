@@ -72,24 +72,13 @@ namespace PlayniteAchievements.Views.Helpers
                     menu.Items.Add(captureItem);
                 }
 
-                var plugin = PlayniteAchievementsPlugin.Instance;
-                var showcase = plugin?.Settings?.Persisted?.Showcase;
-                if (showcase != null &&
-                    !(data is FriendGameSummaryItem) &&
+                if (!(data is FriendGameSummaryItem) &&
                     TryGetGameId(data, out var showcaseGameId))
                 {
-                    var isPinned = ShowcasePinService.IsGamePinned(showcase, showcaseGameId);
-                    menu.Items.Add(CreateMenuItem(
+                    ShowcasePinMenuBuilder.AppendGameMenu(
+                        menu,
                         resourceOwner,
-                        isPinned
-                            ? "LOCPlayAch_Showcase_UnpinGame"
-                            : "LOCPlayAch_Showcase_PinGame",
-                        () =>
-                        {
-                            ShowcasePinService.ToggleGame(showcase, showcaseGameId);
-                            plugin.PersistSettingsForUi();
-                            ShowcaseConfigurationEvents.RaiseChanged();
-                        }));
+                        showcaseGameId);
                 }
 
                 menu.Items.Add(new Separator());

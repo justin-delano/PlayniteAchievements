@@ -8,8 +8,8 @@ using PlayniteAchievements.ViewModels.Items;
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
-    /// Backs the pinned games widget: the shared game-summaries grid over the pinned
-    /// (or Playnite-favorite) games. Pin reordering is only offered when the widget
+    /// Backs a pinned-games widget instance: its game-summaries grid renders the selected
+    /// pin collection (or Playnite favorites). Pin reordering is only offered when the widget
     /// draws from showcase pins, whose order is user-controlled.
     /// </summary>
     public sealed class FavoriteGamesWidgetViewModel
@@ -24,9 +24,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         }
 
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedGames;
-
-        // One instance per dashboard, so the pins keep a single stable column layout.
-        protected override bool UsesPerInstanceSurface => false;
 
         protected override IEnumerable<GameSummaryItem> SelectItems(
             ShowcaseWidgetProjection projection)

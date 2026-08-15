@@ -256,7 +256,11 @@ namespace PlayniteAchievements
 
             if (data is GameSummaryItem)
             {
-                AddStartPageGameRowMenuItems(menu, gameId, resourceOwner);
+                AddStartPageGameRowMenuItems(
+                    menu,
+                    gameId,
+                    resourceOwner,
+                    includeShowcasePin: !(data is FriendGameSummaryItem));
                 return menu;
             }
 
@@ -283,7 +287,11 @@ namespace PlayniteAchievements
             return menu;
         }
 
-        private void AddStartPageGameRowMenuItems(ContextMenu menu, Guid gameId, FrameworkElement resourceOwner)
+        private void AddStartPageGameRowMenuItems(
+            ContextMenu menu,
+            Guid gameId,
+            FrameworkElement resourceOwner,
+            bool includeShowcasePin)
         {
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
                 () => OpenViewAchievementsWindow(gameId)));
@@ -305,21 +313,9 @@ namespace PlayniteAchievements
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements",
                 () => OpenManageAchievementsView(gameId)));
 
-            var showcase = Settings?.Persisted?.Showcase;
-            if (showcase != null)
+            if (includeShowcasePin)
             {
-                var isPinned = ShowcasePinService.IsGamePinned(showcase, gameId);
-                menu.Items.Add(CreateStartPageMenuItem(
-                    resourceOwner,
-                    isPinned
-                        ? "LOCPlayAch_Showcase_UnpinGame"
-                        : "LOCPlayAch_Showcase_PinGame",
-                    () =>
-                    {
-                        ShowcasePinService.ToggleGame(showcase, gameId);
-                        PersistSettingsForUi();
-                        ShowcaseConfigurationEvents.RaiseChanged();
-                    }));
+                ShowcasePinMenuBuilder.AppendGameMenu(menu, resourceOwner, gameId);
             }
 
             menu.Items.Add(new Separator());
@@ -445,6 +441,21 @@ namespace PlayniteAchievements
             var settings = ShowcaseWidgetSettingsFactory.CreateDefault(
                 kind,
                 instanceId.ToString("N"));
+
+            if (kind == ShowcaseWidgetKind.PinnedAchievements ||
+                kind == ShowcaseWidgetKind.IconMosaic)
+            {
+                ShowcaseWidgetOptions.SetPinCollectionId(
+                    settings,
+                    showcase.DefaultAchievementPinCollectionId);
+            }
+            else if (kind == ShowcaseWidgetKind.FavoriteGames ||
+                     kind == ShowcaseWidgetKind.GameMosaic)
+            {
+                ShowcaseWidgetOptions.SetPinCollectionId(
+                    settings,
+                    showcase.DefaultGamePinCollectionId);
+            }
 
             // The four pie views share the showcase Pie kind; each seeds the distribution
             // its view id has always shown.

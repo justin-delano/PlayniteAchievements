@@ -75,8 +75,8 @@ namespace PlayniteAchievements.Models
                 Define(ShowcaseWidgetKind.Timeline, "LOCPlayAch_Showcase_Widget_Timeline", "", true, false),
                 Define(ShowcaseWidgetKind.Statistics, "LOCPlayAch_Showcase_Widget_Statistics", "", true, false),
                 Define(ShowcaseWidgetKind.NativePoints, "LOCPlayAch_Showcase_Widget_NativePoints", "", true, false),
-                Define(ShowcaseWidgetKind.PinnedAchievements, "LOCPlayAch_Showcase_Widget_PinnedAchievements", "", false, true),
-                Define(ShowcaseWidgetKind.FavoriteGames, "LOCPlayAch_Showcase_Widget_FavoriteGames", "", false, true),
+                Define(ShowcaseWidgetKind.PinnedAchievements, "LOCPlayAch_Showcase_Widget_PinnedAchievements", "", true, false),
+                Define(ShowcaseWidgetKind.FavoriteGames, "LOCPlayAch_Showcase_Widget_FavoriteGames", "", true, false),
                 Define(ShowcaseWidgetKind.IconMosaic, "LOCPlayAch_Showcase_Widget_IconMosaic", "", true, false),
                 Define(ShowcaseWidgetKind.ScreenshotSlideshow, "LOCPlayAch_Showcase_Widget_ScreenshotSlideshow", "", true, false),
                 Define(ShowcaseWidgetKind.RecentAchievements, "LOCPlayAch_Showcase_Widget_RecentAchievements", "", true, false),
@@ -111,10 +111,8 @@ namespace PlayniteAchievements.Models
     }
 
     /// <summary>
-    /// Builds and maintains the grid surface keys used by showcase grid widgets. Multi-instance
-    /// grid kinds persist column layout per widget instance under "&lt;BaseKey&gt;:&lt;instanceId&gt;";
-    /// the single-instance pinned widgets keep their bare base key so re-adding them retains the
-    /// layout. Orphaned per-instance surfaces are pruned against the live widget instances.
+    /// Builds and maintains the per-instance grid surface keys used by showcase grid widgets.
+    /// Orphaned surfaces are pruned against the live widget instances.
     /// </summary>
     public static class ShowcaseGridSurfaces
     {
@@ -158,18 +156,17 @@ namespace PlayniteAchievements.Models
         }
 
         /// <summary>
-        /// Resolves the grid surface key owned by a widget instance, or null for kinds that do
-        /// not host a grid. Single-instance kinds keep their bare base key; multi-instance kinds
-        /// get a per-instance key.
+        /// Resolves the per-instance grid surface key owned by a widget, or null for kinds that
+        /// do not host a grid.
         /// </summary>
         public static string ResolveWidgetSurface(ShowcaseWidgetKind kind, string instanceId)
         {
             switch (kind)
             {
                 case ShowcaseWidgetKind.PinnedAchievements:
-                    return PinnedAchievements;
+                    return ForInstance(PinnedAchievements, instanceId);
                 case ShowcaseWidgetKind.FavoriteGames:
-                    return PinnedGames;
+                    return ForInstance(PinnedGames, instanceId);
                 case ShowcaseWidgetKind.RecentAchievements:
                     return ForInstance(RecentAchievements, instanceId);
                 case ShowcaseWidgetKind.GameSummaries:
@@ -313,6 +310,41 @@ namespace PlayniteAchievements.Models
         private const string ShowLegend = "ShowLegend";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
+        private const string PinCollectionId = "PinCollectionId";
+
+        public static string GetPinCollectionId(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (settings?.Options == null ||
+                !settings.Options.TryGetValue(PinCollectionId, out var value))
+            {
+                return null;
+            }
+
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        public static void SetPinCollectionId(
+            ShowcaseWidgetInstanceSettings settings,
+            string collectionId)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(collectionId))
+            {
+                settings.Options?.Remove(PinCollectionId);
+                return;
+            }
+
+            if (settings.Options == null)
+            {
+                settings.Options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            settings.Options[PinCollectionId] = collectionId.Trim();
+        }
 
         public static ShowcaseScoreMode GetScoreMode(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Mode, ShowcaseScoreMode.Dual);

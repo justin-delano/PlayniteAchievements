@@ -75,7 +75,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             var showcase = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase;
             if (showcase == null ||
-                !ShowcasePinService.IsAchievementPinned(showcase, gameId, apiName))
+                !ShowcasePinService.IsAchievementPinned(showcase, PinCollectionId, gameId, apiName))
             {
                 return;
             }
@@ -89,11 +89,16 @@ namespace PlayniteAchievements.Views.Showcase
                 () => MovePin(gameId, apiName, 1)));
         }
 
-        private static void MovePin(Guid gameId, string apiName, int direction)
+        private void MovePin(Guid gameId, string apiName, int direction)
         {
             var showcase = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase;
             if (showcase != null &&
-                ShowcasePinService.MoveAchievement(showcase, gameId, apiName, direction))
+                ShowcasePinService.MoveAchievement(
+                    showcase,
+                    PinCollectionId,
+                    gameId,
+                    apiName,
+                    direction))
             {
                 ShowcaseConfigurationCommit.Commit();
             }

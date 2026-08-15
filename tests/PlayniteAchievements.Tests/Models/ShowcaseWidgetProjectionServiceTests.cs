@@ -203,10 +203,11 @@ namespace PlayniteAchievements.Tests.Models
                 }
             };
             var missingGameId = Guid.NewGuid();
-            var settings = new ShowcaseSettings
-            {
-                PinnedGameIds = new List<Guid> { secondGameId, firstGameId },
-                PinnedAchievements = new List<PinnedAchievementReference>
+            var settings = new ShowcaseSettings();
+            settings.GamePinCollections[0].GameIds =
+                new List<Guid> { secondGameId, firstGameId };
+            settings.AchievementPinCollections[0].Pins =
+                new List<PinnedAchievementReference>
                 {
                     new PinnedAchievementReference { GameId = firstGameId, ApiName = "first" },
                     new PinnedAchievementReference
@@ -221,12 +222,11 @@ namespace PlayniteAchievements.Tests.Models
                         GameId = lockedRare.PlayniteGameId.Value,
                         ApiName = lockedRare.ApiName
                     }
-                }
-            };
+                };
 
             var resolvedPins = ShowcaseWidgetProjectionService.ResolvePinnedAchievements(
                 snapshot,
-                settings.PinnedAchievements);
+                settings.AchievementPinCollections[0].Pins);
             Assert.AreSame(firstAchievement, resolvedPins[0].Achievement);
             Assert.IsTrue(resolvedPins[1].IsMissing);
             Assert.AreEqual("Remembered unlock", resolvedPins[1].Name);
@@ -605,10 +605,8 @@ namespace PlayniteAchievements.Tests.Models
             {
                 GameSummaries = new List<GameSummaryItem> { completedOld, completedNew, favorite }
             };
-            var settings = new ShowcaseSettings
-            {
-                PinnedGameIds = new List<Guid> { pinnedFirst, pinnedSecond }
-            };
+            var settings = new ShowcaseSettings();
+            settings.GamePinCollections[0].GameIds = new List<Guid> { pinnedFirst, pinnedSecond };
             var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.GameMosaic };
 
             var completed = ShowcaseWidgetProjectionService.ResolveGameMosaic(snapshot, settings, instance);
@@ -674,11 +672,145 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual("Removed game", rows[1].GameName);
             Assert.IsFalse(rows[1].Unlocked);
 
+            var settings = new ShowcaseSettings();
+            settings.AchievementPinCollections[0].Pins = pins;
             var built = ShowcaseWidgetProjectionService.Build(
                 snapshot,
-                new ShowcaseSettings { PinnedAchievements = pins },
+                settings,
                 new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.PinnedAchievements });
             Assert.AreEqual(2, built.AchievementRows.Count);
+        }
+
+        [TestMethod]
+        public void PinnedSourceWidgets_UseSelectedCollectionAndFallBackToDefault()
+        {
+            var defaultGameId = Guid.NewGuid();
+            var selectedGameId = Guid.NewGuid();
+            var defaultAchievement = new AchievementDisplayItem
+            {
+                PlayniteGameId = defaultGameId,
+                ApiName = "default-achievement",
+                DisplayName = "Default achievement",
+                Unlocked = true
+            };
+            var selectedAchievement = new AchievementDisplayItem
+            {
+                PlayniteGameId = selectedGameId,
+                ApiName = "selected-achievement",
+                DisplayName = "Selected achievement",
+                Unlocked = true
+            };
+            var defaultGame = new GameSummaryItem
+            {
+                PlayniteGameId = defaultGameId,
+                GameName = "Default game",
+                IsFavorite = true
+            };
+            var selectedGame = new GameSummaryItem
+            {
+                PlayniteGameId = selectedGameId,
+                GameName = "Selected game"
+            };
+            var snapshot = new OverviewDataSnapshot
+            {
+                Achievements = new List<AchievementDisplayItem>
+                {
+                    defaultAchievement,
+                    selectedAchievement
+                },
+                GameSummaries = new List<GameSummaryItem> { defaultGame, selectedGame }
+            };
+            var settings = new ShowcaseSettings();
+            settings.AchievementPinCollections[0].Pins.Add(new PinnedAchievementReference
+            {
+                GameId = defaultGameId,
+                ApiName = defaultAchievement.ApiName
+            });
+            settings.GamePinCollections[0].GameIds.Add(defaultGameId);
+            var achievementCollection = new PinnedAchievementCollection
+            {
+                CollectionId = "achievement-selection",
+                Name = "Selection",
+                Pins = new List<PinnedAchievementReference>
+                {
+                    new PinnedAchievementReference
+                    {
+                        GameId = selectedGameId,
+                        ApiName = selectedAchievement.ApiName
+                    }
+                }
+            };
+            var gameCollection = new PinnedGameCollection
+            {
+                CollectionId = "game-selection",
+                Name = "Selection",
+                GameIds = new List<Guid> { selectedGameId }
+            };
+            settings.AchievementPinCollections.Add(achievementCollection);
+            settings.GamePinCollections.Add(gameCollection);
+
+            var pinnedAchievements = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.PinnedAchievements
+            };
+            ShowcaseWidgetOptions.SetPinCollectionId(
+                pinnedAchievements,
+                achievementCollection.CollectionId);
+            var pinnedProjection = ShowcaseWidgetProjectionService.Build(
+                snapshot,
+                settings,
+                pinnedAchievements);
+            Assert.AreEqual(achievementCollection.CollectionId, pinnedProjection.ResolvedPinCollectionId);
+            Assert.AreSame(selectedAchievement, pinnedProjection.AchievementRows.Single());
+
+            var favoriteGames = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.FavoriteGames
+            };
+            ShowcaseWidgetOptions.SetPinCollectionId(favoriteGames, gameCollection.CollectionId);
+            Assert.AreSame(
+                selectedGame,
+                ShowcaseWidgetProjectionService.ResolveFavoriteGames(
+                    snapshot,
+                    settings,
+                    favoriteGames).Single());
+
+            var iconMosaic = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.IconMosaic
+            };
+            iconMosaic.SetOption("Source", ShowcaseMosaicSource.Pinned);
+            ShowcaseWidgetOptions.SetPinCollectionId(iconMosaic, achievementCollection.CollectionId);
+            Assert.AreSame(
+                selectedAchievement,
+                ShowcaseWidgetProjectionService.ResolveMosaic(snapshot, settings, iconMosaic).Single());
+
+            var gameMosaic = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.GameMosaic
+            };
+            gameMosaic.SetOption("Source", ShowcaseGameMosaicSource.Pinned);
+            ShowcaseWidgetOptions.SetPinCollectionId(gameMosaic, gameCollection.CollectionId);
+            Assert.AreSame(
+                selectedGame,
+                ShowcaseWidgetProjectionService.ResolveGameMosaic(
+                    snapshot,
+                    settings,
+                    gameMosaic).Single());
+
+            ShowcaseWidgetOptions.SetPinCollectionId(pinnedAchievements, "missing-collection");
+            var fallback = ShowcaseWidgetProjectionService.Build(snapshot, settings, pinnedAchievements);
+            Assert.AreEqual(settings.DefaultAchievementPinCollectionId, fallback.ResolvedPinCollectionId);
+            Assert.AreSame(defaultAchievement, fallback.AchievementRows.Single());
+
+            favoriteGames.SetOption("Source", ShowcaseFavoriteGameSource.PlayniteFavorites);
+            ShowcaseWidgetOptions.SetPinCollectionId(favoriteGames, gameCollection.CollectionId);
+            Assert.AreSame(
+                defaultGame,
+                ShowcaseWidgetProjectionService.ResolveFavoriteGames(
+                    snapshot,
+                    settings,
+                    favoriteGames).Single());
         }
 
         [TestMethod]

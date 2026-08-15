@@ -122,6 +122,20 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(EnablePinReorderProperty, value);
         }
 
+        public static readonly DependencyProperty PinCollectionIdProperty =
+            DependencyProperty.Register(
+                nameof(PinCollectionId),
+                typeof(string),
+                typeof(ShowcaseGridHostBase),
+                new PropertyMetadata(null));
+
+        /// <summary>Collection whose ordered pins are rendered by this grid.</summary>
+        public string PinCollectionId
+        {
+            get => (string)GetValue(PinCollectionIdProperty);
+            set => SetValue(PinCollectionIdProperty, value);
+        }
+
         /// <summary>The hosted grid, used for context-menu styling and post-edit refreshes.</summary>
         protected abstract FrameworkElement GridElement { get; }
 

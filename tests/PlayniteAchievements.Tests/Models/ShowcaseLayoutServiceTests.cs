@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Settings;
@@ -28,6 +29,25 @@ namespace PlayniteAchievements.Tests.Models
                         widget.InstanceId == block.WidgetInstanceId))
                     .Any(widget => widget.Kind == ShowcaseWidgetKind.Timeline), template.ToString());
             }
+        }
+
+        [TestMethod]
+        public void CreateWidget_SeedsTheMatchingDefaultPinCollection()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var achievements = ShowcaseLayoutService.CreateWidget(
+                settings,
+                ShowcaseWidgetKind.PinnedAchievements);
+            var games = ShowcaseLayoutService.CreateWidget(
+                settings,
+                ShowcaseWidgetKind.FavoriteGames);
+
+            Assert.AreEqual(
+                settings.DefaultAchievementPinCollectionId,
+                PlayniteAchievements.Models.ShowcaseWidgetOptions.GetPinCollectionId(achievements));
+            Assert.AreEqual(
+                settings.DefaultGamePinCollectionId,
+                PlayniteAchievements.Models.ShowcaseWidgetOptions.GetPinCollectionId(games));
         }
 
         [TestMethod]
@@ -404,8 +424,8 @@ namespace PlayniteAchievements.Tests.Models
         public void Clone_IsDeepForPagesWidgetsPinsAndProfile()
         {
             var settings = ShowcaseLayoutService.CreateDefault();
-            settings.PinnedGameIds.Add(Guid.NewGuid());
-            settings.PinnedAchievements.Add(new PinnedAchievementReference
+            settings.GamePinCollections[0].GameIds.Add(Guid.NewGuid());
+            settings.AchievementPinCollections[0].Pins.Add(new PinnedAchievementReference
             {
                 GameId = Guid.NewGuid(),
                 ApiName = "first",
@@ -416,13 +436,13 @@ namespace PlayniteAchievements.Tests.Models
             var clone = settings.Clone();
             clone.Pages[0].Name = "Changed";
             clone.WidgetInstances[0].SetOption("Mode", "Changed");
-            clone.PinnedGameIds.Clear();
-            clone.PinnedAchievements[0].ApiName = "changed";
+            clone.GamePinCollections[0].GameIds.Clear();
+            clone.AchievementPinCollections[0].Pins[0].ApiName = "changed";
             clone.Profile.DisplayName = "Changed";
 
             Assert.AreEqual("Showcase", settings.Pages[0].Name);
-            Assert.AreEqual(1, settings.PinnedGameIds.Count);
-            Assert.AreEqual("first", settings.PinnedAchievements[0].ApiName);
+            Assert.AreEqual(1, settings.GamePinCollections[0].GameIds.Count);
+            Assert.AreEqual("first", settings.AchievementPinCollections[0].Pins[0].ApiName);
             Assert.AreEqual("Player", settings.Profile.DisplayName);
         }
 
@@ -590,17 +610,17 @@ namespace PlayniteAchievements.Tests.Models
             var gameId = Guid.NewGuid();
             var otherGameId = Guid.NewGuid();
             var settings = ShowcaseLayoutService.CreateDefault();
-            settings.PinnedGameIds.Add(gameId);
-            settings.PinnedGameIds.Add(otherGameId);
-            settings.PinnedGameIds.Add(gameId);
-            settings.PinnedAchievements.Add(new PinnedAchievementReference
+            settings.GamePinCollections[0].GameIds.Add(gameId);
+            settings.GamePinCollections[0].GameIds.Add(otherGameId);
+            settings.GamePinCollections[0].GameIds.Add(gameId);
+            settings.AchievementPinCollections[0].Pins.Add(new PinnedAchievementReference
             {
                 GameId = gameId,
                 ApiName = "missing-api",
                 LastKnownGameName = "Removed Game",
                 LastKnownAchievementName = "Still Manageable"
             });
-            settings.PinnedAchievements.Add(new PinnedAchievementReference
+            settings.AchievementPinCollections[0].Pins.Add(new PinnedAchievementReference
             {
                 GameId = gameId,
                 ApiName = "MISSING-API",
@@ -611,14 +631,59 @@ namespace PlayniteAchievements.Tests.Models
 
             CollectionAssert.AreEqual(
                 new[] { gameId, otherGameId },
-                settings.PinnedGameIds);
-            Assert.AreEqual(1, settings.PinnedAchievements.Count);
+                settings.GamePinCollections[0].GameIds);
+            Assert.AreEqual(1, settings.AchievementPinCollections[0].Pins.Count);
             Assert.AreEqual(
                 "Still Manageable",
-                settings.PinnedAchievements[0].LastKnownAchievementName);
+                settings.AchievementPinCollections[0].Pins[0].LastKnownAchievementName);
             Assert.AreEqual(
                 "Removed Game",
-                settings.PinnedAchievements[0].LastKnownGameName);
+                settings.AchievementPinCollections[0].Pins[0].LastKnownGameName);
+        }
+
+        [TestMethod]
+        public void Normalize_RepairsCollectionIdsNamesAndProtectedDefaults()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            settings.AchievementPinCollections = new List<PinnedAchievementCollection>
+            {
+                new PinnedAchievementCollection
+                {
+                    CollectionId = "duplicate-id",
+                    Name = " Highlights "
+                },
+                new PinnedAchievementCollection
+                {
+                    CollectionId = "duplicate-id",
+                    Name = "highlights"
+                }
+            };
+            settings.GamePinCollections = null;
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            Assert.AreEqual(
+                settings.DefaultAchievementPinCollectionId,
+                settings.AchievementPinCollections[0].CollectionId);
+            Assert.AreEqual(
+                settings.DefaultGamePinCollectionId,
+                settings.GamePinCollections.Single().CollectionId);
+            Assert.AreEqual(
+                settings.AchievementPinCollections.Count,
+                settings.AchievementPinCollections
+                    .Select(collection => collection.CollectionId)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count());
+            Assert.AreEqual(
+                settings.AchievementPinCollections.Count,
+                settings.AchievementPinCollections
+                    .Select(collection => collection.Name)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count());
+            Assert.IsTrue(settings.AchievementPinCollections.Any(collection =>
+                collection.Name == "Highlights"));
+            Assert.IsTrue(settings.AchievementPinCollections.Any(collection =>
+                collection.Name == "highlights (2)"));
         }
     }
 }

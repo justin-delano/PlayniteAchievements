@@ -591,7 +591,7 @@ namespace PlayniteAchievements.Services.Showcase
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            var widget = NewWidget(kind);
+            var widget = NewWidget(settings, kind);
             settings.WidgetInstances.Add(widget);
             return widget;
         }
@@ -720,11 +720,18 @@ namespace PlayniteAchievements.Services.Showcase
                 settings.LastSelectedPageId = settings.Pages[0].PageId;
             }
 
-            settings.PinnedGameIds = (settings.PinnedGameIds ?? new List<Guid>())
-                .Where(id => id != Guid.Empty)
-                .Distinct()
-                .ToList();
-            settings.PinnedAchievements = NormalizeAchievementPins(settings.PinnedAchievements);
+            settings.DefaultAchievementPinCollectionId = NormalizeCollectionId(
+                settings.DefaultAchievementPinCollectionId,
+                ShowcaseSettings.BuiltInAchievementCollectionId);
+            settings.DefaultGamePinCollectionId = NormalizeCollectionId(
+                settings.DefaultGamePinCollectionId,
+                ShowcaseSettings.BuiltInGameCollectionId);
+            settings.AchievementPinCollections = NormalizeAchievementCollections(
+                settings.AchievementPinCollections,
+                settings.DefaultAchievementPinCollectionId);
+            settings.GamePinCollections = NormalizeGameCollections(
+                settings.GamePinCollections,
+                settings.DefaultGamePinCollectionId);
             settings.Profile = settings.Profile ?? new ShowcaseProfileSettings();
             settings.StartPageInstances = NormalizeStartPageInstances(settings.StartPageInstances);
         }
@@ -841,7 +848,7 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseWidgetInstanceSettings widget = null;
             if (showCollectionScore || showPrestigeScore)
             {
-                widget = NewWidget(ShowcaseWidgetKind.Scores);
+                widget = NewWidget(settings, ShowcaseWidgetKind.Scores);
                 ShowcaseWidgetOptions.SetScoreMode(
                     widget,
                     showCollectionScore && showPrestigeScore
@@ -864,14 +871,43 @@ namespace PlayniteAchievements.Services.Showcase
             int columnSpan,
             ShowcaseWidgetKind kind)
         {
-            var widget = NewWidget(kind);
+            var widget = NewWidget(settings, kind);
             settings.WidgetInstances.Add(widget);
             page.Blocks.Add(NewBlock(row, column, rowSpan, columnSpan, widget.InstanceId));
         }
 
-        private static ShowcaseWidgetInstanceSettings NewWidget(ShowcaseWidgetKind kind)
+        private static ShowcaseWidgetInstanceSettings NewWidget(
+            ShowcaseSettings settings,
+            ShowcaseWidgetKind kind)
         {
-            return ShowcaseWidgetSettingsFactory.CreateDefault(kind);
+            var widget = ShowcaseWidgetSettingsFactory.CreateDefault(kind);
+            SeedPinCollectionSelection(settings, widget);
+            return widget;
+        }
+
+        private static void SeedPinCollectionSelection(
+            ShowcaseSettings settings,
+            ShowcaseWidgetInstanceSettings widget)
+        {
+            if (settings == null || widget == null)
+            {
+                return;
+            }
+
+            if (widget.Kind == ShowcaseWidgetKind.PinnedAchievements ||
+                widget.Kind == ShowcaseWidgetKind.IconMosaic)
+            {
+                ShowcaseWidgetOptions.SetPinCollectionId(
+                    widget,
+                    settings.DefaultAchievementPinCollectionId);
+            }
+            else if (widget.Kind == ShowcaseWidgetKind.FavoriteGames ||
+                     widget.Kind == ShowcaseWidgetKind.GameMosaic)
+            {
+                ShowcaseWidgetOptions.SetPinCollectionId(
+                    widget,
+                    settings.DefaultGamePinCollectionId);
+            }
         }
 
         private static ShowcaseBlockSettings NewBlock(
@@ -972,6 +1008,134 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             return result;
+        }
+
+        private static List<PinnedAchievementCollection> NormalizeAchievementCollections(
+            IEnumerable<PinnedAchievementCollection> collections,
+            string defaultCollectionId)
+        {
+            var result = new List<PinnedAchievementCollection>();
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var source in collections ?? Array.Empty<PinnedAchievementCollection>())
+            {
+                if (source == null)
+                {
+                    continue;
+                }
+
+                var id = string.IsNullOrWhiteSpace(source.CollectionId)
+                    ? NewId()
+                    : source.CollectionId.Trim();
+                if (!ids.Add(id))
+                {
+                    id = NormalizeUniqueId(null, ids);
+                }
+
+                var fallbackName = string.Equals(id, defaultCollectionId, StringComparison.OrdinalIgnoreCase)
+                    ? "Default"
+                    : "Collection";
+                result.Add(new PinnedAchievementCollection
+                {
+                    CollectionId = id,
+                    Name = MakeUniqueCollectionName(source.Name, fallbackName, names),
+                    Pins = NormalizeAchievementPins(source.Pins)
+                });
+            }
+
+            var defaultCollection = result.FirstOrDefault(collection =>
+                string.Equals(collection.CollectionId, defaultCollectionId, StringComparison.OrdinalIgnoreCase));
+            if (defaultCollection == null)
+            {
+                defaultCollection = new PinnedAchievementCollection
+                {
+                    CollectionId = defaultCollectionId,
+                    Name = MakeUniqueCollectionName("Default", "Default", names)
+                };
+                result.Insert(0, defaultCollection);
+            }
+            else
+            {
+                result.Remove(defaultCollection);
+                result.Insert(0, defaultCollection);
+            }
+
+            return result;
+        }
+
+        private static List<PinnedGameCollection> NormalizeGameCollections(
+            IEnumerable<PinnedGameCollection> collections,
+            string defaultCollectionId)
+        {
+            var result = new List<PinnedGameCollection>();
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var source in collections ?? Array.Empty<PinnedGameCollection>())
+            {
+                if (source == null)
+                {
+                    continue;
+                }
+
+                var id = string.IsNullOrWhiteSpace(source.CollectionId)
+                    ? NewId()
+                    : source.CollectionId.Trim();
+                if (!ids.Add(id))
+                {
+                    id = NormalizeUniqueId(null, ids);
+                }
+
+                var fallbackName = string.Equals(id, defaultCollectionId, StringComparison.OrdinalIgnoreCase)
+                    ? "Default"
+                    : "Collection";
+                result.Add(new PinnedGameCollection
+                {
+                    CollectionId = id,
+                    Name = MakeUniqueCollectionName(source.Name, fallbackName, names),
+                    GameIds = (source.GameIds ?? new List<Guid>())
+                        .Where(idValue => idValue != Guid.Empty)
+                        .Distinct()
+                        .ToList()
+                });
+            }
+
+            var defaultCollection = result.FirstOrDefault(collection =>
+                string.Equals(collection.CollectionId, defaultCollectionId, StringComparison.OrdinalIgnoreCase));
+            if (defaultCollection == null)
+            {
+                defaultCollection = new PinnedGameCollection
+                {
+                    CollectionId = defaultCollectionId,
+                    Name = MakeUniqueCollectionName("Default", "Default", names)
+                };
+                result.Insert(0, defaultCollection);
+            }
+            else
+            {
+                result.Remove(defaultCollection);
+                result.Insert(0, defaultCollection);
+            }
+
+            return result;
+        }
+
+        private static string NormalizeCollectionId(string value, string fallback) =>
+            string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+
+        private static string MakeUniqueCollectionName(
+            string value,
+            string fallback,
+            HashSet<string> used)
+        {
+            var root = string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+            var candidate = root;
+            var suffix = 2;
+            while (!used.Add(candidate))
+            {
+                candidate = $"{root} ({suffix++})";
+            }
+
+            return candidate;
         }
 
         private static Dictionary<string, ShowcaseWidgetInstanceSettings> NormalizeStartPageInstances(

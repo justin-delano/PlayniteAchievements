@@ -350,9 +350,77 @@ namespace PlayniteAchievements.Tests.Views
                 "Views",
                 "Helpers",
                 "GameRowContextMenuBuilder.cs");
+            var startPage = ReadRepoFile(
+                "source",
+                "PlayniteAchievementsPlugin.StartPage.cs");
 
             StringAssert.Contains(achievements, "friendOwned");
             StringAssert.Contains(games, "!(data is FriendGameSummaryItem)");
+            StringAssert.Contains(startPage, "includeShowcasePin: !(data is FriendGameSummaryItem)");
+        }
+
+        [TestMethod]
+        public void Showcase_PinCollectionsUseCustomSubmenusAndInstanceOwnedWidgetState()
+        {
+            var menuBuilder = ReadRepoFile(
+                "source",
+                "Views",
+                "Helpers",
+                "ShowcasePinMenuBuilder.cs");
+            var achievementMenus = ReadRepoFile(
+                "source",
+                "Views",
+                "Helpers",
+                "AchievementRowOptionsMenuBuilder.cs");
+            var gameMenus = ReadRepoFile(
+                "source",
+                "Views",
+                "Helpers",
+                "GameRowContextMenuBuilder.cs");
+            var nativeMenus = ReadRepoFile(
+                "source",
+                "PlayniteAchievementsPlugin.Menus.cs");
+            var options = ReadRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseWidgetOptionsControl.cs");
+            var templates = ReadRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseWidgetTemplates.xaml");
+            var achievementGrid = ReadRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseAchievementGridControl.xaml.cs");
+            var gameGrid = ReadRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseGameGridControl.xaml.cs");
+
+            StringAssert.Contains(menuBuilder, "LOCPlayAch_Showcase_PinToShowcase");
+            StringAssert.Contains(menuBuilder, "IsCheckable = true");
+            StringAssert.Contains(menuBuilder, "AutomationProperties.SetName(button, label)");
+            StringAssert.Contains(menuBuilder, "e.Handled = true");
+            StringAssert.Contains(menuBuilder, "LOCPlayAch_Showcase_NewCollection");
+            StringAssert.Contains(menuBuilder, "ShowcaseConfigurationCommit.Commit()");
+            StringAssert.Contains(achievementMenus, "ShowcasePinMenuBuilder.AppendAchievementMenu");
+            StringAssert.Contains(gameMenus, "ShowcasePinMenuBuilder.AppendGameMenu");
+            Assert.IsFalse(nativeMenus.Contains("ShowcasePinMenuBuilder"));
+            Assert.IsFalse(nativeMenus.Contains("LOCPlayAch_Showcase_PinToShowcase"));
+
+            StringAssert.Contains(options, "AddPinCollectionChoice");
+            StringAssert.Contains(options, "ShowcaseFavoriteGameSource.ShowcasePins");
+            StringAssert.Contains(options, "ShowcaseMosaicSource.Pinned");
+            StringAssert.Contains(options, "ShowcaseGameMosaicSource.Pinned");
+            StringAssert.Contains(templates, "PinCollectionId=\"{Binding PinCollectionId}\"");
+            StringAssert.Contains(achievementGrid, "PinCollectionId");
+            StringAssert.Contains(gameGrid, "PinCollectionId");
+            StringAssert.Contains(achievementGrid, "ShowcasePinService.MoveAchievement");
+            StringAssert.Contains(gameGrid, "ShowcasePinService.MoveGame");
         }
 
         private static void AssertEnumKeys<T>(

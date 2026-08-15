@@ -14,15 +14,18 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     public sealed class GameTileViewModel
     {
         private readonly Guid? _gameId;
+        private readonly string _pinCollectionId;
 
         public GameTileViewModel(
             GameSummaryItem game,
             bool pinnable,
+            string pinCollectionId,
             double coverWidth,
             double coverHeight,
             int decodePixel)
         {
             _gameId = game.PlayniteGameId;
+            _pinCollectionId = pinCollectionId;
             HasCover = !string.IsNullOrWhiteSpace(game.GameCoverPath);
             CoverPath = HasCover ? game.GameCoverPath : game.GameLogo;
             CoverWidth = coverWidth;
@@ -62,7 +65,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private void Move(int direction)
         {
             if (_gameId.HasValue &&
-                ShowcasePinService.MoveGame(Settings, _gameId.Value, direction))
+                ShowcasePinService.MoveGame(
+                    Settings,
+                    _pinCollectionId,
+                    _gameId.Value,
+                    direction))
             {
                 ShowcaseConfigurationCommit.Commit();
             }
@@ -75,7 +82,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 return;
             }
 
-            ShowcasePinService.ToggleGame(Settings, _gameId.Value);
+            ShowcasePinService.ToggleGame(Settings, _pinCollectionId, _gameId.Value);
             ShowcaseConfigurationCommit.Commit();
         }
     }

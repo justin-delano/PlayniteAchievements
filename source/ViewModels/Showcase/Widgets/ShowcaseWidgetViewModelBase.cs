@@ -51,6 +51,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private string _columnSettingsKey;
         private object _gridOptions;
         private GridControlBarViewModel _controlBar;
+        private string _pinCollectionId;
 
         protected ShowcaseGridWidgetViewModelBase()
         {
@@ -74,6 +75,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         {
             get => _columnSettingsKey;
             private set => SetValue(ref _columnSettingsKey, value);
+        }
+
+        /// <summary>Resolved collection used by pinned grids for row reorder operations.</summary>
+        public string PinCollectionId
+        {
+            get => _pinCollectionId;
+            private set => SetValue(ref _pinCollectionId, value);
         }
 
         /// <summary>
@@ -110,11 +118,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             }
         }
 
-        /// <summary>The widget kind's surface key, shared by every instance of that kind.</summary>
+        /// <summary>The widget kind's base surface key, expanded with the instance ID during refresh.</summary>
         protected abstract string BaseSurfaceKey { get; }
-
-        /// <summary>False for single-instance widgets, whose surface never needs an instance suffix.</summary>
-        protected virtual bool UsesPerInstanceSurface => true;
 
         protected abstract System.Collections.Generic.IEnumerable<TItem> SelectItems(
             ShowcaseWidgetProjection projection);
@@ -124,9 +129,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             // Must match ShowcaseGridSurfaces.ResolveWidgetSurface for this widget's kind:
             // the projection resolves GridWidgetOptions from that key, and the grid persists
             // its column layout under this one.
-            ColumnSettingsKey = UsesPerInstanceSurface
-                ? ShowcaseGridSurfaces.ForInstance(BaseSurfaceKey, Projection?.Instance?.InstanceId)
-                : BaseSurfaceKey;
+            ColumnSettingsKey = ShowcaseGridSurfaces.ForInstance(
+                BaseSurfaceKey,
+                Projection?.Instance?.InstanceId);
+            PinCollectionId = Projection?.ResolvedPinCollectionId;
             GridOptions = Projection?.GridWidgetOptions;
             RefreshItems();
         }

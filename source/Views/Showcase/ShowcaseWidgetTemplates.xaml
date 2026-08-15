@@ -454,12 +454,13 @@
         </ScrollViewer>
     </DataTemplate>
 
-    <!-- PinnedAchievements: the shared achievement grid over pinned rows with pin reordering.
+    <!-- PinnedAchievements: an instance-owned achievement grid over the selected collection with pin reordering.
          Display DPs bind through GridOptions, the widget's live grid-options record; when it is
          null (no catalog supplied) each DP keeps its default. -->
     <DataTemplate DataType="{x:Type widgets:PinnedAchievementsWidgetViewModel}">
         <showcase:ShowcaseAchievementGridControl ItemsSource="{Binding Items}"
                                                  ColumnSettingsKey="{Binding ColumnSettingsKey}"
+                                                 PinCollectionId="{Binding PinCollectionId}"
                                                  ControlBar="{Binding ControlBar}"
                                                  ShowControlBar="{Binding GridOptions.ShowControlBar, FallbackValue=False}"
                                                  EnablePinReorder="True"
@@ -475,6 +476,7 @@
     <DataTemplate DataType="{x:Type widgets:FavoriteGamesWidgetViewModel}">
         <showcase:ShowcaseGameGridControl ItemsSource="{Binding Items}"
                                           ColumnSettingsKey="{Binding ColumnSettingsKey}"
+                                          PinCollectionId="{Binding PinCollectionId}"
                                           ControlBar="{Binding ControlBar}"
                                           ShowControlBar="{Binding GridOptions.ShowControlBar, FallbackValue=False}"
                                           EnablePinReorder="{Binding PinReorderEnabled}"
@@ -550,7 +552,7 @@
                                     <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveLater}"
                                               Command="{Binding MoveLaterCommand}"/>
                                     <Separator/>
-                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_UnpinGame}"
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_RemoveFromCollection}"
                                               Command="{Binding UnpinCommand}"/>
                                 </ContextMenu>
                             </Border.ContextMenu>
