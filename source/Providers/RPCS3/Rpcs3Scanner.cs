@@ -6,6 +6,7 @@ using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Common.Disc;
 using PlayniteAchievements.Providers.RPCS3.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
@@ -63,6 +64,15 @@ namespace PlayniteAchievements.Providers.RPCS3
     {
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
         public bool PreserveExisting { get; set; }
+
+        /// <summary>
+        /// The category label the source's trophies were grouped under (the set title,
+        /// falling back to the NPWR id), and the set's ICON0.PNG on disk when one exists —
+        /// the art RPCS3's own trophy manager shows per trophy set. Used to publish
+        /// per-sub-game default category art for collections.
+        /// </summary>
+        public string CategoryLabel { get; set; }
+        public string CategoryArtPath { get; set; }
     }
 
     /// <summary>
@@ -195,6 +205,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             var isCollection = sources.Count > 1;
             var achievements = new List<AchievementDetail>();
+            var categoryArt = new List<(string Label, string ArtPath)>();
             foreach (var source in sources)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -206,12 +217,18 @@ namespace PlayniteAchievements.Providers.RPCS3
                 }
 
                 achievements.AddRange(sourceAchievements.Achievements);
+                if (isCollection && !string.IsNullOrWhiteSpace(sourceAchievements.CategoryArtPath))
+                {
+                    categoryArt.Add((sourceAchievements.CategoryLabel, sourceAchievements.CategoryArtPath));
+                }
             }
 
             if (achievements.Count == 0)
             {
                 return Task.FromResult<GameAchievementData>(null);
             }
+
+            ApplyDefaultCategoryArt(game, categoryArt);
 
             // Record the resolved trophy source identity so the refresh pipeline can
             // detect match changes and overwrite stale cached icons (ApiNames are bare
@@ -236,6 +253,49 @@ namespace PlayniteAchievements.Providers.RPCS3
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow
             });
+        }
+
+        /// <summary>
+        /// Publishes each sub-game's ICON0.PNG as the default category art for its
+        /// category label, so a collection's category groups render with the same
+        /// art RPCS3's trophy manager shows per trophy set. Uses the shared
+        /// provider-default convention read by CategoryDefaultImageResolver:
+        /// existing art is kept, and user overrides always win over defaults.
+        /// </summary>
+        private void ApplyDefaultCategoryArt(Game game, List<(string Label, string ArtPath)> entries)
+        {
+            if (entries == null || entries.Count == 0 || game?.Id == null || game.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            var diskImageService = PlayniteAchievementsPlugin.Instance?.DiskImageService;
+            if (diskImageService == null)
+            {
+                return;
+            }
+
+            var gameIdText = game.Id.ToString("D");
+            foreach (var entry in entries)
+            {
+                var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(entry.Label);
+                if (string.Equals(
+                    label,
+                    AchievementCategoryTypeHelper.DefaultCategoryLabel,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    diskImageService.SaveDefaultCategoryImageFromFile(gameIdText, label, entry.ArtPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[RPCS3] Default category image copy failed for '{entry.Label}'.");
+                }
+            }
         }
 
         private Rpcs3RefreshContext GetOrCreateRefreshContext(
@@ -370,6 +430,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                             sourceTitle,
                             isCollection,
                             forceLocked: false),
+                        CategoryLabel = string.IsNullOrWhiteSpace(sourceTitle) ? source.NpCommId : sourceTitle,
+                        CategoryArtPath = FindExistingIcon0Path(trophyFolderPath)
                     };
                 }
                 catch (Exception ex)
@@ -404,15 +466,18 @@ namespace PlayniteAchievements.Providers.RPCS3
                     return new SourceAchievements { PreserveExisting = true };
                 }
 
+                var iconDirectory = ExtractTrpIcons(source.TrpPath, source.NpCommId);
                 return new SourceAchievements
                 {
                     Achievements = ConvertTrophiesToAchievements(
                         trophies,
                         source,
-                        trophyFolderPath: ExtractTrpIcons(source.TrpPath, source.NpCommId),
+                        trophyFolderPath: iconDirectory,
                         sourceTitle: source.SourceTitle,
                         isCollection: isCollection,
                         forceLocked: true),
+                    CategoryLabel = string.IsNullOrWhiteSpace(source.SourceTitle) ? source.NpCommId : source.SourceTitle,
+                    CategoryArtPath = FindExistingIcon0Path(iconDirectory)
                 };
             }
             catch (Exception ex)
@@ -479,6 +544,22 @@ namespace PlayniteAchievements.Providers.RPCS3
                 _logger?.Debug(ex, $"[RPCS3] Failed to extract icons from '{trpPath}'");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The set-level ICON0.PNG inside a trophy folder (or an extracted TRP icon
+        /// directory), or null when the directory or file is absent. RPCS3's trophy
+        /// manager shows this image per trophy set.
+        /// </summary>
+        private static string FindExistingIcon0Path(string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return null;
+            }
+
+            var icon0Path = Path.Combine(directory, "ICON0.PNG");
+            return File.Exists(icon0Path) ? icon0Path : null;
         }
 
         private List<AchievementDetail> ConvertTrophiesToAchievements(
@@ -986,13 +1067,42 @@ namespace PlayniteAchievements.Providers.RPCS3
                 using (var disc = new DiscFileSystemReader(isoPath))
                 {
                     var rootDirectoryNames = disc.GetRootDirectoryNames();
+                    var enumeratedTrpPaths = 0;
 
                     foreach (var trpImagePath in GetIsoTrophyTrpPaths(disc, rootDirectoryNames))
                     {
+                        enumeratedTrpPaths++;
+
                         var trpBytes = disc.ReadAllBytesOrNull(trpImagePath);
                         if (trpBytes == null ||
                             !Rpcs3TrophyParser.TryReadTrpIdentity(trpBytes, out var npCommId, out var titleName, _logger))
                         {
+                            // The TRP contents could not be read or parsed (e.g. an image
+                            // whose file data the filesystem reader cannot surface). A
+                            // TROPDIR set directory is named after its NPWR id, so the
+                            // set can still be matched against a trophy folder RPCS3 has
+                            // already created for it.
+                            var fallbackId = ExtractNpCommIdFromImagePath(trpImagePath);
+                            if (string.IsNullOrWhiteSpace(fallbackId) || !seen.Add(fallbackId))
+                            {
+                                continue;
+                            }
+
+                            if (trophyFolderCache?.ContainsKey(fallbackId) == true)
+                            {
+                                _logger?.Info(
+                                    $"[RPCS3] ISO '{isoPath}': '{trpImagePath}' could not be parsed; matched " +
+                                    $"'{fallbackId}' from its TROPDIR directory name via the RPCS3 trophy folder.");
+                                sources.Add(new GameTrophySource { NpCommId = fallbackId, TrpPath = null });
+                            }
+                            else
+                            {
+                                _logger?.Info(
+                                    $"[RPCS3] ISO '{isoPath}': '{trpImagePath}' could not be parsed and set " +
+                                    $"'{fallbackId}' has no RPCS3 trophy folder; booting it once in RPCS3 surfaces it.");
+                                dropped.Add(fallbackId);
+                            }
+
                             continue;
                         }
 
@@ -1021,6 +1131,21 @@ namespace PlayniteAchievements.Providers.RPCS3
                         }
                     }
 
+                    if (enumeratedTrpPaths == 0)
+                    {
+                        // Distinguishes "the image holds no trophy set" from a
+                        // filesystem the reader could not walk: parse failures in
+                        // the disc reader surface only as empty listings.
+                        var rootSummary = rootDirectoryNames.Count > 0
+                            ? string.Join(", ", rootDirectoryNames)
+                            : "none";
+                        var errorSummary = string.IsNullOrWhiteSpace(disc.LastError)
+                            ? string.Empty
+                            : $"; first filesystem read error: {disc.LastError}";
+                        _logger?.Info(
+                            $"[RPCS3] ISO '{isoPath}': structured read found no TROPHY.TRP paths; " +
+                            $"root directories [{rootSummary}]{errorSummary}.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -1152,6 +1277,24 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 yield return "TROPHY/TROPHY.TRP";
             }
+        }
+
+        /// <summary>
+        /// The NPWR id carried in a trophy path's own segments, or null when no
+        /// segment is NPWR-shaped. TROPDIR set directories are named after their
+        /// NPWR id, so the id survives even when the TRP contents are unreadable.
+        /// </summary>
+        private static string ExtractNpCommIdFromImagePath(string pathInsideImage)
+        {
+            if (string.IsNullOrWhiteSpace(pathInsideImage))
+            {
+                return null;
+            }
+
+            return pathInsideImage
+                .Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(Rpcs3MatchIdHelper.Normalize)
+                .FirstOrDefault(segment => !string.IsNullOrWhiteSpace(segment));
         }
 
         /// <summary>
