@@ -233,6 +233,40 @@ namespace PlayniteAchievements.Providers.Xenia
 
             var candidatePaths = GetCandidateRomPaths(game);
 
+            // Try to find TitleID in file
+            foreach (var path in candidatePaths)
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                if (path.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
+                {
+                    var executionInfo = XeniaTitleIDExtractor.GetFromIsoFile(path);
+                    if (!string.IsNullOrEmpty(executionInfo.TitleIdHex))
+                    {
+                        //_logger.Debug($"Found TitleID: {executionInfo.TitleIdHex}");
+                        titleID = executionInfo.TitleIdHex;
+                        return true;
+                    }
+                }
+                else if (path.EndsWith(".xex", StringComparison.OrdinalIgnoreCase))
+                {
+                    var executionInfo = XeniaTitleIDExtractor.GetFromXexFile(path);
+                    if (!string.IsNullOrEmpty(executionInfo.TitleIdHex))
+                    {
+                        //_logger.Debug($"Found TitleID: {executionInfo.TitleIdHex}");
+                        titleID = executionInfo.TitleIdHex;
+                        return true;
+                    }
+                }
+                else
+                {
+                    _logger.Error("[Xenia] Unsupported ROM only .xex or .iso files are supported!");
+                }
+            }
+
             // Try to find game in recent.toml
             foreach (var path in candidatePaths)
             {
@@ -298,103 +332,7 @@ namespace PlayniteAchievements.Providers.Xenia
 
             }
 
-            // Try to find TitleID in file
-            int exeAreaSize = 300;
-            foreach (var path in candidatePaths)
-            {
-                if (!File.Exists(path))
-                {
-                    continue;
-                }
-
-                if (path.EndsWith(".iso") || path.EndsWith(".xex") || string.IsNullOrEmpty(Path.GetExtension(path)))
-                {
-                    using var mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
-
-                    Int64 accessoroffset = 0;
-                    var filesize = new FileInfo(path).Length;
-                    bool filecomplete = false;
-
-                    // Place this outside of loop to combat potential edge-case where .exe/.pe is found at the start of
-                    // the 1.5gb chunk but titleID is in the previous 1.5GB chunk that has been wiped
-                    var chunksize = 8 * 1024; // 8 KB buffer
-                    var buffer = new byte[chunksize];
-                    var previousbuffer = new byte[chunksize];
-
-                    // Accessor needs to be split into sub 2GB chunks due to virtual address max size on 32bit
-                    // This didn't need chunking in my testing on .NET8 but we are on .NET4
-                    do
-                    {
-                        Int64 filechunk = 1500000000;
-                        if(filechunk + accessoroffset > filesize)
-                        {
-                            filechunk = filesize - accessoroffset;
-                            filecomplete = true;
-                        }
-
-                        using var accessor = mmf.CreateViewStream(accessoroffset, filechunk, MemoryMappedFileAccess.Read);
-                        accessoroffset += filechunk;
-                        var position = 0;
-                        var bytesRead = 0;
-                        byte[] combinedbuffer = new byte[chunksize * 2];
-                        byte[] exeChunk = new byte[exeAreaSize];
-
-                        while (accessor.Position < accessor.Length)
-                        {
-                            bytesRead = accessor.Read(buffer, 0, buffer.Length);
-                            if (bytesRead == 0) break;
-
-                            Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
-                            Array.Copy(buffer, 0, combinedbuffer, chunksize, bytesRead);
-
-                            var combinedLength = previousbuffer.Length + bytesRead;
-                            var foundexe = IndexOf(combinedbuffer, combinedLength, Encoding.UTF8.GetBytes(".exe"));
-                            var foundpe = IndexOf(combinedbuffer, combinedLength, Encoding.UTF8.GetBytes(".pe"));
-
-                            if (foundexe >= exeAreaSize)
-                            {
-                                // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
-                                Array.Copy(combinedbuffer, foundexe - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                                var temptitleID = CheckChunk(ref exeChunk);
-                                if (!string.IsNullOrEmpty(temptitleID))
-                                {
-                                    titleID = temptitleID;
-                                    CacheTitleId(game.Id, temptitleID);
-                                    return true;
-
-                                }
-                            }
-                            if (foundpe >= exeAreaSize)
-                            {
-                                Array.Copy(combinedbuffer, foundpe - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                                var temptitleID = CheckChunk(ref exeChunk);
-                                if (!string.IsNullOrEmpty(temptitleID))
-                                {
-                                    titleID = temptitleID;
-                                    CacheTitleId(game.Id, temptitleID);
-                                    return true;
-                                }
-                            }
-
-                            position += bytesRead;
-                            Array.Clear(previousbuffer, 0, previousbuffer.Length);
-                            var tailCount = Math.Min(previousbuffer.Length, bytesRead);
-                            Array.Copy(buffer, bytesRead - tailCount, previousbuffer, previousbuffer.Length - tailCount, tailCount);
-                        }
-
-
-
-                    } while (!filecomplete);
-                    
-
-                }
-                else
-                {
-                    _logger.Error("[Xenia] Unsupported ROM only .xex, .iso, or extensionless package files are supported!");
-                }
-            }
+            
 
             titleID = "";
             return false;
