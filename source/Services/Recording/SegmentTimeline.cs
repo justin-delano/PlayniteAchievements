@@ -8,9 +8,11 @@ namespace PlayniteAchievements.Services.Recording
 {
     /// <summary>
     /// Pure clip-window and buffer math over the rolling segment recording, all in UTC. The
-    /// invariant every window upholds: a clip contains the unlock moment (with its pre-roll)
-    /// plus a toast-duration slot after it — the toast itself is composited into the clip at
-    /// export, so the window never depends on when the toast actually displayed on screen.
+    /// invariant every window upholds: a clip contains its anchor moment (with the anchor's
+    /// pre-roll) plus a toast-duration slot after it — the toast itself is always composited into
+    /// the clip at export, never filmed. The anchor is the unlock by default, so the window does
+    /// not depend on when the toast displayed; a configured notification delay switches it to the
+    /// instant the card appeared, so the clip shows what the user saw.
     /// Clamped only to recorded data. No filesystem access — fully unit-testable.
     /// </summary>
     internal static class SegmentTimeline
@@ -44,6 +46,12 @@ namespace PlayniteAchievements.Services.Recording
         {
             public IReadOnlyList<SegmentInfo> Segments { get; set; }
 
+            /// <summary>
+            /// Exact absolute start of the planned clip. Keep this instead of reconstructing it
+            /// with DateTime.AddSeconds(double), which rounds to milliseconds on .NET Framework.
+            /// </summary>
+            public DateTime StartUtc { get; set; }
+
             /// <summary>Seek offset (seconds) into the concatenated segments.</summary>
             public double StartOffsetSeconds { get; set; }
 
@@ -75,6 +83,13 @@ namespace PlayniteAchievements.Services.Recording
             public DateTime EndUtc { get; set; }
 
             public DateTime ToastAnchorUtc { get; set; }
+
+            /// <summary>
+            /// True when the anchor is the moment the notification appeared rather than the unlock —
+            /// the notification-delay path. Diagnostics only: it tells the timing log which of the
+            /// two rules produced this window, so a clip that looks late can be read at a glance.
+            /// </summary>
+            public bool AnchoredOnDisplay { get; set; }
         }
 
         /// <summary>
@@ -121,7 +136,7 @@ namespace PlayniteAchievements.Services.Recording
 
         /// <summary>
         /// Splits a buffer file name into its wall-clock stamp and, for video segments, the
-        /// encoded dimensions: prefix + yyyyMMdd-HHmmssfff + optional _WxH + optional -N (the
+        /// encoded dimensions: prefix + yyyyMMdd-HHmmssfffffffZ + optional _WxH + optional -N (the
         /// writer's same-instant uniquifier) + extension. The stamp is read at its fixed width so
         /// neither trailing token defeats it, falling back to the second-resolution stamp buffers
         /// written before milliseconds were included carry.
@@ -185,22 +200,21 @@ namespace PlayniteAchievements.Services.Recording
             isUtc = false;
             suffix = string.Empty;
 
-            if (body.Length >= RecordingPaths.UtcStampLength)
+            if (TryParseUtcStamp(
+                    body,
+                    RecordingPaths.UtcStampFormat,
+                    RecordingPaths.UtcStampLength,
+                    out stamp,
+                    out suffix) ||
+                TryParseUtcStamp(
+                    body,
+                    RecordingPaths.LegacyUtcStampFormat,
+                    RecordingPaths.LegacyUtcStampLength,
+                    out stamp,
+                    out suffix))
             {
-                var candidate = body.Substring(0, RecordingPaths.UtcStampLength);
-                var rest = body.Substring(RecordingPaths.UtcStampLength);
-                if ((rest.Length == 0 || rest[0] == RecordingPaths.DimensionSeparator || rest[0] == '-') &&
-                    DateTime.TryParseExact(
-                        candidate,
-                        RecordingPaths.UtcStampFormat,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                        out stamp))
-                {
-                    isUtc = true;
-                    suffix = rest;
-                    return true;
-                }
+                isUtc = true;
+                return true;
             }
 
             foreach (var length in new[] { RecordingPaths.StampLength, RecordingPaths.LegacyStampLength })
@@ -229,6 +243,41 @@ namespace PlayniteAchievements.Services.Recording
             }
 
             return false;
+        }
+
+        private static bool TryParseUtcStamp(
+            string body,
+            string format,
+            int length,
+            out DateTime stamp,
+            out string suffix)
+        {
+            stamp = default;
+            suffix = string.Empty;
+            if (body.Length < length)
+            {
+                return false;
+            }
+
+            var candidate = body.Substring(0, length);
+            var rest = body.Substring(length);
+            if (rest.Length > 0 && rest[0] != RecordingPaths.DimensionSeparator && rest[0] != '-')
+            {
+                return false;
+            }
+
+            if (!DateTime.TryParseExact(
+                    candidate,
+                    format,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out stamp))
+            {
+                return false;
+            }
+
+            suffix = rest;
+            return true;
         }
 
         /// <summary>
@@ -283,11 +332,21 @@ namespace PlayniteAchievements.Services.Recording
         }
 
         /// <summary>
-        /// Computes the clip window in UTC. The clip is built around the moment the achievement was
-        /// earned — the real on-screen notification never moves the window, because the card is
-        /// composited into the clip at export, on the anchor.
+        /// Computes the clip window in UTC. By default the clip is built around the moment the
+        /// achievement was earned — the real on-screen notification does not move the window,
+        /// because the card is composited into the clip at export, on the anchor.
         ///
-        /// The anchor is the source-selected timestamp when it is reachable, else observation. Two
+        /// <paramref name="displayAnchorUtc"/> overrides that. When the user configures a
+        /// notification delay, the capture is meant to show what was on screen when the card
+        /// appeared, so the recorder passes the instant the wave grabbed its base surface — the
+        /// same instant the screenshot depicts — and the window is built around that instead. It
+        /// bypasses the <see cref="IsPreciseUnlockTime"/> heuristic deliberately: that guard exists
+        /// to reject provider timestamps from a foreign clock domain, whereas this value is
+        /// measured locally on the recorder's own clock and is always later than observation, which
+        /// the guard's lead check would reject outright.
+        ///
+        /// Otherwise the anchor is the source-selected timestamp when it is reachable, else
+        /// observation. Two
         /// floors raise the start: it may not open earlier than one poll interval + pre-roll before
         /// observation, nor earlier than recorded data. When a floor raises the start past the
         /// timestamp itself, that timestamp is discarded and the window is recomputed around
@@ -309,7 +368,8 @@ namespace PlayniteAchievements.Services.Recording
             int pollIntervalSeconds,
             int preRollSeconds,
             double toastSlotSeconds,
-            double tailSeconds)
+            double tailSeconds,
+            DateTime? displayAnchorUtc = null)
         {
             var preRoll = Math.Max(0, preRollSeconds);
 
@@ -318,6 +378,33 @@ namespace PlayniteAchievements.Services.Recording
             if (oldestSegmentStartUtc.HasValue && oldestSegmentStartUtc.Value > floor)
             {
                 floor = oldestSegmentStartUtc.Value;
+            }
+
+            if (displayAnchorUtc.HasValue)
+            {
+                // The card is pinned to when it actually appeared, so the pre-roll leads into the
+                // notification rather than into the unlock. Only the recorded-data floor applies:
+                // the observation floor guards against reaching back before a promptly-observed
+                // unlock, and this anchor is always later than observation, so it cannot.
+                var displayAnchor = displayAnchorUtc.Value;
+                var displayStart = displayAnchor.AddSeconds(-preRoll);
+                if (displayStart < floor)
+                {
+                    displayStart = floor;
+                }
+
+                if (displayAnchor < displayStart)
+                {
+                    displayAnchor = displayStart;
+                }
+
+                return new ClipWindow
+                {
+                    StartUtc = displayStart,
+                    EndUtc = displayAnchor.AddSeconds(Math.Max(0, toastSlotSeconds) + Math.Max(0, tailSeconds)),
+                    ToastAnchorUtc = displayAnchor,
+                    AnchoredOnDisplay = true,
+                };
             }
 
             var anchor = IsPreciseUnlockTime(preferredAnchorUtc, captureStartUtc, observedUtc)
@@ -495,6 +582,7 @@ namespace PlayniteAchievements.Services.Recording
             return new ClipPlan
             {
                 Segments = run,
+                StartUtc = effectiveStart,
                 StartOffsetSeconds = (effectiveStart - first.StartUtc).TotalSeconds,
                 DurationSeconds = (effectiveEnd - effectiveStart).TotalSeconds,
                 EndUtc = effectiveEnd,

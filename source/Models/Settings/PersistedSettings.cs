@@ -79,6 +79,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _frameUseThemeStyling = true;
         private Dictionary<string, NotificationStyleSettings> _providerNotificationStyles;
         private int _toastDurationSeconds = 6;
+        private double _notificationDelaySeconds = 0;
         private int _maxConcurrentToasts = 3;
         private bool _enableControllerVibration = false;
         private int _controllerVibrationStrengthPercent = 50;
@@ -123,6 +124,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableOpenSettingsHotkey = true;
         private bool _enableCategoryModeHotkey = true;
         private bool _enableTestUnlockHotkey = true;
+        private bool _enableCaptureTestFolder = false;
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
         private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
         private string _overviewHotkey = DefaultOverviewHotkey;
@@ -136,6 +138,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showLockedIcon = true;
         private bool _useSeparateLockedIconsWhenAvailable = false;
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
+        private string _lockedFallbackIconPath = null;
+        private string _hiddenFallbackIconPath = null;
         private bool _modernCompactListShowRarityGlow = true;
         private bool _modernUnlockedListShowRarityGlow = true;
         private bool _animateRarityGlows = true;
@@ -178,6 +182,7 @@ namespace PlayniteAchievements.Models.Settings
         private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
         private DateDisplayMode _unlockDateDisplayMode = DateDisplayMode.DateAndTime;
         private PlaytimeDisplayMode _playtimeDisplayMode = PlaytimeDisplayMode.HoursAndMinutes;
+        private CategoryCompletionBadgeMode _categoryCompletionBadgeMode = CategoryCompletionBadgeMode.All;
         private FriendNameDisplayMode _friendNameDisplayMode = FriendNameDisplayMode.PersonaAndNickname;
         private bool _enableAchievementCompactListControl = true;
         private bool _enableAchievementDataGridControl = true;
@@ -523,6 +528,16 @@ namespace PlayniteAchievements.Models.Settings
             return new HashSet<string>(
                 GetFriendSettings(providerKey)
                     .Where(entry => entry.IsIgnored)
+                    .Select(entry => entry.ExternalUserId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        public HashSet<string> GetFullScanExcludedFriendIds(string providerKey)
+        {
+            return new HashSet<string>(
+                GetFriendSettings(providerKey)
+                    .Where(entry => entry.ExcludeFromFullScans)
                     .Select(entry => entry.ExternalUserId)
                     .Where(id => !string.IsNullOrWhiteSpace(id)),
                 StringComparer.OrdinalIgnoreCase);
@@ -958,13 +973,27 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Enables the shortcut that fires a notification for the running game's last-earned
+        /// Enables the shortcut that re-fires the notification for the running game's last-earned
         /// achievement. Gated by <see cref="EnableAchievementHotkeys"/>.
         /// </summary>
         public bool EnableTestUnlockHotkey
         {
             get => _enableTestUnlockHotkey;
             set => SetValue(ref _enableTestUnlockHotkey, value);
+        }
+
+        /// <summary>
+        /// Routes retriggered captures into the shared "Test" subfolder of the capture root instead of
+        /// the game's own folder. The capture library hides that subfolder, so retriggers become
+        /// throwaway test output rather than part of the game's collection.
+        ///
+        /// Also the only way to retrigger with no game running: without it the shortcut is inert
+        /// outside a game, because there is no game folder to write to.
+        /// </summary>
+        public bool EnableCaptureTestFolder
+        {
+            get => _enableCaptureTestFolder;
+            set => SetValue(ref _enableCaptureTestFolder, value);
         }
 
         /// <summary>
@@ -1084,6 +1113,24 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _toastDurationSeconds;
             set => SetValue(ref _toastDurationSeconds, Math.Max(2, value));
+        }
+
+        /// <summary>
+        /// Holds a notification back this many seconds after it would otherwise reach the screen, and
+        /// moves its captures with it: the screenshot and the composited clip card both land on the
+        /// delayed moment, so the capture shows what was on screen when the card appeared.
+        ///
+        /// Measured from the notification, not from the unlock — a wave held by the foreground gate is
+        /// delayed relative to when it is released, not to when the achievement was earned.
+        ///
+        /// Deliberately has no upper bound; only negatives are rejected. A delay long enough to outlive
+        /// the recorder's wait budget degrades to an unlock-anchored clip rather than losing it.
+        /// Never applies to previews or retriggers.
+        /// </summary>
+        public double NotificationDelaySeconds
+        {
+            get => _notificationDelaySeconds;
+            set => SetValue(ref _notificationDelaySeconds, Math.Max(0, value));
         }
 
         public int MaxConcurrentToasts
@@ -1593,6 +1640,29 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Absolute path to the user's image for locked achievements, or null for the built-in
+        /// placeholder. When set it replaces both the masked-locked placeholder and the
+        /// grayscaled-unlocked fallback, so a locked achievement shows either a provider-supplied
+        /// locked icon or this image.
+        /// </summary>
+        public string LockedFallbackIconPath
+        {
+            get => _lockedFallbackIconPath;
+            set => SetValue(ref _lockedFallbackIconPath, value);
+        }
+
+        /// <summary>
+        /// Absolute path to the user's image for hidden achievements whose icon is masked, or null
+        /// for the built-in placeholder. Takes precedence over <see cref="LockedFallbackIconPath"/>
+        /// when an achievement is both hidden and locked-masked.
+        /// </summary>
+        public string HiddenFallbackIconPath
+        {
+            get => _hiddenFallbackIconPath;
+            set => SetValue(ref _hiddenFallbackIconPath, value);
+        }
+
+        /// <summary>
         /// When true, the modern compact list (and the legacy SuccessStory-compatible lists, which
         /// follow it) shows rarity glow on unlocked icons.
         /// </summary>
@@ -1989,6 +2059,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _playtimeDisplayMode;
             set => SetValue(ref _playtimeDisplayMode, value);
+        }
+
+        /// <summary>
+        /// Which category-mode summary rows may render the completion badge under their progress bar.
+        /// </summary>
+        public CategoryCompletionBadgeMode CategoryCompletionBadgeMode
+        {
+            get => _categoryCompletionBadgeMode;
+            set => SetValue(ref _categoryCompletionBadgeMode, value);
         }
 
         /// <summary>
@@ -2685,6 +2764,7 @@ namespace PlayniteAchievements.Models.Settings
                 OpenSettingsHotkey = this.OpenSettingsHotkey,
                 CategoryModeHotkey = this.CategoryModeHotkey,
                 TestUnlockHotkey = this.TestUnlockHotkey,
+                EnableCaptureTestFolder = this.EnableCaptureTestFolder,
 
                 // Notification Settings
                 EnableNotifications = this.EnableNotifications,
@@ -2700,6 +2780,7 @@ namespace PlayniteAchievements.Models.Settings
                         StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, NotificationStyleSettings>(StringComparer.OrdinalIgnoreCase),
                 ToastDurationSeconds = this.ToastDurationSeconds,
+                NotificationDelaySeconds = this.NotificationDelaySeconds,
                 MaxConcurrentToasts = this.MaxConcurrentToasts,
                 ToastPosition = this.ToastPosition,
                 EnableControllerVibration = this.EnableControllerVibration,
@@ -2746,6 +2827,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowLockedIcon = this.ShowLockedIcon,
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
+                LockedFallbackIconPath = this.LockedFallbackIconPath,
+                HiddenFallbackIconPath = this.HiddenFallbackIconPath,
                 ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 AnimateRarityGlows = this.AnimateRarityGlows,
@@ -2787,6 +2870,7 @@ namespace PlayniteAchievements.Models.Settings
                 GridCellVerticalAlignment = this.GridCellVerticalAlignment,
                 UnlockDateDisplayMode = this.UnlockDateDisplayMode,
                 PlaytimeDisplayMode = this.PlaytimeDisplayMode,
+                CategoryCompletionBadgeMode = this.CategoryCompletionBadgeMode,
                 FriendNameDisplayMode = this.FriendNameDisplayMode,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
@@ -2906,6 +2990,8 @@ namespace PlayniteAchievements.Models.Settings
             ShowFriendSpoilers = defaults.ShowFriendSpoilers;
             UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
+            LockedFallbackIconPath = defaults.LockedFallbackIconPath;
+            HiddenFallbackIconPath = defaults.HiddenFallbackIconPath;
             ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;
             ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             AnimateRarityGlows = defaults.AnimateRarityGlows;
@@ -2941,6 +3027,7 @@ namespace PlayniteAchievements.Models.Settings
             GridCellVerticalAlignment = defaults.GridCellVerticalAlignment;
             UnlockDateDisplayMode = defaults.UnlockDateDisplayMode;
             PlaytimeDisplayMode = defaults.PlaytimeDisplayMode;
+            CategoryCompletionBadgeMode = defaults.CategoryCompletionBadgeMode;
             FriendNameDisplayMode = defaults.FriendNameDisplayMode;
 
             EnableAchievementCompactListControl = defaults.EnableAchievementCompactListControl;

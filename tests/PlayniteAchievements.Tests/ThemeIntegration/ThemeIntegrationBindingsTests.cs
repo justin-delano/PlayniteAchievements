@@ -139,6 +139,65 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void SelectedGameBuilder_CarriesCapturePathsIntoThemeDisplayItems()
+        {
+            var captures = new PlayniteAchievements.Services.Tests.Captures.CaptureTestDirectory();
+            try
+            {
+                var gameName = "Capture Game";
+                var cleanPath = captures.WriteCapture(gameName, "001_DLC Achievement_clean.png");
+                var videoPath = captures.WriteCapture(gameName, "001_DLC Achievement.mp4");
+
+                var captureLibrary = captures.CreateService();
+                PlayniteAchievements.Services.Captures.AchievementCapturePathResolver.CaptureLibraryAccessor =
+                    () => captureLibrary;
+
+                var gameId = Guid.NewGuid();
+                var achievement = Achievement("DLC Achievement", 12.0, unlocked: true);
+                var data = new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    Game = new Game { Id = gameId, Name = gameName },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail> { achievement }
+                };
+
+                var state = SelectedGameRuntimeStateBuilder.Build(gameId, data);
+                var detail = state.AllAchievements.Single();
+
+                Assert.AreEqual(cleanPath, detail.CleanCapturePath);
+                Assert.IsNull(detail.NotificationCapturePath);
+                Assert.IsNull(detail.FramedCapturePath);
+                Assert.AreEqual(videoPath, detail.VideoCapturePath);
+                Assert.IsTrue(detail.HasAnyCapture);
+
+                var displayItem = new AchievementDisplayItem();
+                displayItem.UpdateFrom(
+                    detail,
+                    gameName,
+                    gameId,
+                    showHiddenIcon: false,
+                    showHiddenTitle: false,
+                    showHiddenDescription: false,
+                    showHiddenSuffix: true,
+                    showLockedIcon: true,
+                    useSeparateLockedIconsWhenAvailable: false,
+                    showRarityBar: true);
+
+                Assert.AreEqual(cleanPath, displayItem.CleanCapturePath);
+                Assert.IsNull(displayItem.NotificationCapturePath);
+                Assert.IsNull(displayItem.FramedCapturePath);
+                Assert.AreEqual(videoPath, displayItem.VideoCapturePath);
+                Assert.IsTrue(displayItem.HasCaptures);
+            }
+            finally
+            {
+                PlayniteAchievements.Services.Captures.AchievementCapturePathResolver.CaptureLibraryAccessor = null;
+                captures.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void SelectedGameBuilder_DefaultCanonicalOrderMatchesSharedDefaultSorting()
         {
             var gameId = Guid.NewGuid();

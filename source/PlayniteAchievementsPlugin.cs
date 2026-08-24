@@ -84,6 +84,7 @@ namespace PlayniteAchievements
         private readonly RayTrackService _rayTrackService;
         private readonly ManagedCustomIconService _managedCustomIconService;
         private readonly NotificationImageStore _notificationImageStore;
+        private readonly FallbackIconStore _fallbackIconStore;
         private NotificationStylePortableStore _notificationStylePortableStore;
         private NotificationStylePresetStore _notificationStylePresetStore;
         private readonly NotificationPublisher _notifications;
@@ -148,6 +149,7 @@ namespace PlayniteAchievements
         public ManagedCustomIconService ManagedCustomIconService => _managedCustomIconService;
         public ICacheManager CacheManager => _cacheManager;
         public NotificationImageStore NotificationImageStore => _notificationImageStore;
+        public FallbackIconStore FallbackIconStore => _fallbackIconStore;
         public NotificationStylePortableStore NotificationStylePortableStore =>
             _notificationStylePortableStore ?? (_notificationStylePortableStore =
                 new NotificationStylePortableStore(_notificationImageStore, _logger));
@@ -480,6 +482,13 @@ namespace PlayniteAchievements
                     _managedCustomIconService = new ManagedCustomIconService(_diskImageService, _logger);
                     GameSummaryArtResolver.ManagedCustomIconServiceAccessor = () => _managedCustomIconService;
                     _notificationImageStore = new NotificationImageStore(_diskImageService, _logger);
+                    _fallbackIconStore = new FallbackIconStore(_diskImageService, _logger);
+                    // Read through Settings.Persisted on every call: the settings dialog mutates the
+                    // live instance and CancelEdit replaces it wholesale.
+                    AchievementIconResolver.LockedFallbackPathAccessor =
+                        () => Settings?.Persisted?.LockedFallbackIconPath;
+                    AchievementIconResolver.HiddenFallbackPathAccessor =
+                        () => Settings?.Persisted?.HiddenFallbackIconPath;
                     _imageService = new MemoryImageService(_logger, _diskImageService);
                     _rayTrackService = new RayTrackService(_logger, _imageService);
                     _gameCustomDataStore.AttachManagedCustomIconService(_managedCustomIconService);
@@ -588,10 +597,16 @@ namespace PlayniteAchievements
                         GetProcessIdForGame,
                         _toastNotifications,
                         key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings,
-                        _windowTracker);
+                        _windowTracker,
+                        // Fails open while the provider registry is still being built: refusing to
+                        // refresh a game we cannot classify is free, but refusing to capture one
+                        // costs a clip that cannot be recovered afterwards.
+                        game => Providers == null || AnyProviderCapable(game));
                     _captureLibraryService = new Services.Captures.CaptureLibraryService(
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
+                    Services.Captures.AchievementCapturePathResolver.CaptureLibraryAccessor =
+                        () => _captureLibraryService;
                     _inGameMonitor = new InGameAchievementMonitor(
                         PlayniteApi,
                         settings,
@@ -681,7 +696,8 @@ namespace PlayniteAchievements
                         _friendsOverviewDataCoordinator,
                         _achievementHotkeyTargetResolver.ResolveRunningGame,
                         ToggleAchievementCapstoneFromTheme,
-                        target => _achievementMarkerToggle.ToggleGoal(target));
+                        target => _achievementMarkerToggle.ToggleGoal(target),
+                        _captureLibraryService);
 
                     // A friend-consuming theme is a plugin-lifetime consumer: it keeps the
                     // friends snapshot alive when the last friends view closes.
@@ -1117,6 +1133,8 @@ namespace PlayniteAchievements
                     _settingsViewModel?.Settings?.Persisted,
                     _gameCustomDataStore?.LoadAll());
 
+                _fallbackIconStore?.PruneOrphans(_settingsViewModel?.Settings?.Persisted);
+
                 // Auto-migrate themes that have been updated since the last migration.
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
@@ -1219,7 +1237,9 @@ namespace PlayniteAchievements
                    propertyName == nameof(PersistedSettings.ShowHiddenSuffix) ||
                    propertyName == nameof(PersistedSettings.ShowLockedIcon) ||
                    propertyName == nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable) ||
-                   propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds);
+                   propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds) ||
+                   propertyName == nameof(PersistedSettings.LockedFallbackIconPath) ||
+                   propertyName == nameof(PersistedSettings.HiddenFallbackIconPath);
         }
 
         private void RestartBackgroundUpdater()

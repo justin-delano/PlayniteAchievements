@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Services.Capture;
 using PlayniteAchievements.Services.Recording;
 
 namespace PlayniteAchievements.Services.Tests.Recording
@@ -278,6 +279,100 @@ namespace PlayniteAchievements.Services.Tests.Recording
             Assert.AreEqual(unlock, window.ToastAnchorUtc);
         }
 
+        // === Clip window anchored on the notification (the notification-delay path) ===
+
+        [TestMethod]
+        public void ComputeClipWindow_DisplayAnchor_BuildsWindowAroundTheNotification()
+        {
+            var captureStart = T0;
+            var unlock = T0.AddSeconds(60);
+            var detection = unlock.AddSeconds(10);
+            // The card reached the screen after detection, delay included.
+            var display = detection.AddSeconds(4);
+
+            var window = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, captureStart, null,
+                pollIntervalSeconds: 15, preRollSeconds: 15,
+                toastSlotSeconds: 8, tailSeconds: 1,
+                displayAnchorUtc: display);
+
+            Assert.AreEqual(display, window.ToastAnchorUtc);
+            Assert.AreEqual(display.AddSeconds(-15), window.StartUtc);
+            Assert.AreEqual(display.AddSeconds(9), window.EndUtc);
+            Assert.IsTrue(window.AnchoredOnDisplay);
+        }
+
+        /// <summary>
+        /// A display instant is always later than observation, which is exactly what
+        /// <see cref="SegmentTimeline.IsPreciseUnlockTime"/> rejects. Routing it through the
+        /// dedicated parameter has to bypass that guard, or every delayed clip would silently fall
+        /// back to detection anchoring.
+        /// </summary>
+        [TestMethod]
+        public void ComputeClipWindow_DisplayAnchor_SurvivesTheLeadGuardThatRejectsLateAnchors()
+        {
+            var captureStart = T0;
+            var detection = T0.AddSeconds(120);
+            var display = detection.AddSeconds(SegmentTimeline.PreciseLeadSeconds + 30);
+
+            Assert.IsFalse(
+                SegmentTimeline.IsPreciseUnlockTime(display, captureStart, detection),
+                "Guard precondition: a late display instant is not a 'precise unlock time'.");
+
+            var window = SegmentTimeline.ComputeClipWindow(
+                null, detection, captureStart, null,
+                pollIntervalSeconds: 15, preRollSeconds: 15,
+                toastSlotSeconds: 8, tailSeconds: 1,
+                displayAnchorUtc: display);
+
+            Assert.AreEqual(display, window.ToastAnchorUtc);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_DisplayAnchor_ClampsStartToRecordedData()
+        {
+            var captureStart = T0.AddSeconds(100);
+            var detection = T0.AddSeconds(105);
+            var display = T0.AddSeconds(108);
+
+            var window = SegmentTimeline.ComputeClipWindow(
+                null, detection, captureStart, null,
+                pollIntervalSeconds: 15, preRollSeconds: 30,
+                toastSlotSeconds: 8, tailSeconds: 1,
+                displayAnchorUtc: display);
+
+            Assert.AreEqual(captureStart, window.StartUtc);
+            Assert.AreEqual(display, window.ToastAnchorUtc);
+        }
+
+        /// <summary>
+        /// No display instant (no delay configured, an unrevealed wave, or the wait gave up) must
+        /// reproduce the unlock-anchored window exactly — the default path stays untouched.
+        /// </summary>
+        [TestMethod]
+        public void ComputeClipWindow_NoDisplayAnchor_MatchesTheUnlockAnchoredWindow()
+        {
+            var captureStart = T0;
+            var unlock = T0.AddSeconds(60);
+            var detection = unlock.AddSeconds(10);
+
+            var withoutArgument = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, captureStart, null,
+                pollIntervalSeconds: 15, preRollSeconds: 15,
+                toastSlotSeconds: 8, tailSeconds: 1);
+
+            var withNull = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, captureStart, null,
+                pollIntervalSeconds: 15, preRollSeconds: 15,
+                toastSlotSeconds: 8, tailSeconds: 1,
+                displayAnchorUtc: null);
+
+            Assert.AreEqual(withoutArgument.StartUtc, withNull.StartUtc);
+            Assert.AreEqual(withoutArgument.EndUtc, withNull.EndUtc);
+            Assert.AreEqual(withoutArgument.ToastAnchorUtc, withNull.ToastAnchorUtc);
+            Assert.IsFalse(withNull.AnchoredOnDisplay);
+        }
+
         [TestMethod]
         public void ComputeClipWindow_AnchorRaisedToStartWhenClampPassesIt()
         {
@@ -488,8 +583,27 @@ namespace PlayniteAchievements.Services.Tests.Recording
             CollectionAssert.AreEqual(
                 new[] { segments[0], segments[1], segments[2] },
                 plan.Segments.ToArray());
+            Assert.AreEqual(T0.AddSeconds(3), plan.StartUtc);
             Assert.AreEqual(3, plan.StartOffsetSeconds, 0.001);
             Assert.AreEqual(9, plan.DurationSeconds, 0.001);
+        }
+
+        [TestMethod]
+        public void PlanClip_PreservesSubMillisecondStartAndEndExactly()
+        {
+            var segment = Segment(T0.AddTicks(17));
+            var requestedStart = T0.AddSeconds(1).AddTicks(2345);
+            var requestedEnd = T0.AddSeconds(4).AddTicks(6789);
+
+            var plan = SegmentTimeline.PlanClip(
+                new[] { segment }, requestedStart, requestedEnd, 5);
+
+            Assert.IsNotNull(plan);
+            Assert.AreEqual(requestedStart, plan.StartUtc);
+            Assert.AreEqual(requestedEnd, plan.EndUtc);
+            Assert.AreEqual(
+                requestedStart - segment.StartUtc,
+                plan.StartUtc - plan.Segments[0].StartUtc);
         }
 
         [TestMethod]
@@ -692,6 +806,19 @@ namespace PlayniteAchievements.Services.Tests.Recording
         }
 
         [TestMethod]
+        public void ParseSegments_StillReadsLegacyUtcMillisecondNames()
+        {
+            var expected = new DateTime(2026, 1, 1, 14, 0, 0, 437, DateTimeKind.Utc);
+            var segments = SegmentTimeline.ParseSegments(
+                new[] { (@"C:\buf\seg_20260101-140000437Z_1884x976.mp4", 1L) },
+                PlusTwo);
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual(expected, segments[0].StartUtc);
+            Assert.AreEqual(DateTimeKind.Utc, segments[0].StartUtc.Kind);
+        }
+
+        [TestMethod]
         public void ParseSegments_StillReadsSecondResolutionStamps()
         {
             // Buffers written before milliseconds were included must keep parsing.
@@ -712,7 +839,8 @@ namespace PlayniteAchievements.Services.Tests.Recording
         [TestMethod]
         public void BuildSegmentFileName_RoundTripsThroughTheParser()
         {
-            var utcStart = new DateTime(2026, 1, 1, 12, 0, 7, 42, DateTimeKind.Utc);
+            var utcStart = new DateTime(2026, 1, 1, 12, 0, 7, 42, DateTimeKind.Utc)
+                .AddTicks(6789);
             var name = RecordingPaths.BuildSegmentFileName(utcStart, 1884, 976);
 
             var segments = SegmentTimeline.ParseSegments(
@@ -720,7 +848,7 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             Assert.AreEqual(1, segments.Count);
             Assert.AreEqual(utcStart, segments[0].StartUtc);
-            StringAssert.Contains(name, "120007042Z_");
+            StringAssert.Contains(name, "1200070426789Z_");
             Assert.AreEqual(1884, segments[0].Width);
             Assert.AreEqual(976, segments[0].Height);
         }
@@ -728,18 +856,48 @@ namespace PlayniteAchievements.Services.Tests.Recording
         [TestMethod]
         public void BuildAudioChunkFileName_RoundTripsThroughTheParser()
         {
-            var utcStart = new DateTime(2026, 1, 1, 12, 0, 3, 601, DateTimeKind.Utc);
-            var name = RecordingPaths.BuildAudioChunkFileName(RecordingPaths.AudioChunkFilePrefix, utcStart);
-
-            var chunks = SegmentTimeline.ParseSegments(
-                new[] { ($@"C:\buf\{name}", 1L) },
-                PlusTwo,
+            var utcStart = new DateTime(2026, 1, 1, 12, 0, 3, 601, DateTimeKind.Utc)
+                .AddTicks(4321);
+            var prefixes = new[]
+            {
                 RecordingPaths.AudioChunkFilePrefix,
-                RecordingPaths.AudioChunkFileExtension);
+                RecordingPaths.ChimeChunkFilePrefix,
+                RecordingPaths.GameReferenceChunkFilePrefix,
+                RecordingPaths.HapticReferenceChunkFilePrefix(0),
+                RecordingPaths.HapticReferenceChunkFilePrefix(3),
+            };
 
-            Assert.AreEqual(1, chunks.Count);
-            Assert.AreEqual(utcStart, chunks[0].StartUtc);
-            StringAssert.Contains(name, "120003601Z.wav");
+            foreach (var prefix in prefixes)
+            {
+                var name = RecordingPaths.BuildAudioChunkFileName(prefix, utcStart);
+                var chunks = SegmentTimeline.ParseSegments(
+                    new[] { ($@"C:\buf\{name}", 1L) },
+                    PlusTwo,
+                    prefix,
+                    RecordingPaths.AudioChunkFileExtension);
+
+                Assert.AreEqual(1, chunks.Count, prefix);
+                Assert.AreEqual(utcStart, chunks[0].StartUtc, prefix);
+                StringAssert.Contains(name, "1200036014321Z.wav", prefix);
+            }
+        }
+
+        [TestMethod]
+        public void AudioFrameTimeline_RoundTripsWithoutCrossTrackDrift()
+        {
+            var origin = T0.AddTicks(73);
+            foreach (var frame in new long[] { -48001, -1, 0, 1, 2, 47, 48, 47999, 48000, 48001, 17_280_000 })
+            {
+                var utc = RecordingPaths.AudioFrameUtc(origin, frame, PcmAudio.SampleRate);
+                Assert.AreEqual(
+                    frame,
+                    RecordingPaths.AudioFrameAt(origin, utc, PcmAudio.SampleRate),
+                    $"frame {frame} did not survive UTC placement");
+                Assert.AreEqual(
+                    Math.Max(0, frame) * PcmAudio.BlockAlign,
+                    PcmAudio.TicksToAlignedBytes(Math.Max(0, (utc - origin).Ticks)),
+                    $"frame {frame} did not survive PCM placement");
+            }
         }
 
         [TestMethod]

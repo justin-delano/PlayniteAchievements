@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -258,8 +259,11 @@ namespace PlayniteAchievements.Services.Capture
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "[Recording] Base clip has no usable audio stream; re-encoding video only.");
-                return -1;
+                _logger?.Debug(
+                    ex,
+                    "[Recording] Base clip audio could not be configured; aborting the overlay " +
+                    "pass so the caller keeps the toastless clip with its audio.");
+                throw;
             }
         }
 
@@ -288,7 +292,30 @@ namespace PlayniteAchievements.Services.Capture
             byte[] inflated = null;
             var inflatedIndex = -1;
 
+            // The card's shadow/glow halo, captured effect-free at record time and re-applied here
+            // per output frame as frame + layer × interpolated scale (the recorded pixels carry no
+            // effects). Inflated once for the whole export; composited into a scratch so the XOR
+            // reconstruction buffer stays pristine. The ray-burst layers work the same way but are
+            // timed: the cursor advances with output time and the current layer is inflated on
+            // change.
+            var shadowLayer = track.ShadowLayer;
+            var shadowPixels = shadowLayer?.Inflate();
+            byte[] glowScratch = null;
+            // Adjacent ray layers are crossfaded by output time — the rays drift slowly, so the
+            // blend reads as smooth motion at a fraction of the capture rate. Two layers stay
+            // inflated: the current one and the next, promoted forward as the cursor advances.
+            var rayCursor = -1;
+            var rayIndex = -1;
+            byte[] rayPixels = null;
+            var rayNextIndex = -1;
+            byte[] rayNextPixels = null;
+
             var pendingAudio = audioStream >= 0 ? ReadNextAudio(audioReader, trimLead) : null;
+            if (audioStream >= 0 && pendingAudio == null)
+            {
+                throw new InvalidDataException(
+                    "The base clip declared audio but produced no samples after lead trimming.");
+            }
 
             var counts = default(CompositeCounts);
 
@@ -330,17 +357,83 @@ namespace PlayniteAchievements.Services.Capture
                 {
                     if (time >= toastStart && time <= toastEnd)
                     {
-                        var sampleIndex = track.FindSampleIndexAtOrBefore((time - toastStart) / (double)OneSecond100ns);
+                        var secondsIntoTrack = (time - toastStart) / (double)OneSecond100ns;
+                        var sampleIndex = track.FindSampleIndexAtOrBefore(secondsIntoTrack);
                         if (sampleIndex >= 0 &&
                             TryGetOverlay(track, sampleIndex, ref inflated, ref inflatedIndex, out var overlayFrame))
                         {
-                            var trackSample = track.Samples[sampleIndex];
-                            var destRect = OverlayBlitMath.ScaleRect(
-                                trackSample.RelX + track.OffsetX, trackSample.RelY + track.OffsetY,
-                                overlayFrame.Width, overlayFrame.Height,
-                                trackSample.ClientW, trackSample.ClientH, frameW, frameH);
+                            // Pixels hold at the nearest-previous sample; the position is synthesized
+                            // (lone-toast corner + slide offset) and interpolated to this frame's
+                            // instant, so motion stays smooth even where pixel frames repeat.
+                            var destRect = ToastOverlayExportMath.ComputeDestRect(
+                                track, sampleIndex, secondsIntoTrack, frameW, frameH);
+
+                            rayCursor = ToastOverlayExportMath.FindRayLayerAtOrBefore(
+                                track, secondsIntoTrack, rayCursor);
+                            var displayIndex = track.RayLayers.Count > 0 ? Math.Max(0, rayCursor) : -1;
+                            if (displayIndex >= 0 && displayIndex != rayIndex)
+                            {
+                                rayPixels = displayIndex == rayNextIndex
+                                    ? rayNextPixels
+                                    : track.RayLayers[displayIndex].Layer?.Inflate();
+                                rayIndex = displayIndex;
+                            }
+
+                            var followIndex = displayIndex >= 0 && displayIndex + 1 < track.RayLayers.Count
+                                ? displayIndex + 1
+                                : -1;
+                            if (followIndex >= 0 && followIndex != rayNextIndex)
+                            {
+                                rayNextPixels = track.RayLayers[followIndex].Layer?.Inflate();
+                                rayNextIndex = followIndex;
+                            }
+
+                            var composeRays = rayIndex >= 0 && rayPixels != null &&
+                                LayerMatchesFrame(track.RayLayers[rayIndex].Layer, overlayFrame) &&
+                                rayPixels.Length == inflated.Length;
+                            var composeShadow = shadowPixels != null &&
+                                shadowLayer.Width == overlayFrame.Width &&
+                                shadowLayer.Height == overlayFrame.Height &&
+                                shadowPixels.Length == inflated.Length;
+
+                            var overlayPixels = inflated;
+                            if (composeRays || composeShadow)
+                            {
+                                if (glowScratch == null || glowScratch.Length != inflated.Length)
+                                {
+                                    glowScratch = new byte[inflated.Length];
+                                }
+
+                                Buffer.BlockCopy(inflated, 0, glowScratch, 0, inflated.Length);
+                                if (composeRays)
+                                {
+                                    var hostOpacity = ToastOverlayExportMath.GetHostOpacity(
+                                        track, sampleIndex, secondsIntoTrack);
+                                    var blend = ToastOverlayExportMath.GetRayLayerBlend(
+                                        track, rayCursor, secondsIntoTrack);
+                                    var blendNext = blend > 0 && followIndex >= 0 && rayNextPixels != null &&
+                                        LayerMatchesFrame(track.RayLayers[followIndex].Layer, overlayFrame) &&
+                                        rayNextPixels.Length == inflated.Length;
+                                    OverlayBlitMath.AddScaled(
+                                        glowScratch, rayPixels, hostOpacity * (blendNext ? 1.0 - blend : 1.0));
+                                    if (blendNext)
+                                    {
+                                        OverlayBlitMath.AddScaled(glowScratch, rayNextPixels, hostOpacity * blend);
+                                    }
+                                }
+
+                                if (composeShadow)
+                                {
+                                    OverlayBlitMath.AddScaled(
+                                        glowScratch, shadowPixels,
+                                        ToastOverlayExportMath.GetGlowScale(track, sampleIndex, secondsIntoTrack));
+                                }
+
+                                overlayPixels = glowScratch;
+                            }
+
                             outSample = compositor.Compose(
-                                sample, inflated, overlayFrame.Width, overlayFrame.Height, destRect);
+                                sample, overlayPixels, overlayFrame.Width, overlayFrame.Height, destRect);
                             if (outSample != null)
                             {
                                 counts.Composited++;
@@ -653,6 +746,12 @@ namespace PlayniteAchievements.Services.Capture
         private static long ToTicks(double seconds)
         {
             return (long)(Math.Max(0, seconds) * OneSecond100ns);
+        }
+
+        private static bool LayerMatchesFrame(ToastOverlayTrack.Frame layer, ToastOverlayTrack.Frame frame)
+        {
+            return layer != null && frame != null &&
+                layer.Width == frame.Width && layer.Height == frame.Height;
         }
     }
 }

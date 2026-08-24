@@ -138,6 +138,18 @@ namespace PlayniteAchievements.Models.Achievements
 
         public int CategoryOrderIndex { get; set; } = int.MaxValue;
 
+        public string CleanCapturePath { get; set; }
+
+        public string NotificationCapturePath { get; set; }
+
+        public string FramedCapturePath { get; set; }
+
+        public string VideoCapturePath { get; set; }
+
+        public bool HasAnyCapture =>
+            CleanCapturePath != null || NotificationCapturePath != null ||
+            FramedCapturePath != null || VideoCapturePath != null;
+
         public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
 
         public System.Windows.Input.ICommand FilterDynamicLibraryAchievementsByProviderCommand { get; set; }
@@ -340,6 +352,18 @@ namespace PlayniteAchievements.ViewModels
         public int CategoryOrderIndex { get; set; } = int.MaxValue;
 
         public string CategoryArtPath { get; set; }
+
+        public string CleanCapturePath { get; set; }
+
+        public string NotificationCapturePath { get; set; }
+
+        public string FramedCapturePath { get; set; }
+
+        public string VideoCapturePath { get; set; }
+
+        public bool HasCaptures =>
+            CleanCapturePath != null || NotificationCapturePath != null ||
+            FramedCapturePath != null || VideoCapturePath != null;
 
         public string GameIconPath { get; set; }
 
@@ -549,6 +573,10 @@ namespace PlayniteAchievements.ViewModels
                 CategoryLabel = CategoryLabel,
                 CategoryOrderIndex = CategoryOrderIndex,
                 CategoryArtPath = CategoryArtPath,
+                CleanCapturePath = CleanCapturePath,
+                NotificationCapturePath = NotificationCapturePath,
+                FramedCapturePath = FramedCapturePath,
+                VideoCapturePath = VideoCapturePath,
                 GameIconPath = GameIconPath,
                 GameCoverPath = GameCoverPath,
                 Hidden = Hidden,
@@ -633,6 +661,10 @@ namespace PlayniteAchievements.ViewModels
             CategoryOrderIndex = categoryOrderIndex;
             // Mirrors the real display item: no game-asset fallback baked into the art path.
             CategoryArtPath = categoryArtPath ?? source?.CategoryArtPath;
+            CleanCapturePath = source?.CleanCapturePath;
+            NotificationCapturePath = source?.NotificationCapturePath;
+            FramedCapturePath = source?.FramedCapturePath;
+            VideoCapturePath = source?.VideoCapturePath;
         }
     }
 }

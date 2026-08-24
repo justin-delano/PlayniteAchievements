@@ -399,9 +399,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             // achievement and its comparison fields must be re-resolved.
             _friendCompare.SetGame(theme?.SelectedGameId, DisplayItems.ToList());
 
-            // Same reason the capture flag is stamped here rather than on clonedItems: UpdateFrom
-            // does not carry HasCaptures, so a reused row would otherwise keep the flag of whichever
-            // achievement previously occupied its position.
+            // On the live path the details are already capture-stamped by the runtime state
+            // builder and UpdateFrom carries the paths. This mark backstops the sources that
+            // bypass the builder: ThemeDataOverride preview items and states built before the
+            // capture library was wired.
             Services.Captures.CapturePresenceMarker.MarkAchievements(
                 DisplayItems.ToList(), CaptureLibrary);
 

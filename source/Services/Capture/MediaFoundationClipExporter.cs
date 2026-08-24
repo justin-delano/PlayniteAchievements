@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.ExceptionServices;
 using Playnite.SDK;
 using PlayniteAchievements.Services.Recording;
@@ -17,7 +18,9 @@ namespace PlayniteAchievements.Services.Capture
     /// keyframe/second, so this loses no content and adds ≤1s of lead, exactly matching the old
     /// `-c copy` seek. The planned loopback WAV chunks are read as PCM, converted to 48 kHz stereo
     /// 16-bit, encoded to AAC, and muxed into the same file, offset by that keyframe lead so audio
-    /// and video stay aligned. Audio absent/failed → a video-only clip.
+    /// and video stay aligned. A missing audio plan intentionally produces a video-only clip; once
+    /// a plan exists, adding or reading it is required so the caller can retry with the original
+    /// recorded plan instead of silently saving a clip with an empty audio track.
     /// </summary>
     internal sealed class MediaFoundationClipExporter
     {
@@ -71,14 +74,14 @@ namespace PlayniteAchievements.Services.Capture
                         var audioStream = -1;
                         if (audioPlan?.Segments != null && audioPlan.Segments.Count > 0)
                         {
-                            audioStream = TryAddAudioStream(sink, out pcmType);
+                            audioStream = AddAudioStream(sink, out pcmType);
                             _logger?.Debug($"[Recording] MF export: audio stream added ({audioStream}).");
                         }
 
                         sink.BeginWriting();
 
-                        var clipStart = ToTicks(videoPlan.StartOffsetSeconds);
-                        var clipEnd = clipStart + ToTicks(videoPlan.DurationSeconds);
+                        var clipStart = PlanStartTicks(videoPlan);
+                        var clipEnd = PlanEndTicks(videoPlan);
                         var keyframeStart = FindKeyframeStart(videoPlan.Segments[0].Path, clipStart);
                         var videoLead = clipStart - keyframeStart; // ≥ 0
                         videoLeadSeconds = videoLead / (double)OneSecond100ns;
@@ -150,37 +153,37 @@ namespace PlayniteAchievements.Services.Capture
             return pcmType;
         }
 
-        private int TryAddAudioStream(SinkWriter sink, out MediaType pcmType)
+        private static int AddAudioStream(SinkWriter sink, out MediaType pcmType)
         {
-            pcmType = null;
-            try
+            using (var aacType = CreateAacType())
             {
-                using (var aacType = CreateAacType())
-                {
-                    sink.AddStream(aacType, out var streamIndex);
-                    pcmType = CreatePcmType();
-                    sink.SetInputMediaType(streamIndex, pcmType, null);
-                    return streamIndex;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[Recording] Could not add an AAC audio stream; clip will be video-only.");
-                pcmType?.Dispose();
-                pcmType = null;
-                return -1;
+                sink.AddStream(aacType, out var streamIndex);
+                pcmType = CreatePcmType();
+                sink.SetInputMediaType(streamIndex, pcmType, null);
+                return streamIndex;
             }
         }
 
         /// <summary>
-        /// Reads a planned audio window (e.g. the chime sidecar chunks around one wave's unlock
-        /// sound) into one contiguous 48 kHz stereo 16-bit PCM buffer. Returns null on failure or
-        /// when nothing overlaps.
+        /// Reads a plan onto an exact caller-supplied UTC window, placing decoded samples by their
+        /// timestamps and zero-padding uncovered spans. Separate process-loopback clients rotate
+        /// chunks at different instants; appending their samples would erase that difference and
+        /// make sample-wise game cancellation leave an echo.
         /// </summary>
         [HandleProcessCorruptedStateExceptions, System.Security.SecurityCritical]
-        public static byte[] TryReadPcmWindow(SegmentTimeline.ClipPlan plan, ILogger logger)
+        public static byte[] TryReadPcmWindow(
+            SegmentTimeline.ClipPlan plan,
+            DateTime outputStartUtc,
+            DateTime outputEndUtc,
+            ILogger logger)
         {
-            if (plan?.Segments == null || plan.Segments.Count == 0)
+            if (plan?.Segments == null || plan.Segments.Count == 0 || outputEndUtc <= outputStartUtc)
+            {
+                return null;
+            }
+
+            var outputBytes = PcmAudio.TicksToAlignedBytes((outputEndUtc - outputStartUtc).Ticks);
+            if (outputBytes <= 0 || outputBytes > int.MaxValue)
             {
                 return null;
             }
@@ -190,8 +193,10 @@ namespace PlayniteAchievements.Services.Capture
                 try
                 {
                     using (var pcmType = CreatePcmType())
-                    using (var stream = new System.IO.MemoryStream())
                     {
+                        var output = new byte[(int)outputBytes];
+                        var planOffsetTicks = (plan.StartUtc - outputStartUtc).Ticks;
+                        var wroteAny = false;
                         foreach (var timed in AudioSamples(plan, pcmType, videoLead: 0))
                         {
                             using (var sample = timed.Sample)
@@ -202,7 +207,21 @@ namespace PlayniteAchievements.Services.Capture
                                 {
                                     var bytes = new byte[length];
                                     System.Runtime.InteropServices.Marshal.Copy(ptr, bytes, 0, length);
-                                    stream.Write(bytes, 0, length);
+                                    var sampleTicks = planOffsetTicks + timed.Time;
+                                    var destOffset = PcmAudio.TicksToAlignedBytes(Math.Max(0, sampleTicks));
+                                    var sourceOffset = PcmAudio.TicksToAlignedBytes(Math.Max(0, -sampleTicks));
+                                    var count = Math.Min(
+                                        bytes.Length - sourceOffset,
+                                        output.Length - destOffset);
+                                    count &= ~(long)(PcmAudio.BlockAlign - 1);
+                                    if (count > 0)
+                                    {
+                                        Buffer.BlockCopy(
+                                            bytes, (int)sourceOffset,
+                                            output, (int)destOffset,
+                                            (int)count);
+                                        wroteAny = true;
+                                    }
                                 }
                                 finally
                                 {
@@ -211,7 +230,7 @@ namespace PlayniteAchievements.Services.Capture
                             }
                         }
 
-                        return stream.Length > 0 ? stream.ToArray() : null;
+                        return wroteAny ? output : null;
                     }
                 }
                 catch (Exception ex)
@@ -281,8 +300,9 @@ namespace PlayniteAchievements.Services.Capture
         /// Writes video and audio samples to the sink in a single timestamp-ordered stream. A
         /// multi-stream Media Foundation SinkWriter blocks a stream that runs too far ahead of the
         /// others, so writing all video before any audio deadlocks — interleaving by output time
-        /// keeps both streams advancing. Audio is best-effort: a read failure degrades to a
-        /// video-only clip.
+        /// keeps both streams advancing. When an audio plan was supplied it is mandatory: an empty
+        /// or unreadable plan aborts this attempt so the recording service can retry with the
+        /// original, uncleaned chunks.
         /// </summary>
         private void WriteInterleaved(
             SinkWriter sink, int videoStream, SegmentTimeline.ClipPlan videoPlan, long keyframeStart, long clipEnd,
@@ -295,7 +315,11 @@ namespace PlayniteAchievements.Services.Capture
                 if (audioStream >= 0 && audioPlan?.Segments != null && audioPlan.Segments.Count > 0)
                 {
                     audio = AudioSamples(audioPlan, pcmType, videoLead).GetEnumerator();
-                    hasAudio = TryMoveNext(audio);
+                    hasAudio = audio.MoveNext();
+                    if (!hasAudio)
+                    {
+                        throw new InvalidDataException("Planned clip audio produced no samples.");
+                    }
                 }
 
                 try
@@ -311,7 +335,7 @@ namespace PlayniteAchievements.Services.Capture
                         else
                         {
                             WriteAndDispose(sink, audioStream, audio.Current);
-                            hasAudio = TryMoveNext(audio);
+                            hasAudio = audio.MoveNext();
                         }
                     }
                 }
@@ -331,19 +355,6 @@ namespace PlayniteAchievements.Services.Capture
             finally
             {
                 timed.Sample.Dispose();
-            }
-        }
-
-        private bool TryMoveNext(IEnumerator<TimedSample> enumerator)
-        {
-            try
-            {
-                return enumerator.MoveNext();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "[Recording] Clip audio read failed; clip will be video-only.");
-                return false;
             }
         }
 
@@ -485,8 +496,8 @@ namespace PlayniteAchievements.Services.Capture
         private static IEnumerable<TimedSample> AudioSamples(
             SegmentTimeline.ClipPlan plan, MediaType pcmType, long videoLead)
         {
-            var clipStart = ToTicks(plan.StartOffsetSeconds);
-            var clipEnd = clipStart + ToTicks(plan.DurationSeconds);
+            var clipStart = PlanStartTicks(plan);
+            var clipEnd = PlanEndTicks(plan);
             var started = false;
 
             foreach (var chunk in plan.Segments)
@@ -565,9 +576,14 @@ namespace PlayniteAchievements.Services.Capture
             }
         }
 
-        private static long ToTicks(double seconds)
+        private static long PlanStartTicks(SegmentTimeline.ClipPlan plan)
         {
-            return (long)(Math.Max(0, seconds) * OneSecond100ns);
+            return Math.Max(0, (plan.StartUtc - plan.Segments[0].StartUtc).Ticks);
+        }
+
+        private static long PlanEndTicks(SegmentTimeline.ClipPlan plan)
+        {
+            return Math.Max(PlanStartTicks(plan), (plan.EndUtc - plan.Segments[0].StartUtc).Ticks);
         }
     }
 }

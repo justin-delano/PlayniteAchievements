@@ -115,6 +115,22 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
+        public void OverlayTrackSampling_UsesTheCardSurfaceInsideTheSlideHost()
+        {
+            var service = ReadToastService();
+
+            Assert.IsTrue(
+                service.Contains("private ItemsControl _activeCardSurface;"),
+                "The active card surface should retain its ItemsControl type for overlay sampling.");
+            Assert.IsTrue(
+                service.Contains("itemsControl = _activeCardSurface;"),
+                "Overlay sampling must use the card surface wrapped by the slide host.");
+            Assert.IsFalse(
+                service.Contains("itemsControl = window?.Content as ItemsControl;"),
+                "The window content is the slide host, so casting it to ItemsControl drops every sample.");
+        }
+
+        [TestMethod]
         public void SlideTiming_IsResolvedOncePerWaveRatherThanPerSlide()
         {
             var service = ReadToastService();
@@ -183,9 +199,15 @@ namespace PlayniteAchievements.Tests.Services.UI
             Assert.IsTrue(
                 service.Contains("var restDip = travels ? toDip : 0d;"),
                 "The non-travelling case no longer rests the card at its corner.");
+            // The seed must be the slide's END value, never its start: an animation is an override,
+            // not an assignment, so the settled snap's Stop reverts the transform to whatever local
+            // value was seeded — a start seed strands the card in the travel room until slide-out.
             Assert.IsTrue(
+                service.Contains("transform.Y = restDip;"),
+                "The transform must be seeded with the slide's rest value before the storyboard runs.");
+            Assert.IsFalse(
                 service.Contains("transform.Y = travels ? fromDip : restDip;"),
-                "A non-travelling animation must not park the card at the slide's start position.");
+                "Seeding the slide's start position makes the settled snap revert the card into the travel room.");
         }
 
         private static string ReadToastService()

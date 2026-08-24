@@ -849,16 +849,22 @@ internal static class CaptureHarness
             var sample = Activator.CreateInstance(sampleType);
             sampleType.GetField("ElapsedMs").SetValue(sample, ms);
             sampleType.GetField("FrameIndex").SetValue(sample, 0);
-            sampleType.GetField("RelX").SetValue(sample, 60);
-            sampleType.GetField("RelY").SetValue(sample, 820);
+            sampleType.GetField("SlideXPhys").SetValue(sample, 0.0);
+            sampleType.GetField("SlideYPhys").SetValue(sample, 0.0);
+            sampleType.GetField("GlowScale").SetValue(sample, 1.0);
+            sampleType.GetField("CardWPhys").SetValue(sample, CardW);
+            sampleType.GetField("CardHPhys").SetValue(sample, CardH);
+            sampleType.GetField("HostOpacity").SetValue(sample, 1.0);
             sampleType.GetField("ClientW").SetValue(sample, 1920);
             sampleType.GetField("ClientH").SetValue(sample, 1080);
             add.Invoke(samples, new[] { sample });
         }
 
         trackType.GetProperty("DurationSeconds").SetValue(track, 4.0);
-        trackType.GetProperty("OffsetX").SetValue(track, 0);
-        trackType.GetProperty("OffsetY").SetValue(track, 0);
+        trackType.GetProperty("AlignRight").SetValue(track, false);
+        trackType.GetProperty("AlignBottom").SetValue(track, true);
+        trackType.GetProperty("GapDip").SetValue(track, 24.0);
+        trackType.GetProperty("MonitorScale").SetValue(track, 1.0);
         trackType.GetProperty("AchievementName").SetValue(track, "Harness");
         trackType.GetProperty("ProviderKey").SetValue(track, "harness");
         return track;
@@ -1071,12 +1077,24 @@ internal static class CaptureHarness
 
     private static DateTime? ParseStamp(string name)
     {
-        // seg_yyyyMMdd-HHmmssfff_WxH.mp4
+        // Current: seg_yyyyMMdd-HHmmssfffffffZ_WxH.mp4. Older millisecond and
+        // second-resolution names remain readable by the harness too.
         var body = name.Substring(4);
-        var stamp = body.Substring(0, Math.Min(18, body.Length));
+        var separator = body.IndexOf('_');
+        var stamp = separator >= 0 ? body.Substring(0, separator) : body;
+        if (stamp.EndsWith("Z", StringComparison.OrdinalIgnoreCase))
+        {
+            stamp = stamp.Substring(0, stamp.Length - 1);
+        }
+
         DateTime parsed;
-        if (DateTime.TryParseExact(stamp, "yyyyMMdd-HHmmssfff", null,
-            System.Globalization.DateTimeStyles.None, out parsed))
+        if (DateTime.TryParseExact(
+            stamp,
+            new[] { "yyyyMMdd-HHmmssfffffff", "yyyyMMdd-HHmmssfff", "yyyyMMdd-HHmmss" },
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal |
+                System.Globalization.DateTimeStyles.AdjustToUniversal,
+            out parsed))
         {
             return parsed;
         }

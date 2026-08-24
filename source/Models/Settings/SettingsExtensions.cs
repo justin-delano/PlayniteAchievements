@@ -88,6 +88,7 @@ namespace PlayniteAchievements.Models.Settings
             target.OpenSettingsHotkey = source.OpenSettingsHotkey;
             target.CategoryModeHotkey = source.CategoryModeHotkey;
             target.TestUnlockHotkey = source.TestUnlockHotkey;
+            target.EnableCaptureTestFolder = source.EnableCaptureTestFolder;
 
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;
@@ -103,6 +104,7 @@ namespace PlayniteAchievements.Models.Settings
                     StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, NotificationStyleSettings>(StringComparer.OrdinalIgnoreCase);
             target.ToastDurationSeconds = source.ToastDurationSeconds;
+            target.NotificationDelaySeconds = source.NotificationDelaySeconds;
             target.MaxConcurrentToasts = source.MaxConcurrentToasts;
             target.ToastPosition = source.ToastPosition;
             target.EnableControllerVibration = source.EnableControllerVibration;
@@ -152,6 +154,8 @@ namespace PlayniteAchievements.Models.Settings
             target.SeparateLockedIconEnabledGameIds = source.SeparateLockedIconEnabledGameIds != null
                 ? new HashSet<Guid>(source.SeparateLockedIconEnabledGameIds)
                 : new HashSet<Guid>();
+            target.LockedFallbackIconPath = source.LockedFallbackIconPath;
+            target.HiddenFallbackIconPath = source.HiddenFallbackIconPath;
             target.ModernCompactListShowRarityGlow = source.ModernCompactListShowRarityGlow;
             target.ModernUnlockedListShowRarityGlow = source.ModernUnlockedListShowRarityGlow;
             target.AnimateRarityGlows = source.AnimateRarityGlows;
@@ -194,6 +198,7 @@ namespace PlayniteAchievements.Models.Settings
             target.GridCellVerticalAlignment = source.GridCellVerticalAlignment;
             target.UnlockDateDisplayMode = source.UnlockDateDisplayMode;
             target.PlaytimeDisplayMode = source.PlaytimeDisplayMode;
+            target.CategoryCompletionBadgeMode = source.CategoryCompletionBadgeMode;
             target.FriendNameDisplayMode = source.FriendNameDisplayMode;
             target.EnableAchievementCompactListControl = source.EnableAchievementCompactListControl;
             target.EnableAchievementDataGridControl = source.EnableAchievementDataGridControl;

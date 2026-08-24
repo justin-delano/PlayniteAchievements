@@ -124,8 +124,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                     },
                     async (game, token) =>
                     {
-                        var data = await FetchGameDataAsync(game, refreshContexts, token).ConfigureAwait(false);
-                        await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                        var data = await FetchGameDataAsync(game, refreshContexts, rarityEnricher, token).ConfigureAwait(false);
                         return new ProviderRefreshExecutor.ProviderGameResult
                         {
                             Data = data
@@ -172,17 +171,108 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return;
             }
 
-            await rarityEnricher.EnrichAsync(game, data.Achievements, "ps3", "PSN", cancel).ConfigureAwait(false);
+            await rarityEnricher
+                .EnrichAsync(game, data.Achievements, "ps3", "PSN", cancel, regionHint: ResolveExophaseRegionHint(game))
+                .ConfigureAwait(false);
         }
 
-        private Task<GameAchievementData> FetchGameDataAsync(
+        private async Task EnrichSourceRarityAsync(
+            Game game,
+            GameTrophySource source,
+            SourceAchievements sourceAchievements,
+            ExophaseMetadataEnricher rarityEnricher,
+            CancellationToken cancel)
+        {
+            if (rarityEnricher == null ||
+                sourceAchievements?.Achievements == null ||
+                sourceAchievements.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            // CategoryLabel is the set's own title from TROPCONF/TRP; when the title could not
+            // be read it falls back to the NP communication id, which is unsearchable.
+            var searchName = sourceAchievements.CategoryLabel;
+            if (string.IsNullOrWhiteSpace(searchName) ||
+                string.Equals(searchName, source?.NpCommId, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger?.Info($"[RPCS3] '{game?.Name}': no set title for '{source?.NpCommId}'; skipping Exophase rarity for this set.");
+                return;
+            }
+
+            await rarityEnricher
+                .EnrichAsync(
+                    game,
+                    sourceAchievements.Achievements,
+                    "ps3",
+                    "PSN",
+                    cancel,
+                    regionHint: ResolveExophaseRegionHint(game),
+                    searchName: searchName)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Best-effort Exophase region hint from a PS3 serial in the game's paths.
+        /// The serial's third letter encodes the release region (BLES -> EU,
+        /// BLUS -> NA, BLJS -> JP, ...), which selects the matching regional entry
+        /// when Exophase lists one game once per region. Null when no serial is found.
+        /// </summary>
+        private static string ResolveExophaseRegionHint(Game game)
+        {
+            foreach (var text in EnumerateSerialSourceTexts(game))
+            {
+                foreach (var serial in Rpcs3SerialNpwrBridge.ExtractSerials(text))
+                {
+                    var regionHint = ExophaseGameNameMatcher.MapPsnSerialToRegionHint(serial);
+                    if (!string.IsNullOrWhiteSpace(regionHint))
+                    {
+                        return regionHint;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<string> EnumerateSerialSourceTexts(Game game)
+        {
+            if (game == null)
+            {
+                yield break;
+            }
+
+            yield return game.InstallDirectory;
+
+            if (game.Roms != null)
+            {
+                foreach (var rom in game.Roms)
+                {
+                    yield return rom?.Path;
+                }
+            }
+
+            if (game.GameActions != null)
+            {
+                foreach (var action in game.GameActions)
+                {
+                    yield return action?.Path;
+                    yield return action?.Arguments;
+                    yield return action?.AdditionalArguments;
+                    yield return action?.WorkingDir;
+                }
+            }
+        }
+
+        private async Task<GameAchievementData> FetchGameDataAsync(
             Game game,
             Dictionary<string, Rpcs3RefreshContext> refreshContexts,
+            ExophaseMetadataEnricher rarityEnricher,
             CancellationToken cancel)
         {
             if (game == null)
             {
-                return Task.FromResult<GameAchievementData>(null);
+                return null;
             }
 
             var refreshContext = GetOrCreateRefreshContext(game, refreshContexts, cancel);
@@ -198,12 +288,20 @@ namespace PlayniteAchievements.Providers.RPCS3
             if (sources.Count == 0)
             {
                 _logger?.Info($"[RPCS3] '{game.Name}': no trophy sources resolved; cached achievements preserved.");
-                return Task.FromResult<GameAchievementData>(null);
+                return null;
             }
 
             cancel.ThrowIfCancellationRequested();
 
             var isCollection = sources.Count > 1;
+
+            // Exophase lists each trophy set as its own game and has no pages for multipack
+            // collections, so collections enrich per set using the set's own title. A per-game
+            // slug override names a single page and keeps the merged single-call path.
+            var enrichPerSource = isCollection &&
+                rarityEnricher != null &&
+                !GameCustomDataLookup.TryGetExophaseEnrichmentSlugOverride(game.Id, out _);
+
             var achievements = new List<AchievementDetail>();
             var categoryArt = new List<(string Label, string ArtPath)>();
             foreach (var source in sources)
@@ -213,7 +311,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                 if (sourceAchievements.PreserveExisting)
                 {
                     _logger?.Warn($"[RPCS3] '{game.Name}': progress for '{source.NpCommId}' was not trustworthy; cached achievements preserved.");
-                    return Task.FromResult<GameAchievementData>(null);
+                    return null;
+                }
+
+                if (enrichPerSource)
+                {
+                    await EnrichSourceRarityAsync(game, source, sourceAchievements, rarityEnricher, cancel).ConfigureAwait(false);
                 }
 
                 achievements.AddRange(sourceAchievements.Achievements);
@@ -225,7 +328,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             if (achievements.Count == 0)
             {
-                return Task.FromResult<GameAchievementData>(null);
+                return null;
             }
 
             ApplyDefaultCategoryArt(game, categoryArt);
@@ -242,7 +345,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 $"[RPCS3] '{game.Name}': produced {achievements.Count} trophies " +
                 $"({unlockedCount} unlocked) from [{providerGameKey}].");
 
-            return Task.FromResult(new GameAchievementData
+            var data = new GameAchievementData
             {
                 ProviderKey = "RPCS3",
                 ProviderGameKey = providerGameKey,
@@ -252,7 +355,14 @@ namespace PlayniteAchievements.Providers.RPCS3
                 HasAchievements = achievements.Count > 0,
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow
-            });
+            };
+
+            if (!enrichPerSource)
+            {
+                await EnrichRarityAsync(game, data, rarityEnricher, cancel).ConfigureAwait(false);
+            }
+
+            return data;
         }
 
         /// <summary>
