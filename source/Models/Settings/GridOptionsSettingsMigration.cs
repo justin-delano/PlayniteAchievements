@@ -1,6 +1,7 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PlayniteAchievements.Models;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -78,6 +79,7 @@ namespace PlayniteAchievements.Models.Settings
                 changed |= CopyFriendSummaryOptions(persisted, gridOptions);
                 changed |= SeedStartPageControlBarDefaults(gridOptions);
                 changed |= SeedSingleGameAppearanceFromOverviewSelectedGame(gridOptions);
+                changed |= SeedShowcaseSortDefaults(gridOptions);
 
                 return changed
                     ? root.ToString(Formatting.None)
@@ -87,6 +89,54 @@ namespace PlayniteAchievements.Models.Settings
             {
                 return json;
             }
+        }
+
+        /// <summary>
+        /// One-shot: showcase grid surfaces predate sort consumption, so their persisted records
+        /// hold the class-default sort that was never applied. Seeds them to the order-preserving
+        /// modes (achievements None, pinned games PinOrder) so enabling sort does not reorder
+        /// existing widgets. <see cref="GridOptionsCatalog.ShowcaseSortSeeded"/> defaults true on
+        /// new catalogs, so only files written before the marker existed are seeded.
+        /// </summary>
+        private static bool SeedShowcaseSortDefaults(JObject gridOptions)
+        {
+            const string marker = nameof(GridOptionsCatalog.ShowcaseSortSeeded);
+            if (gridOptions[marker]?.Value<bool>() == true)
+            {
+                return false;
+            }
+
+            if (gridOptions[nameof(GridOptionsCatalog.Achievement)] is JObject achievements)
+            {
+                foreach (var property in achievements.Properties())
+                {
+                    if (ShowcaseGridSurfaces.IsAchievementSurface(property.Name) &&
+                        property.Value is JObject record)
+                    {
+                        record[nameof(AchievementGridOptions.SortMode)] =
+                            nameof(CompactListSortMode.None);
+                    }
+                }
+            }
+
+            if (gridOptions[nameof(GridOptionsCatalog.GameSummaries)] is JObject gameSummaries)
+            {
+                foreach (var property in gameSummaries.Properties())
+                {
+                    if (string.Equals(
+                            ShowcaseGridSurfaces.GetBaseKey(property.Name),
+                            ShowcaseGridSurfaces.PinnedGames,
+                            StringComparison.OrdinalIgnoreCase) &&
+                        property.Value is JObject record)
+                    {
+                        record[nameof(GameSummaryGridOptions.SortMode)] =
+                            nameof(GameSummariesSortMode.PinOrder);
+                    }
+                }
+            }
+
+            gridOptions[marker] = true;
+            return true;
         }
 
         private static bool CopyAchievementOptions(JObject persisted, JObject gridOptions)
