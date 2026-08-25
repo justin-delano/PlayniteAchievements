@@ -285,6 +285,9 @@
                     <ComboBox SelectedValue="{Binding GameSummaryOptions.SortMode, ElementName=EditorRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               SelectedValuePath="Tag"
                               MinWidth="180">
+                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GameSummariesSort_PinOrder}"
+                                      Tag="{x:Static settings:GameSummariesSortMode.PinOrder}"
+                                      Visibility="{Binding ShowGameSortPinOrderChoice, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_LastUnlock}" Tag="{x:Static settings:GameSummariesSortMode.RecentUnlock}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_LastPlayed}" Tag="{x:Static settings:GameSummariesSortMode.LastPlayed}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Total}" Tag="{x:Static settings:GameSummariesSortMode.TotalAchievements}"/>
