@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -12,13 +13,13 @@ namespace PlayniteAchievements.Models.Settings
         Timeline = 3,
         Statistics = 4,
         NativePoints = 5,
-        PinnedAchievements = 6,
-        FavoriteGames = 7,
+        // 6 (PinnedAchievements), 7 (FavoriteGames), and 12 (GameMosaic) are retired; they
+        // collapsed into RecentAchievements, GameSummaries, and IconMosaic via source options.
+        // Do not reuse the numbers.
         IconMosaic = 8,
         ScreenshotSlideshow = 9,
         RecentAchievements = 10,
         GameSummaries = 11,
-        GameMosaic = 12,
         ActivityCalendar = 13
     }
 
@@ -51,12 +52,6 @@ namespace PlayniteAchievements.Models.Settings
         Game = 1
     }
 
-    public enum ShowcaseFavoriteGameSource
-    {
-        ShowcasePins = 0,
-        PlayniteFavorites = 1
-    }
-
     public enum ShowcaseMosaicSource
     {
         Recent = 0,
@@ -77,6 +72,28 @@ namespace PlayniteAchievements.Models.Settings
         All = 0,
         GameCollection = 1,
         AchievementCollection = 2
+    }
+
+    /// <summary>What the collapsed Mosaic widget renders: achievement icons or game covers.</summary>
+    public enum ShowcaseMosaicContent
+    {
+        Achievements = 0,
+        Games = 1
+    }
+
+    /// <summary>Row source for the collapsed Achievements Grid widget.</summary>
+    public enum ShowcaseAchievementGridSource
+    {
+        All = 0,
+        Pinned = 1
+    }
+
+    /// <summary>Row source for the collapsed Game Summaries Grid widget.</summary>
+    public enum ShowcaseGameGridSource
+    {
+        Library = 0,
+        Pinned = 1,
+        PlayniteFavorites = 2
     }
 
     public enum ShowcaseImageFitMode
@@ -340,6 +357,10 @@ namespace PlayniteAchievements.Models.Settings
         public string DefaultGamePinCollectionId { get; set; } =
             BuiltInGameCollectionId;
 
+        // Replace on deserialize: these lists are seeded with the built-in Default, and
+        // Newtonsoft's default in-place population would append the persisted entries after the
+        // seed, duplicating the Default collection on every load.
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<PinnedAchievementCollection> AchievementPinCollections { get; set; } =
             new List<PinnedAchievementCollection>
             {
@@ -350,6 +371,7 @@ namespace PlayniteAchievements.Models.Settings
                 }
             };
 
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<PinnedGameCollection> GamePinCollections { get; set; } =
             new List<PinnedGameCollection>
             {
