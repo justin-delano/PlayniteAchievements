@@ -567,14 +567,14 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
                     <DataTemplate>
+                        <!-- The glow rides the OUTER border: ClipToBounds clips an element's own
+                             drop-shadow effect, so the image-clipping border sits inside it. -->
                         <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                 Margin="3"
-                                ClipToBounds="True"
                                 ToolTip="{Binding GameName}"
                                 ContextMenuService.IsEnabled="{Binding IsPinnable}">
                             <Border.Style>
                                 <Style TargetType="Border">
-                                    <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ShowCompletionGlow}" Value="True">
                                             <Setter Property="Effect" Value="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
@@ -593,22 +593,26 @@
                                               Command="{Binding UnpinCommand}"/>
                                 </ContextMenu>
                             </Border.ContextMenu>
-                            <Image Width="{Binding CoverWidth}"
-                                   Height="{Binding CoverHeight}"
-                                   SnapsToDevicePixels="True"
-                                   helpers:AsyncImage.Uri="{Binding CoverPath}"
-                                   helpers:AsyncImage.DecodePixel="{Binding DecodePixel}">
-                                <Image.Style>
-                                    <Style TargetType="Image">
-                                        <Setter Property="Stretch" Value="UniformToFill"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasCover}" Value="False">
-                                                <Setter Property="Stretch" Value="Uniform"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Image.Style>
-                            </Image>
+                            <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
+                                    CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                    ClipToBounds="True">
+                                <Image Width="{Binding CoverWidth}"
+                                       Height="{Binding CoverHeight}"
+                                       SnapsToDevicePixels="True"
+                                       helpers:AsyncImage.Uri="{Binding CoverPath}"
+                                       helpers:AsyncImage.DecodePixel="{Binding DecodePixel}">
+                                    <Image.Style>
+                                        <Style TargetType="Image">
+                                            <Setter Property="Stretch" Value="UniformToFill"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasCover}" Value="False">
+                                                    <Setter Property="Stretch" Value="Uniform"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Border>
                         </Border>
                     </DataTemplate>
             </ListBox.ItemTemplate>
