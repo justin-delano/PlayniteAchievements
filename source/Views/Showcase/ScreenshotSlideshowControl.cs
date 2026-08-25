@@ -48,6 +48,7 @@ namespace PlayniteAchievements.Views.Showcase
         private int _reloadVersion;
         private bool _paused;
         private bool _editHold;
+        private bool _mediaHovered;
         private ShowcaseScreenshotVariant? _loadedVariant;
         private bool? _loadedShuffle;
         private ShowcaseImageFitMode? _loadedFit;
@@ -220,6 +221,18 @@ namespace PlayniteAchievements.Views.Showcase
                     args.Handled = true;
                 }
             };
+            // The pause/fullscreen transport only shows while the pointer is over the image, so
+            // the idle slideshow stays chrome-free.
+            mediaFrame.MouseEnter += (_, __) =>
+            {
+                _mediaHovered = true;
+                UpdateChromeVisibility();
+            };
+            mediaFrame.MouseLeave += (_, __) =>
+            {
+                _mediaHovered = false;
+                UpdateChromeVisibility();
+            };
             Grid.SetColumn(mediaFrame, 1);
             mediaRow.Children.Add(mediaFrame);
             Grid.SetColumn(_next, 2);
@@ -330,7 +343,7 @@ namespace PlayniteAchievements.Views.Showcase
             _previous.Visibility = canNavigate ? Visibility.Visible : Visibility.Collapsed;
             _next.Visibility = canNavigate ? Visibility.Visible : Visibility.Collapsed;
             _captionBar.Visibility = Visibility.Visible;
-            _transport.Visibility = _items.Count > 0
+            _transport.Visibility = _items.Count > 0 && _mediaHovered
                 ? Visibility.Visible
                 : Visibility.Collapsed;
             _pause.IsEnabled = _items.Count > 1;
