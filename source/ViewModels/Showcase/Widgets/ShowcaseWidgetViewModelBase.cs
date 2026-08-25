@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels.Items;
@@ -254,6 +256,49 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             _searchIndex.Rebuild(list);
             return list.Where(item => _searchIndex.Matches(item, query));
         }
+
+        /// <summary>
+        /// Applies the surface's configured sort. None preserves the projection's source order
+        /// (pin order for pinned grids, unlock recency for recent grids).
+        /// </summary>
+        protected override IEnumerable<AchievementDisplayItem> OrderItems(
+            IEnumerable<AchievementDisplayItem> items)
+        {
+            var options = GridOptions as AchievementGridOptions;
+            var spec = new AchievementSortSpec(
+                options?.SortMode ?? CompactListSortMode.None,
+                options?.SortDescending == false
+                    ? ListSortDirection.Ascending
+                    : ListSortDirection.Descending);
+            if (spec.PreservesSourceOrder)
+            {
+                return items;
+            }
+
+            var list = (items ?? Enumerable.Empty<AchievementDisplayItem>())
+                .Where(item => item != null)
+                .ToList();
+            var comparison = AchievementSortHelper.GetComparison(
+                spec.SortMemberPath,
+                spec.Direction,
+                AchievementSortScope.RecentAchievements);
+            if (comparison == null)
+            {
+                return list;
+            }
+
+            list.Sort(AchievementSortHelper.WithStableOrder(
+                comparison,
+                AchievementSortHelper.CreateStableOrderMap(list)));
+            return list;
+        }
+
+        protected override bool ShouldRefreshItemsFor(string propertyName)
+        {
+            return base.ShouldRefreshItemsFor(propertyName) ||
+                propertyName == nameof(AchievementGridOptions.SortMode) ||
+                propertyName == nameof(AchievementGridOptions.SortDescending);
+        }
     }
 
     /// <summary>
@@ -279,6 +324,37 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 .ToList();
             _controlBarAdapter.UpdateOptions(list);
             return _controlBarAdapter.Apply(list);
+        }
+
+        /// <summary>Sort fallback when the surface record is unavailable.</summary>
+        protected virtual GameSummariesSortMode DefaultSortMode => GameSummariesSortMode.RecentUnlock;
+
+        /// <summary>
+        /// Applies the surface's configured sort. PinOrder preserves the projection's source
+        /// order, which for pinned grids is the user-controlled pin order. Sorting runs here
+        /// (not in the projection) so a sort edit re-orders this widget's rows without
+        /// re-projecting the whole dashboard.
+        /// </summary>
+        protected override IEnumerable<GameSummaryItem> OrderItems(IEnumerable<GameSummaryItem> items)
+        {
+            var list = (items ?? Enumerable.Empty<GameSummaryItem>())
+                .Where(item => item != null)
+                .ToList();
+            var options = GridOptions as GameSummaryGridOptions;
+            GameSummariesSortHelper.Sort(
+                list,
+                options?.SortMode ?? DefaultSortMode,
+                options?.SortDescending == false
+                    ? ListSortDirection.Ascending
+                    : ListSortDirection.Descending);
+            return list;
+        }
+
+        protected override bool ShouldRefreshItemsFor(string propertyName)
+        {
+            return base.ShouldRefreshItemsFor(propertyName) ||
+                propertyName == nameof(GameSummaryGridOptions.SortMode) ||
+                propertyName == nameof(GameSummaryGridOptions.SortDescending);
         }
     }
 }
