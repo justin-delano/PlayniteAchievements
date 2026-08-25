@@ -22,17 +22,26 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             string pinCollectionId,
             double coverWidth,
             double coverHeight,
-            int decodePixel)
+            int decodePixel,
+            bool useCovers = true,
+            bool showCompletionGlow = false)
         {
             _gameId = game.PlayniteGameId;
             _pinCollectionId = pinCollectionId;
-            HasCover = !string.IsNullOrWhiteSpace(game.GameCoverPath);
-            CoverPath = HasCover ? game.GameCoverPath : game.GameLogo;
+            // Icon tiles keep Uniform stretch (HasCover false) so icons are never cropped;
+            // cover art fills its tile.
+            var cover = game.GameCoverPath;
+            var icon = game.GameLogo;
+            HasCover = useCovers && !string.IsNullOrWhiteSpace(cover);
+            CoverPath = useCovers
+                ? (HasCover ? cover : icon)
+                : (!string.IsNullOrWhiteSpace(icon) ? icon : cover);
             CoverWidth = coverWidth;
             CoverHeight = coverHeight;
             DecodePixel = decodePixel;
             GameName = game.GameName;
             IsPinnable = pinnable && game.PlayniteGameId.HasValue;
+            ShowCompletionGlow = showCompletionGlow && game.IsCompleted;
 
             MoveEarlierCommand = new RelayCommand(_ => Move(-1));
             MoveLaterCommand = new RelayCommand(_ => Move(1));
@@ -52,6 +61,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public string GameName { get; }
 
         public bool IsPinnable { get; }
+
+        /// <summary>True when the tile's game is completed and the widget shows the glow.</summary>
+        public bool ShowCompletionGlow { get; }
 
         public RelayCommand MoveEarlierCommand { get; }
 
