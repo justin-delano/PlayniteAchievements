@@ -1340,12 +1340,10 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_Less">Less</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_More">More</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_Completion">Completion</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_TrackedGames">Tracked games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_PlayedGames">Played games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">Completed games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_Playtime">Playtime</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">Unlocks / active day</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">30-day rate</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Average global unlock</sys:String>

@@ -482,12 +482,12 @@ namespace PlayniteAchievements.Services.Showcase
 
             return new List<ShowcaseStatistic>
             {
-                Stat("unlocked", "LOCPlayAch_Showcase_Stat_Unlocked", snapshot.TotalUnlocked),
+                Stat("unlocked", "LOCPlayAch_Common_Unlocked", snapshot.TotalUnlocked),
                 Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", snapshot.GlobalProgressionPercent),
                 Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", snapshot.TotalGames),
                 Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", playedGames),
                 Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", snapshot.CompletedGames),
-                Stat("playtime", "LOCPlayAch_Showcase_Stat_Playtime", totalPlaytime),
+                Stat("playtime", "LOCPlayAch_Common_Label_Playtime", totalPlaytime),
                 Stat(
                     "activeDayRate",
                     "LOCPlayAch_Showcase_Stat_ActiveDayRate",
