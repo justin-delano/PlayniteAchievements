@@ -19,6 +19,12 @@ namespace PlayniteAchievements.Services.StartPage
         public bool HasSettings { get; set; }
 
         public bool AllowMultipleInstances { get; set; }
+
+        /// <summary>
+        /// Hidden views are omitted from the StartPage add list but still resolve by id, so
+        /// views placed before their widget kind was collapsed or disabled keep rendering.
+        /// </summary>
+        public bool Hidden { get; set; }
     }
 
     public static class StartPageViewCatalog
@@ -37,12 +43,9 @@ namespace PlayniteAchievements.Services.StartPage
         public const string ShowcaseTimelineViewId = "PlayniteAchievements_Showcase_Timeline";
         public const string ShowcaseStatisticsViewId = "PlayniteAchievements_Showcase_Statistics";
         public const string ShowcaseNativePointsViewId = "PlayniteAchievements_Showcase_NativePoints";
-        public const string ShowcasePinnedAchievementsViewId = "PlayniteAchievements_Showcase_PinnedAchievements";
-        public const string ShowcaseFavoriteGamesViewId = "PlayniteAchievements_Showcase_FavoriteGames";
         public const string ShowcaseIconMosaicViewId = "PlayniteAchievements_Showcase_IconMosaic";
         public const string ShowcaseScreenshotSlideshowViewId = "PlayniteAchievements_Showcase_ScreenshotSlideshow";
         public const string ShowcaseActivityCalendarViewId = "PlayniteAchievements_Showcase_ActivityCalendar";
-        public const string ShowcaseGameMosaicViewId = "PlayniteAchievements_Showcase_GameMosaic";
 
         private static readonly IReadOnlyList<StartPageViewDefinition> ViewDefinitions =
             new List<StartPageViewDefinition>
@@ -140,20 +143,13 @@ namespace PlayniteAchievements.Services.StartPage
                     StartPageWidgetKind.ShowcaseStatistics,
                     ShowcaseWidgetKind.Statistics,
                     hasSettings: false),
+                // NativePoints stays resolvable for already-placed start-page views; Shared
+                // marks it hidden from the add list because its showcase kind is hidden in the
+                // widget catalog.
                 Shared(
                     ShowcaseNativePointsViewId,
                     StartPageWidgetKind.ShowcaseNativePoints,
                     ShowcaseWidgetKind.NativePoints,
-                    hasSettings: true),
-                Shared(
-                    ShowcasePinnedAchievementsViewId,
-                    StartPageWidgetKind.ShowcasePinnedAchievements,
-                    ShowcaseWidgetKind.PinnedAchievements,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseFavoriteGamesViewId,
-                    StartPageWidgetKind.ShowcaseFavoriteGames,
-                    ShowcaseWidgetKind.FavoriteGames,
                     hasSettings: true),
                 Shared(
                     ShowcaseIconMosaicViewId,
@@ -169,11 +165,6 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcaseActivityCalendarViewId,
                     StartPageWidgetKind.ShowcaseActivityCalendar,
                     ShowcaseWidgetKind.ActivityCalendar,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseGameMosaicViewId,
-                    StartPageWidgetKind.ShowcaseGameMosaic,
-                    ShowcaseWidgetKind.GameMosaic,
                     hasSettings: true)
             };
 
@@ -207,7 +198,8 @@ namespace PlayniteAchievements.Services.StartPage
                 ShowcaseWidgetKind = showcaseKind,
                 NameKey = definition.NameKey,
                 AllowMultipleInstances = definition.AllowMultipleInstances,
-                HasSettings = hasSettings
+                HasSettings = hasSettings,
+                Hidden = definition.Hidden
             };
         }
     }
