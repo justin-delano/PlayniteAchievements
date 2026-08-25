@@ -1265,19 +1265,15 @@ namespace PlayniteAchievements.Views.Showcase
             var button = new Button
             {
                 Content = glyph,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
-                FontSize = 12,
-                Width = 26,
-                Height = 26,
-                Focusable = false,
                 HorizontalAlignment = alignment,
                 VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(8),
                 ToolTip = Localize(labelKey),
-                BorderThickness = new Thickness(0),
                 Visibility = Visibility.Collapsed
             };
-            button.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Surface");
+            button.SetResourceReference(
+                FrameworkElement.StyleProperty,
+                "PlayAch.Showcase.BlockActionButtonStyle");
             System.Windows.Automation.AutomationProperties.SetName(button, Localize(labelKey));
             Panel.SetZIndex(button, 5);
             return button;
