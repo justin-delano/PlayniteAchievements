@@ -1290,7 +1290,7 @@ namespace PlayniteAchievements.Views.Showcase
         private void OpenWidgetPicker(ShowcaseBlockSettings block, FrameworkElement target)
         {
             var menu = new ContextMenu();
-            foreach (var definition in ShowcaseWidgetCatalog.Definitions)
+            foreach (var definition in ShowcaseWidgetCatalog.Definitions.Where(definition => !definition.Hidden))
             {
                 var captured = definition;
                 var item = WidgetPickerItem(
