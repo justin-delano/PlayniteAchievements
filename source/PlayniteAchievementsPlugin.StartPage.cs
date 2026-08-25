@@ -34,6 +34,7 @@ namespace PlayniteAchievements
             {
                 ExtensionName = L("LOCPlayAch_Title_PluginName"),
                 Views = StartPageViewCatalog.Views
+                    .Where(view => !view.Hidden)
                     .Select(view => new StartPageViewArgsBase
                     {
                         ViewId = view.ViewId,
@@ -442,15 +443,14 @@ namespace PlayniteAchievements
                 kind,
                 instanceId.ToString("N"));
 
-            if (kind == ShowcaseWidgetKind.PinnedAchievements ||
-                kind == ShowcaseWidgetKind.IconMosaic)
+            if (kind == ShowcaseWidgetKind.IconMosaic ||
+                kind == ShowcaseWidgetKind.RecentAchievements)
             {
                 ShowcaseWidgetOptions.SetPinCollectionId(
                     settings,
                     showcase.DefaultAchievementPinCollectionId);
             }
-            else if (kind == ShowcaseWidgetKind.FavoriteGames ||
-                     kind == ShowcaseWidgetKind.GameMosaic)
+            else if (kind == ShowcaseWidgetKind.GameSummaries)
             {
                 ShowcaseWidgetOptions.SetPinCollectionId(
                     settings,
