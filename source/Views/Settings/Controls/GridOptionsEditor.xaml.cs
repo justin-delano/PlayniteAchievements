@@ -178,5 +178,10 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
         public static readonly DependencyProperty ShowCompletionGlowRowProperty = RegisterFlag(nameof(ShowCompletionGlowRow), true);
         public bool ShowCompletionGlowRow { get => (bool)GetValue(ShowCompletionGlowRowProperty); set => SetValue(ShowCompletionGlowRowProperty, value); }
+
+        // Offers the order-preserving PinOrder game sort choice; only surfaces whose source
+        // order is user-controlled (the showcase pinned-games grid) enable it.
+        public static readonly DependencyProperty ShowGameSortPinOrderChoiceProperty = RegisterFlag(nameof(ShowGameSortPinOrderChoice), false);
+        public bool ShowGameSortPinOrderChoice { get => (bool)GetValue(ShowGameSortPinOrderChoiceProperty); set => SetValue(ShowGameSortPinOrderChoiceProperty, value); }
     }
 }
