@@ -216,6 +216,50 @@ namespace PlayniteAchievements.Views.Showcase
                         OnOffLabel);
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
+                    FrameworkElement slideshowGameCollectionRow = null;
+                    FrameworkElement slideshowAchievementCollectionRow = null;
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_Source"),
+                        new[]
+                        {
+                            ShowcaseSlideshowSource.All,
+                            ShowcaseSlideshowSource.GameCollection,
+                            ShowcaseSlideshowSource.AchievementCollection
+                        },
+                        ShowcaseWidgetOptions.GetSlideshowSource(_settings),
+                        value =>
+                        {
+                            ShowcaseWidgetOptions.SetSlideshowSource(_settings, value);
+                            if (slideshowGameCollectionRow != null)
+                            {
+                                slideshowGameCollectionRow.Visibility =
+                                    value == ShowcaseSlideshowSource.GameCollection
+                                        ? Visibility.Visible
+                                        : Visibility.Collapsed;
+                            }
+
+                            if (slideshowAchievementCollectionRow != null)
+                            {
+                                slideshowAchievementCollectionRow.Visibility =
+                                    value == ShowcaseSlideshowSource.AchievementCollection
+                                        ? Visibility.Visible
+                                        : Visibility.Collapsed;
+                            }
+                        },
+                        SlideshowSourceName);
+                    slideshowGameCollectionRow = AddPinCollectionChoice(panel, achievementCollection: false);
+                    slideshowGameCollectionRow.Visibility =
+                        ShowcaseWidgetOptions.GetSlideshowSource(_settings) ==
+                        ShowcaseSlideshowSource.GameCollection
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                    slideshowAchievementCollectionRow = AddPinCollectionChoice(panel, achievementCollection: true);
+                    slideshowAchievementCollectionRow.Visibility =
+                        ShowcaseWidgetOptions.GetSlideshowSource(_settings) ==
+                        ShowcaseSlideshowSource.AchievementCollection
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_Variant"),
