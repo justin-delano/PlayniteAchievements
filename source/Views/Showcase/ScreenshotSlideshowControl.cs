@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
@@ -10,6 +12,9 @@ using System.Windows.Threading;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Captures;
+using PlayniteAchievements.Services.Images;
+using PlayniteAchievements.Services.Showcase;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
@@ -46,6 +51,8 @@ namespace PlayniteAchievements.Views.Showcase
         private ShowcaseScreenshotVariant? _loadedVariant;
         private bool? _loadedShuffle;
         private ShowcaseImageFitMode? _loadedFit;
+        private ShowcaseSlideshowSource? _loadedSource;
+        private string _loadedCollectionId;
 
         public ScreenshotSlideshowControl(ShowcaseWidgetInstanceSettings settings)
         {
@@ -124,8 +131,17 @@ namespace PlayniteAchievements.Views.Showcase
                 _timer.Interval = interval;
             }
 
+            // A scoped slideshow reloads on every re-apply so pin-collection membership changes
+            // are picked up; the reload's same-set fast path keeps an unchanged scope invisible.
+            var source = ShowcaseWidgetOptions.GetSlideshowSource(_settings);
             if (ShowcaseWidgetOptions.GetScreenshotVariant(_settings) != _loadedVariant ||
-                ShowcaseWidgetOptions.GetShuffle(_settings) != _loadedShuffle)
+                ShowcaseWidgetOptions.GetShuffle(_settings) != _loadedShuffle ||
+                source != _loadedSource ||
+                source != ShowcaseSlideshowSource.All ||
+                !string.Equals(
+                    ShowcaseWidgetOptions.GetPinCollectionId(_settings),
+                    _loadedCollectionId,
+                    StringComparison.OrdinalIgnoreCase))
             {
                 _ = ReloadAsync();
                 return;
@@ -326,11 +342,92 @@ namespace PlayniteAchievements.Views.Showcase
             Dispatcher.BeginInvoke(new Action(() => _ = ReloadAsync()));
         }
 
+        /// <summary>
+        /// Sanitized capture folder names (and, for achievement collections, the allowed
+        /// achievement stems per folder) for the configured pin-collection scope. Folders is null
+        /// when the slideshow draws from the whole library; Stems is null when a folder's every
+        /// capture qualifies.
+        /// </summary>
+        private (IReadOnlyCollection<string> Folders, Dictionary<string, HashSet<string>> Stems)
+            ResolveScope(ShowcaseSlideshowSource source)
+        {
+            if (source == ShowcaseSlideshowSource.All)
+            {
+                return (null, null);
+            }
+
+            var showcase = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase;
+            var collectionId = ShowcaseWidgetOptions.GetPinCollectionId(_settings);
+            var games = PlayniteAchievementsPlugin.Instance?.PlayniteApi?.Database?.Games;
+            if (source == ShowcaseSlideshowSource.GameCollection)
+            {
+                var collection = ShowcasePinService.ResolveGameCollection(showcase, collectionId);
+                var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var gameId in collection?.GameIds ?? new List<Guid>())
+                {
+                    var folder = UnlockScreenshotService.SanitizeCaptureGameName(
+                        games?.Get(gameId)?.Name);
+                    if (!string.IsNullOrEmpty(folder))
+                    {
+                        folders.Add(folder);
+                    }
+                }
+
+                return (folders, null);
+            }
+
+            var achievementCollection = ShowcasePinService.ResolveAchievementCollection(
+                showcase,
+                collectionId);
+            var stems = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pin in achievementCollection?.Pins ?? new List<PinnedAchievementReference>())
+            {
+                if (pin == null)
+                {
+                    continue;
+                }
+
+                var gameName = games?.Get(pin.GameId)?.Name ?? pin.LastKnownGameName;
+                var folder = UnlockScreenshotService.SanitizeCaptureGameName(gameName);
+                var stem = AchievementIconCachePathBuilder.SanitizeSegment(
+                    pin.LastKnownAchievementName);
+                if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(stem))
+                {
+                    continue;
+                }
+
+                if (!stems.TryGetValue(folder, out var folderStems))
+                {
+                    folderStems = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    stems[folder] = folderStems;
+                }
+
+                folderStems.Add(stem);
+            }
+
+            return (stems.Keys.ToList(), stems);
+        }
+
+        private static string GetCaptureFolderName(string filePath)
+        {
+            try
+            {
+                return Path.GetFileName(Path.GetDirectoryName(filePath)) ?? string.Empty;
+            }
+            catch (ArgumentException)
+            {
+                return string.Empty;
+            }
+        }
+
         private async Task ReloadAsync()
         {
             var captureLibrary = _captureLibrary;
             var reloadVersion = ++_reloadVersion;
             var selectedVariant = ShowcaseWidgetOptions.GetScreenshotVariant(_settings);
+            var selectedSource = ShowcaseWidgetOptions.GetSlideshowSource(_settings);
+            var selectedCollectionId = ShowcaseWidgetOptions.GetPinCollectionId(_settings);
+            var scope = ResolveScope(selectedSource);
             CaptureVariant? captureVariant = null;
             switch (selectedVariant)
             {
@@ -358,11 +455,22 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 items = captureLibrary == null
                     ? (IReadOnlyList<CaptureItem>)Array.Empty<CaptureItem>()
-                    : await Task.Run(() => captureLibrary.GetScreenshots(captureVariant));
+                    : await Task.Run(() => captureLibrary.GetScreenshots(
+                        captureVariant,
+                        gameFolders: scope.Folders));
             }
             catch
             {
                 items = Array.Empty<CaptureItem>();
+            }
+
+            if (scope.Stems != null)
+            {
+                items = items
+                    .Where(item =>
+                        scope.Stems.TryGetValue(GetCaptureFolderName(item.FilePath), out var stems) &&
+                        stems.Contains(item.AchievementStem ?? string.Empty))
+                    .ToList();
             }
 
             if (reloadVersion != _reloadVersion ||
@@ -376,6 +484,8 @@ namespace PlayniteAchievements.Views.Showcase
             if (_items.Count > 0 &&
                 selectedVariant == _loadedVariant &&
                 shuffle == _loadedShuffle &&
+                selectedSource == _loadedSource &&
+                string.Equals(selectedCollectionId, _loadedCollectionId, StringComparison.OrdinalIgnoreCase) &&
                 SameItemSet(items))
             {
                 // Same files under the same options: keep the playback order, position, and
@@ -386,6 +496,8 @@ namespace PlayniteAchievements.Views.Showcase
             var currentPath = Current?.FilePath;
             _loadedVariant = selectedVariant;
             _loadedShuffle = shuffle;
+            _loadedSource = selectedSource;
+            _loadedCollectionId = selectedCollectionId;
             _items = CreatePlaybackOrder(items);
             _index = ResolveIndex(currentPath);
             ShowCurrent();
