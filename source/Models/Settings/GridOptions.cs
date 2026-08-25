@@ -770,13 +770,6 @@ namespace PlayniteAchievements.Models.Settings
             AttachOptions(GameSummariesKindName, id, options);
         }
 
-        /// <summary>
-        /// Marker for the one-shot migration that seeds showcase grid surfaces with the
-        /// order-preserving sort modes. Defaults true so only settings files written before
-        /// the marker existed are seeded (see GridOptionsSettingsMigration).
-        /// </summary>
-        public bool ShowcaseSortSeeded { get; set; } = true;
-
         public GridOptionsCatalog Clone()
         {
             return new GridOptionsCatalog
@@ -784,8 +777,7 @@ namespace PlayniteAchievements.Models.Settings
                 Achievement = Achievement,
                 GameSummaries = GameSummaries,
                 FriendSummaries = FriendSummaries,
-                CategorySummaries = CategorySummaries,
-                ShowcaseSortSeeded = ShowcaseSortSeeded
+                CategorySummaries = CategorySummaries
             };
         }
 
