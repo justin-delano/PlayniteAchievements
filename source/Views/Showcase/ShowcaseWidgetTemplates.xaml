@@ -567,12 +567,21 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                                CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                        <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                 Margin="3"
                                 ClipToBounds="True"
                                 ToolTip="{Binding GameName}"
                                 ContextMenuService.IsEnabled="{Binding IsPinnable}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowCompletionGlow}" Value="True">
+                                            <Setter Property="Effect" Value="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
                             <Border.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveEarlier}"
