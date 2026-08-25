@@ -1332,6 +1332,9 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Clean">Clean</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Notification">Notification</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Framed">Framed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_All">All captures</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_GameCollection">Game collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_AchievementCollection">Achievement collection</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fit">Fit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fill">Fill</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityTooltipFormat">{0} — {1} unlocked</sys:String>
