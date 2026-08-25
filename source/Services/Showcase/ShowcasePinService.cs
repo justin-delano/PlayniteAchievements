@@ -511,9 +511,21 @@ namespace PlayniteAchievements.Services.Showcase
 
         private static bool UsesCollectionType(ShowcaseWidgetKind kind, bool achievementCollection)
         {
-            return achievementCollection
-                ? kind == ShowcaseWidgetKind.PinnedAchievements || kind == ShowcaseWidgetKind.IconMosaic
-                : kind == ShowcaseWidgetKind.FavoriteGames || kind == ShowcaseWidgetKind.GameMosaic;
+            // Kinds whose options can reference a pin collection of the given type; the exact
+            // id match in the caller does the precise work, this just keeps unrelated kinds
+            // untouched. The mosaic and the slideshow can reference either type.
+            switch (kind)
+            {
+                case ShowcaseWidgetKind.IconMosaic:
+                case ShowcaseWidgetKind.ScreenshotSlideshow:
+                    return true;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    return achievementCollection;
+                case ShowcaseWidgetKind.GameSummaries:
+                    return !achievementCollection;
+                default:
+                    return false;
+            }
         }
     }
 }
