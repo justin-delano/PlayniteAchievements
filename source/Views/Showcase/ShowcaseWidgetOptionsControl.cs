@@ -200,13 +200,11 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseMosaicSource.Pinned
                         ? Visibility.Visible
                         : Visibility.Collapsed;
-                    AddChoice(
+                    AddNumberRow(
                         panel,
                         Localize("LOCPlayAch_Showcase_ItemCount"),
-                        new[] { 12, 24, 36, 48, 64 },
-                        ShowcaseWidgetOptions.GetMosaicCount(_settings),
-                        value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value),
-                        CountLabel);
+                        () => ShowcaseWidgetOptions.GetMosaicCount(_settings),
+                        value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value));
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Settings_ToastShowRarityGlow"),
@@ -352,13 +350,11 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseGameMosaicSource.Pinned
                         ? Visibility.Visible
                         : Visibility.Collapsed;
-                    AddChoice(
+                    AddNumberRow(
                         panel,
                         Localize("LOCPlayAch_Showcase_ItemCount"),
-                        new[] { 12, 24, 36, 48, 64 },
-                        ShowcaseWidgetOptions.GetGameMosaicCount(_settings),
-                        value => ShowcaseWidgetOptions.SetGameMosaicCount(_settings, value),
-                        CountLabel);
+                        () => ShowcaseWidgetOptions.GetGameMosaicCount(_settings),
+                        value => ShowcaseWidgetOptions.SetGameMosaicCount(_settings, value));
                     break;
             }
 
@@ -508,6 +504,67 @@ namespace PlayniteAchievements.Views.Showcase
                 selectedGameCollection,
                 value => ShowcaseWidgetOptions.SetPinCollectionId(_settings, value?.CollectionId),
                 value => value?.Name ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Free-form numeric entry row (label + TextBox). Commits on focus loss or Enter; the
+        /// setter's own clamping normalizes the value, and the box reads the result back so the
+        /// user sees what was actually stored.
+        /// </summary>
+        private Grid AddNumberRow(Panel panel, string label, Func<int> read, Action<int> apply)
+        {
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+            var labelBlock = new TextBlock
+            {
+                Text = label,
+                Margin = new Thickness(0, 0, 10, 0),
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            labelBlock.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
+            row.Children.Add(labelBlock);
+
+            var box = new TextBox
+            {
+                MinHeight = 30,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Text = read().ToString(FormattingCulture.Current)
+            };
+            void Commit()
+            {
+                if (int.TryParse(
+                        box.Text,
+                        System.Globalization.NumberStyles.Integer,
+                        FormattingCulture.Current,
+                        out var value) &&
+                    value != read())
+                {
+                    apply(value);
+                    _persist?.Invoke();
+                    if (_publishChanges)
+                    {
+                        ShowcaseConfigurationEvents.RaiseChanged();
+                    }
+                }
+
+                box.Text = read().ToString(FormattingCulture.Current);
+            }
+
+            box.LostFocus += (_, __) => Commit();
+            box.KeyDown += (_, args) =>
+            {
+                if (args.Key == System.Windows.Input.Key.Enter)
+                {
+                    Commit();
+                    args.Handled = true;
+                }
+            };
+            Grid.SetColumn(box, 1);
+            row.Children.Add(box);
+            panel.Children.Add(row);
+            return row;
         }
 
         private static string CountLabel(int value) => value.ToString("N0", FormattingCulture.Current);
