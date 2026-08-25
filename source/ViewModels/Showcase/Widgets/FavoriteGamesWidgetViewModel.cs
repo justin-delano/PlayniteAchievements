@@ -8,9 +8,8 @@ using PlayniteAchievements.ViewModels.Items;
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>
-    /// Backs a pinned-games widget instance: its game-summaries grid renders the selected
-    /// pin collection (or Playnite favorites). Pin reordering is only offered when the widget
-    /// draws from showcase pins, whose order is user-controlled.
+    /// Backs the Game Summaries Grid widget's pinned and Playnite-favorites sources. Pin
+    /// reordering is only offered for the pinned source, whose order is user-controlled.
     /// </summary>
     public sealed class FavoriteGamesWidgetViewModel
         : ShowcaseGameGridWidgetViewModelBase
@@ -23,15 +22,15 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             private set => SetValue(ref _pinReorderEnabled, value);
         }
 
-        protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedGames;
+        protected override string BaseSurfaceKey => ShowcaseGridSurfaces.GameSummaries;
 
         protected override GameSummariesSortMode DefaultSortMode => GameSummariesSortMode.PinOrder;
 
         protected override IEnumerable<GameSummaryItem> SelectItems(
             ShowcaseWidgetProjection projection)
         {
-            PinReorderEnabled = ShowcaseWidgetOptions.GetFavoriteSource(projection?.Instance) ==
-                ShowcaseFavoriteGameSource.ShowcasePins;
+            PinReorderEnabled = ShowcaseWidgetOptions.GetGameGridSource(projection?.Instance) ==
+                ShowcaseGameGridSource.Pinned;
             return projection?.Games;
         }
     }
