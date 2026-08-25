@@ -170,6 +170,8 @@ namespace PlayniteAchievements.Services.Showcase
             public DateTime StatisticsDay;
 
             public DailyScoreDeltas ScoreDeltas;
+
+            public IReadOnlyList<AchievementDisplayItem> AllAchievementRows;
         }
 
         private static string WindowKey(TimelineRange range, DateTime endDate) =>
@@ -224,25 +226,21 @@ namespace PlayniteAchievements.Services.Showcase
                 case ShowcaseWidgetKind.NativePoints:
                     result.ChartEntries = BuildNativePoints(snapshot, instance);
                     break;
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    var achievementCollection = ShowcasePinService.ResolveAchievementCollection(
-                        settings,
-                        ShowcaseWidgetOptions.GetPinCollectionId(instance));
-                    result.ResolvedPinCollectionId = achievementCollection?.CollectionId;
-                    result.Achievements = ResolvePinnedAchievements(snapshot, achievementCollection?.Pins);
-                    result.AchievementRows = MaterializePinRows(result.Achievements);
-                    break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    if (ShowcaseWidgetOptions.GetFavoriteSource(instance) ==
-                        ShowcaseFavoriteGameSource.ShowcasePins)
-                    {
-                        result.ResolvedPinCollectionId = ShowcasePinService.ResolveGameCollection(
-                            settings,
-                            ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
-                    }
-                    result.Games = ResolveFavoriteGames(snapshot, settings, instance);
-                    break;
                 case ShowcaseWidgetKind.IconMosaic:
+                    // The collapsed Mosaic: achievement icons or game covers per the Content
+                    // option; each content mode keeps its own source semantics.
+                    if (ShowcaseWidgetOptions.GetMosaicContent(instance) == ShowcaseMosaicContent.Games)
+                    {
+                        if (ShowcaseWidgetOptions.GetGameMosaicSource(instance) == ShowcaseGameMosaicSource.Pinned)
+                        {
+                            result.ResolvedPinCollectionId = ShowcasePinService.ResolveGameCollection(
+                                settings,
+                                ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
+                        }
+                        result.Games = ResolveGameMosaic(snapshot, settings, instance);
+                        break;
+                    }
+
                     if (ShowcaseWidgetOptions.GetMosaicSource(instance) == ShowcaseMosaicSource.Pinned)
                     {
                         result.ResolvedPinCollectionId = ShowcasePinService.ResolveAchievementCollection(
@@ -252,19 +250,46 @@ namespace PlayniteAchievements.Services.Showcase
                     result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
-                    result.AchievementRows = ResolveRecentAchievements(snapshot);
+                    // The collapsed Achievements Grid: every achievement by default, or a pin
+                    // collection's rows with reorder support.
+                    if (ShowcaseWidgetOptions.GetAchievementGridSource(instance) ==
+                        ShowcaseAchievementGridSource.Pinned)
+                    {
+                        var gridPins = ShowcasePinService.ResolveAchievementCollection(
+                            settings,
+                            ShowcaseWidgetOptions.GetPinCollectionId(instance));
+                        result.ResolvedPinCollectionId = gridPins?.CollectionId;
+                        result.Achievements = ResolvePinnedAchievements(snapshot, gridPins?.Pins);
+                        result.AchievementRows = MaterializePinRows(result.Achievements);
+                    }
+                    else
+                    {
+                        result.AchievementRows = ResolveAllAchievements(snapshot);
+                    }
+
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    result.Games = ResolveGameSummaries(snapshot, instance);
-                    break;
-                case ShowcaseWidgetKind.GameMosaic:
-                    if (ShowcaseWidgetOptions.GetGameMosaicSource(instance) == ShowcaseGameMosaicSource.Pinned)
+                    // The collapsed Game Summaries Grid: the library by default, or the pinned
+                    // collection / Playnite favorites subsets.
+                    switch (ShowcaseWidgetOptions.GetGameGridSource(instance))
                     {
-                        result.ResolvedPinCollectionId = ShowcasePinService.ResolveGameCollection(
-                            settings,
-                            ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
+                        case ShowcaseGameGridSource.Pinned:
+                            var gridGames = ShowcasePinService.ResolveGameCollection(
+                                settings,
+                                ShowcaseWidgetOptions.GetPinCollectionId(instance));
+                            result.ResolvedPinCollectionId = gridGames?.CollectionId;
+                            result.Games = ResolvePinnedGameSummaries(
+                                snapshot?.GameSummaries ?? new List<GameSummaryItem>(),
+                                gridGames?.GameIds);
+                            break;
+                        case ShowcaseGameGridSource.PlayniteFavorites:
+                            result.Games = ResolvePlayniteFavorites(snapshot?.GameSummaries);
+                            break;
+                        default:
+                            result.Games = ResolveGameSummaries(snapshot, instance);
+                            break;
                     }
-                    result.Games = ResolveGameMosaic(snapshot, settings, instance);
+
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     result.ActivityCalendar = GetActivityCalendar(snapshot, instance, (now ?? DateTime.Now).Date);
@@ -562,27 +587,6 @@ namespace PlayniteAchievements.Services.Showcase
                 .ToList();
         }
 
-        public static IReadOnlyList<GameSummaryItem> ResolveFavoriteGames(
-            OverviewDataSnapshot snapshot,
-            ShowcaseSettings settings,
-            ShowcaseWidgetInstanceSettings instance)
-        {
-            var summaries = snapshot?.GameSummaries ?? new List<GameSummaryItem>();
-            var source = ShowcaseWidgetOptions.GetFavoriteSource(instance);
-            if (source == ShowcaseFavoriteGameSource.PlayniteFavorites)
-            {
-                return summaries
-                    .Where(game => game?.IsFavorite == true)
-                    .OrderBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase)
-                    .ToList();
-            }
-
-            var collection = ShowcasePinService.ResolveGameCollection(
-                settings,
-                ShowcaseWidgetOptions.GetPinCollectionId(instance));
-            return ResolvePinnedGameSummaries(summaries, collection?.GameIds);
-        }
-
         /// <summary>Pinned games in pin order; unknown ids are skipped.</summary>
         private static IReadOnlyList<GameSummaryItem> ResolvePinnedGameSummaries(
             IReadOnlyList<GameSummaryItem> summaries,
@@ -620,14 +624,40 @@ namespace PlayniteAchievements.Services.Showcase
                 .ToList();
         }
 
-        public static IReadOnlyList<AchievementDisplayItem> ResolveRecentAchievements(
+        /// <summary>
+        /// Every achievement in the snapshot, unlocked-recent-first with the locked tail last,
+        /// so the grid's Default sort reads as newest unlocks. Cached per snapshot because the
+        /// full library is sorted once, not per dashboard rebuild; the MaxRows cap applies in
+        /// the widget view model after its search filter.
+        /// </summary>
+        public static IReadOnlyList<AchievementDisplayItem> ResolveAllAchievements(
             OverviewDataSnapshot snapshot)
         {
-            // RecentAchievements is already sorted upstream (AchievementSortHelper,
-            // scope RecentAchievements) - do not re-sort. The MaxRows cap applies in the
-            // widget view model, after its control-bar search filter.
-            return (snapshot?.RecentAchievements ?? new List<AchievementDisplayItem>())
-                .Where(item => item != null)
+            if (snapshot == null)
+            {
+                return new List<AchievementDisplayItem>();
+            }
+
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            if (cache.AllAchievementRows == null)
+            {
+                cache.AllAchievementRows = (snapshot.Achievements ?? new List<AchievementDisplayItem>())
+                    .Where(item => item != null)
+                    .OrderByDescending(item => item.Unlocked)
+                    .ThenByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue)
+                    .ToList();
+            }
+
+            return cache.AllAchievementRows;
+        }
+
+        /// <summary>Playnite-favorite games, alphabetical.</summary>
+        private static IReadOnlyList<GameSummaryItem> ResolvePlayniteFavorites(
+            IReadOnlyList<GameSummaryItem> summaries)
+        {
+            return (summaries ?? new List<GameSummaryItem>())
+                .Where(game => game?.IsFavorite == true)
+                .OrderBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
         }
 
