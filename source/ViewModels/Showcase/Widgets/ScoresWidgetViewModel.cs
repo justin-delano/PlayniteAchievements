@@ -33,11 +33,21 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             HistoryCaption = historyCaption;
             HistoryStartText = historyStartText;
             HistoryEndText = historyEndText;
+            HistoryMinValue = historyValues != null && historyValues.Count > 0
+                ? historyValues.Min()
+                : 0;
         }
 
         public ScoreCardViewModel Card { get; }
 
         public ChartValues<int> HistoryValues { get; }
+
+        /// <summary>
+        /// Bottom of the mini chart's Y axis. The series is cumulative, so the window's first
+        /// value is its minimum; pinning the axis there spends the chart height on score gained
+        /// inside the window instead of on padding below the already-earned total.
+        /// </summary>
+        public double HistoryMinValue { get; }
 
         /// <summary>Per-point date labels; hidden on the axis, surfaced by the hover tooltip.</summary>
         public IList<string> HistoryLabels { get; }
