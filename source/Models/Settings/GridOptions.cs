@@ -770,6 +770,13 @@ namespace PlayniteAchievements.Models.Settings
             AttachOptions(GameSummariesKindName, id, options);
         }
 
+        /// <summary>
+        /// Marker for the one-shot migration that seeds showcase grid surfaces with the
+        /// order-preserving sort modes. Defaults true so only settings files written before
+        /// the marker existed are seeded (see GridOptionsSettingsMigration).
+        /// </summary>
+        public bool ShowcaseSortSeeded { get; set; } = true;
+
         public GridOptionsCatalog Clone()
         {
             return new GridOptionsCatalog
@@ -777,7 +784,8 @@ namespace PlayniteAchievements.Models.Settings
                 Achievement = Achievement,
                 GameSummaries = GameSummaries,
                 FriendSummaries = FriendSummaries,
-                CategorySummaries = CategorySummaries
+                CategorySummaries = CategorySummaries,
+                ShowcaseSortSeeded = ShowcaseSortSeeded
             };
         }
 
@@ -1015,6 +1023,9 @@ namespace PlayniteAchievements.Models.Settings
             if (ShowcaseGridSurfaces.IsAchievementSurface(key))
             {
                 options.ShowControlBar = false;
+                // Pin order for pinned grids and unlock recency for recent grids are the
+                // projection's source order; None keeps it until the user picks a sort.
+                options.SortMode = CompactListSortMode.None;
                 if (string.Equals(ShowcaseGridSurfaces.GetBaseKey(key), ShowcaseGridSurfaces.RecentAchievements, StringComparison.OrdinalIgnoreCase))
                 {
                     options.MaxRows = DefaultShowcaseRecentMaxRows;
@@ -1050,6 +1061,12 @@ namespace PlayniteAchievements.Models.Settings
                 if (string.Equals(ShowcaseGridSurfaces.GetBaseKey(key), ShowcaseGridSurfaces.GameSummaries, StringComparison.OrdinalIgnoreCase))
                 {
                     options.MaxRows = DefaultShowcaseGameSummariesMaxRows;
+                }
+                else
+                {
+                    // Pinned-games grids keep the user-controlled pin order until the user
+                    // picks a sort.
+                    options.SortMode = GameSummariesSortMode.PinOrder;
                 }
             }
 
