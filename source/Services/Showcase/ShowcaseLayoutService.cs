@@ -804,20 +804,70 @@ namespace PlayniteAchievements.Services.Showcase
                 case ShowcasePageTemplate.Showcase:
                     AddBlock(settings, page, 0, 0, 2, 3, ShowcaseWidgetKind.Profile);
                     AddScoreBlock(settings, page, 0, 3, 2, 2, showCollectionScore, showPrestigeScore);
-                    AddBlock(settings, page, 2, 0, 3, 3, ShowcaseWidgetKind.PinnedAchievements);
+                    AddBlock(
+                        settings,
+                        page,
+                        2,
+                        0,
+                        3,
+                        3,
+                        ShowcaseWidgetKind.RecentAchievements,
+                        widget => ShowcaseWidgetOptions.SetAchievementGridSource(
+                            widget,
+                            ShowcaseAchievementGridSource.Pinned));
                     AddBlock(settings, page, 2, 3, 2, 2, ShowcaseWidgetKind.Statistics);
-                    AddBlock(settings, page, 4, 3, 1, 2, ShowcaseWidgetKind.FavoriteGames);
+                    AddBlock(
+                        settings,
+                        page,
+                        4,
+                        3,
+                        1,
+                        2,
+                        ShowcaseWidgetKind.GameSummaries,
+                        widget => ShowcaseWidgetOptions.SetGameGridSource(
+                            widget,
+                            ShowcaseGameGridSource.Pinned));
                     break;
                 case ShowcasePageTemplate.Analytics:
                     AddScoreBlock(settings, page, 0, 0, 2, 5, true, true);
-                    AddBlock(settings, page, 2, 0, 3, 3, ShowcaseWidgetKind.NativePoints);
+                    AddBlock(settings, page, 2, 0, 3, 3, ShowcaseWidgetKind.ActivityCalendar);
                     AddBlock(settings, page, 2, 3, 1, 2, ShowcaseWidgetKind.Statistics);
                     AddBlock(settings, page, 3, 3, 2, 2, ShowcaseWidgetKind.Pie);
                     break;
                 case ShowcasePageTemplate.Collection:
-                    AddBlock(settings, page, 0, 0, 3, 3, ShowcaseWidgetKind.PinnedAchievements);
-                    AddBlock(settings, page, 0, 3, 3, 2, ShowcaseWidgetKind.FavoriteGames);
-                    AddBlock(settings, page, 3, 0, 2, 5, ShowcaseWidgetKind.GameMosaic);
+                    AddBlock(
+                        settings,
+                        page,
+                        0,
+                        0,
+                        3,
+                        3,
+                        ShowcaseWidgetKind.RecentAchievements,
+                        widget => ShowcaseWidgetOptions.SetAchievementGridSource(
+                            widget,
+                            ShowcaseAchievementGridSource.Pinned));
+                    AddBlock(
+                        settings,
+                        page,
+                        0,
+                        3,
+                        3,
+                        2,
+                        ShowcaseWidgetKind.GameSummaries,
+                        widget => ShowcaseWidgetOptions.SetGameGridSource(
+                            widget,
+                            ShowcaseGameGridSource.Pinned));
+                    AddBlock(
+                        settings,
+                        page,
+                        3,
+                        0,
+                        2,
+                        5,
+                        ShowcaseWidgetKind.IconMosaic,
+                        widget => ShowcaseWidgetOptions.SetMosaicContent(
+                            widget,
+                            ShowcaseMosaicContent.Games));
                     break;
                 default:
                     for (var row = 0; row < MaxGridSize; row++)
@@ -869,9 +919,11 @@ namespace PlayniteAchievements.Services.Showcase
             int column,
             int rowSpan,
             int columnSpan,
-            ShowcaseWidgetKind kind)
+            ShowcaseWidgetKind kind,
+            Action<ShowcaseWidgetInstanceSettings> configure = null)
         {
             var widget = NewWidget(settings, kind);
+            configure?.Invoke(widget);
             settings.WidgetInstances.Add(widget);
             page.Blocks.Add(NewBlock(row, column, rowSpan, columnSpan, widget.InstanceId));
         }
@@ -894,15 +946,14 @@ namespace PlayniteAchievements.Services.Showcase
                 return;
             }
 
-            if (widget.Kind == ShowcaseWidgetKind.PinnedAchievements ||
-                widget.Kind == ShowcaseWidgetKind.IconMosaic)
+            if (widget.Kind == ShowcaseWidgetKind.IconMosaic ||
+                widget.Kind == ShowcaseWidgetKind.RecentAchievements)
             {
                 ShowcaseWidgetOptions.SetPinCollectionId(
                     widget,
                     settings.DefaultAchievementPinCollectionId);
             }
-            else if (widget.Kind == ShowcaseWidgetKind.FavoriteGames ||
-                     widget.Kind == ShowcaseWidgetKind.GameMosaic)
+            else if (widget.Kind == ShowcaseWidgetKind.GameSummaries)
             {
                 ShowcaseWidgetOptions.SetPinCollectionId(
                     widget,
