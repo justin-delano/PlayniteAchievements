@@ -54,13 +54,10 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Pie:
                 case ShowcaseWidgetKind.Timeline:
                 case ShowcaseWidgetKind.NativePoints:
-                case ShowcaseWidgetKind.PinnedAchievements:
-                case ShowcaseWidgetKind.FavoriteGames:
                 case ShowcaseWidgetKind.IconMosaic:
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                 case ShowcaseWidgetKind.RecentAchievements:
                 case ShowcaseWidgetKind.GameSummaries:
-                case ShowcaseWidgetKind.GameMosaic:
                 case ShowcaseWidgetKind.ActivityCalendar:
                     return true;
                 default:
@@ -73,9 +70,6 @@ namespace PlayniteAchievements.Views.Showcase
             var panel = new StackPanel { Margin = margin };
             switch (_settings.Kind)
             {
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    AddPinCollectionChoice(panel, achievementCollection: true);
-                    break;
                 case ShowcaseWidgetKind.Scores:
                     AddChoice(
                         panel,
@@ -148,39 +142,41 @@ namespace PlayniteAchievements.Views.Showcase
                         value => ShowcaseWidgetOptions.SetTopN(_settings, value),
                         CountLabel);
                     break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    FrameworkElement favoriteCollectionRow = null;
+                case ShowcaseWidgetKind.IconMosaic:
+                    // The collapsed Mosaic widget: the Content choice flips between the
+                    // achievement-icon rows and the game-cover rows; the count is shared.
+                    var achievementMosaicPanel = new StackPanel();
+                    var gameMosaicPanel = new StackPanel();
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Source"),
-                        new[]
-                        {
-                            ShowcaseFavoriteGameSource.ShowcasePins,
-                            ShowcaseFavoriteGameSource.PlayniteFavorites
-                        },
-                        ShowcaseWidgetOptions.GetFavoriteSource(_settings),
+                        Localize("LOCPlayAch_Showcase_Mode"),
+                        new[] { ShowcaseMosaicContent.Achievements, ShowcaseMosaicContent.Games },
+                        ShowcaseWidgetOptions.GetMosaicContent(_settings),
                         value =>
                         {
-                            ShowcaseWidgetOptions.SetFavoriteSource(_settings, value);
-                            if (favoriteCollectionRow != null)
-                            {
-                                favoriteCollectionRow.Visibility = value ==
-                                    ShowcaseFavoriteGameSource.ShowcasePins
-                                    ? Visibility.Visible
-                                    : Visibility.Collapsed;
-                            }
+                            ShowcaseWidgetOptions.SetMosaicContent(_settings, value);
+                            achievementMosaicPanel.Visibility = value == ShowcaseMosaicContent.Achievements
+                                ? Visibility.Visible
+                                : Visibility.Collapsed;
+                            gameMosaicPanel.Visibility = value == ShowcaseMosaicContent.Games
+                                ? Visibility.Visible
+                                : Visibility.Collapsed;
                         },
-                        FavoriteSourceName);
-                    favoriteCollectionRow = AddPinCollectionChoice(panel, achievementCollection: false);
-                    favoriteCollectionRow.Visibility = ShowcaseWidgetOptions.GetFavoriteSource(_settings) ==
-                        ShowcaseFavoriteGameSource.ShowcasePins
-                        ? Visibility.Visible
-                        : Visibility.Collapsed;
-                    break;
-                case ShowcaseWidgetKind.IconMosaic:
+                        MosaicContentName);
+                    panel.Children.Add(achievementMosaicPanel);
+                    panel.Children.Add(gameMosaicPanel);
+                    achievementMosaicPanel.Visibility =
+                        ShowcaseWidgetOptions.GetMosaicContent(_settings) == ShowcaseMosaicContent.Achievements
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                    gameMosaicPanel.Visibility =
+                        ShowcaseWidgetOptions.GetMosaicContent(_settings) == ShowcaseMosaicContent.Games
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+
                     FrameworkElement achievementMosaicCollectionRow = null;
                     AddChoice(
-                        panel,
+                        achievementMosaicPanel,
                         Localize("LOCPlayAch_Showcase_Source"),
                         new[] { ShowcaseMosaicSource.Recent, ShowcaseMosaicSource.Rarest, ShowcaseMosaicSource.Pinned },
                         ShowcaseWidgetOptions.GetMosaicSource(_settings),
@@ -195,23 +191,67 @@ namespace PlayniteAchievements.Views.Showcase
                             }
                         },
                         MosaicSourceName);
-                    achievementMosaicCollectionRow = AddPinCollectionChoice(panel, achievementCollection: true);
+                    achievementMosaicCollectionRow = AddPinCollectionChoice(achievementMosaicPanel, achievementCollection: true);
                     achievementMosaicCollectionRow.Visibility = ShowcaseWidgetOptions.GetMosaicSource(_settings) ==
                         ShowcaseMosaicSource.Pinned
                         ? Visibility.Visible
                         : Visibility.Collapsed;
-                    AddNumberRow(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_ItemCount"),
-                        () => ShowcaseWidgetOptions.GetMosaicCount(_settings),
-                        value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value));
                     AddChoice(
-                        panel,
+                        achievementMosaicPanel,
                         Localize("LOCPlayAch_Settings_ToastShowRarityGlow"),
                         new[] { true, false },
                         ShowcaseWidgetOptions.GetMosaicShowRarityGlow(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicShowRarityGlow(_settings, value),
                         OnOffLabel);
+
+                    FrameworkElement mosaicGameCollectionRow = null;
+                    AddChoice(
+                        gameMosaicPanel,
+                        Localize("LOCPlayAch_Showcase_Source"),
+                        new[]
+                        {
+                            ShowcaseGameMosaicSource.Completed,
+                            ShowcaseGameMosaicSource.All,
+                            ShowcaseGameMosaicSource.Pinned,
+                            ShowcaseGameMosaicSource.PlayniteFavorites
+                        },
+                        ShowcaseWidgetOptions.GetGameMosaicSource(_settings),
+                        value =>
+                        {
+                            ShowcaseWidgetOptions.SetGameMosaicSource(_settings, value);
+                            if (mosaicGameCollectionRow != null)
+                            {
+                                mosaicGameCollectionRow.Visibility = value == ShowcaseGameMosaicSource.Pinned
+                                    ? Visibility.Visible
+                                    : Visibility.Collapsed;
+                            }
+                        },
+                        GameMosaicSourceName);
+                    mosaicGameCollectionRow = AddPinCollectionChoice(gameMosaicPanel, achievementCollection: false);
+                    mosaicGameCollectionRow.Visibility = ShowcaseWidgetOptions.GetGameMosaicSource(_settings) ==
+                        ShowcaseGameMosaicSource.Pinned
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+                    AddChoice(
+                        gameMosaicPanel,
+                        Localize("LOCPlayAch_UseCoverImages"),
+                        new[] { true, false },
+                        ShowcaseWidgetOptions.GetGameMosaicUseCovers(_settings),
+                        value => ShowcaseWidgetOptions.SetGameMosaicUseCovers(_settings, value),
+                        OnOffLabel);
+                    AddChoice(
+                        gameMosaicPanel,
+                        Localize("LOCPlayAch_Settings_ShowCompletionGlow"),
+                        new[] { true, false },
+                        ShowcaseWidgetOptions.GetGameMosaicShowCompletionGlow(_settings),
+                        value => ShowcaseWidgetOptions.SetGameMosaicShowCompletionGlow(_settings, value),
+                        OnOffLabel);
+
+                    AddNumberRow(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_ItemCount"),
+                        () => ShowcaseWidgetOptions.GetMosaicCount(_settings),
+                        value => ShowcaseWidgetOptions.SetMosaicCount(_settings, value));
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     FrameworkElement slideshowGameCollectionRow = null;
@@ -297,8 +337,47 @@ namespace PlayniteAchievements.Views.Showcase
                         OnOffLabel);
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
+                    // The collapsed Game Summaries Grid: library scope filters only apply to
+                    // the Library source, so their rows hide for the pinned/favorites sources.
+                    FrameworkElement gameGridCollectionRow = null;
+                    var gameGridLibraryPanel = new StackPanel();
                     AddChoice(
                         panel,
+                        Localize("LOCPlayAch_Showcase_Source"),
+                        new[]
+                        {
+                            ShowcaseGameGridSource.Library,
+                            ShowcaseGameGridSource.Pinned,
+                            ShowcaseGameGridSource.PlayniteFavorites
+                        },
+                        ShowcaseWidgetOptions.GetGameGridSource(_settings),
+                        value =>
+                        {
+                            ShowcaseWidgetOptions.SetGameGridSource(_settings, value);
+                            if (gameGridCollectionRow != null)
+                            {
+                                gameGridCollectionRow.Visibility = value == ShowcaseGameGridSource.Pinned
+                                    ? Visibility.Visible
+                                    : Visibility.Collapsed;
+                            }
+
+                            gameGridLibraryPanel.Visibility = value == ShowcaseGameGridSource.Library
+                                ? Visibility.Visible
+                                : Visibility.Collapsed;
+                        },
+                        GameGridSourceName);
+                    gameGridCollectionRow = AddPinCollectionChoice(panel, achievementCollection: false);
+                    gameGridCollectionRow.Visibility =
+                        ShowcaseWidgetOptions.GetGameGridSource(_settings) == ShowcaseGameGridSource.Pinned
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                    panel.Children.Add(gameGridLibraryPanel);
+                    gameGridLibraryPanel.Visibility =
+                        ShowcaseWidgetOptions.GetGameGridSource(_settings) == ShowcaseGameGridSource.Library
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                    AddChoice(
+                        gameGridLibraryPanel,
                         Localize("LOCPlayAch_Filter_ActivitySelectorPlaceholder"),
                         new[]
                         {
@@ -310,51 +389,47 @@ namespace PlayniteAchievements.Views.Showcase
                         value => ShowcaseWidgetOptions.SetGameActivityScope(_settings, value),
                         ActivityScopeName);
                     AddChoice(
-                        panel,
+                        gameGridLibraryPanel,
                         Localize("LOCPlayAch_Showcase_HideCompleted"),
                         new[] { false, true },
                         ShowcaseWidgetOptions.GetHideCompleted(_settings),
                         value => ShowcaseWidgetOptions.SetHideCompleted(_settings, value),
                         OnOffLabel);
                     break;
-                case ShowcaseWidgetKind.ActivityCalendar:
-                    AddRangeChoice(panel);
-
-                    break;
-                case ShowcaseWidgetKind.GameMosaic:
-                    FrameworkElement gameMosaicCollectionRow = null;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    // The collapsed Achievements Grid: every achievement, or a pin collection.
+                    FrameworkElement achievementGridCollectionRow = null;
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_Source"),
                         new[]
                         {
-                            ShowcaseGameMosaicSource.Completed,
-                            ShowcaseGameMosaicSource.All,
-                            ShowcaseGameMosaicSource.Pinned,
-                            ShowcaseGameMosaicSource.PlayniteFavorites
+                            ShowcaseAchievementGridSource.All,
+                            ShowcaseAchievementGridSource.Pinned
                         },
-                        ShowcaseWidgetOptions.GetGameMosaicSource(_settings),
+                        ShowcaseWidgetOptions.GetAchievementGridSource(_settings),
                         value =>
                         {
-                            ShowcaseWidgetOptions.SetGameMosaicSource(_settings, value);
-                            if (gameMosaicCollectionRow != null)
+                            ShowcaseWidgetOptions.SetAchievementGridSource(_settings, value);
+                            if (achievementGridCollectionRow != null)
                             {
-                                gameMosaicCollectionRow.Visibility = value == ShowcaseGameMosaicSource.Pinned
-                                    ? Visibility.Visible
-                                    : Visibility.Collapsed;
+                                achievementGridCollectionRow.Visibility =
+                                    value == ShowcaseAchievementGridSource.Pinned
+                                        ? Visibility.Visible
+                                        : Visibility.Collapsed;
                             }
                         },
-                        GameMosaicSourceName);
-                    gameMosaicCollectionRow = AddPinCollectionChoice(panel, achievementCollection: false);
-                    gameMosaicCollectionRow.Visibility = ShowcaseWidgetOptions.GetGameMosaicSource(_settings) ==
-                        ShowcaseGameMosaicSource.Pinned
-                        ? Visibility.Visible
-                        : Visibility.Collapsed;
-                    AddNumberRow(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_ItemCount"),
-                        () => ShowcaseWidgetOptions.GetGameMosaicCount(_settings),
-                        value => ShowcaseWidgetOptions.SetGameMosaicCount(_settings, value));
+                        AchievementGridSourceName);
+                    achievementGridCollectionRow = AddPinCollectionChoice(panel, achievementCollection: true);
+                    achievementGridCollectionRow.Visibility =
+                        ShowcaseWidgetOptions.GetAchievementGridSource(_settings) ==
+                        ShowcaseAchievementGridSource.Pinned
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                    break;
+                case ShowcaseWidgetKind.ActivityCalendar:
+                    AddRangeChoice(panel);
+
                     break;
             }
 
@@ -394,9 +469,9 @@ namespace PlayniteAchievements.Views.Showcase
             else
             {
                 options = catalog.GetGameSummaries(surfaceKey);
-                // Pinned games additionally offer the order-preserving PinOrder choice, since
-                // their source order is user-controlled pin order.
-                editor.ShowGameSortPinOrderChoice = _settings.Kind == ShowcaseWidgetKind.FavoriteGames;
+                // The game grid can draw from pins, so it offers the order-preserving PinOrder
+                // choice for that source's user-controlled pin order.
+                editor.ShowGameSortPinOrderChoice = true;
             }
 
             editor.Options = options;
