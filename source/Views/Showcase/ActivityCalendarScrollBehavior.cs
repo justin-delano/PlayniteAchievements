@@ -1,6 +1,8 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views.Showcase
 {
@@ -32,13 +34,30 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            viewer.Loaded -= OnLoaded;
             viewer.ScrollChanged -= OnScrollChanged;
             viewer.PreviewMouseWheel -= OnPreviewMouseWheel;
             if (e.NewValue is bool enabled && enabled)
             {
+                viewer.Loaded += OnLoaded;
                 viewer.ScrollChanged += OnScrollChanged;
                 viewer.PreviewMouseWheel += OnPreviewMouseWheel;
             }
+        }
+
+        private static void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is ScrollViewer viewer))
+            {
+                return;
+            }
+
+            // Deferred so the pin lands after the first layout pass has produced the calendar's
+            // extent. Loaded also re-fires when the widget host is re-parented during layout
+            // edits, re-pinning the view to the latest weeks in that case too.
+            viewer.Dispatcher.BeginInvoke(
+                new Action(viewer.ScrollToRightEnd),
+                DispatcherPriority.Loaded);
         }
 
         private static void OnScrollChanged(object sender, ScrollChangedEventArgs e)
