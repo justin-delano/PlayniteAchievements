@@ -128,12 +128,16 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         protected override void Refresh()
         {
-            // Must match ShowcaseGridSurfaces.ResolveWidgetSurface for this widget's kind:
-            // the projection resolves GridWidgetOptions from that key, and the grid persists
-            // its column layout under this one.
-            ColumnSettingsKey = ShowcaseGridSurfaces.ForInstance(
-                BaseSurfaceKey,
-                Projection?.Instance?.InstanceId);
+            // Derived from the INSTANCE kind, not the view-model type: collapsed widget kinds
+            // reuse another kind's view model for their pinned mode, and the projection resolves
+            // GridWidgetOptions from the instance kind's surface key. BaseSurfaceKey only covers
+            // the projection-less case.
+            ColumnSettingsKey = (Projection?.Instance != null
+                    ? ShowcaseGridSurfaces.ResolveWidgetSurface(
+                        Projection.Instance.Kind,
+                        Projection.Instance.InstanceId)
+                    : null)
+                ?? ShowcaseGridSurfaces.ForInstance(BaseSurfaceKey, Projection?.Instance?.InstanceId);
             PinCollectionId = Projection?.ResolvedPinCollectionId;
             GridOptions = Projection?.GridWidgetOptions;
             RefreshItems();
