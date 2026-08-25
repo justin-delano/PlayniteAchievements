@@ -141,20 +141,24 @@ namespace PlayniteAchievements.Views.Showcase
                         ? (object)UpdateBodyViewModel<NativePointsWidgetViewModel>()
                         : CreateEmptyText();
                     break;
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    BodyHost.Content = _projection.AchievementRows?.Count > 0
-                        ? (object)UpdateBodyViewModel<PinnedAchievementsWidgetViewModel>()
-                        : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
-                    break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    BodyHost.Content = _projection.Games?.Count > 0
-                        ? (object)UpdateBodyViewModel<FavoriteGamesWidgetViewModel>()
-                        : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
-                    break;
                 case ShowcaseWidgetKind.IconMosaic:
-                    BodyHost.Content = _projection.MosaicAchievements?.Count > 0
-                        ? (object)UpdateBodyViewModel<IconMosaicWidgetViewModel>()
-                        : CreateEmptyText();
+                    // The collapsed Mosaic renders achievement icons or game covers per its
+                    // Content option; UpdateBodyViewModel swaps the view model type when the
+                    // option changes.
+                    if (ShowcaseWidgetOptions.GetMosaicContent(_projection.Instance) ==
+                        ShowcaseMosaicContent.Games)
+                    {
+                        BodyHost.Content = _projection.Games?.Count > 0
+                            ? (object)UpdateBodyViewModel<GameMosaicWidgetViewModel>()
+                            : CreateEmptyText();
+                    }
+                    else
+                    {
+                        BodyHost.Content = _projection.MosaicAchievements?.Count > 0
+                            ? (object)UpdateBodyViewModel<IconMosaicWidgetViewModel>()
+                            : CreateEmptyText();
+                    }
+
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     // Unlike the view-model widgets above, the slideshow carries playback state
@@ -174,19 +178,40 @@ namespace PlayniteAchievements.Views.Showcase
                     slideshow.SetEditHold(!IsHitTestVisible);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
-                    BodyHost.Content = _projection.AchievementRows?.Count > 0
-                        ? (object)UpdateBodyViewModel<RecentAchievementsWidgetViewModel>()
-                        : CreateEmptyText();
+                    // The collapsed Achievements Grid: the pinned source rides the pinned
+                    // view model for reorder support and placeholder rows.
+                    if (ShowcaseWidgetOptions.GetAchievementGridSource(_projection.Instance) ==
+                        ShowcaseAchievementGridSource.Pinned)
+                    {
+                        BodyHost.Content = _projection.AchievementRows?.Count > 0
+                            ? (object)UpdateBodyViewModel<PinnedAchievementsWidgetViewModel>()
+                            : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
+                    }
+                    else
+                    {
+                        BodyHost.Content = _projection.AchievementRows?.Count > 0
+                            ? (object)UpdateBodyViewModel<RecentAchievementsWidgetViewModel>()
+                            : CreateEmptyText();
+                    }
+
                     break;
                 case ShowcaseWidgetKind.GameSummaries:
-                    BodyHost.Content = _projection.Games?.Count > 0
-                        ? (object)UpdateBodyViewModel<GameSummariesWidgetViewModel>()
-                        : CreateEmptyText();
-                    break;
-                case ShowcaseWidgetKind.GameMosaic:
-                    BodyHost.Content = _projection.Games?.Count > 0
-                        ? (object)UpdateBodyViewModel<GameMosaicWidgetViewModel>()
-                        : CreateEmptyText();
+                    // The collapsed Game Summaries Grid: pinned/favorites sources ride the
+                    // favorites view model for pin reorder support.
+                    if (ShowcaseWidgetOptions.GetGameGridSource(_projection.Instance) ==
+                        ShowcaseGameGridSource.Library)
+                    {
+                        BodyHost.Content = _projection.Games?.Count > 0
+                            ? (object)UpdateBodyViewModel<GameSummariesWidgetViewModel>()
+                            : CreateEmptyText();
+                    }
+                    else
+                    {
+                        BodyHost.Content = _projection.Games?.Count > 0
+                            ? (object)UpdateBodyViewModel<FavoriteGamesWidgetViewModel>()
+                            : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
+                    }
+
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     BodyHost.Content = UpdateBodyViewModel<ActivityCalendarWidgetViewModel>();
@@ -197,10 +222,10 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        // Reuses (or lazily creates) the per-kind body view model for this control and feeds it the
+        // Reuses (or lazily creates) the body view model for this control and feeds it the
         // current projection and viewport. Implicit templates in ShowcaseWidgetTemplates.xaml render
-        // the returned view model. A control instance renders a single widget kind for its lifetime,
-        // so the view model type never changes once created.
+        // the returned view model. The type check replaces the view model when a collapsed kind's
+        // source option switches it to the other mode's view model.
         private ShowcaseWidgetViewModelBase UpdateBodyViewModel<T>()
             where T : ShowcaseWidgetViewModelBase, new()
         {
