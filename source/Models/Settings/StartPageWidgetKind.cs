@@ -15,11 +15,11 @@ namespace PlayniteAchievements.Models.Settings
         ShowcaseTimeline = 11,
         ShowcaseStatistics = 12,
         ShowcaseNativePoints = 13,
-        ShowcasePinnedAchievements = 14,
-        ShowcaseFavoriteGames = 15,
+        // 14 (ShowcasePinnedAchievements), 15 (ShowcaseFavoriteGames), and 19
+        // (ShowcaseGameMosaic) are retired; their widgets collapsed into the grid and mosaic
+        // kinds. Do not reuse the numbers.
         ShowcaseIconMosaic = 16,
         ShowcaseScreenshotSlideshow = 17,
-        ShowcaseActivityCalendar = 18,
-        ShowcaseGameMosaic = 19
+        ShowcaseActivityCalendar = 18
     }
 }
