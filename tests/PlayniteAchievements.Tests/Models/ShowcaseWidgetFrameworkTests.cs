@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
@@ -103,9 +104,19 @@ namespace PlayniteAchievements.Tests.Models
             var summaries = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.GameSummaries);
             Assert.IsFalse(ShowcaseWidgetOptions.GetHideCompleted(summaries));
 
-            var mosaic = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.GameMosaic);
+            var mosaic = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.IconMosaic);
+            Assert.AreEqual(ShowcaseMosaicContent.Achievements, ShowcaseWidgetOptions.GetMosaicContent(mosaic));
+            Assert.AreEqual(ShowcaseMosaicSource.Recent, ShowcaseWidgetOptions.GetMosaicSource(mosaic));
             Assert.AreEqual(ShowcaseGameMosaicSource.Completed, ShowcaseWidgetOptions.GetGameMosaicSource(mosaic));
             Assert.AreEqual(24, ShowcaseWidgetOptions.GetGameMosaicCount(mosaic));
+
+            var achievementGrid = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.RecentAchievements);
+            Assert.AreEqual(
+                ShowcaseAchievementGridSource.All,
+                ShowcaseWidgetOptions.GetAchievementGridSource(achievementGrid));
+            Assert.AreEqual(
+                ShowcaseGameGridSource.Library,
+                ShowcaseWidgetOptions.GetGameGridSource(summaries));
 
             var scores = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.Scores);
             Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(scores));
@@ -117,15 +128,18 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
-        public void WidgetCatalog_AllowsMultiplePinnedGridPlacements()
+        public void WidgetCatalog_AllowsMultipleGridPlacementsAndParksOnlyNativePoints()
         {
-            var achievements = ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.PinnedAchievements);
-            var games = ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.FavoriteGames);
+            var achievements = ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.RecentAchievements);
+            var games = ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.GameSummaries);
 
             Assert.IsTrue(achievements.AllowMultipleInstances);
             Assert.IsFalse(achievements.SingleInstancePerPage);
             Assert.IsTrue(games.AllowMultipleInstances);
             Assert.IsFalse(games.SingleInstancePerPage);
+            Assert.IsFalse(achievements.Hidden);
+            Assert.IsTrue(ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.NativePoints).Hidden);
+            Assert.AreEqual(1, ShowcaseWidgetCatalog.Definitions.Count(definition => definition.Hidden));
         }
 
         [TestMethod]
@@ -135,11 +149,10 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual("ShowcaseRecentAchievements:abc", key);
             Assert.AreEqual(ShowcaseGridSurfaces.RecentAchievements, ShowcaseGridSurfaces.GetBaseKey(key));
             Assert.AreEqual(
-                ShowcaseGridSurfaces.PinnedGames,
-                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.PinnedGames, null));
+                ShowcaseGridSurfaces.GameSummaries,
+                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.GameSummaries, null));
 
             Assert.IsTrue(ShowcaseGridSurfaces.IsAchievementSurface(key));
-            Assert.IsTrue(ShowcaseGridSurfaces.IsAchievementSurface(ShowcaseGridSurfaces.PinnedAchievements));
             Assert.IsFalse(ShowcaseGridSurfaces.IsAchievementSurface("OverviewRecentAchievements"));
             Assert.IsTrue(ShowcaseGridSurfaces.IsGameSurface("ShowcaseGameSummaries:123"));
             Assert.IsFalse(ShowcaseGridSurfaces.IsGameSurface("StartPageGameSummaries"));
@@ -157,12 +170,6 @@ namespace PlayniteAchievements.Tests.Models
         [TestMethod]
         public void GridSurfaces_ResolveWidgetSurfaceMapsGridKindsOnly()
         {
-            Assert.AreEqual(
-                "ShowcasePinnedAchievements:abc",
-                ShowcaseGridSurfaces.ResolveWidgetSurface(ShowcaseWidgetKind.PinnedAchievements, "abc"));
-            Assert.AreEqual(
-                "ShowcasePinnedGames:abc",
-                ShowcaseGridSurfaces.ResolveWidgetSurface(ShowcaseWidgetKind.FavoriteGames, "abc"));
             Assert.AreEqual(
                 "ShowcaseRecentAchievements:abc",
                 ShowcaseGridSurfaces.ResolveWidgetSurface(ShowcaseWidgetKind.RecentAchievements, "abc"));
@@ -183,10 +190,9 @@ namespace PlayniteAchievements.Tests.Models
                 recent.MaxRows);
             Assert.IsFalse(recent.ShowControlBar);
 
-            var pinned = catalog.GetAchievement("ShowcasePinnedAchievements:pinned");
-            Assert.IsNull(pinned.MaxRows);
+            var pinned = catalog.GetAchievement("ShowcaseRecentAchievements:pinned");
             Assert.IsFalse(pinned.ShowControlBar);
-            var otherPinned = catalog.GetAchievement("ShowcasePinnedAchievements:other");
+            var otherPinned = catalog.GetAchievement("ShowcaseRecentAchievements:other");
             pinned.ShowControlBar = true;
             pinned.Columns.Widths["Name"] = 321d;
             Assert.IsFalse(otherPinned.ShowControlBar);
@@ -198,14 +204,11 @@ namespace PlayniteAchievements.Tests.Models
                 summaries.MaxRows);
             Assert.IsFalse(summaries.ShowControlBar);
 
-            var pinnedGames = catalog.GetGameSummaries("ShowcasePinnedGames:pinned");
-            Assert.IsNull(pinnedGames.MaxRows);
-            Assert.IsFalse(pinnedGames.ShowControlBar);
-            var otherPinnedGames = catalog.GetGameSummaries("ShowcasePinnedGames:other");
-            pinnedGames.ShowColumnHeaders = false;
-            pinnedGames.Columns.Widths["Game"] = 456d;
-            Assert.IsTrue(otherPinnedGames.ShowColumnHeaders);
-            Assert.IsFalse(otherPinnedGames.Columns.Widths.ContainsKey("Game"));
+            var otherSummaries = catalog.GetGameSummaries("ShowcaseGameSummaries:other");
+            summaries.ShowColumnHeaders = false;
+            summaries.Columns.Widths["Game"] = 456d;
+            Assert.IsTrue(otherSummaries.ShowColumnHeaders);
+            Assert.IsFalse(otherSummaries.Columns.Widths.ContainsKey("Game"));
         }
 
         [TestMethod]
@@ -214,7 +217,7 @@ namespace PlayniteAchievements.Tests.Models
             var catalog = new PlayniteAchievements.Models.Settings.GridOptionsCatalog();
             catalog.GetAchievement("ShowcaseRecentAchievements:live");
             catalog.GetAchievement("ShowcaseRecentAchievements:gone");
-            catalog.GetAchievement(ShowcaseGridSurfaces.PinnedAchievements);
+            catalog.GetAchievement(ShowcaseGridSurfaces.RecentAchievements);
             catalog.GetGameSummaries("ShowcaseGameSummaries:startpage");
             catalog.GetGameSummaries("ShowcaseGameSummaries:gone");
             catalog.GetGameSummaries("OverviewGameSummaries");
@@ -235,7 +238,7 @@ namespace PlayniteAchievements.Tests.Models
 
             Assert.IsTrue(catalog.Achievement.ContainsKey("ShowcaseRecentAchievements:live"));
             Assert.IsFalse(catalog.Achievement.ContainsKey("ShowcaseRecentAchievements:gone"));
-            Assert.IsTrue(catalog.Achievement.ContainsKey(ShowcaseGridSurfaces.PinnedAchievements));
+            Assert.IsTrue(catalog.Achievement.ContainsKey(ShowcaseGridSurfaces.RecentAchievements));
             Assert.IsTrue(catalog.GameSummaries.ContainsKey("ShowcaseGameSummaries:startpage"));
             Assert.IsFalse(catalog.GameSummaries.ContainsKey("ShowcaseGameSummaries:gone"));
             Assert.IsTrue(catalog.GameSummaries.ContainsKey("OverviewGameSummaries"));

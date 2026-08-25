@@ -115,15 +115,15 @@ namespace PlayniteAchievements.Tests.Models
 
             var dashboard = new ShowcaseWidgetInstanceSettings
             {
-                Kind = ShowcaseWidgetKind.FavoriteGames
+                Kind = ShowcaseWidgetKind.GameSummaries
             };
             var startPage = new ShowcaseWidgetInstanceSettings
             {
-                Kind = ShowcaseWidgetKind.GameMosaic
+                Kind = ShowcaseWidgetKind.IconMosaic
             };
             var achievementDashboard = new ShowcaseWidgetInstanceSettings
             {
-                Kind = ShowcaseWidgetKind.PinnedAchievements
+                Kind = ShowcaseWidgetKind.RecentAchievements
             };
             var achievementStartPage = new ShowcaseWidgetInstanceSettings
             {

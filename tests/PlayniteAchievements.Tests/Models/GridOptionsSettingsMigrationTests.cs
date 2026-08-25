@@ -72,15 +72,11 @@ namespace PlayniteAchievements.Models.Tests
         {
             var catalog = new GridOptionsCatalog();
 
-            Assert.AreEqual(
-                CompactListSortMode.None,
-                catalog.GetAchievement("ShowcasePinnedAchievements:abc").SortMode);
+            // None keeps the projection's source order (recency, or pin order for the pinned
+            // source); game grids default to the recent-unlock sort with PinOrder available.
             Assert.AreEqual(
                 CompactListSortMode.None,
                 catalog.GetAchievement("ShowcaseRecentAchievements:abc").SortMode);
-            Assert.AreEqual(
-                GameSummariesSortMode.PinOrder,
-                catalog.GetGameSummaries("ShowcasePinnedGames:abc").SortMode);
             Assert.AreEqual(
                 GameSummariesSortMode.RecentUnlock,
                 catalog.GetGameSummaries("ShowcaseGameSummaries:abc").SortMode);

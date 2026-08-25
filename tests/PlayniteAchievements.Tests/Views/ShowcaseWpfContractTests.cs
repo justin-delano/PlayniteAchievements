@@ -175,10 +175,12 @@ namespace PlayniteAchievements.Tests.Views
             AssertEnumKeys<ShowcaseScoreMode>(localization, "LOCPlayAch_Showcase_ScoreMode_");
             AssertEnumKeys<ShowcasePieMode>(localization, "LOCPlayAch_Showcase_PieMode_");
             AssertEnumKeys<ShowcasePointsGrouping>(localization, "LOCPlayAch_Showcase_PointsGrouping_");
-            AssertEnumKeys<ShowcaseFavoriteGameSource>(localization, "LOCPlayAch_Showcase_FavoriteSource_");
             AssertEnumKeys<ShowcaseMosaicSource>(localization, "LOCPlayAch_Showcase_MosaicSource_");
             AssertEnumKeys<ShowcaseScreenshotVariant>(localization, "LOCPlayAch_Showcase_ScreenshotVariant_");
             AssertEnumKeys<ShowcaseSlideshowSource>(localization, "LOCPlayAch_Showcase_SlideshowSource_");
+            AssertEnumKeys<ShowcaseMosaicContent>(localization, "LOCPlayAch_Showcase_MosaicContent_");
+            AssertEnumKeys<ShowcaseAchievementGridSource>(localization, "LOCPlayAch_Showcase_AchievementGridSource_");
+            AssertEnumKeys<ShowcaseGameGridSource>(localization, "LOCPlayAch_Showcase_GameGridSource_");
             AssertEnumKeys<ShowcaseImageFitMode>(localization, "LOCPlayAch_Showcase_ImageFit_");
             AssertEnumKeys<ShowcaseGameMosaicSource>(localization, "LOCPlayAch_Showcase_GameMosaicSource_");
         }
@@ -414,7 +416,8 @@ namespace PlayniteAchievements.Tests.Views
             Assert.IsFalse(nativeMenus.Contains("LOCPlayAch_Showcase_PinToShowcase"));
 
             StringAssert.Contains(options, "AddPinCollectionChoice");
-            StringAssert.Contains(options, "ShowcaseFavoriteGameSource.ShowcasePins");
+            StringAssert.Contains(options, "ShowcaseGameGridSource.Pinned");
+            StringAssert.Contains(options, "ShowcaseAchievementGridSource.Pinned");
             StringAssert.Contains(options, "ShowcaseMosaicSource.Pinned");
             StringAssert.Contains(options, "ShowcaseGameMosaicSource.Pinned");
             StringAssert.Contains(templates, "PinCollectionId=\"{Binding PinCollectionId}\"");

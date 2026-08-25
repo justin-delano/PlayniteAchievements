@@ -67,15 +67,12 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseActivityCalendarViewId)
                 .HasSettings);
+            // NativePoints is the only parked view: resolvable for already-placed widgets but
+            // omitted from the add list.
             Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseGameMosaicViewId)
-                .HasSettings);
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcasePinnedAchievementsViewId)
-                .AllowMultipleInstances);
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseFavoriteGamesViewId)
-                .AllowMultipleInstances);
+                view.ViewId == StartPageViewCatalog.ShowcaseNativePointsViewId)
+                .Hidden);
+            Assert.AreEqual(1, views.Count(view => view.Hidden));
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
         }
 

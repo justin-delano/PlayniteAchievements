@@ -67,7 +67,7 @@ namespace PlayniteAchievements.Tests.Models
             showcase.GamePinCollections.Add(collection);
             var widget = PlayniteAchievements.Services.Showcase.ShowcaseLayoutService.CreateWidget(
                 showcase,
-                ShowcaseWidgetKind.FavoriteGames);
+                ShowcaseWidgetKind.GameSummaries);
             PlayniteAchievements.Models.ShowcaseWidgetOptions.SetPinCollectionId(
                 widget,
                 collection.CollectionId);
@@ -84,6 +84,20 @@ namespace PlayniteAchievements.Tests.Models
                 PlayniteAchievements.Models.ShowcaseWidgetOptions.GetPinCollectionId(
                     loaded.Showcase.WidgetInstances.Single(item =>
                         item.InstanceId == widget.InstanceId)));
+        }
+
+        [TestMethod]
+        public void Showcase_RoundTripKeepsASingleDefaultCollectionPerList()
+        {
+            // The seeded lists must be replaced, not populated in place, on deserialize;
+            // in-place population appended the persisted entries after the seed and grew a
+            // duplicate Default collection on every load.
+            var settings = new PersistedSettings();
+            var json = JsonConvert.SerializeObject(settings);
+            var loaded = JsonConvert.DeserializeObject<PersistedSettings>(json);
+
+            Assert.AreEqual(1, loaded.Showcase.AchievementPinCollections.Count);
+            Assert.AreEqual(1, loaded.Showcase.GamePinCollections.Count);
         }
 
         private static class ShowcaseLayoutServiceAccess

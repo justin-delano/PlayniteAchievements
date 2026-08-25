@@ -37,10 +37,10 @@ namespace PlayniteAchievements.Tests.Models
             var settings = ShowcaseLayoutService.CreateDefault();
             var achievements = ShowcaseLayoutService.CreateWidget(
                 settings,
-                ShowcaseWidgetKind.PinnedAchievements);
+                ShowcaseWidgetKind.RecentAchievements);
             var games = ShowcaseLayoutService.CreateWidget(
                 settings,
-                ShowcaseWidgetKind.FavoriteGames);
+                ShowcaseWidgetKind.GameSummaries);
 
             Assert.AreEqual(
                 settings.DefaultAchievementPinCollectionId,
