@@ -124,7 +124,8 @@ namespace PlayniteAchievements.Services.Captures
         /// </summary>
         public IReadOnlyList<CaptureItem> GetScreenshots(
             CaptureVariant? variant = null,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            IReadOnlyCollection<string> gameFolders = null)
         {
             EnsureWatchers();
             if (forceRefresh)
@@ -132,9 +133,19 @@ namespace PlayniteAchievements.Services.Captures
                 ClearCaches();
             }
 
+            // The filter holds sanitized folder names (the slideshow scopes to a pin collection);
+            // limiting the scan here keeps a scoped consumer from parsing every game folder.
+            var allowedFolders = gameFolders == null
+                ? null
+                : new HashSet<string>(gameFolders, StringComparer.OrdinalIgnoreCase);
             var screenshots = new List<CaptureItem>();
             foreach (var folder in GetGameFoldersWithCaptures())
             {
+                if (allowedFolders != null && !allowedFolders.Contains(folder))
+                {
+                    continue;
+                }
+
                 screenshots.AddRange(
                     ScanGame(folder)
                         .Groups
