@@ -1015,13 +1015,10 @@ namespace PlayniteAchievements.Models.Settings
             if (ShowcaseGridSurfaces.IsAchievementSurface(key))
             {
                 options.ShowControlBar = false;
-                // Pin order for pinned grids and unlock recency for recent grids are the
-                // projection's source order; None keeps it until the user picks a sort.
+                // The projection's source order (recency, or pin order for the pinned source)
+                // holds until the user picks a sort.
                 options.SortMode = CompactListSortMode.None;
-                if (string.Equals(ShowcaseGridSurfaces.GetBaseKey(key), ShowcaseGridSurfaces.RecentAchievements, StringComparison.OrdinalIgnoreCase))
-                {
-                    options.MaxRows = DefaultShowcaseRecentMaxRows;
-                }
+                options.MaxRows = DefaultShowcaseRecentMaxRows;
             }
 
             return options;
@@ -1050,16 +1047,7 @@ namespace PlayniteAchievements.Models.Settings
             if (ShowcaseGridSurfaces.IsGameSurface(key))
             {
                 options.ShowControlBar = false;
-                if (string.Equals(ShowcaseGridSurfaces.GetBaseKey(key), ShowcaseGridSurfaces.GameSummaries, StringComparison.OrdinalIgnoreCase))
-                {
-                    options.MaxRows = DefaultShowcaseGameSummariesMaxRows;
-                }
-                else
-                {
-                    // Pinned-games grids keep the user-controlled pin order until the user
-                    // picks a sort.
-                    options.SortMode = GameSummariesSortMode.PinOrder;
-                }
+                options.MaxRows = DefaultShowcaseGameSummariesMaxRows;
             }
 
             return options;
