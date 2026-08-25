@@ -423,6 +423,13 @@ namespace PlayniteAchievements.Models
         public static void SetMosaicShowRarityGlow(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowRarityGlow, value);
 
+        public static ShowcaseSlideshowSource GetSlideshowSource(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Source, ShowcaseSlideshowSource.All);
+
+        public static void SetSlideshowSource(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseSlideshowSource value) => settings?.SetOption(Source, value);
+
         public static ShowcaseScreenshotVariant GetScreenshotVariant(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Variant, ShowcaseScreenshotVariant.All);
 
@@ -526,6 +533,7 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetMosaicShowRarityGlow(settings, true);
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
+                    ShowcaseWidgetOptions.SetSlideshowSource(settings, ShowcaseSlideshowSource.All);
                     ShowcaseWidgetOptions.SetScreenshotVariant(settings, ShowcaseScreenshotVariant.All);
                     ShowcaseWidgetOptions.SetShuffle(settings, true);
                     ShowcaseWidgetOptions.SetSlideshowIntervalSeconds(settings, 8);
