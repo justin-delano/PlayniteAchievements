@@ -412,10 +412,10 @@ namespace PlayniteAchievements.Models
             ShowcaseMosaicSource value) => settings?.SetOption(Source, value);
 
         public static int GetMosaicCount(ShowcaseWidgetInstanceSettings settings) =>
-            Clamp(settings?.GetOption(Count, 24) ?? 24, 1, 64);
+            Clamp(settings?.GetOption(Count, 24) ?? 24, 1, 200);
 
         public static void SetMosaicCount(ShowcaseWidgetInstanceSettings settings, int value) =>
-            settings?.SetOption(Count, Clamp(value, 1, 64));
+            settings?.SetOption(Count, Clamp(value, 1, 200));
 
         public static bool GetMosaicShowRarityGlow(ShowcaseWidgetInstanceSettings settings) =>
             settings?.GetOption(ShowRarityGlow, true) ?? true;
@@ -471,10 +471,10 @@ namespace PlayniteAchievements.Models
             ShowcaseGameMosaicSource value) => settings?.SetOption(Source, value);
 
         public static int GetGameMosaicCount(ShowcaseWidgetInstanceSettings settings) =>
-            Clamp(settings?.GetOption(Count, 24) ?? 24, 1, 64);
+            Clamp(settings?.GetOption(Count, 24) ?? 24, 1, 200);
 
         public static void SetGameMosaicCount(ShowcaseWidgetInstanceSettings settings, int value) =>
-            settings?.SetOption(Count, Clamp(value, 1, 64));
+            settings?.SetOption(Count, Clamp(value, 1, 200));
 
         private static T GetEnum<T>(
             ShowcaseWidgetInstanceSettings settings,
