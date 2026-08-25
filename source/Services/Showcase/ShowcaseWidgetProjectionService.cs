@@ -41,7 +41,8 @@ namespace PlayniteAchievements.Services.Showcase
 
         public int Count { get; set; }
 
-        /// <summary>0 = no unlocks; 1..4 = quartile of the window's busiest day.</summary>
+        /// <summary>0 = no unlocks; 1..4 = percentile bucket among the window's active days,
+        /// with the busiest day always 4.</summary>
         public int Intensity { get; set; }
     }
 
@@ -725,9 +726,22 @@ namespace PlayniteAchievements.Services.Showcase
                 days.Add(new ShowcaseActivityDay { Date = day.Date, Count = day.Count });
             }
 
+            var activeCounts = days
+                .Where(day => day.Count > 0)
+                .Select(day => day.Count)
+                .OrderBy(count => count)
+                .ToList();
+            var lowerQuartile = Percentile(activeCounts, 0.25);
+            var median = Percentile(activeCounts, 0.5);
+            var upperQuartile = Percentile(activeCounts, 0.75);
             foreach (var day in days)
             {
-                day.Intensity = ComputeActivityIntensity(day.Count, max);
+                day.Intensity = ComputeActivityIntensity(
+                    day.Count,
+                    max,
+                    lowerQuartile,
+                    median,
+                    upperQuartile);
             }
 
             return new ShowcaseActivityCalendar
@@ -741,16 +755,42 @@ namespace PlayniteAchievements.Services.Showcase
             };
         }
 
-        /// <summary>Quartile of the window's busiest day; 0 only for zero-count days.</summary>
-        private static int ComputeActivityIntensity(int count, int max)
+        /// <summary>
+        /// Percentile bucket among the window's active days; 0 only for zero-count days. Rank-based
+        /// thresholds keep one outlier day from washing every typical day into the lightest tier
+        /// the way max-relative quartiles did; the busiest day always renders at full intensity,
+        /// which also keeps uniform-activity and single-active-day windows dark rather than faint.
+        /// </summary>
+        private static int ComputeActivityIntensity(
+            int count,
+            int max,
+            int lowerQuartile,
+            int median,
+            int upperQuartile)
         {
             if (count <= 0 || max <= 0)
             {
                 return 0;
             }
 
-            var ratio = count / (double)max;
-            return ratio <= 0.25 ? 1 : ratio <= 0.5 ? 2 : ratio <= 0.75 ? 3 : 4;
+            if (count >= max)
+            {
+                return 4;
+            }
+
+            return count <= lowerQuartile ? 1 : count <= median ? 2 : count <= upperQuartile ? 3 : 4;
+        }
+
+        /// <summary>Nearest-rank percentile of an ascending-sorted list; 0 when the list is empty.</summary>
+        private static int Percentile(IReadOnlyList<int> sorted, double quantile)
+        {
+            if (sorted == null || sorted.Count == 0)
+            {
+                return 0;
+            }
+
+            var rank = (int)Math.Ceiling(quantile * sorted.Count);
+            return sorted[Math.Max(1, Math.Min(sorted.Count, rank)) - 1];
         }
 
         private sealed class DailyScoreDeltas
