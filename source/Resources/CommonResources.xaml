@@ -208,17 +208,18 @@
     </Style>
 
     <!-- Corner actions floating over showcase widget content while a block is selected in edit
-         mode. Carries a solid surface chip so the glyph stays legible over charts and grids. -->
+         mode. Uses the popup surface token because it is the one brush guaranteed opaque, so the
+         chip never lets widget text bleed through. -->
     <Style x:Key="PlayAch.Showcase.BlockActionButtonStyle" TargetType="Button">
-        <Setter Property="Width" Value="26"/>
-        <Setter Property="Height" Value="26"/>
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
         <Setter Property="MinHeight" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontSize" Value="14"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Surface}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.PopupSurface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.PopupBorder}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Template">
@@ -241,7 +242,7 @@
                             <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Chrome" Property="Opacity" Value="0.72"/>
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.85"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4"/>
