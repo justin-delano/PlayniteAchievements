@@ -38,9 +38,6 @@ namespace PlayniteAchievements.Views.Showcase
         public static string PointsGroupingName(ShowcasePointsGrouping value) =>
             EnumValueName("LOCPlayAch_Showcase_PointsGrouping_", value);
 
-        public static string FavoriteSourceName(ShowcaseFavoriteGameSource value) =>
-            EnumValueName("LOCPlayAch_Showcase_FavoriteSource_", value);
-
         public static string MosaicSourceName(ShowcaseMosaicSource value) =>
             EnumValueName("LOCPlayAch_Showcase_MosaicSource_", value);
 
@@ -49,6 +46,15 @@ namespace PlayniteAchievements.Views.Showcase
 
         public static string SlideshowSourceName(ShowcaseSlideshowSource value) =>
             EnumValueName("LOCPlayAch_Showcase_SlideshowSource_", value);
+
+        public static string MosaicContentName(ShowcaseMosaicContent value) =>
+            EnumValueName("LOCPlayAch_Showcase_MosaicContent_", value);
+
+        public static string AchievementGridSourceName(ShowcaseAchievementGridSource value) =>
+            EnumValueName("LOCPlayAch_Showcase_AchievementGridSource_", value);
+
+        public static string GameGridSourceName(ShowcaseGameGridSource value) =>
+            EnumValueName("LOCPlayAch_Showcase_GameGridSource_", value);
 
         public static string GameMosaicSourceName(ShowcaseGameMosaicSource value) =>
             EnumValueName("LOCPlayAch_Showcase_GameMosaicSource_", value);
