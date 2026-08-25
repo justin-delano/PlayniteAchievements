@@ -1320,8 +1320,6 @@
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Trophy">Trophy distribution</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PointsGrouping_Provider">Provider or service</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PointsGrouping_Game">Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_FavoriteSource_ShowcasePins">Showcase pins</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_FavoriteSource_PlayniteFavorites">Playnite favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Recent">Recent achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Rarest">Rarest achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Pinned">Pinned achievements</sys:String>
@@ -1368,13 +1366,17 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Timeline">Timeline</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics">Overall Statistics</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_NativePoints">Native Points</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_PinnedAchievements">Pinned Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FavoriteGames">Pinned Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic">Icon Mosaic</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic">Mosaic</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow">Screenshot Slideshow</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_RecentAchievements">Recent Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Game Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameMosaic">Game Mosaic</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_RecentAchievements">Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Game Summaries Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicContent_Achievements">Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicContent_Games">Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_All">All achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_Pinned">Pinned collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameGridSource_Library">All games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameGridSource_Pinned">Pinned collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameGridSource_PlayniteFavorites">Playnite favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">Activity Calendar</sys:String>
 
     <!-- ================================================================= -->
