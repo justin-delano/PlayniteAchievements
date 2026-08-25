@@ -619,12 +619,14 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}"/>
-            <!-- The calendar sizes itself from the plugin's body font size (see
+            <!-- The calendar sizes itself from the plugin's title font size (see
                  ActivityCalendarMetrics) instead of stretching to fill the widget; long
-                 ranges overflow into a horizontal scrollbar. The weekday gutter and the
-                 legend sit outside the scroll area so they stay put while the calendar
-                 scrolls, and the gutter shares the heatmap's metrics so its rows line up. -->
-            <Grid TextElement.FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                 ranges overflow into a horizontal scrollbar pinned to the latest weeks,
+                 with the mouse wheel mapped to horizontal scrolling. The weekday gutter
+                 and the legend sit outside the scroll area so they stay put while the
+                 calendar scrolls, and the gutter shares the heatmap's metrics so its
+                 rows line up. -->
+            <Grid TextElement.FontSize="{DynamicResource PlayAch.FontSize.Title}"
                   VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -635,7 +637,8 @@
                                                     VerticalAlignment="Top"/>
                 <ScrollViewer Grid.Column="1"
                               HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled">
+                              VerticalScrollBarVisibility="Disabled"
+                              showcase:ActivityCalendarScrollBehavior.Enabled="True">
                     <!-- Single custom-drawn visual: one element for the whole grid of cells,
                          with tooltips served from hit tests. -->
                     <showcase:ActivityCalendarHeatmap Weeks="{Binding Weeks}"
