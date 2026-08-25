@@ -309,7 +309,7 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
-        public void ActivityCalendar_BucketsIntensityAtMaxRelativeQuartiles()
+        public void ActivityCalendar_BucketsIntensityAtActiveDayPercentiles()
         {
             var endDate = new DateTime(2026, 7, 31);
             var snapshot = new OverviewDataSnapshot
@@ -331,13 +331,36 @@ namespace PlayniteAchievements.Tests.Models
                     endDate)
                 .Days.ToDictionary(day => day.Date);
 
+            // Active counts sorted [1,2,3,5,7,8]: nearest-rank P25=2, P50=3, P75=7.
             Assert.AreEqual(4, byDate[endDate].Intensity);
             Assert.AreEqual(1, byDate[endDate.AddDays(-1)].Intensity);
             Assert.AreEqual(1, byDate[endDate.AddDays(-2)].Intensity);
             Assert.AreEqual(2, byDate[endDate.AddDays(-3)].Intensity);
             Assert.AreEqual(3, byDate[endDate.AddDays(-4)].Intensity);
-            Assert.AreEqual(4, byDate[endDate.AddDays(-5)].Intensity);
+            Assert.AreEqual(3, byDate[endDate.AddDays(-5)].Intensity);
             Assert.AreEqual(0, byDate[endDate.AddDays(-6)].Intensity);
+
+            // One outlier day no longer washes typical days into the lightest tier.
+            var outlier = ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                    new OverviewDataSnapshot
+                    {
+                        GlobalUnlockCountsByDate = new Dictionary<DateTime, int>
+                        {
+                            [endDate] = 60,
+                            [endDate.AddDays(-1)] = 1,
+                            [endDate.AddDays(-2)] = 1,
+                            [endDate.AddDays(-3)] = 2,
+                            [endDate.AddDays(-4)] = 2,
+                            [endDate.AddDays(-5)] = 3
+                        }
+                    },
+                    CalendarInstance(TimelineRange.OneYear),
+                    endDate)
+                .Days.ToDictionary(day => day.Date);
+            Assert.AreEqual(4, outlier[endDate].Intensity);
+            Assert.AreEqual(1, outlier[endDate.AddDays(-1)].Intensity);
+            Assert.AreEqual(2, outlier[endDate.AddDays(-3)].Intensity);
+            Assert.AreEqual(3, outlier[endDate.AddDays(-5)].Intensity);
 
             var single = ShowcaseWidgetProjectionService.BuildActivityCalendar(
                 new OverviewDataSnapshot
