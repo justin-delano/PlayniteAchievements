@@ -391,16 +391,16 @@ namespace PlayniteAchievements.Views.Showcase
             object options;
             if (ShowcaseGridSurfaces.IsAchievementSurface(surfaceKey))
             {
+                // The sort combo's Default (None) keeps the projection order: pin order for
+                // pinned grids, unlock recency for recent grids.
                 options = catalog.GetAchievement(surfaceKey);
-                // Pinned rows keep pin order and recent rows keep unlock recency;
-                // AchievementGridOptions.SortMode is not consumed on showcase surfaces.
-                editor.ShowSortRow = false;
             }
             else
             {
                 options = catalog.GetGameSummaries(surfaceKey);
-                // Pinned/favorite games keep their projection-defined order.
-                editor.ShowSortRow = _settings.Kind == ShowcaseWidgetKind.GameSummaries;
+                // Pinned games additionally offer the order-preserving PinOrder choice, since
+                // their source order is user-controlled pin order.
+                editor.ShowGameSortPinOrderChoice = _settings.Kind == ShowcaseWidgetKind.FavoriteGames;
             }
 
             editor.Options = options;
