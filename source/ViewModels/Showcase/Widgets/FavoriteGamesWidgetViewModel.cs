@@ -25,6 +25,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         protected override string BaseSurfaceKey => ShowcaseGridSurfaces.PinnedGames;
 
+        protected override GameSummariesSortMode DefaultSortMode => GameSummariesSortMode.PinOrder;
+
         protected override IEnumerable<GameSummaryItem> SelectItems(
             ShowcaseWidgetProjection projection)
         {
