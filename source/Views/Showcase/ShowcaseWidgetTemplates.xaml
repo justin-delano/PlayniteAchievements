@@ -195,7 +195,7 @@
                                     </lvc:Axis>
                                 </lvc:CartesianChart.AxisX>
                                 <lvc:CartesianChart.AxisY>
-                                    <lvc:Axis ShowLabels="False">
+                                    <lvc:Axis ShowLabels="False" MinValue="{Binding HistoryMinValue}">
                                         <lvc:Axis.Separator>
                                             <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
                                         </lvc:Axis.Separator>
