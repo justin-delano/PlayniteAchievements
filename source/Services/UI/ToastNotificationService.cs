@@ -55,11 +55,12 @@ namespace PlayniteAchievements.Services.UI
         // CornerGapDip - glow so the body sits here whether or not the border glow is on (with the
         // glow on, the glow itself may reach the screen edge). Tunable.
         private const double CornerGapDip = 24d;
-        // Gap between launching the sound URI and the toast slide-in / controller pulse. The sound
-        // is played out-of-process (UniPlaySong resolves and starts the audio), so its onset lags
-        // the launch; this offset is what the slide-in and the in-process vibration wait for so all
-        // three land together. Tunable.
+        // Gap between launching the sound and the toast slide-in / controller pulse, so the audio
+        // onset and the reveal land together. The URI path pays the shell's scheme resolution on
+        // top of UniPlaySong's player start, hence the larger constant; the in-process event
+        // (UniPlaySong 1.8.4+) reaches the player directly and needs far less. Both tunable.
         private const int SoundAlignmentDelayMs = 450;
+        private const int SoundAlignmentFastPathDelayMs = 150;
 
         private bool _disposed;
         // Window-bearing waves shown by this process; see the [Toast] Fire diagnostic line.
@@ -191,7 +192,9 @@ namespace PlayniteAchievements.Services.UI
         private void RaiseWaveDisplayed(
             IReadOnlyList<AchievementToastViewModel> wave,
             DateTime? soundPlayedUtc,
-            DateTime? surfaceCaptureUtc)
+            DateTime? surfaceCaptureUtc,
+            string soundFilePath = null,
+            double? soundFileGain = null)
         {
             if (wave == null || wave.Count == 0 || wave[0].IsPreview)
             {
@@ -203,7 +206,12 @@ namespace PlayniteAchievements.Services.UI
                 WaveDisplayed?.Invoke(
                     this,
                     new ToastWaveDisplayedEventArgs(
-                        wave, CaptureTimelineClock.UtcNow, soundPlayedUtc, surfaceCaptureUtc));
+                        wave,
+                        CaptureTimelineClock.UtcNow,
+                        soundPlayedUtc,
+                        surfaceCaptureUtc,
+                        soundFilePath,
+                        soundFileGain));
             }
             catch (Exception ex)
             {
@@ -497,6 +505,35 @@ namespace PlayniteAchievements.Services.UI
         /// the notification card and frame chrome scale with a downscaled screenshot.
         /// </para>
         /// </summary>
+        /// <summary>
+        /// Grabs the wave's base surface at <paramref name="captureAtUtc"/>, or immediately when it
+        /// is null (no configured capture delay).
+        /// <para>
+        /// Waits for that exact instant rather than sleeping the configured duration, so the moment
+        /// published to the recording service is the moment actually captured — the clip anchor and
+        /// the screenshot then depict the same frame instead of drifting apart by however long the
+        /// wave spent getting here.
+        /// </para>
+        /// <para>
+        /// Window handles are resolved after the wait, not before, so a game that changed windows
+        /// during the delay is still captured correctly.
+        /// </para>
+        /// </summary>
+        private async Task<System.Drawing.Bitmap> StartWaveSurfaceCaptureAsync(
+            bool isTestFire, DateTime? captureAtUtc)
+        {
+            if (captureAtUtc.HasValue)
+            {
+                var wait = captureAtUtc.Value - CaptureTimelineClock.UtcNow;
+                if (wait > TimeSpan.Zero)
+                {
+                    await Task.Delay(wait).ConfigureAwait(true);
+                }
+            }
+
+            return await StartWaveSurfaceCapture(isTestFire).ConfigureAwait(true);
+        }
+
         private Task<System.Drawing.Bitmap> StartWaveSurfaceCapture(bool isTestFire)
         {
             var capHeight = ResolutionCapMath.CapHeightFor(
@@ -533,6 +570,13 @@ namespace PlayniteAchievements.Services.UI
         /// </para>
         /// Never disposes or mutates the base bitmap — the save pipeline owns it via the capture
         /// task.
+        /// <para>
+        /// Contract the caller relies on: every card is rasterized SYNCHRONOUSLY, before this
+        /// method's first await. The caller invokes it without awaiting, so the rendering happens
+        /// while the wave is settled and the window alive, and only the blit onto the base frame is
+        /// deferred — which is what lets a delayed capture be waited on without holding the toast
+        /// on screen. Do not introduce an await ahead of the render loop.
+        /// </para>
         /// </summary>
         private async Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> ComposeWaveWithToastAsync(
             WaveScreenshotPlan plan, Window window, bool isTestFire,
@@ -547,13 +591,11 @@ namespace PlayniteAchievements.Services.UI
                 return null;
             }
 
-            var baseBitmap = baseCaptureTask != null
-                ? await baseCaptureTask.ConfigureAwait(true)
-                : null;
-            if (baseBitmap == null)
-            {
-                return null;
-            }
+            // The base capture is deliberately NOT awaited yet. With a capture delay configured it
+            // is still pending, and the cards must be rendered from the live window now, while the
+            // wave is settled and laid out at its final size — waiting first would either render
+            // them against a window on its way out or hold the toast on screen for the delay.
+            // Only the blit at the end needs the base frame.
 
             // Geometry for placing cards into the base capture: the corner math runs against the
             // anchor rect (game client rect, or the work area for the out-of-game test fire) and
@@ -607,6 +649,22 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 overlays.Add((vm, overlay, rect));
+            }
+
+            // Now the base frame is needed. With a capture delay this is where the wait actually
+            // happens, off the display path — the cards above are already rasterized, so the toast
+            // is free to hold, slide out and close while this waits.
+            var baseBitmap = baseCaptureTask != null
+                ? await baseCaptureTask.ConfigureAwait(true)
+                : null;
+            if (baseBitmap == null)
+            {
+                foreach (var entry in overlays)
+                {
+                    entry.Overlay?.Dispose();
+                }
+
+                return null;
             }
 
             // Pool: GDI+ clone + composite per item. This completes before the save pipeline takes
@@ -1930,38 +1988,40 @@ namespace PlayniteAchievements.Services.UI
             var visible = wavePlan.IsVisible;
             var plan = wavePlan.Screenshots;
 
-            // Hold the notification back before anything is captured or shown, so the delay moves
-            // the card, the chime, the vibration and every capture together. Measured from here —
-            // the point the wave was released for display — not from the unlock, so a wave held by
-            // the foreground gate is delayed relative to its release.
+            // The notification is never held back — it shows as soon as the queue and the
+            // foreground gate allow. The delay moves only the CAPTURE: the base frame is grabbed
+            // this long after the card reaches the screen, and the composited card is placed at
+            // that same instant, so the capture shows the game a moment further on while still
+            // reading as the notification's own frame.
             //
-            // Only a wave that actually reaches the screen is delayed. An unrevealed wave renders
-            // its card solely to feed a screenshot variant or an overlay track, so there is no
-            // on-screen moment to push back and nothing to gain by stalling its capture. Test fires
-            // and previews are exempt: both are meant to appear the instant they are asked for.
-            if (wavePlan.Mode == WaveMode.Visible && !waveIsTestFire && !wave[0].IsPreview)
-            {
-                var delaySeconds = _settings?.Persisted?.NotificationDelaySeconds ?? 0;
-                if (delaySeconds > 0)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds)).ConfigureAwait(true);
-                }
-            }
+            // Previews and retriggers are exempt: both capture the instant they are asked for.
+            var captureDelaySeconds = !waveIsTestFire && !wave[0].IsPreview
+                ? Math.Max(0, _settings?.Persisted?.NotificationDelaySeconds ?? 0)
+                : 0;
 
-            // The base capture must precede window.Show(); overlapping it with the sound-align
-            // delay below adds no latency to the toast itself. It feeds every variant: clean saves
-            // it as-is, framed composites the frame onto it, and with-notification composites each
-            // item's rendered card onto a copy of it.
+            // The instant the base frame is aimed at, published to the recording service so a
+            // delayed clip anchors on the same moment the screenshot depicts. The capture waits
+            // for this exact instant rather than sleeping a duration, so the value stays truthful.
+            // Null at zero delay, which keeps clips unlock-anchored exactly as before.
             //
-            // Stamped even when no screenshot is planned: it is also the instant a delayed wave's
-            // clip anchors to, and a clip can be cut with screenshots switched off entirely.
-            Task<System.Drawing.Bitmap> baseCaptureTask = null;
-            var surfaceCaptureUtc = wavePlan.Mode == WaveMode.Visible
-                ? CaptureTimelineClock.UtcNow
+            // Stamped even when no screenshot is planned: a clip can be cut with screenshots
+            // switched off entirely, and it still anchors here.
+            var surfaceCaptureUtc = captureDelaySeconds > 0
+                ? CaptureTimelineClock.UtcNow.AddSeconds(captureDelaySeconds)
                 : (DateTime?)null;
+
+            // Feeds every variant: clean saves it as-is, framed composites the frame onto it, and
+            // with-notification composites each item's rendered card onto a copy of it.
+            //
+            // Undelayed this still precedes window.Show(), overlapping the sound-align delay below
+            // at no cost to the toast. Delayed it deliberately runs after the card is on screen,
+            // which is safe because a running game is captured per-window and the toast is a
+            // separate window; the monitor capture that would catch the card is retrigger-only,
+            // and retriggers never delay.
+            Task<System.Drawing.Bitmap> baseCaptureTask = null;
             if (plan != null)
             {
-                baseCaptureTask = StartWaveSurfaceCapture(waveIsTestFire);
+                baseCaptureTask = StartWaveSurfaceCaptureAsync(waveIsTestFire, surfaceCaptureUtc);
             }
 
             // Nothing needs a card: capture and save, no window, no delays. Running this inside
@@ -2007,12 +2067,17 @@ namespace PlayniteAchievements.Services.UI
             // both — and skips the alignment delay that exists only to line them up with the
             // reveal. Its clips carry no chime because none was played.
             DateTime? soundPlayedUtc = null;
+            string soundFilePath = null;
+            double? soundFileGain = null;
             if (visible)
             {
                 // Play the sound first, then show the toast after a short delay so the audio onset
-                // and the slide-in visually align.
-                soundPlayedUtc = PlayWaveSound(cardItems);
-                await Task.Delay(SoundAlignmentDelayMs).ConfigureAwait(true);
+                // and the slide-in visually align. The in-process fast path starts the player far
+                // sooner than the URI, so it waits proportionally less.
+                bool fastPath;
+                (soundPlayedUtc, soundFilePath, soundFileGain, fastPath) = PlayWaveSound(cardItems);
+                await Task.Delay(fastPath ? SoundAlignmentFastPathDelayMs : SoundAlignmentDelayMs)
+                    .ConfigureAwait(true);
                 if (_disposed)
                 {
                     DisposeCaptureTask(baseCaptureTask);
@@ -2323,10 +2388,13 @@ namespace PlayniteAchievements.Services.UI
 
                 // The wave has settled, revealed or not: signal the recording service (a liveness
                 // bump for its track wait, this wave's chime time for the clip audio mix, and the
-                // instant its base surface was captured, which a delayed wave's clip anchors to).
-                // An unrevealed wave passes a null chime time, so its clips are mixed without one,
-                // and a null capture instant, so its clips stay unlock-anchored.
-                RaiseWaveDisplayed(cardItems, soundPlayedUtc, surfaceCaptureUtc);
+                // instant this wave's capture is aimed at, which a delayed clip anchors to).
+                // An unrevealed wave passes a null chime time, so its clips are mixed without one.
+                // With no capture delay the instant is null and clips stay unlock-anchored; it is
+                // reported here, before the capture itself, because it is a scheduled target rather
+                // than an observation, so the recorder never waits on the capture to plan a window.
+                RaiseWaveDisplayed(
+                    cardItems, soundPlayedUtc, surfaceCaptureUtc, soundFilePath, soundFileGain);
 
                 // Layout and placement are final: verify a lone card actually settled on its corner.
                 ReportSettledCornerDrift(window, cardItems);
@@ -2334,16 +2402,21 @@ namespace PlayniteAchievements.Services.UI
                 // The with-notification composites happen here: the toast has slid in and settled,
                 // so each item's card renders at its final laid-out size. Cards render on the UI
                 // thread (live visuals); the clones and blits run on the thread pool.
-                Dictionary<AchievementToastViewModel, System.Drawing.Bitmap> toastByVm = null;
+                Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> toastCompositeTask = null;
                 if (plan != null && plan.NeedsToastComposite)
                 {
-                    toastByVm = await ComposeWaveWithToastAsync(plan, window, waveIsTestFire, baseCaptureTask)
-                        .ConfigureAwait(true);
+                    // Deliberately not awaited. The call rasterizes every card synchronously before
+                    // its first await — which is why it has to run here, with the wave settled and
+                    // the window alive — and defers only the blit onto the base frame. Awaiting it
+                    // would park the hold, countdown and slide-out behind a delayed capture and
+                    // leave the toast on screen for the length of the delay.
+                    toastCompositeTask = ComposeWaveWithToastAsync(
+                        plan, window, waveIsTestFire, baseCaptureTask);
                 }
 
                 if (plan != null)
                 {
-                    _ = SaveWaveScreenshotsAsync(plan, baseCaptureTask, toastByVm);
+                    _ = SaveWaveScreenshotsAsync(plan, baseCaptureTask, toastCompositeTask);
                     baseCaptureTask = null;
                 }
 
@@ -2562,11 +2635,15 @@ namespace PlayniteAchievements.Services.UI
         /// <summary>
         /// Fires a single UniPlaySong sound for the wave, using the highest-ranked tier present so
         /// a burst of unlocks does not stack overlapping sounds. UniPlaySong owns enablement and
-        /// audio selection for the "playniteachievements/&lt;tier&gt;" URI; if it is not installed
-        /// the URI is unhandled and the call is ignored. Returns the launch moment (null when no
-        /// sound fired) so the recording service can locate the chime in its sidecar audio track.
+        /// audio selection. The sound file is resolved first (UniPlaySong 1.8.4+) so the recording
+        /// service can mix that exact file at the composited toast; the sound then fires through
+        /// UniPlaySong's in-process event, or the playnite:// URI on older versions. Returns the
+        /// launch moment (null when no sound fired — including UniPlaySong's achievement-sound
+        /// master switch being off) and the resolved file path (null when unknown, which sends the
+        /// recording service down its capture-based fallback).
         /// </summary>
-        private DateTime? PlayWaveSound(IReadOnlyList<AchievementToastViewModel> wave)
+        private (DateTime? PlayedUtc, string SoundFilePath, double? SoundFileGain, bool FastPath)
+            PlayWaveSound(IReadOnlyList<AchievementToastViewModel> wave)
         {
             var tier = wave?
                 .OrderByDescending(vm => vm.SoundTierRank)
@@ -2574,18 +2651,46 @@ namespace PlayniteAchievements.Services.UI
                 .FirstOrDefault();
             if (string.IsNullOrWhiteSpace(tier))
             {
-                return null;
+                return (null, null, null, false);
+            }
+
+            var soundFilePath = UniPlaySongBridge.TryResolveAchievementSound(
+                _api, tier, _logger, out var soundDisabled);
+            if (soundDisabled)
+            {
+                // UniPlaySong positively reports achievement sounds off: nothing would play, so
+                // nothing may be mixed into clips either.
+                return (null, null, null, false);
+            }
+
+            // Snapshotted at fire time, like the path: the mixed chime should be as loud as the
+            // live one the user heard, and the volume can change between now and export.
+            var soundFileGain = soundFilePath == null
+                ? null
+                : UniPlaySongBridge.TryReadJingleVolume(_api, _logger);
+
+            // One line per wave, because a field log without it cannot distinguish "UniPlaySong
+            // too old" from "resolution failed" from "file path flowed but export dropped it".
+            _logger?.Info(
+                $"[Toast] Wave sound (tier={tier}): " +
+                (soundFilePath == null
+                    ? "no resolved file; clips use the capture-based chime fallback"
+                    : $"file='{soundFilePath}' volume={(soundFileGain?.ToString("0.00") ?? "unknown")}"));
+
+            if (UniPlaySongBridge.TryTriggerExternalEvent(_api, tier, _logger))
+            {
+                return (CaptureTimelineClock.UtcNow, soundFilePath, soundFileGain, true);
             }
 
             try
             {
-                Process.Start($"playnite://uniplaysong/playniteachievements/{tier}");
-                return CaptureTimelineClock.UtcNow;
+                Process.Start($"playnite://uniplaysong/{UniPlaySongBridge.EventSource}/{tier}");
+                return (CaptureTimelineClock.UtcNow, soundFilePath, soundFileGain, false);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "Toast unlock sound URI could not be launched.");
-                return null;
+                return (null, null, null, false);
             }
         }
 
@@ -2695,11 +2800,21 @@ namespace PlayniteAchievements.Services.UI
         private async Task SaveWaveScreenshotsAsync(
             WaveScreenshotPlan plan,
             Task<System.Drawing.Bitmap> baseCaptureTask,
-            Dictionary<AchievementToastViewModel, System.Drawing.Bitmap> toastByVm)
+            Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> toastCompositeTask)
         {
             System.Drawing.Bitmap baseBitmap = null;
+
+            // Declared out here so the finally still disposes the composites when the pipeline
+            // throws after they were produced.
+            Dictionary<AchievementToastViewModel, System.Drawing.Bitmap> toastByVm = null;
             try
             {
+                // Awaited before the base bitmap is touched here, preserving the rule that the
+                // per-item clones finish before the save pipeline reads the shared capture.
+                toastByVm = toastCompositeTask != null
+                    ? await toastCompositeTask.ConfigureAwait(true)
+                    : null;
+
                 if (baseCaptureTask != null)
                 {
                     baseBitmap = await baseCaptureTask.ConfigureAwait(true);

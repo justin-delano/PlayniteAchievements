@@ -58,51 +58,138 @@ namespace PlayniteAchievements.Services.Tests.Recording
         }
 
         [TestMethod]
-        public void HapticRemoval_NeverDropsRecordedAudioOnUncertainty()
+        public void RecordingModes_UseOneEndpointAndGameOnlyFailsOpenToAudibleAudio()
         {
+            var recorder = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "AudioLoopbackRecorder.cs"));
+            StringAssert.Contains(recorder, "_source == RecordingAudioSource.GameOnly");
+            StringAssert.Contains(recorder, "includeProcessTree: false");
+            StringAssert.Contains(recorder, "ProcessLoopbackCapture.ForEndpoint(speaker.ID)");
+            StringAssert.Contains(recorder, "Role.Console");
+            StringAssert.Contains(recorder, "return new WasapiLoopbackCapture()");
+            StringAssert.Contains(recorder, "haptic-free full-system speaker audio");
+
             var source = File.ReadAllText(FindRepoFile(
                 "source", "Services", "Recording", "UnlockRecordingService.cs"));
-            var start = source.IndexOf("private SegmentTimeline.ClipPlan TryRemoveHapticAudio", StringComparison.Ordinal);
+            var start = source.IndexOf("private SegmentTimeline.ClipPlan TryRemoveNonGameAudio", StringComparison.Ordinal);
             var end = source.IndexOf("private void TryDeleteCleanedAudio", start, StringComparison.Ordinal);
 
             Assert.IsTrue(start >= 0 && end > start);
             var removal = source.Substring(start, end - start);
-            StringAssert.Contains(removal, "HasHapticHole");
-            StringAssert.Contains(removal, "IsReferenceSafelyAbsentOrRemoved");
-            StringAssert.Contains(removal, "maximumResidualCorrelation");
-            StringAssert.Contains(removal, "commitVerifiedBlocksOnWeakPass: true");
-            StringAssert.Contains(removal, "minimumCorrelation: HapticCancellationMinimumCorrelation");
-            StringAssert.Contains(removal, "attemptVerifiedBlocksWhenGloballyClean: true");
-            StringAssert.Contains(removal, "independentChannelGains: true");
-            StringAssert.Contains(removal, "gainCrossfadeFrames: 0");
-            StringAssert.Contains(removal, "fractionalLagSteps: 32");
-            StringAssert.Contains(removal, "referenceCovered && reference == null");
-            StringAssert.Contains(removal, "keeping the recorded audio");
+            StringAssert.Contains(removal, "residualPass: false");
+            StringAssert.Contains(removal, "residualPass: true");
+            StringAssert.Contains(removal, "muteUnverifiedBlocks: false");
+            StringAssert.Contains(removal, "outcome != PcmCancellationOutcome.CancelledVerified");
+            StringAssert.Contains(removal, "return audioPlan;");
+            StringAssert.Contains(removal, "haptic-free full-system speaker mix");
             Assert.IsFalse(
                 removal.Contains("return null;"),
                 "A non-null recorded plan must never become the exporter's no-audio sentinel.");
-            Assert.IsFalse(
-                removal.Contains("without audio"),
-                "Haptic-removal uncertainty must retain the recorded audio, buzz included.");
         }
 
         [TestMethod]
-        public void ChimeAndHaptics_UseTheSameTimestampAlignedSubtractionPath()
+        public void ControllerDefaultOutput_KeepsProgramChannelsAndDropsActuatorChannels()
         {
-            var source = File.ReadAllText(FindRepoFile(
+            var recorder = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "AudioLoopbackRecorder.cs"));
+            StringAssert.Contains(recorder, "RenderEndpointScan.IsHapticEndpoint(speaker)");
+            StringAssert.Contains(recorder, "ProcessLoopbackCapture.ForEndpointNative");
+            StringAssert.Contains(recorder, "ExtractDualSenseProgramAudio");
+            StringAssert.Contains(recorder, "native front L/R channels");
+
+            var capture = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "ProcessLoopbackCapture.cs"));
+            var start = capture.IndexOf("internal static byte[] ExtractDualSenseProgramAudio", StringComparison.Ordinal);
+            var end = capture.IndexOf("private IAudioClient ActivateProcessLoopbackClient", start, StringComparison.Ordinal);
+            Assert.IsTrue(start >= 0 && end > start);
+            var extraction = capture.Substring(start, end - start);
+            StringAssert.Contains(extraction, "Buffer.BlockCopy(source, sourceOffset, output");
+            Assert.IsFalse(extraction.Contains("sourceOffset + 2 * sizeof(float)"));
+        }
+
+        [TestMethod]
+        public void GameOnly_PreservesTheTimestampedChimeSidecar()
+        {
+            var recorder = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "AudioLoopbackRecorder.cs"));
+            StringAssert.Contains(recorder, "includeProcessTree: true");
+            StringAssert.Contains(recorder, "_writeGameReference = true");
+            StringAssert.Contains(recorder, "PlayniteChimeCaptureMode.CancelGameReference");
+            StringAssert.Contains(recorder, "RecordingPaths.GameReferenceChunkFilePrefix");
+        }
+
+        [TestMethod]
+        public void ReTimedChime_LiveChimesAlwaysRemovedAndOwnChimeAlwaysComposited()
+        {
+            // The standing policy: every fired live chime is removed best-effort in BOTH modes
+            // (verified partial removals kept), and the wave's own chime is always composited at
+            // the toast — there is deliberately no gate between removal quality and the
+            // composite, so a chime always plays at the notification in the clip.
+            var service = File.ReadAllText(FindRepoFile(
                 "source", "Services", "Recording", "UnlockRecordingService.cs"));
-            var marker = "PcmAudio.CancelCorrelated(";
-            var first = source.IndexOf(marker, StringComparison.Ordinal);
-            var second = source.IndexOf(marker, first + marker.Length, StringComparison.Ordinal);
+            StringAssert.Contains(service, "Live-chime removal (");
+            StringAssert.Contains(service, "subtractedAnything");
+            Assert.IsFalse(
+                service.Contains("LiveChimeAbsent"),
+                "The removal-quality composite gate was removed by policy.");
+            // Hybrid removal: file reference first (immune to crossfeed/tears), captured slice
+            // second (matches a cold player's time-warped render the file cannot).
+            StringAssert.Contains(service, "ChimePass(fileChimeReference, \"file\"");
+            StringAssert.Contains(service, "ChimePass(capturedChimeReference, \"capture\"");
 
-            Assert.IsTrue(first >= 0 && second > first,
-                "Both chime cleanup and haptic cleanup must use the shared subtraction path.");
+            // Full System captures the game-tree reference so the Playnite-tree slice can be
+            // verified game-free before it is subtracted from the speaker mix; a Playnite-launched
+            // game lives inside both trees and must never be removed from a Full System clip.
+            StringAssert.Contains(service, "TryReadCapturedChimeReference");
+            var isolate = service.IndexOf(
+                "private byte[] TryReadCapturedChimeReference", StringComparison.Ordinal);
+            var isolateEnd = service.IndexOf(
+                "private SegmentTimeline.ClipPlan TryRemoveNonGameAudio",
+                isolate,
+                StringComparison.Ordinal);
+            Assert.IsTrue(isolate >= 0 && isolateEnd > isolate);
+            var isolation = service.Substring(isolate, isolateEnd - isolate);
+            StringAssert.Contains(isolation, "RecordingPaths.GameReferenceChunkFilePrefix");
+            StringAssert.Contains(isolation, "PcmCancellationOutcome.Unseparable");
+            StringAssert.Contains(isolation, "ChimeReferenceFailed");
+            StringAssert.Contains(isolation, "GameReferenceFailed");
 
-            var pcm = File.ReadAllText(FindRepoFile(
-                "source", "Services", "Capture", "PcmAudio.cs"));
-            StringAssert.Contains(pcm, "FitKnownBlock(");
-            Assert.IsFalse(pcm.Contains("private static BlockFit FitBlock("));
-            Assert.IsFalse(pcm.Contains("SearchLags("));
+            var recorder = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "AudioLoopbackRecorder.cs"));
+            StringAssert.Contains(
+                recorder, "the live chime stays in the speaker mix");
+        }
+
+        [TestMethod]
+        public void ChimeComposite_PrefersTheResolvedFileAndRespectsUniPlaySongGates()
+        {
+            // The composited chime comes from the exact file UniPlaySong resolved at fire time —
+            // no captured copy, no separation. Capture remains the fallback for older UniPlaySong.
+            // The live-chime removal also builds its reference from the fired chimes' files when
+            // they are all known.
+            var service = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "UnlockRecordingService.cs"));
+            StringAssert.Contains(service, "OwnSoundFilePath");
+            StringAssert.Contains(service, "ChimeSoundFile.TryReadPcm");
+            StringAssert.Contains(service, "_firedChimes");
+
+            var toast = File.ReadAllText(FindRepoFile(
+                "source", "Services", "UI", "ToastNotificationService.cs"));
+            StringAssert.Contains(toast, "TryResolveAchievementSound");
+            StringAssert.Contains(toast, "TryTriggerExternalEvent");
+            StringAssert.Contains(toast, "playnite://uniplaysong/");
+
+            var bridge = File.ReadAllText(FindRepoFile(
+                "source", "Services", "UI", "UniPlaySongBridge.cs"));
+            StringAssert.Contains(bridge, "soundDisabled = true");
+            StringAssert.Contains(bridge, "\"enabled\"");
+            StringAssert.Contains(bridge, "\"exists\"");
+            StringAssert.Contains(bridge, "apiVersion",
+                "The bridge should stay documented against UniPlaySong's version-stamped JSON.");
+            // UniPlaySong plays jingles at MusicVolume / 100 (its JingleService); the mixed chime
+            // must be as loud as the live one the user heard, not a full-scale decode.
+            StringAssert.Contains(bridge, "MusicVolume");
+            StringAssert.Contains(service, "soundFileGain ?? ChimeFileMixGain");
         }
 
         [TestMethod]
@@ -118,7 +205,7 @@ namespace PlayniteAchievements.Services.Tests.Recording
             var firstUtc = recorder.IndexOf(utcMarker, StringComparison.Ordinal);
             var secondUtc = recorder.IndexOf(utcMarker, firstUtc + utcMarker.Length, StringComparison.Ordinal);
             Assert.IsTrue(firstUtc >= 0 && secondUtc > firstUtc,
-                "Both sparse haptic chunks and pump-paced chunks must use the shared frame grid.");
+                "Both sparse auxiliary chunks and pump-paced chunks must use the shared frame grid.");
             Assert.IsFalse(recorder.Contains("AddSeconds(startFrame /"));
             Assert.IsFalse(recorder.Contains("_chunkStartWallClockSamples / (double)"));
 
@@ -137,27 +224,18 @@ namespace PlayniteAchievements.Services.Tests.Recording
         }
 
         [TestMethod]
-        public void HapticRemoval_KeepsVerifiedWorkWhenAnotherReferenceFails()
+        public void ObsoleteHapticReferencePipeline_IsRemoved()
         {
-            var source = File.ReadAllText(FindRepoFile(
+            var recorder = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Recording", "AudioLoopbackRecorder.cs"));
+            Assert.IsFalse(recorder.Contains("StartHapticReference"));
+            Assert.IsFalse(recorder.Contains("HapticEndpointCapture"));
+            Assert.IsFalse(recorder.Contains("WriteStampedHapticPacket"));
+
+            var service = File.ReadAllText(FindRepoFile(
                 "source", "Services", "Recording", "UnlockRecordingService.cs"));
-            var start = source.IndexOf("private SegmentTimeline.ClipPlan TryRemoveHapticAudio", StringComparison.Ordinal);
-            var end = source.IndexOf("private void TryDeleteCleanedAudio", start, StringComparison.Ordinal);
-
-            Assert.IsTrue(start >= 0 && end > start);
-            var removal = source.Substring(start, end - start);
-            var uncertainty = removal.IndexOf(
-                "!PcmAudio.IsReferenceSafelyAbsentOrRemoved", StringComparison.Ordinal);
-            var nextOutcome = removal.IndexOf("removedAny |=", uncertainty, StringComparison.Ordinal);
-
-            Assert.IsTrue(uncertainty >= 0 && nextOutcome > uncertainty);
-            var uncertainBranch = removal.Substring(uncertainty, nextOutcome - uncertainty);
-            StringAssert.Contains(uncertainBranch, "continue;");
-            Assert.IsFalse(
-                uncertainBranch.Contains("return audioPlan;"),
-                "One bad controller reference must not discard another reference's verified cleanup.");
-            StringAssert.Contains(removal, "unremovedActiveReferences");
-            StringAssert.Contains(removal, "verified partial haptic cleanup");
+            Assert.IsFalse(service.Contains("TryRemoveHapticAudio"));
+            Assert.IsFalse(service.Contains("HapticReferenceChunkFilePrefix"));
         }
 
         [TestMethod]
@@ -211,19 +289,17 @@ namespace PlayniteAchievements.Services.Tests.Recording
         }
 
         [TestMethod]
-        public void HapticRecorder_PropagatesIncompleteAndUncapturableEndpointScans()
+        public void EndpointClassifier_IsUsedBeforeNativeControllerChannelSplitting()
         {
             var recorder = File.ReadAllText(FindRepoFile(
                 "source", "Services", "Recording", "AudioLoopbackRecorder.cs"));
             var scan = File.ReadAllText(FindRepoFile(
                 "source", "Services", "Recording", "RenderEndpointScan.cs"));
 
-            StringAssert.Contains(recorder, "out var scanComplete, out var hasDefaultHapticEndpoint");
-            StringAssert.Contains(recorder, "!scanComplete || hasDefaultHapticEndpoint");
-            StringAssert.Contains(scan, "out bool scanComplete");
-            StringAssert.Contains(scan, "out bool hasUncapturableDefaultHapticEndpoint");
-            StringAssert.Contains(scan, "scanComplete = false");
-            StringAssert.Contains(scan, "hasUncapturableDefaultHapticEndpoint |= keptAsOutput");
+            var classify = recorder.IndexOf("RenderEndpointScan.IsHapticEndpoint(speaker)", StringComparison.Ordinal);
+            var native = recorder.IndexOf("ProcessLoopbackCapture.ForEndpointNative(speaker.ID)", classify, StringComparison.Ordinal);
+            Assert.IsTrue(classify >= 0 && native > classify);
+            StringAssert.Contains(scan, "HapticEndpointClassifier.IsHapticEndpoint");
         }
 
         [TestMethod]
