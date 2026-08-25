@@ -42,6 +42,10 @@ namespace PlayniteAchievements.Views.Showcase
         private int _index;
         private int _reloadVersion;
         private bool _paused;
+        private bool _editHold;
+        private ShowcaseScreenshotVariant? _loadedVariant;
+        private bool? _loadedShuffle;
+        private ShowcaseImageFitMode? _loadedFit;
 
         public ScreenshotSlideshowControl(ShowcaseWidgetInstanceSettings settings)
         {
@@ -98,6 +102,61 @@ namespace PlayniteAchievements.Views.Showcase
             Content = Build();
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+        }
+
+        /// <summary>True when this control was built for the given widget instance, so a
+        /// projection re-apply can keep the running slideshow instead of recreating it.</summary>
+        public bool IsFor(ShowcaseWidgetInstanceSettings instance) =>
+            ReferenceEquals(_settings, instance);
+
+        /// <summary>
+        /// Re-applies this widget's own options after a projection re-apply. Deltas only: an
+        /// unchanged option set leaves the playback order, position, and timer phase alone, so
+        /// edits to other widgets never disturb a running slideshow.
+        /// </summary>
+        public void RefreshOptions()
+        {
+            var interval = TimeSpan.FromSeconds(Math.Max(
+                2,
+                ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(_settings)));
+            if (_timer.Interval != interval)
+            {
+                _timer.Interval = interval;
+            }
+
+            if (ShowcaseWidgetOptions.GetScreenshotVariant(_settings) != _loadedVariant ||
+                ShowcaseWidgetOptions.GetShuffle(_settings) != _loadedShuffle)
+            {
+                _ = ReloadAsync();
+                return;
+            }
+
+            if (ShowcaseWidgetOptions.GetImageFitMode(_settings) != _loadedFit)
+            {
+                ShowCurrent();
+            }
+        }
+
+        /// <summary>
+        /// Holds the slideshow still while the dashboard is in edit mode: the timer stops so the
+        /// image does not change mid-edit, and resumes on exit unless the user paused it.
+        /// </summary>
+        public void SetEditHold(bool hold)
+        {
+            if (_editHold == hold)
+            {
+                return;
+            }
+
+            _editHold = hold;
+            if (hold)
+            {
+                _timer.Stop();
+            }
+            else if (!_paused && IsLoaded)
+            {
+                _timer.Start();
+            }
         }
 
         public void Dispose()
@@ -238,7 +297,7 @@ namespace PlayniteAchievements.Views.Showcase
             _timer.Interval = TimeSpan.FromSeconds(Math.Max(
                 2,
                 ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(_settings)));
-            if (!_paused)
+            if (!_paused && !_editHold)
             {
                 _timer.Start();
             }
@@ -286,8 +345,13 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
             }
 
-            _status.Text = Localize("LOCPlayAch_Showcase_LoadingScreenshots");
-            _status.Visibility = Visibility.Visible;
+            // Only announce loading when nothing is on screen yet; a reload behind a visible
+            // image (a re-parent during layout edits, a capture event) keeps the image up.
+            if (_items.Count == 0)
+            {
+                _status.Text = Localize("LOCPlayAch_Showcase_LoadingScreenshots");
+                _status.Visibility = Visibility.Visible;
+            }
 
             IReadOnlyList<CaptureItem> items;
             try
@@ -308,10 +372,47 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            var shuffle = ShowcaseWidgetOptions.GetShuffle(_settings);
+            if (_items.Count > 0 &&
+                selectedVariant == _loadedVariant &&
+                shuffle == _loadedShuffle &&
+                SameItemSet(items))
+            {
+                // Same files under the same options: keep the playback order, position, and
+                // timer phase so reloads triggered by layout churn are invisible.
+                return;
+            }
+
             var currentPath = Current?.FilePath;
+            _loadedVariant = selectedVariant;
+            _loadedShuffle = shuffle;
             _items = CreatePlaybackOrder(items);
             _index = ResolveIndex(currentPath);
             ShowCurrent();
+        }
+
+        private bool SameItemSet(IReadOnlyList<CaptureItem> items)
+        {
+            if (items == null || items.Count != _items.Count)
+            {
+                return false;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in _items)
+            {
+                seen.Add(item.FilePath);
+            }
+
+            foreach (var item in items)
+            {
+                if (!seen.Remove(item.FilePath))
+                {
+                    return false;
+                }
+            }
+
+            return seen.Count == 0;
         }
 
         private IReadOnlyList<CaptureItem> CreatePlaybackOrder(IReadOnlyList<CaptureItem> items)
@@ -375,7 +476,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 _timer.Stop();
             }
-            else
+            else if (!_editHold)
             {
                 _timer.Start();
             }
@@ -404,8 +505,9 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void ShowCurrent()
         {
-            _image.Stretch = ShowcaseWidgetOptions.GetImageFitMode(_settings) ==
-                ShowcaseImageFitMode.Fill
+            var fit = ShowcaseWidgetOptions.GetImageFitMode(_settings);
+            _loadedFit = fit;
+            _image.Stretch = fit == ShowcaseImageFitMode.Fill
                 ? Stretch.UniformToFill
                 : Stretch.Uniform;
             var current = Current;
