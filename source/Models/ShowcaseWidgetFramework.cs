@@ -62,6 +62,12 @@ namespace PlayniteAchievements.Models
         public bool AllowMultipleInstances { get; set; }
 
         public bool SingleInstancePerPage { get; set; }
+
+        /// <summary>
+        /// Hidden kinds are omitted from the add-widget pickers but keep rendering already-placed
+        /// widgets. NativePoints is parked here as underbaked rather than deleted.
+        /// </summary>
+        public bool Hidden { get; set; }
     }
 
     public static class ShowcaseWidgetCatalog
@@ -74,14 +80,11 @@ namespace PlayniteAchievements.Models
                 Define(ShowcaseWidgetKind.Pie, "LOCPlayAch_Showcase_Widget_Pie", "", true, false),
                 Define(ShowcaseWidgetKind.Timeline, "LOCPlayAch_Showcase_Widget_Timeline", "", true, false),
                 Define(ShowcaseWidgetKind.Statistics, "LOCPlayAch_Showcase_Widget_Statistics", "", true, false),
-                Define(ShowcaseWidgetKind.NativePoints, "LOCPlayAch_Showcase_Widget_NativePoints", "", true, false),
-                Define(ShowcaseWidgetKind.PinnedAchievements, "LOCPlayAch_Showcase_Widget_PinnedAchievements", "", true, false),
-                Define(ShowcaseWidgetKind.FavoriteGames, "LOCPlayAch_Showcase_Widget_FavoriteGames", "", true, false),
+                Define(ShowcaseWidgetKind.NativePoints, "LOCPlayAch_Showcase_Widget_NativePoints", "", true, false, hidden: true),
                 Define(ShowcaseWidgetKind.IconMosaic, "LOCPlayAch_Showcase_Widget_IconMosaic", "", true, false),
                 Define(ShowcaseWidgetKind.ScreenshotSlideshow, "LOCPlayAch_Showcase_Widget_ScreenshotSlideshow", "", true, false),
                 Define(ShowcaseWidgetKind.RecentAchievements, "LOCPlayAch_Showcase_Widget_RecentAchievements", "", true, false),
                 Define(ShowcaseWidgetKind.GameSummaries, "LOCPlayAch_Showcase_Widget_GameSummaries", "", true, false),
-                Define(ShowcaseWidgetKind.GameMosaic, "LOCPlayAch_Showcase_Widget_GameMosaic", "", true, false),
                 Define(ShowcaseWidgetKind.ActivityCalendar, "LOCPlayAch_Showcase_Widget_ActivityCalendar", "", true, false)
             };
 
@@ -97,7 +100,8 @@ namespace PlayniteAchievements.Models
             string nameKey,
             string glyphKey,
             bool allowMultipleInstances,
-            bool singleInstancePerPage)
+            bool singleInstancePerPage,
+            bool hidden = false)
         {
             return new ShowcaseWidgetDefinition
             {
@@ -105,7 +109,8 @@ namespace PlayniteAchievements.Models
                 NameKey = nameKey,
                 GlyphKey = glyphKey,
                 AllowMultipleInstances = allowMultipleInstances,
-                SingleInstancePerPage = singleInstancePerPage
+                SingleInstancePerPage = singleInstancePerPage,
+                Hidden = hidden
             };
         }
     }
@@ -116,9 +121,7 @@ namespace PlayniteAchievements.Models
     /// </summary>
     public static class ShowcaseGridSurfaces
     {
-        public const string PinnedAchievements = "ShowcasePinnedAchievements";
         public const string RecentAchievements = "ShowcaseRecentAchievements";
-        public const string PinnedGames = "ShowcasePinnedGames";
         public const string GameSummaries = "ShowcaseGameSummaries";
 
         private const char InstanceSeparator = ':';
@@ -143,16 +146,18 @@ namespace PlayniteAchievements.Models
 
         public static bool IsAchievementSurface(string columnSettingsKey)
         {
-            var baseKey = GetBaseKey(columnSettingsKey);
-            return string.Equals(baseKey, PinnedAchievements, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(baseKey, RecentAchievements, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(
+                GetBaseKey(columnSettingsKey),
+                RecentAchievements,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsGameSurface(string columnSettingsKey)
         {
-            var baseKey = GetBaseKey(columnSettingsKey);
-            return string.Equals(baseKey, PinnedGames, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(baseKey, GameSummaries, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(
+                GetBaseKey(columnSettingsKey),
+                GameSummaries,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -163,10 +168,6 @@ namespace PlayniteAchievements.Models
         {
             switch (kind)
             {
-                case ShowcaseWidgetKind.PinnedAchievements:
-                    return ForInstance(PinnedAchievements, instanceId);
-                case ShowcaseWidgetKind.FavoriteGames:
-                    return ForInstance(PinnedGames, instanceId);
                 case ShowcaseWidgetKind.RecentAchievements:
                     return ForInstance(RecentAchievements, instanceId);
                 case ShowcaseWidgetKind.GameSummaries:
@@ -306,11 +307,14 @@ namespace PlayniteAchievements.Models
         private const string Shuffle = "Shuffle";
         private const string HideCompleted = "HideCompleted";
         private const string ShowRarityGlow = "ShowRarityGlow";
+        private const string UseCoverImages = "UseCoverImages";
+        private const string ShowCompletionGlow = "ShowCompletionGlow";
         private const string ShowCenterPercentage = "ShowCenterPercentage";
         private const string ShowLegend = "ShowLegend";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
         private const string PinCollectionId = "PinCollectionId";
+        private const string Content = "Content";
 
         public static string GetPinCollectionId(ShowcaseWidgetInstanceSettings settings)
         {
@@ -397,13 +401,6 @@ namespace PlayniteAchievements.Models
         public static void SetTopN(ShowcaseWidgetInstanceSettings settings, int value) =>
             settings?.SetOption(TopN, Clamp(value, 1, 25));
 
-        public static ShowcaseFavoriteGameSource GetFavoriteSource(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, Source, ShowcaseFavoriteGameSource.ShowcasePins);
-
-        public static void SetFavoriteSource(
-            ShowcaseWidgetInstanceSettings settings,
-            ShowcaseFavoriteGameSource value) => settings?.SetOption(Source, value);
-
         public static ShowcaseMosaicSource GetMosaicSource(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Source, ShowcaseMosaicSource.Recent);
 
@@ -422,6 +419,27 @@ namespace PlayniteAchievements.Models
 
         public static void SetMosaicShowRarityGlow(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowRarityGlow, value);
+
+        public static ShowcaseMosaicContent GetMosaicContent(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Content, ShowcaseMosaicContent.Achievements);
+
+        public static void SetMosaicContent(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseMosaicContent value) => settings?.SetOption(Content, value);
+
+        public static ShowcaseAchievementGridSource GetAchievementGridSource(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Source, ShowcaseAchievementGridSource.All);
+
+        public static void SetAchievementGridSource(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseAchievementGridSource value) => settings?.SetOption(Source, value);
+
+        public static ShowcaseGameGridSource GetGameGridSource(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Source, ShowcaseGameGridSource.Library);
+
+        public static void SetGameGridSource(
+            ShowcaseWidgetInstanceSettings settings,
+            ShowcaseGameGridSource value) => settings?.SetOption(Source, value);
 
         public static ShowcaseSlideshowSource GetSlideshowSource(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Source, ShowcaseSlideshowSource.All);
@@ -476,6 +494,19 @@ namespace PlayniteAchievements.Models
         public static void SetGameMosaicCount(ShowcaseWidgetInstanceSettings settings, int value) =>
             settings?.SetOption(Count, Clamp(value, 1, 200));
 
+        public static bool GetGameMosaicUseCovers(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(UseCoverImages, true) ?? true;
+
+        public static void SetGameMosaicUseCovers(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(UseCoverImages, value);
+
+        public static bool GetGameMosaicShowCompletionGlow(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowCompletionGlow, true) ?? true;
+
+        public static void SetGameMosaicShowCompletionGlow(
+            ShowcaseWidgetInstanceSettings settings,
+            bool value) => settings?.SetOption(ShowCompletionGlow, value);
+
         private static T GetEnum<T>(
             ShowcaseWidgetInstanceSettings settings,
             string key,
@@ -524,10 +555,8 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetPointsGrouping(settings, ShowcasePointsGrouping.Provider);
                     ShowcaseWidgetOptions.SetTopN(settings, 8);
                     break;
-                case ShowcaseWidgetKind.FavoriteGames:
-                    ShowcaseWidgetOptions.SetFavoriteSource(settings, ShowcaseFavoriteGameSource.ShowcasePins);
-                    break;
                 case ShowcaseWidgetKind.IconMosaic:
+                    ShowcaseWidgetOptions.SetMosaicContent(settings, ShowcaseMosaicContent.Achievements);
                     ShowcaseWidgetOptions.SetMosaicSource(settings, ShowcaseMosaicSource.Recent);
                     ShowcaseWidgetOptions.SetMosaicCount(settings, 24);
                     ShowcaseWidgetOptions.SetMosaicShowRarityGlow(settings, true);
@@ -539,13 +568,13 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetSlideshowIntervalSeconds(settings, 8);
                     ShowcaseWidgetOptions.SetImageFitMode(settings, ShowcaseImageFitMode.Fill);
                     break;
+                case ShowcaseWidgetKind.RecentAchievements:
+                    ShowcaseWidgetOptions.SetAchievementGridSource(settings, ShowcaseAchievementGridSource.All);
+                    break;
                 case ShowcaseWidgetKind.GameSummaries:
+                    ShowcaseWidgetOptions.SetGameGridSource(settings, ShowcaseGameGridSource.Library);
                     ShowcaseWidgetOptions.SetHideCompleted(settings, false);
                     ShowcaseWidgetOptions.SetGameActivityScope(settings, GameActivityScope.All);
-                    break;
-                case ShowcaseWidgetKind.GameMosaic:
-                    ShowcaseWidgetOptions.SetGameMosaicSource(settings, ShowcaseGameMosaicSource.Completed);
-                    ShowcaseWidgetOptions.SetGameMosaicCount(settings, 24);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     ShowcaseTimelineOptions.SetRange(settings, TimelineRange.OneYear);
