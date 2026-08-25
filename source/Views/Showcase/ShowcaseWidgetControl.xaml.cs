@@ -35,6 +35,18 @@ namespace PlayniteAchievements.Views.Showcase
         public ShowcaseWidgetControl()
         {
             InitializeComponent();
+            // Edit mode makes the widget body inert through IsHitTestVisible (see
+            // ShowcaseControl); a hosted slideshow also holds its current image while inert so
+            // layout edits do not flip pictures mid-drag.
+            IsHitTestVisibleChanged += OnHitTestVisibleChanged;
+        }
+
+        private void OnHitTestVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (BodyHost?.Content is ScreenshotSlideshowControl slideshow)
+            {
+                slideshow.SetEditHold(!(bool)e.NewValue);
+            }
         }
 
         public ShowcaseWidgetProjection Projection
@@ -145,7 +157,21 @@ namespace PlayniteAchievements.Views.Showcase
                         : CreateEmptyText();
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    BodyHost.Content = new ScreenshotSlideshowControl(_projection.Instance);
+                    // Unlike the view-model widgets above, the slideshow carries playback state
+                    // (order, position, timer phase); reuse it across projection re-applies so
+                    // edits elsewhere on the dashboard do not reset or reshuffle it.
+                    if (BodyHost.Content is ScreenshotSlideshowControl slideshow &&
+                        slideshow.IsFor(_projection.Instance))
+                    {
+                        slideshow.RefreshOptions();
+                    }
+                    else
+                    {
+                        slideshow = new ScreenshotSlideshowControl(_projection.Instance);
+                        BodyHost.Content = slideshow;
+                    }
+
+                    slideshow.SetEditHold(!IsHitTestVisible);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
                     BodyHost.Content = _projection.AchievementRows?.Count > 0
