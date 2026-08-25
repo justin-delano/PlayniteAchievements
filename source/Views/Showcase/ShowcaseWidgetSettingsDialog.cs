@@ -329,9 +329,10 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.PinnedAchievements:
                 case ShowcaseWidgetKind.RecentAchievements:
                     return 520;
+                case ShowcaseWidgetKind.ScreenshotSlideshow:
+                    return 330;
                 case ShowcaseWidgetKind.Profile:
                     return 300;
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
                 case ShowcaseWidgetKind.Pie:
                 case ShowcaseWidgetKind.IconMosaic:
                     return 250;
