@@ -89,7 +89,7 @@ namespace PlayniteAchievements.Tests.Models
             instance.SetOption("Mode", 999);
             instance.SetOption("Source", 999);
 
-            Assert.AreEqual(64, ShowcaseWidgetOptions.GetGameMosaicCount(instance));
+            Assert.AreEqual(200, ShowcaseWidgetOptions.GetGameMosaicCount(instance));
             Assert.AreEqual(ShowcaseGameMosaicSource.Completed, ShowcaseWidgetOptions.GetGameMosaicSource(instance));
             Assert.IsFalse(ShowcaseWidgetOptions.GetHideCompleted(instance));
 
