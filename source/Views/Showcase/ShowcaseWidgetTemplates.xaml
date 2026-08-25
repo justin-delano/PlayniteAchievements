@@ -156,9 +156,16 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <StackPanel Margin="4"
-                                MaxWidth="{Binding DataContext.MaxCardWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                VerticalAlignment="Center">
+                    <!-- Grid rows (not a StackPanel) so a small cell compresses the chart row
+                         instead of clipping the date labels off the bottom. -->
+                    <Grid Margin="4"
+                          MaxWidth="{Binding DataContext.MaxCardWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <controls:ScoreCardControl
                             ScoreCard="{Binding Card}"
                             IsFeatured="{Binding DataContext.IsFeatured, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -167,55 +174,76 @@
                             MinWidth="0"
                             HorizontalAlignment="Stretch"
                             showcase:ScoreCardInfoBehavior.Enabled="True"/>
-                        <StackPanel Margin="6,2,6,0"
-                                    Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="{Binding HistoryCaption}"
+                        <TextBlock Grid.Row="1"
+                                   Margin="6,2,6,0"
+                                   Text="{Binding HistoryCaption}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}"/>
+                        <lvc:CartesianChart Grid.Row="2"
+                                            MaxHeight="{Binding DataContext.ChartHeight, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            MinHeight="34"
+                                            LegendLocation="None"
+                                            Hoverable="True"
+                                            DisableAnimations="True"
+                                            Margin="6,2,6,0"
+                                            Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}">
+                            <lvc:CartesianChart.Series>
+                                <lvc:LineSeries Title="{Binding Card.Label}"
+                                                Values="{Binding HistoryValues}"
+                                                Stroke="{Binding Card.AccentBrush}"
+                                                Fill="{Binding Card.AccentBackgroundBrush}"
+                                                StrokeThickness="2"
+                                                PointGeometry="{x:Null}"
+                                                LineSmoothness="0.3"/>
+                            </lvc:CartesianChart.Series>
+                            <lvc:CartesianChart.AxisX>
+                                <lvc:Axis Labels="{Binding HistoryLabels}" ShowLabels="False">
+                                    <lvc:Axis.Separator>
+                                        <lvc:Separator IsEnabled="False"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisX>
+                            <lvc:CartesianChart.AxisY>
+                                <!-- Floor at the window minimum, ceiling at the next tier; the
+                                     dotted sections mark tier boundaries crossed in the window
+                                     plus the upcoming one at the top edge. -->
+                                <lvc:Axis ShowLabels="True"
+                                          FontSize="10"
+                                          Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                          LabelFormatter="{Binding YLabelFormatter}"
+                                          MinValue="{Binding HistoryMinValue}"
+                                          MaxValue="{Binding HistoryAxisMax}"
+                                          Sections="{Binding TierSections}">
+                                    <lvc:Axis.Separator>
+                                        <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisY>
+                        </lvc:CartesianChart>
+                        <Grid Grid.Row="3"
+                              Margin="6,1,6,0"
+                              Visibility="{Binding ShowChart, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding HistoryStartText}"
+                                       HorizontalAlignment="Left"
+                                       TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                        FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
-                            <lvc:CartesianChart Height="{Binding DataContext.ChartHeight, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                LegendLocation="None"
-                                                Hoverable="True"
-                                                DisableAnimations="True"
-                                                Margin="0,2,0,0">
-                                <lvc:CartesianChart.Series>
-                                    <lvc:LineSeries Title="{Binding Card.Label}"
-                                                    Values="{Binding HistoryValues}"
-                                                    Stroke="{Binding Card.AccentBrush}"
-                                                    Fill="{Binding Card.AccentBackgroundBrush}"
-                                                    StrokeThickness="2"
-                                                    PointGeometry="{x:Null}"
-                                                    LineSmoothness="0.3"/>
-                                </lvc:CartesianChart.Series>
-                                <lvc:CartesianChart.AxisX>
-                                    <lvc:Axis Labels="{Binding HistoryLabels}" ShowLabels="False">
-                                        <lvc:Axis.Separator>
-                                            <lvc:Separator IsEnabled="False"/>
-                                        </lvc:Axis.Separator>
-                                    </lvc:Axis>
-                                </lvc:CartesianChart.AxisX>
-                                <lvc:CartesianChart.AxisY>
-                                    <lvc:Axis ShowLabels="False" MinValue="{Binding HistoryMinValue}">
-                                        <lvc:Axis.Separator>
-                                            <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
-                                        </lvc:Axis.Separator>
-                                    </lvc:Axis>
-                                </lvc:CartesianChart.AxisY>
-                            </lvc:CartesianChart>
-                            <Grid Margin="0,1,0,0">
-                                <TextBlock Text="{Binding HistoryStartText}"
-                                           HorizontalAlignment="Left"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
-                                <TextBlock Text="{Binding HistoryEndText}"
-                                           HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
-                            </Grid>
-                        </StackPanel>
-                    </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding HistoryEndText}"
+                                       HorizontalAlignment="Right"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
+                        </Grid>
+                    </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
