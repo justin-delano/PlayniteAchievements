@@ -72,6 +72,13 @@ namespace PlayniteAchievements.Models.Settings
         Framed = 3
     }
 
+    public enum ShowcaseSlideshowSource
+    {
+        All = 0,
+        GameCollection = 1,
+        AchievementCollection = 2
+    }
+
     public enum ShowcaseImageFitMode
     {
         Fit = 0,
