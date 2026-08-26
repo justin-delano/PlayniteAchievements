@@ -31,7 +31,7 @@
         </Setter>
     </Style>
 
-    <!-- Shared value/label tile used by the Statistics widget and the Profile stat strip. -->
+    <!-- Value/label tile used by the Statistics widget. -->
     <DataTemplate x:Key="ShowcaseStatTileTemplate">
         <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
                 CornerRadius="{StaticResource PlayAch.Radius.Card}"
@@ -57,45 +57,65 @@
          WPF resolves the matching template by runtime type. One template per kind. -->
 
     <!-- Profile: avatar + name/subtitle over the provider identity (manual overrides win),
-         with a medal-count row outside compact and a stat strip when expanded. -->
+         with a medal-count row and a stat strip over the instance's configured stat keys.
+         The zero-size image owns the avatar decode (AsyncImage wants a loaded Image); the
+         rounded border's brush consumes its Source so the art clips to the corner radius. -->
     <DataTemplate DataType="{x:Type widgets:ProfileWidgetViewModel}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
+            <!-- The banner fades toward the stat strip so the identity reads over the art
+                 without a full-card wash. An OpacityMask only samples alpha, so the white
+                 gradient stops carry no tint. -->
             <Image Grid.RowSpan="2"
                    Stretch="UniformToFill"
-                   Opacity="0.2"
+                   Opacity="0.3"
                    IsHitTestVisible="False"
                    Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}"
                    helpers:AsyncImage.Uri="{Binding BackgroundPath}"
-                   helpers:AsyncImage.DecodePixel="320"/>
+                   helpers:AsyncImage.DecodePixel="320">
+                <Image.OpacityMask>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                        <GradientStop Color="#99FFFFFF" Offset="0.55"/>
+                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                    </LinearGradientBrush>
+                </Image.OpacityMask>
+            </Image>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
-                        BorderBrush="{DynamicResource PlayAch.Brush.Accent}"
-                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                        CornerRadius="{Binding AvatarCornerRadius}"
-                        Padding="2"
-                        Margin="0,0,12,0"
-                        VerticalAlignment="Center"
-                        ClipToBounds="True"
-                        Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVis}}">
-                    <Image Width="{Binding AvatarSize}"
-                           Height="{Binding AvatarSize}"
-                           Stretch="UniformToFill"
-                           SnapsToDevicePixels="True"
+                <Grid Margin="0,0,14,0"
+                      VerticalAlignment="Center"
+                      Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVis}}">
+                    <Image x:Name="ProfileAvatarSource"
+                           Width="0"
+                           Height="0"
+                           Opacity="0"
+                           IsHitTestVisible="False"
                            helpers:AsyncImage.Uri="{Binding AvatarPath}"
                            helpers:AsyncImage.DecodePixel="{Binding AvatarDecodePixel}"/>
-                </Border>
+                    <Border Width="{Binding AvatarSize}"
+                            Height="{Binding AvatarSize}"
+                            CornerRadius="{Binding AvatarCornerRadius}"
+                            SnapsToDevicePixels="True">
+                        <Border.Background>
+                            <ImageBrush Stretch="UniformToFill"
+                                        ImageSource="{Binding Source, ElementName=ProfileAvatarSource}"/>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="10" ShadowDepth="1" Opacity="0.4"/>
+                        </Border.Effect>
+                    </Border>
+                </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DisplayName}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               FontWeight="SemiBold"
+                               FontWeight="Bold"
                                FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
                                TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding Subtitle}"
@@ -105,7 +125,7 @@
                                TextWrapping="Wrap"
                                Visibility="{Binding ShowSubtitle, Converter={StaticResource BoolToVis}}"/>
                     <ItemsControl ItemsSource="{Binding Medals}"
-                                  Margin="0,5,0,0"
+                                  Margin="0,6,0,0"
                                   Visibility="{Binding ShowMedals, Converter={StaticResource BoolToVis}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -114,7 +134,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,10,2">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,2">
                                     <Image Source="{Binding IconKey, Converter={StaticResource ShowcaseResourceKeyToImage}}"
                                            Width="16"
                                            Height="16"
@@ -130,17 +150,39 @@
                     </ItemsControl>
                 </StackPanel>
             </Grid>
-            <ItemsControl Grid.Row="1"
-                          ItemsSource="{Binding Stats}"
-                          Margin="0,6,0,0"
-                          ItemTemplate="{StaticResource ShowcaseStatTileTemplate}"
-                          Visibility="{Binding ShowStatStrip, Converter={StaticResource BoolToVis}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="4"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-            </ItemsControl>
+            <!-- Open value/label columns under a hairline, instead of the Statistics widget's
+                 boxed tiles, so the strip reads as part of the card. -->
+            <StackPanel Grid.Row="1"
+                        Margin="0,8,0,0"
+                        Visibility="{Binding ShowStatStrip, Converter={StaticResource BoolToVis}}">
+                <Rectangle Height="1"
+                           Fill="{DynamicResource PlayAch.Brush.Border}"
+                           Opacity="0.4"
+                           SnapsToDevicePixels="True"/>
+                <ItemsControl ItemsSource="{Binding Stats}" Margin="0,6,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="{Binding StatColumns}"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="3,2,10,2">
+                                <TextBlock Text="{Binding Value}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                                           FontWeight="SemiBold"
+                                           FontSize="{DynamicResource PlayAch.FontSize.SectionHeader}"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Label}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Grid>
     </DataTemplate>
 
