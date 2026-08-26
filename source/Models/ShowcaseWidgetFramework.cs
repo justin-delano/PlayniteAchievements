@@ -317,9 +317,6 @@ namespace PlayniteAchievements.Models
         private const string Content = "Content";
         private const string ProfileStats = "ProfileStats";
 
-        /// <summary>Number of stat slots the profile card offers.</summary>
-        public const int ProfileStatSlotCount = 4;
-
         /// <summary>Stat keys the profile stat slots show when the option is unset.</summary>
         public static readonly IReadOnlyList<string> DefaultProfileStatKeys = new[]
         {
@@ -330,10 +327,10 @@ namespace PlayniteAchievements.Models
         };
 
         /// <summary>
-        /// Keys of the overall statistics filling the profile widget's stat slots, in slot
-        /// order and capped at <see cref="ProfileStatSlotCount"/>. An unset option means
-        /// <see cref="DefaultProfileStatKeys"/>; a stored empty value means every slot is
-        /// empty and the strip hides.
+        /// Keys of the overall statistics filling the profile widget's stat slots, one per
+        /// slot in slot order, unbounded. An unset option means
+        /// <see cref="DefaultProfileStatKeys"/>; a stored empty value means no slots and the
+        /// strip hides.
         /// </summary>
         public static IReadOnlyList<string> GetProfileStatKeys(ShowcaseWidgetInstanceSettings settings)
         {
@@ -347,7 +344,6 @@ namespace PlayniteAchievements.Models
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(key => key.Trim())
                 .Where(key => key.Length > 0)
-                .Take(ProfileStatSlotCount)
                 .ToList();
         }
 
@@ -369,8 +365,7 @@ namespace PlayniteAchievements.Models
                 ",",
                 (keys ?? Enumerable.Empty<string>())
                     .Where(key => !string.IsNullOrWhiteSpace(key))
-                    .Select(key => key.Trim())
-                    .Take(ProfileStatSlotCount));
+                    .Select(key => key.Trim()));
         }
 
         public static string GetPinCollectionId(ShowcaseWidgetInstanceSettings settings)
