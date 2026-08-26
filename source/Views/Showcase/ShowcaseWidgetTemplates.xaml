@@ -10,6 +10,7 @@
 
     <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
     <converters:ResourceKeyToImageSourceConverter x:Key="ShowcaseResourceKeyToImage"/>
+    <converters:RaritySelectionIncludesCompletedConverter x:Key="RaritySelectionIncludesCompleted"/>
 
     <!-- Mosaics can hold 64 tiles, each carrying artwork, a glow effect, and a ray burst that
          redraws while it is on screen. A plain ItemsControl in a ScrollViewer realizes all of
@@ -601,18 +602,78 @@
                                               Command="{Binding UnpinCommand}"/>
                                 </ContextMenu>
                             </Grid.ContextMenu>
-                            <!-- Backing completion-glow layer, matching the game summaries grid:
-                                 two art copies carrying the completed-gradient start/end glows,
-                                 cached as one bitmap, outside the clipping border so the bloom
-                                 follows the art's silhouette and is never cut off. -->
+                            <!-- Completion glow, one-to-one with the game summaries grid's cover
+                                 cell: rays riding the art's silhouette, the two-tone bloom, and
+                                 the edge line, gated on the same soft/ray tier selections and
+                                 pulse toggle exposed as ancestor DPs by ShowcaseWidgetControl. -->
+                            <controls:RarityRayBurst UseCompletedColors="True"
+                                                     BurstScale="1.55"
+                                                     CornerRadiusRatio="0.14"
+                                                     SubjectUri="{Binding CoverPath}">
+                                <controls:RarityRayBurst.Style>
+                                    <Style TargetType="controls:RarityRayBurst">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ShowCompletionGlow}" Value="True"/>
+                                                    <Condition Binding="{Binding RayGlowTiers, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}, Converter={StaticResource RaritySelectionIncludesCompleted}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ShowCompletionGlow}" Value="True"/>
+                                                    <Condition Binding="{Binding RayGlowTiers, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}, Converter={StaticResource RaritySelectionIncludesCompleted}}" Value="True"/>
+                                                    <Condition Binding="{Binding AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="IsActive" Value="True"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:RarityRayBurst.Style>
+                            </controls:RarityRayBurst>
                             <Border CacheMode="BitmapCache"
-                                    IsHitTestVisible="False"
-                                    Visibility="{Binding ShowCompletionGlow, Converter={StaticResource BoolToVis}}">
+                                    IsHitTestVisible="False">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ShowCompletionGlow}" Value="True"/>
+                                                    <Condition Binding="{Binding SoftGlowTiers, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}, Converter={StaticResource RaritySelectionIncludesCompleted}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ShowCompletionGlow}" Value="True"/>
+                                                    <Condition Binding="{Binding SoftGlowTiers, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}, Converter={StaticResource RaritySelectionIncludesCompleted}}" Value="True"/>
+                                                    <Condition Binding="{Binding AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="helpers:RarityGlowPulse.IsActive" Value="True"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <Grid>
                                     <Image Style="{StaticResource MosaicTileArtStyle}"
                                            Effect="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
                                     <Image Style="{StaticResource MosaicTileArtStyle}"
                                            Effect="{DynamicResource PlayAch.Effect.CompletedGlowEnd}"/>
+                                    <Image Effect="{DynamicResource PlayAch.Effect.CompletedGlowEdge}">
+                                        <Image.Style>
+                                            <Style TargetType="Image" BasedOn="{StaticResource MosaicTileArtStyle}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RayGlowTiers, RelativeSource={RelativeSource AncestorType=showcase:ShowcaseWidgetControl}, Converter={StaticResource RaritySelectionIncludesCompleted}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
                                 </Grid>
                             </Border>
                             <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
