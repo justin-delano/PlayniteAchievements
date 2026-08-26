@@ -38,6 +38,7 @@ namespace PlayniteAchievements.Views.Showcase
         private static readonly string[] MirroredAppearanceResourceKeys =
         {
             "PlayAch.Brush.CompletedGame",
+            "PlayAch.Brush.Progress.CompletedFill",
             "PlayAch.Effect.CompletedGlowStart",
             "PlayAch.Effect.CompletedGlowEnd",
             "PlayAch.Effect.CompletedGlowEdge"
