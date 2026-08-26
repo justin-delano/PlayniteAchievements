@@ -109,7 +109,8 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 BuildProfileSettings(panel);
             }
-            else if (ShowcaseWidgetOptionsControl.HasOptions(_workingWidget.Kind))
+
+            if (ShowcaseWidgetOptionsControl.HasOptions(_workingWidget.Kind))
             {
                 panel.Children.Add(new ShowcaseWidgetOptionsControl(
                     _workingWidget,
@@ -331,7 +332,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     return 330;
                 case ShowcaseWidgetKind.Profile:
-                    return 300;
+                    return 340;
                 case ShowcaseWidgetKind.Pie:
                     return 250;
                 case ShowcaseWidgetKind.NativePoints:
