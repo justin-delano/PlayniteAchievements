@@ -549,11 +549,25 @@
 
     <!-- GameMosaic: dense wrap of game cover tiles; pinned-source tiles get a reorder/unpin menu. -->
     <DataTemplate DataType="{x:Type widgets:GameMosaicWidgetViewModel}">
+        <DataTemplate.Resources>
+            <!-- Glowing tiles render above their neighbors: the bloom and rays extend past the
+                 tile bounds, and at default z-order the adjacent tiles' art (drawn later) paints
+                 over that overflow, cropping the glow to the thin gutter. -->
+            <Style x:Key="GameMosaicItemStyle"
+                   TargetType="ListBoxItem"
+                   BasedOn="{StaticResource ShowcaseMosaicItemStyle}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ShowCompletionGlow}" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </DataTemplate.Resources>
         <ListBox ItemsSource="{Binding Tiles}"
                  Background="Transparent"
                  BorderThickness="0"
                  Padding="0"
-                 ItemContainerStyle="{StaticResource ShowcaseMosaicItemStyle}"
+                 ItemContainerStyle="{StaticResource GameMosaicItemStyle}"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.CanContentScroll="True"
