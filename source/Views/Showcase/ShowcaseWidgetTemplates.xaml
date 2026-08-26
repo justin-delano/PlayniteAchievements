@@ -682,6 +682,19 @@
                                     </Style>
                                 </Border.Style>
                                 <Grid>
+                                    <!-- Aura underlay: at tile size the art-copy shadows below
+                                         survive only as a thin rim past the opaque cover, so a
+                                         blurred completed-gradient rect carries the visible
+                                         bloom. Overhang 4 plus blur 10 stays inside the tile's
+                                         glow clearance. -->
+                                    <Rectangle Margin="-4"
+                                               RadiusX="6"
+                                               RadiusY="6"
+                                               Fill="{DynamicResource PlayAch.Brush.Progress.CompletedFill}">
+                                        <Rectangle.Effect>
+                                            <BlurEffect Radius="10"/>
+                                        </Rectangle.Effect>
+                                    </Rectangle>
                                     <Image Style="{StaticResource MosaicTileArtStyle}"
                                            Effect="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
                                     <Image Style="{StaticResource MosaicTileArtStyle}"
