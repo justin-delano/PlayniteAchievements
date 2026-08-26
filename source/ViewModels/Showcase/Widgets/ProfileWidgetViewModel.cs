@@ -59,7 +59,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private string _avatarPath;
         private bool _hasAvatar;
         private double _avatarSize = 72;
-        private CornerRadius _avatarCornerRadius = new CornerRadius(38);
+        private CornerRadius _avatarCornerRadius = new CornerRadius(12);
         private int _avatarDecodePixel = 144;
         private string _displayName;
         private string _subtitle;
@@ -111,7 +111,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             AvatarPath = resolved.AvatarPath;
             HasAvatar = !string.IsNullOrWhiteSpace(resolved.AvatarPath);
             AvatarSize = compact ? 42 : 72;
-            AvatarCornerRadius = new CornerRadius((AvatarSize + 4) / 2);
+            // Rounded rectangle, not a circle: the corner scales with the avatar so both
+            // densities read the same.
+            AvatarCornerRadius = new CornerRadius(Math.Round(AvatarSize * 0.17));
             AvatarDecodePixel = Math.Max(64, (int)Math.Ceiling(AvatarSize * 2));
 
             DisplayName = string.IsNullOrWhiteSpace(resolved.DisplayName)
