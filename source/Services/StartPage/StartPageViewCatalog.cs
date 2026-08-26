@@ -127,7 +127,7 @@ namespace PlayniteAchievements.Services.StartPage
                     ShowcaseProfileViewId,
                     StartPageWidgetKind.ShowcaseProfile,
                     ShowcaseWidgetKind.Profile,
-                    hasSettings: false),
+                    hasSettings: true),
                 Shared(
                     ShowcaseDualScoresViewId,
                     StartPageWidgetKind.ShowcaseDualScores,
