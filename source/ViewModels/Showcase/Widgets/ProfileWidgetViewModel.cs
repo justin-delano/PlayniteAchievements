@@ -41,7 +41,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// <summary>
     /// Backs the Profile widget: avatar, display name, and background resolved from the
     /// provider identity with manual overrides, plus a medal-count row (rarity, completed,
-    /// trophies) and a stat strip over the instance's configured stat keys. Density only
+    /// trophies) and a stat strip filling the instance's configured stat slots. Density only
     /// scales the avatar; the same content shows at every size.
     /// </summary>
     public sealed class ProfileWidgetViewModel : ShowcaseWidgetViewModelBase
