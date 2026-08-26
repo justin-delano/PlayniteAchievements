@@ -41,19 +41,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// <summary>
     /// Backs the Profile widget: avatar, display name, and background resolved from the
     /// provider identity with manual overrides, plus a medal-count row (rarity, completed,
-    /// trophies) and a four-tile stat strip. Density only scales the avatar; the same
-    /// content shows at every size.
+    /// trophies) and a stat strip over the instance's configured stat keys. Density only
+    /// scales the avatar; the same content shows at every size.
     /// </summary>
     public sealed class ProfileWidgetViewModel : ShowcaseWidgetViewModelBase
     {
-        private static readonly string[] StatStripKeys =
-        {
-            "completedGames",
-            "completion",
-            "playtime",
-            "activeDayRate"
-        };
-
         private string _backgroundPath;
         private bool _hasBackground;
         private string _avatarPath;
@@ -66,6 +58,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private bool _showSubtitle;
         private bool _showMedals;
         private bool _showStatStrip;
+        private int _statColumns = 4;
 
         public BulkObservableCollection<ProfileMedalViewModel> Medals { get; } =
             new BulkObservableCollection<ProfileMedalViewModel>();
@@ -96,6 +89,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public bool ShowMedals { get => _showMedals; private set => SetValue(ref _showMedals, value); }
 
         public bool ShowStatStrip { get => _showStatStrip; private set => SetValue(ref _showStatStrip, value); }
+
+        /// <summary>Strip columns: one per stat up to four, wrapping to extra rows past that.</summary>
+        public int StatColumns { get => _statColumns; private set => SetValue(ref _statColumns, value); }
 
         protected override void Refresh()
         {
@@ -128,6 +124,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             Stats.ReplaceAll(BuildStatStrip());
             ShowStatStrip = Stats.Count > 0;
+            StatColumns = Math.Max(1, Math.Min(4, Stats.Count));
         }
 
         private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(OverviewDataSnapshot snapshot)
@@ -155,7 +152,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         {
             var statistics = Projection?.Statistics ?? Array.Empty<ShowcaseStatistic>();
             var tiles = new List<ProfileStatViewModel>();
-            foreach (var key in StatStripKeys)
+            foreach (var key in ShowcaseWidgetOptions.GetProfileStatKeys(Projection?.Instance))
             {
                 var stat = statistics.FirstOrDefault(item =>
                     item != null && string.Equals(item.Key, key, StringComparison.Ordinal));
