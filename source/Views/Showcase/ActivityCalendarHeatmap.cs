@@ -86,23 +86,12 @@ namespace PlayniteAchievements.Views.Showcase
         {
             Loaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
                 .AppearanceChanged += OnAppearanceChanged;
-            Unloaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
-                .AppearanceChanged -= OnAppearanceChanged;
-
-            // The tooltip service only arms its hover timer when the pointer enters an element
-            // that ALREADY has a tooltip; a value first assigned during MouseMove never opens
-            // until something (like scrolling) re-enters the element. Arm with an empty value
-            // and suppress it when the pointer is not over a day cell.
-            ToolTip = string.Empty;
-            ToolTipOpening += OnToolTipOpening;
-        }
-
-        private void OnToolTipOpening(object sender, ToolTipEventArgs e)
-        {
-            if (!(ToolTip is string tooltip) || string.IsNullOrEmpty(tooltip))
+            Unloaded += (_, __) =>
             {
-                e.Handled = true;
-            }
+                PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                    .AppearanceChanged -= OnAppearanceChanged;
+                CloseToolTip();
+            };
         }
 
         private void OnAppearanceChanged(object sender, EventArgs e)
@@ -231,19 +220,36 @@ namespace PlayniteAchievements.Views.Showcase
             InvalidateVisual();
         }
 
+        private ToolTip _toolTip;
+        private int _hoverWeekIndex = -1;
+        private int _hoverDayIndex = -1;
+
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            // Never assign null: the empty string keeps the tooltip service armed (see ctor).
-            ToolTip = HitTestTooltip(e.GetPosition(this)) ?? string.Empty;
+            UpdateHoverToolTip(e.GetPosition(this));
         }
 
-        private string HitTestTooltip(Point position)
+        protected override void OnMouseLeave(MouseEventArgs e)
+        {
+            base.OnMouseLeave(e);
+            _hoverWeekIndex = -1;
+            _hoverDayIndex = -1;
+            CloseToolTip();
+        }
+
+        /// <summary>
+        /// Serves the tooltip for the day cell under the pointer. The tooltip service positions
+        /// its popup once at open, so over this single-element calendar it would sit still while
+        /// the pointer crosses cells; instead the element owns one ToolTip and reopens it against
+        /// the hovered cell's rect on every cell change, so the popup tracks the pointer.
+        /// </summary>
+        private void UpdateHoverToolTip(Point position)
         {
             var weeks = Weeks;
             if (weeks == null || weeks.Count == 0)
             {
-                return null;
+                return;
             }
 
             var metrics = ActivityCalendarMetrics.For(this);
@@ -251,13 +257,62 @@ namespace PlayniteAchievements.Views.Showcase
             var top = ShowMonthLabels ? metrics.MonthBandHeight : 0;
             var weekIndex = (int)(position.X / cellBox);
             var dayIndex = (int)((position.Y - top) / cellBox);
-            if (weekIndex < 0 || weekIndex >= weeks.Count || dayIndex < 0 || dayIndex >= 7)
+
+            string tooltip = null;
+            if (position.Y >= top && weekIndex >= 0 && weekIndex < weeks.Count &&
+                dayIndex >= 0 && dayIndex < 7)
             {
-                return null;
+                var days = weeks[weekIndex]?.Days;
+                tooltip = days != null && dayIndex < days.Count ? days[dayIndex]?.Tooltip : null;
             }
 
-            var days = weeks[weekIndex]?.Days;
-            return days != null && dayIndex < days.Count ? days[dayIndex]?.Tooltip : null;
+            if (tooltip == null)
+            {
+                _hoverWeekIndex = -1;
+                _hoverDayIndex = -1;
+                CloseToolTip();
+                return;
+            }
+
+            if (weekIndex == _hoverWeekIndex && dayIndex == _hoverDayIndex)
+            {
+                return;
+            }
+
+            _hoverWeekIndex = weekIndex;
+            _hoverDayIndex = dayIndex;
+            ShowToolTip(tooltip, new Rect(
+                weekIndex * cellBox,
+                top + dayIndex * cellBox,
+                cellBox,
+                cellBox));
+        }
+
+        private void ShowToolTip(string content, Rect cellRect)
+        {
+            if (_toolTip == null)
+            {
+                _toolTip = new ToolTip
+                {
+                    PlacementTarget = this,
+                    Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom
+                };
+            }
+
+            // An open popup's position is fixed at open time, so a cell change closes and
+            // reopens it against the new cell's rect; within one cell it stays untouched.
+            _toolTip.IsOpen = false;
+            _toolTip.Content = content;
+            _toolTip.PlacementRectangle = cellRect;
+            _toolTip.IsOpen = true;
+        }
+
+        private void CloseToolTip()
+        {
+            if (_toolTip != null)
+            {
+                _toolTip.IsOpen = false;
+            }
         }
 
         private static Brush[] BuildIntensityBrushes(Brush accent)
