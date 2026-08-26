@@ -668,18 +668,20 @@
                                     </Style>
                                 </Border.Style>
                                 <Grid>
-                                    <!-- Aura underlay: at tile size the grid's art-copy shadow
+                                    <!-- Bloom underlay: at tile size the grid's art-copy shadow
                                          bloom survives only as a thin rim past the opaque cover,
-                                         so a blurred completed-gradient rect carries the bloom
-                                         instead. Overhang 4 plus blur 10 stays inside the tile's
-                                         glow clearance; opacity keeps it a wash, not a neon ring. -->
-                                    <Rectangle Margin="-4"
-                                               RadiusX="6"
-                                               RadiusY="6"
+                                         so a blurred rect carries the bloom instead — styled to
+                                         the shadows it stands in for: overhang 2 mirrors their
+                                         ShadowDepth, blur 14 their BlurRadius, and the diagonal
+                                         gradient their 135/315 color bias. Opacity matches the
+                                         grid rim's brightness. -->
+                                    <Rectangle Margin="-2"
+                                               RadiusX="5"
+                                               RadiusY="5"
                                                Opacity="0.65"
-                                               Fill="{DynamicResource PlayAch.Brush.Progress.CompletedFill}">
+                                               Fill="{DynamicResource PlayAch.Brush.CompletedGlowBloom}">
                                         <Rectangle.Effect>
-                                            <BlurEffect Radius="10"/>
+                                            <BlurEffect Radius="14"/>
                                         </Rectangle.Effect>
                                     </Rectangle>
                                     <Image Effect="{DynamicResource PlayAch.Effect.CompletedGlowEdge}">
