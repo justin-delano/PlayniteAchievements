@@ -315,6 +315,57 @@ namespace PlayniteAchievements.Models
         private const string ActivityScope = "ActivityScope";
         private const string PinCollectionId = "PinCollectionId";
         private const string Content = "Content";
+        private const string ProfileStats = "ProfileStats";
+
+        /// <summary>Stat keys the profile stat strip shows when the option is unset.</summary>
+        public static readonly IReadOnlyList<string> DefaultProfileStatKeys = new[]
+        {
+            "completedGames",
+            "completion",
+            "playtime",
+            "activeDayRate"
+        };
+
+        /// <summary>
+        /// Keys of the overall statistics the profile widget's stat strip shows, in display
+        /// order. An unset option means <see cref="DefaultProfileStatKeys"/>; a stored empty
+        /// value means the user chose none and the strip hides.
+        /// </summary>
+        public static IReadOnlyList<string> GetProfileStatKeys(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (settings?.Options == null ||
+                !settings.Options.TryGetValue(ProfileStats, out var raw))
+            {
+                return DefaultProfileStatKeys;
+            }
+
+            return (raw ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(key => key.Trim())
+                .Where(key => key.Length > 0)
+                .ToList();
+        }
+
+        public static void SetProfileStatKeys(
+            ShowcaseWidgetInstanceSettings settings,
+            IEnumerable<string> keys)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            if (settings.Options == null)
+            {
+                settings.Options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            settings.Options[ProfileStats] = string.Join(
+                ",",
+                (keys ?? Enumerable.Empty<string>())
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim()));
+        }
 
         public static string GetPinCollectionId(ShowcaseWidgetInstanceSettings settings)
         {
