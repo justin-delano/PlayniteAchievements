@@ -549,9 +549,10 @@ namespace PlayniteAchievements.Views.Showcase
         }
 
         /// <summary>
-        /// The profile card's four stat slots: a labeled 2x2 grid of combo boxes, each picking
-        /// one of the overall statistics or None. The stored selection compacts filled slots in
-        /// slot order, so the strip renders them left to right.
+        /// The profile stat strip's slot editor: one combo per filled slot plus a trailing
+        /// empty one, each picking a single overall statistic. Choosing a stat in the trailing
+        /// combo appends a slot; choosing None in a filled combo removes it. Slots are
+        /// unbounded and stored in slot order.
         /// </summary>
         private void AddProfileStatSlots(Panel panel)
         {
@@ -567,63 +568,91 @@ namespace PlayniteAchievements.Views.Showcase
             labelBlock.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             panel.Children.Add(labelBlock);
 
-            var stored = ShowcaseWidgetOptions.GetProfileStatKeys(_settings);
-            var slots = new string[ShowcaseWidgetOptions.ProfileStatSlotCount];
-            for (var index = 0; index < slots.Length && index < stored.Count; index++)
+            var slots = ShowcaseWidgetOptions.GetProfileStatKeys(_settings).ToList();
+            var grid = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2 };
+            var rebuilding = false;
+
+            void Store()
             {
-                slots[index] = stored[index];
+                ShowcaseWidgetOptions.SetProfileStatKeys(_settings, slots);
+                _persist?.Invoke();
+                if (_publishChanges)
+                {
+                    ShowcaseConfigurationEvents.RaiseChanged();
+                }
             }
 
-            var grid = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2 };
-            for (var index = 0; index < slots.Length; index++)
+            void Rebuild()
             {
-                var slotIndex = index;
-                var combo = new ComboBox
+                rebuilding = true;
+                grid.Children.Clear();
+                for (var index = 0; index <= slots.Count; index++)
                 {
-                    MinHeight = 30,
-                    Margin = new Thickness(0, 2, index % 2 == 0 ? 8 : 0, 2)
-                };
-                combo.Items.Add(new Choice<string>
-                {
-                    Value = null,
-                    Label = Localize("LOCPlayAch_Common_None")
-                });
-                foreach (var stat in catalog)
-                {
+                    var slotIndex = index;
+                    var combo = new ComboBox
+                    {
+                        MinHeight = 30,
+                        Margin = new Thickness(0, 2, index % 2 == 0 ? 8 : 0, 2)
+                    };
                     combo.Items.Add(new Choice<string>
                     {
-                        Value = stat.Key,
-                        Label = Localize(stat.LabelKey)
+                        Value = null,
+                        Label = Localize("LOCPlayAch_Common_None")
                     });
+                    foreach (var stat in catalog)
+                    {
+                        combo.Items.Add(new Choice<string>
+                        {
+                            Value = stat.Key,
+                            Label = Localize(stat.LabelKey)
+                        });
+                    }
+
+                    combo.DisplayMemberPath = nameof(Choice<string>.Label);
+                    var current = slotIndex < slots.Count ? slots[slotIndex] : null;
+                    // Unknown keys (hand-edited settings) fall back to the None choice.
+                    combo.SelectedItem = combo.Items
+                        .OfType<Choice<string>>()
+                        .FirstOrDefault(choice => string.Equals(
+                            choice.Value,
+                            current,
+                            StringComparison.Ordinal))
+                        ?? combo.Items[0];
+                    combo.SelectionChanged += (_, __) =>
+                    {
+                        if (rebuilding || !(combo.SelectedItem is Choice<string> choice))
+                        {
+                            return;
+                        }
+
+                        if (slotIndex >= slots.Count)
+                        {
+                            if (choice.Value == null)
+                            {
+                                return;
+                            }
+
+                            slots.Add(choice.Value);
+                        }
+                        else if (choice.Value == null)
+                        {
+                            slots.RemoveAt(slotIndex);
+                        }
+                        else
+                        {
+                            slots[slotIndex] = choice.Value;
+                        }
+
+                        Store();
+                        Rebuild();
+                    };
+                    grid.Children.Add(combo);
                 }
 
-                combo.DisplayMemberPath = nameof(Choice<string>.Label);
-                // Unknown keys (hand-edited settings) fall back to the None choice.
-                combo.SelectedItem = combo.Items
-                    .OfType<Choice<string>>()
-                    .FirstOrDefault(choice => string.Equals(
-                        choice.Value,
-                        slots[slotIndex],
-                        StringComparison.Ordinal))
-                    ?? combo.Items[0];
-                combo.SelectionChanged += (_, __) =>
-                {
-                    if (!(combo.SelectedItem is Choice<string> choice))
-                    {
-                        return;
-                    }
-
-                    slots[slotIndex] = choice.Value;
-                    ShowcaseWidgetOptions.SetProfileStatKeys(_settings, slots);
-                    _persist?.Invoke();
-                    if (_publishChanges)
-                    {
-                        ShowcaseConfigurationEvents.RaiseChanged();
-                    }
-                };
-                grid.Children.Add(combo);
+                rebuilding = false;
             }
 
+            Rebuild();
             panel.Children.Add(grid);
         }
 
