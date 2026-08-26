@@ -32,6 +32,16 @@ namespace PlayniteAchievements.Views.Showcase
         private WidgetViewportState _viewport = WidgetViewportState.Classify(0, 0);
         private ShowcaseWidgetViewModelBase _bodyViewModel;
 
+        // The live, appearance-recolored completion visuals exist at application scope; the
+        // statically merged DesignTokens defaults shadow them for DynamicResource lookups inside
+        // this tree, so they are mirrored locally the way GameSummariesGridControl does.
+        private static readonly string[] MirroredAppearanceResourceKeys =
+        {
+            "PlayAch.Brush.CompletedGame",
+            "PlayAch.Effect.CompletedGlowStart",
+            "PlayAch.Effect.CompletedGlowEnd"
+        };
+
         public ShowcaseWidgetControl()
         {
             InitializeComponent();
@@ -39,6 +49,39 @@ namespace PlayniteAchievements.Views.Showcase
             // ShowcaseControl); a hosted slideshow also holds its current image while inert so
             // layout edits do not flip pictures mid-drag.
             IsHitTestVisibleChanged += OnHitTestVisibleChanged;
+            Loaded += (_, __) =>
+            {
+                PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged +=
+                    OnAppearanceChanged;
+                MirrorAppearanceResources();
+            };
+            Unloaded += (_, __) =>
+                PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged -=
+                    OnAppearanceChanged;
+        }
+
+        private void OnAppearanceChanged(object sender, EventArgs e)
+        {
+            Dispatcher?.BeginInvoke(new Action(MirrorAppearanceResources));
+        }
+
+        private void MirrorAppearanceResources()
+        {
+            foreach (var key in MirroredAppearanceResourceKeys)
+            {
+                try
+                {
+                    var resource = Application.Current?.TryFindResource(key);
+                    if (resource != null)
+                    {
+                        Resources[key] = resource;
+                    }
+                }
+                catch
+                {
+                    // Keep the static fallback resources if application resources are unavailable.
+                }
+            }
         }
 
         private void OnHitTestVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
