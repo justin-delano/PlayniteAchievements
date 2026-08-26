@@ -39,8 +39,51 @@ namespace PlayniteAchievements.Views.Showcase
         {
             "PlayAch.Brush.CompletedGame",
             "PlayAch.Effect.CompletedGlowStart",
-            "PlayAch.Effect.CompletedGlowEnd"
+            "PlayAch.Effect.CompletedGlowEnd",
+            "PlayAch.Effect.CompletedGlowEdge"
         };
+
+        // The glow-gating settings the game summaries grid exposes as ancestor DPs; the mosaic
+        // tile template gates its completion glow layers on these the same way the grid's cover
+        // cell does, so both surfaces honor the soft/ray tier selections and the pulse toggle.
+        public static readonly DependencyProperty AnimateRarityGlowsProperty =
+            DependencyProperty.Register(
+                nameof(AnimateRarityGlows),
+                typeof(bool),
+                typeof(ShowcaseWidgetControl),
+                new PropertyMetadata(false));
+
+        public bool AnimateRarityGlows
+        {
+            get => (bool)GetValue(AnimateRarityGlowsProperty);
+            set => SetValue(AnimateRarityGlowsProperty, value);
+        }
+
+        public static readonly DependencyProperty SoftGlowTiersProperty =
+            DependencyProperty.Register(
+                nameof(SoftGlowTiers),
+                typeof(PlayniteAchievements.Models.Achievements.RaritySelection),
+                typeof(ShowcaseWidgetControl),
+                new PropertyMetadata(PlayniteAchievements.Models.Achievements.RaritySelection.None));
+
+        public PlayniteAchievements.Models.Achievements.RaritySelection SoftGlowTiers
+        {
+            get => (PlayniteAchievements.Models.Achievements.RaritySelection)GetValue(SoftGlowTiersProperty);
+            set => SetValue(SoftGlowTiersProperty, value);
+        }
+
+        public static readonly DependencyProperty RayGlowTiersProperty =
+            DependencyProperty.Register(
+                nameof(RayGlowTiers),
+                typeof(PlayniteAchievements.Models.Achievements.RaritySelection),
+                typeof(ShowcaseWidgetControl),
+                new PropertyMetadata(PlayniteAchievements.Models.Achievements.RaritySelection.None));
+
+        public PlayniteAchievements.Models.Achievements.RaritySelection RayGlowTiers
+        {
+            get => (PlayniteAchievements.Models.Achievements.RaritySelection)GetValue(RayGlowTiersProperty);
+            set => SetValue(RayGlowTiersProperty, value);
+        }
 
         public ShowcaseWidgetControl()
         {
@@ -49,6 +92,12 @@ namespace PlayniteAchievements.Views.Showcase
             // ShowcaseControl); a hosted slideshow also holds its current image while inert so
             // layout edits do not flip pictures mid-drag.
             IsHitTestVisibleChanged += OnHitTestVisibleChanged;
+            PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                .BindAnimateRarityGlows(this, AnimateRarityGlowsProperty);
+            PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                .BindSoftGlowTiers(this, SoftGlowTiersProperty);
+            PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                .BindRayGlowTiers(this, RayGlowTiersProperty);
             Loaded += (_, __) =>
             {
                 PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged +=
