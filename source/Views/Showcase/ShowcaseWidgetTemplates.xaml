@@ -66,12 +66,12 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <!-- The banner fades toward the stat strip so the identity reads over the art
-                 without a full-card wash. An OpacityMask only samples alpha, so the white
-                 gradient stops carry no tint. -->
+            <!-- The banner renders at full strength (no wash — a flat opacity reads as a tint
+                 over the card surface) and only fades out toward the stat strip; the drop
+                 shadows on the foreground elements keep them legible over the art. An
+                 OpacityMask only samples alpha, so the white gradient stops carry no tint. -->
             <Image Grid.RowSpan="2"
                    Stretch="UniformToFill"
-                   Opacity="0.3"
                    IsHitTestVisible="False"
                    Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}"
                    helpers:AsyncImage.Uri="{Binding BackgroundPath}"
@@ -79,7 +79,7 @@
                 <Image.OpacityMask>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <GradientStop Color="#FFFFFFFF" Offset="0"/>
-                        <GradientStop Color="#99FFFFFF" Offset="0.55"/>
+                        <GradientStop Color="#CCFFFFFF" Offset="0.5"/>
                         <GradientStop Color="#00FFFFFF" Offset="1"/>
                     </LinearGradientBrush>
                 </Image.OpacityMask>
