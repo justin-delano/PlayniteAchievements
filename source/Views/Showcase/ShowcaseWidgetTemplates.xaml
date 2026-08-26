@@ -549,25 +549,11 @@
 
     <!-- GameMosaic: dense wrap of game cover tiles; pinned-source tiles get a reorder/unpin menu. -->
     <DataTemplate DataType="{x:Type widgets:GameMosaicWidgetViewModel}">
-        <DataTemplate.Resources>
-            <!-- Glowing tiles render above their neighbors: the bloom and rays extend past the
-                 tile bounds, and at default z-order the adjacent tiles' art (drawn later) paints
-                 over that overflow, cropping the glow to the thin gutter. -->
-            <Style x:Key="GameMosaicItemStyle"
-                   TargetType="ListBoxItem"
-                   BasedOn="{StaticResource ShowcaseMosaicItemStyle}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ShowCompletionGlow}" Value="True">
-                        <Setter Property="Panel.ZIndex" Value="1"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </DataTemplate.Resources>
         <ListBox ItemsSource="{Binding Tiles}"
                  Background="Transparent"
                  BorderThickness="0"
                  Padding="0"
-                 ItemContainerStyle="{StaticResource GameMosaicItemStyle}"
+                 ItemContainerStyle="{StaticResource ShowcaseMosaicItemStyle}"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.CanContentScroll="True"
@@ -626,10 +612,10 @@
                                               Command="{Binding UnpinCommand}"/>
                                 </ContextMenu>
                             </Grid.ContextMenu>
-                            <!-- Completion glow, one-to-one with the game summaries grid's cover
-                                 cell: rays riding the art's silhouette, the two-tone bloom, and
-                                 the edge line, gated on the same soft/ray tier selections and
-                                 pulse toggle exposed as ancestor DPs by ShowcaseWidgetControl. -->
+                            <!-- Completion glow: the game summaries grid's rays and edge line,
+                                 with the aura underlay below carrying the bloom, gated on the
+                                 same soft/ray tier selections and pulse toggle exposed as
+                                 ancestor DPs by ShowcaseWidgetControl. -->
                             <controls:RarityRayBurst UseCompletedColors="True"
                                                      BurstScale="1.55"
                                                      CornerRadiusRatio="0.14"
@@ -682,23 +668,20 @@
                                     </Style>
                                 </Border.Style>
                                 <Grid>
-                                    <!-- Aura underlay: at tile size the art-copy shadows below
-                                         survive only as a thin rim past the opaque cover, so a
-                                         blurred completed-gradient rect carries the visible
-                                         bloom. Overhang 4 plus blur 10 stays inside the tile's
-                                         glow clearance. -->
+                                    <!-- Aura underlay: at tile size the grid's art-copy shadow
+                                         bloom survives only as a thin rim past the opaque cover,
+                                         so a blurred completed-gradient rect carries the bloom
+                                         instead. Overhang 4 plus blur 10 stays inside the tile's
+                                         glow clearance; opacity keeps it a wash, not a neon ring. -->
                                     <Rectangle Margin="-4"
                                                RadiusX="6"
                                                RadiusY="6"
+                                               Opacity="0.65"
                                                Fill="{DynamicResource PlayAch.Brush.Progress.CompletedFill}">
                                         <Rectangle.Effect>
                                             <BlurEffect Radius="10"/>
                                         </Rectangle.Effect>
                                     </Rectangle>
-                                    <Image Style="{StaticResource MosaicTileArtStyle}"
-                                           Effect="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
-                                    <Image Style="{StaticResource MosaicTileArtStyle}"
-                                           Effect="{DynamicResource PlayAch.Effect.CompletedGlowEnd}"/>
                                     <Image Effect="{DynamicResource PlayAch.Effect.CompletedGlowEdge}">
                                         <Image.Style>
                                             <Style TargetType="Image" BasedOn="{StaticResource MosaicTileArtStyle}">
