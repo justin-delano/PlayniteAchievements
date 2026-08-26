@@ -584,7 +584,10 @@
                                 </Style.Triggers>
                             </Style>
                         </DataTemplate.Resources>
-                        <Grid Margin="3"
+                        <!-- Margin 6 (not the icon mosaic's 3): the completion bloom renders
+                             beyond the art and needs gutter room to read, like the grid's 8,6
+                             art margins. -->
+                        <Grid Margin="6"
                               ToolTip="{Binding GameName}"
                               ContextMenuService.IsEnabled="{Binding IsPinnable}">
                             <Grid.ContextMenu>
