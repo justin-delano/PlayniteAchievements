@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -50,6 +51,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             switch (kind)
             {
+                case ShowcaseWidgetKind.Profile:
                 case ShowcaseWidgetKind.Scores:
                 case ShowcaseWidgetKind.Pie:
                 case ShowcaseWidgetKind.Timeline:
@@ -70,6 +72,9 @@ namespace PlayniteAchievements.Views.Showcase
             var panel = new StackPanel { Margin = margin };
             switch (_settings.Kind)
             {
+                case ShowcaseWidgetKind.Profile:
+                    AddProfileStatsChoice(panel);
+                    break;
                 case ShowcaseWidgetKind.Scores:
                     AddChoice(
                         panel,
@@ -542,6 +547,109 @@ namespace PlayniteAchievements.Views.Showcase
                 ShowcaseTimelineOptions.GetRange(_settings),
                 value => ShowcaseTimelineOptions.SetRange(_settings, value),
                 TimelineRangeName);
+        }
+
+        /// <summary>
+        /// The profile stat strip's multi-select: a summary button that drops a checkable menu
+        /// of the overall statistics. The stored selection keeps the catalog's canonical order,
+        /// and each toggle reads the current selection fresh because the menu stays open across
+        /// clicks.
+        /// </summary>
+        private void AddProfileStatsChoice(Panel panel)
+        {
+            // Key/label catalog only; the empty snapshot's values are never shown.
+            var catalog = ShowcaseWidgetProjectionService.BuildStatistics(null, DateTime.Now);
+
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+            var labelBlock = new TextBlock
+            {
+                Text = Localize("LOCPlayAch_Showcase_Widget_Statistics"),
+                Margin = new Thickness(0, 0, 10, 0),
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            labelBlock.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
+            row.Children.Add(labelBlock);
+
+            var summary = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+            var button = new Button
+            {
+                MinHeight = 30,
+                Content = summary,
+                HorizontalContentAlignment = HorizontalAlignment.Left
+            };
+            var menu = new ContextMenu();
+            if (TryFindResource("AchievementSelectorContextMenuStyle") is Style menuStyle)
+            {
+                menu.Style = menuStyle;
+            }
+
+            button.ContextMenu = menu;
+
+            HashSet<string> ReadSelection() => new HashSet<string>(
+                ShowcaseWidgetOptions.GetProfileStatKeys(_settings),
+                StringComparer.Ordinal);
+
+            void RefreshSummary()
+            {
+                var selected = ReadSelection();
+                var labels = catalog
+                    .Where(stat => selected.Contains(stat.Key))
+                    .Select(stat => Localize(stat.LabelKey))
+                    .ToList();
+                summary.Text = labels.Count == catalog.Count
+                    ? Localize("LOCPlayAch_Common_All")
+                    : labels.Count > 0
+                        ? string.Join(", ", labels)
+                        : Localize("LOCPlayAch_Common_None");
+            }
+
+            button.Click += (_, __) =>
+            {
+                menu.Items.Clear();
+                var selected = ReadSelection();
+                foreach (var stat in catalog)
+                {
+                    var key = stat.Key;
+                    menu.Items.Add(MultiSelectMenu.CreateItem(
+                        button,
+                        Localize(stat.LabelKey),
+                        selected.Contains(key),
+                        isChecked =>
+                        {
+                            var current = ReadSelection();
+                            if (isChecked)
+                            {
+                                current.Add(key);
+                            }
+                            else
+                            {
+                                current.Remove(key);
+                            }
+
+                            ShowcaseWidgetOptions.SetProfileStatKeys(
+                                _settings,
+                                catalog.Where(item => current.Contains(item.Key))
+                                    .Select(item => item.Key));
+                            _persist?.Invoke();
+                            if (_publishChanges)
+                            {
+                                ShowcaseConfigurationEvents.RaiseChanged();
+                            }
+
+                            RefreshSummary();
+                        }));
+                }
+
+                MultiSelectMenu.Open(button, menu);
+            };
+
+            RefreshSummary();
+            Grid.SetColumn(button, 1);
+            row.Children.Add(button);
+            panel.Children.Add(row);
         }
 
         private FrameworkElement AddPinCollectionChoice(Panel panel, bool achievementCollection)
