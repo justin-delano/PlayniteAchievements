@@ -567,22 +567,27 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <!-- The glow rides the OUTER border: ClipToBounds clips an element's own
-                             drop-shadow effect, so the image-clipping border sits inside it. -->
-                        <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
-                                Margin="3"
-                                ToolTip="{Binding GameName}"
-                                ContextMenuService.IsEnabled="{Binding IsPinnable}">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ShowCompletionGlow}" Value="True">
-                                            <Setter Property="Effect" Value="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                            <Border.ContextMenu>
+                        <DataTemplate.Resources>
+                            <!-- Shared by the visible art and the glow-layer copies so the bloom
+                                 tracks the exact same artwork, size, and stretch. -->
+                            <Style x:Key="MosaicTileArtStyle" TargetType="Image">
+                                <Setter Property="Width" Value="{Binding CoverWidth}"/>
+                                <Setter Property="Height" Value="{Binding CoverHeight}"/>
+                                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                                <Setter Property="helpers:AsyncImage.DecodePixel" Value="{Binding DecodePixel}"/>
+                                <Setter Property="helpers:AsyncImage.Uri" Value="{Binding CoverPath}"/>
+                                <Setter Property="Stretch" Value="UniformToFill"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasCover}" Value="False">
+                                        <Setter Property="Stretch" Value="Uniform"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataTemplate.Resources>
+                        <Grid Margin="3"
+                              ToolTip="{Binding GameName}"
+                              ContextMenuService.IsEnabled="{Binding IsPinnable}">
+                            <Grid.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_MoveEarlier}"
                                               Command="{Binding MoveEarlierCommand}"/>
@@ -592,28 +597,27 @@
                                     <MenuItem Header="{DynamicResource LOCPlayAch_Showcase_RemoveFromCollection}"
                                               Command="{Binding UnpinCommand}"/>
                                 </ContextMenu>
-                            </Border.ContextMenu>
+                            </Grid.ContextMenu>
+                            <!-- Backing completion-glow layer, matching the game summaries grid:
+                                 two art copies carrying the completed-gradient start/end glows,
+                                 cached as one bitmap, outside the clipping border so the bloom
+                                 follows the art's silhouette and is never cut off. -->
+                            <Border CacheMode="BitmapCache"
+                                    IsHitTestVisible="False"
+                                    Visibility="{Binding ShowCompletionGlow, Converter={StaticResource BoolToVis}}">
+                                <Grid>
+                                    <Image Style="{StaticResource MosaicTileArtStyle}"
+                                           Effect="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
+                                    <Image Style="{StaticResource MosaicTileArtStyle}"
+                                           Effect="{DynamicResource PlayAch.Effect.CompletedGlowEnd}"/>
+                                </Grid>
+                            </Border>
                             <Border Background="{DynamicResource PlayAch.Brush.Overlay.Tint.08}"
                                     CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                     ClipToBounds="True">
-                                <Image Width="{Binding CoverWidth}"
-                                       Height="{Binding CoverHeight}"
-                                       SnapsToDevicePixels="True"
-                                       helpers:AsyncImage.Uri="{Binding CoverPath}"
-                                       helpers:AsyncImage.DecodePixel="{Binding DecodePixel}">
-                                    <Image.Style>
-                                        <Style TargetType="Image">
-                                            <Setter Property="Stretch" Value="UniformToFill"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasCover}" Value="False">
-                                                    <Setter Property="Stretch" Value="Uniform"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
+                                <Image Style="{StaticResource MosaicTileArtStyle}"/>
                             </Border>
-                        </Border>
+                        </Grid>
                     </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
