@@ -332,7 +332,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     return 330;
                 case ShowcaseWidgetKind.Profile:
-                    return 340;
+                    return 380;
                 case ShowcaseWidgetKind.Pie:
                     return 250;
                 case ShowcaseWidgetKind.NativePoints:
