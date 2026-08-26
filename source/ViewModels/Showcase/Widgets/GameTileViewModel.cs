@@ -42,6 +42,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             GameName = game.GameName;
             IsPinnable = pinnable && game.PlayniteGameId.HasValue;
             ShowCompletionGlow = showCompletionGlow && game.IsCompleted;
+            GlowSpacing = showCompletionGlow;
 
             MoveEarlierCommand = new RelayCommand(_ => Move(-1));
             MoveLaterCommand = new RelayCommand(_ => Move(1));
@@ -64,6 +65,15 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         /// <summary>True when the tile's game is completed and the widget shows the glow.</summary>
         public bool ShowCompletionGlow { get; }
+
+        /// <summary>
+        /// True on every tile while the widget's completion-glow option is on, completed or not,
+        /// so the whole mosaic shares one tile size. The glow's bloom (blur 14, depth 2) and ray
+        /// reach (about 0.275 of the art per side) both need roughly 14-16px of clearance; with
+        /// less, neighboring tiles' art paints over the overflow and only the rays' pale inner
+        /// copies survive in the gutters.
+        /// </summary>
+        public bool GlowSpacing { get; }
 
         public RelayCommand MoveEarlierCommand { get; }
 
