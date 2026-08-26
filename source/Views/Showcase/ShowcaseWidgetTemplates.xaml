@@ -57,7 +57,7 @@
          WPF resolves the matching template by runtime type. One template per kind. -->
 
     <!-- Profile: avatar + name/subtitle over the provider identity (manual overrides win),
-         with a medal-count row and a stat strip over the instance's four stat slots.
+         with a medal-count row and a stat strip over the instance's configured stat slots.
          The zero-size image owns the avatar decode (AsyncImage wants a loaded Image); the
          rounded border's brush consumes its Source so the art clips to the corner radius. -->
     <DataTemplate DataType="{x:Type widgets:ProfileWidgetViewModel}">
