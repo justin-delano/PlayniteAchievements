@@ -58,7 +58,8 @@ namespace PlayniteAchievements.Views.Showcase
                 new FrameworkPropertyMetadata(
                     null,
                     FrameworkPropertyMetadataOptions.AffectsMeasure |
-                    FrameworkPropertyMetadataOptions.AffectsRender));
+                    FrameworkPropertyMetadataOptions.AffectsRender,
+                    (d, __) => ((ActivityCalendarHeatmap)d).ResetHover()));
 
         public IReadOnlyList<ActivityCalendarWeekViewModel> Weeks
         {
@@ -84,6 +85,7 @@ namespace PlayniteAchievements.Views.Showcase
 
         public ActivityCalendarHeatmap()
         {
+            AddVisualChild(_hoverVisual);
             Loaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
                 .AppearanceChanged += OnAppearanceChanged;
             Unloaded += (_, __) =>
@@ -92,6 +94,21 @@ namespace PlayniteAchievements.Views.Showcase
                     .AppearanceChanged -= OnAppearanceChanged;
                 CloseToolTip();
             };
+        }
+
+        /// <summary>Overlay for the hover outline; visual children draw above OnRender content.</summary>
+        private readonly DrawingVisual _hoverVisual = new DrawingVisual();
+
+        protected override int VisualChildrenCount => 1;
+
+        protected override Visual GetVisualChild(int index)
+        {
+            if (index != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            return _hoverVisual;
         }
 
         private void OnAppearanceChanged(object sender, EventArgs e)
@@ -188,6 +205,7 @@ namespace PlayniteAchievements.Views.Showcase
         private Brush _emptyBrush;
         private Brush _textBrush;
         private Brush[] _intensityBrushes;
+        private Pen _hoverPen;
         private Typeface _typeface;
         private double _pixelsPerDip;
 
@@ -207,6 +225,13 @@ namespace PlayniteAchievements.Views.Showcase
                 new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
             _textBrush = TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.Gray;
             _intensityBrushes = BuildIntensityBrushes(accent);
+            // The text brush contrasts both the empty tint and every accent intensity, so the
+            // outline stays visible on any cell in either theme.
+            _hoverPen = new Pen(_textBrush, 1);
+            if (_hoverPen.CanFreeze)
+            {
+                _hoverPen.Freeze();
+            }
 
             var fontFamily = TextElement.GetFontFamily(this) ?? new FontFamily("Segoe UI");
             _typeface = new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
@@ -233,8 +258,16 @@ namespace PlayniteAchievements.Views.Showcase
         protected override void OnMouseLeave(MouseEventArgs e)
         {
             base.OnMouseLeave(e);
+            ResetHover();
+        }
+
+        /// <summary>Clears the hover outline and tooltip; also runs when Weeks is replaced,
+        /// because a stale outline would point at whatever cell now occupies the old index.</summary>
+        private void ResetHover()
+        {
             _hoverWeekIndex = -1;
             _hoverDayIndex = -1;
+            RenderHoverIndicator();
             CloseToolTip();
         }
 
@@ -268,9 +301,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             if (tooltip == null)
             {
-                _hoverWeekIndex = -1;
-                _hoverDayIndex = -1;
-                CloseToolTip();
+                ResetHover();
                 return;
             }
 
@@ -281,11 +312,39 @@ namespace PlayniteAchievements.Views.Showcase
 
             _hoverWeekIndex = weekIndex;
             _hoverDayIndex = dayIndex;
+            RenderHoverIndicator();
             ShowToolTip(tooltip, new Rect(
                 weekIndex * cellBox,
                 top + dayIndex * cellBox,
                 cellBox,
                 cellBox));
+        }
+
+        /// <summary>
+        /// Draws the outline around the hovered day cell into the dedicated overlay visual, so
+        /// pointer movement never re-renders the whole calendar drawing.
+        /// </summary>
+        private void RenderHoverIndicator()
+        {
+            using (var context = _hoverVisual.RenderOpen())
+            {
+                if (_hoverWeekIndex < 0 || _hoverDayIndex < 0)
+                {
+                    return; // an empty drawing clears the previous outline
+                }
+
+                EnsureRenderResources();
+                var metrics = ActivityCalendarMetrics.For(this);
+                var cellBox = metrics.CellBox;
+                var cell = Math.Max(1, cellBox - CellMargin * 2);
+                var top = ShowMonthLabels ? metrics.MonthBandHeight : 0;
+                var rect = new Rect(
+                    _hoverWeekIndex * cellBox + CellMargin,
+                    top + _hoverDayIndex * cellBox + CellMargin,
+                    cell,
+                    cell);
+                context.DrawRoundedRectangle(null, _hoverPen, rect, CellCornerRadius, CellCornerRadius);
+            }
         }
 
         private void ShowToolTip(string content, Rect cellRect)
