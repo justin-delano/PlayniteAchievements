@@ -37,10 +37,7 @@ namespace PlayniteAchievements.Views.Showcase
         // this tree, so they are mirrored locally the way GameSummariesGridControl does.
         private static readonly string[] MirroredAppearanceResourceKeys =
         {
-            "PlayAch.Brush.CompletedGame",
             "PlayAch.Brush.Progress.CompletedFill",
-            "PlayAch.Effect.CompletedGlowStart",
-            "PlayAch.Effect.CompletedGlowEnd",
             "PlayAch.Effect.CompletedGlowEdge"
         };
 
