@@ -352,66 +352,6 @@ namespace PlayniteAchievements.Views.Controls
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             DetachCurrentSources();
-            ReleaseTooltipResources();
-        }
-
-        // LiveCharts keeps its tooltip timeout timer and tooltip popup as internal members, and
-        // both survive an unload: a running DispatcherTimer is held by the Dispatcher's timer
-        // list, and a popup's content lives in a PopupRoot in its own top-level window rather
-        // than in this control's visual tree. Either one keeps the chart reachable, and the
-        // chart transitively holds its series, the chart view model, and (through the bound
-        // sources and this control's own events) the hosting view. Resolved once.
-        private static readonly PropertyInfo LiveChartsTooltipTimerProperty =
-            typeof(LiveCharts.Wpf.Charts.Base.Chart).GetProperty(
-                "TooltipTimeoutTimer",
-                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-
-        private static readonly PropertyInfo LiveChartsTooltipContainerProperty =
-            typeof(LiveCharts.Wpf.Charts.Base.Chart).GetProperty(
-                "TooltipContainer",
-                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-
-        /// <summary>
-        /// Releases the chart's tooltip timer and popup. Safe to call whenever the chart leaves
-        /// the tree: LiveCharts restarts the timer and reopens the popup on the next hover.
-        /// </summary>
-        private void ReleaseTooltipResources()
-        {
-            if (Chart == null)
-            {
-                return;
-            }
-
-            try
-            {
-                (LiveChartsTooltipTimerProperty?.GetValue(Chart)
-                    as System.Windows.Threading.DispatcherTimer)?.Stop();
-
-                if (LiveChartsTooltipContainerProperty?.GetValue(Chart)
-                    is System.Windows.Controls.Primitives.Popup popup)
-                {
-                    popup.IsOpen = false;
-                }
-
-                // The updater's redraw timer. Its concrete type (LiveCharts.Wpf.Components
-                // .ChartUpdater) is internal, so Timer is reached off the instance. While it is
-                // enabled the Dispatcher's timer list holds it, and it holds the chart core -
-                // which is reachable from the series and everything bound to them. LiveCharts
-                // restarts it through ChartUpdater.Run() on the next update after a reload.
-                var updater = Chart.Model?.Updater;
-                if (updater != null)
-                {
-                    var timerProperty = updater.GetType().GetProperty(
-                        "Timer",
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    (timerProperty?.GetValue(updater)
-                        as System.Windows.Threading.DispatcherTimer)?.Stop();
-                }
-            }
-            catch
-            {
-                // Reaching library internals is best-effort; never let it break unload.
-            }
         }
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
