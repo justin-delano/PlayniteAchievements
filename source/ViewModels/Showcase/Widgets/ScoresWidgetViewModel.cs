@@ -156,9 +156,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         // What the cards were last built from. Rebuilding the collection makes LiveCharts throw
         // away and re-plot every series, so an unrelated refresh (a pin toggle, another widget's
-        // option, a resize that keeps the same density) must not touch it.
+        // option, a resize that keeps the same density) must not touch it. The snapshot is held
+        // weakly: it is change-detection state only, and a strong field here would pin a whole
+        // full-library snapshot generation per Scores widget.
         private IReadOnlyList<ShowcaseScorePoint> _builtHistory;
-        private OverviewDataSnapshot _builtSnapshot;
+        private WeakReference<OverviewDataSnapshot> _builtSnapshot;
         private ShowcaseScoreMode _builtMode;
         private bool _builtShowChart;
 
@@ -192,9 +194,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
             var showChart = history.Count >= 2;
+            OverviewDataSnapshot builtSnapshot = null;
+            _builtSnapshot?.TryGetTarget(out builtSnapshot);
             if (Cards.Count > 0 &&
                 ReferenceEquals(_builtHistory, history) &&
-                ReferenceEquals(_builtSnapshot, Projection?.Snapshot) &&
+                ReferenceEquals(builtSnapshot, Projection?.Snapshot) &&
                 _builtMode == mode &&
                 _builtShowChart == showChart)
             {
@@ -202,7 +206,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             }
 
             _builtHistory = history;
-            _builtSnapshot = Projection?.Snapshot;
+            _builtSnapshot = Projection?.Snapshot == null
+                ? null
+                : new WeakReference<OverviewDataSnapshot>(Projection.Snapshot);
             _builtMode = mode;
             _builtShowChart = showChart;
 
