@@ -1618,7 +1618,11 @@ namespace PlayniteAchievements.ViewModels
                         UseProgressWindow = false,
                         SwallowExceptions = false
                     });
-                await RefreshViewAsync();
+                // No explicit view refresh here: the pipeline's end-of-run CacheInvalidated
+                // already reconciles this view model - scoped runs re-queue a delta per
+                // refreshed game, larger/full runs collapse to a full invalidation that
+                // lands in OnRefreshDebounceTimerTick's RefreshViewAsync. A second full
+                // projection rebuild on top of that doubled the post-run allocation.
             }
             catch (Exception ex)
             {
