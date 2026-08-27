@@ -515,6 +515,7 @@ namespace PlayniteAchievements
                     {
                         InvalidateStartPageData();
                         InvalidateFriendDataCoordinators();
+                        ScheduleRetentionDiagnostics();
                     };
                     // Bitmap eviction is scoped instead of wholesale: normal refreshes never
                     // rewrite icon files in place (in-place overwrites are handled by the

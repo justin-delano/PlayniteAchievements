@@ -86,6 +86,17 @@ namespace PlayniteAchievements.Services.Widgets
             }
         }
 
+        /// <summary>Retained snapshot shape, for memory diagnostics.</summary>
+        public void GetRetentionStats(out bool hasSnapshot, out int achievementRows, out int gameRows)
+        {
+            lock (_syncRoot)
+            {
+                hasSnapshot = _snapshot != null;
+                achievementRows = _snapshot?.Achievements?.Count ?? 0;
+                gameRows = _snapshot?.GameSummaries?.Count ?? 0;
+            }
+        }
+
         public void AttachPublisher()
         {
             lock (_syncRoot)

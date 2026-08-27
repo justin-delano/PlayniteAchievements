@@ -31,7 +31,14 @@ namespace PlayniteAchievements.Common
     {
         private const double BytesPerMb = 1024d * 1024d;
 
-        public static bool Enabled => PerfScope.PerfTracingEnabled;
+        /// <summary>
+        /// Memory lines are a handful per refresh (unlike the per-operation timing traces), so
+        /// they stay on independently of <see cref="PerfScope.PerfTracingEnabled"/>: residual
+        /// memory after a refresh is only diagnosable from a log that was already recording.
+        /// </summary>
+        internal static readonly bool MemoryTracingEnabled = true;
+
+        public static bool Enabled => MemoryTracingEnabled || PerfScope.PerfTracingEnabled;
 
         /// <summary>
         /// Captures current process memory counters. Never throws; returns an invalid snapshot
@@ -64,6 +71,32 @@ namespace PlayniteAchievements.Common
         public static MemorySnapshot Log(ILogger logger, string point, string detail = null)
         {
             return Log(logger, point, default(MemorySnapshot), detail);
+        }
+
+        /// <summary>
+        /// Logs a [MemPerf] line after forcing a full blocking collection, so the managed number
+        /// reflects what is actually still rooted rather than uncollected garbage. Only for
+        /// once-per-refresh retention reporting - never in a hot path.
+        /// </summary>
+        public static void LogRetained(ILogger logger, string point, string detail = null)
+        {
+            if (!Enabled)
+            {
+                return;
+            }
+
+            try
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+            catch
+            {
+                return;
+            }
+
+            Log(logger, point, detail);
         }
 
         /// <summary>

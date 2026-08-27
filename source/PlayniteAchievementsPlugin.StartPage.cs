@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK.Models;
@@ -192,6 +193,90 @@ namespace PlayniteAchievements
         private void InvalidateStartPageData()
         {
             _startPageDataCoordinator?.Invalidate();
+        }
+
+        // Reports what the process-lifetime caches still hold once a refresh has settled, so
+        // residual memory can be attributed to a specific retainer instead of inferred from
+        // the process total. Delayed past the post-refresh delta/projection work and the LOH
+        // compaction so it measures the resting state, not the peak.
+        private void ScheduleRetentionDiagnostics()
+        {
+            if (!Common.MemoryDiagnostics.Enabled)
+            {
+                return;
+            }
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+                    LogRetentionDiagnostics("refresh.settled");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Retention diagnostics failed.");
+                }
+            });
+        }
+
+        private void LogRetentionDiagnostics(string point)
+        {
+            var detail = new System.Text.StringBuilder();
+
+            try
+            {
+                if (_imageService != null)
+                {
+                    _imageService.GetCacheStats(out var imageCount, out var imageBytes);
+                    detail.Append($"images={imageCount}/{imageBytes / (1024 * 1024)}MB ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read image cache stats.");
+            }
+
+            try
+            {
+                detail.Append($"projections={_libraryProjectionService?.DescribeCachedProjections() ?? "n/a"} ");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read projection cache stats.");
+            }
+
+            try
+            {
+                if (_achievementDataService != null)
+                {
+                    _achievementDataService.GetOverviewMemoStats(out var memoEntries, out var memoRows);
+                    detail.Append($"summaryMemo={memoEntries}/{memoRows}rows ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read summary memo stats.");
+            }
+
+            try
+            {
+                if (_startPageDataCoordinator != null)
+                {
+                    _startPageDataCoordinator.GetRetentionStats(out var hasSnapshot, out var achRows, out var gameRows);
+                    detail.Append($"sharedSnapshot={(hasSnapshot ? "yes" : "no")}/{achRows}ach/{gameRows}games ");
+                }
+                else
+                {
+                    detail.Append("sharedSnapshot=none ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read shared snapshot stats.");
+            }
+
+            Common.MemoryDiagnostics.LogRetained(_logger, point, detail.ToString().TrimEnd());
         }
 
         // Trailing coalescer for high-frequency invalidation sources: per-game refresh saves,

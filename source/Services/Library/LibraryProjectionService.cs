@@ -135,6 +135,15 @@ namespace PlayniteAchievements.Services.Library
             ScheduleWarm();
         }
 
+        /// <summary>Cached projection keys retained right now, for memory diagnostics.</summary>
+        public string DescribeCachedProjections()
+        {
+            lock (_sync)
+            {
+                return _cache.Count == 0 ? "none" : string.Join("+", _cache.Keys);
+            }
+        }
+
         // Triggers the first background warm. Called once Playnite has finished starting so the
         // warmed snapshot resolves game presentation (cover, icon, playtime, last played) against
         // a populated game database rather than baking in blank values during early startup.

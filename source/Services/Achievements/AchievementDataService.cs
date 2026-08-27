@@ -1047,6 +1047,24 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
+        /// <summary>
+        /// Memoized overview summaries retained right now (one per requested limit) and the
+        /// achievement rows they hold, for memory diagnostics.
+        /// </summary>
+        internal void GetOverviewMemoStats(out int entries, out int achievementRows)
+        {
+            lock (_overviewProjectionCacheSync)
+            {
+                entries = _overviewSummaryCacheByLimit.Count;
+                achievementRows = 0;
+                foreach (var cached in _overviewSummaryCacheByLimit.Values)
+                {
+                    achievementRows += cached?.Achievements?.Count ?? 0;
+                    achievementRows += cached?.RecentUnlocks?.Count ?? 0;
+                }
+            }
+        }
+
         private static bool ShouldInvalidateOverviewProjectionCaches(string propertyName)
         {
             return string.IsNullOrWhiteSpace(propertyName) ||

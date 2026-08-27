@@ -77,6 +77,16 @@ namespace PlayniteAchievements.Services.Images
         /// <summary>Raised when the whole memory cache is dropped.</summary>
         public event Action CacheCleared;
 
+        /// <summary>Cached bitmap count and their estimated decoded size, for memory diagnostics.</summary>
+        public void GetCacheStats(out int count, out long bytes)
+        {
+            lock (_cacheLock)
+            {
+                count = _cache.Count;
+                bytes = _cacheBytes;
+            }
+        }
+
         public void Dispose()
         {
             _diskService.ImageFileOverwritten -= OnImageFileOverwritten;
