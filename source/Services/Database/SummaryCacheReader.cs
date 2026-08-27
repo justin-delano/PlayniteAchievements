@@ -112,7 +112,7 @@ namespace PlayniteAchievements.Services.Database
                 var recentRows = LoadCachedRecentUnlockRows(
                     db,
                     boundedRecentLimit,
-                    includeAllVisibleAchievements: requestedRecentLimit == 0);
+                    includeAllUnlockedAchievements: requestedRecentLimit == 0);
 
                 var result = new CachedSummaryData();
 
@@ -417,7 +417,7 @@ namespace PlayniteAchievements.Services.Database
         private static List<CachedRecentUnlockRow> LoadCachedRecentUnlockRows(
             SQLiteDatabase db,
             int recentAchievementLimit,
-            bool includeAllVisibleAchievements)
+            bool includeAllUnlockedAchievements)
         {
             var sql = new StringBuilder(
                 @"WITH LatestProgress AS (
@@ -470,11 +470,22 @@ namespace PlayniteAchievements.Services.Database
                 FROM LatestProgress lp
                 INNER JOIN UserAchievements ua
                     ON ua.UserGameProgressId = lp.UserGameProgressId");
-            if (!includeAllVisibleAchievements)
+            if (!includeAllUnlockedAchievements)
             {
                 sql.Append(@"
                    AND ua.Unlocked = 1
                    AND ua.UnlockTimeUtc IS NOT NULL");
+            }
+            else
+            {
+                // The unbounded overview read: every unlocked achievement, including those
+                // without an unlock timestamp. Locked rows stay out of the snapshot - one
+                // display row per locked definition (tens of thousands in a large library vs
+                // a few thousand unlocks) costs hundreds of MB across the summary memo, the
+                // display items, and the search text on the 32-bit host. The few pinned-but-
+                // locked achievements are hydrated separately by OverviewDataBuilder.
+                sql.Append(@"
+                   AND ua.Unlocked = 1");
             }
 
             sql.Append(@"
