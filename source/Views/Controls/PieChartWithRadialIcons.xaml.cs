@@ -392,6 +392,21 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     popup.IsOpen = false;
                 }
+
+                // The updater's redraw timer. Its concrete type (LiveCharts.Wpf.Components
+                // .ChartUpdater) is internal, so Timer is reached off the instance. While it is
+                // enabled the Dispatcher's timer list holds it, and it holds the chart core -
+                // which is reachable from the series and everything bound to them. LiveCharts
+                // restarts it through ChartUpdater.Run() on the next update after a reload.
+                var updater = Chart.Model?.Updater;
+                if (updater != null)
+                {
+                    var timerProperty = updater.GetType().GetProperty(
+                        "Timer",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    (timerProperty?.GetValue(updater)
+                        as System.Windows.Threading.DispatcherTimer)?.Stop();
+                }
             }
             catch
             {
