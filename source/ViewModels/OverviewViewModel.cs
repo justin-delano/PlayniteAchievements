@@ -2853,6 +2853,11 @@ namespace PlayniteAchievements.ViewModels
                     var gameData = Guid.TryParse(key, out var parsedGameId)
                         ? _achievementDataService.GetGameAchievementDataForOverview(parsedGameId)
                         : _achievementDataService.GetVisibleGameAchievementData(key);
+
+                    // The other big per-refresh allocation: one full per-game payload read from
+                    // the cache per delta key. Only the bounded in-memory game cache should keep
+                    // these alive after the fragment is built.
+                    Common.LeakWatch.Track("OverviewGameData", gameData);
                     // Fragments carry the game's achievement rows (unlocked + pinned): the
                     // delta swap removes the game's old rows from _allAchievements, so a
                     // fragment without rows would silently drop the refreshed game from the

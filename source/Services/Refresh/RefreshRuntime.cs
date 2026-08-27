@@ -1017,6 +1017,9 @@ namespace PlayniteAchievements.Services.Refresh
             }
 
             var timer = Stopwatch.StartNew();
+            // Memory is sampled per provider so a residual after the run can be attributed to
+            // the provider that produced it instead of to the run as a whole.
+            var providerMemBaseline = MemoryDiagnostics.Capture();
             try
             {
                 return await plan.Provider.RefreshAsync(
@@ -1036,7 +1039,8 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 timer.Stop();
                 _logger?.Debug(
-                    $"[RefreshPerf] phase=current.provider provider={plan.Provider.ProviderKey} ms={timer.ElapsedMilliseconds} games={plan.Games.Count}");
+                    $"[RefreshPerf] phase=current.provider provider={plan.Provider.ProviderKey} ms={timer.ElapsedMilliseconds} games={plan.Games.Count}" +
+                    MemoryDiagnostics.FormatInlineSuffix(providerMemBaseline));
             }
         }
 
