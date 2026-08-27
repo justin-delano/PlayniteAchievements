@@ -352,36 +352,50 @@ namespace PlayniteAchievements.Views.Controls
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             DetachCurrentSources();
-            CloseTooltipPopup();
+            ReleaseTooltipResources();
         }
 
+        // LiveCharts keeps its tooltip timeout timer and tooltip popup as internal members, and
+        // both survive an unload: a running DispatcherTimer is held by the Dispatcher's timer
+        // list, and a popup's content lives in a PopupRoot in its own top-level window rather
+        // than in this control's visual tree. Either one keeps the chart reachable, and the
+        // chart transitively holds its series, the chart view model, and (through the bound
+        // sources and this control's own events) the hosting view. Resolved once.
+        private static readonly PropertyInfo LiveChartsTooltipTimerProperty =
+            typeof(LiveCharts.Wpf.Charts.Base.Chart).GetProperty(
+                "TooltipTimeoutTimer",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
+        private static readonly PropertyInfo LiveChartsTooltipContainerProperty =
+            typeof(LiveCharts.Wpf.Charts.Base.Chart).GetProperty(
+                "TooltipContainer",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
         /// <summary>
-        /// Closes the popup hosting the chart's DataTooltip. A WPF popup's content lives in a
-        /// PopupRoot in its own top-level window, not in this control's visual tree, so a popup
-        /// left open outlives the unload and keeps the chart graph - and through it the bound
-        /// series, view model, and rows - reachable. Harmless to close: LiveCharts reopens the
-        /// tooltip on the next hover.
+        /// Releases the chart's tooltip timer and popup. Safe to call whenever the chart leaves
+        /// the tree: LiveCharts restarts the timer and reopens the popup on the next hover.
         /// </summary>
-        private void CloseTooltipPopup()
+        private void ReleaseTooltipResources()
         {
+            if (Chart == null)
+            {
+                return;
+            }
+
             try
             {
-                var node = Chart?.DataTooltip as DependencyObject;
-                for (var depth = 0; node != null && depth < 16; depth++)
-                {
-                    if (node is System.Windows.Controls.Primitives.Popup popup)
-                    {
-                        popup.IsOpen = false;
-                        return;
-                    }
+                (LiveChartsTooltipTimerProperty?.GetValue(Chart)
+                    as System.Windows.Threading.DispatcherTimer)?.Stop();
 
-                    node = LogicalTreeHelper.GetParent(node)
-                           ?? (node is Visual ? VisualTreeHelper.GetParent(node) : null);
+                if (LiveChartsTooltipContainerProperty?.GetValue(Chart)
+                    is System.Windows.Controls.Primitives.Popup popup)
+                {
+                    popup.IsOpen = false;
                 }
             }
             catch
             {
-                // Tooltip teardown is best-effort; never let it break unload.
+                // Reaching library internals is best-effort; never let it break unload.
             }
         }
 
