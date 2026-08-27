@@ -172,6 +172,9 @@ namespace PlayniteAchievements.Services.Showcase
             public DailyScoreDeltas ScoreDeltas;
 
             public IReadOnlyList<AchievementDisplayItem> AllAchievementRows;
+
+            public readonly Dictionary<string, IReadOnlyList<AchievementDisplayItem>> PinRows =
+                new Dictionary<string, IReadOnlyList<AchievementDisplayItem>>(StringComparer.Ordinal);
         }
 
         private static string WindowKey(TimelineRange range, DateTime endDate) =>
@@ -260,7 +263,7 @@ namespace PlayniteAchievements.Services.Showcase
                             ShowcaseWidgetOptions.GetPinCollectionId(instance));
                         result.ResolvedPinCollectionId = gridPins?.CollectionId;
                         result.Achievements = ResolvePinnedAchievements(snapshot, gridPins?.Pins);
-                        result.AchievementRows = MaterializePinRows(result.Achievements);
+                        result.AchievementRows = ResolvePinRowsCached(snapshot, result.Achievements);
                     }
                     else
                     {
@@ -600,6 +603,41 @@ namespace PlayniteAchievements.Services.Showcase
                 .Where(byId.ContainsKey)
                 .Select(id => byId[id])
                 .ToList();
+        }
+
+        /// <summary>
+        /// <see cref="MaterializePinRows"/> memoized per snapshot and pin-list identity, so
+        /// re-projections of the same snapshot hand the grids reference-equal rows (missing
+        /// pins otherwise allocate fresh placeholder rows each time, defeating the widgets'
+        /// SameRows short-circuit and forcing a full grid rebuild). A pin edit changes the
+        /// key, so its rebuild still happens.
+        /// </summary>
+        private static IReadOnlyList<AchievementDisplayItem> ResolvePinRowsCached(
+            OverviewDataSnapshot snapshot,
+            IReadOnlyList<ShowcaseAchievementItem> items)
+        {
+            if (snapshot == null)
+            {
+                return MaterializePinRows(items);
+            }
+
+            var key = string.Join(
+                ";",
+                (items ?? (IReadOnlyList<ShowcaseAchievementItem>)Array.Empty<ShowcaseAchievementItem>())
+                    .Where(item => item != null)
+                    .Select(item =>
+                        (item.Pin?.GameId.ToString() ?? string.Empty) + ":" +
+                        (item.Pin?.ApiName ?? string.Empty) + ":" +
+                        (item.IsMissing ? "1" : "0")));
+
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            if (!cache.PinRows.TryGetValue(key, out var rows))
+            {
+                rows = MaterializePinRows(items);
+                cache.PinRows[key] = rows;
+            }
+
+            return rows;
         }
 
         /// <summary>
