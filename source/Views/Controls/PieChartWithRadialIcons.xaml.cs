@@ -352,6 +352,37 @@ namespace PlayniteAchievements.Views.Controls
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             DetachCurrentSources();
+            CloseTooltipPopup();
+        }
+
+        /// <summary>
+        /// Closes the popup hosting the chart's DataTooltip. A WPF popup's content lives in a
+        /// PopupRoot in its own top-level window, not in this control's visual tree, so a popup
+        /// left open outlives the unload and keeps the chart graph - and through it the bound
+        /// series, view model, and rows - reachable. Harmless to close: LiveCharts reopens the
+        /// tooltip on the next hover.
+        /// </summary>
+        private void CloseTooltipPopup()
+        {
+            try
+            {
+                var node = Chart?.DataTooltip as DependencyObject;
+                for (var depth = 0; node != null && depth < 16; depth++)
+                {
+                    if (node is System.Windows.Controls.Primitives.Popup popup)
+                    {
+                        popup.IsOpen = false;
+                        return;
+                    }
+
+                    node = LogicalTreeHelper.GetParent(node)
+                           ?? (node is Visual ? VisualTreeHelper.GetParent(node) : null);
+                }
+            }
+            catch
+            {
+                // Tooltip teardown is best-effort; never let it break unload.
+            }
         }
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
