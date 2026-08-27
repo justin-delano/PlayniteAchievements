@@ -239,6 +239,19 @@ namespace PlayniteAchievements
 
             try
             {
+                if (_cacheManager is Services.Cache.CacheManager concreteCache)
+                {
+                    concreteCache.GetMemoryCacheStats(out var cachedGames, out var cachedAchievements);
+                    detail.Append($"gameLru={cachedGames}games/{cachedAchievements}ach ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read game cache stats.");
+            }
+
+            try
+            {
                 detail.Append($"projections={_libraryProjectionService?.DescribeCachedProjections() ?? "n/a"} ");
             }
             catch (Exception ex)
