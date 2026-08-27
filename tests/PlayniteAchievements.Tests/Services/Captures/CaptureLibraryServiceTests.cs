@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Captures;
@@ -60,6 +61,10 @@ namespace PlayniteAchievements.Services.Tests.Captures
 
             service.Invalidate();
 
+            // The library-wide signal is debounced, so the raise lands off the calling thread.
+            Assert.IsTrue(
+                SpinWait.SpinUntil(() => raised > 0, TimeSpan.FromSeconds(5)),
+                "Writers rely on the debounced signal reaching open grids.");
             Assert.AreEqual(1, raised);
             Assert.IsNull(seen.GameName);
             Assert.IsNull(seen.FolderName);
