@@ -57,6 +57,13 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly Dictionary<string, ShowcaseWidgetControl> _hostCache =
             new Dictionary<string, ShowcaseWidgetControl>(StringComparer.OrdinalIgnoreCase);
 
+        // Throttles SnapshotChanged-driven re-projections: the overview's delta pipeline
+        // raises the event every few hundred milliseconds during a refresh, and each
+        // re-projection walks the full snapshot per widget. The first event of a burst
+        // refreshes promptly; the rest ride the window and land as one trailing refresh.
+        private readonly System.Windows.Threading.DispatcherTimer _snapshotRefreshTimer;
+        private bool _snapshotRefreshPending;
+
         internal ShowcaseControl(
             OverviewViewModel overview,
             PlayniteAchievementsSettings settings,
@@ -68,6 +75,11 @@ namespace PlayniteAchievements.Views.Showcase
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _persist = persist ?? throw new ArgumentNullException(nameof(persist));
             _api = api;
+            _snapshotRefreshTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(1000)
+            };
+            _snapshotRefreshTimer.Tick += SnapshotRefreshTimer_Tick;
             _overview.SnapshotChanged += Overview_SnapshotChanged;
             ShowcaseConfigurationEvents.Changed += ShowcaseConfigurationEvents_Changed;
             EnsureLayout();
@@ -118,6 +130,15 @@ namespace PlayniteAchievements.Views.Showcase
 
             ClearDragVisuals();
             _disposed = true;
+            _snapshotRefreshTimer.Stop();
+            // The cached widget bodies hold PersistedSettings-subscribed grids and slideshow
+            // timers that only release in Dispose; drop them explicitly rather than relying
+            // on Unloaded, which WPF does not guarantee.
+            foreach (var host in _hostCache.Values)
+            {
+                host?.DisposeBody();
+            }
+
             _hostCache.Clear();
             _overview.SnapshotChanged -= Overview_SnapshotChanged;
             ShowcaseConfigurationEvents.Changed -= ShowcaseConfigurationEvents_Changed;
@@ -1171,6 +1192,11 @@ namespace PlayniteAchievements.Views.Showcase
                 StringComparer.OrdinalIgnoreCase);
             foreach (var staleId in _hostCache.Keys.Where(id => !live.Contains(id)).ToList())
             {
+                if (_hostCache.TryGetValue(staleId, out var stale))
+                {
+                    stale?.DisposeBody();
+                }
+
                 _hostCache.Remove(staleId);
             }
         }
@@ -1848,7 +1874,44 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void Overview_SnapshotChanged(object sender, EventArgs e)
         {
-            Dispatcher.BeginInvoke(new Action(RefreshWidgetData));
+            Dispatcher.BeginInvoke(new Action(QueueSnapshotRefresh));
+        }
+
+        private void QueueSnapshotRefresh()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_snapshotRefreshTimer.IsEnabled)
+            {
+                _snapshotRefreshPending = true;
+                return;
+            }
+
+            RefreshWidgetData();
+            _snapshotRefreshTimer.Start();
+        }
+
+        private void SnapshotRefreshTimer_Tick(object sender, EventArgs e)
+        {
+            if (_disposed)
+            {
+                _snapshotRefreshTimer.Stop();
+                return;
+            }
+
+            if (_snapshotRefreshPending)
+            {
+                // Keep the timer running so the next burst stays windowed.
+                _snapshotRefreshPending = false;
+                RefreshWidgetData();
+            }
+            else
+            {
+                _snapshotRefreshTimer.Stop();
+            }
         }
 
         // A snapshot change carries new data but the same layout, so update each widget host's
@@ -1869,6 +1932,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             var snapshot = _overview.LatestSnapshot ?? new OverviewDataSnapshot();
+            var applied = new HashSet<ShowcaseWidgetControl>();
             foreach (var visual in _blockVisuals.Values)
             {
                 if (visual?.Host != null && visual.Widget != null)
@@ -1879,7 +1943,35 @@ namespace PlayniteAchievements.Views.Showcase
                             Layout,
                             visual.Widget,
                             gridOptions: _settings.Persisted?.GridOptions));
+                    applied.Add(visual.Host);
                 }
+            }
+
+            // Re-project the cached hosts for the other pages too. Their projections carry
+            // the snapshot they last saw, so leaving them would pin one whole snapshot
+            // generation per visited page (the process is 32-bit); re-projecting from the
+            // current snapshot keeps every host on the single live generation while their
+            // visuals stay warm for instant page switches. The per-snapshot derived cache
+            // makes the extra projections cheap.
+            var widgetsById = Layout.WidgetInstances
+                .Where(widget => !string.IsNullOrWhiteSpace(widget?.InstanceId))
+                .ToDictionary(widget => widget.InstanceId, StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in _hostCache)
+            {
+                if (entry.Value == null ||
+                    applied.Contains(entry.Value) ||
+                    entry.Value.Projection == null ||
+                    !widgetsById.TryGetValue(entry.Key, out var widget))
+                {
+                    continue;
+                }
+
+                entry.Value.Apply(
+                    ShowcaseWidgetProjectionService.Build(
+                        snapshot,
+                        Layout,
+                        widget,
+                        gridOptions: _settings.Persisted?.GridOptions));
             }
         }
 
