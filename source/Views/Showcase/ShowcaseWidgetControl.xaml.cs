@@ -96,16 +96,34 @@ namespace PlayniteAchievements.Views.Showcase
                 .BindSoftGlowTiers(this, SoftGlowTiersProperty);
             PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
                 .BindRayGlowTiers(this, RayGlowTiersProperty);
+            // Widget hosts are re-parented across dashboard rebuilds and page switches, which
+            // re-fires Loaded without a guaranteed intervening Unloaded. Without the hooked
+            // guard each such Loaded would stack another handler on the static event and root
+            // this control (and its projection/snapshot) permanently. Same convention as
+            // OverviewHostControl / RarityRayBurst.
             Loaded += (_, __) =>
             {
-                PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged +=
-                    OnAppearanceChanged;
+                if (!_appearanceHooked)
+                {
+                    _appearanceHooked = true;
+                    PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged +=
+                        OnAppearanceChanged;
+                }
+
                 MirrorAppearanceResources();
             };
             Unloaded += (_, __) =>
-                PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged -=
-                    OnAppearanceChanged;
+            {
+                if (_appearanceHooked)
+                {
+                    _appearanceHooked = false;
+                    PlayniteAchievements.Models.Achievements.RarityAppearanceHelper.AppearanceChanged -=
+                        OnAppearanceChanged;
+                }
+            };
         }
+
+        private bool _appearanceHooked;
 
         private void OnAppearanceChanged(object sender, EventArgs e)
         {

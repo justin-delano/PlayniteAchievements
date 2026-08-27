@@ -86,15 +86,32 @@ namespace PlayniteAchievements.Views.Showcase
         public ActivityCalendarHeatmap()
         {
             AddVisualChild(_hoverVisual);
-            Loaded += (_, __) => PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
-                .AppearanceChanged += OnAppearanceChanged;
+            // Loaded re-fires when the widget host is re-parented during dashboard rebuilds,
+            // without a guaranteed intervening Unloaded; the hooked guard keeps the static
+            // event from stacking handlers that would root this control permanently.
+            Loaded += (_, __) =>
+            {
+                if (!_appearanceHooked)
+                {
+                    _appearanceHooked = true;
+                    PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                        .AppearanceChanged += OnAppearanceChanged;
+                }
+            };
             Unloaded += (_, __) =>
             {
-                PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
-                    .AppearanceChanged -= OnAppearanceChanged;
+                if (_appearanceHooked)
+                {
+                    _appearanceHooked = false;
+                    PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                        .AppearanceChanged -= OnAppearanceChanged;
+                }
+
                 CloseToolTip();
             };
         }
+
+        private bool _appearanceHooked;
 
         /// <summary>Overlay for the hover outline; visual children draw above OnRender content.</summary>
         private readonly DrawingVisual _hoverVisual = new DrawingVisual();
