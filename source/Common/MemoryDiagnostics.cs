@@ -38,7 +38,7 @@ namespace PlayniteAchievements.Common
         /// Flip to true (with a rebuild) to re-arm the [MemPerf] lines, the per-cache occupancy
         /// report, and the LeakWatch live counts.
         /// </summary>
-        internal static readonly bool MemoryTracingEnabled = false;
+        internal static readonly bool MemoryTracingEnabled = true;
 
         public static bool Enabled => MemoryTracingEnabled || PerfScope.PerfTracingEnabled;
 

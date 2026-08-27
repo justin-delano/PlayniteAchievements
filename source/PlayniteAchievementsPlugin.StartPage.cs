@@ -201,6 +201,16 @@ namespace PlayniteAchievements
         // compaction so it measures the resting state, not the peak.
         private void ScheduleRetentionDiagnostics()
         {
+            ScheduleRetentionDiagnostics("refresh.settled", 20);
+        }
+
+        /// <summary>
+        /// Logs a retention report once the named point has settled. The delay lets deferred
+        /// UI work (dispatcher teardown, weak-reference queues) finish, so the forced
+        /// collection measures what is genuinely still rooted.
+        /// </summary>
+        internal void ScheduleRetentionDiagnostics(string point, int delaySeconds)
+        {
             if (!Common.MemoryDiagnostics.Enabled)
             {
                 return;
@@ -210,8 +220,8 @@ namespace PlayniteAchievements
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
-                    LogRetentionDiagnostics("refresh.settled");
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds))).ConfigureAwait(false);
+                    LogRetentionDiagnostics(point);
                 }
                 catch (Exception ex)
                 {

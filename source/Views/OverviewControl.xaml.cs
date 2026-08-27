@@ -151,6 +151,12 @@ namespace PlayniteAchievements.Views
                     ? OverviewSubView.Overview
                     : _lastSelectedSubView;
             ApplyActiveSubView();
+            // Open/close is its own memory question, separate from refresh churn: if either of
+            // these stays live after Dispose, the window's whole visual tree, view model, and
+            // row set are still rooted and closing the overview cannot return memory.
+            Common.LeakWatch.Track("OverviewControl", this);
+            Common.LeakWatch.Track("OverviewViewModel", _viewModel);
+            Common.MemoryDiagnostics.Log(_logger, "overview.opened", $"context={launchContext}");
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
             if (_settings != null)
             {
@@ -413,6 +419,13 @@ namespace PlayniteAchievements.Views
 
                 IsVisibleChanged -= Showcase_IsVisibleChanged;
                 _viewModel?.Dispose();
+
+                // Reported after a delay and a forced collection: the OverviewControl /
+                // OverviewViewModel live counts in this line are the direct answer to whether
+                // closing the overview actually releases it.
+                PlayniteAchievementsPlugin.Instance?.ScheduleRetentionDiagnostics(
+                    "overview.closed",
+                    delaySeconds: 8);
             }
             catch (Exception ex)
             {
