@@ -114,6 +114,17 @@ namespace PlayniteAchievements.Services.Widgets
                 {
                     _publisherCount--;
                 }
+
+                // The retained snapshot exists to serve widget hosts. With the last publisher
+                // gone (the overview closing) and nothing subscribed, holding a full-library
+                // snapshot keeps the overview's whole row set alive for no consumer, so the
+                // close would not return memory. Drop it; the stale flag makes the next pull
+                // rebuild on demand.
+                if (_publisherCount == 0 && SnapshotInvalidated == null)
+                {
+                    _snapshot = null;
+                    _invalidated = true;
+                }
             }
         }
 

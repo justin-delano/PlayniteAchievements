@@ -150,6 +150,52 @@ namespace PlayniteAchievements.Tests.StartPage
         }
 
         [TestMethod]
+        public async Task DetachPublisher_WithNoListeners_ReleasesRetainedSnapshot()
+        {
+            var buildCount = 0;
+            var coordinator = new StartPageDataCoordinator(() =>
+            {
+                buildCount++;
+                return new OverviewDataSnapshot { TotalGames = buildCount };
+            });
+            var published = new OverviewDataSnapshot { TotalGames = 99 };
+
+            coordinator.AttachPublisher();
+            coordinator.Publish(published);
+            coordinator.DetachPublisher();
+
+            // Nothing is subscribed, so the published snapshot must not stay retained; the
+            // next pull rebuilds instead of handing back the overview's old row set.
+            var rebuilt = await coordinator.GetSnapshotAsync(default);
+
+            Assert.AreNotSame(published, rebuilt);
+            Assert.AreEqual(1, buildCount);
+        }
+
+        [TestMethod]
+        public async Task DetachPublisher_WithListeners_KeepsRetainedSnapshot()
+        {
+            var buildCount = 0;
+            var coordinator = new StartPageDataCoordinator(() =>
+            {
+                buildCount++;
+                return new OverviewDataSnapshot();
+            });
+            coordinator.SnapshotInvalidated += (_, __) => { };
+            var published = new OverviewDataSnapshot { TotalGames = 99 };
+
+            coordinator.AttachPublisher();
+            coordinator.Publish(published);
+            coordinator.DetachPublisher();
+
+            // A live widget still needs the snapshot, so it survives the overview closing.
+            var snapshot = await coordinator.GetSnapshotAsync(default);
+
+            Assert.AreSame(published, snapshot);
+            Assert.AreEqual(0, buildCount);
+        }
+
+        [TestMethod]
         public async Task Publish_DuringInFlightBuild_SupersedesBuildResult()
         {
             var buildCount = 0;
