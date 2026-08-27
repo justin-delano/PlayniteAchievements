@@ -137,12 +137,14 @@ namespace PlayniteAchievements.Tests.StartPage
             var suppressed = await coordinator.GetSnapshotAsync(default);
             var suppressedForced = await coordinator.GetSnapshotAsync(true, default);
 
+            Assert.AreSame(published, suppressed);
+            Assert.AreSame(published, suppressedForced);
+            // Asserted before detaching: the rebuild below is what takes the count to 1.
+            Assert.AreEqual(0, buildCount);
+
             coordinator.DetachPublisher();
             var rebuilt = await coordinator.GetSnapshotAsync(default);
 
-            Assert.AreSame(published, suppressed);
-            Assert.AreSame(published, suppressedForced);
-            Assert.AreEqual(0, buildCount);
             Assert.AreEqual(101, rebuilt.TotalGames);
             Assert.AreEqual(1, buildCount);
         }
