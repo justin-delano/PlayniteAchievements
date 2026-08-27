@@ -319,6 +319,8 @@ namespace PlayniteAchievements
                 detail.Append(
                     "appearanceSubs=" +
                     Models.Achievements.RarityAppearanceHelper.AppearanceChangedSubscriberCount + " ");
+                detail.Append(
+                    "raySubs=" + Views.Helpers.RayAnimationDriver.SubscriberCount + " ");
             }
             catch (Exception ex)
             {
