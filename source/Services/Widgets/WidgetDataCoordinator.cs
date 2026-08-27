@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Services.Widgets
         private Task<OverviewDataSnapshot> _buildTask;
         private int _generation;
         private int _buildGeneration;
+        private int _publisherCount;
         private bool _invalidated = true;
         private bool _disposed;
 
@@ -69,6 +70,69 @@ namespace PlayniteAchievements.Services.Widgets
 
         public event EventHandler SnapshotInvalidated;
 
+        /// <summary>
+        /// True while at least one snapshot publisher (an active overview view model) is
+        /// attached. While a publisher is attached the coordinator does not self-build;
+        /// it serves whatever the publisher last pushed via <see cref="Publish"/>.
+        /// </summary>
+        public bool HasActivePublisher
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return _publisherCount > 0;
+                }
+            }
+        }
+
+        public void AttachPublisher()
+        {
+            lock (_syncRoot)
+            {
+                ThrowIfDisposed();
+                _publisherCount++;
+            }
+        }
+
+        public void DetachPublisher()
+        {
+            lock (_syncRoot)
+            {
+                if (_publisherCount > 0)
+                {
+                    _publisherCount--;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adopts a snapshot built elsewhere (the overview's full or delta-built snapshot)
+        /// as the shared snapshot, superseding any in-flight self-build via the generation
+        /// check, and notifies listeners the same way <see cref="Invalidate"/> does.
+        /// </summary>
+        public void Publish(OverviewDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            lock (_syncRoot)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _generation++;
+                _snapshot = snapshot;
+                _invalidated = false;
+            }
+
+            SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
+        }
+
         public void Invalidate()
         {
             lock (_syncRoot)
@@ -98,6 +162,15 @@ namespace PlayniteAchievements.Services.Widgets
                     ThrowIfDisposed();
 
                     if (!forceRefresh && !_invalidated && _snapshot != null)
+                    {
+                        return _snapshot;
+                    }
+
+                    // Publisher-fed: an active overview pushes snapshots via Publish, so a
+                    // self-build here would just retain a redundant full-library copy. The
+                    // stale flag from Invalidate survives, making the first pull after the
+                    // publisher detaches rebuild once. Covers forceRefresh too.
+                    if (_publisherCount > 0 && _snapshot != null)
                     {
                         return _snapshot;
                     }
