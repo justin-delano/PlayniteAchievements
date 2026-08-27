@@ -559,7 +559,8 @@ namespace PlayniteAchievements
                         _gameCustomDataStore,
                         _logger,
                         isRefreshActive: () => _refreshService?.IsRebuilding == true,
-                        currentUserIdentityLoader: () => _friendCacheManager?.LoadCurrentUserIdentities());
+                        currentUserIdentityLoader: () => _friendCacheManager?.LoadCurrentUserIdentities(),
+                        hasActiveSnapshotPublisher: () => _startPageDataCoordinator?.HasActivePublisher == true);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
 
                     // Reconcile the cache DB's AchievementFilters mirror against custom data

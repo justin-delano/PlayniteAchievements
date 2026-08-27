@@ -30,6 +30,7 @@ namespace PlayniteAchievements.Services.Library
         private readonly GameCustomDataStore _customDataStore;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Func<bool> _isRefreshActive;
+        private readonly Func<bool> _hasActiveSnapshotPublisher;
         private readonly ILogger _logger;
         private readonly Func<List<Models.Friends.FriendIdentity>> _currentUserIdentityLoader;
         private readonly Dictionary<string, LibraryProjectionSnapshot> _cache =
@@ -51,7 +52,8 @@ namespace PlayniteAchievements.Services.Library
             GameCustomDataStore customDataStore,
             ILogger logger,
             Func<bool> isRefreshActive = null,
-            Func<List<Models.Friends.FriendIdentity>> currentUserIdentityLoader = null)
+            Func<List<Models.Friends.FriendIdentity>> currentUserIdentityLoader = null,
+            Func<bool> hasActiveSnapshotPublisher = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _providers = providers ?? new List<IDataProvider>();
@@ -60,6 +62,7 @@ namespace PlayniteAchievements.Services.Library
             _customDataStore = customDataStore;
             _settings = settings;
             _isRefreshActive = isRefreshActive;
+            _hasActiveSnapshotPublisher = hasActiveSnapshotPublisher;
             _logger = logger;
             _currentUserIdentityLoader = currentUserIdentityLoader;
 
@@ -382,6 +385,15 @@ namespace PlayniteAchievements.Services.Library
             // invalidation schedules the one post-refresh warm. Invoked outside _sync because
             // the predicate takes the refresh state manager's own lock.
             if (_isRefreshActive?.Invoke() == true)
+            {
+                return;
+            }
+
+            // While an overview is open it publishes its own snapshots to the widget
+            // coordinator, so the warmed "overview" cache entry would never be consumed;
+            // the warm would just build and retain a second full-library snapshot.
+            // Invalidate() has already cleared the cache, so on-demand consumers stay fresh.
+            if (_hasActiveSnapshotPublisher?.Invoke() == true)
             {
                 return;
             }
