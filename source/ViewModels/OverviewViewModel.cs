@@ -1947,6 +1947,16 @@ namespace PlayniteAchievements.ViewModels
                 return true;
             }
 
+            // Canaries on the rows this delta discards. Nothing should reference them once the
+            // swap completes, so a rising live count localizes retention to whoever still holds
+            // replaced rows (grid, chart, projection) rather than to a growing cache.
+            Common.LeakWatch.Track(
+                "Row.discardedAchievement",
+                _allAchievements.FirstOrDefault(a => a?.PlayniteGameId == gameId));
+            Common.LeakWatch.Track(
+                "Row.discardedGameSummary",
+                _allGameSummaries.FirstOrDefault(g => g?.PlayniteGameId == gameId));
+
             _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
             _allGameSummaries.RemoveAll(g => g?.PlayniteGameId == gameId);
             _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
