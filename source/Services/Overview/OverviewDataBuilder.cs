@@ -259,6 +259,7 @@ namespace PlayniteAchievements.Services.Overview
                 : 0;
             ApplyScoreSnapshotFromValues(snapshot, snapshot.CollectorScore, snapshot.PrestigeScore);
 
+            Common.LeakWatch.Track("OverviewSnapshot.full", snapshot);
             return snapshot;
         }
 

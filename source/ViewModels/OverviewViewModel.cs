@@ -2029,6 +2029,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
+            Common.LeakWatch.Track("OverviewSnapshot.delta", snapshot);
             snapshot.TotalGames = snapshot.GameSummaries.Count;
             snapshot.TotalAchievements = snapshot.GameSummaries.Sum(g => g?.TotalAchievements ?? 0);
             snapshot.TotalUnlocked = snapshot.GameSummaries.Sum(g => g?.UnlockedAchievements ?? 0);

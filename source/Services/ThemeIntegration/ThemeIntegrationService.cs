@@ -1760,6 +1760,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ApplyLibraryState(LibraryRuntimeState state)
         {
             _runtimeState.Library = state ?? new LibraryRuntimeState();
+            Common.LeakWatch.Track("ThemeLibraryState", _runtimeState.Library);
             var library = _runtimeState.Library;
             PruneGameCommandCaches(library.AllGamesWithAchievements);
 

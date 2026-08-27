@@ -276,6 +276,25 @@ namespace PlayniteAchievements
                 _logger?.Debug(ex, "Failed to read shared snapshot stats.");
             }
 
+            try
+            {
+                var modern = _settingsViewModel?.Settings?.ModernTheme;
+                if (modern != null)
+                {
+                    detail.Append(
+                        $"themeLists={modern.AllAchievementsUnlockDesc?.Count ?? 0}ach/" +
+                        $"{modern.GameSummariesDesc?.Count ?? 0}games ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read theme list stats.");
+            }
+
+            // Live instance counts come last: they are the discriminator when every cache
+            // above reads flat but the heap still grows.
+            detail.Append($"live={Common.LeakWatch.DescribeLive()}");
+
             Common.MemoryDiagnostics.LogRetained(_logger, point, detail.ToString().TrimEnd());
         }
 

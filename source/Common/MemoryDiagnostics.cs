@@ -89,7 +89,9 @@ namespace PlayniteAchievements.Common
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                GC.Collect();
+                // Blocking variant: a background gen2 collection may not have finished when
+                // the counters are read, which would report garbage as still-rooted memory.
+                GC.GetTotalMemory(forceFullCollection: true);
             }
             catch
             {
