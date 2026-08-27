@@ -2842,13 +2842,17 @@ namespace PlayniteAchievements.ViewModels
                     var gameData = Guid.TryParse(key, out var parsedGameId)
                         ? _achievementDataService.GetGameAchievementDataForOverview(parsedGameId)
                         : _achievementDataService.GetVisibleGameAchievementData(key);
+                    // Fragments carry the game's achievement rows (unlocked + pinned): the
+                    // delta swap removes the game's old rows from _allAchievements, so a
+                    // fragment without rows would silently drop the refreshed game from the
+                    // all-achievements surfaces until the next full rebuild.
                     dict[key] = gameData == null
                         ? null
                         : _dataBuilder.BuildGameFragment(
                             _settings,
                             revealedCopy,
                             gameData,
-                            includeAchievementItems: false);
+                            includeAchievementItems: true);
                 }
 
                 return dict;
