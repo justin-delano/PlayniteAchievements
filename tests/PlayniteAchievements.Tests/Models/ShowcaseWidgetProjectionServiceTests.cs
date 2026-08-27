@@ -721,6 +721,54 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void PinRows_AreReferenceStableAcrossRebuildsOfTheSameSnapshot()
+        {
+            var gameId = Guid.NewGuid();
+            var missingGameId = Guid.NewGuid();
+            var snapshot = new OverviewDataSnapshot
+            {
+                Achievements = new List<AchievementDisplayItem>
+                {
+                    new AchievementDisplayItem
+                    {
+                        PlayniteGameId = gameId,
+                        ApiName = "real",
+                        Unlocked = true
+                    }
+                }
+            };
+            var settings = new ShowcaseSettings();
+            settings.AchievementPinCollections[0].Pins = new List<PinnedAchievementReference>
+            {
+                new PinnedAchievementReference { GameId = gameId, ApiName = "real" },
+                new PinnedAchievementReference { GameId = missingGameId, ApiName = "gone" }
+            };
+            var pinnedGrid = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.RecentAchievements
+            };
+            ShowcaseWidgetOptions.SetAchievementGridSource(
+                pinnedGrid,
+                ShowcaseAchievementGridSource.Pinned);
+
+            var first = ShowcaseWidgetProjectionService.Build(snapshot, settings, pinnedGrid);
+            var second = ShowcaseWidgetProjectionService.Build(snapshot, settings, pinnedGrid);
+
+            // Same snapshot + same pins: the rows (missing-pin placeholders included) must be
+            // the same instances so the widgets' SameRows short-circuit holds across rebuilds.
+            Assert.AreSame(first.AchievementRows, second.AchievementRows);
+
+            // A pin edit changes the memo key, so the rows rebuild.
+            settings.AchievementPinCollections[0].Pins = new List<PinnedAchievementReference>
+            {
+                new PinnedAchievementReference { GameId = gameId, ApiName = "real" }
+            };
+            var edited = ShowcaseWidgetProjectionService.Build(snapshot, settings, pinnedGrid);
+            Assert.AreNotSame(first.AchievementRows, edited.AchievementRows);
+            Assert.AreEqual(1, edited.AchievementRows.Count);
+        }
+
+        [TestMethod]
         public void PinnedSourceWidgets_UseSelectedCollectionAndFallBackToDefault()
         {
             var defaultGameId = Guid.NewGuid();
