@@ -64,6 +64,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
+        private readonly Func<Widgets.WidgetDataCoordinator> _widgetCoordinatorAccessor;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
@@ -89,7 +90,8 @@ namespace PlayniteAchievements.Services.UI
             Action ensureAchievementResourcesLoaded,
             FullscreenControllerNavigationService fullscreenControllerNavigationService,
             FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
-            FriendGameAchievementsDataCoordinator friendGameAchievementsDataCoordinator = null)
+            FriendGameAchievementsDataCoordinator friendGameAchievementsDataCoordinator = null,
+            Func<Widgets.WidgetDataCoordinator> widgetCoordinatorAccessor = null)
         {
             _api = api;
             _logger = logger;
@@ -103,6 +105,7 @@ namespace PlayniteAchievements.Services.UI
             _gameCustomDataStore = gameCustomDataStore;
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _friendGameAchievementsDataCoordinator = friendGameAchievementsDataCoordinator;
+            _widgetCoordinatorAccessor = widgetCoordinatorAccessor;
             _settings = settings;
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
@@ -1336,7 +1339,8 @@ namespace PlayniteAchievements.Services.UI
                     _refreshCoordinator,
                     _settings,
                     OverviewLaunchContext.Popout,
-                    _friendsOverviewDataCoordinator);
+                    _friendsOverviewDataCoordinator,
+                    _widgetCoordinatorAccessor);
 
                 var windowOptions = new WindowOptions
                 {

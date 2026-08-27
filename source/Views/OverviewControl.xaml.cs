@@ -97,7 +97,8 @@ namespace PlayniteAchievements.Views
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
-            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null)
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
+            Func<Services.Widgets.WidgetDataCoordinator> widgetCoordinatorAccessor = null)
         {
             InitializeComponent();
 
@@ -135,7 +136,8 @@ namespace PlayniteAchievements.Views
                 logger,
                 settings,
                 launchContext,
-                _friendCache);
+                _friendCache,
+                widgetCoordinatorAccessor);
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
