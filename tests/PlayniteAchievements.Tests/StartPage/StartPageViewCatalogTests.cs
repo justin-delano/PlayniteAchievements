@@ -13,7 +13,10 @@ namespace PlayniteAchievements.Tests.StartPage
         {
             var views = StartPageViewCatalog.Views;
 
-            Assert.AreEqual(19, views.Count);
+            // 8 original views plus the 8 shared showcase views. PinnedAchievements,
+            // FavoriteGames, and GameMosaic are retired (see ShowcaseWidgetKind), so they
+            // no longer contribute views of their own.
+            Assert.AreEqual(16, views.Count);
             CollectionAssert.AreEqual(
                 new[]
                 {
