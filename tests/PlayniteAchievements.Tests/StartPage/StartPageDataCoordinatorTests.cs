@@ -98,5 +98,99 @@ namespace PlayniteAchievements.Tests.StartPage
                 Assert.AreEqual(2, snapshot.TotalGames);
             }
         }
+
+        [TestMethod]
+        public async Task Publish_UpdatesSnapshotAndRaisesEventWithoutBuilding()
+        {
+            var buildCount = 0;
+            var coordinator = new StartPageDataCoordinator(() =>
+            {
+                buildCount++;
+                return new OverviewDataSnapshot();
+            });
+            var raised = false;
+            coordinator.SnapshotInvalidated += (_, __) => raised = true;
+            var published = new OverviewDataSnapshot { TotalGames = 42 };
+
+            coordinator.Publish(published);
+            var snapshot = await coordinator.GetSnapshotAsync(default);
+
+            Assert.IsTrue(raised);
+            Assert.AreSame(published, snapshot);
+            Assert.AreEqual(0, buildCount);
+        }
+
+        [TestMethod]
+        public async Task AttachPublisher_SuppressesRebuildOnInvalidateUntilDetached()
+        {
+            var buildCount = 0;
+            var coordinator = new StartPageDataCoordinator(() =>
+            {
+                buildCount++;
+                return new OverviewDataSnapshot { TotalGames = 100 + buildCount };
+            });
+            var published = new OverviewDataSnapshot { TotalGames = 1 };
+
+            coordinator.AttachPublisher();
+            coordinator.Publish(published);
+            coordinator.Invalidate();
+            var suppressed = await coordinator.GetSnapshotAsync(default);
+            var suppressedForced = await coordinator.GetSnapshotAsync(true, default);
+
+            coordinator.DetachPublisher();
+            var rebuilt = await coordinator.GetSnapshotAsync(default);
+
+            Assert.AreSame(published, suppressed);
+            Assert.AreSame(published, suppressedForced);
+            Assert.AreEqual(0, buildCount);
+            Assert.AreEqual(101, rebuilt.TotalGames);
+            Assert.AreEqual(1, buildCount);
+        }
+
+        [TestMethod]
+        public async Task Publish_DuringInFlightBuild_SupersedesBuildResult()
+        {
+            var buildCount = 0;
+            using (var started = new ManualResetEventSlim())
+            using (var release = new ManualResetEventSlim())
+            {
+                var coordinator = new StartPageDataCoordinator(() =>
+                {
+                    Interlocked.Increment(ref buildCount);
+                    started.Set();
+                    release.Wait();
+                    return new OverviewDataSnapshot { TotalGames = -1 };
+                });
+                var published = new OverviewDataSnapshot { TotalGames = 7 };
+
+                var request = coordinator.GetSnapshotAsync(default);
+                Assert.IsTrue(started.Wait(2000));
+                coordinator.Publish(published);
+                release.Set();
+
+                var snapshot = await request;
+
+                Assert.AreSame(published, snapshot);
+                Assert.AreEqual(1, buildCount);
+            }
+        }
+
+        [TestMethod]
+        public async Task AttachPublisher_WithNoSnapshot_FallsBackToSingleBuild()
+        {
+            var buildCount = 0;
+            var coordinator = new StartPageDataCoordinator(() =>
+            {
+                buildCount++;
+                return new OverviewDataSnapshot { TotalGames = buildCount };
+            });
+
+            coordinator.AttachPublisher();
+            var first = await coordinator.GetSnapshotAsync(default);
+            var second = await coordinator.GetSnapshotAsync(default);
+
+            Assert.AreSame(first, second);
+            Assert.AreEqual(1, buildCount);
+        }
     }
 }
