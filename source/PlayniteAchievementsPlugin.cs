@@ -648,7 +648,11 @@ namespace PlayniteAchievements
                         _fullscreenControllerNavigationService,
                         _friendsOverviewDataCoordinator,
                         _friendGameAchievementsDataCoordinator,
-                        () => GetStartPageDataCoordinator());
+                        // Deliberately the field, not GetStartPageDataCoordinator(): publishing
+                        // is an optimization for widget hosts that already exist. Creating the
+                        // coordinator here would stand up a process-lifetime service holding a
+                        // full-library snapshot for a user who has no start page at all.
+                        () => _startPageDataCoordinator);
 
                     _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);
                     _achievementHotkeyService = new AchievementHotkeyService(
@@ -779,7 +783,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator, () => GetStartPageDataCoordinator()),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator, () => _startPageDataCoordinator),
                         _logger,
                         PlayniteApi,
                         _refreshService,
