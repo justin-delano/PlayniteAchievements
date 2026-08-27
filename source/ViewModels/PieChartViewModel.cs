@@ -117,9 +117,42 @@ namespace PlayniteAchievements.ViewModels
                 : LockedFallbackColor;
         }
 
+        private bool _appearanceHooked;
+
         public PieChartViewModel()
         {
+            AttachAppearance();
+        }
+
+        /// <summary>
+        /// Subscribes to the process-lifetime appearance event. Idempotent, so a control that
+        /// re-attaches on a repeated Loaded cannot stack handlers.
+        /// </summary>
+        public void AttachAppearance()
+        {
+            if (_appearanceHooked)
+            {
+                return;
+            }
+
+            _appearanceHooked = true;
             RarityAppearanceHelper.AppearanceChanged += RarityAppearanceHelper_AppearanceChanged;
+        }
+
+        /// <summary>
+        /// Detaches from the process-lifetime appearance event. Mandatory for every instance
+        /// that is replaced rather than kept for the owner's lifetime: the static event roots
+        /// the view model, and with it its series, slice data, and legend rows.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!_appearanceHooked)
+            {
+                return;
+            }
+
+            _appearanceHooked = false;
+            RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
         }
 
         private void RarityAppearanceHelper_AppearanceChanged(object sender, System.EventArgs e)

@@ -4283,6 +4283,14 @@ namespace PlayniteAchievements.ViewModels
                 _deltaBatchTimer.Tick -= OnDeltaBatchTimerTick;
             }
 
+            // Each chart view model is subscribed to the process-lifetime appearance event, so
+            // without this every overview open strands four of them (and their series data)
+            // for the rest of the session.
+            GamesPieChart?.Dispose();
+            RarityPieChart?.Dispose();
+            ProviderPieChart?.Dispose();
+            TrophyPieChart?.Dispose();
+
             ReleaseRetainedData();
         }
 

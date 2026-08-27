@@ -164,7 +164,16 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     break;
             }
 
+            // The replaced chart is subscribed to the process-lifetime appearance event, so it
+            // must be released explicitly; otherwise every refresh strands one chart view model
+            // and its whole series/slice/legend graph in memory for the rest of the session.
+            var previous = Chart;
             Chart = chart;
+            if (!ReferenceEquals(previous, chart))
+            {
+                previous?.Dispose();
+            }
+
             LegendRows.ReplaceAll((chart.LegendItems ?? Enumerable.Empty<LegendItem>())
                 .Take(8)
                 .Select(item => new PieLegendRowViewModel(item)));
