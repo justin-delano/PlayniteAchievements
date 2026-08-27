@@ -558,6 +558,16 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
+            // A running refresh already reconciles the view model through its own delta
+            // path, and its tag-sync writes raise ItemUpdated per game - a full rebuild per
+            // burst would stack whole-library projection builds on top of the run. Keep the
+            // pending flag and re-arm so one rebuild lands after the run ends.
+            if (_refreshService?.IsRebuilding == true)
+            {
+                _showcaseDatabaseRefreshTimer.Start();
+                return;
+            }
+
             _showcaseDatabaseRefreshPending = false;
             _ = _viewModel?.RefreshViewAsync();
         }
