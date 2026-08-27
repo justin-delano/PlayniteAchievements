@@ -66,6 +66,14 @@ namespace PlayniteAchievements.ViewModels
         private readonly HashSet<string> _revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private OverviewDataSnapshot _latestSnapshot;
 
+        // Shared-snapshot publishing: while this view model is active it feeds every applied
+        // snapshot to the process-wide widget coordinator so start-page widgets share the
+        // instance retained here instead of building their own full-library copy.
+        private static readonly TimeSpan SharedPublishMinInterval = TimeSpan.FromSeconds(2);
+        private readonly Func<Services.Widgets.WidgetDataCoordinator> _widgetCoordinatorAccessor;
+        private Services.Widgets.WidgetDataCoordinator _sharedSnapshotTarget;
+        private DateTime _lastSharedPublishUtc;
+
         public OverviewDataSnapshot LatestSnapshot => _latestSnapshot;
 
         public event EventHandler SnapshotChanged;
@@ -126,8 +134,10 @@ namespace PlayniteAchievements.ViewModels
             ILogger logger,
             PlayniteAchievementsSettings settings,
             OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
-            IFriendCacheManager friendCache = null)
+            IFriendCacheManager friendCache = null,
+            Func<Services.Widgets.WidgetDataCoordinator> widgetCoordinatorAccessor = null)
         {
+            _widgetCoordinatorAccessor = widgetCoordinatorAccessor;
             FriendCompare = new FriendCompareController(friendCache, settings, logger);
             _selectedGameControlBar.AttachFriendCompare(FriendCompare);
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
@@ -1399,6 +1409,7 @@ namespace PlayniteAchievements.ViewModels
             _isActive = isActive;
             if (!isActive)
             {
+                DetachSharedSnapshotPublisher();
                 _deltaBatchTimer?.Stop();
                 lock (_deltaSync)
                 {
@@ -1410,10 +1421,52 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
+                AttachSharedSnapshotPublisher();
                 _progressTracker.SyncToCurrentState();
                 // Refresh data when overview becomes active to ensure cached changes are visible
                 _ = RefreshViewAsync();
             }
+        }
+
+        private void AttachSharedSnapshotPublisher()
+        {
+            if (_sharedSnapshotTarget != null)
+            {
+                return;
+            }
+
+            _sharedSnapshotTarget = _widgetCoordinatorAccessor?.Invoke();
+            _sharedSnapshotTarget?.AttachPublisher();
+        }
+
+        private void DetachSharedSnapshotPublisher()
+        {
+            var target = _sharedSnapshotTarget;
+            _sharedSnapshotTarget = null;
+            target?.DetachPublisher();
+        }
+
+        // Mid-run the delta pipeline applies a snapshot roughly per refreshed game; publishing
+        // each would fan a full start-page widget re-projection out per game, so publishes are
+        // throttled while a refresh run is active. The trailing state still lands: the end-of-run
+        // scoped CacheInvalidated re-queues deltas whose batch tick runs after IsRebuilding is
+        // false, and full-view refreshes publish unconditionally.
+        private void PublishSharedSnapshot(OverviewDataSnapshot snapshot)
+        {
+            var target = _sharedSnapshotTarget;
+            if (target == null || snapshot == null)
+            {
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            if (_refreshService.IsRebuilding && now - _lastSharedPublishUtc < SharedPublishMinInterval)
+            {
+                return;
+            }
+
+            _lastSharedPublishUtc = now;
+            target.Publish(snapshot);
         }
 
         public async Task RefreshViewAsync()
@@ -1922,7 +1975,11 @@ namespace PlayniteAchievements.ViewModels
                 RecentAchievements = _allRecentAchievements ?? new List<AchievementDisplayItem>(),
                 GlobalUnlockCountsByDate = new Dictionary<DateTime, int>(),
                 UnlockCountsByDateByGame = new Dictionary<Guid, Dictionary<DateTime, int>>(),
-                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                // Deltas never touch identities; carry the last full build's forward so
+                // profile consumers of a delta-built snapshot keep the resolved user.
+                CurrentUserIdentities = _latestSnapshot?.CurrentUserIdentities
+                    ?? new List<Models.Friends.FriendIdentity>()
             };
 
             for (var i = 0; i < snapshot.RecentAchievements.Count; i++)
@@ -2123,6 +2180,7 @@ namespace PlayniteAchievements.ViewModels
             GlobalTimeline.SetCounts(timelineCountsToShow);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
             SnapshotChanged?.Invoke(this, EventArgs.Empty);
+            PublishSharedSnapshot(snapshot);
         }
 
         private void MarkSnapshotApplied()
@@ -4215,6 +4273,9 @@ namespace PlayniteAchievements.ViewModels
         // collection and exhaust the address space. Releasing here bounds the retained set to one
         // live overview. Runs after _disposed and CancelPendingRefresh, so no in-flight apply can
         // repopulate these (ApplySnapshot early-returns on _disposed).
+        // The _all* fields are REASSIGNED, not cleared in place: the list instances are embedded
+        // in snapshots published to the widget coordinator, which retains the last one after this
+        // view model dies. An in-place Clear() would gut that shared snapshot.
         private void ReleaseRetainedData()
         {
             AllAchievements.Clear();
