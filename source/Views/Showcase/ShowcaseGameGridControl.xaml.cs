@@ -73,6 +73,8 @@ namespace PlayniteAchievements.Views.Showcase
 
         protected override void RefreshGrid() => InnerGrid?.Refresh();
 
+        public override void Dispose() => InnerGrid?.Dispose();
+
         protected override void AppendPinReorderItems(ContextMenu menu, object data)
         {
             if (!EnablePinReorder ||

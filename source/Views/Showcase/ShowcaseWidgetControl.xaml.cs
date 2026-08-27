@@ -223,31 +223,31 @@ namespace PlayniteAchievements.Views.Showcase
                     : new Thickness(8);
             if (_projection?.Instance == null)
             {
-                BodyHost.Content = CreateEmptyText();
+                SetBodyContent(CreateEmptyText());
                 return;
             }
 
             switch (_projection.Instance.Kind)
             {
                 case ShowcaseWidgetKind.Profile:
-                    BodyHost.Content = UpdateBodyViewModel<ProfileWidgetViewModel>();
+                    SetBodyContent(UpdateBodyViewModel<ProfileWidgetViewModel>());
                     break;
                 case ShowcaseWidgetKind.Scores:
-                    BodyHost.Content = UpdateBodyViewModel<ScoresWidgetViewModel>();
+                    SetBodyContent(UpdateBodyViewModel<ScoresWidgetViewModel>());
                     break;
                 case ShowcaseWidgetKind.Pie:
-                    BodyHost.Content = UpdateBodyViewModel<PieWidgetViewModel>();
+                    SetBodyContent(UpdateBodyViewModel<PieWidgetViewModel>());
                     break;
                 case ShowcaseWidgetKind.Timeline:
-                    BodyHost.Content = UpdateBodyViewModel<TimelineWidgetViewModel>();
+                    SetBodyContent(UpdateBodyViewModel<TimelineWidgetViewModel>());
                     break;
                 case ShowcaseWidgetKind.Statistics:
-                    BodyHost.Content = UpdateBodyViewModel<StatisticsWidgetViewModel>();
+                    SetBodyContent(UpdateBodyViewModel<StatisticsWidgetViewModel>());
                     break;
                 case ShowcaseWidgetKind.NativePoints:
-                    BodyHost.Content = _projection.ChartEntries?.Count > 0
+                    SetBodyContent(_projection.ChartEntries?.Count > 0
                         ? (object)UpdateBodyViewModel<NativePointsWidgetViewModel>()
-                        : CreateEmptyText();
+                        : CreateEmptyText());
                     break;
                 case ShowcaseWidgetKind.IconMosaic:
                     // The collapsed Mosaic renders achievement icons or game covers per its
@@ -256,15 +256,15 @@ namespace PlayniteAchievements.Views.Showcase
                     if (ShowcaseWidgetOptions.GetMosaicContent(_projection.Instance) ==
                         ShowcaseMosaicContent.Games)
                     {
-                        BodyHost.Content = _projection.Games?.Count > 0
+                        SetBodyContent(_projection.Games?.Count > 0
                             ? (object)UpdateBodyViewModel<GameMosaicWidgetViewModel>()
-                            : CreateEmptyText();
+                            : CreateEmptyText());
                     }
                     else
                     {
-                        BodyHost.Content = _projection.MosaicAchievements?.Count > 0
+                        SetBodyContent(_projection.MosaicAchievements?.Count > 0
                             ? (object)UpdateBodyViewModel<IconMosaicWidgetViewModel>()
-                            : CreateEmptyText();
+                            : CreateEmptyText());
                     }
 
                     break;
@@ -280,7 +280,7 @@ namespace PlayniteAchievements.Views.Showcase
                     else
                     {
                         slideshow = new ScreenshotSlideshowControl(_projection.Instance);
-                        BodyHost.Content = slideshow;
+                        SetBodyContent(slideshow);
                     }
 
                     slideshow.SetEditHold(!IsHitTestVisible);
@@ -291,15 +291,15 @@ namespace PlayniteAchievements.Views.Showcase
                     if (ShowcaseWidgetOptions.GetAchievementGridSource(_projection.Instance) ==
                         ShowcaseAchievementGridSource.Pinned)
                     {
-                        BodyHost.Content = _projection.AchievementRows?.Count > 0
+                        SetBodyContent(_projection.AchievementRows?.Count > 0
                             ? (object)UpdateBodyViewModel<PinnedAchievementsWidgetViewModel>()
-                            : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements"));
+                            : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoPinnedAchievements")));
                     }
                     else
                     {
-                        BodyHost.Content = _projection.AchievementRows?.Count > 0
+                        SetBodyContent(_projection.AchievementRows?.Count > 0
                             ? (object)UpdateBodyViewModel<RecentAchievementsWidgetViewModel>()
-                            : CreateEmptyText();
+                            : CreateEmptyText());
                     }
 
                     break;
@@ -309,25 +309,75 @@ namespace PlayniteAchievements.Views.Showcase
                     if (ShowcaseWidgetOptions.GetGameGridSource(_projection.Instance) ==
                         ShowcaseGameGridSource.Library)
                     {
-                        BodyHost.Content = _projection.Games?.Count > 0
+                        SetBodyContent(_projection.Games?.Count > 0
                             ? (object)UpdateBodyViewModel<GameSummariesWidgetViewModel>()
-                            : CreateEmptyText();
+                            : CreateEmptyText());
                     }
                     else
                     {
-                        BodyHost.Content = _projection.Games?.Count > 0
+                        SetBodyContent(_projection.Games?.Count > 0
                             ? (object)UpdateBodyViewModel<FavoriteGamesWidgetViewModel>()
-                            : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames"));
+                            : CreateEmptyText(Localize("LOCPlayAch_Showcase_NoFavoriteGames")));
                     }
 
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    BodyHost.Content = UpdateBodyViewModel<ActivityCalendarWidgetViewModel>();
+                    SetBodyContent(UpdateBodyViewModel<ActivityCalendarWidgetViewModel>());
                     break;
                 default:
-                    BodyHost.Content = CreateEmptyText();
+                    SetBodyContent(CreateEmptyText());
                     break;
             }
+        }
+
+        // Swapping BodyHost.Content discards the previous content's template-generated
+        // visuals. The grid hosts subscribe the app-lifetime PersistedSettings and only
+        // unhook in Dispose (they cannot self-dispose on Unloaded: widget hosts are
+        // re-parented across dashboard rebuilds and the inner grids would not fully
+        // re-attach), so a discarded body must be disposed here or every empty/non-empty
+        // transition permanently roots another grid. The slideshow owns a timer and a
+        // CapturesChanged subscription; same rule.
+        private void SetBodyContent(object next)
+        {
+            var current = BodyHost.Content;
+            if (ReferenceEquals(current, next))
+            {
+                return;
+            }
+
+            DisposeBodyVisuals(current);
+            BodyHost.Content = next;
+        }
+
+        private void DisposeBodyVisuals(object current)
+        {
+            if (current == null)
+            {
+                return;
+            }
+
+            if (current is ScreenshotSlideshowControl slideshow)
+            {
+                slideshow.Dispose();
+                return;
+            }
+
+            foreach (var host in VisualTreeHelpers.FindVisualChildren<ShowcaseGridHostBase>(BodyHost))
+            {
+                host.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Releases the body's disposable visuals. For widget hosts being discarded for good
+        /// (pruned instances, dashboard teardown); re-applying a projection afterwards
+        /// rebuilds the body from scratch.
+        /// </summary>
+        public void DisposeBody()
+        {
+            DisposeBodyVisuals(BodyHost.Content);
+            BodyHost.Content = null;
+            _bodyViewModel = null;
         }
 
         // Reuses (or lazily creates) the body view model for this control and feeds it the

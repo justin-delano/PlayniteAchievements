@@ -12,10 +12,17 @@ namespace PlayniteAchievements.Views.Showcase
     /// Shared plumbing for the showcase widgets that host one of the reusable data grids:
     /// the bindable surface the widget templates use, and the row context menu (the shared
     /// row options plus the pin reorder items each host contributes).
+    /// Disposable because the hosted grids subscribe the app-lifetime PersistedSettings and
+    /// only unhook in their Dispose; the owning ShowcaseWidgetControl disposes hosts when a
+    /// body content swap or widget discard drops them. They must not self-dispose on
+    /// Unloaded: widget hosts are re-parented across dashboard rebuilds, and the inner
+    /// grids' ItemsSource observation only re-attaches on an ItemsSource change.
     /// </summary>
-    public abstract class ShowcaseGridHostBase : UserControl
+    public abstract class ShowcaseGridHostBase : UserControl, System.IDisposable
     {
         private DataGridRow _pendingRightClickRow;
+
+        public abstract void Dispose();
 
         public static readonly DependencyProperty ItemsSourceProperty =
             DependencyProperty.Register(
