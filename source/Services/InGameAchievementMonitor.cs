@@ -473,6 +473,13 @@ namespace PlayniteAchievements.Services
                 timer.Stop();
             }
 
+            // Applying results fans out to UI-thread subscribers (theme state, start page,
+            // Playnite DB updates), whose 3-6 ms bodies land as dropped frames in a running
+            // notification slide. Deferring here, before any observation is applied, covers
+            // every marshaled subscriber at once; the bound keeps a leaked gate from ever
+            // holding progress back for more than one slide's worth of time.
+            await RenderQuietGate.WhenClearAsync(maxDeferMs: 800).ConfigureAwait(false);
+
             try
             {
                 var byGame = results
@@ -1074,9 +1081,9 @@ namespace PlayniteAchievements.Services
 
             // Filtered achievements still consume their claim, so a rarity/category filter cannot be
             // toggled mid-session into replaying an unlock the player already passed.
-            var unlocks = claimed
-                .Where(a => a?.IsFiltered != true)
-                .ToList();
+            // HydrateForToast(after) above stamped DefaultOrderIndex on these instances, so the
+            // emission sort sees the game's custom/provider order.
+            var unlocks = InGameUnlockEmissionOrder.Sort(claimed.Where(a => a?.IsFiltered != true));
             _logger?.Debug(
                 $"[InGameMonitor] User progress complete: game={game.Name}, elapsedMs={elapsedMs}, unlocks={unlocks.Count}.");
 
