@@ -304,6 +304,17 @@ namespace PlayniteAchievements
                 _logger?.Debug(ex, "Failed to read theme list stats.");
             }
 
+            try
+            {
+                detail.Append(
+                    "appearanceSubs=" +
+                    Models.Achievements.RarityAppearanceHelper.AppearanceChangedSubscriberCount + " ");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read appearance subscriber count.");
+            }
+
             // Live instance counts come last: they are the discriminator when every cache
             // above reads flat but the heap still grows.
             detail.Append($"live={Common.LeakWatch.DescribeLive()}");

@@ -22,6 +22,14 @@ namespace PlayniteAchievements.Models.Achievements
 
         public static event EventHandler AppearanceChanged;
 
+        /// <summary>
+        /// Handlers currently attached to <see cref="AppearanceChanged"/>. This event lives for
+        /// the process, so a count that climbs run over run means subscribers are being stranded
+        /// (and rooted) instead of detaching. Diagnostics only.
+        /// </summary>
+        internal static int AppearanceChangedSubscriberCount =>
+            AppearanceChanged?.GetInvocationList()?.Length ?? 0;
+
         private static PersistedSettings _activeSettings;
 
         public static Color GetBaseColor(RarityTier tier, PersistedSettings settings = null)

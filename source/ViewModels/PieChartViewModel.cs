@@ -122,6 +122,7 @@ namespace PlayniteAchievements.ViewModels
         public PieChartViewModel()
         {
             AttachAppearance();
+            Common.LeakWatch.Track("PieChartViewModel", this);
         }
 
         /// <summary>
