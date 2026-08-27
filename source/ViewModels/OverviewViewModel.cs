@@ -70,6 +70,11 @@ namespace PlayniteAchievements.ViewModels
         // snapshot to the process-wide widget coordinator so start-page widgets share the
         // instance retained here instead of building their own full-library copy.
         private static readonly TimeSpan SharedPublishMinInterval = TimeSpan.FromSeconds(2);
+
+        // Single-game changes (an in-game unlock, a row edit) should surface promptly; a bulk
+        // refresh saving game after game must not drive a whole-library recompute per save.
+        private static readonly TimeSpan InteractiveDeltaBatchInterval = TimeSpan.FromMilliseconds(300);
+        private static readonly TimeSpan BulkDeltaBatchInterval = TimeSpan.FromMilliseconds(2500);
         private readonly Func<Services.Widgets.WidgetDataCoordinator> _widgetCoordinatorAccessor;
         private Services.Widgets.WidgetDataCoordinator _sharedSnapshotTarget;
         private DateTime _lastSharedPublishUtc;
@@ -170,7 +175,7 @@ namespace PlayniteAchievements.ViewModels
 
             _deltaBatchTimer = new System.Windows.Threading.DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(300)
+                Interval = InteractiveDeltaBatchInterval
             };
             _deltaBatchTimer.Tick += OnDeltaBatchTimerTick;
 
@@ -1934,9 +1939,9 @@ namespace PlayniteAchievements.ViewModels
                     return true;
                 }
 
-                _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
-                _allGameSummaries.RemoveAll(g => g?.PlayniteGameId == gameId);
-                _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+                RemoveGameRows(_allAchievements, gameId, _globalAchievementSearchIndex);
+                RemoveGameRows(_allGameSummaries, gameId, _gameSummarySearchIndex);
+                RemoveGameRows(_allRecentAchievements, gameId, _recentAchievementSearchIndex);
                 _selectedGamePipeline.Invalidate(gameId);
 
                 if (SelectedGame?.PlayniteGameId == gameId)
@@ -1957,9 +1962,9 @@ namespace PlayniteAchievements.ViewModels
                 "Row.discardedGameSummary",
                 _allGameSummaries.FirstOrDefault(g => g?.PlayniteGameId == gameId));
 
-            _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
-            _allGameSummaries.RemoveAll(g => g?.PlayniteGameId == gameId);
-            _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+            RemoveGameRows(_allAchievements, gameId, _globalAchievementSearchIndex);
+            RemoveGameRows(_allGameSummaries, gameId, _gameSummarySearchIndex);
+            RemoveGameRows(_allRecentAchievements, gameId, _recentAchievementSearchIndex);
             _selectedGamePipeline.Invalidate(gameId);
 
             if (fragment.Achievements != null && fragment.Achievements.Count > 0)
@@ -2757,6 +2762,15 @@ namespace PlayniteAchievements.ViewModels
                     }
                 }
 
+                // Each tick recomputes library-wide state (sorts, snapshot rollups, charts,
+                // filters), so its cost is independent of how many games changed. A bulk
+                // refresh saves games steadily, which at the interactive interval produces
+                // dozens of whole-library passes per run; widening the window while a run is
+                // active collapses those into a handful without changing the end state, since
+                // the run's final invalidation queues one last pass.
+                _deltaBatchTimer.Interval = _refreshService.IsRebuilding
+                    ? BulkDeltaBatchInterval
+                    : InteractiveDeltaBatchInterval;
                 _deltaBatchTimer.Stop();
                 _deltaBatchTimer.Start();
             });
@@ -2912,7 +2926,9 @@ namespace PlayniteAchievements.ViewModels
             // its first unlock. Re-stamp the replaced rows.
             RemarkCapturePresence();
 
-            RefreshOverviewSearchIndexes();
+            // No search-index rebuild here. ApplyFragmentDelta already dropped the entries for
+            // the rows it replaced, and the index fills lazily for the new ones, so rebuilding
+            // all three indexes would re-normalize the entire library on every delta batch.
 
             var snapshot = BuildSnapshotFromSourceLists();
             ApplyOverviewSummaryFromSnapshot(snapshot);
@@ -2949,11 +2965,53 @@ namespace PlayniteAchievements.ViewModels
             RemarkCapturePresence(e?.FolderName);
         }
 
-        private void RefreshOverviewSearchIndexes()
+        // Drops a game's rows and their search-index entries together. The index is keyed by row
+        // instance, so an entry left behind would both root a replaced row and answer for a row
+        // that is no longer in the list. Replacement rows are not indexed here: the index fills
+        // lazily on first lookup, which is what makes a per-delta whole-library rebuild
+        // unnecessary.
+        private static void RemoveGameRows(
+            List<AchievementDisplayItem> rows,
+            Guid gameId,
+            SearchTextIndex<AchievementDisplayItem> index)
         {
-            _globalAchievementSearchIndex.Rebuild(_allAchievements);
-            _gameSummarySearchIndex.Rebuild(_allGameSummaries);
-            _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
+            if (rows == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (row?.PlayniteGameId == gameId)
+                {
+                    index?.Invalidate(row);
+                }
+            }
+
+            rows.RemoveAll(row => row?.PlayniteGameId == gameId);
+        }
+
+        private static void RemoveGameRows(
+            List<GameSummaryItem> rows,
+            Guid gameId,
+            SearchTextIndex<GameSummaryItem> index)
+        {
+            if (rows == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (row?.PlayniteGameId == gameId)
+                {
+                    index?.Invalidate(row);
+                }
+            }
+
+            rows.RemoveAll(row => row?.PlayniteGameId == gameId);
         }
 
         private async void OnRefreshDebounceTimerTick(object sender, EventArgs e)
