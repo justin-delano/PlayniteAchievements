@@ -1608,7 +1608,11 @@ namespace PlayniteAchievements
                 QueueTagSync(gameId);
             }
 
-            InvalidateStartPageData();
+            // Fires per saved game during a bulk refresh (and per in-game unlock via the
+            // monitor). Coalesced: the end-of-run scoped CacheInvalidated invalidates once
+            // regardless, and mid-run start-page freshness comes from the overview's
+            // published snapshots when one is open.
+            ScheduleStartPageInvalidate();
         }
 
         private void HandleRefreshAuthNotifications(RebuildPayload payload)
@@ -1643,7 +1647,7 @@ namespace PlayniteAchievements
             // Games added/removed change what the overview and start page project; drop the cached
             // library projection so the next open rebuilds against the current library.
             _libraryProjectionService?.Invalidate();
-            InvalidateStartPageData();
+            ScheduleStartPageInvalidate();
 
             if (e == null)
             {
@@ -1689,9 +1693,11 @@ namespace PlayniteAchievements
         {
             // A game's Playnite-owned fields (playtime, last played, cover, icon, metadata) changed;
             // invalidate so the cached overview/start-page projection is rebuilt with fresh values.
-            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce.
+            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce; the
+            // start-page invalidation is coalesced too (playtime ticks fire this continuously
+            // while a game runs).
             _libraryProjectionService?.Invalidate();
-            InvalidateStartPageData();
+            ScheduleStartPageInvalidate();
         }
 
         private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)

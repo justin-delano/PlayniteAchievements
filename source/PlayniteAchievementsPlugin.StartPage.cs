@@ -25,6 +25,9 @@ namespace PlayniteAchievements
         private readonly Dictionary<string, IDisposable> _startPageViewModels =
             new Dictionary<string, IDisposable>(StringComparer.Ordinal);
         private StartPageDataCoordinator _startPageDataCoordinator;
+        private readonly object _startPageInvalidateSync = new object();
+        private System.Threading.Timer _startPageInvalidateTimer;
+        private const int StartPageInvalidateDelayMs = 2000;
 
         public StartPageExtensionArgs GetAvailableStartPageViews()
         {
@@ -191,6 +194,36 @@ namespace PlayniteAchievements
             _startPageDataCoordinator?.Invalidate();
         }
 
+        // Trailing coalescer for high-frequency invalidation sources: per-game refresh saves,
+        // playtime ItemUpdated ticks, and library-sync bursts. Each invalidation makes every
+        // live start-page widget re-pull (and, with no publisher attached, rebuild) a full
+        // library snapshot, so bursts must collapse into one. Invalidate() is thread-safe;
+        // no dispatcher marshaling is needed. Low-frequency user-driven changes keep calling
+        // InvalidateStartPageData() directly.
+        private void ScheduleStartPageInvalidate()
+        {
+            lock (_startPageInvalidateSync)
+            {
+                if (_startPageDataCoordinator == null)
+                {
+                    return;
+                }
+
+                if (_startPageInvalidateTimer == null)
+                {
+                    _startPageInvalidateTimer = new System.Threading.Timer(
+                        _ => InvalidateStartPageData(),
+                        null,
+                        StartPageInvalidateDelayMs,
+                        System.Threading.Timeout.Infinite);
+                }
+                else
+                {
+                    _startPageInvalidateTimer.Change(StartPageInvalidateDelayMs, System.Threading.Timeout.Infinite);
+                }
+            }
+        }
+
         internal void InvalidateStartPageDataForUi()
         {
             InvalidateStartPageData();
@@ -211,6 +244,12 @@ namespace PlayniteAchievements
             }
 
             _startPageViewModels.Clear();
+
+            lock (_startPageInvalidateSync)
+            {
+                _startPageInvalidateTimer?.Dispose();
+                _startPageInvalidateTimer = null;
+            }
 
             try
             {
