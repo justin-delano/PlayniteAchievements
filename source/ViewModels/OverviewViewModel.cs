@@ -1837,6 +1837,12 @@ namespace PlayniteAchievements.ViewModels
 
             _selectedGamePipeline.InvalidateAll();
 
+            // Canary on the OUTGOING full row set. A full rebuild replaces every row at once,
+            // unlike the per-game delta swap, so retention here is invisible to the delta
+            // canaries. A live count that grows per refresh means the previous library-wide
+            // set (and the grid containers and bindings attached to it) is still rooted.
+            Common.LeakWatch.Track("Row.replacedFullSet", _allAchievements?.FirstOrDefault());
+
             _latestSnapshot = snapshot;
             _allAchievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
             if (globalSearchEntries != null)
