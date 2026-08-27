@@ -32,11 +32,13 @@ namespace PlayniteAchievements.Common
         private const double BytesPerMb = 1024d * 1024d;
 
         /// <summary>
-        /// Memory lines are a handful per refresh (unlike the per-operation timing traces), so
-        /// they stay on independently of <see cref="PerfScope.PerfTracingEnabled"/>: residual
-        /// memory after a refresh is only diagnosable from a log that was already recording.
+        /// Independent switch for the memory lines, so residual-memory work can be traced
+        /// without the per-operation timing noise. Off by default: the retention report forces
+        /// a blocking collection after every refresh, which is too expensive to ship enabled.
+        /// Flip to true (with a rebuild) to re-arm the [MemPerf] lines, the per-cache occupancy
+        /// report, and the LeakWatch live counts.
         /// </summary>
-        internal static readonly bool MemoryTracingEnabled = true;
+        internal static readonly bool MemoryTracingEnabled = false;
 
         public static bool Enabled => MemoryTracingEnabled || PerfScope.PerfTracingEnabled;
 
