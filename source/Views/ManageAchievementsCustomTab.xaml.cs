@@ -32,13 +32,67 @@ namespace PlayniteAchievements.Views
             ".tiff"
         };
 
+        private CustomAchievementEditItem _categoryPickerRow;
+
         public ManageAchievementsCustomTab(ManageAchievementsCustomViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+
+            // The picker resolves on demand (Enter or focus loss); it is seeded for the row that
+            // was selected when editing began, so a click onto another row commits to the right one.
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            viewModel.AssignmentsChanged += (_, __) => SeedCategoryPicker();
+            CategoryPicker.Committed += (_, __) => ApplyCategoryFromPicker();
+            CategoryPicker.IsKeyboardFocusWithinChanged += (_, e) =>
+            {
+                if (!(bool)e.NewValue)
+                {
+                    ApplyCategoryFromPicker();
+                }
+            };
+            SeedCategoryPicker();
         }
 
         private ManageAchievementsCustomViewModel ViewModel => DataContext as ManageAchievementsCustomViewModel;
+
+        private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e?.PropertyName == nameof(ManageAchievementsCustomViewModel.SelectedRow))
+            {
+                SeedCategoryPicker();
+            }
+        }
+
+        private void SeedCategoryPicker()
+        {
+            _categoryPickerRow = ViewModel?.SelectedRow;
+            CategoryPicker.SetInitialCategory(_categoryPickerRow?.CategoryLabel);
+        }
+
+        private void ApplyCategoryFromPicker()
+        {
+            var row = _categoryPickerRow;
+            if (row == null || ViewModel == null || !row.CanEditAssignments)
+            {
+                return;
+            }
+
+            ViewModel.ApplyCategoryToRow(row, CategoryPicker.ResolveSelection());
+        }
+
+        private void TypeSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null || TypeSelectionContextMenu == null || TypeSelectionButton == null)
+            {
+                return;
+            }
+
+            SelectorContextMenuHelper.OpenCategoryTypeMenu(
+                TypeSelectionButton,
+                TypeSelectionContextMenu,
+                ViewModel.TypeSelectionOptions);
+        }
 
         public void RefreshData()
         {
@@ -198,7 +252,10 @@ namespace PlayniteAchievements.Views
                 RevertButton,
                 ClearButton,
                 SaveButton,
-                CustomAchievementsGrid
+                CustomAchievementsGrid,
+                CapstoneCheckBox,
+                CategoryPicker,
+                TypeSelectionButton
             };
 
             return elements
