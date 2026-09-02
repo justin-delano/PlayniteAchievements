@@ -545,6 +545,24 @@ namespace PlayniteAchievements.Services.Achievements
             });
         }
 
+        /// <summary>
+        /// Assigns the custom provider a custom-only game displays as; null or blank clears it.
+        /// </summary>
+        public void SetCustomProvider(Guid gameId, string customProviderId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                customData.CustomProviderId = string.IsNullOrWhiteSpace(customProviderId)
+                    ? null
+                    : customProviderId.Trim();
+            });
+        }
+
         public void SetExophaseEnrichmentSlugOverride(Guid gameId, string slug)
         {
             if (gameId == Guid.Empty)
