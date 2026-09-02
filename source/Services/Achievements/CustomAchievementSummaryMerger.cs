@@ -23,7 +23,8 @@ namespace PlayniteAchievements.Services.Achievements
             ISet<Guid> excludedSummaryIds,
             int recentAchievementDetailLimit,
             Func<Guid, string> resolveGameName,
-            ManagedCustomIconService managedCustomIconService)
+            ManagedCustomIconService managedCustomIconService,
+            Func<string, string> resolveCustomProviderKey = null)
         {
             if (summaryData == null || customDataByGameId == null || customDataByGameId.Count == 0)
             {
@@ -77,6 +78,11 @@ namespace PlayniteAchievements.Services.Achievements
                         CacheKey = gameId.ToString("D"),
                         PlayniteGameId = gameId,
                         ProviderKey = CustomAchievementProjectionService.ProviderKey,
+                        // Custom-only games display as their assigned custom provider when the id
+                        // still resolves; the summary row mirrors the synthetic game data.
+                        ProviderPlatformKey = string.IsNullOrWhiteSpace(customData.CustomProviderId)
+                            ? null
+                            : resolveCustomProviderKey?.Invoke(customData.CustomProviderId),
                         GameName = resolveGameName?.Invoke(gameId),
                         LastUpdatedUtc = DateTime.UtcNow
                     };
