@@ -37,6 +37,10 @@ namespace PlayniteAchievements.Services.UI
         // Whether an unlock is being cut into a clip, so its card must be rendered into an overlay
         // track even when nothing about it shows on screen. Supplied by the recording service.
         private readonly Func<AchievementUnlockedEventArgs, bool> _needsOverlayTrack;
+        // Decodes the frame at an unlock's video anchor out of the recording buffer (null bitmap
+        // when the buffer cannot answer). Supplied by the recording service; lets the screenshot
+        // depict the true unlock moment instead of the instant the toast fired.
+        private readonly Func<AchievementUnlockedEventArgs, int, System.Drawing.Bitmap> _captureAnchorFrame;
         private readonly UnlockScreenshotService _screenshotService;
         private readonly ScreenshotFrameCompositor _frameCompositor;
         private readonly AchievementToastTemplateResolver _templateResolver;
@@ -66,6 +70,11 @@ namespace PlayniteAchievements.Services.UI
         // (UniPlaySong 1.8.4+) reaches the player directly and needs far less. Both tunable.
         private const int SoundAlignmentDelayMs = 450;
         private const int SoundAlignmentFastPathDelayMs = 150;
+        // Longest the wave waits for an undelayed base capture before creating the toast window,
+        // so the capture's WGC session and readback do not overlap the window's first composition
+        // and slide-in. Sized to the capture's own budget (session setup, 150 ms warmup, one
+        // full-resolution readback) less the wave work that already ran since it was started.
+        private const int BaseCaptureGraceMs = 400;
 
         private bool _disposed;
         // Window-bearing waves shown by this process; see the [Toast] Fire diagnostic line.
@@ -169,7 +178,8 @@ namespace PlayniteAchievements.Services.UI
             Func<Guid?, int?> getGameProcessId = null,
             ActiveGameWindowTracker windowTracker = null,
             GameCustomDataStore gameCustomDataStore = null,
-            Func<AchievementUnlockedEventArgs, bool> needsOverlayTrack = null)
+            Func<AchievementUnlockedEventArgs, bool> needsOverlayTrack = null,
+            Func<AchievementUnlockedEventArgs, int, System.Drawing.Bitmap> captureAnchorFrame = null)
         {
             _api = api;
             _settings = settings;
@@ -179,6 +189,7 @@ namespace PlayniteAchievements.Services.UI
             _windowTracker = windowTracker;
             _gameCustomDataStore = gameCustomDataStore;
             _needsOverlayTrack = needsOverlayTrack;
+            _captureAnchorFrame = captureAnchorFrame;
             _screenshotService = new UnlockScreenshotService(logger);
             _frameCompositor = new ScreenshotFrameCompositor(logger);
             _templateResolver = new AchievementToastTemplateResolver(
@@ -209,9 +220,12 @@ namespace PlayniteAchievements.Services.UI
             DateTime? soundPlayedUtc,
             DateTime? surfaceCaptureUtc,
             string soundFilePath = null,
-            double? soundFileGain = null)
+            double? soundFileGain = null,
+            int? soundAlignmentDelayMs = null)
         {
-            if (wave == null || wave.Count == 0 || wave[0].IsPreview)
+            // Progress waves never own a capture or a clip, so the recording side has nothing to
+            // learn from them.
+            if (wave == null || wave.Count == 0 || wave[0].IsPreview || wave[0].IsProgressUpdate)
             {
                 return;
             }
@@ -226,7 +240,8 @@ namespace PlayniteAchievements.Services.UI
                         soundPlayedUtc,
                         surfaceCaptureUtc,
                         soundFilePath,
-                        soundFileGain));
+                        soundFileGain,
+                        soundAlignmentDelayMs));
             }
             catch (Exception ex)
             {
@@ -332,12 +347,14 @@ namespace PlayniteAchievements.Services.UI
                 return false;
             }
 
-            if (ShouldToast(args.IsPreview, args.IsFriendUnlock, args.ProviderKey))
+            if (ShouldToast(args.IsPreview, args.IsFriendUnlock, args.IsProgressUpdate, args.ProviderKey))
             {
                 return true;
             }
 
-            if (args.IsFriendUnlock)
+            // Progress notifications and friend unlocks are toast-only: neither ever owns an
+            // overlay track or a screenshot.
+            if (args.IsFriendUnlock || args.IsProgressUpdate)
             {
                 return false;
             }
@@ -367,7 +384,7 @@ namespace PlayniteAchievements.Services.UI
         /// service is wired in.
         /// </summary>
         private bool NeedsOverlayTrack(AchievementUnlockedEventArgs args) =>
-            args != null && !args.IsPreview && !args.IsFriendUnlock &&
+            args != null && !args.IsPreview && !args.IsFriendUnlock && !args.IsProgressUpdate &&
             (_needsOverlayTrack?.Invoke(args) ?? false);
 
         private static RarityTier ResolveRarity(AchievementUnlockedEventArgs args) =>
@@ -377,11 +394,11 @@ namespace PlayniteAchievements.Services.UI
             args.IsGameCompleted || args.IsCompletionAchievement || args.IsCapstone;
 
         /// <summary>
-        /// Whether this unlock shows an on-screen toast. Previews always toast; otherwise the
-        /// policy ANDs the EnableNotifications master switch into both toast flags and resolves
-        /// all-false for null settings.
+        /// Whether this notification shows an on-screen toast. Previews always toast; otherwise the
+        /// policy ANDs the EnableNotifications master switch into every toast flag and resolves
+        /// all-false for null settings. Progress notifications have their own flag.
         /// </summary>
-        private bool ShouldToast(bool isPreview, bool isFriendUnlock, string providerKey)
+        private bool ShouldToast(bool isPreview, bool isFriendUnlock, bool isProgressUpdate, string providerKey)
         {
             if (isPreview)
             {
@@ -389,6 +406,11 @@ namespace PlayniteAchievements.Services.UI
             }
 
             var effective = ProviderNotificationPolicy.Resolve(_settings?.Persisted, providerKey);
+            if (isProgressUpdate)
+            {
+                return effective.ProgressToasts;
+            }
+
             return isFriendUnlock
                 ? effective.FriendUnlockToasts
                 : effective.UnlockToasts;
@@ -507,13 +529,18 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// The current wave's game window handle as learned by the foreground tracker, or
-        /// IntPtr.Zero when no tracker/game is available (callers fall back to pid resolution).
+        /// The current wave's game window handle, or IntPtr.Zero when no tracker/game is available
+        /// (callers fall back to pid resolution).
+        ///
+        /// Resolved focus-first: a wave fires while the player is in the game, so the window they
+        /// are looking at is the one to photograph and to place the notification over. This is not
+        /// the same choice the video recorder makes — it has to pick a target during launch and
+        /// keep it — so the two ask the tracker different questions on purpose.
         /// </summary>
         private IntPtr ResolveWaveWindowHandle()
         {
             return _activeWaveGameId.HasValue && _windowTracker != null
-                ? _windowTracker.TryGetWindowHandle(_activeWaveGameId.Value)
+                ? _windowTracker.TryGetFocusedWindowHandle(_activeWaveGameId.Value)
                 : IntPtr.Zero;
         }
 
@@ -591,6 +618,48 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
+        /// Decodes each plan item's unlock-anchor frame out of the recording buffer on the pool,
+        /// through the recording service's delegate. Returns null entries as absences: an item the
+        /// buffer cannot answer for simply keeps the shared live capture. Never throws. The
+        /// returned dictionary owns its bitmaps until the save pipeline takes them.
+        /// </summary>
+        private Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> StartWaveAnchorFramesCapture(
+            WaveScreenshotPlan plan)
+        {
+            var vms = plan.Items.Select(i => i.Vm).ToList();
+            var capHeight = ResolutionCapMath.CapHeightFor(
+                _settings?.Persisted?.ScreenshotResolution ?? ScreenshotResolution.Native);
+            var capture = _captureAnchorFrame;
+            return Task.Run(() =>
+            {
+                Dictionary<AchievementToastViewModel, System.Drawing.Bitmap> byVm = null;
+                foreach (var vm in vms)
+                {
+                    try
+                    {
+                        var frame = capture(vm.CaptureArgs, capHeight);
+                        if (frame != null)
+                        {
+                            if (byVm == null)
+                            {
+                                byVm = new Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>();
+                            }
+
+                            byVm[vm] = frame;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(
+                            ex, "Buffered anchor frame failed; the screenshot keeps the live capture.");
+                    }
+                }
+
+                return byVm;
+            });
+        }
+
+        /// <summary>
         /// Builds the with-notification screenshot for each qualifying item in the wave: an
         /// independent clone of the shared base capture with only that item's toast card
         /// composited at the anchor corner — where a genuine single-toast notification would sit —
@@ -618,7 +687,8 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private async Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> ComposeWaveWithToastAsync(
             WaveScreenshotPlan plan, Window window, bool isTestFire,
-            Task<System.Drawing.Bitmap> baseCaptureTask)
+            Task<System.Drawing.Bitmap> baseCaptureTask,
+            Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> anchorFramesTask)
         {
             var withToastVms = plan.Items
                 .Where(i => (i.Variants & ScreenshotVariants.WithToast) != 0)
@@ -695,7 +765,13 @@ namespace PlayniteAchievements.Services.UI
             var baseBitmap = baseCaptureTask != null
                 ? await baseCaptureTask.ConfigureAwait(true)
                 : null;
-            if (baseBitmap == null)
+            // Items with a buffered anchor frame composite onto it instead of the shared live
+            // capture; the corner mapping scales through each bitmap's own dimensions, so the two
+            // may differ in size (screenshot cap vs recording cap) without drifting.
+            var anchorFrames = anchorFramesTask != null
+                ? await anchorFramesTask.ConfigureAwait(true)
+                : null;
+            if (baseBitmap == null && anchorFrames == null)
             {
                 foreach (var entry in overlays)
                 {
@@ -706,18 +782,27 @@ namespace PlayniteAchievements.Services.UI
             }
 
             // Pool: GDI+ clone + composite per item. This completes before the save pipeline takes
-            // the base capture, so nothing touches the base bitmap concurrently.
+            // the base capture and the anchor frames, so nothing touches those bitmaps concurrently.
             return await Task.Run(() =>
             {
                 var byVm = new Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>();
-                var full = new System.Drawing.Rectangle(0, 0, baseBitmap.Width, baseBitmap.Height);
                 foreach (var entry in overlays)
                 {
+                    var source = anchorFrames != null && anchorFrames.TryGetValue(entry.Vm, out var frame)
+                        ? frame
+                        : baseBitmap;
+                    if (source == null)
+                    {
+                        entry.Overlay?.Dispose();
+                        continue;
+                    }
+
                     try
                     {
                         // Clone(rect, format) preserves the capture's pixel format; new Bitmap(Image)
                         // would convert it and change the alpha semantics.
-                        var clone = baseBitmap.Clone(full, baseBitmap.PixelFormat);
+                        var full = new System.Drawing.Rectangle(0, 0, source.Width, source.Height);
+                        var clone = source.Clone(full, source.PixelFormat);
                         if (entry.Overlay != null)
                         {
                             try
@@ -1324,6 +1409,13 @@ namespace PlayniteAchievements.Services.UI
                 // sides at once — the live slide gets the UI thread back, and the clip gets denser
                 // position samples to interpolate between. The card's appearance is deliberately
                 // treated as static for the slide's span.
+                //
+                // That span outlasts the SlideQuietScope: the scope lifts at the storyboard's
+                // Completed, while _runningSlideStoryboard clears later, in StopActiveSlide at the
+                // settled snap. Between the two the glow pulse and GIFs animate live but the track
+                // still holds this frozen frame; the first tick after the snap re-rasterizes. Kept
+                // that way deliberately — extending the scope would hold the on-screen animations
+                // frozen through the settle window to close a track-only gap.
                 var slideFrozen = _runningSlideStoryboard != null && scratch.HasPixelFrame;
                 if (!rendersThisTick || slideFrozen || !recorder.CanAcceptFrame(vm))
                 {
@@ -2001,7 +2093,9 @@ namespace PlayniteAchievements.Services.UI
             var end = anchorIndex;
             // Completion-grade notifications never share a wave with regular achievement unlocks:
             // the standalone 100% notification and a capstone unlock each get their own wave
-            // (multiple completions of the same kind may stack together).
+            // (multiple completions of the same kind may stack together). Progress notifications
+            // likewise batch only with each other: the chime and vibration are per wave, and a
+            // progress wave plays neither.
             while (end < items.Count &&
                    result.Count < max &&
                    items[end].NotifyReadyAtUtc <= now &&
@@ -2009,8 +2103,9 @@ namespace PlayniteAchievements.Services.UI
                    items[end].PlayniteGameId == anchor.PlayniteGameId &&
                    items[end].IsGameCompleted == anchor.IsGameCompleted &&
                    items[end].IsCapstone == anchor.IsCapstone &&
-                   ShouldToast(items[end].IsPreview, items[end].IsFriendUnlock, items[end].ProviderKey) ==
-                       ShouldToast(anchor.IsPreview, anchor.IsFriendUnlock, anchor.ProviderKey))
+                   items[end].IsProgressUpdate == anchor.IsProgressUpdate &&
+                   ShouldToast(items[end].IsPreview, items[end].IsFriendUnlock, items[end].IsProgressUpdate, items[end].ProviderKey) ==
+                       ShouldToast(anchor.IsPreview, anchor.IsFriendUnlock, anchor.IsProgressUpdate, anchor.ProviderKey))
             {
                 result.Add(items[end]);
                 end++;
@@ -2114,7 +2209,7 @@ namespace PlayniteAchievements.Services.UI
             // toast, items that only produce capture output, or a mix (waves batch by friend/own
             // only).
             var toastItems = wave
-                .Where(vm => ShouldToast(vm.IsPreview, vm.IsFriendUnlock, vm.ProviderKey))
+                .Where(vm => ShouldToast(vm.IsPreview, vm.IsFriendUnlock, vm.IsProgressUpdate, vm.ProviderKey))
                 .ToList();
             if (toastItems.Count > 0)
             {
@@ -2223,6 +2318,18 @@ namespace PlayniteAchievements.Services.UI
                 baseCaptureTask = StartWaveSurfaceCaptureAsync(waveIsTestFire, surfaceCaptureUtc);
             }
 
+            // Per-item buffered anchor frames: when a recording session covers this wave and no
+            // delay moved the capture instant, each item's screenshot depicts the true unlock
+            // moment decoded out of the rolling buffer rather than the (possibly much later)
+            // instant the toast fired. Items the buffer cannot answer for fall back to the shared
+            // live capture above. Skipped whenever a delay applies — a delayed capture
+            // deliberately depicts a different instant, and the clip anchors there with it.
+            Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> anchorFramesTask = null;
+            if (plan != null && !waveIsTestFire && !surfaceCaptureUtc.HasValue && _captureAnchorFrame != null)
+            {
+                anchorFramesTask = StartWaveAnchorFramesCapture(plan);
+            }
+
             // Nothing needs a card: capture and save, no window, no hold. Running this inside
             // the sequential wave pipeline is what keeps the out-of-game monitor capture free of
             // an earlier wave's toast, and keeps the per-wave placement state single-owner.
@@ -2230,7 +2337,7 @@ namespace PlayniteAchievements.Services.UI
             {
                 if (plan != null)
                 {
-                    _ = SaveWaveScreenshotsAsync(plan, baseCaptureTask, null);
+                    _ = SaveWaveScreenshotsAsync(plan, baseCaptureTask, anchorFramesTask, null);
                 }
 
                 // A windowless wave still owes the recording side its liveness bump and, in the
@@ -2268,24 +2375,53 @@ namespace PlayniteAchievements.Services.UI
 
             PrimeWaveVisuals(cardItems);
 
+            // An undelayed base capture is a second WGC session — device, warmup, full-resolution
+            // readback — on the same GPU the clip recorder's deprioritized pump runs on. Left to
+            // overlap the window creation and slide-in below, it lands in the one span where the
+            // recorder is already paying for the toast: affected clips hold duplicated game frames
+            // at the pop-up. Absorb the overlap here, ahead of the chime, so the chime and the
+            // reveal shift together and their alignment holds; bounded, so a stuck capture costs
+            // latency, never the wave. A delayed capture runs after the card is on screen and
+            // never overlaps the pop-up in the first place.
+            if (baseCaptureTask != null && captureDelaySeconds <= 0)
+            {
+                await Task.WhenAny(baseCaptureTask, Task.Delay(BaseCaptureGraceMs))
+                    .ConfigureAwait(true);
+                if (_disposed)
+                {
+                    DisposeCaptureTask(baseCaptureTask);
+                    DisposeAnchorFramesTask(anchorFramesTask);
+                    return;
+                }
+            }
+
             // Chime and vibration belong to the on-screen notification, so an unrevealed wave skips
             // both — and skips the alignment delay that exists only to line them up with the
-            // reveal. Its clips carry no chime because none was played.
+            // reveal. Its clips carry no chime because none was played. A progress wave is visible
+            // yet deliberately silent: no chime, no vibration, and therefore no alignment delay
+            // either (waves batch by kind, so the anchor item speaks for the whole wave).
             DateTime? soundPlayedUtc = null;
             string soundFilePath = null;
             double? soundFileGain = null;
-            if (visible)
+            int? soundAlignmentMs = null;
+            if (visible && !wave[0].IsProgressUpdate)
             {
                 // Play the sound first, then show the toast after a short delay so the audio onset
                 // and the slide-in visually align. The in-process fast path starts the player far
                 // sooner than the URI, so it waits proportionally less.
                 bool fastPath;
                 (soundPlayedUtc, soundFilePath, soundFileGain, fastPath) = PlayWaveSound(cardItems);
+                if (soundPlayedUtc.HasValue)
+                {
+                    soundAlignmentMs = fastPath ? SoundAlignmentFastPathDelayMs : SoundAlignmentDelayMs;
+                }
+
                 await Task.Delay(fastPath ? SoundAlignmentFastPathDelayMs : SoundAlignmentDelayMs)
                     .ConfigureAwait(true);
                 if (_disposed)
                 {
                     DisposeCaptureTask(baseCaptureTask);
+                    DisposeAnchorFramesTask(anchorFramesTask);
                     return;
                 }
 
@@ -2480,9 +2616,15 @@ namespace PlayniteAchievements.Services.UI
                     _logger?.Info($"[Toast] Warm: frames={warmFrames}/{WarmFrameCount}, timedOut=true");
                 }
 
-                // Recording setup runs before the slide so its one expensive render — the shadow
-                // layer capture, which rasterizes the effects' software blur once per card — lands
-                // before the slide clock starts instead of eating the slide's first frames. Game
+                // Recording setup runs before the slide so its expensive renders — the shadow
+                // layer capture, which rasterizes the effects' software blur once per card, and
+                // the pixel prime — land before the slide clock starts instead of eating the
+                // slide's first frames. A composed frame is awaited after each block: back to
+                // back the two blocks queue several full card rasterizations into one composition
+                // pass, and the slide's first frame then pays for all of them at once (measured as
+                // the slide-in line's 50 ms first gaps). Interleaved, each block's cost is
+                // presented before the next begins and the slide starts against a drained
+                // composition queue, at the price of two composed frames of extra latency. Game
                 // anchor only — a test fire out of game has no video — and only with recordings
                 // enabled, since nothing else consumes a track.
                 if (_activeIsGame && _activeReferenceHwnd != IntPtr.Zero &&
@@ -2496,7 +2638,18 @@ namespace PlayniteAchievements.Services.UI
                     _waveShadowCaptureCount = 0;
                     _wavePrimedSubmitCount = 0;
                     CaptureWaveShadowLayers(trackRecorder, window, cardItems);
+                    await WaitForComposedFramesAsync(1, WarmFrameTimeoutMs).ConfigureAwait(true);
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
                     PrimeWaveCardPixels(trackRecorder, window, cardItems);
+                    await WaitForComposedFramesAsync(1, WarmFrameTimeoutMs).ConfigureAwait(true);
+                    if (_disposed)
+                    {
+                        return;
+                    }
                 }
 
                 SlideInPhysical(window, reveal: visible);
@@ -2602,7 +2755,8 @@ namespace PlayniteAchievements.Services.UI
                 // rather than an observation, so the recorder never waits on the capture to plan a
                 // window.
                 RaiseWaveDisplayed(
-                    cardItems, soundPlayedUtc, surfaceCaptureUtc, soundFilePath, soundFileGain);
+                    cardItems, soundPlayedUtc, surfaceCaptureUtc, soundFilePath, soundFileGain,
+                    soundAlignmentMs);
 
                 // Layout and placement are final: verify a lone card actually settled on its corner.
                 ReportSettledCornerDrift(window, cardItems);
@@ -2619,13 +2773,14 @@ namespace PlayniteAchievements.Services.UI
                     // would park the hold, countdown and slide-out behind a delayed capture and
                     // leave the toast on screen for the length of the delay.
                     toastCompositeTask = ComposeWaveWithToastAsync(
-                        plan, window, waveIsTestFire, baseCaptureTask);
+                        plan, window, waveIsTestFire, baseCaptureTask, anchorFramesTask);
                 }
 
                 if (plan != null)
                 {
-                    _ = SaveWaveScreenshotsAsync(plan, baseCaptureTask, toastCompositeTask);
+                    _ = SaveWaveScreenshotsAsync(plan, baseCaptureTask, anchorFramesTask, toastCompositeTask);
                     baseCaptureTask = null;
+                    anchorFramesTask = null;
                 }
 
                 // An invisible wave that owes no overlay track has already produced everything it
@@ -2740,9 +2895,10 @@ namespace PlayniteAchievements.Services.UI
             }
             finally
             {
-                // Null after the save pipeline takes ownership; disposes the pending capture when
+                // Null after the save pipeline takes ownership; disposes the pending captures when
                 // the wave aborts (dispose, exception) before the hand-off.
                 DisposeCaptureTask(baseCaptureTask);
+                DisposeAnchorFramesTask(anchorFramesTask);
 
                 if (onRendering != null)
                 {
@@ -2946,7 +3102,7 @@ namespace PlayniteAchievements.Services.UI
             }
 
             var first = wave[0];
-            if (first.IsPreview || first.IsFriendUnlock)
+            if (first.IsPreview || first.IsFriendUnlock || first.IsProgressUpdate)
             {
                 return null;
             }
@@ -3013,6 +3169,7 @@ namespace PlayniteAchievements.Services.UI
         private async Task SaveWaveScreenshotsAsync(
             WaveScreenshotPlan plan,
             Task<System.Drawing.Bitmap> baseCaptureTask,
+            Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> anchorFramesTask,
             Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> toastCompositeTask)
         {
             System.Drawing.Bitmap baseBitmap = null;
@@ -3020,10 +3177,12 @@ namespace PlayniteAchievements.Services.UI
             // Declared out here so the finally still disposes the composites when the pipeline
             // throws after they were produced.
             Dictionary<AchievementToastViewModel, System.Drawing.Bitmap> toastByVm = null;
+            Dictionary<AchievementToastViewModel, System.Drawing.Bitmap> anchorFrames = null;
             try
             {
                 // Awaited before the base bitmap is touched here, preserving the rule that the
-                // per-item clones finish before the save pipeline reads the shared capture.
+                // per-item clones finish before the save pipeline reads the shared capture (the
+                // composite awaits the same anchor-frame task, so that ordering covers both).
                 toastByVm = toastCompositeTask != null
                     ? await toastCompositeTask.ConfigureAwait(true)
                     : null;
@@ -3033,53 +3192,78 @@ namespace PlayniteAchievements.Services.UI
                     baseBitmap = await baseCaptureTask.ConfigureAwait(true);
                 }
 
+                anchorFrames = anchorFramesTask != null
+                    ? await anchorFramesTask.ConfigureAwait(true)
+                    : null;
+
                 var framedByVm = new Dictionary<AchievementToastViewModel, System.Windows.Media.Imaging.BitmapSource>();
-                if (plan.NeedsFrame && baseBitmap != null)
+                if (plan.NeedsFrame && (baseBitmap != null || anchorFrames != null))
                 {
-                    var captured = baseBitmap;
-                    var cleanSource = await Task.Run(() => ScreenshotFrameCompositor.ToBitmapSource(captured))
-                        .ConfigureAwait(true);
-                    if (cleanSource != null)
+                    // One BitmapSource conversion per distinct base: the shared live capture and
+                    // each item's buffered anchor frame convert once, however many items reuse
+                    // them.
+                    var sourceCache =
+                        new Dictionary<System.Drawing.Bitmap, System.Windows.Media.Imaging.BitmapSource>();
+                    foreach (var item in plan.Items)
                     {
-                        foreach (var item in plan.Items)
+                        if ((item.Variants & ScreenshotVariants.Framed) == 0)
                         {
-                            if ((item.Variants & ScreenshotVariants.Framed) == 0)
-                            {
-                                continue;
-                            }
+                            continue;
+                        }
 
-                            await Dispatcher.Yield(DispatcherPriority.Background);
-                            if (_disposed)
-                            {
-                                break;
-                            }
+                        var itemBitmap = anchorFrames != null &&
+                            anchorFrames.TryGetValue(item.Vm, out var anchorFrame)
+                            ? anchorFrame
+                            : baseBitmap;
+                        if (itemBitmap == null)
+                        {
+                            continue;
+                        }
 
-                            // Scope the frame template to each item's game/provider (game >
-                            // provider > global) so a per-game or per-platform custom frame applies.
-                            var frameTemplate = _templateResolver.ResolveFrameTemplate(
-                                item.Vm.FrameUseThemeStyling,
-                                item.Vm.ProviderKey,
-                                item.Vm.PlayniteGameId);
-                            if (frameTemplate == null)
-                            {
-                                continue;
-                            }
+                        await Dispatcher.Yield(DispatcherPriority.Background);
+                        if (_disposed)
+                        {
+                            break;
+                        }
 
-                            // The frame renders synchronously into a bitmap, so the ray burst inside it
-                            // can only read a track that is already cached. Warm it here, at the one
-                            // seam in this path that can await, and cap the wait so a slow fetch costs
-                            // the burst its silhouette rather than costing the capture its frame.
-                            await WarmRayTrackAsync(item.Vm.IconPath);
-                            if (_disposed)
-                            {
-                                break;
-                            }
+                        // Scope the frame template to each item's game/provider (game >
+                        // provider > global) so a per-game or per-platform custom frame applies.
+                        var frameTemplate = _templateResolver.ResolveFrameTemplate(
+                            item.Vm.FrameUseThemeStyling,
+                            item.Vm.ProviderKey,
+                            item.Vm.PlayniteGameId);
+                        if (frameTemplate == null)
+                        {
+                            continue;
+                        }
 
-                            var framed = _frameCompositor.ComposeFramed(cleanSource, frameTemplate, item.Vm);
-                            if (framed != null)
-                            {
-                                framedByVm[item.Vm] = framed;
-                            }
+                        if (!sourceCache.TryGetValue(itemBitmap, out var cleanSource))
+                        {
+                            var captured = itemBitmap;
+                            cleanSource = await Task.Run(() => ScreenshotFrameCompositor.ToBitmapSource(captured))
+                                .ConfigureAwait(true);
+                            sourceCache[itemBitmap] = cleanSource;
+                        }
+
+                        if (cleanSource == null)
+                        {
+                            continue;
+                        }
+
+                        // The frame renders synchronously into a bitmap, so the ray burst inside it
+                        // can only read a track that is already cached. Warm it here, at the one
+                        // seam in this path that can await, and cap the wait so a slow fetch costs
+                        // the burst its silhouette rather than costing the capture its frame.
+                        await WarmRayTrackAsync(item.Vm.IconPath);
+                        if (_disposed)
+                        {
+                            break;
+                        }
+
+                        var framed = _frameCompositor.ComposeFramed(cleanSource, frameTemplate, item.Vm);
+                        if (framed != null)
+                        {
+                            framedByVm[item.Vm] = framed;
                         }
                     }
                 }
@@ -3088,8 +3272,10 @@ namespace PlayniteAchievements.Services.UI
                 var items = plan.Items;
                 var clean = baseBitmap;
                 var toasts = toastByVm;
+                var frames = anchorFrames;
                 baseBitmap = null;
                 toastByVm = null;
+                anchorFrames = null;
                 _ = Task.Run(() =>
                 {
                     try
@@ -3097,10 +3283,13 @@ namespace PlayniteAchievements.Services.UI
                         foreach (var item in items)
                         {
                             var vm = item.Vm;
-                            if ((item.Variants & ScreenshotVariants.Clean) != 0 && clean != null)
+                            var itemClean = frames != null && frames.TryGetValue(vm, out var anchorFrame)
+                                ? anchorFrame
+                                : clean;
+                            if ((item.Variants & ScreenshotVariants.Clean) != 0 && itemClean != null)
                             {
                                 _screenshotService.Save(
-                                    clean, baseDir, vm.ProviderKey, vm.GameName, vm.AchievementName,
+                                    itemClean, baseDir, vm.ProviderKey, vm.GameName, vm.AchievementName,
                                     vm.AchievementNumber, vm.TotalCount,
                                     plan.CleanSuffix);
                             }
@@ -3141,6 +3330,7 @@ namespace PlayniteAchievements.Services.UI
                     {
                         clean?.Dispose();
                         DisposeAll(toasts);
+                        DisposeAll(frames);
                     }
                 });
             }
@@ -3152,6 +3342,7 @@ namespace PlayniteAchievements.Services.UI
             {
                 baseBitmap?.Dispose();
                 DisposeAll(toastByVm);
+                DisposeAll(anchorFrames);
             }
         }
 
@@ -3186,6 +3377,26 @@ namespace PlayniteAchievements.Services.UI
                 else
                 {
                     // Observe capture faults even when a queued wave is cleared before awaiting it.
+                    _ = t.Exception;
+                }
+            }, TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        /// <summary>
+        /// Disposes the bitmaps of an in-flight per-item anchor-frame decode when the wave aborts
+        /// before the save pipeline takes ownership.
+        /// </summary>
+        private static void DisposeAnchorFramesTask(
+            Task<Dictionary<AchievementToastViewModel, System.Drawing.Bitmap>> framesTask)
+        {
+            framesTask?.ContinueWith(t =>
+            {
+                if (t.Status == TaskStatus.RanToCompletion)
+                {
+                    DisposeAll(t.Result);
+                }
+                else
+                {
                     _ = t.Exception;
                 }
             }, TaskContinuationOptions.ExecuteSynchronously);

@@ -61,12 +61,12 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderDisplayOrder =
         {
-            "Steam", "Epic", "GOG", "BattleNet", "EA", "Ubisoft", "GameJolt", "PSN", "Xbox", "GooglePlay", "Apple", "FFXIV", "RetroAchievements", "RPCS3", "ShadPS4", "Xenia", "Manual", "Exophase", "Hoyoverse"
+            "Steam", "Epic", "GOG", "BattleNet", "EA", "Ubisoft", "GameJolt", "Riot", "PSN", "Xbox", "GooglePlay", "Apple", "FFXIV", "RetroAchievements", "RPCS3", "ShadPS4", "Xenia", "Manual", "Exophase", "Hoyoverse"
         };
 
         private static readonly string[] ProviderRefreshOrder =
         {
-            "Manual", "FFXIV", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "EA", "GameJolt", "Hoyoverse", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
+            "Manual", "FFXIV", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "EA", "GameJolt", "Riot", "Hoyoverse", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
@@ -481,6 +481,9 @@ namespace PlayniteAchievements
                     CategoryDefaultImageResolver.DiskImageServiceAccessor = () => _diskImageService;
                     _managedCustomIconService = new ManagedCustomIconService(_diskImageService, _logger);
                     GameSummaryArtResolver.ManagedCustomIconServiceAccessor = () => _managedCustomIconService;
+                    CategoryArtChainResolver.OverrideDisplayPathResolver =
+                        (storedValue, gameId, displayMode) => _managedCustomIconService
+                            .ResolveCategoryArtDisplayPath(storedValue, gameId, displayMode);
                     _notificationImageStore = new NotificationImageStore(_diskImageService, _logger);
                     _fallbackIconStore = new FallbackIconStore(_diskImageService, _logger);
                     // Read through Settings.Persisted on every call: the settings dialog mutates the
@@ -588,9 +591,10 @@ namespace PlayniteAchievements
                         _windowTracker,
                         _gameCustomDataStore,
                         // Late-bound: the recording service is constructed just below, but the
-                        // toast service only ever invokes this from an unlock handler, long after
+                        // toast service only ever invokes these from an unlock handler, long after
                         // the field is assigned.
-                        e => _unlockRecordings?.WouldRequestClip(e) ?? false);
+                        e => _unlockRecordings?.WouldRequestClip(e) ?? false,
+                        (e, capHeight) => _unlockRecordings?.TryCaptureAnchorFrame(e, capHeight));
                     _unlockRecordings = new Services.Recording.UnlockRecordingService(
                         PlayniteApi,
                         settings,
@@ -1481,7 +1485,12 @@ namespace PlayniteAchievements
         // deferred.
         private static readonly TimeSpan CustomDataChangeCoalesceDelay = TimeSpan.FromMilliseconds(400);
         private readonly object _customDataChangeSync = new object();
-        private readonly HashSet<Guid> _pendingCustomDataChangeIds = new HashSet<Guid>();
+
+        // Value is whether any change coalesced into this burst could move a library rollup. A
+        // burst that cannot - category order, art and membership, goal reordering - still has to
+        // repaint the game's own theme surface, but nothing library-wide reads it, so the tag
+        // sync, the start page and the whole-library theme lists are left alone.
+        private readonly Dictionary<Guid, bool> _pendingCustomDataChangeIds = new Dictionary<Guid, bool>();
         private Timer _customDataChangeTimer;
 
         private void GameCustomDataStore_CustomDataChanged(object sender, GameCustomDataChangedEventArgs e)
@@ -1493,7 +1502,8 @@ namespace PlayniteAchievements
 
             lock (_customDataChangeSync)
             {
-                _pendingCustomDataChangeIds.Add(e.PlayniteGameId);
+                _pendingCustomDataChangeIds.TryGetValue(e.PlayniteGameId, out var pendingAffectsSummaryData);
+                _pendingCustomDataChangeIds[e.PlayniteGameId] = pendingAffectsSummaryData || e.AffectsSummaryData;
                 if (_customDataChangeTimer == null)
                 {
                     _customDataChangeTimer = new Timer(
@@ -1511,37 +1521,45 @@ namespace PlayniteAchievements
 
         private void FlushPendingCustomDataChanges()
         {
-            List<Guid> gameIds;
+            List<KeyValuePair<Guid, bool>> pending;
             lock (_customDataChangeSync)
             {
-                gameIds = _pendingCustomDataChangeIds.ToList();
+                pending = _pendingCustomDataChangeIds.ToList();
                 _pendingCustomDataChangeIds.Clear();
             }
 
-            foreach (var gameId in gameIds)
+            foreach (var change in pending)
             {
-                HandleCustomDataChanged(gameId);
+                HandleCustomDataChanged(change.Key, change.Value);
             }
         }
 
-        private void HandleCustomDataChanged(Guid gameId)
+        private void HandleCustomDataChanged(Guid gameId, bool affectsSummaryData)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
-            if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
+            if (affectsSummaryData &&
+                _tagSyncService != null &&
+                persisted?.TaggingSettings?.EnableTagging == true)
             {
+                // Tags carry completion status, which only a summary-affecting change can move.
                 QueueTagSync(gameId);
             }
 
             try
             {
-                _themeIntegrationService?.NotifyCustomDataChanged(gameId);
+                // The game's own theme surface still repaints - a category edit is visible there -
+                // but the whole-library theme lists are rebuilt only when something they read moved.
+                _themeIntegrationService?.NotifyCustomDataChanged(gameId, refreshLibraryState: affectsSummaryData);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={gameId}.");
             }
 
-            InvalidateStartPageData();
+            if (affectsSummaryData)
+            {
+                InvalidateStartPageData();
+            }
         }
 
         // A capstone write is a SQLite save, and a theme button click arrives on the UI thread, so

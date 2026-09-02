@@ -23,6 +23,9 @@ namespace PlayniteAchievements
 
         public Services.Achievements.AchievementDataService AchievementDataService { get; set; }
 
+        // Mirrors the real plugin property RefreshRuntime reads for the category path repoint.
+        public Services.Achievements.AchievementOverridesService AchievementOverridesService { get; set; }
+
         public Services.GameCustomData.GameCustomDataStore GameCustomDataStore { get; set; }
 
         public Services.ThemeIntegration.ThemeIntegrationService ThemeIntegrationService { get; set; }
@@ -43,6 +46,23 @@ namespace PlayniteAchievements
         }
 
         public void OpenViewAchievementsWindow(Guid gameId, string focusAchievementId = null)
+        {
+        }
+    }
+}
+
+namespace PlayniteAchievements.Services.Achievements
+{
+    // Mirrors the members RefreshRuntime touches on the real overrides service, so the linked
+    // category-path repoint compiles against the plugin stub.
+    public class AchievementOverridesService
+    {
+        public void SetAchievementCategoryMetadata(
+            System.Guid gameId,
+            System.Collections.Generic.IReadOnlyList<string> categoryOrder,
+            System.Collections.Generic.IReadOnlyDictionary<string, Models.Settings.CategoryImageOverrideData> categoryImageOverrides,
+            Models.Settings.GameSummaryCategoryData gameSummaryCategory,
+            bool affectsSummaryData = true)
         {
         }
     }
@@ -355,6 +375,8 @@ namespace PlayniteAchievements.ViewModels
 
         public string CategoryArtPath { get; set; }
 
+        public System.Collections.Generic.IReadOnlyList<string> CategoryAncestorArtPaths { get; set; }
+
         public string CleanCapturePath { get; set; }
 
         public string NotificationCapturePath { get; set; }
@@ -577,6 +599,7 @@ namespace PlayniteAchievements.ViewModels
                 CategoryLabel = CategoryLabel,
                 CategoryOrderIndex = CategoryOrderIndex,
                 CategoryArtPath = CategoryArtPath,
+                CategoryAncestorArtPaths = CategoryAncestorArtPaths,
                 CleanCapturePath = CleanCapturePath,
                 NotificationCapturePath = NotificationCapturePath,
                 FramedCapturePath = FramedCapturePath,

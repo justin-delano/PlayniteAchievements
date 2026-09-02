@@ -1224,6 +1224,21 @@ namespace PlayniteAchievements.ViewModels
         // Drives the breadcrumb's "> CategoryName" segment and the clickable game-name affordance.
         public bool IsSelectedGameDrilledIntoCategory => !string.IsNullOrEmpty(SelectedGameDrilledCategory);
 
+        // Storage form of the same drill, for matching against achievement labels.
+        // SelectedGameDrilledCategory is the display form and will not compare equal to one.
+        private string _selectedGameDrilledCategoryPath;
+        public string SelectedGameDrilledCategoryPath
+        {
+            get => _selectedGameDrilledCategoryPath;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedGameDrilledCategoryPath, value))
+                {
+                    RefreshSelectedGameHeaderCounts();
+                }
+            }
+        }
+
         public ObservableCollection<ChartDataPoint> SelectedGameDailyUnlocks { get; } = new ObservableCollection<ChartDataPoint>();
 
         #endregion
@@ -3899,12 +3914,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (isDrilled)
                 {
-                    // Scope to the drilled category, respecting any active filter applied within it.
+                    // Scope to the drilled category itself, not its subtree: the header counts what
+                    // the grid below is showing, and that grid holds this node's own achievements
+                    // only. Matching is on the storage path - the display form spells its separators
+                    // out and never equals a stored label.
+                    var drilledPath = SelectedGameDrilledCategoryPath;
                     var scoped = (_filteredSelectedGameAchievements ?? new List<AchievementDisplayItem>())
-                        .Where(item => string.Equals(
-                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.CategoryLabel),
-                            drilledCategory,
-                            StringComparison.OrdinalIgnoreCase))
+                        .Where(item => CategoryPathHelper.IsSame(item?.CategoryLabel, drilledPath))
                         .ToList();
                     total = scoped.Count;
                     unlocked = scoped.Count(item => item?.Unlocked == true);
@@ -4065,9 +4081,14 @@ namespace PlayniteAchievements.ViewModels
 
                 var revealedCopy = GetRevealedKeysSnapshotIfNeeded();
 
-                var loadResult = await _selectedGamePipeline
-                    .LoadAsync(gameId, revealedCopy, cancellationToken)
-                    .ConfigureAwait(true);
+                (List<AchievementDisplayItem> Items, bool HasCustomOrder) loadResult;
+                using (PerfScope.Start(_logger, "Overview.SelectedGameLoad", thresholdMs: 25,
+                    context: $"game={gameId}"))
+                {
+                    loadResult = await _selectedGamePipeline
+                        .LoadAsync(gameId, revealedCopy, cancellationToken)
+                        .ConfigureAwait(true);
+                }
 
                 if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
@@ -4078,19 +4099,24 @@ namespace PlayniteAchievements.ViewModels
                 var hasCustomOrder = loadResult.HasCustomOrder;
                 SelectedGameHasCustomAchievementOrder = hasCustomOrder;
 
-                _allSelectedGameAchievements = items;
-                Services.Captures.CapturePresenceMarker.MarkAchievements(items, _captureLibrary);
-                // Snapshot the natural order before goals are pinned, so removing a goal can put
-                // the achievement back where it belongs instead of leaving it stranded on top.
-                _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>(items);
-                AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
-                FriendCompare?.SetTargetItems(items);
-                UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
-                ApplyRightFilters();
+                using (PerfScope.Start(_logger, "Overview.SelectedGameApply", thresholdMs: 25,
+                    context: $"items={items.Count}"))
+                {
+                    _allSelectedGameAchievements = items;
+                    Services.Captures.CapturePresenceMarker.MarkAchievements(items, _captureLibrary);
+                    // Snapshot the natural order before goals are pinned, so removing a goal can put
+                    // the achievement back where it belongs instead of leaving it stranded on top.
+                    _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>(items);
+                    AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
+                    FriendCompare?.SetTargetItems(items);
+                    UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
+                    ApplyRightFilters();
 
-                var selectedTimelineCounts = GetSelectedGameTimelineCounts(gameId);
-                GlobalTimeline.SetCounts(selectedTimelineCounts);
-                SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+                    var selectedTimelineCounts = GetSelectedGameTimelineCounts(gameId);
+                    GlobalTimeline.SetCounts(selectedTimelineCounts);
+                    SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+                }
+
                 return true;
             }
             catch (OperationCanceledException)

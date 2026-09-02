@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using NAudio.CoreAudioApi;
+using System.Threading.Tasks;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using Playnite.SDK;
@@ -47,7 +47,16 @@ namespace PlayniteAchievements.Services.Recording
     {
         // Wall-clock pump cadence and buffered-provider depth.
         private const int PumpIntervalMs = 50;
-        private const int BufferSeconds = 5;
+
+        // The ring has to absorb a maximal gap pad without evicting the audio around it. An
+        // endpoint loopback delivers nothing while the endpoint is silent but its device clock
+        // keeps running, so ProcessLoopbackCapture reads every silent passage as a dropout and
+        // injects up to MaxGapSeconds of silence in one burst. At 5 s -- exactly MaxGapSeconds --
+        // a single such burst filled the ring and DiscardOnBufferOverflow threw away everything
+        // else in it, which is heard as continuous stutter. Field logs show the signature plainly:
+        // discarded tracks padded almost exactly (981.1s vs 985.9s, 306.3 vs 311.2, 1446.0 vs
+        // 1450.7), i.e. what overflowed WAS the padding, and it took the real audio with it.
+        private const int BufferSeconds = 4 * ProcessLoopbackCapture.MaxGapSeconds;
 
         // How long to wait for the first stamped packet before anchoring to the wall clock
         // instead. Only reached when the source is silent from the moment capture starts.
@@ -86,6 +95,18 @@ namespace PlayniteAchievements.Services.Recording
         private bool _stopped;
         // Audio the ring buffer never accepted, in bytes of the capture format; see Append.
         private long _discardedBytes;
+        // A clip export may ask for the chunk covering its window end to close now instead of at
+        // its natural boundary; see FlushChunksThroughAsync. 0 = no request. Read/written with
+        // Interlocked: the process is 32-bit, where a bare long read can tear.
+        private long _flushThroughUtcTicks;
+        // The same, for the stamped auxiliary (sidecar) chunks; see
+        // FlushAuxiliaryChunksThroughAsync.
+        private long _flushAuxThroughUtcTicks;
+
+        // How far the wall clock must be past an auxiliary flush request before the covering
+        // sidecar chunks close. Sidecar writes happen on packet arrival, so this absorbs capture
+        // delivery latency; it replaces a fixed segment-length-plus-margin sleep at the reader.
+        private const int AuxiliaryFlushMarginMs = 750;
         private bool _writeGameReference;
         private bool _removeNonGameFromSpeakerMix;
         private bool _extractControllerProgramAudio;
@@ -180,8 +201,8 @@ namespace PlayniteAchievements.Services.Recording
                             }
                             else
                             {
-                                _micName = micDevice.FriendlyName;
-                                _micCapture = new WasapiCapture(micDevice);
+                                _micName = micDevice.Describe();
+                                _micCapture = ProcessLoopbackCapture.ForCaptureEndpoint(micDevice.Id);
                                 _micBuffer = NewBuffer(_micCapture.WaveFormat);
                                 _micCapture.DataAvailable += (s, e) => Append(_micBuffer, e);
 
@@ -219,10 +240,14 @@ namespace PlayniteAchievements.Services.Recording
                     {
                         IsBackground = true,
                         Name = "PA-AudioPump",
-                        // Background capture work: yield to the game and the shell. The pump is
-                        // wall-clock paced and reads whatever accumulated, so a late wake costs
-                        // nothing but a slightly larger read.
-                        Priority = ThreadPriority.BelowNormal,
+                        // A late wake costs nothing but a larger read -- until the read is larger
+                        // than the ring, at which point BufferedWaveProvider silently discards the
+                        // excess (DiscardOnBufferOverflow) and the track loses that audio for good.
+                        // The deadline is BufferSeconds, far slacker than the capture threads' 200
+                        // ms, but BelowNormal under a CPU-saturating emulator was missing even
+                        // that. Normal keeps it out of the way of the capture threads above it
+                        // while still being scheduled against the game.
+                        Priority = ThreadPriority.Normal,
                     };
                     _pumpThread.Start();
 
@@ -346,44 +371,45 @@ namespace PlayniteAchievements.Services.Recording
             }
             try
             {
-                using (var enumerator = new MMDeviceEnumerator())
-                using (var speaker = enumerator.GetDefaultAudioEndpoint(
-                    DataFlow.Render,
-                    Role.Console))
+                var speaker = AudioEndpointEnumerator.TryGetDefaultEndpoint(
+                    AudioDataFlow.Render, AudioEndpointRole.Console);
+                if (speaker == null || string.IsNullOrEmpty(speaker.Id))
                 {
-                    if (RenderEndpointScan.IsHapticEndpoint(speaker))
-                    {
-                        ProcessLoopbackCapture native = null;
-                        try
-                        {
-                            native = ProcessLoopbackCapture.ForEndpointNative(speaker.ID);
-                            if (ProcessLoopbackCapture.IsDualSenseActuatorFormat(native.WaveFormat))
-                            {
-                                _extractControllerProgramAudio = true;
-                                _hapticExclusionProven = true;
-                                _logger?.Info(
-                                    "[Recording] The default output is a controller; recording its " +
-                                    "native front L/R channels and excluding actuator channels 2/3.");
-                                return native;
-                            }
-                        }
-                        finally
-                        {
-                            if (!_extractControllerProgramAudio)
-                            {
-                                try { native?.Dispose(); } catch { }
-                            }
-                        }
+                    throw new InvalidOperationException("There is no default render endpoint.");
+                }
 
-                        _logger?.Warn(
-                            "[Recording] The default controller output did not expose the proven " +
-                            "4-channel layout; retaining audible endpoint audio, which may include haptics.");
+                if (RenderEndpointScan.IsHapticEndpoint(speaker))
+                {
+                    ProcessLoopbackCapture native = null;
+                    try
+                    {
+                        native = ProcessLoopbackCapture.ForEndpointNative(speaker.Id);
+                        if (ProcessLoopbackCapture.IsDualSenseActuatorFormat(native.WaveFormat))
+                        {
+                            _extractControllerProgramAudio = true;
+                            _hapticExclusionProven = true;
+                            _logger?.Info(
+                                "[Recording] The default output is a controller; recording its " +
+                                "native front L/R channels and excluding actuator channels 2/3.");
+                            return native;
+                        }
+                    }
+                    finally
+                    {
+                        if (!_extractControllerProgramAudio)
+                        {
+                            try { native?.Dispose(); } catch { }
+                        }
                     }
 
-                    var endpoint = ProcessLoopbackCapture.ForEndpoint(speaker.ID);
-                    _hapticExclusionProven = true;
-                    return endpoint;
+                    _logger?.Warn(
+                        "[Recording] The default controller output did not expose the proven " +
+                        "4-channel layout; retaining audible endpoint audio, which may include haptics.");
                 }
+
+                var endpoint = ProcessLoopbackCapture.ForEndpoint(speaker.Id);
+                _hapticExclusionProven = true;
+                return endpoint;
             }
             catch (Exception ex)
             {
@@ -392,8 +418,21 @@ namespace PlayniteAchievements.Services.Recording
                     "[Recording] Timestamped speaker capture unavailable; using ordinary " +
                     "speaker loopback. Audio is retained, but haptic exclusion cannot be proven on " +
                     "this fallback.");
-                return new WasapiLoopbackCapture();
             }
+
+            // The multimedia default, which on most machines is the same endpoint reached a second
+            // way. Deliberately not NAudio's WasapiLoopbackCapture: it builds the same device
+            // enumerator the primary path just failed on, so it could only ever rethrow — which is
+            // what turned one endpoint failure into silent clips.
+            var fallbackId = AudioEndpointEnumerator.TryGetDefaultEndpointId(
+                AudioDataFlow.Render, AudioEndpointRole.Multimedia);
+            if (string.IsNullOrEmpty(fallbackId))
+            {
+                throw new InvalidOperationException(
+                    "No render endpoint could be resolved for speaker capture.");
+            }
+
+            return ProcessLoopbackCapture.ForEndpoint(fallbackId);
         }
 
         /// <summary>
@@ -794,25 +833,90 @@ namespace PlayniteAchievements.Services.Recording
         /// Reports whatever this track lost or stood in for. Silent when nothing did, so a line here
         /// always means the recorded audio does not represent an unbroken stretch of real time.
         /// </summary>
-        private void LogTimelineNotices(params IWaveIn[] captures)
+        /// <summary>
+        /// Reports what the CLIP TRACK lost: audio the ring buffer refused, and engine dropouts the
+        /// main capture padded with silence.
+        /// <para>
+        /// Only <paramref name="clipTrack"/> counts toward that. The sidecars were summed in here
+        /// once, and they are sparse by design — a process-loopback client whose target is silent
+        /// delivers no packets, so every idle span reads as a "dropout". That pushed the figures
+        /// past the session length (a field log claimed 1446 s of loss in a 483 s session) and sent
+        /// a starvation hunt looking at cancellation instead. Sidecar padding is reported
+        /// separately, and without alarm.
+        /// </para>
+        /// </summary>
+        private void LogTimelineNotices(IWaveIn clipTrack, IWaveIn micTrack, params IWaveIn[] sidecars)
         {
             var discarded = Interlocked.Read(ref _discardedBytes);
-            var paddedFrames = 0L;
-            foreach (var capture in captures ?? new IWaveIn[0])
+            var paddedFrames = (clipTrack as ProcessLoopbackCapture)?.PaddedGapFrames ?? 0;
+            var micPaddedFrames = (micTrack as ProcessLoopbackCapture)?.PaddedGapFrames ?? 0;
+            var bytesPerSecond = Math.Max(1, _outputFormat?.AverageBytesPerSecond ?? 1);
+            var sampleRate = Math.Max(1, _outputFormat?.SampleRate ?? 1);
+
+            if (discarded > 0 || paddedFrames > 0 || micPaddedFrames > 0)
             {
-                paddedFrames += (capture as ProcessLoopbackCapture)?.PaddedGapFrames ?? 0;
+                // The mic mixes into the same clip, so its pads are audible there too.
+                var mic = micPaddedFrames > 0
+                    ? $", {micPaddedFrames / (double)sampleRate:0.###}s of microphone dropouts padded"
+                    : string.Empty;
+                _logger?.Warn(
+                    $"[Recording] Audio track has gaps: {discarded / (double)bytesPerSecond:0.###}s dropped to " +
+                    $"buffer overflow, {paddedFrames / (double)sampleRate:0.###}s of engine dropouts padded " +
+                    $"with silence{mic}.");
             }
-            if (discarded == 0 && paddedFrames == 0)
+
+            // Silence a gap witness asked for beyond elapsed real time, which is impossible.
+            // Reported on its own because it says something quite different from the line above:
+            // not that audio was lost, but that a witness lied and was refused.
+            var impossible = (clipTrack as ProcessLoopbackCapture)?.ImpossibleGapFrames ?? 0;
+            if (impossible > 0)
+            {
+                _logger?.Warn(
+                    $"[Recording] A gap witness asked for {impossible / (double)sampleRate:0.###}s more " +
+                    "silence than the session was long; it was refused. Endpoint mix format: " +
+                    ((clipTrack as ProcessLoopbackCapture)?.NativeMixFormat?.ToString() ?? "unknown") +
+                    $"; capture format: {_outputFormat}.");
+            }
+
+            LogDevicePositionRate(clipTrack as ProcessLoopbackCapture, "clip");
+            LogDevicePositionRate(micTrack as ProcessLoopbackCapture, "microphone");
+
+            var sidecarFrames = 0L;
+            foreach (var capture in sidecars ?? new IWaveIn[0])
+            {
+                sidecarFrames += (capture as ProcessLoopbackCapture)?.PaddedGapFrames ?? 0;
+            }
+
+            if (sidecarFrames > 0)
+            {
+                // Expected: these follow one process tree and pad whenever it is quiet.
+                _logger?.Debug(
+                    $"[Recording] Sidecar silence padding: {sidecarFrames / (double)sampleRate:0.###}s " +
+                    "across the reference tracks (idle spans, not dropouts).");
+            }
+        }
+
+        /// <summary>
+        /// Names the unit the device position counter actually ticks in when it is not this
+        /// capture's frames. Informational: gap sizing uses packet stamps, and a deviating rate
+        /// with near-zero padding is a healthy capture on a non-48 kHz endpoint — but when a
+        /// clip does have gaps, this is the number that explains the machine.
+        /// </summary>
+        private void LogDevicePositionRate(ProcessLoopbackCapture capture, string trackName)
+        {
+            var rate = capture?.MeasuredDevicePositionRate ?? 0;
+            var captureRate = capture?.WaveFormat?.SampleRate ?? 0;
+            if (rate <= 0 || captureRate <= 0 ||
+                Math.Abs(rate - captureRate) <= captureRate * 0.01)
             {
                 return;
             }
 
-            var bytesPerSecond = Math.Max(1, _outputFormat?.AverageBytesPerSecond ?? 1);
-            var sampleRate = Math.Max(1, _outputFormat?.SampleRate ?? 1);
-            _logger?.Warn(
-                $"[Recording] Audio track has gaps: {discarded / (double)bytesPerSecond:0.###}s dropped to " +
-                $"buffer overflow, {paddedFrames / (double)sampleRate:0.###}s of engine dropouts padded " +
-                "with silence.");
+            _logger?.Info(
+                $"[Recording] The {trackName} track's device position counter advances at " +
+                $"~{rate:0}/s against its {captureRate}/s capture format (native mix: " +
+                $"{capture.NativeMixFormat?.ToString() ?? "unknown"}). Gap sizing uses packet " +
+                "timestamps, so this alone costs nothing.");
         }
 
         /// <summary>
@@ -863,6 +967,9 @@ namespace PlayniteAchievements.Services.Recording
                                 OpenChunkLocked();
                             }
                         }
+
+                        SettleFlushRequestLocked();
+                        SettleAuxiliaryFlushRequestLocked(CaptureTimelineClock.UtcNow);
                     }
 
                     Thread.Sleep(PumpIntervalMs);
@@ -961,7 +1068,7 @@ namespace PlayniteAchievements.Services.Recording
             {
                 CloseChunkLocked();
                 CloseAuxiliaryTracksLocked();
-                LogTimelineNotices(system, gameReference, nonGame);
+                LogTimelineNotices(system, mic, gameReference, nonGame);
                 _systemCapture = null;
                 _gameReferenceCapture = null;
                 _nonGameCapture = null;
@@ -1049,6 +1156,131 @@ namespace PlayniteAchievements.Services.Recording
         {
             try { _writer?.Dispose(); } catch { }
             _writer = null;
+        }
+
+        /// <summary>
+        /// Asks the pump to close the chunk covering <paramref name="utc"/> as soon as the audio
+        /// written reaches that instant, instead of waiting for the chunk to fill to the segment
+        /// length. Completes once the covering chunk's WAV is closed; callers bound the wait. A
+        /// request that outlives its caller is harmless — the pump just rotates once, early.
+        /// </summary>
+        public async Task FlushChunksThroughAsync(DateTime utc)
+        {
+            // Keep the furthest-out request: a rotation past the maximum satisfies every earlier
+            // one, while letting a later request overwrite an earlier one would leave the earlier
+            // caller waiting on a rotation that never comes.
+            long requested = utc.Ticks, seen;
+            while ((seen = Interlocked.Read(ref _flushThroughUtcTicks)) < requested &&
+                Interlocked.CompareExchange(ref _flushThroughUtcTicks, requested, seen) != seen)
+            {
+            }
+
+            while (_running && Interlocked.Read(ref _flushThroughUtcTicks) != 0)
+            {
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Closes the current chunk early once a flush request's instant is covered by the audio
+        /// written so far, so an export can read it without waiting out the chunk length. The pump
+        /// paces writes to the wall clock and the mix pads unfilled reads, so coverage arrives
+        /// within a pump tick of the requested instant. Runs under the gate on the pump thread.
+        /// </summary>
+        private void SettleFlushRequestLocked()
+        {
+            var requested = Interlocked.Read(ref _flushThroughUtcTicks);
+            if (requested == 0)
+            {
+                return;
+            }
+
+            var requestFrames = (long)Math.Ceiling(
+                (new DateTime(requested, DateTimeKind.Utc) - _pumpStartUtc).TotalSeconds *
+                _outputFormat.SampleRate);
+            if (_writer == null || _chunkStartWallClockSamples >= requestFrames)
+            {
+                // Nothing open, or the covering chunk already rotated out and closed.
+                Interlocked.CompareExchange(ref _flushThroughUtcTicks, 0, requested);
+                return;
+            }
+
+            if (TotalFramesWritten() >= requestFrames)
+            {
+                CloseChunkLocked();
+                OpenChunkLocked();
+                Interlocked.CompareExchange(ref _flushThroughUtcTicks, 0, requested);
+            }
+        }
+
+        /// <summary>
+        /// Asks the pump to close the stamped sidecar chunks covering <paramref name="utc"/> once
+        /// the wall clock is safely past it, instead of waiting out their natural chunk length.
+        /// Also flushes the main chunk when this recorder writes its sidecar through the main
+        /// writer (the unstamped chime mode). Completes once the covering chunks are closed;
+        /// callers bound the wait.
+        /// </summary>
+        public async Task FlushAuxiliaryChunksThroughAsync(DateTime utc)
+        {
+            long requested = utc.Ticks, seen;
+            while ((seen = Interlocked.Read(ref _flushAuxThroughUtcTicks)) < requested &&
+                Interlocked.CompareExchange(ref _flushAuxThroughUtcTicks, requested, seen) != seen)
+            {
+            }
+
+            var mainFlush = _capturePlayniteChimes ? FlushChunksThroughAsync(utc) : null;
+            while (_running && Interlocked.Read(ref _flushAuxThroughUtcTicks) != 0)
+            {
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+
+            if (mainFlush != null)
+            {
+                await mainFlush.ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Closes the sidecar chunks covering an auxiliary flush request once the wall clock is
+        /// past the request by <see cref="AuxiliaryFlushMarginMs"/> (sidecar writes trail the
+        /// audio by capture delivery latency). Sparse tracks reopen on their next packet, exactly
+        /// as after a natural expiry. Runs under the gate on the pump thread.
+        /// </summary>
+        private void SettleAuxiliaryFlushRequestLocked(DateTime nowUtc)
+        {
+            var requested = Interlocked.Read(ref _flushAuxThroughUtcTicks);
+            if (requested == 0)
+            {
+                return;
+            }
+
+            if (nowUtc.Ticks - requested < TimeSpan.FromMilliseconds(AuxiliaryFlushMarginMs).Ticks)
+            {
+                return;
+            }
+
+            var requestUtc = new DateTime(requested, DateTimeKind.Utc);
+            foreach (var track in new[]
+            {
+                _stampedChimeTrack,
+                _stampedGameReferenceTrack,
+                _stampedNonGameTrack,
+            })
+            {
+                if (track?.Writer == null || !track.OriginUtc.HasValue)
+                {
+                    continue;
+                }
+
+                var requestFrame = RecordingPaths.AudioFrameAt(
+                    track.OriginUtc.Value, requestUtc, track.Format.SampleRate);
+                if (track.ChunkStartFrame <= requestFrame)
+                {
+                    CloseAuxiliaryChunkLocked(track);
+                }
+            }
+
+            Interlocked.CompareExchange(ref _flushAuxThroughUtcTicks, 0, requested);
         }
 
         private void FailLocked(Exception ex, string message)
