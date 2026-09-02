@@ -266,6 +266,7 @@ namespace PlayniteAchievements.Views
                 ProviderNameTextBox,
                 ProviderColorTextBox,
                 PickProviderColorButton,
+                ProviderIconSourceTextBox,
                 BrowseProviderSvgButton,
                 DeleteCustomProviderButton,
                 AddButton,
