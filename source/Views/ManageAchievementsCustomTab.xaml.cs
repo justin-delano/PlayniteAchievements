@@ -169,11 +169,10 @@ namespace PlayniteAchievements.Views
                 DeleteButton,
                 PasteImportButton,
                 ImportFileButton,
-                ExportTemplateButton,
+                ExportButton,
                 RevertButton,
                 ClearButton,
                 SaveButton,
-                EditIconsButton,
                 CustomAchievementsGrid
             };
 
