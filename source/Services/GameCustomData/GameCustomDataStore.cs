@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Services.GameCustomData
     /// <summary>
     /// Orchestrates per-game custom data persistence and migration.
     /// </summary>
-    public sealed class GameCustomDataStore
+    public sealed partial class GameCustomDataStore
     {
         private const string DatabaseFileName = "game_custom_data.db";
 
