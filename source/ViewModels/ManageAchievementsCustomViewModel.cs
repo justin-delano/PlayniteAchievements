@@ -22,6 +22,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
@@ -234,12 +235,74 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        /// <summary>
+        /// Icon key resolved the same way every other surface resolves it, so the preview shows
+        /// the default icon until an SVG has been imported.
+        /// </summary>
         public string SelectedProviderIconKey =>
-            _selectedCustomProvider == null ? null : CustomProviderKeys.BuildIconKey(_selectedCustomProvider.Id);
+            _selectedCustomProvider != null &&
+            ProviderRegistry.TryResolveProviderVisuals(CustomProviderKeys.Build(_selectedCustomProvider.Id), out var iconKey, out _)
+                ? iconKey
+                : null;
 
         public string SelectedProviderPreviewColorHex => _selectedCustomProvider?.ColorHex;
 
-        public string SelectedProviderIconFileName => _selectedCustomProvider?.IconSourceFileName;
+        /// <summary>Swatch brush for the color field; transparent while nothing is selected.</summary>
+        public Brush SelectedProviderColorBrush
+        {
+            get
+            {
+                var colorHex = _selectedCustomProvider?.ColorHex;
+                if (!string.IsNullOrWhiteSpace(colorHex))
+                {
+                    try
+                    {
+                        if (ColorConverter.ConvertFromString(colorHex.Trim()) is Color color)
+                        {
+                            var brush = new SolidColorBrush(color);
+                            brush.Freeze();
+                            return brush;
+                        }
+                    }
+                    catch
+                    {
+                        // Fall through to transparent.
+                    }
+                }
+
+                return Brushes.Transparent;
+            }
+        }
+
+        /// <summary>
+        /// The link or local path the icon was imported from. Committing a new value imports it;
+        /// clearing it returns the provider to the default icon.
+        /// </summary>
+        public string SelectedProviderIconSource
+        {
+            get => _selectedCustomProvider?.IconSource;
+            set
+            {
+                var source = NormalizeText(value);
+                if (_selectedCustomProvider == null || string.Equals(source, _selectedCustomProvider.IconSource, StringComparison.Ordinal))
+                {
+                    OnPropertyChanged(nameof(SelectedProviderIconSource));
+                    return;
+                }
+
+                if (source == null)
+                {
+                    PersistSelectedProvider(definition =>
+                    {
+                        definition.IconPathData = null;
+                        definition.IconSource = null;
+                    });
+                    return;
+                }
+
+                _ = ImportIconSourceAsync(source);
+            }
+        }
 
         public CustomAchievementEditItem SelectedRow
         {
@@ -422,11 +485,19 @@ namespace PlayniteAchievements.ViewModels
                 var selected = defaultOption;
                 foreach (var definition in _customProviderStore?.GetAll() ?? (IReadOnlyList<CustomProviderDefinition>)Array.Empty<CustomProviderDefinition>())
                 {
+                    // Resolved through the registry so a provider without an imported SVG lists
+                    // with the default icon, exactly as the rest of the UI renders it.
+                    if (!ProviderRegistry.TryResolveProviderVisuals(CustomProviderKeys.Build(definition.Id), out var iconKey, out var colorHex))
+                    {
+                        iconKey = CustomProviderKeys.BaseIconKey;
+                        colorHex = definition.ColorHex;
+                    }
+
                     var option = new CustomProviderOption(
                         definition.Id,
                         definition.Name,
-                        CustomProviderKeys.BuildIconKey(definition.Id),
-                        definition.ColorHex);
+                        iconKey,
+                        colorHex);
                     CustomProviderOptions.Add(option);
                     if (assignedId != null && string.Equals(option.Id, assignedId, StringComparison.OrdinalIgnoreCase))
                     {
@@ -459,8 +530,64 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(SelectedProviderColorHex));
             OnPropertyChanged(nameof(SelectedProviderIconKey));
             OnPropertyChanged(nameof(SelectedProviderPreviewColorHex));
-            OnPropertyChanged(nameof(SelectedProviderIconFileName));
+            OnPropertyChanged(nameof(SelectedProviderColorBrush));
+            OnPropertyChanged(nameof(SelectedProviderIconSource));
             RaiseCommandStates();
+        }
+
+        /// <summary>
+        /// Imports an SVG from a link or a local path off the UI thread, then stores its geometry
+        /// and the source text so the user can see and edit where the icon came from.
+        /// </summary>
+        private async Task ImportIconSourceAsync(string source)
+        {
+            var targetId = _selectedCustomProvider?.Id;
+            if (targetId == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var pathData = await Task.Run(async () =>
+                {
+                    if (IsHttpUrl(source))
+                    {
+                        var markup = await HttpClientFactory.Shared.GetStringAsync(source).ConfigureAwait(false);
+                        return SvgGeometryImporter.ImportMarkup(markup);
+                    }
+
+                    return SvgGeometryImporter.ImportFile(source);
+                }).ConfigureAwait(true);
+
+                if (!string.Equals(_selectedCustomProvider?.Id, targetId, StringComparison.OrdinalIgnoreCase))
+                {
+                    // The selection moved while the import ran; the result no longer applies.
+                    return;
+                }
+
+                PersistSelectedProvider(definition =>
+                {
+                    definition.IconPathData = pathData;
+                    definition.IconSource = source;
+                });
+            }
+            catch (SvgGeometryImportException ex)
+            {
+                _logger?.Warn(ex, $"Failed importing SVG '{source}' for a custom provider.");
+                SetStatus(
+                    ResourceProvider.GetString(ex.NoDrawableShapes
+                        ? "LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes"
+                        : "LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid"),
+                    true);
+                OnPropertyChanged(nameof(SelectedProviderIconSource));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed loading SVG '{source}' for a custom provider.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+                OnPropertyChanged(nameof(SelectedProviderIconSource));
+            }
         }
 
         private void ApplyCustomProviderAssignment(string customProviderId)
@@ -596,25 +723,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            try
-            {
-                var pathData = SvgGeometryImporter.ImportFile(dialog.FileName);
-                var fileName = Path.GetFileName(dialog.FileName);
-                PersistSelectedProvider(definition =>
-                {
-                    definition.IconPathData = pathData;
-                    definition.IconSourceFileName = fileName;
-                });
-            }
-            catch (SvgGeometryImportException ex)
-            {
-                _logger?.Warn(ex, $"Failed importing SVG '{dialog.FileName}' for a custom provider.");
-                SetStatus(
-                    ResourceProvider.GetString(ex.NoDrawableShapes
-                        ? "LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes"
-                        : "LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid"),
-                    true);
-            }
+            SelectedProviderIconSource = dialog.FileName;
         }
 
         private void PickColor()
