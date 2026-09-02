@@ -354,8 +354,11 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
+                    <!-- Star-sized so the cells cover the full row width: a click beyond the last
+                         column lands on no cell and would not select the row. -->
                     <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Description}"
-                                            Width="240"
+                                            Width="*"
+                                            MinWidth="200"
                                             SortMemberPath="Description">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
