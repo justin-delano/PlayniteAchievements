@@ -885,7 +885,10 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
                 _gameDataSnapshotProvider,
                 _settings,
-                _logger);
+                _logger,
+                PlayniteAchievementsPlugin.Instance?.CustomProviderStore,
+                // Same picker the Display > Appearance platform colors use.
+                currentValue => PlayniteAchievementsPlugin.Instance?.PickColor(Window.GetWindow(this), currentValue));
             _customViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;
             _customViewModel.AssignmentsChanged += CustomViewModel_AssignmentsChanged;
             _customViewModel.CapstoneChanged += CustomViewModel_CapstoneChanged;
@@ -1232,6 +1235,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _customViewModel.CustomAchievementsSaved -= CustomViewModel_CustomAchievementsSaved;
                 _customViewModel.AssignmentsChanged -= CustomViewModel_AssignmentsChanged;
                 _customViewModel.CapstoneChanged -= CustomViewModel_CapstoneChanged;
+                _customViewModel.Detach();
             }
 
             _customControl = null;
