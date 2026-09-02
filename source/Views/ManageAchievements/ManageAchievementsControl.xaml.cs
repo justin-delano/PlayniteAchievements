@@ -1093,6 +1093,13 @@ namespace PlayniteAchievements.Views.ManageAchievements
             var changedApiNames = _pendingIconOverrideApiNames.ToList();
             _pendingIconOverrideApiNames.Clear();
             _viewModel?.NotifyIconOverridesChanged(changedApiNames);
+
+            // Custom achievement icons are written into their definitions, which the Custom
+            // tab edits; it reloads on its next visit unless it holds unsaved edits.
+            if (changedApiNames.Any(CustomAchievementProjectionService.IsCustomApiName))
+            {
+                _customRefreshPending = true;
+            }
         }
 
         private void RefreshService_GameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
