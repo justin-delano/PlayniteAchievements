@@ -32,8 +32,6 @@ namespace PlayniteAchievements.ViewModels
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly ManagedCustomIconService _managedCustomIconService;
         private readonly ILogger _logger;
-        private readonly CustomAchievementTextImportService _textImportService =
-            new CustomAchievementTextImportService();
 
         private CustomAchievementEditItem _selectedRow;
         private bool _hasChanges;
@@ -62,7 +60,6 @@ namespace PlayniteAchievements.ViewModels
             AddCommand = new RelayCommand(_ => AddRow(), _ => !IsSaving);
             DuplicateCommand = new RelayCommand(_ => DuplicateSelected(), _ => SelectedRow != null && !IsSaving);
             DeleteCommand = new RelayCommand(_ => DeleteSelected(), _ => SelectedRow != null && !IsSaving);
-            PasteImportCommand = new RelayCommand(_ => PasteImport(), _ => !IsSaving);
             ImportFileCommand = new RelayCommand(_ => ImportFile(), _ => !IsSaving);
             ExportTemplateCommand = new RelayCommand(_ => ExportTemplate(), _ => !IsSaving);
             ExportAchievementsCommand = new RelayCommand(_ => ExportAchievements(), _ => HasRows && !IsSaving);
@@ -82,8 +79,6 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand DuplicateCommand { get; }
 
         public RelayCommand DeleteCommand { get; }
-
-        public RelayCommand PasteImportCommand { get; }
 
         public RelayCommand ImportFileCommand { get; }
 
@@ -162,7 +157,7 @@ namespace PlayniteAchievements.ViewModels
 
         public bool CanSave => HasChanges && !HasValidationErrors && !IsSaving;
 
-        public IReadOnlyList<CustomAchievementSelectionOption> RarityOptions { get; } =
+        public static IReadOnlyList<CustomAchievementSelectionOption> RarityOptions { get; } =
             new[]
             {
                 RarityTier.Common,
@@ -271,25 +266,6 @@ namespace PlayniteAchievements.ViewModels
             RefreshComputedState();
         }
 
-        private void PasteImport()
-        {
-            try
-            {
-                if (!Clipboard.ContainsText())
-                {
-                    SetStatus(L("LOCPlayAch_ManageAchievements_Custom_NoClipboardText", "Clipboard does not contain text."), true);
-                    return;
-                }
-
-                ImportText(Clipboard.GetText());
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, $"Failed importing custom achievements from clipboard for gameId={_gameId}.");
-                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
-            }
-        }
-
         private void ImportFile()
         {
             var dialog = new OpenFileDialog
@@ -313,11 +289,6 @@ namespace PlayniteAchievements.ViewModels
                 _logger?.Warn(ex, $"Failed importing custom achievements from '{dialog.FileName}' for gameId={_gameId}.");
                 SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
             }
-        }
-
-        private void ImportText(string text)
-        {
-            MergeImportedDefinitions(_textImportService.Import(text));
         }
 
         private void MergeImportedDefinitions(CustomAchievementTextImportResult result)
@@ -714,7 +685,6 @@ namespace PlayniteAchievements.ViewModels
             AddCommand.RaiseCanExecuteChanged();
             DuplicateCommand.RaiseCanExecuteChanged();
             DeleteCommand.RaiseCanExecuteChanged();
-            PasteImportCommand.RaiseCanExecuteChanged();
             ImportFileCommand.RaiseCanExecuteChanged();
             ExportTemplateCommand.RaiseCanExecuteChanged();
             ExportAchievementsCommand.RaiseCanExecuteChanged();
@@ -1191,7 +1161,6 @@ namespace PlayniteAchievements.ViewModels
             var row = new CustomAchievementEditItem
             {
                 DisplayName = "New Achievement " + Math.Max(1, index).ToString(CultureInfo.InvariantCulture),
-                Rarity = "Common",
                 IsNew = true
             };
             row.SyncRarityInputFromState();
