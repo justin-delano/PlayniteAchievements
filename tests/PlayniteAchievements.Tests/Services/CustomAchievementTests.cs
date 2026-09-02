@@ -309,5 +309,70 @@ namespace PlayniteAchievements.Services.Tests
                 }
             }
         }
+
+        [TestMethod]
+        public void CreateSyntheticGameData_StampsProviderPlatformKeyFromAssignedCustomProvider()
+        {
+            var gameId = Guid.NewGuid();
+            var definitions = new List<CustomAchievementDefinition>
+            {
+                new CustomAchievementDefinition { DisplayName = "Solo" }
+            };
+
+            var assigned = CustomAchievementProjectionService.CreateSyntheticGameData(gameId, null, definitions, null, "Custom:abc");
+            Assert.AreEqual(CustomAchievementProjectionService.ProviderKey, assigned.ProviderKey);
+            Assert.AreEqual("Custom:abc", assigned.ProviderPlatformKey);
+            Assert.AreEqual("Custom:abc", assigned.EffectiveProviderKey);
+
+            var unassigned = CustomAchievementProjectionService.CreateSyntheticGameData(gameId, null, definitions);
+            Assert.IsNull(unassigned.ProviderPlatformKey);
+            Assert.AreEqual(CustomAchievementProjectionService.ProviderKey, unassigned.EffectiveProviderKey);
+        }
+
+        [TestMethod]
+        public void Merge_CustomOnlyGame_CarriesResolvedCustomProviderKeyIntoSummaryAndRecentUnlocks()
+        {
+            var gameId = Guid.NewGuid();
+            var unlockTime = new DateTime(2026, 3, 4, 5, 6, 7, DateTimeKind.Utc);
+            Dictionary<Guid, GameCustomDataFile> BuildCustomData() => new Dictionary<Guid, GameCustomDataFile>
+            {
+                [gameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    CustomProviderId = "abc",
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition { Id = "solo", DisplayName = "Solo", Unlocked = true, UnlockTimeUtc = unlockTime }
+                    }
+                }
+            };
+
+            var resolved = new CachedSummaryData();
+            CustomAchievementSummaryMerger.Merge(
+                resolved,
+                BuildCustomData(),
+                new HashSet<Guid>(),
+                10,
+                _ => "Solo Game",
+                null,
+                id => id == "abc" ? "Custom:abc" : null);
+
+            var game = resolved.Games.Single();
+            Assert.AreEqual(CustomAchievementProjectionService.ProviderKey, game.ProviderKey);
+            Assert.AreEqual("Custom:abc", game.ProviderPlatformKey);
+            Assert.AreEqual("Custom:abc", resolved.RecentUnlocks.Single().ProviderPlatformKey);
+
+            var unresolved = new CachedSummaryData();
+            CustomAchievementSummaryMerger.Merge(
+                unresolved,
+                BuildCustomData(),
+                new HashSet<Guid>(),
+                10,
+                _ => "Solo Game",
+                null,
+                _ => null);
+
+            Assert.IsNull(unresolved.Games.Single().ProviderPlatformKey);
+        }
     }
 }
