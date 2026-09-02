@@ -30,12 +30,8 @@ namespace PlayniteAchievements.Services
             UnlockedIconPath,
             LockedIconPath,
             Points,
-            ScaledPoints,
-            Category,
-            CategoryType,
             TrophyType,
             Hidden,
-            IsCapstone,
             Rarity,
             GlobalPercentUnlocked,
             ProgressNum,
@@ -68,19 +64,10 @@ namespace PlayniteAchievements.Services
                 ["points"] = Field.Points,
                 ["score"] = Field.Points,
                 ["gamerscore"] = Field.Points,
-                ["scaledpoints"] = Field.ScaledPoints,
-                ["trueratio"] = Field.ScaledPoints,
-                ["category"] = Field.Category,
-                ["categorylabel"] = Field.Category,
-                ["type"] = Field.CategoryType,
-                ["categorytype"] = Field.CategoryType,
                 ["trophy"] = Field.TrophyType,
                 ["trophytype"] = Field.TrophyType,
                 ["hidden"] = Field.Hidden,
                 ["secret"] = Field.Hidden,
-                ["capstone"] = Field.IsCapstone,
-                ["iscapstone"] = Field.IsCapstone,
-                ["completion"] = Field.IsCapstone,
                 ["rarity"] = Field.Rarity,
                 ["percent"] = Field.GlobalPercentUnlocked,
                 ["globalpercent"] = Field.GlobalPercentUnlocked,
@@ -240,15 +227,6 @@ namespace PlayniteAchievements.Services
                 case Field.Points:
                     definition.Points = ParseNonNegativeInt(result, value, rowNumber, "points");
                     break;
-                case Field.ScaledPoints:
-                    definition.ScaledPoints = ParseNonNegativeInt(result, value, rowNumber, "scaled points");
-                    break;
-                case Field.Category:
-                    definition.Category = value;
-                    break;
-                case Field.CategoryType:
-                    definition.CategoryType = value;
-                    break;
                 case Field.TrophyType:
                     definition.TrophyType = value;
                     break;
@@ -260,16 +238,6 @@ namespace PlayniteAchievements.Services
                     else
                     {
                         result.Errors.Add($"Row {rowNumber}: hidden must be true/false, yes/no, or 1/0.");
-                    }
-                    break;
-                case Field.IsCapstone:
-                    if (TryParseBoolean(value, out var capstone))
-                    {
-                        definition.IsCapstone = capstone;
-                    }
-                    else
-                    {
-                        result.Errors.Add($"Row {rowNumber}: capstone must be true/false, yes/no, or 1/0.");
                     }
                     break;
                 case Field.Rarity:
