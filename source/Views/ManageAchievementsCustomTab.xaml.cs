@@ -57,6 +57,17 @@ namespace PlayniteAchievements.Views
             button.ContextMenu.IsOpen = true;
         }
 
+        private void IconImage_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!((sender as FrameworkElement)?.DataContext is CustomAchievementEditItem row) || !row.CanReveal)
+            {
+                return;
+            }
+
+            row.ToggleReveal();
+            e.Handled = true;
+        }
+
         private void RarityMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (!(e.OriginalSource is MenuItem menuItem) ||
