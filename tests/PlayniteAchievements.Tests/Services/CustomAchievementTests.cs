@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.GameCustomData;
 using System;
 using System.Collections.Generic;
@@ -143,6 +145,94 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(50, definition.GlobalPercentUnlocked);
             Assert.AreEqual(1, definition.ProgressNum);
             Assert.AreEqual(2, definition.ProgressDenom);
+        }
+
+        [TestMethod]
+        public void SummaryMerger_AppendsCustomAchievementsToExistingAndCustomOnlyGames()
+        {
+            var existingGameId = Guid.NewGuid();
+            var customOnlyGameId = Guid.NewGuid();
+            var excludedGameId = Guid.NewGuid();
+            var unlockTime = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+
+            var summary = new CachedSummaryData();
+            summary.Games.Add(new CachedGameSummaryData
+            {
+                PlayniteGameId = existingGameId,
+                CacheKey = "steam:1",
+                ProviderKey = "Steam",
+                GameName = "Existing",
+                HasAchievements = true,
+                TotalAchievements = 2,
+                UnlockedAchievements = 1,
+                TotalCommonPossible = 2,
+                CommonCount = 1
+            });
+
+            var customData = new Dictionary<Guid, GameCustomDataFile>
+            {
+                [existingGameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = existingGameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition { Id = "a", DisplayName = "A", Unlocked = true, UnlockTimeUtc = unlockTime, Rarity = "Rare", Points = 10, TrophyType = "gold" },
+                        new CustomAchievementDefinition { Id = "b", DisplayName = "B" },
+                        new CustomAchievementDefinition { Id = "c", DisplayName = "C", Unlocked = true }
+                    },
+                    SummaryFilteredAchievementApiNames = new List<string> { CustomAchievementProjectionService.BuildApiName("c") }
+                },
+                [customOnlyGameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = customOnlyGameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition { Id = "solo", DisplayName = "Solo", Unlocked = true, UnlockTimeUtc = unlockTime.AddDays(1) }
+                    }
+                },
+                [excludedGameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = excludedGameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition { Id = "x", DisplayName = "X", Unlocked = true }
+                    }
+                }
+            };
+
+            CustomAchievementSummaryMerger.Merge(
+                summary,
+                customData,
+                new HashSet<Guid> { excludedGameId },
+                recentAchievementDetailLimit: 1,
+                resolveGameName: id => id == customOnlyGameId ? "Solo Game" : null,
+                managedCustomIconService: null);
+
+            var existing = summary.Games.Single(g => g.PlayniteGameId == existingGameId);
+            Assert.AreEqual(4, existing.TotalAchievements, "two stored plus a and b; c is filtered from summaries");
+            Assert.AreEqual(2, existing.UnlockedAchievements);
+            Assert.AreEqual(1, existing.TotalRarePossible);
+            Assert.AreEqual(1, existing.RareCount);
+            Assert.AreEqual(3, existing.TotalCommonPossible);
+            Assert.AreEqual(1, existing.TrophyGoldTotal);
+            Assert.AreEqual(1, existing.TrophyGoldCount);
+            Assert.AreEqual(10, existing.Points);
+            Assert.AreEqual(unlockTime, existing.LastUnlockUtc);
+            Assert.IsFalse(existing.IsCompleted);
+
+            var solo = summary.Games.Single(g => g.PlayniteGameId == customOnlyGameId);
+            Assert.AreEqual("Solo Game", solo.GameName);
+            Assert.AreEqual(CustomAchievementProjectionService.ProviderKey, solo.ProviderKey);
+            Assert.IsTrue(solo.HasAchievements);
+            Assert.IsTrue(solo.IsCompleted);
+            Assert.IsFalse(summary.Games.Any(g => g.PlayniteGameId == excludedGameId));
+
+            Assert.IsTrue(summary.HasMoreRecentUnlocks);
+            Assert.AreEqual(1, summary.RecentUnlocks.Count);
+            Assert.AreEqual(CustomAchievementProjectionService.BuildApiName("solo"), summary.RecentUnlocks[0].ApiName, "newest unlock first");
+            Assert.AreEqual(1, summary.GlobalUnlockCountsByDate[unlockTime.Date]);
+            Assert.AreEqual(1, summary.GlobalUnlockCountsByDate[unlockTime.AddDays(1).Date]);
+            Assert.AreEqual(1, summary.UnlockCountsByDateByGame[existingGameId][unlockTime.Date]);
         }
 
         [TestMethod]
