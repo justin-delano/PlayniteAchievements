@@ -482,6 +482,43 @@ namespace PlayniteAchievements.Services.Achievements
             });
         }
 
+        /// <summary>
+        /// Writes icon paths edited in the Icons tab straight into the matching custom achievement
+        /// definitions, keyed by projected ApiName. Custom achievements carry their icons on the
+        /// definition rather than in the override maps, so both tabs edit one value.
+        /// </summary>
+        public void SetCustomAchievementIcons(
+            Guid gameId,
+            IReadOnlyDictionary<string, (string Unlocked, string Locked)> iconsByApiName)
+        {
+            if (gameId == Guid.Empty || iconsByApiName == null || iconsByApiName.Count == 0)
+            {
+                return;
+            }
+
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                if (customData.CustomAchievements == null)
+                {
+                    return;
+                }
+
+                foreach (var definition in customData.CustomAchievements)
+                {
+                    var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                    if (definition == null ||
+                        string.IsNullOrWhiteSpace(apiName) ||
+                        !iconsByApiName.TryGetValue(apiName, out var icons))
+                    {
+                        continue;
+                    }
+
+                    definition.UnlockedIconPath = string.IsNullOrWhiteSpace(icons.Unlocked) ? null : icons.Unlocked.Trim();
+                    definition.LockedIconPath = string.IsNullOrWhiteSpace(icons.Locked) ? null : icons.Locked.Trim();
+                }
+            });
+        }
+
         public void SetSeparateLockedIconOverride(Guid gameId, bool enabled)
         {
             if (gameId == Guid.Empty)
