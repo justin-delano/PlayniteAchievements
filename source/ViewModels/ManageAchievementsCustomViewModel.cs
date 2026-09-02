@@ -40,7 +40,6 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasRows;
         private bool _hasValidationErrors;
         private bool _isSaving;
-        private bool _isIconEditorOpen;
         private string _statusText;
         private bool _statusIsError;
         private string _baselineCollectionSignature;
@@ -66,8 +65,7 @@ namespace PlayniteAchievements.ViewModels
             PasteImportCommand = new RelayCommand(_ => PasteImport(), _ => !IsSaving);
             ImportFileCommand = new RelayCommand(_ => ImportFile(), _ => !IsSaving);
             ExportTemplateCommand = new RelayCommand(_ => ExportTemplate(), _ => !IsSaving);
-            ToggleIconEditorCommand = new RelayCommand(_ => IsIconEditorOpen = !IsIconEditorOpen, _ => SelectedRow != null && !IsSaving);
-            CloseIconEditorCommand = new RelayCommand(_ => IsIconEditorOpen = false, _ => IsIconEditorOpen);
+            ExportAchievementsCommand = new RelayCommand(_ => ExportAchievements(), _ => HasRows && !IsSaving);
             SaveCommand = new AsyncCommand(_ => SaveAsync(), _ => CanSave);
             RevertCommand = new RelayCommand(_ => Revert(), _ => HasChanges && !IsSaving);
             ClearCommand = new RelayCommand(_ => ClearRows(), _ => HasRows && !IsSaving);
@@ -91,9 +89,7 @@ namespace PlayniteAchievements.ViewModels
 
         public RelayCommand ExportTemplateCommand { get; }
 
-        public RelayCommand ToggleIconEditorCommand { get; }
-
-        public RelayCommand CloseIconEditorCommand { get; }
+        public RelayCommand ExportAchievementsCommand { get; }
 
         public AsyncCommand SaveCommand { get; }
 
@@ -109,7 +105,6 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _selectedRow, value))
                 {
                     OnPropertyChanged(nameof(HasSelectedRow));
-                    OnPropertyChanged(nameof(ShowIconEditor));
                     RaiseCommandStates();
                 }
             }
@@ -166,21 +161,6 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool CanSave => HasChanges && !HasValidationErrors && !IsSaving;
-
-        public bool IsIconEditorOpen
-        {
-            get => _isIconEditorOpen;
-            set
-            {
-                if (SetValueAndReturn(ref _isIconEditorOpen, value))
-                {
-                    OnPropertyChanged(nameof(ShowIconEditor));
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public bool ShowIconEditor => IsIconEditorOpen && SelectedRow != null;
 
         public IReadOnlyList<CustomAchievementSelectionOption> RarityOptions { get; } =
             new[]
@@ -385,12 +365,35 @@ namespace PlayniteAchievements.ViewModels
             RefreshComputedState();
         }
 
+        private const string ExportCsvHeader =
+            "id,title,description,unlocked,unlockTimeUtc,points,trophyType,hidden,rarity,percent,progress,total,unlockedIcon,lockedIcon";
+
         private void ExportTemplate()
+        {
+            ExportCsv("custom-achievements-template.csv", new[] { ExportCsvHeader }, "custom achievement template");
+        }
+
+        private void ExportAchievements()
+        {
+            var definitions = BuildValidatedDefinitions(out _, out var errors);
+            if (errors.Count > 0)
+            {
+                SetStatus(string.Join(Environment.NewLine, errors.Take(8)), true);
+                RefreshComputedState();
+                return;
+            }
+
+            var lines = new List<string> { ExportCsvHeader };
+            lines.AddRange(definitions.Select(FormatCsvRow));
+            ExportCsv("custom-achievements.csv", lines, "custom achievements");
+        }
+
+        private void ExportCsv(string defaultFileName, IEnumerable<string> lines, string description)
         {
             var dialog = new SaveFileDialog
             {
                 Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                FileName = "custom-achievements-template.csv",
+                FileName = defaultFileName,
                 OverwritePrompt = true
             };
 
@@ -401,15 +404,48 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                var header = "id,title,description,unlocked,unlockTimeUtc,points,rarity,unlockedIcon,lockedIcon";
-                File.WriteAllText(dialog.FileName, header + Environment.NewLine);
+                File.WriteAllLines(dialog.FileName, lines);
                 SetStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), false);
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed exporting custom achievement template to '{dialog.FileName}'.");
+                _logger?.Warn(ex, $"Failed exporting {description} to '{dialog.FileName}'.");
                 SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
             }
+        }
+
+        private static string FormatCsvRow(CustomAchievementDefinition definition)
+        {
+            var fields = new[]
+            {
+                definition.Id,
+                definition.DisplayName,
+                definition.Description,
+                definition.Unlocked ? "true" : "false",
+                definition.UnlockTimeUtc?.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+                definition.Points?.ToString(CultureInfo.InvariantCulture),
+                definition.TrophyType,
+                definition.Hidden ? "true" : "false",
+                definition.Rarity,
+                definition.GlobalPercentUnlocked?.ToString(CultureInfo.InvariantCulture),
+                definition.ProgressNum?.ToString(CultureInfo.InvariantCulture),
+                definition.ProgressDenom?.ToString(CultureInfo.InvariantCulture),
+                definition.UnlockedIconPath,
+                definition.LockedIconPath
+            };
+
+            return string.Join(",", fields.Select(EscapeCsv));
+        }
+
+        private static string EscapeCsv(string value)
+        {
+            var safe = value ?? string.Empty;
+            if (safe.IndexOfAny(new[] { ',', '"', '\r', '\n' }) < 0)
+            {
+                return safe;
+            }
+
+            return "\"" + safe.Replace("\"", "\"\"") + "\"";
         }
 
         private async Task SaveAsync()
@@ -702,8 +738,7 @@ namespace PlayniteAchievements.ViewModels
             PasteImportCommand.RaiseCanExecuteChanged();
             ImportFileCommand.RaiseCanExecuteChanged();
             ExportTemplateCommand.RaiseCanExecuteChanged();
-            ToggleIconEditorCommand.RaiseCanExecuteChanged();
-            CloseIconEditorCommand.RaiseCanExecuteChanged();
+            ExportAchievementsCommand.RaiseCanExecuteChanged();
             SaveCommand.RaiseCanExecuteChanged();
             RevertCommand.RaiseCanExecuteChanged();
             ClearCommand.RaiseCanExecuteChanged();
