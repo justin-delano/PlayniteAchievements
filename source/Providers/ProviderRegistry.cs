@@ -19,15 +19,19 @@ namespace PlayniteAchievements.Providers
     /// </summary>
     public sealed class CustomProviderVisuals
     {
-        public CustomProviderVisuals(string name, string colorHex)
+        public CustomProviderVisuals(string name, string colorHex, bool hasIcon = true)
         {
             Name = name;
             ColorHex = colorHex;
+            HasIcon = hasIcon;
         }
 
         public string Name { get; }
 
         public string ColorHex { get; }
+
+        /// <summary>False until the user imports an SVG; the provider then shows the default icon in its own color.</summary>
+        public bool HasIcon { get; }
     }
 
     /// <summary>
@@ -324,7 +328,9 @@ namespace PlayniteAchievements.Providers
                 var custom = CustomProviderResolver?.Invoke(customProviderId);
                 if (custom != null && IsValidColor(custom.ColorHex))
                 {
-                    iconKey = CustomProviderKeys.BuildIconKey(customProviderId);
+                    iconKey = custom.HasIcon
+                        ? CustomProviderKeys.BuildIconKey(customProviderId)
+                        : CustomProviderKeys.BaseIconKey;
                     colorHex = custom.ColorHex.Trim();
                     return true;
                 }
