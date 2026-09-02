@@ -132,6 +132,23 @@ namespace PlayniteAchievements.Services.Hydration
             }
         }
 
+        /// <summary>
+        /// Appends the game's custom achievement projections with no overlays applied. Custom
+        /// achievements exist only in custom data, so a raw cache read omits them; callers that
+        /// need the un-overlaid row set including custom rows go through here.
+        /// </summary>
+        public void AppendCustomAchievements(GameAchievementData data)
+        {
+            if (data?.PlayniteGameId == null)
+            {
+                return;
+            }
+
+            var gameId = data.PlayniteGameId.Value;
+            var customData = GameCustomDataLookup.ResolveGameCustomData(gameId, Persisted, _gameCustomDataStore);
+            AppendCustomAchievements(data, gameId, customData);
+        }
+
         private static void AppendCustomAchievements(
             GameAchievementData data,
             Guid gameId,
