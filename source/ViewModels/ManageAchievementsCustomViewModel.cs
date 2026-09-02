@@ -763,6 +763,8 @@ namespace PlayniteAchievements.ViewModels
         private bool _hidden;
         private string _rarity;
         private string _globalPercentUnlockedText;
+        private string _rarityInput;
+        private bool _rarityInputInvalid;
         private string _progressNumText;
         private string _progressDenomText;
         private string _validationMessage;
@@ -907,6 +909,95 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _globalPercentUnlockedText;
             set => SetValue(ref _globalPercentUnlockedText, value);
+        }
+
+        /// <summary>
+        /// The single rarity editor's text. A number (optionally ending in %) sets the global
+        /// unlock percent and derives the tier from the rarity thresholds; a tier name or its
+        /// display text sets the tier and clears the percent. Anything else is flagged invalid.
+        /// </summary>
+        public string RarityInput
+        {
+            get => _rarityInput;
+            set
+            {
+                if (SetValueAndReturn(ref _rarityInput, value))
+                {
+                    ApplyRarityInput(value);
+                }
+            }
+        }
+
+        private void ApplyRarityInput(string value)
+        {
+            var normalized = NormalizeText(value);
+            _rarityInputInvalid = false;
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                Rarity = null;
+                GlobalPercentUnlockedText = null;
+                return;
+            }
+
+            var percentText = normalized.TrimEnd('%').Trim();
+            if (double.TryParse(percentText, NumberStyles.Float, CultureInfo.InvariantCulture, out var percent) &&
+                percent >= 0 &&
+                percent <= 100)
+            {
+                GlobalPercentUnlockedText = percentText;
+                Rarity = PercentRarityHelper.GetRarityTier(percent).ToString();
+                return;
+            }
+
+            var tier = TryMatchRarityTier(normalized);
+            if (tier.HasValue)
+            {
+                Rarity = tier.Value.ToString();
+                GlobalPercentUnlockedText = null;
+                return;
+            }
+
+            _rarityInputInvalid = true;
+            Rarity = null;
+            GlobalPercentUnlockedText = null;
+        }
+
+        private static RarityTier? TryMatchRarityTier(string text)
+        {
+            if (RarityTierExtensions.TryParse(text, out var parsed))
+            {
+                return parsed;
+            }
+
+            foreach (RarityTier tier in Enum.GetValues(typeof(RarityTier)))
+            {
+                if (string.Equals(tier.ToDisplayText(), text, StringComparison.OrdinalIgnoreCase))
+                {
+                    return tier;
+                }
+            }
+
+            return null;
+        }
+
+        private void SyncRarityInputFromState()
+        {
+            _rarityInputInvalid = false;
+            string input;
+            if (!string.IsNullOrWhiteSpace(GlobalPercentUnlockedText))
+            {
+                input = GlobalPercentUnlockedText.TrimEnd('%') + "%";
+            }
+            else if (RarityTierExtensions.TryParse(Rarity, out var tier))
+            {
+                input = tier.ToDisplayText();
+            }
+            else
+            {
+                input = Rarity;
+            }
+
+            SetValue(ref _rarityInput, input, nameof(RarityInput));
         }
 
         public string ProgressNumText
@@ -1103,6 +1194,7 @@ namespace PlayniteAchievements.ViewModels
                 Rarity = "Common",
                 IsNew = true
             };
+            row.SyncRarityInputFromState();
             row.CaptureBaseline();
             return row;
         }
@@ -1137,6 +1229,7 @@ namespace PlayniteAchievements.ViewModels
             Hidden = definition.Hidden;
             Rarity = definition.Rarity;
             GlobalPercentUnlockedText = FormatDouble(definition.GlobalPercentUnlocked);
+            SyncRarityInputFromState();
             ProgressNumText = FormatInt(definition.ProgressNum);
             ProgressDenomText = FormatInt(definition.ProgressDenom);
             ValidationMessage = null;
@@ -1233,10 +1326,10 @@ namespace PlayniteAchievements.ViewModels
                 definition.TrophyType = NormalizeTrophyType(TrophyType);
             }
 
-            if (!string.IsNullOrWhiteSpace(Rarity) &&
-                !RarityTierExtensions.TryParse(Rarity, out _))
+            if (_rarityInputInvalid ||
+                (!string.IsNullOrWhiteSpace(Rarity) && !RarityTierExtensions.TryParse(Rarity, out _)))
             {
-                errors.Add("Rarity must be Common, Uncommon, Rare, or UltraRare.");
+                errors.Add("Rarity must be a percent from 0 to 100, or Common, Uncommon, Rare, or Ultra Rare.");
             }
 
             if (definition.ProgressNum.HasValue &&
@@ -1272,6 +1365,7 @@ namespace PlayniteAchievements.ViewModels
                 Hidden,
                 Rarity,
                 GlobalPercentUnlockedText,
+                RarityInput,
                 ProgressNumText,
                 ProgressDenomText
             });
