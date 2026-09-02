@@ -10,6 +10,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,8 +33,11 @@ namespace PlayniteAchievements.ViewModels
         private readonly AchievementOverridesService _achievementOverridesService;
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly ManagedCustomIconService _managedCustomIconService;
+        private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private bool _isRefreshingAssignments;
+        private bool _isSyncingTypeOptions;
 
         private CustomAchievementEditItem _selectedRow;
         private bool _hasChanges;
@@ -49,6 +53,7 @@ namespace PlayniteAchievements.ViewModels
             AchievementOverridesService achievementOverridesService,
             GameCustomDataStore gameCustomDataStore,
             ManagedCustomIconService managedCustomIconService,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
@@ -57,10 +62,20 @@ namespace PlayniteAchievements.ViewModels
             _achievementOverridesService = achievementOverridesService ?? throw new ArgumentNullException(nameof(achievementOverridesService));
             _gameCustomDataStore = gameCustomDataStore ?? throw new ArgumentNullException(nameof(gameCustomDataStore));
             _managedCustomIconService = managedCustomIconService;
+            _gameDataSnapshotProvider = gameDataSnapshotProvider;
             _settings = settings;
             _logger = logger;
 
             AchievementRows = new ObservableCollection<CustomAchievementEditItem>();
+            AssignableCategoryOptions = new ObservableCollection<string>();
+            TypeSelectionOptions = new ObservableCollection<CategoryTypeSelectionOption>(
+                AchievementCategoryTypeHelper.AssignableCategoryTypes.Select(type =>
+                    new CategoryTypeSelectionOption(type, ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(type))));
+            foreach (var option in TypeSelectionOptions)
+            {
+                option.PropertyChanged += TypeSelectionOption_PropertyChanged;
+            }
+
             AddCommand = new RelayCommand(_ => AddRow(), _ => !IsSaving);
             DuplicateCommand = new RelayCommand(_ => DuplicateSelected(), _ => SelectedRow != null && !IsSaving);
             DeleteCommand = new RelayCommand(_ => DeleteSelected(), _ => SelectedRow != null && !IsSaving);
@@ -76,7 +91,19 @@ namespace PlayniteAchievements.ViewModels
 
         public event EventHandler CustomAchievementsSaved;
 
+        /// <summary>Raised after a category or type assignment was persisted for a custom row.</summary>
+        public event EventHandler AssignmentsChanged;
+
+        /// <summary>Raised after the game's manual capstone was changed from this tab.</summary>
+        public event EventHandler<CapstoneChangedEventArgs> CapstoneChanged;
+
         public ObservableCollection<CustomAchievementEditItem> AchievementRows { get; }
+
+        /// <summary>Every category the Category tab shows, in tree order, for the details picker.</summary>
+        public ObservableCollection<string> AssignableCategoryOptions { get; }
+
+        /// <summary>Category-type toggles for the selected row; changes persist immediately.</summary>
+        public ObservableCollection<CategoryTypeSelectionOption> TypeSelectionOptions { get; }
 
         public RelayCommand AddCommand { get; }
 
@@ -104,6 +131,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _selectedRow, value))
                 {
                     OnPropertyChanged(nameof(HasSelectedRow));
+                    SyncTypeOptionsToSelectedRow();
                     RaiseCommandStates();
                 }
             }
@@ -210,6 +238,7 @@ namespace PlayniteAchievements.ViewModels
                 ReplaceRows((data?.CustomAchievements ?? new List<CustomAchievementDefinition>())
                     .Select(CustomAchievementEditItem.FromDefinition));
                 CaptureCollectionBaseline();
+                RefreshAssignmentState();
                 SetStatus(null, false);
                 RefreshComputedState();
             }
@@ -232,11 +261,33 @@ namespace PlayniteAchievements.ViewModels
         private void AddRow()
         {
             var row = CustomAchievementEditItem.CreateNew(AchievementRows.Count + 1);
+            AssignStableId(row);
             AttachRow(row);
             AchievementRows.Add(row);
             SelectedRow = row;
             SetStatus(null, false);
             RefreshComputedState();
+            _ = SaveAsync();
+        }
+
+        /// <summary>
+        /// The ID is never shown or edited: it is derived once from the initial title, kept unique
+        /// against the other rows, and then stays fixed so every ApiName-keyed customization the
+        /// other tabs write (category, capstone, notes, order) survives later renames.
+        /// </summary>
+        private void AssignStableId(CustomAchievementEditItem row)
+        {
+            if (row == null || !string.IsNullOrWhiteSpace(row.NormalizedId))
+            {
+                return;
+            }
+
+            var usedIds = new HashSet<string>(
+                AchievementRows
+                    .Select(existing => existing?.NormalizedId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+            row.Id = CustomAchievementProjectionService.GenerateId(row.DisplayName, usedIds);
         }
 
         private void DuplicateSelected()
@@ -247,12 +298,14 @@ namespace PlayniteAchievements.ViewModels
             }
 
             var row = SelectedRow.CloneForDuplicate();
+            AssignStableId(row);
             AttachRow(row);
             var insertIndex = Math.Max(0, AchievementRows.IndexOf(SelectedRow) + 1);
             AchievementRows.Insert(insertIndex, row);
             SelectedRow = row;
             SetStatus(null, false);
             RefreshComputedState();
+            _ = SaveAsync();
         }
 
         private void DeleteSelected()
@@ -620,10 +673,12 @@ namespace PlayniteAchievements.ViewModels
             ReplaceRows((definitions ?? Array.Empty<CustomAchievementDefinition>())
                 .Select(CustomAchievementEditItem.FromDefinition));
             CaptureCollectionBaseline();
+            RefreshAssignmentState();
         }
 
         private void ReplaceRows(IEnumerable<CustomAchievementEditItem> rows)
         {
+            var previousSelectedId = SelectedRow?.NormalizedId;
             foreach (var row in AchievementRows)
             {
                 row.PropertyChanged -= Row_PropertyChanged;
@@ -636,7 +691,283 @@ namespace PlayniteAchievements.ViewModels
                 AchievementRows.Add(row);
             }
 
-            SelectedRow = AchievementRows.FirstOrDefault();
+            // Keep the user's place: a save or reload rebuilds the rows, and the details pane
+            // should stay on the achievement they were editing.
+            SelectedRow = AchievementRows.FirstOrDefault(row =>
+                              !string.IsNullOrWhiteSpace(previousSelectedId) &&
+                              string.Equals(row?.NormalizedId, previousSelectedId, StringComparison.OrdinalIgnoreCase))
+                          ?? AchievementRows.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Rereads the per-achievement category, type, and capstone assignments for saved rows.
+        /// These live in the game's custom data, edited by the Category and Capstones tabs too,
+        /// so rows show the current state rather than anything staged for Save.
+        /// </summary>
+        private void RefreshAssignmentState()
+        {
+            _isRefreshingAssignments = true;
+            try
+            {
+                var categoryOverrides = GetCurrentCategoryOverrideMap();
+                var categoryTypeOverrides = GetCurrentCategoryTypeOverrideMap();
+                var capstoneApiName = NormalizeText(GameCustomDataLookup.GetManualCapstone(_gameId, _settings?.Persisted));
+
+                foreach (var row in AchievementRows)
+                {
+                    var apiName = NormalizeText(row?.OriginalApiName);
+                    if (row == null)
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(apiName))
+                    {
+                        row.CategoryLabel = null;
+                        row.CategoryTypeValue = null;
+                        row.IsCapstone = false;
+                        continue;
+                    }
+
+                    row.CategoryLabel = categoryOverrides.TryGetValue(apiName, out var category)
+                        ? category
+                        : AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(null);
+                    row.CategoryTypeValue = categoryTypeOverrides.TryGetValue(apiName, out var categoryType)
+                        ? categoryType
+                        : AchievementCategoryTypeHelper.NormalizeOrDefault(null);
+                    row.IsCapstone = string.Equals(apiName, capstoneApiName, StringComparison.OrdinalIgnoreCase);
+                }
+
+                RefreshAssignableCategoryOptions(categoryOverrides);
+                SyncTypeOptionsToSelectedRow();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed loading custom achievement assignments for gameId={_gameId}.");
+            }
+            finally
+            {
+                _isRefreshingAssignments = false;
+            }
+        }
+
+        private void RefreshAssignableCategoryOptions(IReadOnlyDictionary<string, string> categoryOverrides)
+        {
+            // Same sources the Category tab renders: every achievement's effective label, plus
+            // labels that only carry user state (order, art, the summary pick), in tree order.
+            var categoryOrder = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
+            var labels = new List<string>();
+            var achievements = _gameDataSnapshotProvider?.GetHydratedGameData()?.Achievements;
+            if (achievements != null)
+            {
+                foreach (var achievement in achievements)
+                {
+                    var apiName = NormalizeText(achievement?.ApiName);
+                    if (string.IsNullOrWhiteSpace(apiName))
+                    {
+                        continue;
+                    }
+
+                    labels.Add(categoryOverrides.TryGetValue(apiName, out var overrideLabel)
+                        ? overrideLabel
+                        : AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category));
+                }
+            }
+
+            labels.AddRange(AchievementRows
+                .Select(row => row?.CategoryLabel)
+                .Where(label => !string.IsNullOrWhiteSpace(label)));
+            labels.AddRange(GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted)?.Keys
+                ?? Enumerable.Empty<string>());
+            labels.AddRange(categoryOrder ?? new List<string>());
+            var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
+            if (!string.IsNullOrWhiteSpace(summaryCategory?.Label))
+            {
+                labels.Add(summaryCategory.Label);
+            }
+
+            var ordered = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryTree(
+                labels.Where(label => !string.IsNullOrWhiteSpace(label)),
+                categoryOrder);
+            CollectionHelper.SynchronizeCollection(AssignableCategoryOptions, ordered);
+        }
+
+        private void SyncTypeOptionsToSelectedRow()
+        {
+            if (TypeSelectionOptions == null)
+            {
+                return;
+            }
+
+            _isSyncingTypeOptions = true;
+            try
+            {
+                var selectedTypes = new HashSet<string>(
+                    AchievementCategoryTypeHelper.ParseValues(SelectedRow?.CategoryTypeValue),
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var option in TypeSelectionOptions)
+                {
+                    option.IsSelected = selectedTypes.Contains(option.Value);
+                }
+            }
+            finally
+            {
+                _isSyncingTypeOptions = false;
+            }
+        }
+
+        private void TypeSelectionOption_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (_isSyncingTypeOptions ||
+                !string.Equals(e?.PropertyName, nameof(CategoryTypeSelectionOption.IsSelected), StringComparison.Ordinal) ||
+                !(sender is CategoryTypeSelectionOption option))
+            {
+                return;
+            }
+
+            SetCategoryTypeForRow(SelectedRow, option.Value, option.IsSelected);
+        }
+
+        /// <summary>
+        /// Assigns a category label to a saved row, or clears its override when the text is
+        /// blank. Persists immediately, like the Category tab.
+        /// </summary>
+        public bool ApplyCategoryToRow(CustomAchievementEditItem row, string categoryText)
+        {
+            var apiName = NormalizeText(row?.OriginalApiName);
+            if (string.IsNullOrWhiteSpace(apiName))
+            {
+                return false;
+            }
+
+            var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategory(categoryText);
+            var categoryOverrides = GetCurrentCategoryOverrideMap();
+            var changed = string.IsNullOrWhiteSpace(normalizedCategory)
+                ? categoryOverrides.Remove(apiName)
+                : !categoryOverrides.TryGetValue(apiName, out var existing) ||
+                  !string.Equals(existing, normalizedCategory, StringComparison.Ordinal);
+            if (!changed)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedCategory))
+            {
+                categoryOverrides[apiName] = normalizedCategory;
+            }
+
+            PersistAssignmentMaps(categoryOverrides, GetCurrentCategoryTypeOverrideMap());
+            return true;
+        }
+
+        private void SetCategoryTypeForRow(CustomAchievementEditItem row, string categoryType, bool isSelected)
+        {
+            var apiName = NormalizeText(row?.OriginalApiName);
+            var normalizedType = AchievementCategoryTypeHelper.Normalize(categoryType);
+            if (string.IsNullOrWhiteSpace(apiName) || string.IsNullOrWhiteSpace(normalizedType))
+            {
+                return;
+            }
+
+            var categoryTypeOverrides = GetCurrentCategoryTypeOverrideMap();
+            var currentType = AchievementCategoryTypeHelper.NormalizeOrDefault(row.CategoryTypeValue);
+            var updatedType = AchievementCategoryTypeHelper.WithCategoryType(currentType, normalizedType, isSelected);
+            if (string.Equals(updatedType, currentType, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            // Custom achievements carry no provider type, so the default means "no override".
+            if (string.Equals(updatedType, AchievementCategoryTypeHelper.NormalizeOrDefault(null), StringComparison.Ordinal))
+            {
+                categoryTypeOverrides.Remove(apiName);
+            }
+            else
+            {
+                categoryTypeOverrides[apiName] = updatedType;
+            }
+
+            PersistAssignmentMaps(GetCurrentCategoryOverrideMap(), categoryTypeOverrides);
+        }
+
+        private void PersistAssignmentMaps(
+            IReadOnlyDictionary<string, string> categoryOverrides,
+            IReadOnlyDictionary<string, string> categoryTypeOverrides)
+        {
+            try
+            {
+                _achievementOverridesService.SetAchievementCategoryOverrides(_gameId, categoryOverrides, categoryTypeOverrides);
+                RefreshAssignmentState();
+                AssignmentsChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed saving custom achievement category assignments for gameId={_gameId}.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+            }
+        }
+
+        private void SetCapstoneForRow(CustomAchievementEditItem row, bool isCapstone)
+        {
+            var apiName = NormalizeText(row?.OriginalApiName);
+            if (string.IsNullOrWhiteSpace(apiName))
+            {
+                RefreshAssignmentState();
+                return;
+            }
+
+            var currentCapstone = NormalizeText(GameCustomDataLookup.GetManualCapstone(_gameId, _settings?.Persisted));
+            var isCurrent = string.Equals(currentCapstone, apiName, StringComparison.OrdinalIgnoreCase);
+            if (isCapstone == isCurrent)
+            {
+                return;
+            }
+
+            var targetApiName = isCapstone ? apiName : null;
+            try
+            {
+                _achievementOverridesService.SetCapstone(_gameId, targetApiName);
+                RefreshAssignmentState();
+                CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(targetApiName, isCapstone ? row.DisplayName : null));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed saving capstone for gameId={_gameId}.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+                RefreshAssignmentState();
+            }
+        }
+
+        private Dictionary<string, string> GetCurrentCategoryOverrideMap()
+        {
+            var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in GameCustomDataLookup.GetAchievementCategoryOverrides(_gameId, _settings?.Persisted))
+            {
+                var apiName = NormalizeText(pair.Key);
+                var category = AchievementCategoryTypeHelper.NormalizeCategory(pair.Value);
+                if (!string.IsNullOrWhiteSpace(apiName) && !string.IsNullOrWhiteSpace(category))
+                {
+                    normalized[apiName] = category;
+                }
+            }
+
+            return normalized;
+        }
+
+        private Dictionary<string, string> GetCurrentCategoryTypeOverrideMap()
+        {
+            var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in GameCustomDataLookup.GetAchievementCategoryTypeOverrides(_gameId, _settings?.Persisted))
+            {
+                var apiName = NormalizeText(pair.Key);
+                var categoryType = AchievementCategoryTypeHelper.Normalize(pair.Value);
+                if (!string.IsNullOrWhiteSpace(apiName) && !string.IsNullOrWhiteSpace(categoryType))
+                {
+                    normalized[apiName] = categoryType;
+                }
+            }
+
+            return normalized;
         }
 
         private void AttachRow(CustomAchievementEditItem row)
@@ -656,13 +987,30 @@ namespace PlayniteAchievements.ViewModels
 
         private void Row_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e == null ||
-                e.PropertyName == nameof(CustomAchievementEditItem.ValidationMessage) ||
+            if (e == null)
+            {
+                return;
+            }
+
+            if (e.PropertyName == nameof(CustomAchievementEditItem.IsCapstone))
+            {
+                if (!_isRefreshingAssignments && sender is CustomAchievementEditItem capstoneRow)
+                {
+                    SetCapstoneForRow(capstoneRow, capstoneRow.IsCapstone);
+                }
+
+                return;
+            }
+
+            if (e.PropertyName == nameof(CustomAchievementEditItem.ValidationMessage) ||
                 e.PropertyName == nameof(CustomAchievementEditItem.IsRevealed) ||
                 e.PropertyName == nameof(CustomAchievementEditItem.IsIconHidden) ||
                 e.PropertyName == nameof(CustomAchievementEditItem.IsLockedIconHidden) ||
                 e.PropertyName == nameof(CustomAchievementEditItem.CanReveal) ||
-                e.PropertyName == nameof(CustomAchievementEditItem.DisplayIcon))
+                e.PropertyName == nameof(CustomAchievementEditItem.DisplayIcon) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.CategoryLabel) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.CategoryTypeValue) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.CategoryTypeDisplayText))
             {
                 return;
             }
@@ -835,6 +1183,52 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(IsLockedIconHidden));
             OnPropertyChanged(nameof(CanReveal));
             OnPropertyChanged(nameof(DisplayIcon));
+        }
+
+        private string _categoryLabel;
+        private string _categoryTypeValue;
+        private bool _isCapstone;
+
+        /// <summary>
+        /// Category, type, and capstone are ApiName-keyed custom data shared with the other tabs,
+        /// so they are only editable once the row has been saved and has an ApiName.
+        /// </summary>
+        public bool CanEditAssignments => !string.IsNullOrWhiteSpace(OriginalApiName);
+
+        public string CategoryLabel
+        {
+            get => _categoryLabel;
+            set => SetValue(ref _categoryLabel, value);
+        }
+
+        public string CategoryTypeValue
+        {
+            get => _categoryTypeValue;
+            set
+            {
+                if (SetValueAndReturn(ref _categoryTypeValue, value))
+                {
+                    OnPropertyChanged(nameof(CategoryTypeDisplayText));
+                }
+            }
+        }
+
+        public string CategoryTypeDisplayText
+        {
+            get
+            {
+                // The Default sentinel renders blank in grid cells; a button needs a label.
+                var text = AchievementCategoryTypeHelper.ToDisplayText(CategoryTypeValue);
+                return string.IsNullOrWhiteSpace(text)
+                    ? AchievementCategoryTypeHelper.ToCategoryTypeDisplayText(AchievementCategoryTypeHelper.NormalizeOrDefault(null))
+                    : text;
+            }
+        }
+
+        public bool IsCapstone
+        {
+            get => _isCapstone;
+            set => SetValue(ref _isCapstone, value);
         }
 
         public string Id
