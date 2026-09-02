@@ -37,6 +37,7 @@
             <Style x:Key="GridEditorTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                 <Setter Property="MinHeight" Value="26" />
                 <Setter Property="Padding" Value="6,2" />
+                <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
@@ -263,7 +264,24 @@
                                        Stretch="Uniform"
                                        RenderOptions.BitmapScalingMode="HighQuality"
                                        helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                                       helpers:AsyncImage.DecodePixel="96" />
+                                       helpers:AsyncImage.DecodePixel="96"
+                                       PreviewMouseLeftButtonDown="IconImage_PreviewMouseLeftButtonDown">
+                                    <Image.Style>
+                                        <Style TargetType="Image">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CanReveal}" Value="True">
+                                                    <Setter Property="Cursor" Value="Hand" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
+                                                    <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Achievements_ClickToReveal}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsLockedIconHidden}" Value="True">
+                                                    <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Achievements_ClickToReveal}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -304,22 +322,55 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Rarity}"
-                                            Width="140"
+                                            Width="170"
                                             SortMemberPath="Rarity">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <!-- One editor for both rarity inputs: type an unlock percent, or pick a tier
-                                     from the dropdown. A text box commits on focus loss; the placeholder shows
-                                     that a percent is accepted. -->
-                                <Grid>
+                                     from the dropdown. The placeholder shows that a percent is accepted, and
+                                     the badge on the right tracks the tier the current value resolves to. -->
+                                <Grid VerticalAlignment="Center">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
+                                    <Image Grid.Column="0"
+                                           Width="18"
+                                           Height="18"
+                                           Margin="2,0,6,0"
+                                           VerticalAlignment="Center"
+                                           ToolTip="{Binding RarityInput}">
+                                        <Image.Style>
+                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Rarity}" Value="UltraRare">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Source" Value="{DynamicResource BadgeRarityUltraRare}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Rarity}" Value="Rare">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Source" Value="{DynamicResource BadgeRarityRare}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Rarity}" Value="Uncommon">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Source" Value="{DynamicResource BadgeRarityUncommon}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Rarity}" Value="Common">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Source" Value="{DynamicResource BadgeRarityCommon}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
                                     <TextBox x:Name="RarityInputBox"
-                                             Text="{Binding RarityInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                             Grid.Column="1"
+                                             Text="{Binding RarityInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource GridEditorTextBoxStyle}" />
-                                    <TextBlock Text="100%"
+                                    <TextBlock Grid.Column="1"
+                                               Text="100%"
                                                IsHitTestVisible="False"
                                                Margin="8,0,0,0"
                                                VerticalAlignment="Center"
@@ -336,7 +387,7 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
-                                    <Button Grid.Column="1"
+                                    <Button Grid.Column="2"
                                             Content="&#x25BE;"
                                             Style="{StaticResource DropdownButtonStyle}"
                                             Click="ContextMenuButton_Click">
@@ -406,6 +457,7 @@
                                           SelectedValue="{Binding TrophyType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           SelectedValuePath="Value"
                                           MinHeight="26"
+                                          VerticalAlignment="Center"
                                           VerticalContentAlignment="Center">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
