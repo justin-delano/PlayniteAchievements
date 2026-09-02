@@ -59,7 +59,6 @@ namespace PlayniteAchievements.Services.Achievements
         private readonly object _overviewProjectionCacheSync = new object();
         private readonly Dictionary<int, CachedSummaryData> _overviewSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
-        private bool? _overviewHasCustomAchievements;
 
         // Bumped on every invalidation; a summary loaded before an invalidation must not be
         // memoized after it (it may have been built against since-replaced filter mirror rows).
@@ -293,13 +292,6 @@ namespace PlayniteAchievements.Services.Achievements
 
         internal CachedSummaryData GetCachedSummaryDataForOverview(int recentAchievementDetailLimit = 0)
         {
-            // SQL-backed summaries do not include custom-only achievements. Fall back to the
-            // full projection whenever at least one game defines them.
-            if (HasCustomAchievementsConfigured())
-            {
-                return null;
-            }
-
             var normalizedLimit = Math.Max(0, recentAchievementDetailLimit);
             int generation;
             lock (_overviewProjectionCacheSync)
@@ -322,7 +314,7 @@ namespace PlayniteAchievements.Services.Achievements
             CachedSummaryData hydratedSummary;
             try
             {
-                hydratedSummary = ApplyOverviewSummaryHydration(summaryData);
+                hydratedSummary = ApplyOverviewSummaryHydration(summaryData, normalizedLimit);
             }
             catch (Exception ex)
             {
@@ -349,7 +341,7 @@ namespace PlayniteAchievements.Services.Achievements
             return GetCachedSummaryDataForOverview(recentAchievementDetailLimit);
         }
 
-        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData)
+        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData, int recentAchievementDetailLimit)
         {
             summaryData ??= new CachedSummaryData();
             summaryData.Games ??= new List<CachedGameSummaryData>();
@@ -373,6 +365,15 @@ namespace PlayniteAchievements.Services.Achievements
                     summaryData.UnlockCountsByDateByGame,
                     excludedSummaryIds);
             }
+
+            // SQL summaries never see custom achievements, which live only in custom data.
+            CustomAchievementSummaryMerger.Merge(
+                summaryData,
+                customDataByGameId,
+                excludedSummaryIds,
+                recentAchievementDetailLimit,
+                gameId => GetGame(gameId)?.Name,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService);
 
             var gameIdsNeedingCompletionOverrides = new HashSet<Guid>(
                 summaryData.Games
@@ -767,38 +768,6 @@ namespace PlayniteAchievements.Services.Achievements
             return visibleAchievements;
         }
 
-        private bool HasCustomAchievementsConfigured()
-        {
-            lock (_overviewProjectionCacheSync)
-            {
-                if (_overviewHasCustomAchievements.HasValue)
-                {
-                    return _overviewHasCustomAchievements.Value;
-                }
-            }
-
-            var hasCustomAchievements = ComputeHasCustomAchievementsConfigured();
-            lock (_overviewProjectionCacheSync)
-            {
-                _overviewHasCustomAchievements = hasCustomAchievements;
-                return hasCustomAchievements;
-            }
-        }
-
-        private bool ComputeHasCustomAchievementsConfigured()
-        {
-            var customDataByGameId = LoadCustomDataByGameId();
-            foreach (var customData in customDataByGameId.Values)
-            {
-                if (CustomAchievementProjectionService.HasCustomAchievements(customData))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private void ApplyGameSummaryCustomization(
             IList<CachedGameSummaryData> games,
             IReadOnlyDictionary<Guid, SummaryCustomizationData> customizationByGameId)
@@ -1113,7 +1082,6 @@ namespace PlayniteAchievements.Services.Achievements
             {
                 _overviewProjectionGeneration++;
                 _overviewSummaryCacheByLimit.Clear();
-                _overviewHasCustomAchievements = null;
             }
         }
 
