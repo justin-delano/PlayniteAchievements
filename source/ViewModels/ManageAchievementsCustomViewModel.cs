@@ -294,7 +294,7 @@ namespace PlayniteAchievements.ViewModels
         {
             var dialog = new OpenFileDialog
             {
-                Filter = "CSV/TSV files (*.csv;*.tsv;*.txt)|*.csv;*.tsv;*.txt|All files (*.*)|*.*",
+                Filter = CustomAchievementsPackageFilter,
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -306,7 +306,7 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                ImportText(File.ReadAllText(dialog.FileName));
+                MergeImportedDefinitions(_gameCustomDataStore.ImportCustomAchievementsPackage(_gameId, dialog.FileName));
             }
             catch (Exception ex)
             {
@@ -317,7 +317,11 @@ namespace PlayniteAchievements.ViewModels
 
         private void ImportText(string text)
         {
-            var result = _textImportService.Import(text);
+            MergeImportedDefinitions(_textImportService.Import(text));
+        }
+
+        private void MergeImportedDefinitions(CustomAchievementTextImportResult result)
+        {
             if (result.HasErrors)
             {
                 SetStatus(string.Join(Environment.NewLine, result.Errors.Take(8)), true);
@@ -365,12 +369,12 @@ namespace PlayniteAchievements.ViewModels
             RefreshComputedState();
         }
 
-        private const string ExportCsvHeader =
-            "id,title,description,unlocked,unlockTimeUtc,points,trophyType,hidden,rarity,percent,progress,total,unlockedIcon,lockedIcon";
+        private const string CustomAchievementsPackageFilter =
+            "Playnite Achievements Custom Achievements (*.pacustom)|*.pacustom";
 
         private void ExportTemplate()
         {
-            ExportCsv("custom-achievements-template.csv", new[] { ExportCsvHeader }, "custom achievement template");
+            ExportPackage("custom-achievements-template.pacustom", Array.Empty<CustomAchievementDefinition>(), "custom achievement template");
         }
 
         private void ExportAchievements()
@@ -383,16 +387,19 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var lines = new List<string> { ExportCsvHeader };
-            lines.AddRange(definitions.Select(FormatCsvRow));
-            ExportCsv("custom-achievements.csv", lines, "custom achievements");
+            ExportPackage("custom-achievements.pacustom", definitions, "custom achievements");
         }
 
-        private void ExportCsv(string defaultFileName, IEnumerable<string> lines, string description)
+        private void ExportPackage(
+            string defaultFileName,
+            IReadOnlyList<CustomAchievementDefinition> definitions,
+            string description)
         {
             var dialog = new SaveFileDialog
             {
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                Filter = CustomAchievementsPackageFilter,
+                AddExtension = true,
+                DefaultExt = GameCustomDataStore.CustomAchievementsPackageFileExtension,
                 FileName = defaultFileName,
                 OverwritePrompt = true
             };
@@ -404,7 +411,13 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                File.WriteAllLines(dialog.FileName, lines);
+                var destinationPath = dialog.FileName;
+                if (!destinationPath.EndsWith(GameCustomDataStore.CustomAchievementsPackageFileExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    destinationPath += GameCustomDataStore.CustomAchievementsPackageFileExtension;
+                }
+
+                _gameCustomDataStore.ExportCustomAchievementsPackage(_gameId, definitions, destinationPath);
                 SetStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), false);
             }
             catch (Exception ex)
@@ -412,40 +425,6 @@ namespace PlayniteAchievements.ViewModels
                 _logger?.Warn(ex, $"Failed exporting {description} to '{dialog.FileName}'.");
                 SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
             }
-        }
-
-        private static string FormatCsvRow(CustomAchievementDefinition definition)
-        {
-            var fields = new[]
-            {
-                definition.Id,
-                definition.DisplayName,
-                definition.Description,
-                definition.Unlocked ? "true" : "false",
-                definition.UnlockTimeUtc?.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
-                definition.Points?.ToString(CultureInfo.InvariantCulture),
-                definition.TrophyType,
-                definition.Hidden ? "true" : "false",
-                definition.Rarity,
-                definition.GlobalPercentUnlocked?.ToString(CultureInfo.InvariantCulture),
-                definition.ProgressNum?.ToString(CultureInfo.InvariantCulture),
-                definition.ProgressDenom?.ToString(CultureInfo.InvariantCulture),
-                definition.UnlockedIconPath,
-                definition.LockedIconPath
-            };
-
-            return string.Join(",", fields.Select(EscapeCsv));
-        }
-
-        private static string EscapeCsv(string value)
-        {
-            var safe = value ?? string.Empty;
-            if (safe.IndexOfAny(new[] { ',', '"', '\r', '\n' }) < 0)
-            {
-                return safe;
-            }
-
-            return "\"" + safe.Replace("\"", "\"\"") + "\"";
         }
 
         private async Task SaveAsync()
