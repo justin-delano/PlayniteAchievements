@@ -263,12 +263,7 @@ namespace PlayniteAchievements.Views
                 // games that have real provider data.
                 CustomProviderComboBox,
                 AddCustomProviderButton,
-                ProviderNameTextBox,
-                ProviderColorTextBox,
-                PickProviderColorButton,
-                ProviderIconSourceTextBox,
-                BrowseProviderSvgButton,
-                DeleteCustomProviderButton,
+                EditCustomProviderButton,
                 AddButton,
                 DuplicateButton,
                 DeleteButton,
