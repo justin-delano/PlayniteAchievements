@@ -182,13 +182,6 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowIconEditor => IsIconEditorOpen && SelectedRow != null;
 
-        public IReadOnlyList<CustomAchievementSelectionOption> CategoryTypeOptions { get; } =
-            AchievementCategoryTypeHelper.AllowedCategoryTypes
-                .Select(type => new CustomAchievementSelectionOption(
-                    type,
-                    AchievementCategoryTypeHelper.ToCategoryTypeDisplayText(type)))
-                .ToList();
-
         public IReadOnlyList<CustomAchievementSelectionOption> RarityOptions { get; } =
             new[]
             {
@@ -408,7 +401,7 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                var header = "id,title,description,unlocked,unlockTimeUtc,points,category,categoryType,rarity,unlockedIcon,lockedIcon";
+                var header = "id,title,description,unlocked,unlockTimeUtc,points,rarity,unlockedIcon,lockedIcon";
                 File.WriteAllText(dialog.FileName, header + Environment.NewLine);
                 SetStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), false);
             }
@@ -752,12 +745,8 @@ namespace PlayniteAchievements.ViewModels
         private string _unlockedIconPath;
         private string _lockedIconPath;
         private string _pointsText;
-        private string _scaledPointsText;
-        private string _category;
-        private string _categoryType;
         private string _trophyType;
         private bool _hidden;
-        private bool _isCapstone;
         private string _rarity;
         private string _globalPercentUnlockedText;
         private string _progressNumText;
@@ -876,30 +865,6 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _pointsText, value);
         }
 
-        public string ScaledPointsText
-        {
-            get => _scaledPointsText;
-            set => SetValue(ref _scaledPointsText, value);
-        }
-
-        public string Category
-        {
-            get => _category;
-            set => SetValue(ref _category, value);
-        }
-
-        public string CategoryType
-        {
-            get => _categoryType;
-            set
-            {
-                if (SetValueAndReturn(ref _categoryType, value))
-                {
-                    OnPropertyChanged(nameof(CategoryTypeDisplay));
-                }
-            }
-        }
-
         public string TrophyType
         {
             get => _trophyType;
@@ -910,12 +875,6 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _hidden;
             set => SetValue(ref _hidden, value);
-        }
-
-        public bool IsCapstone
-        {
-            get => _isCapstone;
-            set => SetValue(ref _isCapstone, value);
         }
 
         public string Rarity
@@ -1102,8 +1061,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public string CategoryTypeDisplay => AchievementCategoryTypeHelper.ToCategoryTypeDisplayText(CategoryType);
-
         public string DisplayIcon => Unlocked
             ? AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath)
             : AchievementIconResolver.GetLockedDisplayIcon(UnlockedIconPath, LockedIconPath);
@@ -1129,8 +1086,6 @@ namespace PlayniteAchievements.ViewModels
             var row = new CustomAchievementEditItem
             {
                 DisplayName = "New Achievement " + Math.Max(1, index).ToString(CultureInfo.InvariantCulture),
-                Category = "Default",
-                CategoryType = "Default",
                 Rarity = "Common",
                 IsNew = true
             };
@@ -1164,12 +1119,8 @@ namespace PlayniteAchievements.ViewModels
             UnlockedIconPath = definition.UnlockedIconPath;
             LockedIconPath = definition.LockedIconPath;
             PointsText = FormatInt(definition.Points);
-            ScaledPointsText = FormatInt(definition.ScaledPoints);
-            Category = definition.Category;
-            CategoryType = definition.CategoryType;
             TrophyType = definition.TrophyType;
             Hidden = definition.Hidden;
-            IsCapstone = definition.IsCapstone;
             Rarity = definition.Rarity;
             GlobalPercentUnlockedText = FormatDouble(definition.GlobalPercentUnlocked);
             ProgressNumText = FormatInt(definition.ProgressNum);
@@ -1236,11 +1187,8 @@ namespace PlayniteAchievements.ViewModels
                 Unlocked = Unlocked,
                 UnlockedIconPath = NormalizeText(UnlockedIconPath),
                 LockedIconPath = NormalizeText(LockedIconPath),
-                Category = string.IsNullOrWhiteSpace(Category) ? "Default" : Category.Trim(),
-                CategoryType = string.IsNullOrWhiteSpace(CategoryType) ? "Default" : CategoryType.Trim(),
                 TrophyType = NormalizeText(TrophyType),
                 Hidden = Hidden,
-                IsCapstone = IsCapstone,
                 Rarity = string.IsNullOrWhiteSpace(Rarity) ? "Common" : Rarity.Trim()
             };
 
@@ -1258,16 +1206,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             definition.Points = ParseNullableInt(PointsText, errors, "Points", allowZero: true);
-            definition.ScaledPoints = ParseNullableInt(ScaledPointsText, errors, "Scaled points", allowZero: true);
             definition.GlobalPercentUnlocked = ParseNullablePercent(GlobalPercentUnlockedText, errors);
             definition.ProgressNum = ParseNullableInt(ProgressNumText, errors, "Progress", allowZero: true);
             definition.ProgressDenom = ParseNullableInt(ProgressDenomText, errors, "Progress total", allowZero: false);
-
-            if (!string.IsNullOrWhiteSpace(CategoryType) &&
-                string.IsNullOrWhiteSpace(AchievementCategoryTypeHelper.Normalize(CategoryType)))
-            {
-                errors.Add("Category type is invalid.");
-            }
 
             if (!string.IsNullOrWhiteSpace(TrophyType) && NormalizeTrophyType(TrophyType) == null)
             {
@@ -1313,12 +1254,8 @@ namespace PlayniteAchievements.ViewModels
                 UnlockedIconPath,
                 LockedIconPath,
                 PointsText,
-                ScaledPointsText,
-                Category,
-                CategoryType,
                 TrophyType,
                 Hidden,
-                IsCapstone,
                 Rarity,
                 GlobalPercentUnlockedText,
                 ProgressNumText,
