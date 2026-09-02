@@ -81,6 +81,21 @@ namespace PlayniteAchievements.Views
             ViewModel.ApplyCategoryToRow(row, CategoryPicker.ResolveSelection());
         }
 
+        /// <summary>
+        /// Text editors bind on focus loss so a half-typed value is not persisted; Enter commits
+        /// the same way the other Manage tabs do.
+        /// </summary>
+        private void EditorTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter || !(sender is TextBox textBox))
+            {
+                return;
+            }
+
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            e.Handled = true;
+        }
+
         private void TypeSelectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel == null || TypeSelectionContextMenu == null || TypeSelectionButton == null)
@@ -249,10 +264,9 @@ namespace PlayniteAchievements.Views
                 DeleteButton,
                 ImportFileButton,
                 ExportButton,
-                RevertButton,
                 ClearButton,
-                SaveButton,
                 CustomAchievementsGrid,
+                AddRowFooterButton,
                 CapstoneCheckBox,
                 CategoryPicker,
                 TypeSelectionButton
