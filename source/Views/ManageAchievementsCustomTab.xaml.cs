@@ -45,6 +45,18 @@ namespace PlayniteAchievements.Views
             ViewModel?.RefreshData();
         }
 
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is Button button) || button.ContextMenu == null)
+            {
+                return;
+            }
+
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.Placement = PlacementMode.Bottom;
+            button.ContextMenu.IsOpen = true;
+        }
+
         private void BrowseIconButton_Click(object sender, RoutedEventArgs e)
         {
             if (!TryResolveRowAndVariant(sender as FrameworkElement, out var row, out var variant))
