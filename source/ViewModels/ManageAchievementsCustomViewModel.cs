@@ -82,8 +82,6 @@ namespace PlayniteAchievements.ViewModels
             ImportFileCommand = new RelayCommand(_ => ImportFile(), _ => !IsSaving);
             ExportTemplateCommand = new RelayCommand(_ => ExportTemplate(), _ => !IsSaving);
             ExportAchievementsCommand = new RelayCommand(_ => ExportAchievements(), _ => HasRows && !IsSaving);
-            SaveCommand = new AsyncCommand(_ => SaveAsync(), _ => CanSave);
-            RevertCommand = new RelayCommand(_ => Revert(), _ => HasChanges && !IsSaving);
             ClearCommand = new RelayCommand(_ => ClearRows(), _ => HasRows && !IsSaving);
 
             ReloadData();
@@ -116,10 +114,6 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ExportTemplateCommand { get; }
 
         public RelayCommand ExportAchievementsCommand { get; }
-
-        public AsyncCommand SaveCommand { get; }
-
-        public RelayCommand RevertCommand { get; }
 
         public RelayCommand ClearCommand { get; }
 
@@ -321,6 +315,7 @@ namespace PlayniteAchievements.ViewModels
             SelectedRow = AchievementRows.FirstOrDefault();
             SetStatus(null, false);
             RefreshComputedState();
+            _ = SaveAsync();
         }
 
         private void ImportFile()
@@ -389,12 +384,13 @@ namespace PlayniteAchievements.ViewModels
             SelectedRow = AchievementRows.LastOrDefault();
             SetStatus(
                 string.Format(
-                    L("LOCPlayAch_ManageAchievements_Custom_ImportSummary", "Imported {0} rows ({1} added, {2} updated). Save to apply."),
+                    L("LOCPlayAch_ManageAchievements_Custom_ImportSummary", "Imported {0} rows ({1} added, {2} updated)."),
                     result.Definitions.Count,
                     added,
                     updated),
                 false);
             RefreshComputedState();
+            _ = SaveAsync();
         }
 
         private const string CustomAchievementsPackageFilter =
@@ -482,8 +478,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 _achievementOverridesService.SetCustomAchievements(_gameId, definitions, renameMap);
-                CommitRows(definitions);
-                SetStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), false);
+                CommitRowsInPlace(definitions);
                 RefreshComputedState();
                 CustomAchievementsSaved?.Invoke(this, EventArgs.Empty);
             }
@@ -495,12 +490,12 @@ namespace PlayniteAchievements.ViewModels
             finally
             {
                 IsSaving = false;
+                // Edits that landed while the write was in flight get their own save.
+                if (HasChanges && !HasValidationErrors)
+                {
+                    _ = SaveAsync();
+                }
             }
-        }
-
-        private void Revert()
-        {
-            ReloadData();
         }
 
         private void ClearRows()
@@ -524,6 +519,7 @@ namespace PlayniteAchievements.ViewModels
             SelectedRow = null;
             SetStatus(null, false);
             RefreshComputedState();
+            _ = SaveAsync();
         }
 
         private List<CustomAchievementDefinition> BuildValidatedDefinitions(
@@ -668,10 +664,28 @@ namespace PlayniteAchievements.ViewModels
             return string.IsNullOrWhiteSpace(managedPath) ? normalized : managedPath;
         }
 
-        private void CommitRows(IReadOnlyList<CustomAchievementDefinition> definitions)
+        /// <summary>
+        /// Marks the rows saved without rebuilding them: BuildValidatedDefinitions emits one
+        /// definition per non-blank row in row order, so the two walk together.
+        /// </summary>
+        private void CommitRowsInPlace(IReadOnlyList<CustomAchievementDefinition> definitions)
         {
-            ReplaceRows((definitions ?? Array.Empty<CustomAchievementDefinition>())
-                .Select(CustomAchievementEditItem.FromDefinition));
+            var next = 0;
+            foreach (var row in AchievementRows)
+            {
+                if (row == null || row.IsBlank)
+                {
+                    continue;
+                }
+
+                if (definitions == null || next >= definitions.Count)
+                {
+                    break;
+                }
+
+                row.CommitSaved(definitions[next++]);
+            }
+
             CaptureCollectionBaseline();
             RefreshAssignmentState();
         }
@@ -981,6 +995,9 @@ namespace PlayniteAchievements.ViewModels
             // locked or hidden custom row masks its icon until clicked.
             row.ShowHiddenIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
             row.ShowLockedIcon = _settings?.Persisted?.ShowLockedIcon ?? true;
+            row.ConfigureIconPathDisplay(
+                path => _managedCustomIconService?.GetManagedDisplayPath(path, _gameIdText) ?? path,
+                text => _managedCustomIconService?.ResolveManagedDisplayPath(text, _gameIdText) ?? text);
             row.PropertyChanged -= Row_PropertyChanged;
             row.PropertyChanged += Row_PropertyChanged;
         }
@@ -1017,6 +1034,10 @@ namespace PlayniteAchievements.ViewModels
 
             SetStatus(null, false);
             RefreshComputedState();
+            // Like the other Manage tabs, a completed edit persists at once: text boxes commit on
+            // focus loss or Enter, toggles and pickers on the click. The commit updates rows in
+            // place so the grid keeps focus and selection.
+            _ = SaveAsync();
         }
 
         private void RefreshComputedState()
@@ -1050,8 +1071,6 @@ namespace PlayniteAchievements.ViewModels
             ImportFileCommand.RaiseCanExecuteChanged();
             ExportTemplateCommand.RaiseCanExecuteChanged();
             ExportAchievementsCommand.RaiseCanExecuteChanged();
-            SaveCommand.RaiseCanExecuteChanged();
-            RevertCommand.RaiseCanExecuteChanged();
             ClearCommand.RaiseCanExecuteChanged();
         }
 
@@ -1303,6 +1322,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _unlockedIconPath, value))
                 {
+                    OnPropertyChanged(nameof(UnlockedIconDisplayText));
                     OnPropertyChanged(nameof(UnlockedPreviewPath));
                     OnPropertyChanged(nameof(LockedPreviewPath));
                     OnPropertyChanged(nameof(DisplayIcon));
@@ -1317,10 +1337,54 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _lockedIconPath, value))
                 {
+                    OnPropertyChanged(nameof(LockedIconDisplayText));
                     OnPropertyChanged(nameof(LockedPreviewPath));
                     OnPropertyChanged(nameof(DisplayIcon));
                 }
             }
+        }
+
+        private Func<string, string> _iconPathToDisplay;
+        private Func<string, string> _iconPathFromDisplay;
+
+        /// <summary>
+        /// Managed icons live under the plugin's icon cache; the editor shows them relative to
+        /// that root and maps typed text back to a stored path.
+        /// </summary>
+        public void ConfigureIconPathDisplay(Func<string, string> toDisplay, Func<string, string> fromDisplay)
+        {
+            _iconPathToDisplay = toDisplay;
+            _iconPathFromDisplay = fromDisplay;
+            OnPropertyChanged(nameof(UnlockedIconDisplayText));
+            OnPropertyChanged(nameof(LockedIconDisplayText));
+        }
+
+        public string UnlockedIconDisplayText
+        {
+            get => ToIconDisplayText(UnlockedIconPath);
+            set => UnlockedIconPath = FromIconDisplayText(value);
+        }
+
+        public string LockedIconDisplayText
+        {
+            get => ToIconDisplayText(LockedIconPath);
+            set => LockedIconPath = FromIconDisplayText(value);
+        }
+
+        private string ToIconDisplayText(string path)
+        {
+            var normalized = NormalizeText(path);
+            return string.IsNullOrWhiteSpace(normalized)
+                ? string.Empty
+                : _iconPathToDisplay?.Invoke(normalized) ?? normalized;
+        }
+
+        private string FromIconDisplayText(string text)
+        {
+            var normalized = NormalizeText(text);
+            return string.IsNullOrWhiteSpace(normalized)
+                ? null
+                : _iconPathFromDisplay?.Invoke(normalized) ?? normalized;
         }
 
         public string PointsText
@@ -1717,6 +1781,29 @@ namespace PlayniteAchievements.ViewModels
         public void MarkAsNewImport()
         {
             IsNew = true;
+        }
+
+        /// <summary>
+        /// Adopts what a save persisted for this row: the generated ID when it had none, the
+        /// materialized icon paths, and its ApiName. Text the user is still typing is left alone.
+        /// </summary>
+        public void CommitSaved(CustomAchievementDefinition definition)
+        {
+            if (definition == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(NormalizedId))
+            {
+                Id = definition.Id;
+            }
+
+            UnlockedIconPath = definition.UnlockedIconPath;
+            LockedIconPath = definition.LockedIconPath;
+            OriginalApiName = CustomAchievementProjectionService.BuildApiName(definition.Id);
+            OnPropertyChanged(nameof(CanEditAssignments));
+            CaptureBaseline();
         }
 
         public CustomAchievementEditItem CloneForDuplicate()
