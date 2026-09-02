@@ -296,7 +296,6 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">Open Icons Folder</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">The extension data path is unavailable.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">One or more icon values are invalid. Use image links (http:// or https://) or local image files.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_Capstone">Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ClearAll">Clear Custom Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ClearConfirm">Clear all custom achievements for this game?</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_Details">Details</sys:String>
@@ -312,7 +311,6 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_PasteImport">Paste</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">Progress Total</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressNum">Progress</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ScaledPoints">Scaled Points</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_TrophyType">Trophy Type</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Unlocked Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Filtered</sys:String>
