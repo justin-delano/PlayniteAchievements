@@ -1331,31 +1331,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private static void OpenSelectorContextMenu(Button button, ContextMenu menu)
         {
-            if (button == null || menu == null)
-            {
-                return;
-            }
-
-            RoutedEventHandler onClosed = null;
-            onClosed = (_, __) =>
-            {
-                menu.Closed -= onClosed;
-                button.ReleaseMouseCapture();
-            };
-
-            menu.Closed += onClosed;
-            menu.PlacementTarget = button;
-            menu.Placement = PlacementMode.Bottom;
-            menu.HorizontalOffset = 0;
-            menu.VerticalOffset = 0;
-            if (button.IsKeyboardFocusWithin)
-            {
-                FullscreenControllerNavigationService.OpenContextMenu(button, menu);
-            }
-            else
-            {
-                menu.IsOpen = true;
-            }
+            SelectorContextMenuHelper.Open(button, menu);
         }
 
         private static void OpenCategoryTypeContextMenu(
@@ -1363,43 +1339,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             ContextMenu menu,
             IEnumerable<CategoryTypeSelectionOption> options)
         {
-            if (button == null || menu == null)
-            {
-                return;
-            }
-
-            menu.Items.Clear();
-
-            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
-            foreach (var option in options ?? Enumerable.Empty<CategoryTypeSelectionOption>())
-            {
-                if (option == null)
-                {
-                    continue;
-                }
-
-                var item = new MenuItem
-                {
-                    Header = option.DisplayName,
-                    IsCheckable = true,
-                    StaysOpenOnClick = true,
-                    IsChecked = option.IsSelected
-                };
-                if (itemStyle != null)
-                {
-                    item.Style = itemStyle;
-                }
-
-                item.Click += (_, __) => option.IsSelected = item.IsChecked;
-                menu.Items.Add(item);
-            }
-
-            if (menu.Items.Count == 0)
-            {
-                return;
-            }
-
-            OpenSelectorContextMenu(button, menu);
+            SelectorContextMenuHelper.OpenCategoryTypeMenu(button, menu, options);
         }
 
         /// <summary>
