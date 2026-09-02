@@ -1009,7 +1009,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 Name = name,
                 ColorHex = NormalizeString(snapshot.ColorHex),
                 IconPathData = NormalizeString(snapshot.IconPathData),
-                IconSourceFileName = NormalizeString(snapshot.IconSourceFileName)
+                IconSource = NormalizeString(snapshot.IconSource)
             };
         }
 
