@@ -21,6 +21,7 @@ using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.ViewModels.ManageAchievements;
+using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.Settings.General;
 
@@ -888,7 +889,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _logger,
                 PlayniteAchievementsPlugin.Instance?.CustomProviderStore,
                 // Same picker the Display > Appearance platform colors use.
-                currentValue => PlayniteAchievementsPlugin.Instance?.PickColor(Window.GetWindow(this), currentValue));
+                currentValue => PlayniteAchievementsPlugin.Instance?.PickColor(Window.GetWindow(this), currentValue),
+                editor => CustomProviderEditorDialog.Show(Window.GetWindow(this), editor));
             _customViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;
             _customViewModel.AssignmentsChanged += CustomViewModel_AssignmentsChanged;
             _customViewModel.CapstoneChanged += CustomViewModel_CapstoneChanged;
