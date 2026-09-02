@@ -186,9 +186,10 @@
                               Visibility="{Binding HasSelectedCustomProvider, Converter={StaticResource BoolToVis}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" MaxWidth="260" />
+                                <ColumnDefinition Width="*" MaxWidth="220" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" MaxWidth="320" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
@@ -217,15 +218,25 @@
                                          KeyDown="EditorTextBox_KeyDown" />
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                            <StackPanel Grid.Column="2" Margin="0,0,4,0">
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Common_Color}"
                                            Style="{StaticResource FieldLabelStyle}"
                                            Margin="0,0,0,2" />
-                                <TextBox x:Name="ProviderColorTextBox"
-                                         Width="96"
-                                         Style="{StaticResource GridEditorTextBoxStyle}"
-                                         Text="{Binding SelectedProviderColorHex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                         KeyDown="EditorTextBox_KeyDown" />
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- Swatch mirrors the Display > Appearance platform color rows. -->
+                                    <Border Width="26"
+                                            Height="26"
+                                            CornerRadius="4"
+                                            Margin="0,0,4,0"
+                                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                                            BorderThickness="1"
+                                            Background="{Binding SelectedProviderColorBrush}" />
+                                    <TextBox x:Name="ProviderColorTextBox"
+                                             Width="96"
+                                             Style="{StaticResource GridEditorTextBoxStyle}"
+                                             Text="{Binding SelectedProviderColorHex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                             KeyDown="EditorTextBox_KeyDown" />
+                                </StackPanel>
                             </StackPanel>
 
                             <Button x:Name="PickProviderColorButton"
@@ -235,16 +246,26 @@
                                     Style="{StaticResource ToolbarButtonStyle}"
                                     VerticalAlignment="Bottom"
                                     Margin="0,0,8,0" />
+
+                            <StackPanel Grid.Column="4" Margin="0,0,4,0">
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Column_Icon}"
+                                           Style="{StaticResource FieldLabelStyle}"
+                                           Margin="0,0,0,2" />
+                                <!-- Link or local path to an SVG; blank keeps the default icon. -->
+                                <TextBox x:Name="ProviderIconSourceTextBox"
+                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                         Text="{Binding SelectedProviderIconSource, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                         KeyDown="EditorTextBox_KeyDown" />
+                            </StackPanel>
                             <Button x:Name="BrowseProviderSvgButton"
-                                    Grid.Column="4"
+                                    Grid.Column="5"
                                     Content="{DynamicResource LOCPlayAch_Button_Browse}"
                                     Command="{Binding BrowseSvgCommand}"
-                                    ToolTip="{Binding SelectedProviderIconFileName}"
                                     Style="{StaticResource ToolbarButtonStyle}"
                                     VerticalAlignment="Bottom"
                                     Margin="0,0,8,0" />
                             <Button x:Name="DeleteCustomProviderButton"
-                                    Grid.Column="5"
+                                    Grid.Column="6"
                                     Content="{DynamicResource LOCPlayAch_Common_Delete}"
                                     Command="{Binding DeleteCustomProviderCommand}"
                                     Style="{StaticResource ToolbarButtonStyle}"
