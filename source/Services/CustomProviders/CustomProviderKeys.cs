@@ -14,7 +14,10 @@ namespace PlayniteAchievements.Services.CustomProviders
 
         public const string Prefix = "Custom:";
 
-        public const string BaseIconKey = "ProviderIconCustom";
+        // Unassigned custom-only games borrow the Manual provider's icon and color.
+        public const string FallbackProviderKey = "Manual";
+
+        public const string BaseIconKey = "ProviderIconManual";
 
         public const string IconKeyPrefix = "ProviderIconCustom:";
 
