@@ -883,6 +883,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _achievementOverridesService,
                 PlayniteAchievementsPlugin.Instance?.GameCustomDataStore,
                 PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                _settings,
                 _logger);
             _customViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;
             _customControl = new ManageAchievementsCustomTab(_customViewModel);
