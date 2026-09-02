@@ -40,7 +40,9 @@ namespace PlayniteAchievements.Services
             {
                 if (_rawGameData == null)
                 {
-                    _rawGameData = _achievementDataService.GetRawGameAchievementData(_gameId);
+                    // Manage tabs build their row lists from this copy, so it carries the custom
+                    // achievement rows too; only display overlays are left to the hydrated copy.
+                    _rawGameData = _achievementDataService.GetRawGameAchievementDataWithCustomAchievements(_gameId);
                 }
 
                 return _rawGameData;
