@@ -4,6 +4,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.GameCustomData;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace PlayniteAchievements.Services.Tests
@@ -142,6 +143,81 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(50, definition.GlobalPercentUnlocked);
             Assert.AreEqual(1, definition.ProgressNum);
             Assert.AreEqual(2, definition.ProgressDenom);
+        }
+
+        [TestMethod]
+        public void CustomAchievementsPackage_RoundTripsDefinitionsAndHeaderOnlyTemplate()
+        {
+            var tempDirectory = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDirectory);
+            try
+            {
+                var store = new GameCustomDataStore(Path.Combine(tempDirectory, "store"));
+                var gameId = Guid.NewGuid();
+                var packagePath = Path.Combine(tempDirectory, "custom.pacustom");
+                store.ExportCustomAchievementsPackage(
+                    gameId,
+                    new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition
+                        {
+                            Id = "first-win",
+                            DisplayName = "First, Win",
+                            Description = "Uses a \"quote\"",
+                            Unlocked = true,
+                            UnlockTimeUtc = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+                            Points = 10,
+                            TrophyType = "gold",
+                            Hidden = true,
+                            Rarity = "Rare",
+                            GlobalPercentUnlocked = 12.5,
+                            ProgressNum = 1,
+                            ProgressDenom = 2
+                        },
+                        new CustomAchievementDefinition
+                        {
+                            Id = "second",
+                            DisplayName = "Second"
+                        }
+                    },
+                    packagePath);
+
+                var result = store.ImportCustomAchievementsPackage(gameId, packagePath);
+                Assert.IsFalse(result.HasErrors, string.Join("; ", result.Errors));
+                Assert.AreEqual(2, result.Definitions.Count);
+
+                var first = result.Definitions[0];
+                Assert.AreEqual("first-win", first.Id);
+                Assert.AreEqual("First, Win", first.DisplayName);
+                Assert.AreEqual("Uses a \"quote\"", first.Description);
+                Assert.IsTrue(first.Unlocked);
+                Assert.AreEqual(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc), first.UnlockTimeUtc);
+                Assert.AreEqual(10, first.Points);
+                Assert.AreEqual("gold", first.TrophyType);
+                Assert.IsTrue(first.Hidden);
+                Assert.AreEqual("Rare", first.Rarity);
+                Assert.AreEqual(12.5, first.GlobalPercentUnlocked);
+                Assert.AreEqual(1, first.ProgressNum);
+                Assert.AreEqual(2, first.ProgressDenom);
+                Assert.IsNull(first.UnlockedIconPath);
+                Assert.AreEqual("second", result.Definitions[1].Id);
+
+                var templatePath = Path.Combine(tempDirectory, "template.pacustom");
+                store.ExportCustomAchievementsPackage(gameId, new List<CustomAchievementDefinition>(), templatePath);
+                var templateResult = store.ImportCustomAchievementsPackage(gameId, templatePath);
+                Assert.AreEqual(0, templateResult.Definitions.Count);
+                Assert.IsTrue(templateResult.HasErrors, "A header-only template imports as no rows.");
+            }
+            finally
+            {
+                try
+                {
+                    Directory.Delete(tempDirectory, recursive: true);
+                }
+                catch
+                {
+                }
+            }
         }
     }
 }
