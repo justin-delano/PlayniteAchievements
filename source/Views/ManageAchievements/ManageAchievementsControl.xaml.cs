@@ -883,9 +883,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _achievementOverridesService,
                 PlayniteAchievementsPlugin.Instance?.GameCustomDataStore,
                 PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                _gameDataSnapshotProvider,
                 _settings,
                 _logger);
             _customViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;
+            _customViewModel.AssignmentsChanged += CustomViewModel_AssignmentsChanged;
+            _customViewModel.CapstoneChanged += CustomViewModel_CapstoneChanged;
             _customControl = new ManageAchievementsCustomTab(_customViewModel);
             CustomHost.Content = _customControl;
         }
@@ -1047,10 +1050,27 @@ namespace PlayniteAchievements.Views.ManageAchievements
             HandleStateChanged(refreshCapstone: true);
         }
 
+        private void CustomViewModel_AssignmentsChanged(object sender, EventArgs e)
+        {
+            // Same propagation as a Category tab edit; the Custom tab already shows the change,
+            // so it keeps its rows and selection instead of reloading on its own edit.
+            CategoryViewModel_DeferredLibraryRefreshRequired(sender, e);
+            _customRefreshPending = false;
+        }
+
+        private void CustomViewModel_CapstoneChanged(object sender, CapstoneChangedEventArgs e)
+        {
+            _gameDataSnapshotProvider?.Invalidate();
+            _viewModel?.NotifyCapstoneChanged(e?.DisplayName);
+            _capstoneRefreshPending = true;
+        }
+
         private void CapstoneControl_CapstoneChanged(object sender, CapstoneChangedEventArgs e)
         {
             _gameDataSnapshotProvider?.Invalidate();
             _viewModel?.NotifyCapstoneChanged(e?.DisplayName);
+            // Custom rows show the capstone flag in their details pane.
+            _customRefreshPending = true;
         }
 
         private void AchievementIconsControl_IconOverridesSaved(object sender, IconOverridesSavedEventArgs e)
@@ -1208,6 +1228,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (_customViewModel != null)
             {
                 _customViewModel.CustomAchievementsSaved -= CustomViewModel_CustomAchievementsSaved;
+                _customViewModel.AssignmentsChanged -= CustomViewModel_AssignmentsChanged;
+                _customViewModel.CapstoneChanged -= CustomViewModel_CapstoneChanged;
             }
 
             _customControl = null;
