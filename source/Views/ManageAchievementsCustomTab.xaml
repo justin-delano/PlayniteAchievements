@@ -153,10 +153,19 @@
                             Content="{DynamicResource LOCPlayAch_Common_Import}"
                             Command="{Binding ImportFileCommand}"
                             Style="{StaticResource ToolbarButtonStyle}" />
-                    <Button x:Name="ExportTemplateButton"
-                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportTemplate}"
-                            Command="{Binding ExportTemplateCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
+                    <Button x:Name="ExportButton"
+                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                            Click="ExportButton_Click"
+                            Style="{StaticResource ToolbarButtonStyle}">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportAchievements}"
+                                          Command="{Binding ExportAchievementsCommand}" />
+                                <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportTemplate}"
+                                          Command="{Binding ExportTemplateCommand}" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
                     <Button x:Name="RevertButton"
                             Content="{DynamicResource LOCPlayAch_Common_RevertChanges}"
                             Command="{Binding RevertCommand}"
@@ -297,9 +306,40 @@
                                 <ComboBox ItemsSource="{Binding DataContext.RarityOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                           SelectedValue="{Binding Rarity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           SelectedValuePath="Value"
-                                          DisplayMemberPath="DisplayName"
                                           MinHeight="30"
-                                          VerticalContentAlignment="Center" />
+                                          VerticalContentAlignment="Center">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Width="16"
+                                                       Height="16"
+                                                       Margin="0,0,6,0"
+                                                       VerticalAlignment="Center">
+                                                    <Image.Style>
+                                                        <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Value}" Value="UltraRare">
+                                                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityUltraRare}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Value}" Value="Rare">
+                                                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityRare}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Value}" Value="Uncommon">
+                                                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityUncommon}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Value}" Value="Common">
+                                                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityCommon}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
+                                                <TextBlock Text="{Binding DisplayName}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -403,16 +443,9 @@
 
                         <StackPanel DataContext="{Binding SelectedRow}"
                                     Visibility="{Binding DataContext.HasSelectedRow, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
-                            <Button x:Name="EditIconsButton"
-                                    Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_EditIcons}"
-                                    Command="{Binding DataContext.ToggleIconEditorCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    Padding="12,6"
-                                    Margin="0,12,0,2"
-                                    HorizontalAlignment="Left" />
-
                             <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
                                       IsChecked="{Binding Hidden, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      Margin="0,10,0,0" />
+                                      Margin="0,12,0,0" />
 
                             <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_TrophyType}"
                                        Style="{StaticResource FieldLabelStyle}" />
@@ -468,22 +501,12 @@
                                 Padding="0,12,0,0"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,1,0,0"
-                                Visibility="{Binding ShowIconEditor, Converter={StaticResource BoolToVis}}">
+                                Visibility="{Binding HasSelectedRow, Converter={StaticResource BoolToVis}}">
                             <StackPanel DataContext="{Binding SelectedRow}">
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_EditIcons}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center" />
-                                    <Button Grid.Column="1"
-                                            Content="{DynamicResource LOCPlayAch_Button_Close}"
-                                            Command="{Binding DataContext.CloseIconEditorCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            Padding="10,5" />
-                                </Grid>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Tab_CustomIcons}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8" />
 
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
