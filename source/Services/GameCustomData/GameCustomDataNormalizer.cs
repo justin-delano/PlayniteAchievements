@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Services.CustomProviders;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services.Achievements;
@@ -77,6 +78,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 NormalizeNotificationAppearanceOverride(normalized.NotificationAppearanceOverride);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
             normalized.CustomAchievements = NormalizeCustomAchievements(normalized.CustomAchievements);
+            normalized.CustomProviderId = NormalizeCustomProviderId(normalized.CustomProviderId, normalized.CustomAchievements);
             return normalized;
         }
 
@@ -116,6 +118,8 @@ namespace PlayniteAchievements.Services.GameCustomData
                 NormalizeNotificationAppearanceOverride(normalized.NotificationAppearanceOverride);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
             normalized.CustomAchievements = NormalizeCustomAchievements(normalized.CustomAchievements);
+            normalized.CustomProviderId = NormalizeCustomProviderId(normalized.CustomProviderId, normalized.CustomAchievements);
+            normalized.CustomProvider = NormalizeCustomProviderSnapshot(normalized.CustomProvider, normalized.CustomProviderId);
             return normalized;
         }
 
@@ -151,7 +155,8 @@ namespace PlayniteAchievements.Services.GameCustomData
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
                    data.ManualLink != null ||
-                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0);
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static bool HasPortableData(GameCustomDataFile data)
@@ -189,7 +194,8 @@ namespace PlayniteAchievements.Services.GameCustomData
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
                    data.ManualLink != null ||
-                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0);
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static bool HasVisibleCustomization(GameCustomDataFile data)
@@ -222,7 +228,8 @@ namespace PlayniteAchievements.Services.GameCustomData
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
                    data.ManualLink != null ||
-                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0);
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static GameCustomDataFile MergePreferExisting(GameCustomDataFile existing, GameCustomDataFile legacy)
@@ -316,7 +323,11 @@ namespace PlayniteAchievements.Services.GameCustomData
                     ? existing.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
                     : legacy.CustomAchievements != null && legacy.CustomAchievements.Count > 0
                         ? legacy.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
-                        : null
+                        : null,
+                // Follows whichever side supplied the custom achievements it belongs to.
+                CustomProviderId = existing.CustomAchievements != null && existing.CustomAchievements.Count > 0
+                    ? existing.CustomProviderId
+                    : legacy.CustomProviderId
             };
         }
 
@@ -965,6 +976,40 @@ namespace PlayniteAchievements.Services.GameCustomData
                 DisplayPlatformKeyOverride = NormalizeString(link.DisplayPlatformKeyOverride),
                 CreatedUtc = createdUtc,
                 LastModifiedUtc = lastModifiedUtc
+            };
+        }
+
+        /// <summary>
+        /// A custom provider assignment only has meaning while the game has custom achievements, so
+        /// the id is dropped otherwise and never keeps an empty row alive.
+        /// </summary>
+        private static string NormalizeCustomProviderId(
+            string customProviderId,
+            IReadOnlyCollection<CustomAchievementDefinition> customAchievements)
+        {
+            var normalized = CustomProviderKeys.NormalizeId(customProviderId);
+            return normalized != null && customAchievements != null && customAchievements.Count > 0
+                ? normalized
+                : null;
+        }
+
+        private static CustomProviderDefinition NormalizeCustomProviderSnapshot(
+            CustomProviderDefinition snapshot,
+            string customProviderId)
+        {
+            var name = NormalizeString(snapshot?.Name);
+            if (snapshot == null || customProviderId == null || name == null)
+            {
+                return null;
+            }
+
+            return new CustomProviderDefinition
+            {
+                Id = customProviderId,
+                Name = name,
+                ColorHex = NormalizeString(snapshot.ColorHex),
+                IconPathData = NormalizeString(snapshot.IconPathData),
+                IconSourceFileName = NormalizeString(snapshot.IconSourceFileName)
             };
         }
 
