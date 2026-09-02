@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
@@ -31,6 +32,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly AchievementOverridesService _achievementOverridesService;
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly ManagedCustomIconService _managedCustomIconService;
+        private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
         private CustomAchievementEditItem _selectedRow;
@@ -47,6 +49,7 @@ namespace PlayniteAchievements.ViewModels
             AchievementOverridesService achievementOverridesService,
             GameCustomDataStore gameCustomDataStore,
             ManagedCustomIconService managedCustomIconService,
+            PlayniteAchievementsSettings settings,
             ILogger logger)
         {
             _gameId = gameId;
@@ -54,6 +57,7 @@ namespace PlayniteAchievements.ViewModels
             _achievementOverridesService = achievementOverridesService ?? throw new ArgumentNullException(nameof(achievementOverridesService));
             _gameCustomDataStore = gameCustomDataStore ?? throw new ArgumentNullException(nameof(gameCustomDataStore));
             _managedCustomIconService = managedCustomIconService;
+            _settings = settings;
             _logger = logger;
 
             AchievementRows = new ObservableCollection<CustomAchievementEditItem>();
@@ -642,13 +646,23 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            // Icon masking follows the same display settings as the achievement grids, so a
+            // locked or hidden custom row masks its icon until clicked.
+            row.ShowHiddenIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
+            row.ShowLockedIcon = _settings?.Persisted?.ShowLockedIcon ?? true;
             row.PropertyChanged -= Row_PropertyChanged;
             row.PropertyChanged += Row_PropertyChanged;
         }
 
         private void Row_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e == null || e.PropertyName == nameof(CustomAchievementEditItem.ValidationMessage))
+            if (e == null ||
+                e.PropertyName == nameof(CustomAchievementEditItem.ValidationMessage) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.IsRevealed) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.IsIconHidden) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.IsLockedIconHidden) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.CanReveal) ||
+                e.PropertyName == nameof(CustomAchievementEditItem.DisplayIcon))
             {
                 return;
             }
@@ -749,9 +763,79 @@ namespace PlayniteAchievements.ViewModels
 
         private static readonly string[] TimeModeDisplayNames = { "AM", "PM", "24hr" };
 
+        private bool _isRevealed;
+        private bool _showHiddenIcon;
+        private bool _showLockedIcon = true;
+
         public string OriginalApiName { get; private set; }
 
         public bool IsNew { get; private set; }
+
+        /// <summary>
+        /// Mirrors the grid display setting: when false, a locked hidden row masks its icon
+        /// behind the hidden placeholder until revealed.
+        /// </summary>
+        public bool ShowHiddenIcon
+        {
+            get => _showHiddenIcon;
+            set
+            {
+                if (SetValueAndReturn(ref _showHiddenIcon, value))
+                {
+                    NotifyRevealStateChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Mirrors the grid display setting: when false, a locked row masks its icon behind
+        /// the locked placeholder until revealed.
+        /// </summary>
+        public bool ShowLockedIcon
+        {
+            get => _showLockedIcon;
+            set
+            {
+                if (SetValueAndReturn(ref _showLockedIcon, value))
+                {
+                    NotifyRevealStateChanged();
+                }
+            }
+        }
+
+        public bool IsRevealed
+        {
+            get => _isRevealed;
+            set
+            {
+                if (SetValueAndReturn(ref _isRevealed, value))
+                {
+                    NotifyRevealStateChanged();
+                }
+            }
+        }
+
+        public bool IsIconHidden => Hidden && !Unlocked && !ShowHiddenIcon && !IsRevealed;
+
+        public bool IsLockedIconHidden => !Unlocked && !ShowLockedIcon && !IsRevealed;
+
+        public bool CanReveal => !Unlocked && ((Hidden && !ShowHiddenIcon) || !ShowLockedIcon);
+
+        public void ToggleReveal()
+        {
+            if (CanReveal)
+            {
+                IsRevealed = !IsRevealed;
+            }
+        }
+
+        private void NotifyRevealStateChanged()
+        {
+            OnPropertyChanged(nameof(IsIconHidden));
+            OnPropertyChanged(nameof(IsLockedIconHidden));
+            OnPropertyChanged(nameof(CanReveal));
+            OnPropertyChanged(nameof(DisplayIcon));
+        }
 
         public string Id
         {
@@ -784,7 +868,7 @@ namespace PlayniteAchievements.ViewModels
                     }
 
                     OnPropertyChanged(nameof(CanEditUnlockTime));
-                    OnPropertyChanged(nameof(DisplayIcon));
+                    NotifyRevealStateChanged();
                 }
             }
         }
@@ -860,7 +944,13 @@ namespace PlayniteAchievements.ViewModels
         public bool Hidden
         {
             get => _hidden;
-            set => SetValue(ref _hidden, value);
+            set
+            {
+                if (SetValueAndReturn(ref _hidden, value))
+                {
+                    NotifyRevealStateChanged();
+                }
+            }
         }
 
         public string Rarity
@@ -1136,9 +1226,27 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public string DisplayIcon => Unlocked
-            ? AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath)
-            : AchievementIconResolver.GetLockedDisplayIcon(UnlockedIconPath, LockedIconPath);
+        public string DisplayIcon
+        {
+            get
+            {
+                // Hidden is tested first so the more spoiler-sensitive state wins when a row
+                // is both hidden and locked-masked, matching AchievementDisplayItem.
+                if (IsIconHidden)
+                {
+                    return AchievementIconResolver.GetHiddenFallbackIcon();
+                }
+
+                if (IsLockedIconHidden)
+                {
+                    return AchievementIconResolver.GetLockedFallbackIcon();
+                }
+
+                return Unlocked
+                    ? AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath)
+                    : AchievementIconResolver.GetLockedDisplayIcon(UnlockedIconPath, LockedIconPath);
+            }
+        }
 
         public string UnlockedPreviewPath => AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath);
 
