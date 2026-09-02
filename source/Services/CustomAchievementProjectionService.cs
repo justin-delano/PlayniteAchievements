@@ -155,11 +155,17 @@ namespace PlayniteAchievements.Services
             return projected;
         }
 
+        /// <param name="providerPlatformKey">
+        /// Display provider key for the game (a resolved <c>Custom:&lt;id&gt;</c> key), or null to
+        /// display as plain Custom. Rides the same field aggregator-serviced games use, so every
+        /// surface that reads <see cref="GameAchievementData.EffectiveProviderKey"/> shows it.
+        /// </param>
         public static GameAchievementData CreateSyntheticGameData(
             Guid playniteGameId,
             Game game,
             IEnumerable<CustomAchievementDefinition> definitions,
-            ManagedCustomIconService managedCustomIconService = null)
+            ManagedCustomIconService managedCustomIconService = null,
+            string providerPlatformKey = null)
         {
             var achievements = ProjectAchievements(playniteGameId, definitions, managedCustomIconService);
             if (achievements.Count == 0)
@@ -171,6 +177,7 @@ namespace PlayniteAchievements.Services
             {
                 LastUpdatedUtc = DateTime.UtcNow,
                 ProviderKey = ProviderKey,
+                ProviderPlatformKey = NormalizeText(providerPlatformKey),
                 LibrarySourceName = game?.Source?.Name,
                 HasAchievements = true,
                 GameName = game?.Name,
