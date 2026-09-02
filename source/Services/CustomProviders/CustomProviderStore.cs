@@ -165,24 +165,19 @@ namespace PlayniteAchievements.Services.CustomProviders
             }
         }
 
-        public CustomProviderDefinition CreateNew(string name, string colorHex = null)
+        public string GenerateUniqueId()
         {
-            string id;
             lock (_sync)
             {
+                string id;
                 do
                 {
                     id = CustomProviderKeys.GenerateId();
                 }
                 while (_byId.ContainsKey(id));
-            }
 
-            return Upsert(new CustomProviderDefinition
-            {
-                Id = id,
-                Name = name,
-                ColorHex = colorHex ?? CustomProviderKeys.DefaultColorHex
-            });
+                return id;
+            }
         }
 
         /// <summary>
