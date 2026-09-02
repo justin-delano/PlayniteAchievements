@@ -1554,7 +1554,10 @@ namespace PlayniteAchievements
         private CustomProviderVisuals ResolveCustomProviderVisuals(string customProviderId)
         {
             return _customProviderStore != null && _customProviderStore.TryGet(customProviderId, out var definition)
-                ? new CustomProviderVisuals(definition.Name, definition.ColorHex)
+                ? new CustomProviderVisuals(
+                    definition.Name,
+                    definition.ColorHex,
+                    hasIcon: !string.IsNullOrWhiteSpace(definition.IconPathData))
                 : null;
         }
 
