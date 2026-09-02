@@ -5,6 +5,7 @@
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
                    xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+                   xmlns:ach="clr-namespace:PlayniteAchievements"
                    mc:Ignorable="d"
                    d:DesignHeight="40" d:DesignWidth="200">
     <!--
@@ -13,9 +14,28 @@
         Displays achievement summary per game in grid/list views.
         DataContext is inherited from parent (the Game for this row).
     -->
+    <controls:PluginUserControl.Style>
+        <Style TargetType="controls:PluginUserControl">
+            <Style.Triggers>
+                <!-- Source-anchored: this control's DataContext is the game row. -->
+                <DataTrigger Binding="{Binding Settings.Persisted.EnableAchievementViewItemControl, Source={x:Static ach:PlayniteAchievementsPlugin.Instance}}"
+                             Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasData, RelativeSource={RelativeSource Self}}"
+                             Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </controls:PluginUserControl.Style>
+
     <controls:PluginUserControl.Resources>
-        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-        <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
     <Grid Name="PART_GridContener">
@@ -25,7 +45,7 @@
                    FontSize="{Binding RelativeSource={RelativeSource AncestorType=controls:PluginUserControl}, Path=FontSize}"
                    Visibility="{Binding RelativeSource={RelativeSource AncestorType=controls:PluginUserControl}, Path=IntegrationViewItemWithProgressBar, Converter={StaticResource InverseBoolToVisConverter}}">
             <TextBlock.Text>
-                <MultiBinding StringFormat="{}{0}/{1}">
+                <MultiBinding StringFormat="{}{0:N0}/{1:N0}">
                     <Binding RelativeSource="{RelativeSource AncestorType=controls:PluginUserControl}" Path="UnlockedCount" FallbackValue="0" />
                     <Binding RelativeSource="{RelativeSource AncestorType=controls:PluginUserControl}" Path="AchievementCount" FallbackValue="0" />
                 </MultiBinding>

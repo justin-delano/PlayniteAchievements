@@ -4,31 +4,46 @@
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   xmlns:ach="clr-namespace:PlayniteAchievements"
                    mc:Ignorable="d"
                    d:DesignHeight="24" d:DesignWidth="200">
+    <base:ThemeControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </base:ThemeControlBase.Resources>
+
+    <base:ThemeControlBase.Style>
+        <Style TargetType="base:ThemeControlBase">
+            <Style.Triggers>
+                <!-- Source-anchored: themes replace this control's DataContext with the game row. -->
+                <DataTrigger Binding="{Binding Settings.Persisted.EnableAchievementViewItemControl, Source={x:Static ach:PlayniteAchievementsPlugin.Instance}}"
+                             Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasData, RelativeSource={RelativeSource Self}}"
+                             Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </base:ThemeControlBase.Style>
+
     <!--
         Modern view item control for theme integration.
         Displays achievement summary per game in grid/list views.
         DataContext is inherited from parent (the Game for this row).
     -->
     <Grid x:Name="PART_GridContainer">
-        <Grid.Style>
-            <Style TargetType="Grid">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.Persisted.EnableAchievementViewItemControl, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
-                                 Value="False">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </Grid.Style>
         <!-- Simple label format (when ShowProgressBar=False) -->
         <TextBlock x:Name="LabelMode"
                    VerticalAlignment="Center"
-                   Foreground="{DynamicResource TextBrush}"
-                   FontSize="{DynamicResource FontSize}">
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                   FontSize="{DynamicResource PlayAch.FontSize.Body}">
             <TextBlock.Text>
-                <MultiBinding StringFormat="{}{0}/{1}">
+                <MultiBinding StringFormat="{}{0:N0}/{1:N0}">
                     <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="UnlockedCount" FallbackValue="0" />
                     <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="AchievementCount" FallbackValue="0" />
                 </MultiBinding>
@@ -48,19 +63,16 @@
                          Maximum="{Binding RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Path=AchievementCount, Mode=OneWay, FallbackValue=100}"
                          MinWidth="40"
                          Height="16"
-                         VerticalAlignment="Center"
-                         Foreground="{DynamicResource HighlightGlyphBrush}"
-                         Background="{DynamicResource ControlBackgroundBrush}"
-                         BorderBrush="{DynamicResource NormalBorderBrush}"/>
+                         VerticalAlignment="Center"/>
 
             <TextBlock Grid.Column="0"
                        Grid.ColumnSpan="2"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
-                       Foreground="{DynamicResource TextBrush}"
-                       FontSize="{DynamicResource FontSizeSmall}">
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Caption}">
                 <TextBlock.Text>
-                    <MultiBinding StringFormat="{}{0}/{1}">
+                    <MultiBinding StringFormat="{}{0:N0}/{1:N0}">
                         <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="UnlockedCount" FallbackValue="0" />
                         <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="AchievementCount" FallbackValue="0" />
                     </MultiBinding>

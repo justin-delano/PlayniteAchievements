@@ -21,7 +21,9 @@ namespace PlayniteAchievements.Providers
                 "GOG",
                 "BattleNet",
                 "EA",
-                "Ubisoft"
+                "Ubisoft",
+                "GameJolt",
+                "Riot"
             };
 
         private static readonly HashSet<string> ConsoleMobileProviders =

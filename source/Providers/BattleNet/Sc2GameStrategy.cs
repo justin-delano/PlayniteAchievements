@@ -7,6 +7,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.BattleNet.Models;
+using PlayniteAchievements.Services.Achievements;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
@@ -29,17 +30,19 @@ namespace PlayniteAchievements.Providers.BattleNet
         public async Task<GameAchievementData> FetchAchievementsAsync(Game game, string locale, CancellationToken ct)
         {
             var settings = ProviderRegistry.Settings<BattleNetSettings>();
-            var regionId = settings.Sc2RegionId;
-            var realmId = settings.Sc2RealmId;
-            var profileId = settings.Sc2ProfileId;
             var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale;
             var apiLocale = BattleNetLocaleMapper.ToApiLocale(effectiveLocale);
 
-            if (!BattleNetGameSupport.HasConfiguredSc2(settings))
+            if (!BattleNetGameSupport.HasConfiguredSc2(settings) &&
+                !await TryDiscoverProfileAsync(settings, ct).ConfigureAwait(false))
             {
-                _logger?.Warn($"[BattleNet/SC2] SC2 API settings are incomplete. credentials={Bool(BattleNetGameSupport.HasApiCredentials(settings))}, region={regionId}, realm={realmId}, profileId={(profileId > 0 ? MaskId(profileId.ToString()) : "<none>")}");
+                _logger?.Warn($"[BattleNet/SC2] SC2 profile unavailable. credentials={Bool(BattleNetGameSupport.HasApiCredentials(settings))}, oauth={Bool(BattleNetGameSupport.HasOAuthSession(settings))}");
                 return null;
             }
+
+            var regionId = settings.Sc2RegionId;
+            var realmId = settings.Sc2RealmId;
+            var profileId = settings.Sc2ProfileId;
 
             var definitions = await _client.GetSc2AchievementDefinitionsAsync(
                 regionId,
@@ -111,19 +114,72 @@ namespace PlayniteAchievements.Providers.BattleNet
             return data;
         }
 
+        /// <summary>
+        /// Resolves the account's StarCraft II profile coordinates from the Battle.net account using the
+        /// OAuth session, then persists them so later refreshes skip the lookup. Returns false when the
+        /// account lacks API credentials, an OAuth session, or any StarCraft II profile.
+        /// </summary>
+        private async Task<bool> TryDiscoverProfileAsync(BattleNetSettings settings, CancellationToken ct)
+        {
+            if (!BattleNetGameSupport.HasApiCredentials(settings) || !BattleNetGameSupport.HasOAuthSession(settings))
+            {
+                return false;
+            }
+
+            var apiRegion = string.IsNullOrWhiteSpace(settings.WowRegion) ? "us" : settings.WowRegion;
+            var profiles = await _client.GetSc2PlayerProfilesAsync(
+                apiRegion,
+                settings.BattleNetAccountId,
+                settings.BattleNetAccessToken,
+                ct).ConfigureAwait(false);
+
+            var chosen = profiles?.FirstOrDefault(p => p != null && p.ProfileId > 0);
+            if (chosen == null)
+            {
+                return false;
+            }
+
+            if (chosen.RegionId > 0)
+            {
+                settings.Sc2RegionId = chosen.RegionId;
+            }
+            if (chosen.RealmId > 0)
+            {
+                settings.Sc2RealmId = chosen.RealmId;
+            }
+            settings.Sc2ProfileId = chosen.ProfileId;
+            ProviderRegistry.Write(settings, persistToDisk: true);
+
+            if (profiles.Count > 1)
+            {
+                _logger?.Info($"[BattleNet/SC2] Discovered {profiles.Count} profiles; using first (region={chosen.RegionId}, realm={chosen.RealmId}).");
+            }
+
+            return true;
+        }
+
         private static string ResolveCategory(string categoryId, Dictionary<string, string> names, Dictionary<string, string> parents)
         {
             if (string.IsNullOrEmpty(categoryId) || !names.TryGetValue(categoryId, out var name))
                 return null;
 
-            if (parents.TryGetValue(categoryId, out var parentId) &&
-                !string.IsNullOrEmpty(parentId) &&
-                names.TryGetValue(parentId, out var parentName))
+            // Walk to the root rather than taking a single hop, so a category nested deeper than
+            // one level keeps its whole ancestry. The visited set guards against a cycle in the
+            // upstream parent links; NormalizePath applies the depth cap.
+            var segments = new List<string> { name };
+            var visited = new HashSet<string>(StringComparer.Ordinal) { categoryId };
+            var currentId = categoryId;
+
+            while (parents.TryGetValue(currentId, out var parentId) &&
+                   !string.IsNullOrEmpty(parentId) &&
+                   visited.Add(parentId) &&
+                   names.TryGetValue(parentId, out var parentName))
             {
-                return $"{parentName} - {name}";
+                segments.Insert(0, parentName);
+                currentId = parentId;
             }
 
-            return name;
+            return CategoryPathHelper.JoinRaw(segments.ToArray());
         }
 
         private static int StableAppId(string id)
@@ -137,31 +193,5 @@ namespace PlayniteAchievements.Providers.BattleNet
         }
 
         private static string Bool(bool value) => value ? "true" : "false";
-
-        private static string MaskId(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "<empty>";
-            }
-
-            var trimmed = value.Trim();
-            if (trimmed.Length <= 4)
-            {
-                return "****";
-            }
-
-            return $"{new string('*', Math.Min(8, trimmed.Length - 4))}{trimmed.Substring(trimmed.Length - 4)}";
-        }
-
-        private static string GameLabel(Game game)
-        {
-            if (game == null)
-            {
-                return "<null>";
-            }
-
-            return $"{game.Name ?? "<unnamed>"} ({game.Id})";
-        }
     }
 }

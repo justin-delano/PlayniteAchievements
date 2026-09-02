@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Services.Images
 {
@@ -39,6 +40,18 @@ namespace PlayniteAchievements.Services.Images
                 gameId,
                 fileStem,
                 variant);
+            return Path.Combine(
+                Path.GetDirectoryName(_diskImageService.GetCacheDirectoryPath()) ?? string.Empty,
+                relativePath);
+        }
+
+        public string GetCategoryCustomImagePath(
+            string gameId,
+            string fileStem)
+        {
+            var relativePath = AchievementIconCachePathBuilder.BuildCustomCategoryRelativePath(
+                gameId,
+                fileStem);
             return Path.Combine(
                 Path.GetDirectoryName(_diskImageService.GetCacheDirectoryPath()) ?? string.Empty,
                 relativePath);
@@ -142,6 +155,40 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
+        /// <summary>
+        /// Turns a stored category art override into a path a surface can render. Callers reach
+        /// this through <see cref="CategoryArtChainResolver.OverrideDisplayPathResolver"/>, so
+        /// every surface resolves an override the same way.
+        ///
+        /// The managed-path step is idempotent: hydration already resolves the overrides carried on
+        /// game data, while the cached-summary path passes stored values through raw, and an
+        /// already-rooted path is returned unchanged.
+        /// </summary>
+        internal string ResolveCategoryArtDisplayPath(
+            string storedValue,
+            Guid? playniteGameId,
+            CategoryArtDisplayMode displayMode)
+        {
+            var normalized = NormalizePath(storedValue);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            var resolved = playniteGameId.HasValue
+                ? ResolveManagedDisplayPath(normalized, playniteGameId.Value.ToString("D"))
+                : normalized;
+
+            // Category graphics are overwritten in place at a stable managed path, so a surface
+            // rendering through the plugin's image pipeline needs the cache-bust token or it keeps
+            // serving the bitmap from before the replacement. The theme surface deliberately does
+            // not get the token: it is a public contract that theme XAML may bind straight to an
+            // Image, which would not understand the encoding.
+            return displayMode == CategoryArtDisplayMode.PluginImagePipeline
+                ? AchievementIconResolver.ApplyCacheBust(resolved)
+                : resolved;
+        }
+
         public string ResolveManagedDisplayPath(string value, string gameId)
         {
             var normalized = NormalizePath(value);
@@ -188,6 +235,70 @@ namespace PlayniteAchievements.Services.Images
             }
 
             var targetPath = GetAchievementCustomIconPath(gameId, fileStem, variant);
+            if (string.Equals(sourcePath.Trim(), targetPath, StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(targetPath))
+            {
+                return targetPath;
+            }
+
+            if (IsHttpUrl(sourcePath))
+            {
+                return await _diskImageService
+                    .GetOrDownloadIconToPathAsync(
+                        sourcePath,
+                        targetPath,
+                        decodeSize: 0,
+                        cancel,
+                        overwriteExistingTarget: overwriteExistingTarget)
+                    .ConfigureAwait(false);
+            }
+
+            if (!File.Exists(sourcePath))
+            {
+                return null;
+            }
+
+            return await _diskImageService
+                .GetOrCopyLocalIconToPathAsync(
+                    sourcePath,
+                    targetPath,
+                    decodeSize: 0,
+                    cancel,
+                    overwriteExistingTarget: overwriteExistingTarget)
+                .ConfigureAwait(false);
+        }
+
+        public Task<string> MaterializeCategoryImageAsync(
+            string sourcePath,
+            string gameId,
+            string fileStem,
+            CancellationToken cancel,
+            bool overwriteExistingTarget = false)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || string.IsNullOrWhiteSpace(fileStem))
+            {
+                return Task.FromResult<string>(null);
+            }
+
+            var targetPath = GetCategoryCustomImagePath(gameId, fileStem);
+            return MaterializeImageToPathAsync(
+                sourcePath,
+                targetPath,
+                cancel,
+                overwriteExistingTarget);
+        }
+
+        private async Task<string> MaterializeImageToPathAsync(
+            string sourcePath,
+            string targetPath,
+            CancellationToken cancel,
+            bool overwriteExistingTarget)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || string.IsNullOrWhiteSpace(targetPath))
+            {
+                return null;
+            }
+
             if (string.Equals(sourcePath.Trim(), targetPath, StringComparison.OrdinalIgnoreCase) &&
                 File.Exists(targetPath))
             {
@@ -278,7 +389,11 @@ namespace PlayniteAchievements.Services.Images
                 }
             }
 
-            foreach (var file in Directory.EnumerateFiles(customDirectory, "*.png", SearchOption.AllDirectories))
+            // Custom icons keep their source format, so a "*.png" sweep left every other format
+            // behind forever. Enumerate everything and filter by recognized extension instead.
+            foreach (var file in Directory
+                .EnumerateFiles(customDirectory, "*", SearchOption.AllDirectories)
+                .Where(candidate => ImageFormats.HasSupportedExtension(candidate)))
             {
                 try
                 {

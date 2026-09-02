@@ -29,13 +29,18 @@ namespace PlayniteAchievements.Models
         public IReadOnlyCollection<Guid> GameIds { get; set; }
 
         /// <summary>
-        /// When true, force achievement icon redownload even if the target cache files already exist.
+        /// Unified refresh options for current-user and friend refreshes.
         /// </summary>
-        public bool ForceIconRefresh { get; set; }
+        public RefreshOptions Options { get; set; }
 
         /// <summary>
-        /// Optional custom refresh options for ad-hoc custom mode runs.
+        /// When true, this refresh may interrupt the user: an empty-target result (no enabled,
+        /// authenticated provider services the requested game) surfaces the "no capable provider"
+        /// modal, and a provider authentication failure surfaces the auth-failed notification.
+        /// Opt-in so both notices appear only for refreshes of a selected game; polling,
+        /// game-close, import, periodic, and bulk refreshes leave it false and fail silently to
+        /// the log.
         /// </summary>
-        public CustomRefreshOptions CustomOptions { get; set; }
+        public bool SurfaceUserNotices { get; set; }
     }
 }

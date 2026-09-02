@@ -2,6 +2,9 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.EmuLibrary;
+using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -13,18 +16,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using System.Text;
 
 namespace PlayniteAchievements.Providers.ShadPS4
 {
-    internal sealed class ShadPS4DataProvider : IDataProvider
+    internal sealed class ShadPS4DataProvider : DataProviderBase<ShadPS4Settings>, IDataProvider, IProviderOverride, IInGameProgressSource
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4",
+            raw => ShadPS4MatchIdHelper.TryNormalize(raw, out var matchId)
+                ? ProviderOverrideValidation.Valid(matchId)
+                : ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_ShadPS4MatchId_InvalidId"));
+
         private readonly ShadPS4Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
         private readonly string _pluginUserDataPath;
-        private ShadPS4Settings _providerSettings;
 
         private Dictionary<string, string> _titleCache;
         private readonly object _cacheLock = new object();
@@ -46,8 +56,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             _playniteApi = playniteApi;
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
 
-            _providerSettings = ProviderRegistry.Settings<ShadPS4Settings>();
-            _scanner = new ShadPS4Scanner(_logger, _settings, _providerSettings, this, _playniteApi, _pluginUserDataPath);
+            _scanner = new ShadPS4Scanner(_logger, _settings, ProviderSettings, this, _playniteApi, _pluginUserDataPath);
         }
 
         public string ProviderName
@@ -66,6 +75,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
         public string ProviderColorHex => "#752bfd";
 
         public ISessionManager AuthSession => null;
+
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
 
         public bool IsAuthenticated
         {
@@ -100,7 +111,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         public string GetGameDataPath(Game game = null)
         {
             // Priority 1: From provider settings
-            var settingsGameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
+            var settingsGameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(ProviderSettings?.GameDataPath);
             if (!string.IsNullOrWhiteSpace(settingsGameDataPath))
             {
                 return settingsGameDataPath;
@@ -300,7 +311,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (game?.GameActions == null) return false;
 
             // Get settings root for comparison and normalize to likely emulator install folder.
-            var configuredRootPath = ShadPS4PathResolver.ResolveConfiguredRootPath(_providerSettings?.GameDataPath);
+            var configuredRootPath = ShadPS4PathResolver.ResolveConfiguredRootPath(ProviderSettings?.GameDataPath);
             var shadps4InstallFolder = ResolveInstallFolderFromConfiguredRoot(configuredRootPath);
 
             foreach (var action in game.GameActions)
@@ -364,15 +375,16 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         /// <summary>
-        /// Extracts the PS4 title ID from the game's install directory path.
+        /// Extracts the PS4 title ID from the game's install directory path,
+        /// falling back to the EmuLibrary source path for uninstalled EmuLibrary games.
         /// PS4 title IDs follow pattern: AAAA12345 (e.g., CUSA00432)
         /// </summary>
         private string ExtractTitleIdFromGame(Game game)
         {
-            var rawInstallDir = game?.InstallDirectory;
-            var installDir = ExpandGamePath(game, rawInstallDir);
+            var installDir = ExpandGamePath(game, game?.InstallDirectory);
 
-            if (string.IsNullOrWhiteSpace(installDir))
+            if (string.IsNullOrWhiteSpace(installDir) &&
+                !EmuLibraryPathResolver.TryResolveSourcePath(_playniteApi, game, out installDir))
             {
                 return null;
             }
@@ -471,16 +483,98 @@ namespace PlayniteAchievements.Providers.ShadPS4
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
         }
 
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
+        InGameProgressRegistration IInGameProgressSource.TryRegister(
+            Game game,
+            GameAchievementData cachedSchema)
         {
-            if (settings is ShadPS4Settings shadps4Settings)
+            if (game == null ||
+                cachedSchema?.Achievements == null ||
+                cachedSchema.Achievements.Count == 0 ||
+                !string.Equals(cachedSchema.ProviderKey, ProviderKey, StringComparison.OrdinalIgnoreCase))
             {
-                _providerSettings.CopyFrom(shadps4Settings);
+                return null;
             }
+
+            var progressPath = ResolveInGameProgressPath(game);
+            var directory = string.IsNullOrWhiteSpace(progressPath)
+                ? null
+                : Path.GetDirectoryName(progressPath);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return null;
+            }
+
+            return new InGameProgressRegistration
+            {
+                ProviderKey = ProviderKey,
+                WatchTargets = new[] { progressPath },
+                PollInterval = InGameProgressRegistration.FileWatchSafetyPollInterval,
+                State = progressPath
+            };
+        }
+
+        Task<IReadOnlyList<InGameProgressQueryResult>> IInGameProgressSource.QueryAsync(
+            IReadOnlyList<InGameTrackingContext> games,
+            CancellationToken cancellationToken)
+        {
+            var results = new List<InGameProgressQueryResult>();
+            foreach (var context in games ?? Array.Empty<InGameTrackingContext>())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var gameId = context?.Game?.Id ?? Guid.Empty;
+                var path = context?.Registration?.State as string;
+                if (!ShadPS4ProgressReader.TryRead(path, out var unlocked))
+                {
+                    results.Add(InGameProgressQueryResult.Failed(gameId, "file_unstable"));
+                    continue;
+                }
+
+                var observations = unlocked.Select(pair => new AchievementProgressObservation
+                {
+                    ApiName = pair.Key,
+                    Unlocked = true,
+                    UnlockTimeUtc = pair.Value
+                }).ToList();
+                results.Add(InGameProgressQueryResult.Succeeded(gameId, observations));
+            }
+
+            return Task.FromResult<IReadOnlyList<InGameProgressQueryResult>>(results);
+        }
+
+        private string ResolveInGameProgressPath(Game game)
+        {
+            if (game == null)
+            {
+                return null;
+            }
+
+            if (TryGetMatchIdOverride(game.Id, out var matchId))
+            {
+                switch (ShadPS4MatchIdHelper.GetKind(matchId))
+                {
+                    case ShadPS4MatchIdKind.NpCommId:
+                        return GetOrBuildNpCommIdCache().TryGetValue(matchId, out var npXml)
+                            ? npXml
+                            : null;
+                    case ShadPS4MatchIdKind.TitleId:
+                        return GetOrBuildTitleCache().TryGetValue(matchId, out var titleDirectory)
+                            ? Path.Combine(titleDirectory, "trophyfiles", "trophy00", "Xml", "TROP.XML")
+                            : null;
+                }
+            }
+
+            var npCommId = ResolveNpCommIdForGame(game);
+            if (!string.IsNullOrWhiteSpace(npCommId) &&
+                GetOrBuildNpCommIdCache().TryGetValue(npCommId, out var perUserXml))
+            {
+                return perUserXml;
+            }
+
+            var titleId = ExtractTitleIdFromGame(game);
+            return !string.IsNullOrWhiteSpace(titleId) &&
+                   GetOrBuildTitleCache().TryGetValue(titleId, out var trophyDirectory)
+                ? Path.Combine(trophyDirectory, "trophyfiles", "trophy00", "Xml", "TROP.XML")
+                : null;
         }
 
         /// <inheritdoc />
@@ -491,7 +585,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         /// </summary>
         internal string GetAppDataPath()
         {
-            return ShadPS4PathResolver.ResolveConfiguredAppDataPath(_providerSettings?.GameDataPath);
+            return ShadPS4PathResolver.ResolveConfiguredAppDataPath(ProviderSettings?.GameDataPath);
         }
 
         /// <summary>
@@ -581,12 +675,55 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         /// <summary>
         /// Resolves the npcommid for a game by parsing its sce_sys/npbind.dat file.
+        /// Falls back to the EmuLibrary source directory for uninstalled EmuLibrary games.
         /// </summary>
         internal string ResolveNpCommIdForGame(Game game)
         {
-            var rawInstallDir = game?.InstallDirectory;
-            var installDir = ExpandGamePath(game, rawInstallDir);
-            if (string.IsNullOrWhiteSpace(installDir)) return null;
+            var npbindPath = FindNpbindPath(game);
+            return npbindPath == null ? null : ExtractNpCommIdFromNpbind(npbindPath);
+        }
+
+        /// <summary>
+        /// Best-effort Exophase region hint for a game, from the region-prefixed
+        /// trophy content id in its sce_sys/npbind.dat (e.g. UP9000-NPWR05784_00:
+        /// the first letter encodes the release region). PS4 title ids (CUSA) are
+        /// region-agnostic, so the content id is the only regional marker. Null
+        /// when no npbind or no region-prefixed content id is found.
+        /// </summary>
+        internal string ResolveRegionHintForGame(Game game)
+        {
+            var npbindPath = FindNpbindPath(game);
+            if (npbindPath == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var content = Encoding.ASCII.GetString(File.ReadAllBytes(npbindPath));
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    content,
+                    @"([A-Z]P)\d{4}-NPWR\d{5}_\d{2}",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                return match.Success
+                    ? ExophaseGameNameMatcher.MapPsnContentIdToRegionHint(match.Groups[1].Value)
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[ShadPS4] Failed to read region hint from '{npbindPath}'");
+                return null;
+            }
+        }
+
+        private string FindNpbindPath(Game game)
+        {
+            var installDir = ExpandGamePath(game, game?.InstallDirectory);
+            if (string.IsNullOrWhiteSpace(installDir) &&
+                !EmuLibraryPathResolver.TryResolveSourceDirectory(_playniteApi, game, out installDir))
+            {
+                return null;
+            }
 
             var searchDirs = new List<string> { installDir };
 
@@ -602,7 +739,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 var npbindPath = Path.Combine(dir, "sce_sys", "npbind.dat");
                 if (File.Exists(npbindPath))
                 {
-                    return ExtractNpCommIdFromNpbind(npbindPath);
+                    return npbindPath;
                 }
             }
 

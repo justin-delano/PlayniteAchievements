@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using PlayniteAchievements.Models.Settings;
 using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Models.Achievements
@@ -67,6 +68,14 @@ namespace PlayniteAchievements.Models.Achievements
             (Achievements?.Count > 0 && Achievements.All(a => a?.Unlocked == true)) ||
             IsCapstoneUnlocked();
 
+        /// <summary>
+        /// True only when every achievement is unlocked — IsCompleted without the capstone
+        /// shortcut. Drives the standalone 100%-completion notification, which is reserved
+        /// for true 100% while a capstone unlock still marks the game IsCompleted.
+        /// </summary>
+        public bool IsFullyUnlocked =>
+            Achievements?.Count > 0 && Achievements.All(a => a?.Unlocked == true);
+
         private bool IsCapstoneUnlocked()
         {
             if (Achievements == null || Achievements.Count == 0)
@@ -77,6 +86,8 @@ namespace PlayniteAchievements.Models.Achievements
         public string GameName { get; set; }
 
         public int AppId { get; set; }
+
+        public string ProviderGameKey { get; set; }
 
         public Guid? PlayniteGameId { get; set; }
 
@@ -100,6 +111,21 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         [IgnoreDataMember]
         public List<string> AchievementOrder { get; set; }
+
+        /// <summary>
+        /// Runtime-only goal achievement list, most-wanted first. Not persisted in cache/database.
+        /// </summary>
+        [IgnoreDataMember]
+        public List<string> GoalAchievements { get; set; }
+
+        [IgnoreDataMember]
+        public List<string> AchievementCategoryOrder { get; set; }
+
+        [IgnoreDataMember]
+        public Dictionary<string, CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
+
+        [IgnoreDataMember]
+        public GameSummaryCategoryData GameSummaryCategory { get; set; }
 
         /// <summary>
         /// Runtime-only exclusion flag for summary surfaces such as the overview/theme views.

@@ -1,6 +1,7 @@
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;

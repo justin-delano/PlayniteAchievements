@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
@@ -203,6 +204,24 @@ namespace PlayniteAchievements.Providers
             return string.IsNullOrWhiteSpace(value) ? providerKey : value;
         }
 
+        // ===================== PROVIDER ENUMERATION =====================
+
+        /// <summary>
+        /// Returns all registered providers ordered by the configured display order.
+        /// </summary>
+        public IReadOnlyList<IDataProvider> GetAllProviders()
+            => OrderProviderKeys(_providersByKey.Keys)
+                .Select(key => _providersByKey[key])
+                .ToList();
+
+        public bool TryGetProvider(string providerKey, out IDataProvider provider)
+        {
+            provider = null;
+            return !string.IsNullOrWhiteSpace(providerKey) &&
+                   _providersByKey.TryGetValue(providerKey, out provider) &&
+                   provider != null;
+        }
+
         public bool TryGetProviderVisuals(string providerKey, out string iconKey, out string colorHex)
         {
             iconKey = null;
@@ -216,11 +235,82 @@ namespace PlayniteAchievements.Providers
             if (_providersByKey.TryGetValue(providerKey, out var provider) && provider != null)
             {
                 iconKey = provider.ProviderIconKey;
-                colorHex = provider.ProviderColorHex;
+                colorHex = ResolveEffectiveColor(providerKey, provider.ProviderColorHex);
                 return !string.IsNullOrWhiteSpace(iconKey) || !string.IsNullOrWhiteSpace(colorHex);
             }
 
             return false;
+        }
+
+        // Static convenience wrappers so view models and cache projections can resolve provider
+        // visuals off the shared instance without threading a registry reference, mirroring
+        // GetLocalizedName.
+        public static bool TryResolveProviderVisuals(string providerKey, out string iconKey, out string colorHex)
+        {
+            iconKey = null;
+            colorHex = null;
+            var instance = Instance;
+            return instance != null && instance.TryGetProviderVisuals(providerKey, out iconKey, out colorHex);
+        }
+
+        public static string GetProviderColorHex(string providerKey, string fallback = "#888888")
+        {
+            return TryResolveProviderVisuals(providerKey, out _, out var colorHex) &&
+                   !string.IsNullOrWhiteSpace(colorHex)
+                ? colorHex
+                : fallback;
+        }
+
+        public bool TryGetProviderDefaultColorHex(string providerKey, out string colorHex)
+        {
+            colorHex = null;
+            if (!TryGetProvider(providerKey, out var provider) ||
+                !IsValidColor(provider.ProviderColorHex))
+            {
+                return false;
+            }
+
+            colorHex = provider.ProviderColorHex.Trim();
+            return true;
+        }
+
+        public static string GetProviderDefaultColorHex(string providerKey, string fallback = "#888888")
+        {
+            var instance = Instance;
+            return instance != null &&
+                   instance.TryGetProviderDefaultColorHex(providerKey, out var colorHex)
+                ? colorHex
+                : fallback;
+        }
+
+        private string ResolveEffectiveColor(string providerKey, string defaultColorHex)
+        {
+            var overrides = _settings?.Persisted?.ProviderColorOverrides;
+            if (overrides != null &&
+                overrides.TryGetValue(providerKey, out var overrideColorHex) &&
+                IsValidColor(overrideColorHex))
+            {
+                return overrideColorHex.Trim();
+            }
+
+            return IsValidColor(defaultColorHex) ? defaultColorHex.Trim() : null;
+        }
+
+        internal static bool IsValidColor(string colorText)
+        {
+            if (string.IsNullOrWhiteSpace(colorText))
+            {
+                return false;
+            }
+
+            try
+            {
+                return ColorConverter.ConvertFromString(colorText.Trim()) is Color;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // ===================== ENABLED STATE =====================

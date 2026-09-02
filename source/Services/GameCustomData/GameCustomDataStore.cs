@@ -1,0 +1,2020 @@
+using Newtonsoft.Json;
+using Playnite.SDK;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Images;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Threading;
+
+namespace PlayniteAchievements.Services.GameCustomData
+{
+    public sealed class PortableGameCustomDataImportResult
+    {
+        public GameCustomDataFile ImportedData { get; set; }
+
+        public int IgnoredPackageImageCount { get; set; }
+
+        public bool HasIgnoredPackageImages => IgnoredPackageImageCount > 0;
+    }
+
+    public sealed class GameCustomDataChangedEventArgs : EventArgs
+    {
+        public GameCustomDataChangedEventArgs(Guid playniteGameId, bool affectsSummaryData = true)
+        {
+            PlayniteGameId = playniteGameId;
+            AffectsSummaryData = affectsSummaryData;
+        }
+
+        public Guid PlayniteGameId { get; }
+
+        /// <summary>
+        /// False when the change only reorders or re-presents achievements the user already had,
+        /// so nothing about counts, filters or library rollups can have moved. Subscribers that
+        /// rebuild summary or projection data skip those changes; everything else must keep
+        /// treating the change as significant, which is why this defaults to true.
+        /// </summary>
+        public bool AffectsSummaryData { get; }
+    }
+
+    /// <summary>
+    /// Orchestrates per-game custom data persistence and migration.
+    /// </summary>
+    public sealed class GameCustomDataStore
+    {
+        private const string DatabaseFileName = "game_custom_data.db";
+
+        // Portable files are always zip packages under the bare .pa extension (zip inside like
+        // Playnite's .pext); the legacy .pa.zip spelling is still accepted on import.
+        public const string PortableFileExtension = ".pa";
+        public const string PortablePackageFileExtension = ".pa.zip";
+        public const string PortablePackageManifestEntryName = "custom-data.pa";
+        private const string PortablePackageImagesFolderName = "images";
+
+        /// <summary>
+        /// The .pa package entry stem for each notification image slot (path accessors come
+        /// from <see cref="NotificationImageSlotMap"/>).
+        /// </summary>
+        private static readonly IReadOnlyDictionary<NotificationImageSlot, string> NotificationImageEntryStems =
+            new Dictionary<NotificationImageSlot, string>
+            {
+                [NotificationImageSlot.Background] = "notification_background",
+                [NotificationImageSlot.BadgeCommon] = "notification_badge_common",
+                [NotificationImageSlot.BadgeUncommon] = "notification_badge_uncommon",
+                [NotificationImageSlot.BadgeRare] = "notification_badge_rare",
+                [NotificationImageSlot.BadgeUltraRare] = "notification_badge_ultrarare",
+                [NotificationImageSlot.BadgeCompletion] = "notification_badge_completion",
+                [NotificationImageSlot.FrameBadgeCommon] = "notification_frame_badge_common",
+                [NotificationImageSlot.FrameBadgeUncommon] = "notification_frame_badge_uncommon",
+                [NotificationImageSlot.FrameBadgeRare] = "notification_frame_badge_rare",
+                [NotificationImageSlot.FrameBadgeUltraRare] = "notification_frame_badge_ultrarare",
+                [NotificationImageSlot.FrameBadgeCompletion] = "notification_frame_badge_completion"
+            };
+
+        private readonly ILogger _logger;
+        private readonly JsonSerializerSettings _writeSettings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+            NullValueHandling = NullValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Ignore
+        };
+        private readonly object _cacheSync = new object();
+
+        private readonly GameCustomDataLegacyMigration _legacyMigration = new GameCustomDataLegacyMigration();
+        private readonly GameCustomDataRepository _repository;
+        private ManagedCustomIconService _managedCustomIconService;
+        private NotificationImageStore _notificationImageStore;
+        private AchievementDataService _achievementDataService;
+        private Dictionary<Guid, GameCustomDataFile> _cacheByGameId;
+        private HashSet<Guid> _missingGameIds;
+
+        public event EventHandler<GameCustomDataChangedEventArgs> CustomDataChanged;
+
+        public GameCustomDataStore(string pluginUserDataPath, ILogger logger = null)
+        {
+            _logger = logger;
+            var databasePath = Path.Combine(pluginUserDataPath ?? string.Empty, DatabaseFileName);
+            _repository = new GameCustomDataRepository(databasePath, _writeSettings, logger);
+        }
+
+        public string DatabasePath => _repository.DatabasePath;
+
+        public void AttachManagedCustomIconService(ManagedCustomIconService managedCustomIconService)
+        {
+            _managedCustomIconService = managedCustomIconService;
+        }
+
+        public void AttachNotificationImageStore(NotificationImageStore notificationImageStore)
+        {
+            _notificationImageStore = notificationImageStore;
+        }
+
+        public void AttachAchievementDataService(AchievementDataService achievementDataService)
+        {
+            _achievementDataService = achievementDataService;
+        }
+
+        public void AttachRuntimeSettings(PlayniteAchievementsSettings settings)
+        {
+            _ = settings;
+        }
+
+        public bool TryLoad(Guid playniteGameId, out GameCustomDataFile data)
+        {
+            data = null;
+            if (playniteGameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            lock (_cacheSync)
+            {
+                if (_cacheByGameId != null)
+                {
+                    if (_cacheByGameId.TryGetValue(playniteGameId, out var cached))
+                    {
+                        data = cached?.Clone();
+                        return data != null;
+                    }
+
+                    if (_missingGameIds != null && _missingGameIds.Contains(playniteGameId))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            var found = _repository.TryLoad(playniteGameId, out var loaded);
+            lock (_cacheSync)
+            {
+                EnsureCacheCollections();
+                if (found && loaded != null)
+                {
+                    _cacheByGameId[playniteGameId] = loaded.Clone();
+                    _missingGameIds.Remove(playniteGameId);
+                    data = loaded.Clone();
+                    return true;
+                }
+
+                _cacheByGameId.Remove(playniteGameId);
+                _missingGameIds.Add(playniteGameId);
+                return false;
+            }
+        }
+
+        public GameCustomDataFile LoadOrDefault(Guid playniteGameId)
+        {
+            return _repository.LoadOrDefault(playniteGameId);
+        }
+
+        /// <param name="affectsSummaryData">
+        /// Pass false when the mutation cannot change achievement counts, filters or library
+        /// rollups, so summary and projection subscribers can skip the rebuild.
+        /// </param>
+        public void Update(
+            Guid playniteGameId,
+            Action<GameCustomDataFile> mutate,
+            bool affectsSummaryData = true)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                throw new ArgumentException("Game ID is required.", nameof(playniteGameId));
+            }
+
+            if (mutate == null)
+            {
+                throw new ArgumentNullException(nameof(mutate));
+            }
+
+            var data = _repository.LoadOrDefault(playniteGameId);
+            var previous = GameCustomDataNormalizer.NormalizeInternal(data, playniteGameId);
+            mutate(data);
+            Save(playniteGameId, data, previous, affectsSummaryData);
+        }
+
+        // Rewrites every ApiName-keyed field after achievement definitions were renamed in place
+        // (stable-key migrations / renamed achievements), so notes, ordering, filters, category and
+        // icon overrides, and the manual capstone follow the definition to its new key. No-op when
+        // the game has no stored custom data or none of the old keys appear in it.
+        public bool RenameAchievementApiNames(Guid playniteGameId, IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (playniteGameId == Guid.Empty || renamedApiNames == null || renamedApiNames.Count == 0)
+            {
+                return false;
+            }
+
+            if (!TryLoad(playniteGameId, out var probe) || probe == null)
+            {
+                return false;
+            }
+
+            if (!ApplyAchievementApiNameRenames(probe, renamedApiNames))
+            {
+                return false;
+            }
+
+            Update(playniteGameId, data => ApplyAchievementApiNameRenames(data, renamedApiNames));
+            _logger?.Info($"Rewrote achievement custom-data keys for game {playniteGameId} after {renamedApiNames.Count} definition renames.");
+            return true;
+        }
+
+        private static bool ApplyAchievementApiNameRenames(
+            GameCustomDataFile data,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (data == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+
+            if (TryResolveRenamedApiName(renamedApiNames, data.ManualCapstoneApiName, out var renamedCapstone))
+            {
+                data.ManualCapstoneApiName = renamedCapstone;
+                changed = true;
+            }
+
+            changed |= RenameListEntries(data.AchievementOrder, renamedApiNames);
+            changed |= RenameListEntries(data.FilteredAchievementApiNames, renamedApiNames);
+            changed |= RenameListEntries(data.SummaryFilteredAchievementApiNames, renamedApiNames);
+            changed |= RenameListEntries(data.GoalAchievementApiNames, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementCategoryOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementCategoryTypeOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementUnlockedIconOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementLockedIconOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementNotes, renamedApiNames);
+
+            return changed;
+        }
+
+        private static bool TryResolveRenamedApiName(
+            IReadOnlyDictionary<string, string> renamedApiNames,
+            string apiName,
+            out string renamed)
+        {
+            renamed = null;
+            var normalized = apiName?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return false;
+            }
+
+            foreach (var pair in renamedApiNames)
+            {
+                if (string.Equals(pair.Key, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    renamed = pair.Value;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool RenameListEntries(IList<string> entries, IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (TryResolveRenamedApiName(renamedApiNames, entries[i], out var renamed))
+                {
+                    entries[i] = renamed;
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+
+        private static bool RenameDictionaryKeys(
+            IDictionary<string, string> map,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (map == null || map.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var oldKey in map.Keys.ToList())
+            {
+                if (!TryResolveRenamedApiName(renamedApiNames, oldKey, out var newKey))
+                {
+                    continue;
+                }
+
+                var value = map[oldKey];
+                map.Remove(oldKey);
+                if (!map.ContainsKey(newKey))
+                {
+                    map[newKey] = value;
+                }
+
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        public void Save(Guid playniteGameId, GameCustomDataFile data)
+        {
+            Save(playniteGameId, data, previousData: null);
+        }
+
+        private void Save(
+            Guid playniteGameId,
+            GameCustomDataFile data,
+            GameCustomDataFile previousData,
+            bool affectsSummaryData = true)
+        {
+            using (PerfScope.Start(_logger, "GameCustomData.Save", thresholdMs: 50))
+            {
+                var normalized = GameCustomDataNormalizer.NormalizeInternal(data, playniteGameId);
+                _repository.Save(playniteGameId, normalized);
+                RefreshCachedEntry(playniteGameId);
+                if (ShouldSyncManagedCustomIconCache(previousData, normalized))
+                {
+                    SyncManagedCustomIconCache(playniteGameId, normalized);
+                }
+
+                _notificationImageStore?.PruneGameImages(
+                    playniteGameId,
+                    normalized.NotificationAppearanceOverride?.Style);
+                RaiseCustomDataChanged(playniteGameId, affectsSummaryData);
+            }
+        }
+
+        public void Delete(Guid playniteGameId)
+        {
+            _repository.Delete(playniteGameId);
+            lock (_cacheSync)
+            {
+                EnsureCacheCollections();
+                _cacheByGameId.Remove(playniteGameId);
+                _missingGameIds.Add(playniteGameId);
+            }
+
+            _managedCustomIconService?.ClearGameCustomCache(playniteGameId.ToString("D"));
+            _notificationImageStore?.DeleteGameImages(playniteGameId);
+            RaiseCustomDataChanged(playniteGameId);
+        }
+
+        public IReadOnlyList<GameCustomDataFile> LoadAll()
+        {
+            lock (_cacheSync)
+            {
+                if (_cacheByGameId != null && _missingGameIds != null)
+                {
+                    return _cacheByGameId.Values
+                        .Select(data => data?.Clone())
+                        .Where(data => data != null)
+                        .ToList();
+                }
+            }
+
+            var rows = _repository.EnumerateAllNormalized().ToList();
+            lock (_cacheSync)
+            {
+                _cacheByGameId = rows
+                    .Where(data => data?.PlayniteGameId != Guid.Empty)
+                    .ToDictionary(
+                        data => data.PlayniteGameId,
+                        data => data.Clone());
+                _missingGameIds = new HashSet<Guid>();
+                return _cacheByGameId.Values
+                    .Select(data => data?.Clone())
+                    .Where(data => data != null)
+                    .ToList();
+            }
+        }
+
+        public HashSet<Guid> GetExcludedRefreshGameIds(ISet<Guid> fallbackIds = null)
+        {
+            return GetExcludedGameIds(fallbackIds, data => data?.ExcludedFromRefreshes == true);
+        }
+
+        public HashSet<Guid> GetExcludedSummaryGameIds(ISet<Guid> fallbackIds = null)
+        {
+            return GetExcludedGameIds(fallbackIds, data => data?.ExcludedFromSummaries == true);
+        }
+
+        public void ExportPortablePackage(Guid playniteGameId, string destinationPath)
+        {
+            EnsurePortablePackageExtension(destinationPath);
+
+            var portable = LoadNormalizedPortableOrThrow(playniteGameId);
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(
+                EnumeratePortableIconApiNames(portable));
+            var categoryFileStems = AchievementIconCachePathBuilder.BuildCategoryFileStems(
+                EnumeratePortableCategoryLabels(portable));
+            var imageSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            RewritePortableIconsForPackage(
+                playniteGameId,
+                portable.AchievementUnlockedIconOverrides,
+                fileStems,
+                AchievementIconVariant.Unlocked,
+                imageSources);
+            RewritePortableIconsForPackage(
+                playniteGameId,
+                portable.AchievementLockedIconOverrides,
+                fileStems,
+                AchievementIconVariant.Locked,
+                imageSources);
+            RewritePortableCustomAchievementIconsForPackage(
+                playniteGameId,
+                portable.CustomAchievements,
+                fileStems,
+                imageSources);
+            RewritePortableCategoryImagesForPackage(
+                playniteGameId,
+                portable.AchievementCategoryImageOverrides,
+                categoryFileStems,
+                imageSources);
+            RewritePortableNotificationImagesForPackage(
+                playniteGameId,
+                portable.NotificationAppearanceOverride?.Style,
+                imageSources);
+
+            EnsureDestinationDirectory(destinationPath);
+            if (File.Exists(destinationPath))
+            {
+                File.Delete(destinationPath);
+            }
+
+            using (var archive = ZipFile.Open(destinationPath, ZipArchiveMode.Create))
+            {
+                var manifestEntry = archive.CreateEntry(PortablePackageManifestEntryName, CompressionLevel.Optimal);
+                using (var writer = new StreamWriter(manifestEntry.Open()))
+                {
+                    writer.Write(JsonConvert.SerializeObject(portable, _writeSettings));
+                }
+
+                foreach (var pair in imageSources.OrderBy(a => a.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrWhiteSpace(pair.Value) || !File.Exists(pair.Value))
+                    {
+                        throw new InvalidOperationException($"Missing bundled icon file: {pair.Value ?? pair.Key}");
+                    }
+
+                    var imageEntry = archive.CreateEntry(pair.Key, CompressionLevel.Optimal);
+                    using (var source = File.OpenRead(pair.Value))
+                    using (var destination = imageEntry.Open())
+                    {
+                        source.CopyTo(destination);
+                    }
+                }
+            }
+        }
+
+        public PortableGameCustomDataImportResult ImportReplacePortable(Guid playniteGameId, string sourcePath)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                throw new ArgumentException("Game ID is required.", nameof(playniteGameId));
+            }
+
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                throw new ArgumentException("Source path is required.", nameof(sourcePath));
+            }
+
+            if (!IsPortablePackagePath(sourcePath))
+            {
+                throw new InvalidOperationException("Only .PA files are supported.");
+            }
+
+            return ImportReplacePortablePackage(playniteGameId, sourcePath);
+        }
+
+        public GameCustomDataFile ImportReplace(Guid playniteGameId, string sourcePath)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                throw new ArgumentException("Game ID is required.", nameof(playniteGameId));
+            }
+
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                throw new ArgumentException("Source path is required.", nameof(sourcePath));
+            }
+
+            var json = File.ReadAllText(sourcePath);
+            var portable = JsonConvert.DeserializeObject<GameCustomDataPortableFile>(json);
+            return ImportPortableReplace(playniteGameId, portable, "Imported JSON does not contain any portable custom data.");
+        }
+
+        public string MigrateLegacyConfig(string rawJson)
+        {
+            if (string.IsNullOrWhiteSpace(rawJson))
+            {
+                return rawJson;
+            }
+
+            try
+            {
+                var migration = _legacyMigration.Parse(rawJson);
+                var rowsToSave = new System.Collections.Generic.List<GameCustomDataFile>();
+                foreach (var pair in migration.LegacyByGame)
+                {
+                    var legacy = GameCustomDataNormalizer.NormalizeInternal(pair.Value, pair.Key);
+                    var existing = _repository.TryLoad(pair.Key, out var existingData) ? existingData : null;
+                    var merged = GameCustomDataNormalizer.MergePreferExisting(existing, legacy);
+                    if (GameCustomDataNormalizer.HasInternalData(merged))
+                    {
+                        rowsToSave.Add(merged);
+                    }
+                }
+
+                _repository.SaveMany(rowsToSave);
+                InvalidateCache();
+                return migration.CleanedJson;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed migrating legacy per-game custom data. Using original settings JSON.");
+                return rawJson;
+            }
+        }
+
+        public bool HasPortableData(Guid playniteGameId)
+        {
+            return GameCustomDataNormalizer.HasPortableData(_repository.LoadOrDefault(playniteGameId));
+        }
+
+        public void SyncRuntimeCaches()
+        {
+            // Per-game custom data is read directly from the database at runtime.
+        }
+
+        private GameCustomDataPortableFile LoadNormalizedPortableOrThrow(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                throw new ArgumentException("Game ID is required.", nameof(playniteGameId));
+            }
+
+            var internalData = _repository.LoadOrDefault(playniteGameId);
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(internalData, playniteGameId);
+            if (!GameCustomDataNormalizer.HasPortableData(normalized))
+            {
+                throw new InvalidOperationException("No exportable custom data exists for this game.");
+            }
+
+            var portable = GameCustomDataNormalizer.NormalizePortable(normalized.ToPortable(), playniteGameId);
+            if (!GameCustomDataNormalizer.HasPortableData(portable))
+            {
+                throw new InvalidOperationException("No exportable custom data exists for this game.");
+            }
+
+            return portable;
+        }
+
+        private PortableGameCustomDataImportResult ImportReplacePortablePackage(Guid playniteGameId, string sourcePath)
+        {
+            if (!File.Exists(sourcePath))
+            {
+                throw new FileNotFoundException("Package file not found.", sourcePath);
+            }
+
+            using (var archive = ZipFile.OpenRead(sourcePath))
+            {
+                var entriesByName = archive.Entries
+                    .Select(entry => new { Entry = entry, Name = NormalizeArchiveEntryName(entry.FullName) })
+                    .Where(item => item.Entry != null &&
+                                   !string.IsNullOrWhiteSpace(item.Entry.Name) &&
+                                   !string.IsNullOrWhiteSpace(item.Name))
+                    .GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(group => group.Key, group => group.First().Entry, StringComparer.OrdinalIgnoreCase);
+
+                if (entriesByName.TryGetValue(PortablePackageManifestEntryName, out var manifestEntry))
+                {
+                    GameCustomDataPortableFile portable;
+                    using (var reader = new StreamReader(manifestEntry.Open()))
+                    {
+                        portable = JsonConvert.DeserializeObject<GameCustomDataPortableFile>(reader.ReadToEnd());
+                    }
+
+                    RewritePackageImageOverrides(playniteGameId, entriesByName, portable?.AchievementUnlockedIconOverrides, AchievementIconVariant.Unlocked);
+                    RewritePackageImageOverrides(playniteGameId, entriesByName, portable?.AchievementLockedIconOverrides, AchievementIconVariant.Locked);
+                    RewritePackageCustomAchievementImages(playniteGameId, entriesByName, portable?.CustomAchievements);
+                    RewritePackageCategoryImageOverrides(playniteGameId, entriesByName, portable?.AchievementCategoryImageOverrides);
+                    RewritePackageNotificationImages(
+                        playniteGameId,
+                        entriesByName,
+                        portable?.NotificationAppearanceOverride?.Style);
+
+                    return new PortableGameCustomDataImportResult
+                    {
+                        ImportedData = ImportPortableReplace(
+                            playniteGameId,
+                            portable,
+                            "Imported .PA.ZIP does not contain any portable custom data.")
+                    };
+                }
+
+                return ImportReplacePortableImageOnlyPackage(playniteGameId, entriesByName);
+            }
+        }
+
+        private PortableGameCustomDataImportResult ImportReplacePortableImageOnlyPackage(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName)
+        {
+            var achievementApiNames = LoadAchievementApiNamesForImageOnlyPackageOrThrow(playniteGameId);
+            var achievementApiNameSet = new HashSet<string>(achievementApiNames, StringComparer.OrdinalIgnoreCase);
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(achievementApiNames);
+            var portable = new GameCustomDataPortableFile();
+            var ignoredPackageImages = 0;
+
+            foreach (var pair in entriesByName.OrderBy(a => a.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!TryParseImageOnlyPackageEntry(pair.Key, out var apiName, out var variant))
+                {
+                    continue;
+                }
+
+                if (!achievementApiNameSet.Contains(apiName))
+                {
+                    ignoredPackageImages++;
+                    continue;
+                }
+
+                if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+                {
+                    ignoredPackageImages++;
+                    continue;
+                }
+
+                var managedPath = ImportPackageImageToManagedPath(
+                    playniteGameId,
+                    pair.Value,
+                    fileStem,
+                    variant);
+                if (variant == AchievementIconVariant.Locked)
+                {
+                    if (portable.AchievementLockedIconOverrides == null)
+                    {
+                        portable.AchievementLockedIconOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    }
+
+                    portable.AchievementLockedIconOverrides[apiName] = managedPath;
+                }
+                else
+                {
+                    if (portable.AchievementUnlockedIconOverrides == null)
+                    {
+                        portable.AchievementUnlockedIconOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    }
+
+                    portable.AchievementUnlockedIconOverrides[apiName] = managedPath;
+                }
+            }
+
+            if (!GameCustomDataNormalizer.HasPortableData(portable))
+            {
+                throw new InvalidOperationException("Image-only .PA.ZIP did not contain any images matching this game's achievement API names.");
+            }
+
+            return new PortableGameCustomDataImportResult
+            {
+                ImportedData = ImportPortableReplace(
+                    playniteGameId,
+                    portable,
+                    "Imported .PA.ZIP does not contain any portable custom data."),
+                IgnoredPackageImageCount = ignoredPackageImages
+            };
+        }
+
+        private void RewritePortableIconsForPackage(
+            Guid playniteGameId,
+            Dictionary<string, string> overrides,
+            IReadOnlyDictionary<string, string> fileStems,
+            AchievementIconVariant variant,
+            IDictionary<string, string> imageSources)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var pair in overrides.ToList())
+            {
+                var apiName = NormalizeText(pair.Key);
+                var overrideValue = NormalizeText(pair.Value);
+                if (string.IsNullOrWhiteSpace(apiName) || string.IsNullOrWhiteSpace(overrideValue))
+                {
+                    overrides.Remove(pair.Key);
+                    continue;
+                }
+
+                if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+                {
+                    throw new InvalidOperationException($"Could not determine a bundled icon name for '{apiName}'.");
+                }
+
+                var bundledSource = ResolveBundledIconSourcePath(playniteGameId, overrideValue, fileStem, variant);
+                var relativeEntryName = BuildPackageImageEntryName(fileStem, variant);
+                overrides[apiName] = relativeEntryName;
+                imageSources[relativeEntryName] = bundledSource;
+            }
+        }
+
+        private void RewritePackageImageOverrides(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            Dictionary<string, string> overrides,
+            AchievementIconVariant variant)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                return;
+            }
+
+            var managedIcons = GetManagedCustomIconServiceOrThrow();
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(overrides.Keys);
+            var gameIdText = playniteGameId.ToString("D");
+
+            foreach (var pair in overrides.ToList())
+            {
+                var apiName = NormalizeText(pair.Key);
+                var overrideValue = NormalizeText(pair.Value);
+                if (string.IsNullOrWhiteSpace(apiName) || string.IsNullOrWhiteSpace(overrideValue))
+                {
+                    overrides.Remove(pair.Key);
+                    continue;
+                }
+
+                if (IsHttpUrl(overrideValue))
+                {
+                    overrides[apiName] = overrideValue;
+                    continue;
+                }
+
+                var normalizedEntryName = NormalizePackageImagePathOrThrow(overrideValue);
+                if (!entriesByName.TryGetValue(normalizedEntryName, out var imageEntry))
+                {
+                    throw new InvalidOperationException($"Package is missing bundled icon entry '{overrideValue}'.");
+                }
+
+                if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+                {
+                    throw new InvalidOperationException($"Could not determine a managed custom icon path for '{apiName}'.");
+                }
+
+                var targetPath = managedIcons.GetAchievementCustomIconPath(gameIdText, fileStem, variant);
+                var targetDirectory = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrWhiteSpace(targetDirectory))
+                {
+                    Directory.CreateDirectory(targetDirectory);
+                }
+
+                using (var source = imageEntry.Open())
+                using (var destination = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    source.CopyTo(destination);
+                }
+
+                overrides[apiName] = targetPath;
+            }
+        }
+
+        private void RewritePortableCustomAchievementIconsForPackage(
+            Guid playniteGameId,
+            IReadOnlyList<CustomAchievementDefinition> customAchievements,
+            IReadOnlyDictionary<string, string> fileStems,
+            IDictionary<string, string> imageSources)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (definition == null || string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                definition.UnlockedIconPath = RewritePortableCustomAchievementIconForPackage(
+                    playniteGameId,
+                    apiName,
+                    definition.UnlockedIconPath,
+                    fileStems,
+                    AchievementIconVariant.Unlocked,
+                    imageSources);
+                definition.LockedIconPath = RewritePortableCustomAchievementIconForPackage(
+                    playniteGameId,
+                    apiName,
+                    definition.LockedIconPath,
+                    fileStems,
+                    AchievementIconVariant.Locked,
+                    imageSources);
+            }
+        }
+
+        private string RewritePortableCustomAchievementIconForPackage(
+            Guid playniteGameId,
+            string apiName,
+            string value,
+            IReadOnlyDictionary<string, string> fileStems,
+            AchievementIconVariant variant,
+            IDictionary<string, string> imageSources)
+        {
+            var normalizedValue = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                return null;
+            }
+
+            if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+            {
+                throw new InvalidOperationException($"Could not determine a bundled icon name for '{apiName}'.");
+            }
+
+            var bundledSource = ResolveBundledIconSourcePath(playniteGameId, normalizedValue, fileStem, variant);
+            var relativeEntryName = BuildPackageImageEntryName(fileStem, variant);
+            imageSources[relativeEntryName] = bundledSource;
+            return relativeEntryName;
+        }
+
+        private void RewritePackageCustomAchievementImages(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            IReadOnlyList<CustomAchievementDefinition> customAchievements)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                return;
+            }
+
+            var apiNames = customAchievements
+                .Select(definition => CustomAchievementProjectionService.BuildApiName(definition?.Id))
+                .Where(apiName => !string.IsNullOrWhiteSpace(apiName))
+                .ToList();
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(apiNames);
+
+            foreach (var definition in customAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (definition == null || string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                definition.UnlockedIconPath = RewritePackageCustomAchievementImage(
+                    playniteGameId,
+                    entriesByName,
+                    fileStems,
+                    apiName,
+                    definition.UnlockedIconPath,
+                    AchievementIconVariant.Unlocked);
+                definition.LockedIconPath = RewritePackageCustomAchievementImage(
+                    playniteGameId,
+                    entriesByName,
+                    fileStems,
+                    apiName,
+                    definition.LockedIconPath,
+                    AchievementIconVariant.Locked);
+            }
+        }
+
+        private string RewritePackageCustomAchievementImage(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            IReadOnlyDictionary<string, string> fileStems,
+            string apiName,
+            string value,
+            AchievementIconVariant variant)
+        {
+            var normalizedValue = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalizedValue) || IsHttpUrl(normalizedValue))
+            {
+                return normalizedValue;
+            }
+
+            var normalizedEntryName = NormalizePackageImagePathOrThrow(normalizedValue);
+            if (!entriesByName.TryGetValue(normalizedEntryName, out var imageEntry))
+            {
+                throw new InvalidOperationException($"Package is missing bundled icon entry '{normalizedValue}'.");
+            }
+
+            if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+            {
+                throw new InvalidOperationException($"Could not determine a managed custom icon path for '{apiName}'.");
+            }
+
+            return ImportPackageImageToManagedPath(playniteGameId, imageEntry, fileStem, variant);
+        }
+
+        private void RewritePortableCategoryImagesForPackage(
+            Guid playniteGameId,
+            Dictionary<string, CategoryImageOverrideData> overrides,
+            IReadOnlyDictionary<string, string> fileStems,
+            IDictionary<string, string> imageSources)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var pair in overrides.ToList())
+            {
+                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(category) || pair.Value == null)
+                {
+                    overrides.Remove(pair.Key);
+                    continue;
+                }
+
+                if (!fileStems.TryGetValue(category, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+                {
+                    throw new InvalidOperationException($"Could not determine a bundled category image name for '{category}'.");
+                }
+
+                RewritePortableCategoryImageForPackage(
+                    playniteGameId,
+                    pair.Value,
+                    fileStem,
+                    imageSources);
+
+                if (string.IsNullOrWhiteSpace(pair.Value.Art))
+                {
+                    overrides.Remove(pair.Key);
+                }
+            }
+        }
+
+        private void RewritePortableCategoryImageForPackage(
+            Guid playniteGameId,
+            CategoryImageOverrideData overrideData,
+            string fileStem,
+            IDictionary<string, string> imageSources)
+        {
+            if (overrideData == null)
+            {
+                return;
+            }
+
+            var value = NormalizeText(overrideData.Art);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            var bundledSource = ResolveBundledCategoryImageSourcePath(
+                playniteGameId,
+                value,
+                fileStem);
+            var relativeEntryName = BuildPackageCategoryImageEntryName(fileStem);
+            overrideData.Art = relativeEntryName;
+
+            imageSources[relativeEntryName] = bundledSource;
+        }
+
+        private void RewritePackageCategoryImageOverrides(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            Dictionary<string, CategoryImageOverrideData> overrides)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                return;
+            }
+
+            var managedIcons = GetManagedCustomIconServiceOrThrow();
+            var fileStems = AchievementIconCachePathBuilder.BuildCategoryFileStems(overrides.Keys);
+            var gameIdText = playniteGameId.ToString("D");
+
+            foreach (var pair in overrides.ToList())
+            {
+                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(category) || pair.Value == null)
+                {
+                    overrides.Remove(pair.Key);
+                    continue;
+                }
+
+                if (!fileStems.TryGetValue(category, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+                {
+                    throw new InvalidOperationException($"Could not determine a managed category image path for '{category}'.");
+                }
+
+                pair.Value.Art = RewritePackageCategoryImageOverride(
+                    managedIcons,
+                    gameIdText,
+                    entriesByName,
+                    fileStem,
+                    pair.Value.Art);
+
+                if (string.IsNullOrWhiteSpace(pair.Value.Art))
+                {
+                    overrides.Remove(pair.Key);
+                }
+            }
+        }
+
+        private static string RewritePackageCategoryImageOverride(
+            ManagedCustomIconService managedIcons,
+            string gameIdText,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            string fileStem,
+            string overrideValue)
+        {
+            var normalizedValue = NormalizeText(overrideValue);
+            if (string.IsNullOrWhiteSpace(normalizedValue) || IsHttpUrl(normalizedValue))
+            {
+                return normalizedValue;
+            }
+
+            var normalizedEntryName = NormalizePackageImagePathOrThrow(normalizedValue);
+            if (!entriesByName.TryGetValue(normalizedEntryName, out var imageEntry))
+            {
+                throw new InvalidOperationException($"Package is missing bundled category image entry '{overrideValue}'.");
+            }
+
+            var targetPath = managedIcons.GetCategoryCustomImagePath(gameIdText, fileStem);
+            var targetDirectory = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrWhiteSpace(targetDirectory))
+            {
+                Directory.CreateDirectory(targetDirectory);
+            }
+
+            using (var source = imageEntry.Open())
+            using (var destination = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+            {
+                source.CopyTo(destination);
+            }
+
+            return targetPath;
+        }
+
+        private void RewritePortableNotificationImagesForPackage(
+            Guid playniteGameId,
+            NotificationStyleSettings style,
+            IDictionary<string, string> imageSources)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            foreach (var slot in NotificationImageSlotMap.Slots)
+            {
+                var sourceValue = NormalizeText(NotificationImageSlotMap.GetPath(style, slot));
+                if (string.IsNullOrWhiteSpace(sourceValue))
+                {
+                    NotificationImageSlotMap.SetPath(style, slot, null);
+                    continue;
+                }
+
+                var sourcePath = sourceValue;
+                if (!File.Exists(sourcePath))
+                {
+                    if (_notificationImageStore == null)
+                    {
+                        throw new InvalidOperationException("Notification image store is not available.");
+                    }
+
+                    sourcePath = _notificationImageStore
+                        .MaterializeAsync(
+                            sourceValue,
+                            NotificationImageOwner.ForGame(playniteGameId),
+                            slot,
+                            CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+                }
+
+                if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+                {
+                    NotificationImageSlotMap.SetPath(style, slot, null);
+                    continue;
+                }
+
+                var extension = Path.GetExtension(sourcePath);
+                if (!IsSupportedPackageImageExtension(extension))
+                {
+                    extension = ".png";
+                }
+
+                var entryName = PortablePackageImagesFolderName + "/" +
+                    NotificationImageEntryStems[slot] + extension.ToLowerInvariant();
+                NotificationImageSlotMap.SetPath(style, slot, entryName);
+                imageSources[entryName] = sourcePath;
+            }
+        }
+
+        private void RewritePackageNotificationImages(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            NotificationStyleSettings style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            foreach (var slot in NotificationImageSlotMap.Slots)
+            {
+                var prefix = PortablePackageImagesFolderName + "/" + NotificationImageEntryStems[slot] + ".";
+                var entryPair = entriesByName.FirstOrDefault(pair =>
+                    pair.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                    IsSupportedPackageImageExtension(Path.GetExtension(pair.Key)));
+                if (string.IsNullOrWhiteSpace(entryPair.Key) || entryPair.Value == null)
+                {
+                    // The package entries are authoritative; never retain a manifest path.
+                    NotificationImageSlotMap.SetPath(style, slot, null);
+                    continue;
+                }
+
+                if (_notificationImageStore == null)
+                {
+                    throw new InvalidOperationException("Notification image store is not available.");
+                }
+
+                var normalizedEntryName = NormalizePackageImagePathOrThrow(entryPair.Key);
+                var entry = entriesByName[normalizedEntryName];
+                var extension = Path.GetExtension(entry.Name);
+                if (!IsSupportedPackageImageExtension(extension))
+                {
+                    throw new InvalidOperationException(
+                        $"Unsupported bundled notification image '{entry.FullName}'.");
+                }
+
+                EnsureBundledImageDecodableOrThrow(entry.FullName);
+
+                var tempDirectory = Path.Combine(
+                    Path.GetTempPath(),
+                    "PlayniteAchievements",
+                    "PortableNotificationImports");
+                Directory.CreateDirectory(tempDirectory);
+                var tempPath = Path.Combine(
+                    tempDirectory,
+                    Guid.NewGuid().ToString("N") + extension);
+                try
+                {
+                    using (var source = entry.Open())
+                    using (var destination = new FileStream(
+                        tempPath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None))
+                    {
+                        source.CopyTo(destination);
+                    }
+
+                    var managedPath = _notificationImageStore
+                        .MaterializeAsync(
+                            tempPath,
+                            NotificationImageOwner.ForGame(playniteGameId),
+                            slot,
+                            CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+                    if (string.IsNullOrWhiteSpace(managedPath) || !File.Exists(managedPath))
+                    {
+                        throw new InvalidOperationException(
+                            $"Failed to import packaged notification image '{entry.FullName}'.");
+                    }
+
+                    NotificationImageSlotMap.SetPath(style, slot, managedPath);
+                }
+                finally
+                {
+                    try
+                    {
+                        if (File.Exists(tempPath))
+                        {
+                            File.Delete(tempPath);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private string ResolveBundledIconSourcePath(
+            Guid playniteGameId,
+            string overrideValue,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            var normalizedValue = NormalizeText(overrideValue);
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                throw new InvalidOperationException("Cannot bundle an empty custom icon override.");
+            }
+
+            var managedIcons = GetManagedCustomIconServiceOrThrow();
+            var gameIdText = playniteGameId.ToString("D");
+            if (managedIcons.IsManagedCustomIconPath(normalizedValue, gameIdText) && File.Exists(normalizedValue))
+            {
+                return normalizedValue;
+            }
+
+            var bundledSource = managedIcons
+                .MaterializeCustomIconAsync(
+                    normalizedValue,
+                    gameIdText,
+                    fileStem,
+                    variant,
+                    CancellationToken.None,
+                    overwriteExistingTarget: false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (string.IsNullOrWhiteSpace(bundledSource) || !File.Exists(bundledSource))
+            {
+                throw new InvalidOperationException($"Failed to bundle custom icon override '{normalizedValue}'.");
+            }
+
+            return bundledSource;
+        }
+
+        private string ResolveBundledCategoryImageSourcePath(
+            Guid playniteGameId,
+            string overrideValue,
+            string fileStem)
+        {
+            var normalizedValue = NormalizeText(overrideValue);
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                throw new InvalidOperationException("Cannot bundle an empty category image override.");
+            }
+
+            var managedIcons = GetManagedCustomIconServiceOrThrow();
+            var gameIdText = playniteGameId.ToString("D");
+            if (managedIcons.IsManagedCustomIconPath(normalizedValue, gameIdText) && File.Exists(normalizedValue))
+            {
+                return normalizedValue;
+            }
+
+            var bundledSource = managedIcons
+                .MaterializeCategoryImageAsync(
+                    normalizedValue,
+                    gameIdText,
+                    fileStem,
+                    CancellationToken.None,
+                    overwriteExistingTarget: false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (string.IsNullOrWhiteSpace(bundledSource) || !File.Exists(bundledSource))
+            {
+                throw new InvalidOperationException($"Failed to bundle category image override '{normalizedValue}'.");
+            }
+
+            return bundledSource;
+        }
+
+        private IReadOnlyList<string> LoadAchievementApiNamesForImageOnlyPackageOrThrow(Guid playniteGameId)
+        {
+            if (_achievementDataService == null)
+            {
+                throw new InvalidOperationException("Achievement data service is not available.");
+            }
+
+            var apiNames = _achievementDataService
+                .GetGameAchievementData(playniteGameId)?
+                .Achievements?
+                .Where(achievement => achievement != null && !string.IsNullOrWhiteSpace(achievement.ApiName))
+                .Select(achievement => achievement.ApiName.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (apiNames == null || apiNames.Count == 0)
+            {
+                throw new InvalidOperationException("Image-only .PA.ZIP imports require cached achievements for the target game.");
+            }
+
+            return apiNames;
+        }
+
+        private string ImportPackageImageToManagedPath(
+            Guid playniteGameId,
+            ZipArchiveEntry imageEntry,
+            string fileStem,
+            AchievementIconVariant variant)
+        {
+            if (imageEntry == null)
+            {
+                throw new InvalidOperationException("Package image entry is missing.");
+            }
+
+            var managedIcons = GetManagedCustomIconServiceOrThrow();
+            var extension = Path.GetExtension(imageEntry.Name);
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = ".png";
+            }
+
+            var tempDirectory = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "PortableImports");
+            Directory.CreateDirectory(tempDirectory);
+
+            var tempPath = Path.Combine(tempDirectory, Guid.NewGuid().ToString("N") + extension);
+            try
+            {
+                using (var source = imageEntry.Open())
+                using (var destination = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    source.CopyTo(destination);
+                }
+
+                var managedPath = managedIcons
+                    .MaterializeCustomIconAsync(
+                        tempPath,
+                        playniteGameId.ToString("D"),
+                        fileStem,
+                        variant,
+                        CancellationToken.None,
+                        overwriteExistingTarget: true)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (string.IsNullOrWhiteSpace(managedPath) || !File.Exists(managedPath))
+                {
+                    throw new InvalidOperationException($"Failed to import packaged image '{imageEntry.FullName}'.");
+                }
+
+                return managedPath;
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempPath))
+                    {
+                        File.Delete(tempPath);
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private GameCustomDataFile ImportPortableReplace(
+            Guid playniteGameId,
+            GameCustomDataPortableFile portable,
+            string invalidDataMessage)
+        {
+            var normalizedPortable = GameCustomDataNormalizer.NormalizePortable(portable, playniteGameId);
+            if (!GameCustomDataNormalizer.HasPortableData(normalizedPortable))
+            {
+                throw new InvalidOperationException(invalidDataMessage);
+            }
+
+            var current = _repository.LoadOrDefault(playniteGameId);
+            var merged = GameCustomDataFile.FromPortable(
+                normalizedPortable,
+                playniteGameId,
+                current.ExcludedFromRefreshes,
+                current.ExcludedFromSummaries);
+
+            Save(playniteGameId, merged);
+            return LoadOrDefault(playniteGameId);
+        }
+
+        private void SyncManagedCustomIconCache(Guid playniteGameId, GameCustomDataFile normalizedData)
+        {
+            if (_managedCustomIconService == null)
+            {
+                return;
+            }
+
+            var gameIdText = playniteGameId.ToString("D");
+            if (!GameCustomDataNormalizer.HasInternalData(normalizedData))
+            {
+                _managedCustomIconService.ClearGameCustomCache(gameIdText);
+                return;
+            }
+
+            _managedCustomIconService.PruneGameCustomCache(
+                gameIdText,
+                EnumerateManagedCustomIconPaths(playniteGameId, normalizedData));
+        }
+
+        private static bool ShouldSyncManagedCustomIconCache(
+            GameCustomDataFile previousData,
+            GameCustomDataFile currentData)
+        {
+            if (previousData == null)
+            {
+                return true;
+            }
+
+            return !StringMapEquals(
+                       previousData.AchievementUnlockedIconOverrides,
+                       currentData?.AchievementUnlockedIconOverrides) ||
+                   !StringMapEquals(
+                       previousData.AchievementLockedIconOverrides,
+                       currentData?.AchievementLockedIconOverrides) ||
+                   !CategoryImageMapEquals(
+                       previousData.AchievementCategoryImageOverrides,
+                       currentData?.AchievementCategoryImageOverrides);
+        }
+
+        private static bool StringMapEquals(
+            IReadOnlyDictionary<string, string> left,
+            IReadOnlyDictionary<string, string> right)
+        {
+            var leftCount = left?.Count ?? 0;
+            var rightCount = right?.Count ?? 0;
+            if (leftCount != rightCount)
+            {
+                return false;
+            }
+
+            if (leftCount == 0)
+            {
+                return true;
+            }
+
+            foreach (var pair in left)
+            {
+                var key = NormalizeText(pair.Key);
+                if (string.IsNullOrWhiteSpace(key) ||
+                    right == null ||
+                    !right.TryGetValue(key, out var rightValue) ||
+                    !string.Equals(NormalizeText(pair.Value), NormalizeText(rightValue), StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool CategoryImageMapEquals(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> left,
+            IReadOnlyDictionary<string, CategoryImageOverrideData> right)
+        {
+            var leftCount = left?.Count ?? 0;
+            var rightCount = right?.Count ?? 0;
+            if (leftCount != rightCount)
+            {
+                return false;
+            }
+
+            if (leftCount == 0)
+            {
+                return true;
+            }
+
+            foreach (var pair in left)
+            {
+                var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(key) ||
+                    right == null ||
+                    !right.TryGetValue(key, out var rightValue))
+                {
+                    return false;
+                }
+
+                if (!string.Equals(NormalizeText(pair.Value?.Art), NormalizeText(rightValue?.Art), StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private IEnumerable<string> EnumerateManagedCustomIconPaths(Guid playniteGameId, GameCustomDataFile data)
+        {
+            if (_managedCustomIconService == null || data == null)
+            {
+                yield break;
+            }
+
+            var gameIdText = playniteGameId.ToString("D");
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(
+                EnumeratePortableIconApiNames(data.ToPortable()));
+
+            foreach (var retainedPath in EnumerateManagedCustomIconPaths(
+                gameIdText,
+                data.AchievementUnlockedIconOverrides,
+                fileStems,
+                AchievementIconVariant.Unlocked))
+            {
+                yield return retainedPath;
+            }
+
+            foreach (var retainedPath in EnumerateManagedCustomIconPaths(
+                gameIdText,
+                data.AchievementLockedIconOverrides,
+                fileStems,
+                AchievementIconVariant.Locked))
+            {
+                yield return retainedPath;
+            }
+
+            foreach (var retainedPath in EnumerateManagedCustomAchievementIconPaths(
+                gameIdText,
+                data.CustomAchievements,
+                fileStems))
+            {
+                yield return retainedPath;
+            }
+
+            var categoryFileStems = AchievementIconCachePathBuilder.BuildCategoryFileStems(
+                EnumeratePortableCategoryLabels(data.ToPortable()));
+            foreach (var retainedPath in EnumerateManagedCategoryImagePaths(
+                gameIdText,
+                data.AchievementCategoryImageOverrides,
+                categoryFileStems))
+            {
+                yield return retainedPath;
+            }
+        }
+
+        private static IEnumerable<string> EnumerateIconOverrideValues(IReadOnlyDictionary<string, string> overrides)
+        {
+            return overrides == null
+                ? Enumerable.Empty<string>()
+                : overrides.Values.Where(value => !string.IsNullOrWhiteSpace(value));
+        }
+
+        private IEnumerable<string> EnumerateManagedCustomIconPaths(
+            string gameIdText,
+            IReadOnlyDictionary<string, string> overrides,
+            IReadOnlyDictionary<string, string> fileStems,
+            AchievementIconVariant variant)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var pair in overrides)
+            {
+                var apiName = NormalizeText(pair.Key);
+                var value = NormalizeText(pair.Value);
+                if (string.IsNullOrWhiteSpace(apiName) || string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                if (_managedCustomIconService.IsManagedCustomIconPath(value, gameIdText))
+                {
+                    yield return value;
+                    continue;
+                }
+
+                if (!IsHttpUrl(value))
+                {
+                    continue;
+                }
+
+                if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+                {
+                    continue;
+                }
+
+                yield return _managedCustomIconService.GetAchievementCustomIconPath(
+                    gameIdText,
+                    fileStem,
+                    variant);
+            }
+        }
+
+        private static IEnumerable<string> EnumeratePortableIconApiNames(GameCustomDataPortableFile portable)
+        {
+            return (portable?.AchievementUnlockedIconOverrides?.Keys ?? Enumerable.Empty<string>())
+                .Concat(portable?.AchievementLockedIconOverrides?.Keys ?? Enumerable.Empty<string>())
+                .Concat(EnumerateCustomAchievementIconApiNames(portable?.CustomAchievements))
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private IEnumerable<string> EnumerateManagedCustomAchievementIconPaths(
+            string gameIdText,
+            IReadOnlyList<CustomAchievementDefinition> customAchievements,
+            IReadOnlyDictionary<string, string> fileStems)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (string.IsNullOrWhiteSpace(apiName) ||
+                    !fileStems.TryGetValue(apiName, out var fileStem) ||
+                    string.IsNullOrWhiteSpace(fileStem))
+                {
+                    continue;
+                }
+
+                foreach (var retainedPath in EnumerateManagedCustomIconPath(
+                    gameIdText,
+                    fileStem,
+                    definition.UnlockedIconPath,
+                    AchievementIconVariant.Unlocked))
+                {
+                    yield return retainedPath;
+                }
+
+                foreach (var retainedPath in EnumerateManagedCustomIconPath(
+                    gameIdText,
+                    fileStem,
+                    definition.LockedIconPath,
+                    AchievementIconVariant.Locked))
+                {
+                    yield return retainedPath;
+                }
+            }
+        }
+
+        private IEnumerable<string> EnumerateManagedCustomIconPath(
+            string gameIdText,
+            string fileStem,
+            string value,
+            AchievementIconVariant variant)
+        {
+            var normalized = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                yield break;
+            }
+
+            if (_managedCustomIconService.IsManagedCustomIconPath(normalized, gameIdText))
+            {
+                yield return normalized;
+                yield break;
+            }
+
+            if (IsHttpUrl(normalized))
+            {
+                yield return _managedCustomIconService.GetAchievementCustomIconPath(gameIdText, fileStem, variant);
+            }
+        }
+
+        private static IEnumerable<string> EnumerateCustomAchievementIconApiNames(
+            IReadOnlyList<CustomAchievementDefinition> customAchievements)
+        {
+            if (customAchievements == null)
+            {
+                yield break;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                if (definition == null ||
+                    (string.IsNullOrWhiteSpace(definition.UnlockedIconPath) &&
+                     string.IsNullOrWhiteSpace(definition.LockedIconPath)))
+                {
+                    continue;
+                }
+
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition.Id);
+                if (!string.IsNullOrWhiteSpace(apiName))
+                {
+                    yield return apiName;
+                }
+            }
+        }
+
+        private IEnumerable<string> EnumerateManagedCategoryImagePaths(
+            string gameIdText,
+            IReadOnlyDictionary<string, CategoryImageOverrideData> overrides,
+            IReadOnlyDictionary<string, string> fileStems)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var pair in overrides)
+            {
+                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(category) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                foreach (var retainedPath in EnumerateManagedCategoryImagePaths(
+                    gameIdText,
+                    category,
+                    pair.Value.Art,
+                    fileStems))
+                {
+                    yield return retainedPath;
+                }
+            }
+        }
+
+        private IEnumerable<string> EnumerateManagedCategoryImagePaths(
+            string gameIdText,
+            string category,
+            string value,
+            IReadOnlyDictionary<string, string> fileStems)
+        {
+            var normalizedValue = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                yield break;
+            }
+
+            if (_managedCustomIconService.IsManagedCustomIconPath(normalizedValue, gameIdText))
+            {
+                yield return normalizedValue;
+                yield break;
+            }
+
+            if (!IsHttpUrl(normalizedValue))
+            {
+                yield break;
+            }
+
+            if (!fileStems.TryGetValue(category, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+            {
+                yield break;
+            }
+
+            yield return _managedCustomIconService.GetCategoryCustomImagePath(
+                gameIdText,
+                fileStem);
+        }
+
+        private static IEnumerable<string> EnumeratePortableCategoryLabels(GameCustomDataPortableFile portable)
+        {
+            return (portable?.AchievementCategoryImageOverrides?.Keys ?? Enumerable.Empty<string>())
+                .Concat(portable?.AchievementCategoryOrder ?? Enumerable.Empty<string>())
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private ManagedCustomIconService GetManagedCustomIconServiceOrThrow()
+        {
+            if (_managedCustomIconService != null)
+            {
+                return _managedCustomIconService;
+            }
+
+            throw new InvalidOperationException("Managed custom icon service is not available.");
+        }
+
+        private static string BuildPackageImageEntryName(string fileStem, AchievementIconVariant variant)
+        {
+            var fileName = variant == AchievementIconVariant.Locked
+                ? fileStem + ".locked.png"
+                : fileStem + ".png";
+            return PortablePackageImagesFolderName + "/" + fileName;
+        }
+
+        private static string BuildPackageCategoryImageEntryName(string fileStem)
+        {
+            return PortablePackageImagesFolderName + "/category_" + fileStem + ".png";
+        }
+
+        private static bool TryParseImageOnlyPackageEntry(
+            string normalizedEntryName,
+            out string apiName,
+            out AchievementIconVariant variant)
+        {
+            apiName = null;
+            variant = AchievementIconVariant.Unlocked;
+
+            var normalized = NormalizeArchiveEntryName(normalizedEntryName);
+            if (string.IsNullOrWhiteSpace(normalized) || normalized.Contains(".."))
+            {
+                return false;
+            }
+
+            var fileName = normalized;
+            var slashIndex = fileName.LastIndexOf('/');
+            if (slashIndex >= 0)
+            {
+                fileName = fileName.Substring(slashIndex + 1);
+            }
+
+            if (string.IsNullOrWhiteSpace(fileName) || !IsSupportedPackageImageExtension(Path.GetExtension(fileName)))
+            {
+                return false;
+            }
+
+            var stem = NormalizeText(Path.GetFileNameWithoutExtension(fileName));
+            if (string.IsNullOrWhiteSpace(stem))
+            {
+                return false;
+            }
+
+            if (stem.EndsWith(".locked", StringComparison.OrdinalIgnoreCase))
+            {
+                stem = NormalizeText(stem.Substring(0, stem.Length - ".locked".Length));
+                variant = AchievementIconVariant.Locked;
+            }
+
+            apiName = string.IsNullOrWhiteSpace(stem) ? null : stem;
+            return !string.IsNullOrWhiteSpace(apiName);
+        }
+
+        private static void EnsurePortablePackageExtension(string path)
+        {
+            if (!IsPortablePackagePath(path))
+            {
+                throw new InvalidOperationException("Destination path must end with .pa.");
+            }
+        }
+
+        private static void EnsureDestinationDirectory(string destinationPath)
+        {
+            var directory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+        }
+
+        private static bool IsPortablePackagePath(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) &&
+                   (path.EndsWith(PortableFileExtension, StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(PortablePackageFileExtension, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string NormalizeArchiveEntryName(string value)
+        {
+            var normalized = NormalizeText(value)?.Replace('\\', '/').TrimStart('/');
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+
+        private static string NormalizePackageImagePathOrThrow(string value)
+        {
+            var normalized = NormalizeArchiveEntryName(value);
+            if (string.IsNullOrWhiteSpace(normalized) ||
+                normalized.Contains("..") ||
+                !normalized.StartsWith(PortablePackageImagesFolderName + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Invalid bundled icon path '{value}'.");
+            }
+
+            var fileName = normalized.Substring((PortablePackageImagesFolderName + "/").Length);
+            if (string.IsNullOrWhiteSpace(fileName) ||
+                fileName.Contains("/") ||
+                fileName.Contains("\\"))
+            {
+                throw new InvalidOperationException($"Invalid bundled icon path '{value}'.");
+            }
+
+            return normalized;
+        }
+
+        private static bool IsSupportedPackageImageExtension(string extension)
+        {
+            return ImageFormats.IsSupportedExtension(extension);
+        }
+
+        /// <summary>
+        /// Rejects a bundled image this machine could not render, so the failure lands on import
+        /// rather than while a notification surface is drawing.
+        /// </summary>
+        private static void EnsureBundledImageDecodableOrThrow(string entryName)
+        {
+            if (ImageFormats.IsWebpExtension(ImageFormats.GetExtension(entryName)) &&
+                !WebpCodecProbe.IsSupported)
+            {
+                throw new InvalidOperationException(
+                    $"The bundled image '{entryName}' is a WebP, which this system has no decoder for. " +
+                    "Install the WebP Image Extension from the Microsoft Store, then import again.");
+            }
+        }
+
+        private static bool IsHttpUrl(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                    value.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string NormalizeText(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+
+        private void RefreshCachedEntry(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var found = _repository.TryLoad(playniteGameId, out var loaded);
+            lock (_cacheSync)
+            {
+                EnsureCacheCollections();
+                if (found && loaded != null)
+                {
+                    _cacheByGameId[playniteGameId] = loaded.Clone();
+                    _missingGameIds.Remove(playniteGameId);
+                    return;
+                }
+
+                _cacheByGameId.Remove(playniteGameId);
+                _missingGameIds.Add(playniteGameId);
+            }
+        }
+
+        private void InvalidateCache()
+        {
+            lock (_cacheSync)
+            {
+                _cacheByGameId = null;
+                _missingGameIds = null;
+            }
+        }
+
+        private void EnsureCacheCollections()
+        {
+            if (_cacheByGameId == null)
+            {
+                _cacheByGameId = new Dictionary<Guid, GameCustomDataFile>();
+            }
+
+            if (_missingGameIds == null)
+            {
+                _missingGameIds = new HashSet<Guid>();
+            }
+        }
+
+        private HashSet<Guid> GetExcludedGameIds(
+            ISet<Guid> fallbackIds,
+            Func<GameCustomDataFile, bool> selector)
+        {
+            if (selector == null)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            EnsureCacheLoaded();
+
+            lock (_cacheSync)
+            {
+                var result = fallbackIds != null
+                    ? new HashSet<Guid>(fallbackIds)
+                    : new HashSet<Guid>();
+
+                foreach (var pair in _cacheByGameId)
+                {
+                    if (selector(pair.Value))
+                    {
+                        result.Add(pair.Key);
+                    }
+                    else
+                    {
+                        result.Remove(pair.Key);
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        private void EnsureCacheLoaded()
+        {
+            lock (_cacheSync)
+            {
+                if (_cacheByGameId != null && _missingGameIds != null)
+                {
+                    return;
+                }
+            }
+
+            _ = LoadAll();
+        }
+
+        private void RaiseCustomDataChanged(Guid playniteGameId, bool affectsSummaryData = true)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            CustomDataChanged?.Invoke(
+                this,
+                new GameCustomDataChangedEventArgs(playniteGameId, affectsSummaryData));
+        }
+
+    }
+}

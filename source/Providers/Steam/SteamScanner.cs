@@ -2,7 +2,11 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Steam.Models;
+using PlayniteAchievements.Providers.Steam.Local;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -29,27 +33,56 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
+        /// <summary>
+        /// The user's stats for a game could not be read: an expired Steam session, a private or
+        /// missing profile, or a stats page that yielded no usable rows. Non-transient, so it fails
+        /// the game fast instead of retrying, and the refresh writes nothing rather than recording
+        /// every achievement as locked.
+        /// </summary>
+        private sealed class SteamStatsUnavailableException : Exception
+        {
+            public SteamStatsUnavailableException(string message)
+                : base(message)
+            {
+            }
+
+            public SteamStatsUnavailableException(string message, Exception innerException)
+                : base(message, innerException)
+            {
+            }
+        }
+
         private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamHttpClient _steamClient;
         private readonly SteamApiClient _steamApiClient;
         private readonly SteamWebApiTokenResolver _tokenResolver;
+        private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
+        private readonly Func<ICacheManager> _cacheAccessor;
+        private readonly SteamLocalStatsReader _localStatsReader;
 
         public SteamScanner(
             PlayniteAchievementsSettings settings,
             SteamHttpClient steamClient,
             SteamApiClient steamApiClient,
             SteamWebApiTokenResolver tokenResolver,
+            SteamHuntersCategoryEnricher steamHuntersCategoryEnricher,
             IPlayniteAPI api,
-            ILogger logger)
+            ILogger logger,
+            Func<ICacheManager> cacheAccessor = null,
+            SteamLocalStatsReader localStatsReader = null)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
             _steamApiClient = steamApiClient ?? throw new ArgumentNullException(nameof(steamApiClient));
             _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
+            _steamHuntersCategoryEnricher = steamHuntersCategoryEnricher;
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
+            _cacheAccessor = cacheAccessor ??
+                (() => PlayniteAchievementsPlugin.Instance?.CacheManager);
+            _localStatsReader = localStatsReader ?? new SteamLocalStatsReader();
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -59,35 +92,47 @@ namespace PlayniteAchievements.Providers.Steam
             CancellationToken cancel)
         {
             _steamClient.ResetSteamDatetimeParseFailuresForScan();
+            _steamHuntersCategoryEnricher?.ClearCache();
 
             try
             {
-                _logger?.Info("[SteamAch] Probing Steam login status before scan...");
-                var tokenResolution = await _tokenResolver.ResolveAsync(cancel).ConfigureAwait(false);
-                var steamUserId = tokenResolution.UserId?.Trim();
-                if (!tokenResolution.IsSuccess || string.IsNullOrWhiteSpace(steamUserId))
-                {
-                    _logger?.Warn("[SteamAch] Steam authentication check failed. Aborting scan.");
-                    return new RebuildPayload
-                    {
-                        Summary = new RebuildSummary(),
-                        AuthRequired = true
-                    };
-                }
-                _logger?.Info("[SteamAch] Steam web auth verified.");
-
                 if (gamesToRefresh is null || gamesToRefresh.Count == 0)
                 {
                     _logger?.Info("[SteamAch] No games found to scan.");
                     return new RebuildPayload { Summary = new RebuildSummary() };
                 }
 
-                // Create rate limiter with exponential backoff
+                var configuredSteamUserId = ProviderRegistry.Settings<SteamSettings>()?.SteamUserId?.Trim();
+                var steamUserId = configuredSteamUserId;
+                string accessToken = null;
+                var webAvailable = false;
+                try
+                {
+                    _logger?.Info("[SteamAch] Probing Steam login status before scan...");
+                    var tokenResolution = await _tokenResolver.ResolveAsync(cancel).ConfigureAwait(false);
+                    steamUserId = tokenResolution.UserId?.Trim() ?? steamUserId;
+                    accessToken = tokenResolution.Token;
+                    webAvailable =
+                        tokenResolution.IsSuccess &&
+                        !string.IsNullOrWhiteSpace(steamUserId) &&
+                        !string.IsNullOrWhiteSpace(accessToken);
+                }
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[SteamAch] Web authentication probe failed; trying local stats.");
+                }
+
                 var rateLimiter = new RateLimiter(
                     _settings.Persisted.ScanDelayMs,
                     _settings.Persisted.MaxRetryAttempts);
+                var madeWebRequest = false;
+                var localFailures = 0;
 
-                return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                var payload = await ProviderRefreshExecutor.RunProviderGamesAsync(
                     gamesToRefresh,
                     onGameStarting,
                     async (game, token) =>
@@ -98,10 +143,53 @@ namespace PlayniteAchievements.Providers.Steam
                             return ProviderRefreshExecutor.ProviderGameResult.Skipped();
                         }
 
-                        var data = await rateLimiter.ExecuteWithRetryAsync(
-                            () => FetchGameDataAsync(game, steamUserId, tokenResolution.Token, token),
-                            IsTransientError,
-                            token).ConfigureAwait(false);
+                        if (!webAvailable)
+                        {
+                            var localData = TryBuildGameDataFromLocal(game, steamUserId);
+                            if (localData == null)
+                            {
+                                Interlocked.Increment(ref localFailures);
+                            }
+                            return localData == null
+                                ? ProviderRefreshExecutor.ProviderGameResult.Skipped()
+                                : new ProviderRefreshExecutor.ProviderGameResult { Data = localData };
+                        }
+
+                        if (madeWebRequest)
+                        {
+                            await rateLimiter.DelayBeforeNextAsync(token).ConfigureAwait(false);
+                        }
+                        madeWebRequest = true;
+
+                        GameAchievementData data;
+                        try
+                        {
+                            data = await rateLimiter.ExecuteWithRetryAsync(
+                                () => FetchGameDataAsync(game, steamUserId, accessToken, token),
+                                IsTransientError,
+                                token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (token.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch
+                        {
+                            // Last-chance local recovery after web retries. A failed local read
+                            // returns null, preserving the existing cache via the normal skip path.
+                            data = TryBuildGameDataFromLocal(game, steamUserId);
+                            if (data == null)
+                            {
+                                throw;
+                            }
+
+                            _logger?.Info($"[SteamLocal] Web refresh failed; recovered appId={appId} from local stats.");
+                        }
+
+                        if (data == null)
+                        {
+                            data = TryBuildGameDataFromLocal(game, steamUserId);
+                        }
 
                         return new ProviderRefreshExecutor.ProviderGameResult
                         {
@@ -113,11 +201,18 @@ namespace PlayniteAchievements.Providers.Steam
                     onGameError: (game, ex, consecutiveErrors) =>
                     {
                         var appIdText = TryGetPlatformAppId(game, out var appId) ? appId.ToString() : "?";
-                        _logger?.Warn($"[SteamAch] Skipping game after retries: {game?.Name} (appId={appIdText}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+                        // Log the exception object so the stack trace identifies where a silent
+                        // timeout (e.g. HttpClient's TaskCanceledException) actually originated.
+                        _logger?.Warn(ex, $"[SteamAch] Skipping game after retries: {game?.Name} (appId={appIdText}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
                     },
-                    delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
-                    delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: null,
                     cancel).ConfigureAwait(false);
+
+                // A complete local fallback is a successful offline refresh. Surface auth only
+                // when at least one requested game could use neither the web nor its local files.
+                payload.AuthRequired = !webAvailable && localFailures > 0;
+                return payload;
             }
             finally
             {
@@ -130,32 +225,10 @@ namespace PlayniteAchievements.Providers.Steam
         /// </summary>
         private static bool IsTransientError(Exception ex)
         {
-            if (ex is OperationCanceledException) return false;
-            if (ex is SteamTransientException) return true;
-
-            // WebException with transient status codes
-            if (ex is WebException webEx && webEx.Response is HttpWebResponse response)
-            {
-                var statusCode = (int)response.StatusCode;
-                // 429 Too Many Requests, 503 Service Unavailable, 502 Bad Gateway, 504 Gateway Timeout
-                if (statusCode == 429 || statusCode == 502 || statusCode == 503 || statusCode == 504)
-                    return true;
-            }
-
-            // Network-related exceptions
-            var message = ex.Message ?? string.Empty;
-            if (message.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("connection", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                message.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("temporarily", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            if (ex.InnerException != null && !ReferenceEquals(ex.InnerException, ex))
-            {
-                return IsTransientError(ex.InnerException);
-            }
-
-            return false;
+            return TransientErrorClassifier.IsTransient(ex, e =>
+                e is SteamStatsUnavailableException
+                    ? false
+                    : (e is SteamTransientException ? true : (bool?)null));
         }
 
         private void ShowDatetimeParseFailureToastIfNeeded()
@@ -226,6 +299,39 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var schema = await FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+            var hasAchievements = schema?.Achievements?.Count > 0;
+            if (!hasAchievements && schema == null)
+            {
+                var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage)
+                    ? "english"
+                    : _settings.Persisted.GlobalLanguage.Trim();
+                var apiHasAchievements = await _steamApiClient
+                    .GetGameHasAchievementsAsync(accessToken, appId, language, cancel)
+                    .ConfigureAwait(false);
+                if (apiHasAchievements == false)
+                {
+                    _logger?.Debug($"[SteamAch] Skipping stats scrape for appId={appId}; Steam API reports no achievements.");
+                    return new GameAchievementData
+                    {
+                        AppId = appId,
+                        GameName = game.Name,
+                        ProviderKey = "Steam",
+                        LibrarySourceName = game?.Source?.Name,
+                        LastUpdatedUtc = DateTime.UtcNow,
+                        HasAchievements = false,
+                        PlayniteGameId = game.Id,
+                        Achievements = new List<AchievementDetail>()
+                    };
+                }
+
+                // The schema call returns null both for "no achievements" and for any failure
+                // (non-success status, network error, malformed body). Only the availability check
+                // above distinguishes them, and it reports null when it could not tell either. An
+                // indeterminate result must not be written as an achievement-less game.
+                throw new SteamTransientException(
+                    $"[SteamAch] Schema unavailable for appId={appId}; achievement availability is indeterminate.");
+            }
+
             var unlocked = await FetchUnlockedAsync(appId, game?.Name, steamUserId, accessToken, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
@@ -235,7 +341,7 @@ namespace PlayniteAchievements.Providers.Steam
                 ProviderKey = "Steam",
                 LibrarySourceName = game?.Source?.Name,
                 LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = schema?.Achievements != null && schema.Achievements.Count > 0,
+                HasAchievements = hasAchievements,
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };
@@ -299,12 +405,131 @@ namespace PlayniteAchievements.Providers.Steam
 
                     gameData.Achievements.Add(detail);
                 }
+
+                await EnrichSteamHuntersCategoriesAsync(appId, gameData.GameName, gameData.Achievements, gameData.PlayniteGameId, cancel).ConfigureAwait(false);
             }
 
             return gameData;
         }
 
-        private Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
+        private GameAchievementData TryBuildGameDataFromLocal(Game game, string steamUserId)
+        {
+            if (game == null ||
+                !TryGetPlatformAppId(game, out var appId) ||
+                !SteamIdHelper.TryGetAccountId3(steamUserId, out var accountId3))
+            {
+                return null;
+            }
+
+            var steamSettings = ProviderRegistry.Settings<SteamSettings>();
+            var steamPath = SteamInstallLocator.ResolveSteamPath(
+                steamSettings?.SteamInstallPathOverride,
+                _logger);
+            var statsPath = SteamInstallLocator.BuildUserGameStatsPath(steamPath, accountId3, appId);
+            var schemaPath = SteamInstallLocator.BuildSchemaPath(steamPath, appId);
+            if (!System.IO.File.Exists(statsPath) || !System.IO.File.Exists(schemaPath))
+            {
+                return null;
+            }
+
+            var cached = _cacheAccessor?.Invoke()?.LoadGameData(game.Id.ToString());
+            if (cached?.Achievements == null ||
+                cached.Achievements.Count == 0 ||
+                !string.Equals(cached.ProviderKey, "Steam", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var read = _localStatsReader.TryRead(statsPath, schemaPath);
+            if (!read.Success)
+            {
+                return null;
+            }
+
+            var cachedKeys = new HashSet<string>(
+                cached.Achievements
+                    .Where(achievement => !string.IsNullOrWhiteSpace(achievement?.ApiName))
+                    .Select(achievement => achievement.ApiName.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            if (read.UnlockByApiName.Keys.Any(apiName => !cachedKeys.Contains(apiName)))
+            {
+                _logger?.Debug($"[SteamLocal] Cached schema is stale for appId={appId}; using web refresh.");
+                return null;
+            }
+
+            var result = new GameAchievementData
+            {
+                AppId = appId,
+                ProviderKey = "Steam",
+                ProviderPlatformKey = cached.ProviderPlatformKey,
+                ProviderGameKey = cached.ProviderGameKey,
+                LibrarySourceName = game.Source?.Name,
+                GameName = game.Name,
+                PlayniteGameId = game.Id,
+                HasAchievements = true,
+                LastUpdatedUtc = DateTime.UtcNow,
+                Achievements = new List<AchievementDetail>()
+            };
+
+            foreach (var source in cached.Achievements)
+            {
+                if (source == null || string.IsNullOrWhiteSpace(source.ApiName))
+                {
+                    continue;
+                }
+
+                var unlocked = read.UnlockByApiName.TryGetValue(source.ApiName, out var unlockTime);
+                result.Achievements.Add(new AchievementDetail
+                {
+                    ApiName = source.ApiName,
+                    DisplayName = source.DisplayName,
+                    Description = source.Description,
+                    UnlockedIconPath = source.UnlockedIconPath,
+                    LockedIconPath = source.LockedIconPath,
+                    Points = source.Points,
+                    ScaledPoints = source.ScaledPoints,
+                    CategoryType = source.CategoryType,
+                    Category = source.Category,
+                    TrophyType = source.TrophyType,
+                    IsCapstone = source.IsCapstone,
+                    Hidden = source.Hidden,
+                    GlobalPercentUnlocked = source.GlobalPercentUnlocked,
+                    Rarity = source.Rarity,
+                    ProgressNum = source.ProgressNum,
+                    ProgressDenom = source.ProgressDenom,
+                    Unlocked = unlocked,
+                    UnlockTimeUtc = unlocked ? unlockTime : null
+                });
+            }
+
+            _logger?.Info(
+                $"[SteamLocal] Loaded appId={appId} from local stats " +
+                $"({result.UnlockedCount}/{result.AchievementCount} unlocked).");
+            return result;
+        }
+
+        private Task EnrichSteamHuntersCategoriesAsync(
+            int appId,
+            string gameName,
+            IList<AchievementDetail> achievements,
+            Guid? playniteGameId,
+            CancellationToken cancel)
+        {
+            if (_steamHuntersCategoryEnricher == null ||
+                !ShouldUseSteamHuntersForCategories())
+            {
+                return Task.CompletedTask;
+            }
+
+            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, playniteGameId, cancel);
+        }
+
+        private static bool ShouldUseSteamHuntersForCategories()
+        {
+            return ProviderRegistry.Settings<SteamSettings>()?.UseSteamHuntersForCategories == true;
+        }
+
+        internal Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
         {
             var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage) ? "english" : _settings.Persisted.GlobalLanguage.Trim();
             return _steamApiClient.GetSchemaForGameDetailedAsync(
@@ -346,16 +571,18 @@ namespace PlayniteAchievements.Providers.Steam
                 scraped = await ScrapeAchievementsAsync(steamUserId, appId, accessToken, cancel, includeLocked: true, gameName: gameName)
                     .ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
-                if (IsTransientError(ex))
+                // A timeout-shaped OperationCanceledException (HttpClient timeout) without the run
+                // token being cancelled is transient, not a user cancel.
+                if (ex is OperationCanceledException || IsTransientError(ex))
                 {
                     throw new SteamTransientException($"[SteamAch] Transient scrape exception for appId={appId}.", ex);
                 }
 
-                _logger?.Debug(ex, $"[SteamAch] User achievements scrape failed (non-transient, appId={appId}).");
-                return new UserUnlockedAchievements();
+                throw new SteamStatsUnavailableException(
+                    $"[SteamAch] User achievements scrape failed (non-transient, appId={appId}).", ex);
             }
 
             if (scraped == null || scraped.TransientFailure)
@@ -365,40 +592,29 @@ namespace PlayniteAchievements.Providers.Steam
                 throw new SteamTransientException($"[SteamAch] Transient scrape result for appId={appId}. detail={detail}, status={status}");
             }
 
-            var iconFileToAchievements = new Dictionary<string, List<SchemaAchievement>>(StringComparer.OrdinalIgnoreCase);
+            // A scrape that produced no usable rows without being transient means the stats could not
+            // be read: an expired session, a private or missing profile, a redirect off the stats
+            // page, or hidden-only rows. Reporting it as zero unlocks would relock every achievement,
+            // so fail the game instead. NoAchievements is the one API-confirmed empty case and
+            // legitimately yields an empty set. AllHidden is page-confirmed empty when the schema is
+            // itself all-hidden; see SteamStatsPageClassifier.ConfirmsAllHiddenZeroUnlocks.
+            var confirmedAllHiddenZeroUnlocks =
+                scraped.DetailCode == SteamScrapeDetail.AllHidden &&
+                SteamStatsPageClassifier.ConfirmsAllHiddenZeroUnlocks(schema, scraped.HiddenRemainingCount);
 
-            if (schema?.Achievements != null)
+            if (!scraped.SuccessWithRows &&
+                scraped.DetailCode != SteamScrapeDetail.NoAchievements &&
+                !confirmedAllHiddenZeroUnlocks)
             {
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Schema has {schema.Achievements.Count} achievements for appId={appId}");
-
-                foreach (var ach in schema.Achievements)
-                {
-                    if (string.IsNullOrWhiteSpace(ach.Name))
-                        continue;
-
-                    var iconFile = ExtractIconFilename(ach.Icon);
-                    if (!string.IsNullOrWhiteSpace(iconFile))
-                    {
-                        if (!iconFileToAchievements.ContainsKey(iconFile))
-                            iconFileToAchievements[iconFile] = new List<SchemaAchievement>();
-                        iconFileToAchievements[iconFile].Add(ach);
-                    }
-
-                    var iconGrayFile = ExtractIconFilename(ach.IconGray);
-                    if (!string.IsNullOrWhiteSpace(iconGrayFile) &&
-                        !string.Equals(iconGrayFile, iconFile, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!iconFileToAchievements.ContainsKey(iconGrayFile))
-                            iconFileToAchievements[iconGrayFile] = new List<SchemaAchievement>();
-                        iconFileToAchievements[iconGrayFile].Add(ach);
-                    }
-                }
-
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Built iconFileToAchievements with {iconFileToAchievements.Count} icon entries");
+                throw new SteamStatsUnavailableException(
+                    $"[SteamAch] Stats unavailable for appId={appId}. detail={scraped.DetailCode}, status={scraped.StatusCode}");
             }
-            else
+
+            if (confirmedAllHiddenZeroUnlocks)
             {
-                // _logger?.Warn($"[SteamAch] FetchUnlockedAsync: Schema is null or has no achievements for appId={appId}");
+                _logger?.Info(
+                    $"[SteamAch] appId={appId}: all {schema.Achievements.Count} schema achievements " +
+                    "hidden and none unlocked; writing empty unlock set.");
             }
 
             var data = new UserUnlockedAchievements
@@ -413,104 +629,39 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (scraped.Rows != null)
             {
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Scraped {scraped.Rows.Count} rows for appId={appId}");
-                int withTime = 0, withoutTime = 0, matched = 0, fallbackMatches = 0;
+                var apiNamesByRow = SteamAchievementApiNameResolver.Resolve(schema, scraped.Rows);
 
                 foreach (var row in scraped.Rows)
                 {
-                    var iconFile = ExtractIconFilename(row.IconUrl);
-                    if (!string.IsNullOrWhiteSpace(iconFile) && iconFileToAchievements.TryGetValue(iconFile, out var achievements))
+                    if (row == null ||
+                        !apiNamesByRow.TryGetValue(row, out var apiName) ||
+                        string.IsNullOrWhiteSpace(apiName))
                     {
-                        string apiName = null;
+                        continue;
+                    }
 
-                        if (achievements.Count == 1)
+                    data.ProgressNum[apiName] = row.ProgressNum;
+                    data.ProgressDenom[apiName] = row.ProgressDenom;
+
+                    if (row.IsUnlocked)
+                    {
+                        data.UnlockedApiNames.Add(apiName);
+                        if (row.UnlockTimeUtc.HasValue)
                         {
-                            // Icon maps to exactly one achievement - use it directly
-                            apiName = achievements[0].Name;
-                        }
-                        else
-                        {
-                            var rowDescription = NormalizeMatchText(row.Description);
-                            var rowDisplayName = NormalizeMatchText(row.DisplayName);
-
-                            // Multiple achievements share this icon - prioritize: Description, then DisplayName
-                            var descMatches = achievements.Where(a =>
-                                string.Equals(
-                                    NormalizeMatchText(a.Description),
-                                    rowDescription,
-                                    StringComparison.OrdinalIgnoreCase)).ToList();
-
-                            if (descMatches.Count == 1)
-                            {
-                                apiName = descMatches[0].Name;
-                            }
-                            else
-                            {
-                                // Description matched zero or multiple - fall back to DisplayName
-                                apiName = achievements.FirstOrDefault(a =>
-                                    string.Equals(
-                                        NormalizeMatchText(a.DisplayName),
-                                        rowDisplayName,
-                                        StringComparison.OrdinalIgnoreCase))?.Name;
-                            }
-
-                            if (apiName != null)
-                                fallbackMatches++;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(apiName))
-                        {
-                            data.ProgressNum[apiName] = row.ProgressNum;
-                            data.ProgressDenom[apiName] = row.ProgressDenom;
-
-                            if (row.IsUnlocked)
-                            {
-                                data.UnlockedApiNames.Add(apiName);
-                                if (row.UnlockTimeUtc.HasValue)
-                                {
-                                    data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
-                                }
-
-                                matched++;
-                                if (row.UnlockTimeUtc.HasValue) withTime++; else withoutTime++;
-                            }
+                            data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
                         }
                     }
                 }
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Processed rows - withTime={withTime}, withoutTime={withoutTime}, matched={matched}, fallbackMatches={fallbackMatches}");
             }
 
             return data;
-        }
-
-        private static string ExtractIconFilename(string iconUrl)
-        {
-            if (string.IsNullOrWhiteSpace(iconUrl))
-                return null;
-
-            var queryIndex = iconUrl.IndexOf('?');
-            if (queryIndex > 0)
-                iconUrl = iconUrl.Substring(0, queryIndex);
-
-            var lastSlash = iconUrl.LastIndexOf('/');
-            if (lastSlash < 0 || lastSlash >= iconUrl.Length - 1)
-                return null;
-
-            return iconUrl.Substring(lastSlash + 1);
-        }
-
-        private static string NormalizeMatchText(string value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? string.Empty
-                : value.Trim();
         }
 
         // ---------------------------------------------------------------------
         // Achievements scraping
         // ---------------------------------------------------------------------
 
-        private async Task<AchievementsScrapeResponse> ScrapeAchievementsAsync(
+        internal async Task<AchievementsScrapeResponse> ScrapeAchievementsAsync(
             string steamId64,
             int appId,
             string accessToken,
@@ -808,6 +959,7 @@ namespace PlayniteAchievements.Providers.Steam
                 if (SteamHttpClient.HasOnlyHiddenAchievementRows(html))
                 {
                     res.TransientFailure = false;
+                    res.HiddenRemainingCount = SteamStatsPageClassifier.TryGetHiddenRemainingCount(html);
                     res.SetDetail(SteamScrapeDetail.AllHidden);
                     return res;
                 }

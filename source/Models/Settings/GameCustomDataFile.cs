@@ -1,8 +1,35 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace PlayniteAchievements.Models.Settings
 {
+    /// <summary>
+    /// A game's complete notification appearance snapshot. A null instance on
+    /// <see cref="GameCustomDataFile"/> means the game continues to follow its provider/global
+    /// appearance live.
+    /// </summary>
+    public sealed class GameNotificationAppearanceOverride
+    {
+        public NotificationStyleSettings Style { get; set; }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+        public bool ToastUseThemeStyling { get; set; } = true;
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+        public bool FrameUseThemeStyling { get; set; } = true;
+
+        public GameNotificationAppearanceOverride Clone()
+        {
+            return new GameNotificationAppearanceOverride
+            {
+                Style = Style?.Clone(),
+                ToastUseThemeStyling = ToastUseThemeStyling,
+                FrameUseThemeStyling = FrameUseThemeStyling
+            };
+        }
+    }
+
     public sealed class ProviderOverrideData
     {
         public string ProviderKey { get; set; }
@@ -19,12 +46,46 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 
+    // Single category art override. Pre-refactor files stored separate Icon and Cover values;
+    // those members are intentionally not migrated and are skipped on deserialization.
+    public sealed class CategoryImageOverrideData
+    {
+        public string Art { get; set; }
+
+        public CategoryImageOverrideData Clone()
+        {
+            return new CategoryImageOverrideData
+            {
+                Art = Art
+            };
+        }
+    }
+
+    // Category whose art is used as the game's image in game summary grids.
+    // Label matches the image-override key space (effective/display label);
+    // ProviderLabel keys provider-default art and survives renames.
+    public sealed class GameSummaryCategoryData
+    {
+        public string Label { get; set; }
+
+        public string ProviderLabel { get; set; }
+
+        public GameSummaryCategoryData Clone()
+        {
+            return new GameSummaryCategoryData
+            {
+                Label = Label,
+                ProviderLabel = ProviderLabel
+            };
+        }
+    }
+
     /// <summary>
     /// Internal storage representation for per-game custom data.
     /// </summary>
     public sealed class GameCustomDataFile
     {
-        public int SchemaVersion { get; set; } = 5;
+        public int SchemaVersion { get; set; } = 7;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -42,9 +103,21 @@ namespace PlayniteAchievements.Models.Settings
 
         public Dictionary<string, string> AchievementCategoryTypeOverrides { get; set; }
 
+        public List<string> AchievementCategoryOrder { get; set; }
+
+        public Dictionary<string, CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
+
+        public GameSummaryCategoryData GameSummaryCategory { get; set; }
+
         public List<string> FilteredAchievementApiNames { get; set; }
 
         public List<string> SummaryFilteredAchievementApiNames { get; set; }
+
+        /// <summary>
+        /// Achievements the user is working toward, most-wanted first. Membership is the goal
+        /// flag and list position is the goal order, matching <see cref="AchievementOrder"/>.
+        /// </summary>
+        public List<string> GoalAchievementApiNames { get; set; }
 
         public Dictionary<string, string> AchievementUnlockedIconOverrides { get; set; }
 
@@ -62,7 +135,16 @@ namespace PlayniteAchievements.Models.Settings
 
         public string ExophaseSlugOverride { get; set; }
 
+        public GameNotificationAppearanceOverride NotificationAppearanceOverride { get; set; }
+
         public ProviderOverrideData ProviderOverride { get; set; }
+
+        /// <summary>
+        /// Exophase slug used only for rarity/metadata enrichment when another provider services
+        /// the game. Distinct from the legacy <see cref="ExophaseSlugOverride"/>, which selects
+        /// the servicing provider and is migrated into <see cref="ProviderOverride"/>.
+        /// </summary>
+        public string ExophaseEnrichmentSlugOverride { get; set; }
 
         public ManualAchievementLink ManualLink { get; set; }
 
@@ -87,11 +169,19 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = AchievementCategoryOrder != null
+                    ? new List<string>(AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
+                GameSummaryCategory = GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
                 SummaryFilteredAchievementApiNames = SummaryFilteredAchievementApiNames != null
                     ? new List<string>(SummaryFilteredAchievementApiNames)
+                    : null,
+                GoalAchievementApiNames = GoalAchievementApiNames != null
+                    ? new List<string>(GoalAchievementApiNames)
                     : null,
                 AchievementUnlockedIconOverrides = AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
@@ -107,7 +197,9 @@ namespace PlayniteAchievements.Models.Settings
                 ShadPS4MatchIdOverride = ShadPS4MatchIdOverride,
                 ForceUseExophase = ForceUseExophase,
                 ExophaseSlugOverride = ExophaseSlugOverride,
+                NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
+                ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
                 ManualLink = ManualLink?.Clone(),
                 CustomAchievements = CustomAchievements != null
                     ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
@@ -132,11 +224,19 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = AchievementCategoryOrder != null
+                    ? new List<string>(AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
+                GameSummaryCategory = GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
                 SummaryFilteredAchievementApiNames = SummaryFilteredAchievementApiNames != null
                     ? new List<string>(SummaryFilteredAchievementApiNames)
+                    : null,
+                GoalAchievementApiNames = GoalAchievementApiNames != null
+                    ? new List<string>(GoalAchievementApiNames)
                     : null,
                 AchievementUnlockedIconOverrides = AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
@@ -152,7 +252,9 @@ namespace PlayniteAchievements.Models.Settings
                 ShadPS4MatchIdOverride = ShadPS4MatchIdOverride,
                 ForceUseExophase = ForceUseExophase,
                 ExophaseSlugOverride = ExophaseSlugOverride,
+                NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
+                ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
                 ManualLink = ManualLink?.Clone(),
                 CustomAchievements = CustomAchievements != null
                     ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
@@ -168,7 +270,7 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new GameCustomDataFile
             {
-                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 5,
+                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 7,
                 PlayniteGameId = playniteGameId,
                 ExcludedFromRefreshes = excludedFromRefreshes,
                 ExcludedFromSummaries = excludedFromSummaries,
@@ -183,11 +285,19 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = portable?.AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(portable.AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = portable?.AchievementCategoryOrder != null
+                    ? new List<string>(portable.AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(portable?.AchievementCategoryImageOverrides),
+                GameSummaryCategory = portable?.GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = portable?.FilteredAchievementApiNames != null
                     ? new List<string>(portable.FilteredAchievementApiNames)
                     : null,
                 SummaryFilteredAchievementApiNames = portable?.SummaryFilteredAchievementApiNames != null
                     ? new List<string>(portable.SummaryFilteredAchievementApiNames)
+                    : null,
+                GoalAchievementApiNames = portable?.GoalAchievementApiNames != null
+                    ? new List<string>(portable.GoalAchievementApiNames)
                     : null,
                 AchievementUnlockedIconOverrides = portable?.AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(portable.AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
@@ -203,12 +313,36 @@ namespace PlayniteAchievements.Models.Settings
                 ShadPS4MatchIdOverride = portable?.ShadPS4MatchIdOverride,
                 ForceUseExophase = portable?.ForceUseExophase,
                 ExophaseSlugOverride = portable?.ExophaseSlugOverride,
+                NotificationAppearanceOverride = portable?.NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = portable?.ProviderOverride?.Clone(),
+                ExophaseEnrichmentSlugOverride = portable?.ExophaseEnrichmentSlugOverride,
                 ManualLink = portable?.ManualLink?.Clone(),
                 CustomAchievements = portable?.CustomAchievements != null
                     ? portable.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
                     : null
             };
+        }
+
+        internal static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var clone = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in source)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                clone[pair.Key] = pair.Value.Clone();
+            }
+
+            return clone.Count > 0 ? clone : null;
         }
     }
 }

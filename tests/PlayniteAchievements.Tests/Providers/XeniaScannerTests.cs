@@ -6,13 +6,17 @@ using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.EmuLibrary;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Tests.Providers;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -140,6 +144,235 @@ namespace PlayniteAchievements.Providers.Tests
             }
         }
 
+        [TestMethod]
+        public void ResolveTitleId_UninstalledEmuLibraryGame_ScansDecodedSourceFile()
+        {
+            var tempDir = CreateTempDirectory();
+            var previousPlugin = PlayniteAchievementsPlugin.Instance;
+
+            try
+            {
+                PlayniteAchievementsPlugin.Instance = new PlayniteAchievementsPlugin
+                {
+                    GameCustomDataStore = new GameCustomDataStore(Path.Combine(tempDir, "store"))
+                };
+
+                var sourceRoot = Path.Combine(tempDir, "network", "Xbox360");
+                Directory.CreateDirectory(sourceRoot);
+                WriteFakeXexWithTitleId(Path.Combine(sourceRoot, "game.xex"), "54441234");
+
+                var extensionsDataPath = Path.Combine(tempDir, "ExtensionsData");
+                var mappingId = Guid.NewGuid();
+                EmuLibraryPathResolverTests.WriteConfig(extensionsDataPath, mappingId, sourceRoot);
+
+                // Uninstalled EmuLibrary game: no roms, only the serialized game id.
+                var game = EmuLibraryPathResolverTests.BuildEmuLibraryGame(new EmuLibrarySingleFileGameInfo
+                {
+                    MappingId = mappingId,
+                    SourcePath = "game.xex"
+                });
+                game.Id = Guid.NewGuid();
+                game.Name = "Uninstalled EmuLibrary Game";
+
+                var scanner = new XeniaScanner(
+                    logger: new FakeLogger(),
+                    playniteApi: new FakePlayniteApi(extensionsDataPath),
+                    providerSettings: new XeniaSettings { AccountPath = tempDir },
+                    pluginUserDataPath: tempDir);
+
+                var resolved = scanner.ResolveTitleID(game, out var titleId);
+
+                Assert.IsTrue(resolved);
+                Assert.AreEqual("54441234", titleId);
+            }
+            finally
+            {
+                PlayniteAchievementsPlugin.Instance = previousPlugin;
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void ResolveTitleId_ExeMarkerStraddlesReadBoundary_FindsTitleId()
+        {
+            // The scanner reads in 8 KB blocks; the ".exe" marker starts two bytes
+            // before the first block boundary so it only completes in the next read.
+            AssertByteScanFindsTitleId(exeMarkerOffset: (8 * 1024) - 2);
+        }
+
+        [TestMethod]
+        public void ResolveTitleId_ExeMarkerInLaterBlock_FindsTitleId()
+        {
+            AssertByteScanFindsTitleId(exeMarkerOffset: 20000);
+        }
+
+        private static void AssertByteScanFindsTitleId(int exeMarkerOffset)
+        {
+            var tempDir = CreateTempDirectory();
+            var previousPlugin = PlayniteAchievementsPlugin.Instance;
+
+            try
+            {
+                PlayniteAchievementsPlugin.Instance = new PlayniteAchievementsPlugin
+                {
+                    GameCustomDataStore = new GameCustomDataStore(Path.Combine(tempDir, "store"))
+                };
+
+                var romPath = Path.Combine(tempDir, "game.iso");
+                WriteFakeRomWithTitleIdAtOffset(romPath, "54441234", exeMarkerOffset);
+
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Boundary Game",
+                    Roms = new ObservableCollection<GameRom> { new GameRom("rom", romPath) }
+                };
+
+                var scanner = new XeniaScanner(
+                    logger: new FakeLogger(),
+                    playniteApi: new FakePlayniteApi(),
+                    providerSettings: new XeniaSettings { AccountPath = tempDir },
+                    pluginUserDataPath: tempDir);
+
+                var resolved = scanner.ResolveTitleID(game, out var titleId);
+
+                Assert.IsTrue(resolved);
+                Assert.AreEqual("54441234", titleId);
+            }
+            finally
+            {
+                PlayniteAchievementsPlugin.Instance = previousPlugin;
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void TryReadTitleString_ReadsSection5String()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gpdPath = Path.Combine(tempDir, "4D5307E6.gpd");
+                WriteFakeGpdWithTitleString(gpdPath, "Test Game");
+
+                Assert.IsTrue(GPDResolver.TryReadTitleString(gpdPath, out var title));
+                Assert.AreEqual("Test Game", title.Replace("\0", ""));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void TryReadTitleString_NonXdbfFile_ReturnsFalse()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var path = Path.Combine(tempDir, "not-a-gpd.gpd");
+                File.WriteAllText(path, "this is not an XDBF file", Encoding.ASCII);
+
+                Assert.IsFalse(GPDResolver.TryReadTitleString(path, out var title));
+                Assert.IsNull(title);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        /// <summary>
+        /// Writes a minimal fake xex: a known publisher code and title id followed by
+        /// enough padding for the ".exe" marker to sit past the scanner's look-back window.
+        /// </summary>
+        private static void WriteFakeXexWithTitleId(string path, string titleId)
+        {
+            var content = new StringBuilder();
+            content.Append(titleId);
+            content.Append(new string('x', 300 - titleId.Length));
+            content.Append(".exe");
+            File.WriteAllText(path, content.ToString(), Encoding.ASCII);
+        }
+
+        /// <summary>
+        /// Writes a fake rom of neutral filler with the title id placed at the start of the
+        /// scanner's 300-byte look-back window and the ".exe" marker at the given offset.
+        /// </summary>
+        private static void WriteFakeRomWithTitleIdAtOffset(string path, string titleId, int exeMarkerOffset)
+        {
+            var content = new byte[exeMarkerOffset + 4 + 512];
+            for (var i = 0; i < content.Length; i++)
+            {
+                content[i] = (byte)'-';
+            }
+
+            var titleBytes = Encoding.ASCII.GetBytes(titleId);
+            Array.Copy(titleBytes, 0, content, exeMarkerOffset - 300, titleBytes.Length);
+
+            var marker = Encoding.ASCII.GetBytes(".exe");
+            Array.Copy(marker, 0, content, exeMarkerOffset, marker.Length);
+
+            File.WriteAllBytes(path, content);
+        }
+
+        /// <summary>
+        /// Writes a minimal XDBF/GPD with one icon entry and one section-5 string entry
+        /// holding the title encoded as UTF-16 big-endian, matching real gpd files.
+        /// </summary>
+        private static void WriteFakeGpdWithTitleString(string path, string title)
+        {
+            var titleBytes = Encoding.BigEndianUnicode.GetBytes(title + "\0");
+
+            using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write))
+            using (var writer = new BinaryWriter(stream))
+            {
+                WriteBigEndian(writer, 0x58444246U); // XDBF magic
+                WriteBigEndian(writer, 1U);          // version
+                WriteBigEndian(writer, 2U);          // entry capacity
+                WriteBigEndian(writer, 2U);          // entries used
+                WriteBigEndian(writer, 0U);          // free capacity
+                WriteBigEndian(writer, 0U);          // free used
+
+                // Entry 0: icon data
+                WriteBigEndian(writer, (ushort)2);
+                WriteBigEndian(writer, 1UL);
+                WriteBigEndian(writer, 0U);          // offset
+                WriteBigEndian(writer, 4U);          // size
+
+                // Entry 1: string data (game title)
+                WriteBigEndian(writer, (ushort)5);
+                WriteBigEndian(writer, 0x8000UL);
+                WriteBigEndian(writer, 4U);          // offset
+                WriteBigEndian(writer, (uint)titleBytes.Length);
+
+                writer.Write(new byte[4]);           // icon payload
+                writer.Write(titleBytes);
+            }
+        }
+
+        private static void WriteBigEndian(BinaryWriter writer, ushort value)
+        {
+            writer.Write((byte)(value >> 8));
+            writer.Write((byte)value);
+        }
+
+        private static void WriteBigEndian(BinaryWriter writer, uint value)
+        {
+            writer.Write((byte)(value >> 24));
+            writer.Write((byte)(value >> 16));
+            writer.Write((byte)(value >> 8));
+            writer.Write((byte)value);
+        }
+
+        private static void WriteBigEndian(BinaryWriter writer, ulong value)
+        {
+            WriteBigEndian(writer, (uint)(value >> 32));
+            WriteBigEndian(writer, (uint)value);
+        }
+
         private static string CreateTempDirectory()
         {
             var path = Path.Combine(
@@ -176,12 +409,17 @@ namespace PlayniteAchievements.Providers.Tests
 
         private sealed class FakePlayniteApi : IPlayniteAPI
         {
+            public FakePlayniteApi(string extensionsDataPath = null)
+            {
+                Paths = extensionsDataPath == null ? null : new FakePathsApi(extensionsDataPath);
+            }
+
             public FakeNotificationsApi TestNotifications { get; } = new FakeNotificationsApi();
 
             public IMainViewAPI MainView => null;
             public IGameDatabaseAPI Database => null;
             public IDialogsFactory Dialogs => null;
-            public IPlaynitePathsAPI Paths => null;
+            public IPlaynitePathsAPI Paths { get; }
             public INotificationsAPI Notifications => TestNotifications;
             public IPlayniteInfoAPI ApplicationInfo => null;
             public IWebViewFactory WebViews => null;
@@ -200,6 +438,19 @@ namespace PlayniteAchievements.Providers.Tests
             public void AddCustomElementSupport(Plugin plugin, AddCustomElementSupportArgs args) { }
             public void AddSettingsSupport(Plugin plugin, AddSettingsSupportArgs args) { }
             public void AddConvertersSupport(Plugin plugin, AddConvertersSupportArgs args) { }
+        }
+
+        private sealed class FakePathsApi : IPlaynitePathsAPI
+        {
+            public FakePathsApi(string extensionsDataPath)
+            {
+                ExtensionsDataPath = extensionsDataPath;
+            }
+
+            public bool IsPortable => false;
+            public string ApplicationPath => null;
+            public string ConfigurationPath => null;
+            public string ExtensionsDataPath { get; }
         }
 
         private sealed class FakeNotificationsApi : INotificationsAPI

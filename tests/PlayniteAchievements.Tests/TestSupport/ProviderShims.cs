@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
@@ -21,6 +22,7 @@ namespace PlayniteAchievements.Providers
         bool IsCapable(Game game);
         bool IsAuthenticated { get; }
         ISessionManager AuthSession { get; }
+        IFriendsProvider Friends { get; }
         Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
             Action<Game> onGameStarting,
@@ -29,6 +31,11 @@ namespace PlayniteAchievements.Providers
         IProviderSettings GetSettings();
         void ApplySettings(IProviderSettings settings);
         ProviderSettingsViewBase CreateSettingsView();
+    }
+
+    internal interface IOfflineRefreshFallbackProvider
+    {
+        bool CanAttemptOfflineRefresh { get; }
     }
 }
 
@@ -63,9 +70,13 @@ namespace PlayniteAchievements.Providers.GOG
     {
         public string AccessToken { get; set; }
 
-        public string GetAccessToken()
+        public Task<string> GetAccessTokenAsync(CancellationToken ct)
         {
-            return AccessToken;
+            return Task.FromResult(AccessToken);
+        }
+
+        public void InvalidateAccessToken()
+        {
         }
     }
 }
@@ -83,6 +94,11 @@ namespace PlayniteAchievements.Providers.Exophase
         public static List<string> GetMissingCriticalCookies(IReadOnlyCollection<HttpCookie> cookies)
         {
             return new List<string>();
+        }
+
+        public static bool HasCriticalCookies(IReadOnlyCollection<HttpCookie> cookies)
+        {
+            return GetMissingCriticalCookies(cookies).Count == 0;
         }
     }
 
@@ -137,6 +153,19 @@ namespace PlayniteAchievements.Providers.Exophase
 
     internal sealed class ExophaseMetadataEnricher
     {
+        public sealed class RecordedEnrichCall
+        {
+            public string GameName { get; set; }
+
+            public string SearchName { get; set; }
+
+            public int AchievementCount { get; set; }
+        }
+
+        // Scanners construct the enricher internally, so tests observe calls through
+        // this static log. Clear it at the start of each test that asserts on it.
+        public static readonly List<RecordedEnrichCall> EnrichCalls = new List<RecordedEnrichCall>();
+
         public ExophaseMetadataEnricher(
             IPlayniteAPI playniteApi,
             ILogger logger,
@@ -156,9 +185,25 @@ namespace PlayniteAchievements.Providers.Exophase
             string fallbackPlatformSlug,
             string providerPlatformKey,
             CancellationToken ct,
-            ExophaseMetadataFields fields = ExophaseMetadataFields.Rarity)
+            ExophaseMetadataFields fields = ExophaseMetadataFields.Rarity,
+            string regionHint = null,
+            string searchName = null)
         {
+            lock (EnrichCalls)
+            {
+                EnrichCalls.Add(new RecordedEnrichCall
+                {
+                    GameName = game?.Name,
+                    SearchName = searchName,
+                    AchievementCount = achievements?.Count ?? 0
+                });
+            }
+
             return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

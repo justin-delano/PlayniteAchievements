@@ -9,6 +9,8 @@ build.txt
 *.zip
 
 AddonDBManifest.yaml
+#internal
+docs/*
 
 # NuGet packages
 packages/
@@ -78,3 +80,9 @@ DatabasePlan.md
 wiki/
 PlayniteAchievementsWiki/
 PlayniteAchievements.code-workspace
+
+# Working notes (local only)
+docs/
+
+# Local build output, packaged extensions, and crash artifacts
+artifacts/

@@ -11,25 +11,23 @@
     <base:ThemeControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-            <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
-            <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter" />
         </ResourceDictionary>
     </base:ThemeControlBase.Resources>
 
+    <base:ThemeControlBase.Style>
+        <Style TargetType="base:ThemeControlBase">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Persisted.EnableAchievementButtonControl}"
+                             Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </base:ThemeControlBase.Style>
+
     <Button x:Name="PART_PluginButton" Click="PART_PluginButton_Click">
-        <Button.Style>
-            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.Persisted.EnableAchievementButtonControl, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
-                                 Value="False">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </Button.Style>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -37,11 +35,14 @@
             </Grid.ColumnDefinitions>
 
             <!-- Trophy icon (shown when DisplayDetails=False) -->
-            <TextBlock Grid.Column="0"
-                       Text="&#xedd7;" FontFamily="{DynamicResource FontIcoFont}"
-                       VerticalAlignment="Center"
-                       Visibility="{Binding DisplayDetails, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Converter={StaticResource InverseBoolToVisConverter}}"
-                       FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, FallbackValue=14}"/>
+            <Path Grid.Column="0"
+                  Data="{StaticResource PlayAch.Geometry.TrophyIcon}"
+                  Stretch="Uniform"
+                  Fill="{Binding (TextElement.Foreground), RelativeSource={RelativeSource Self}}"
+                  VerticalAlignment="Center"
+                  Visibility="{Binding DisplayDetails, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Converter={StaticResource InverseBoolToVisConverter}}"
+                  Width="{Binding FontSize, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, FallbackValue=14}"
+                  Height="{Binding FontSize, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, FallbackValue=14}"/>
 
             <!-- Details grid (shown when DisplayDetails=True) -->
             <Grid Grid.Column="1" HorizontalAlignment="Stretch"
@@ -76,7 +77,7 @@
                            Margin="0,-3,0,-3" Padding="5,3,5,5"
                            FontSize="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}">
                     <TextBlock.Text>
-                        <MultiBinding StringFormat="{}{0}/{1}">
+                        <MultiBinding StringFormat="{}{0:N0}/{1:N0}">
                             <Binding Path="UnlockedCount" FallbackValue="0"/>
                             <Binding Path="AchievementCount" FallbackValue="0"/>
                         </MultiBinding>

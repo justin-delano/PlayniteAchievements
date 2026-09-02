@@ -4,7 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Services.Overview
 {
@@ -121,6 +123,8 @@ namespace PlayniteAchievements.Services.Overview
                         gameData.AchievementOrder)
                     : achievements;
 
+                // Deliberately not goal-partitioned: this is the surface's natural order, and the
+                // caller keeps it as the snapshot it restores to when a goal is removed.
                 return (orderedItems, hasCustomOrder);
             }, cancellationToken).ConfigureAwait(false);
 

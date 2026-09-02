@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Models
 {
@@ -18,12 +19,25 @@ namespace PlayniteAchievements.Models
         public List<Guid> RefreshedGameIds { get; set; } = new List<Guid>();
     }
 
+    public sealed class FriendRefreshSummary
+    {
+        public int ProvidersProcessed { get; set; }
+        public int FriendsFetched { get; set; }
+        public int FriendsSaved { get; set; }
+        public int OwnershipPagesRefreshed { get; set; }
+        public int OwnershipRowsWritten { get; set; }
+        public int CandidatesLoaded { get; set; }
+        public int CandidatesRefreshed { get; set; }
+        public int AchievementsSaved { get; set; }
+    }
+
     /// <summary>
     /// Payload information for cache rebuild events.
     /// </summary>
     public sealed class RebuildPayload
     {
         public RebuildSummary Summary { get; set; } = new RebuildSummary();
+        public FriendRefreshSummary FriendSummary { get; set; } = new FriendRefreshSummary();
         public bool AuthRequired { get; set; }
 
         /// <summary>
@@ -31,5 +45,18 @@ namespace PlayniteAchievements.Models
         /// Populated by the merge loop in RefreshRuntime from per-provider results.
         /// </summary>
         public List<string> FailedProviderKeys { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Provider keys whose execution faulted with a non-auth, non-cancellation exception.
+        /// The rest of the run continues; these are surfaced in the completion message.
+        /// </summary>
+        public List<string> FaultedProviderKeys { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Provider keys that executed during this refresh, whatever their outcome. Scopes the
+        /// clearing of auth-failed notifications to the providers this run actually spoke to, so
+        /// a refresh of one provider's game cannot clear another provider's warning.
+        /// </summary>
+        public List<string> ExecutedProviderKeys { get; set; } = new List<string>();
     }
 }

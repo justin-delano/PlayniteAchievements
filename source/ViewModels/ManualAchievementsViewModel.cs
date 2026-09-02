@@ -9,13 +9,21 @@ using System.Windows;
 using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Search;
+using PlayniteAchievements.ViewModels.Items;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
@@ -79,6 +87,12 @@ namespace PlayniteAchievements.ViewModels
         private string _sourceGameName = string.Empty;
         private string _manualSourceName = string.Empty;
         private string _saveStatusMessage = string.Empty;
+        private string _displayPlatformKeyOverride;
+        private readonly IReadOnlyList<ProviderOverrideChoice> _availableDisplayPlatforms =
+            BuildDisplayPlatformOptions();
+        private readonly SearchTextIndex<ManualAchievementEditItem> _editSearchIndex =
+            new SearchTextIndex<ManualAchievementEditItem>(item =>
+                SearchTextBuilder.ForManualEdit(item?.DisplayName, item?.Description, item?.ApiName));
 
         private sealed class InheritedUnlockEntry
         {
@@ -311,6 +325,30 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
+        /// Gets the platforms this game can be shown as. The first entry is the default, which
+        /// derives the platform from the source game id.
+        /// </summary>
+        public IReadOnlyList<ProviderOverrideChoice> AvailableDisplayPlatforms => _availableDisplayPlatforms;
+
+        /// <summary>
+        /// Gets or sets the provider key this game is shown as in grids, filters, and themes.
+        /// Empty selects the default. Persisted with the link when the user saves.
+        /// </summary>
+        public string SelectedDisplayPlatformKey
+        {
+            get => _displayPlatformKeyOverride ?? string.Empty;
+            set
+            {
+                var normalized = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+                if (_displayPlatformKeyOverride != normalized)
+                {
+                    _displayPlatformKeyOverride = normalized;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets whether the platform column should be visible in search results.
         /// Only Exophase provides platform information.
         /// </summary>
@@ -349,7 +387,7 @@ namespace PlayniteAchievements.ViewModels
             new ObservableCollection<ManualAchievementEditItem>();
 
         public ObservableCollection<ManualAchievementEditItem> FilteredAchievements { get; } =
-            new ObservableCollection<ManualAchievementEditItem>();
+            new Common.BulkObservableCollection<ManualAchievementEditItem>();
 
         public int TotalCount => AllAchievements.Count;
 
@@ -503,6 +541,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 SearchStatusMessage = string.Format(
+                    FormattingCulture.Current,
                     ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Search_ResultsFormat"),
                     SearchResults.Count);
 
@@ -720,7 +759,7 @@ namespace PlayniteAchievements.ViewModels
             return new RefreshRequest
             {
                 Mode = RefreshModeType.Custom,
-                CustomOptions = new CustomRefreshOptions
+                Options = RefreshOptions.FromCustom(new CustomRefreshOptions
                 {
                     ProviderKeys = new[] { "Manual" },
                     Scope = CustomGameScope.Explicit,
@@ -729,7 +768,7 @@ namespace PlayniteAchievements.ViewModels
                     RespectUserExclusions = false,
                     ForceBypassExclusionsForExplicitIncludes = true,
                     RunProvidersInParallelOverride = false
-                }
+                })
             };
         }
 
@@ -831,15 +870,20 @@ namespace PlayniteAchievements.ViewModels
         {
             var cachedData = _achievementDataService.GetRawGameAchievementData(_playniteGame.Id);
             var hydratedData = _achievementDataService.GetGameAchievementData(_playniteGame.Id);
-            string providerKey = cachedData?.ProviderKey;
-            var achievements = cachedData?.Achievements?
+
+            // Rows are built from hydrated details so the per-achievement icon overrides set in the
+            // Icons tab show up here; the raw cache rows carry provider art only. Both loads return
+            // independent clones, and only ApiName/unlock state is read back out when saving, so
+            // the overlay fields hydration adds are never persisted.
+            string providerKey = hydratedData?.ProviderKey;
+            var achievements = hydratedData?.Achievements?
                 .Where(a => a != null)
                 .ToList();
 
             if (achievements == null || achievements.Count == 0)
             {
-                providerKey = hydratedData?.ProviderKey;
-                achievements = hydratedData?.Achievements?
+                providerKey = cachedData?.ProviderKey;
+                achievements = cachedData?.Achievements?
                     .Where(a => a != null)
                     .ToList();
             }
@@ -883,6 +927,8 @@ namespace PlayniteAchievements.ViewModels
                 ? cachedData.GameName
                 : (!string.IsNullOrWhiteSpace(hydratedData?.GameName) ? hydratedData.GameName : link.SourceGameId);
             ManualSourceName = ResolveSourceName(link?.SourceKey);
+            SelectedDisplayPlatformKey =
+                ManualDisplayPlatformResolver.NormalizeOverride(link?.DisplayPlatformKeyOverride);
             _lastSavedLink = link?.Clone();
             SaveStatusMessage = string.Empty;
 
@@ -976,8 +1022,7 @@ namespace PlayniteAchievements.ViewModels
                 cachedData.Achievements == null ||
                 cachedData.Achievements.Count == 0)
             {
-                return ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements") ??
-                       "The selected game has no achievements.";
+                return ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements");
             }
 
             return null;
@@ -1255,7 +1300,7 @@ namespace PlayniteAchievements.ViewModels
                     cache.RemoveGameData(_playniteGame.Id);
                 }
 
-                cache.NotifyCacheInvalidated();
+                cache.NotifyCacheInvalidated(new[] { _playniteGame.Id });
             }
             catch (Exception ex)
             {
@@ -1263,13 +1308,68 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        /// <summary>
+        /// Re-applies the current per-achievement icon overrides to the rows already on screen and
+        /// repaints them. Deliberately not a full reload: recreating this tab discards the wizard
+        /// stage and any unsaved unlock edits, so an icon change must not cost the user their work.
+        /// </summary>
+        public void RefreshAchievementIcons()
+        {
+            if (CurrentStage != WizardStage.Editing || AllAchievements.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var hydrated = _achievementDataService.GetGameAchievementData(_playniteGame.Id);
+                var byApiName = new Dictionary<string, AchievementDetail>(StringComparer.OrdinalIgnoreCase);
+                if (hydrated?.Achievements != null)
+                {
+                    foreach (var detail in hydrated.Achievements)
+                    {
+                        var apiName = detail?.ApiName?.Trim();
+                        if (!string.IsNullOrWhiteSpace(apiName))
+                        {
+                            byApiName[apiName] = detail;
+                        }
+                    }
+                }
+
+                foreach (var item in AllAchievements)
+                {
+                    var apiName = item?.ApiName?.Trim();
+                    if (item == null || string.IsNullOrWhiteSpace(apiName))
+                    {
+                        continue;
+                    }
+
+                    if (byApiName.TryGetValue(apiName, out var fresh) && fresh != null)
+                    {
+                        item.Source.UnlockedIconPath = fresh.UnlockedIconPath;
+                        item.Source.LockedIconPath = fresh.LockedIconPath;
+                    }
+
+                    item.NotifyIconDisplayChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed refreshing manual tracking achievement icons.");
+            }
+        }
+
         private void PopulateAchievements(List<AchievementDetail> achievements, ManualAchievementLink link)
         {
             AllAchievements.Clear();
             FilteredAchievements.Clear();
+            _editSearchIndex.Clear();
 
             if (achievements != null)
             {
+                // Resolve unlock state through the shared resolver so the editor matches the
+                // provider's cache-writing logic (tolerant of Exophase legacy vs stable ApiNames).
+                var resolver = new ManualUnlockResolver(link);
                 foreach (var detail in achievements)
                 {
                     if (detail == null || string.IsNullOrWhiteSpace(detail.ApiName))
@@ -1277,33 +1377,7 @@ namespace PlayniteAchievements.ViewModels
                         continue;
                     }
 
-                    // Get existing unlock state
-                    var isUnlocked = false;
-                    DateTime? unlockTime = null;
-
-                    if (link?.UnlockStates != null &&
-                        link.UnlockStates.TryGetValue(detail.ApiName, out var existingUnlocked))
-                    {
-                        isUnlocked = existingUnlocked;
-                    }
-
-                    if (link?.UnlockTimes != null &&
-                        link.UnlockTimes.TryGetValue(detail.ApiName, out var existingTime))
-                    {
-                        unlockTime = existingTime;
-
-                        // Backward compatibility: before UnlockStates existed,
-                        // unlock state was inferred from unlock time value.
-                        if (link?.UnlockStates == null || link.UnlockStates.Count == 0)
-                        {
-                            isUnlocked = existingTime.HasValue;
-                        }
-                    }
-
-                    if (!isUnlocked)
-                    {
-                        unlockTime = null;
-                    }
+                    resolver.TryResolveUnlock(detail, out var isUnlocked, out var unlockTime);
 
                     var item = new ManualAchievementEditItem(detail, isUnlocked, unlockTime, _playniteGame.Id);
                     item.PropertyChanged += OnAchievementChanged;
@@ -1311,6 +1385,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
+            _editSearchIndex.Rebuild(AllAchievements);
             FilterAchievements();
             UpdateCounts();
         }
@@ -1351,21 +1426,12 @@ namespace PlayniteAchievements.ViewModels
 
         private void FilterAchievements()
         {
-            FilteredAchievements.Clear();
+            var searchQuery = SearchQuery.From(EditSearchFilter);
+            var filtered = searchQuery.HasValue
+                ? AllAchievements.Where(item => _editSearchIndex.Matches(item, searchQuery)).ToList()
+                : AllAchievements.ToList();
 
-            var filter = EditSearchFilter?.Trim().ToLowerInvariant() ?? string.Empty;
-            var hasFilter = !string.IsNullOrEmpty(filter);
-
-            foreach (var item in AllAchievements)
-            {
-                if (!hasFilter ||
-                    item.DisplayName?.ToLowerInvariant().Contains(filter) == true ||
-                    item.Description?.ToLowerInvariant().Contains(filter) == true ||
-                    item.ApiName?.ToLowerInvariant().Contains(filter) == true)
-                {
-                    FilteredAchievements.Add(item);
-                }
-            }
+            Common.CollectionHelper.Replace(FilteredAchievements, filtered);
         }
 
         private void UpdateCounts()
@@ -1383,6 +1449,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             item.ToggleReveal();
+            _editSearchIndex.Invalidate(item);
         }
 
         private bool CanSave()
@@ -1404,6 +1471,27 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
+        /// <summary>
+        /// Builds the display platform options: the default first, then every registered provider
+        /// by localized name, so each choice resolves to a known icon and color.
+        /// </summary>
+        private static IReadOnlyList<ProviderOverrideChoice> BuildDisplayPlatformOptions()
+        {
+            var options = new List<ProviderOverrideChoice>
+            {
+                new ProviderOverrideChoice(
+                    string.Empty,
+                    ResourceProvider.GetString("LOCPlayAch_Common_Default"))
+            };
+
+            options.AddRange(ManualDisplayPlatformResolver
+                .GetSelectablePlatformKeys()
+                .Select(key => new ProviderOverrideChoice(key, ProviderRegistry.GetLocalizedName(key)))
+                .OrderBy(choice => choice.DisplayName, StringComparer.CurrentCultureIgnoreCase));
+
+            return options;
+        }
+
         private ManualAchievementLink BuildLink()
         {
             var now = DateTime.UtcNow;
@@ -1416,6 +1504,8 @@ namespace PlayniteAchievements.ViewModels
                 UnlockStates = new Dictionary<string, bool>(),
                 AllowUnauthenticatedSchemaFetch = _existingLink?.AllowUnauthenticatedSchemaFetch
                     ?? ResolveAllowUnauthenticatedSchemaFetch(_source?.SourceKey),
+                DisplayPlatformKeyOverride =
+                    ManualDisplayPlatformResolver.NormalizeOverride(_displayPlatformKeyOverride),
                 CreatedUtc = _existingLink?.CreatedUtc ?? now,
                 LastModifiedUtc = now
             };
@@ -1460,32 +1550,32 @@ namespace PlayniteAchievements.ViewModels
                 {
                     var nowUtc = DateTime.UtcNow;
 
+                    // Keep the display platform in sync so the game attributes to its real platform
+                    // (e.g. Steam/PSN) instead of "Manual" right after a window edit, without waiting
+                    // for a full provider refresh. Resolves through the same helper the provider uses,
+                    // so a user override applies here too.
+                    cachedData.ProviderPlatformKey = ManualDisplayPlatformResolver.Resolve(_source, link);
+
+                    // Reset then re-apply through the shared resolver, so the cached unlocked set
+                    // exactly reflects the just-saved link (and never carries stale unlocks).
                     foreach (var achievement in cachedData.Achievements)
                     {
-                        if (string.IsNullOrWhiteSpace(achievement?.ApiName))
+                        if (achievement == null)
                         {
                             continue;
                         }
 
-                        var unlockedState = false;
-                        var hasState = link.UnlockStates != null &&
-                                       link.UnlockStates.TryGetValue(achievement.ApiName, out unlockedState);
-                        DateTime? unlockTime = null;
-                        var hasTime = link.UnlockTimes != null &&
-                                      link.UnlockTimes.TryGetValue(achievement.ApiName, out unlockTime);
-
-                        var isUnlocked = (hasState && unlockedState) || (hasTime && unlockTime.HasValue);
-                        achievement.Unlocked = isUnlocked;
-                        achievement.UnlockTimeUtc = isUnlocked && hasTime && unlockTime.HasValue
-                            ? unlockTime
-                            : null;
+                        achievement.Unlocked = false;
+                        achievement.UnlockTimeUtc = null;
                     }
+
+                    new ManualUnlockResolver(link).ApplyUnlockState(cachedData.Achievements);
 
                     // Force a new snapshot version so theme update coalescing does not skip this save.
                     cachedData.LastUpdatedUtc = nowUtc;
 
                     _cacheManager.SaveGameData(_playniteGame.Id.ToString(), cachedData);
-                    _cacheManager.NotifyCacheInvalidated();
+                    _cacheManager.NotifyCacheInvalidated(new[] { _playniteGame.Id });
 
                     // Ensure immediate theme refresh for this game after manual edits.
                     if (_settings?.SelectedGame?.Id == _playniteGame.Id)
@@ -1603,8 +1693,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             var baseline = _lastSavedLink ?? _existingLink;
-            var unlockTimes = baseline?.UnlockTimes ?? new Dictionary<string, DateTime?>();
-            var unlockStates = baseline?.UnlockStates ?? new Dictionary<string, bool>();
+            var resolver = new ManualUnlockResolver(baseline);
 
             foreach (var item in AllAchievements)
             {
@@ -1613,16 +1702,10 @@ namespace PlayniteAchievements.ViewModels
                     continue;
                 }
 
-                var hasState = unlockStates.TryGetValue(item.ApiName, out var unlockedState);
-                var hasTime = unlockTimes.TryGetValue(item.ApiName, out var unlockTime);
-                var isUnlocked = hasState
-                    ? unlockedState
-                    : (hasTime && unlockTime.HasValue);
-
-                if (isUnlocked)
+                if (resolver.TryResolveUnlock(item.Source, out _, out var unlockTime))
                 {
                     item.IsUnlocked = true;
-                    item.UnlockTime = hasTime && unlockTime.HasValue ? unlockTime.Value : (DateTime?)null;
+                    item.UnlockTime = unlockTime;
                 }
                 else
                 {
@@ -1634,6 +1717,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 SourceGameId = baseline.SourceGameId;
                 ManualSourceName = ResolveSourceName(baseline.SourceKey);
+                SelectedDisplayPlatformKey =
+                    ManualDisplayPlatformResolver.NormalizeOverride(baseline.DisplayPlatformKeyOverride);
             }
 
             UpdateCounts();

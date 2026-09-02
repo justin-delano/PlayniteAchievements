@@ -1,19 +1,51 @@
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Providers;
+using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Captures;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Services.Summaries;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Services.ThemeIntegration
 {
     internal static class LibraryRuntimeStateBuilder
     {
+        private static readonly ProviderBucket[] ProviderBuckets =
+        {
+            new ProviderBucket("Steam", (state, items) => state.SteamGames = items),
+            new ProviderBucket("GOG", (state, items) => state.GOGGames = items),
+            new ProviderBucket("Epic", (state, items) => state.EpicGames = items),
+            new ProviderBucket("BattleNet", (state, items) => state.BattleNetGames = items),
+            new ProviderBucket("EA", (state, items) => state.EAGames = items),
+            new ProviderBucket("Xbox", (state, items) => state.XboxGames = items),
+            new ProviderBucket("PSN", (state, items) => state.PSNGames = items),
+            new ProviderBucket("RetroAchievements", (state, items) => state.RetroAchievementsGames = items),
+            new ProviderBucket("Apple", (state, items) => state.AppleGames = items),
+            new ProviderBucket("GooglePlay", (state, items) => state.GooglePlayGames = items),
+            new ProviderBucket("Hoyoverse", (state, items) => state.HoyoverseGames = items),
+            new ProviderBucket("Ubisoft", (state, items) => state.UbisoftGames = items),
+            new ProviderBucket("RPCS3", (state, items) => state.RPCS3Games = items),
+            new ProviderBucket("Xenia", (state, items) => state.XeniaGames = items),
+            new ProviderBucket("ShadPS4", (state, items) => state.ShadPS4Games = items),
+            new ProviderBucket("GameJolt", (state, items) => state.GameJoltGames = items),
+            new ProviderBucket("Riot", (state, items) => state.RiotGames = items),
+            new ProviderBucket("FFXIV", (state, items) => state.FFXIVGames = items),
+            new ProviderBucket("Manual", (state, items) => state.ManualGames = items)
+        };
+
         public static LibraryRuntimeState Build(
             List<GameAchievementData> allData,
             IPlayniteAPI api,
@@ -28,9 +60,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 HeavyListsBuilt = includeHeavyAchievementLists
             };
 
-            var summariesById = new Dictionary<Guid, GameAchievementSummary>();
             var allGames = new List<GameAchievementSummary>();
-            var scoreableData = new List<GameAchievementData>();
+            var collectorScore = 0;
+            var prestigeScore = 0;
 
             foreach (var data in allData)
             {
@@ -47,41 +79,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                scoreableData.Add(data);
-
-                var unlocked = 0;
-                var latestUnlockUtc = DateTime.MinValue;
-                for (int i = 0; i < data.Achievements.Count; i++)
-                {
-                    var achievement = data.Achievements[i];
-                    if (achievement?.Unlocked != true)
-                    {
-                        continue;
-                    }
-
-                    unlocked++;
-                    if (!achievement.UnlockTimeUtc.HasValue)
-                    {
-                        continue;
-                    }
-
-                    var utc = NormalizeUtc(achievement.UnlockTimeUtc.Value);
-                    if (utc > latestUnlockUtc)
-                    {
-                        latestUnlockUtc = utc;
-                    }
-                }
-
-                var common = new AchievementRarityStats();
-                var uncommon = new AchievementRarityStats();
-                var rare = new AchievementRarityStats();
-                var ultraRare = new AchievementRarityStats();
-                AccumulateGameRarityStats(
-                    data,
-                    common,
-                    uncommon,
-                    rare,
-                    ultraRare);
+                var stats = AchievementStatsAccumulator.FromAchievements(data.Achievements);
+                var common = stats.CommonStats;
+                var uncommon = stats.UncommonStats;
+                var rare = stats.RareStats;
+                var ultraRare = stats.UltraRareStats;
                 AddRarityStats(state.TotalCommon, common);
                 AddRarityStats(state.TotalUncommon, uncommon);
                 AddRarityStats(state.TotalRare, rare);
@@ -89,23 +91,28 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 var rareAndUltraRare = AchievementRarityStatsCombiner.Combine(rare, ultraRare);
                 var overall = AchievementRarityStatsCombiner.Combine(common, uncommon, rare, ultraRare);
-                var gold = rare.Unlocked + ultraRare.Unlocked;
-                var silver = uncommon.Unlocked;
-                var bronze = common.Unlocked;
+                var gold = stats.RareCount + stats.UltraRareCount;
+                var silver = stats.UncommonCount;
+                var bronze = stats.CommonCount;
                 var providerKey = ResolveEffectiveProviderKey(data.ProviderKey, data.ProviderPlatformKey);
                 var providerName = ProviderRegistry.GetLocalizedName(providerKey);
+                collectorScore = AddScore(collectorScore, stats.CollectionScore);
+                prestigeScore = AddScore(prestigeScore, stats.PrestigeScore);
 
                 var summary = new GameAchievementSummary(
                     data.PlayniteGameId.Value,
                     data.Game?.Name ?? data.GameName ?? string.Empty,
                     data.Game?.Source?.Name ?? "Unknown",
-                    ResolveCoverImagePath(data.Game, api),
-                    AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total),
+                    GameSummaryArtResolver.Resolve(
+                        data.PlayniteGameId,
+                        data.GameSummaryCategory,
+                        data.AchievementCategoryImageOverrides) ?? ResolveCoverImagePath(data.Game, api),
+                    stats.ProgressPercent,
                     gold,
                     silver,
                     bronze,
                     data.IsCompleted,
-                    latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime(),
+                    stats.LastUnlockUtc.HasValue ? stats.LastUnlockUtc.Value.ToLocalTime() : DateTime.MinValue,
                     null,
                     common,
                     uncommon,
@@ -116,14 +123,146 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     providerKey,
                     providerName,
                     data.Game?.LastActivity,
-                    unlocked,
-                    total);
+                    stats.UnlockedAchievements,
+                    stats.TotalAchievements,
+                    sortingName: data.Game?.SortingName ?? data.Game?.Name ?? data.GameName ?? string.Empty);
 
                 allGames.Add(summary);
-                summariesById[summary.GameId] = summary;
             }
 
-            allGames = allGames
+            ApplySummaryListsAndTotals(state, allGames);
+            PopulateProviderLists(state, allGames);
+
+            var scoreSnapshot = AchievementScoreCalculator.CreateModernScoreSnapshot(collectorScore, prestigeScore);
+            scoreSnapshot.LegacyScore = AchievementScoreCalculator.CalculateLegacyScore(
+                state.PlatinumTrophies,
+                state.GoldTrophies,
+                state.SilverTrophies,
+                state.BronzeTrophies);
+            scoreSnapshot.LegacyLevel = AchievementLevelCalculator.CalculateLegacy(scoreSnapshot.LegacyScore);
+            ApplyScores(state, scoreSnapshot);
+
+            PopulateAchievementLists(state, allData, token, includeHeavyAchievementLists);
+            return state;
+        }
+
+        public static LibraryRuntimeState BuildFromCachedSummary(
+            CachedSummaryData summaryData,
+            IPlayniteAPI api,
+            CancellationToken token,
+            GameCustomDataStore customDataStore = null)
+        {
+            token.ThrowIfCancellationRequested();
+
+            summaryData ??= new CachedSummaryData();
+            summaryData.Games ??= new List<CachedGameSummaryData>();
+            summaryData.RecentUnlocks ??= new List<CachedRecentUnlockData>();
+            summaryData.UnlockCountsByDateByGame ??= new Dictionary<Guid, Dictionary<DateTime, int>>();
+
+            var state = new LibraryRuntimeState
+            {
+                HeavyListsBuilt = false
+            };
+
+            var referencedGameIds = summaryData.Games
+                .Where(game => game?.PlayniteGameId.HasValue == true)
+                .Select(game => game.PlayniteGameId.Value)
+                .Concat(summaryData.RecentUnlocks
+                    .Where(recent => recent?.PlayniteGameId.HasValue == true)
+                    .Select(recent => recent.PlayniteGameId.Value));
+            var presentationByGameId = BuildGamePresentationCache(api, referencedGameIds);
+            var allGames = new List<GameAchievementSummary>();
+            var collectorScore = 0;
+            var prestigeScore = 0;
+
+            for (var i = 0; i < summaryData.Games.Count; i++)
+            {
+                token.ThrowIfCancellationRequested();
+
+                var game = summaryData.Games[i];
+                if (game == null ||
+                    game.PlayniteGameId.HasValue != true ||
+                    game.PlayniteGameId.Value == Guid.Empty ||
+                    !game.HasAchievements ||
+                    game.TotalAchievements <= 0)
+                {
+                    continue;
+                }
+
+                var gameId = game.PlayniteGameId.Value;
+                var presentation = ResolveGamePresentation(api, gameId, presentationByGameId);
+                var common = CreateRarityStats(game.CommonCount, game.TotalCommonPossible);
+                var uncommon = CreateRarityStats(game.UncommonCount, game.TotalUncommonPossible);
+                var rare = CreateRarityStats(game.RareCount, game.TotalRarePossible);
+                var ultraRare = CreateRarityStats(game.UltraRareCount, game.TotalUltraRarePossible);
+
+                AddRarityStats(state.TotalCommon, common);
+                AddRarityStats(state.TotalUncommon, uncommon);
+                AddRarityStats(state.TotalRare, rare);
+                AddRarityStats(state.TotalUltraRare, ultraRare);
+
+                var rareAndUltraRare = AchievementRarityStatsCombiner.Combine(rare, ultraRare);
+                var overall = AchievementRarityStatsCombiner.Combine(common, uncommon, rare, ultraRare);
+                var providerKey = ResolveEffectiveProviderKey(game.ProviderKey, game.ProviderPlatformKey);
+                var providerName = ProviderRegistry.GetLocalizedName(providerKey);
+                var latestUnlockDate = ResolveLatestUnlockDate(summaryData.UnlockCountsByDateByGame, gameId);
+
+                allGames.Add(new GameAchievementSummary(
+                    gameId,
+                    presentation.Game?.Name ?? game.GameName ?? string.Empty,
+                    presentation.Platform ?? "Unknown",
+                    GameSummaryArtResolver.ResolveForGame(gameId, customDataStore) ?? presentation.CoverImagePath,
+                    AchievementCompletionPercentCalculator.ComputeRoundedPercent(
+                        game.UnlockedAchievements,
+                        game.TotalAchievements),
+                    game.RareCount + game.UltraRareCount,
+                    game.UncommonCount,
+                    game.CommonCount,
+                    game.IsCompleted,
+                    latestUnlockDate,
+                    null,
+                    common,
+                    uncommon,
+                    rare,
+                    ultraRare,
+                    rareAndUltraRare,
+                    overall,
+                    providerKey,
+                    providerName,
+                    presentation.LastPlayed,
+                    game.UnlockedAchievements,
+                    game.TotalAchievements,
+                    sortingName: presentation.SortingName ?? presentation.Game?.Name ?? game.GameName ?? string.Empty));
+
+                collectorScore = AddScore(collectorScore, game.CollectionScore);
+                prestigeScore = AddScore(prestigeScore, game.PrestigeScore);
+            }
+
+            ApplySummaryListsAndTotals(state, allGames);
+            PopulateProviderLists(state, allGames);
+
+            var scoreSnapshot = AchievementScoreCalculator.CreateModernScoreSnapshot(collectorScore, prestigeScore);
+            scoreSnapshot.LegacyScore = AchievementScoreCalculator.CalculateLegacyScore(
+                state.PlatinumTrophies,
+                state.GoldTrophies,
+                state.SilverTrophies,
+                state.BronzeTrophies);
+            scoreSnapshot.LegacyLevel = AchievementLevelCalculator.CalculateLegacy(scoreSnapshot.LegacyScore);
+            ApplyScores(state, scoreSnapshot);
+
+            PopulateRecentLists(
+                state,
+                MaterializeRecentUnlocks(summaryData.RecentUnlocks, api, presentationByGameId, token),
+                includeFullLists: false);
+            return state;
+        }
+
+        private static void ApplySummaryListsAndTotals(
+            LibraryRuntimeState state,
+            List<GameAchievementSummary> allGames)
+        {
+            allGames = (allGames ?? new List<GameAchievementSummary>())
+                .Where(item => item != null)
                 .OrderByDescending(item => item.LastUnlockDate)
                 .ThenByDescending(item => item.Progress)
                 .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
@@ -159,19 +298,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 state.GoldTrophies +
                 state.SilverTrophies +
                 state.BronzeTrophies;
-
-            PopulateProviderLists(state, allData, summariesById);
-
-            var scoreSnapshot = AchievementScoreCalculator.CalculateLibraryScores(
-                scoreableData,
-                state.PlatinumTrophies,
-                state.GoldTrophies,
-                state.SilverTrophies,
-                state.BronzeTrophies);
-            ApplyScores(state, scoreSnapshot);
-
-            PopulateAchievementLists(state, allData, token, includeHeavyAchievementLists);
-            return state;
         }
 
         private static void ApplyScores(LibraryRuntimeState state, AchievementScoreSnapshot scoreSnapshot)
@@ -209,108 +335,34 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private static void PopulateProviderLists(
             LibraryRuntimeState state,
-            IEnumerable<GameAchievementData> allData,
-            IReadOnlyDictionary<Guid, GameAchievementSummary> summariesById)
+            IEnumerable<GameAchievementSummary> allGames)
         {
-            var steamGames = new List<GameAchievementSummary>();
-            var gogGames = new List<GameAchievementSummary>();
-            var epicGames = new List<GameAchievementSummary>();
-            var battleNetGames = new List<GameAchievementSummary>();
-            var eaGames = new List<GameAchievementSummary>();
-            var xboxGames = new List<GameAchievementSummary>();
-            var psnGames = new List<GameAchievementSummary>();
-            var retroAchievementsGames = new List<GameAchievementSummary>();
-            var appleGames = new List<GameAchievementSummary>();
-            var googlePlayGames = new List<GameAchievementSummary>();
-            var hoyoverseGames = new List<GameAchievementSummary>();
-            var ubisoftGames = new List<GameAchievementSummary>();
-            var rpcs3Games = new List<GameAchievementSummary>();
-            var xeniaGames = new List<GameAchievementSummary>();
-            var shadPS4Games = new List<GameAchievementSummary>();
-            var manualGames = new List<GameAchievementSummary>();
+            var buckets = ProviderBuckets.ToDictionary(
+                bucket => bucket.Key,
+                _ => new List<GameAchievementSummary>(),
+                StringComparer.OrdinalIgnoreCase);
 
-            foreach (var data in allData)
+            foreach (var summary in allGames ?? Enumerable.Empty<GameAchievementSummary>())
             {
-                if (data?.PlayniteGameId == null || !summariesById.TryGetValue(data.PlayniteGameId.Value, out var summary))
+                if (summary == null ||
+                    string.IsNullOrWhiteSpace(summary.ProviderKey) ||
+                    !buckets.TryGetValue(summary.ProviderKey, out var providerGames))
                 {
                     continue;
                 }
 
-                var providerKey = data.EffectiveProviderKey;
-                if (string.IsNullOrWhiteSpace(providerKey))
-                {
-                    providerKey = data.ProviderKey;
-                }
-
-                switch (providerKey ?? string.Empty)
-                {
-                    case "Steam":
-                        steamGames.Add(summary);
-                        break;
-                    case "GOG":
-                        gogGames.Add(summary);
-                        break;
-                    case "Epic":
-                        epicGames.Add(summary);
-                        break;
-                    case "BattleNet":
-                        battleNetGames.Add(summary);
-                        break;
-                    case "EA":
-                        eaGames.Add(summary);
-                        break;
-                    case "Xbox":
-                        xboxGames.Add(summary);
-                        break;
-                    case "PSN":
-                        psnGames.Add(summary);
-                        break;
-                    case "RetroAchievements":
-                        retroAchievementsGames.Add(summary);
-                        break;
-                    case "Apple":
-                        appleGames.Add(summary);
-                        break;
-                    case "GooglePlay":
-                        googlePlayGames.Add(summary);
-                        break;
-                    case "Hoyoverse":
-                        hoyoverseGames.Add(summary);
-                        break;
-                    case "Ubisoft":
-                        ubisoftGames.Add(summary);
-                        break;
-                    case "RPCS3":
-                        rpcs3Games.Add(summary);
-                        break;
-                    case "Xenia":
-                        xeniaGames.Add(summary);
-                        break;
-                    case "ShadPS4":
-                        shadPS4Games.Add(summary);
-                        break;
-                    case "Manual":
-                        manualGames.Add(summary);
-                        break;
-                }
+                providerGames.Add(summary);
             }
 
-            state.SteamGames = steamGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.GOGGames = gogGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.EpicGames = epicGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.BattleNetGames = battleNetGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.EAGames = eaGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.XboxGames = xboxGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.PSNGames = psnGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.RetroAchievementsGames = retroAchievementsGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.AppleGames = appleGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.GooglePlayGames = googlePlayGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.HoyoverseGames = hoyoverseGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.UbisoftGames = ubisoftGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.RPCS3Games = rpcs3Games.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.XeniaGames = xeniaGames.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.ShadPS4Games = shadPS4Games.OrderByDescending(item => item.LastUnlockDate).ToList();
-            state.ManualGames = manualGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            foreach (var bucket in ProviderBuckets)
+            {
+                bucket.Set(
+                    state,
+                    buckets[bucket.Key]
+                        .OrderByDescending(item => item.LastUnlockDate)
+                        .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                        .ToList());
+            }
         }
 
         private static void PopulateAchievementLists(
@@ -330,6 +382,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         continue;
                     }
 
+                    var captureSet = AchievementCapturePathResolver.ResolveGameSet(data);
+
+                    var categoryArtMemo = new CategoryArtChainMemo();
                     foreach (var achievement in data.Achievements)
                     {
                         if (achievement == null)
@@ -337,33 +392,39 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             continue;
                         }
 
-                        achievement.Game = data.Game;
-                        achievement.ProviderKey = ResolveEffectiveProviderKey(data.ProviderKey, data.ProviderPlatformKey);
+                        ApplyAchievementPresentation(achievement, data, captureSet, categoryArtMemo);
                         allAchievements.Add(achievement);
                     }
                 }
 
-                state.AllAchievements = allAchievements.ToList();
-                state.AllAchievementsUnlockAsc = AchievementSortHelper.CreateSortedDetailList(
-                    allAchievements,
-                    nameof(AchievementDisplayItem.UnlockTime),
-                    ListSortDirection.Ascending,
-                    includeGameNameTieBreak: true);
-                state.AllAchievementsUnlockDesc = AchievementSortHelper.CreateSortedDetailList(
-                    allAchievements,
-                    nameof(AchievementDisplayItem.UnlockTime),
-                    ListSortDirection.Descending,
-                    includeGameNameTieBreak: true);
-                state.AllAchievementsRarityAsc = AchievementSortHelper.CreateSortedDetailList(
-                    allAchievements,
-                    nameof(AchievementDisplayItem.RaritySortValue),
-                    ListSortDirection.Ascending,
-                    includeGameNameTieBreak: true);
-                state.AllAchievementsRarityDesc = AchievementSortHelper.CreateSortedDetailList(
-                    allAchievements,
-                    nameof(AchievementDisplayItem.RaritySortValue),
-                    ListSortDirection.Descending,
-                    includeGameNameTieBreak: true);
+                // Goals lead these the same way they lead the desktop grids. The recent-unlock
+                // lists below need no such treatment: they are unlocked-only, and a goal clears
+                // the moment its achievement unlocks.
+                state.AllAchievements = AchievementSortHelper.CreateGoalsFirstDetailList(allAchievements);
+                state.AllAchievementsUnlockAsc = AchievementSortHelper.CreateGoalsFirstDetailList(
+                    AchievementSortHelper.CreateSortedDetailList(
+                        allAchievements,
+                        nameof(AchievementDisplayItem.UnlockTime),
+                        ListSortDirection.Ascending,
+                        includeGameNameTieBreak: true));
+                state.AllAchievementsUnlockDesc = AchievementSortHelper.CreateGoalsFirstDetailList(
+                    AchievementSortHelper.CreateSortedDetailList(
+                        allAchievements,
+                        nameof(AchievementDisplayItem.UnlockTime),
+                        ListSortDirection.Descending,
+                        includeGameNameTieBreak: true));
+                state.AllAchievementsRarityAsc = AchievementSortHelper.CreateGoalsFirstDetailList(
+                    AchievementSortHelper.CreateSortedDetailList(
+                        allAchievements,
+                        nameof(AchievementDisplayItem.RaritySortValue),
+                        ListSortDirection.Ascending,
+                        includeGameNameTieBreak: true));
+                state.AllAchievementsRarityDesc = AchievementSortHelper.CreateGoalsFirstDetailList(
+                    AchievementSortHelper.CreateSortedDetailList(
+                        allAchievements,
+                        nameof(AchievementDisplayItem.RaritySortValue),
+                        ListSortDirection.Descending,
+                        includeGameNameTieBreak: true));
 
                 var unlockedAchievements = allAchievements
                     .Where(a => a != null && a.UnlockTimeUtc.HasValue && a.UnlockTimeUtc.Value != DateTime.MinValue)
@@ -381,6 +442,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
+                var captureSet = AchievementCapturePathResolver.ResolveGameSet(data);
+
+                var categoryArtMemo = new CategoryArtChainMemo();
                 foreach (var achievement in data.Achievements)
                 {
                     if (achievement == null ||
@@ -390,13 +454,65 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         continue;
                     }
 
-                    achievement.Game = data.Game;
-                    achievement.ProviderKey = ResolveEffectiveProviderKey(data.ProviderKey, data.ProviderPlatformKey);
+                    ApplyAchievementPresentation(achievement, data, captureSet, categoryArtMemo);
                     unlockedRecent.Add(achievement);
                 }
             }
 
             PopulateRecentLists(state, unlockedRecent, includeFullLists: false);
+        }
+
+        private static void ApplyAchievementPresentation(
+            AchievementDetail achievement,
+            GameAchievementData data,
+            GameCaptureSet captureSet,
+            CategoryArtChainMemo categoryArtMemo = null)
+        {
+            if (achievement == null)
+            {
+                return;
+            }
+
+            achievement.Game = data?.Game;
+            achievement.ProviderKey = ResolveEffectiveProviderKey(data?.ProviderKey, data?.ProviderPlatformKey);
+            ApplyCategoryImagePresentation(achievement, data, categoryArtMemo);
+            AchievementCapturePathResolver.Apply(achievement, captureSet);
+        }
+
+        private static void ApplyCategoryImagePresentation(
+            AchievementDetail achievement,
+            GameAchievementData data,
+            CategoryArtChainMemo categoryArtMemo = null)
+        {
+            if (achievement == null)
+            {
+                return;
+            }
+
+            var category = CategoryPathHelper.NormalizePath(achievement.Category);
+            achievement.CategoryOrderIndex =
+                AchievementCategoryFilterOrderHelper.ResolveCategoryOrderIndex(category, data?.AchievementCategoryOrder);
+
+            var gameId = data?.PlayniteGameId;
+            if (!gameId.HasValue || gameId.Value == Guid.Empty)
+            {
+                achievement.CategoryArtPath = null;
+                return;
+            }
+
+            // One shared chain with the achievement grid: the effective label is probed before
+            // the provider label so a merged category resolves the target's art, and a nested
+            // label inherits its ancestors' art when nothing at its own level resolves. Emits a
+            // plain path - the theme surface must not carry the cache-bust encoding.
+            var providerCategory = CategoryPathHelper.NormalizePath(
+                achievement.ProviderCategory ?? achievement.Category);
+            achievement.CategoryArtPath = CategoryArtChainResolver.Resolve(
+                gameId,
+                category,
+                providerCategory,
+                data?.AchievementCategoryImageOverrides,
+                CategoryArtDisplayMode.FilePath,
+                categoryArtMemo);
         }
 
         private static void PopulateRecentLists(
@@ -458,6 +574,179 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return string.Empty;
+        }
+
+        private static Dictionary<Guid, GamePresentation> BuildGamePresentationCache(
+            IPlayniteAPI api,
+            IEnumerable<Guid> gameIds)
+        {
+            var result = new Dictionary<Guid, GamePresentation>();
+            var distinctGameIds = new HashSet<Guid>(
+                (gameIds ?? Enumerable.Empty<Guid>())
+                    .Where(id => id != Guid.Empty));
+            if (distinctGameIds.Count == 0)
+            {
+                return result;
+            }
+
+            foreach (var gameId in distinctGameIds)
+            {
+                var game = api?.Database?.Games?.Get(gameId);
+                if (game != null)
+                {
+                    result[gameId] = CreateGamePresentation(api, game);
+                }
+            }
+
+            return result;
+        }
+
+        private static GamePresentation ResolveGamePresentation(
+            IPlayniteAPI api,
+            Guid gameId,
+            IDictionary<Guid, GamePresentation> presentationByGameId)
+        {
+            if (presentationByGameId != null &&
+                presentationByGameId.TryGetValue(gameId, out var cached))
+            {
+                return cached;
+            }
+
+            var game = api?.Database?.Games?.Get(gameId);
+            var presentation = CreateGamePresentation(api, game);
+            if (presentationByGameId != null)
+            {
+                presentationByGameId[gameId] = presentation;
+            }
+            return presentation;
+        }
+
+        private static GamePresentation CreateGamePresentation(IPlayniteAPI api, Game game)
+        {
+            return new GamePresentation
+            {
+                Game = game,
+                Platform = game?.Source?.Name ?? "Unknown",
+                CoverImagePath = ResolveCoverImagePath(game, api),
+                LastPlayed = game?.LastActivity,
+                SortingName = game?.SortingName
+            };
+        }
+
+        private static AchievementRarityStats CreateRarityStats(int unlocked, int total)
+        {
+            var normalizedTotal = Math.Max(0, total);
+            var normalizedUnlocked = Math.Max(0, Math.Min(unlocked, normalizedTotal));
+            return new AchievementRarityStats
+            {
+                Total = normalizedTotal,
+                Unlocked = normalizedUnlocked,
+                Locked = normalizedTotal - normalizedUnlocked
+            };
+        }
+
+        private static DateTime ResolveLatestUnlockDate(
+            IReadOnlyDictionary<Guid, Dictionary<DateTime, int>> countsByGameId,
+            Guid gameId)
+        {
+            if (countsByGameId == null ||
+                !countsByGameId.TryGetValue(gameId, out var counts) ||
+                counts == null ||
+                counts.Count == 0)
+            {
+                return DateTime.MinValue;
+            }
+
+            var latestUtc = counts.Keys
+                .Where(date => date != DateTime.MinValue)
+                .DefaultIfEmpty(DateTime.MinValue)
+                .Max();
+            return latestUtc == DateTime.MinValue
+                ? DateTime.MinValue
+                : NormalizeUtc(latestUtc).ToLocalTime();
+        }
+
+        private static List<AchievementDetail> MaterializeRecentUnlocks(
+            IEnumerable<CachedRecentUnlockData> recentUnlocks,
+            IPlayniteAPI api,
+            IDictionary<Guid, GamePresentation> presentationByGameId,
+            CancellationToken token)
+        {
+            var result = new List<AchievementDetail>();
+            foreach (var recent in recentUnlocks ?? Enumerable.Empty<CachedRecentUnlockData>())
+            {
+                token.ThrowIfCancellationRequested();
+                if (recent == null ||
+                    !recent.UnlockTimeUtc.HasValue ||
+                    recent.UnlockTimeUtc.Value == DateTime.MinValue)
+                {
+                    continue;
+                }
+
+                var game = ResolveRecentGame(recent, api, presentationByGameId);
+                result.Add(new AchievementDetail
+                {
+                    ApiName = recent.ApiName,
+                    DisplayName = recent.DisplayName,
+                    Description = recent.Description,
+                    UnlockedIconPath = recent.UnlockedIconPath,
+                    LockedIconPath = recent.LockedIconPath,
+                    Points = recent.Points,
+                    ScaledPoints = recent.ScaledPoints,
+                    Category = recent.Category,
+                    CategoryType = recent.CategoryType,
+                    TrophyType = recent.TrophyType,
+                    Hidden = recent.Hidden,
+                    IsCapstone = recent.IsCapstone,
+                    AchievementNote = recent.AchievementNote,
+                    Game = game,
+                    ProviderKey = ResolveEffectiveProviderKey(recent.ProviderKey, recent.ProviderPlatformKey),
+                    GlobalPercentUnlocked = recent.GlobalPercentUnlocked,
+                    Rarity = recent.Rarity,
+                    Unlocked = true,
+                    UnlockTimeUtc = NormalizeUtc(recent.UnlockTimeUtc.Value),
+                    ProgressNum = recent.ProgressNum,
+                    ProgressDenom = recent.ProgressDenom
+                });
+            }
+
+            return result;
+        }
+
+        private static Game ResolveRecentGame(
+            CachedRecentUnlockData recent,
+            IPlayniteAPI api,
+            IDictionary<Guid, GamePresentation> presentationByGameId)
+        {
+            if (recent?.PlayniteGameId.HasValue == true &&
+                recent.PlayniteGameId.Value != Guid.Empty)
+            {
+                var presentation = ResolveGamePresentation(api, recent.PlayniteGameId.Value, presentationByGameId);
+                if (presentation.Game != null)
+                {
+                    return presentation.Game;
+                }
+
+                return new Game
+                {
+                    Id = recent.PlayniteGameId.Value,
+                    Name = recent.GameName ?? string.Empty
+                };
+            }
+
+            return null;
+        }
+
+        private static int AddScore(int current, int value)
+        {
+            if (value <= 0)
+            {
+                return current;
+            }
+
+            return current > int.MaxValue - value
+                ? int.MaxValue
+                : current + value;
         }
 
         private static void AccumulateGameRarityStats(
@@ -557,6 +846,32 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 ? providerPlatformKey
                 : providerKey;
             return string.IsNullOrWhiteSpace(resolved) ? string.Empty : resolved.Trim();
+        }
+
+        private sealed class GamePresentation
+        {
+            public Game Game { get; set; }
+
+            public string Platform { get; set; }
+
+            public string CoverImagePath { get; set; }
+
+            public DateTime? LastPlayed { get; set; }
+
+            public string SortingName { get; set; }
+        }
+
+        private sealed class ProviderBucket
+        {
+            public ProviderBucket(string key, Action<LibraryRuntimeState, List<GameAchievementSummary>> set)
+            {
+                Key = key;
+                Set = set;
+            }
+
+            public string Key { get; }
+
+            public Action<LibraryRuntimeState, List<GameAchievementSummary>> Set { get; }
         }
     }
 }

@@ -13,7 +13,9 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
@@ -32,6 +34,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private List<AchievementDisplayItem> _lastSourceItems;
         private List<AchievementDetail> _lastOrderedAchievements;
         private int? _lastMaxRows;
+        private readonly AchievementGridControlBarAdapter _controlBarAdapter;
+
+        /// <summary>
+        /// Resolved on each use rather than cached in the constructor: theme controls can be built
+        /// before the plugin instance is available, and the service is a singleton either way.
+        /// </summary>
+        private static Services.Captures.CaptureLibraryService CaptureLibrary =>
+            PlayniteAchievementsPlugin.Instance?.CaptureLibraryService;
 
         // Sort state tracking
         private string _currentSortPath;
@@ -88,10 +98,119 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             set => SetValue(PreviewMinimumMaxHeightProperty, value);
         }
 
+        private static readonly DependencyPropertyKey SummaryItemsPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(SummaryItems), typeof(ObservableCollection<GameSummaryItem>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public static readonly DependencyProperty SummaryItemsProperty =
+            SummaryItemsPropertyKey.DependencyProperty;
+
+        /// <summary>
+        /// Single-row collection backing the game summary header grid (empty when no summary).
+        /// </summary>
+        public ObservableCollection<GameSummaryItem> SummaryItems =>
+            (ObservableCollection<GameSummaryItem>)GetValue(SummaryItemsProperty);
+
+        private static readonly DependencyPropertyKey HasSummaryItemPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(HasSummaryItem), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty HasSummaryItemProperty =
+            HasSummaryItemPropertyKey.DependencyProperty;
+
+        public bool HasSummaryItem => (bool)GetValue(HasSummaryItemProperty);
+
+        private readonly FriendCompareController _friendCompare;
+
         public AchievementDataGridControl()
         {
+            _controlBarAdapter = new AchievementGridControlBarAdapter();
+            _controlBarAdapter.FilterChanged += (_, __) => LoadData(forceReload: true);
+            _friendCompare = new FriendCompareController(
+                PlayniteAchievementsPlugin.Instance?.FriendCacheManager,
+                PlayniteAchievementsPlugin.Instance?.Settings,
+                Logger);
+            _controlBarAdapter.AttachFriendCompare(_friendCompare);
+            SetValue(SummaryItemsPropertyKey, new ObservableCollection<GameSummaryItem>());
             InitializeComponent();
             Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        private void UpdateSummaryItem(GameSummaryItem item)
+        {
+            var desired = item != null
+                ? new List<GameSummaryItem> { item }
+                : new List<GameSummaryItem>();
+            // SynchronizeCollection matches by reference, so SummaryItems ends up holding these
+            // very instances and marking the list reaches the rendered row.
+            CollectionHelper.SynchronizeCollection(SummaryItems, desired);
+            Services.Captures.CapturePresenceMarker.MarkSummaries(desired, CaptureLibrary);
+            SetValue(HasSummaryItemPropertyKey, item != null);
+        }
+
+        private void OnCapturesChanged(object sender, Services.Captures.CapturesChangedEventArgs e)
+        {
+            var folder = e?.FolderName;
+            Services.Captures.CapturePresenceMarker.MarkAchievements(
+                DisplayItems?.ToList(), CaptureLibrary, folder);
+            Services.Captures.CapturePresenceMarker.MarkSummaries(
+                SummaryItems?.ToList(), CaptureLibrary, folder);
+        }
+
+        public GridControlBarViewModel ControlBar => _controlBarAdapter.ControlBar;
+
+        /// <summary>
+        /// Identifies the SelectedCategoryName dependency property.
+        /// </summary>
+        public static readonly DependencyProperty SelectedCategoryNameProperty =
+            DependencyProperty.Register(nameof(SelectedCategoryName), typeof(string),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnSelectedCategoryNameChanged));
+
+        /// <summary>
+        /// Category the achievement grid is currently drilled into (null when not drilled), pushed
+        /// up from AchievementsGrid so the compact breadcrumb can be shown above it.
+        /// </summary>
+        public string SelectedCategoryName
+        {
+            get => (string)GetValue(SelectedCategoryNameProperty);
+            set => SetValue(SelectedCategoryNameProperty, value);
+        }
+
+        private static readonly DependencyPropertyKey IsCategorySelectedPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(IsCategorySelected), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty IsCategorySelectedProperty =
+            IsCategorySelectedPropertyKey.DependencyProperty;
+
+        public bool IsCategorySelected => (bool)GetValue(IsCategorySelectedProperty);
+
+        private static void OnSelectedCategoryNameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.SetValue(IsCategorySelectedPropertyKey, !string.IsNullOrEmpty(control.SelectedCategoryName));
+            }
+        }
+
+        private static readonly DependencyPropertyKey GameNamePropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(GameName), typeof(string),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public static readonly DependencyProperty GameNameProperty =
+            GameNamePropertyKey.DependencyProperty;
+
+        // Name of the currently loaded game, so the breadcrumb can read "GameName > Category" with
+        // the game name acting as the back link, matching the other surfaces' breadcrumb headers.
+        public string GameName => (string)GetValue(GameNameProperty);
+
+        private void GameNameBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (IsCategorySelected)
+            {
+                AchievementsGrid?.ExitDrilledCategory();
+            }
         }
 
         private static void OnPreviewSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -123,9 +242,24 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            if (CaptureLibrary != null)
+            {
+                // Loaded can fire again on visual-tree churn; keep the subscription single.
+                CaptureLibrary.CapturesChanged -= OnCapturesChanged;
+                CaptureLibrary.CapturesChanged += OnCapturesChanged;
+            }
+
             UpdatePreviewBehavior();
             UpdateMaxHeight();
             LoadData();
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            if (CaptureLibrary != null)
+            {
+                CaptureLibrary.CapturesChanged -= OnCapturesChanged;
+            }
         }
 
         private void UpdateMaxHeight()
@@ -162,7 +296,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
         }
 
-        private void LoadData(bool useSourceOrder = false)
+        private void LoadData(bool useSourceOrder = false, bool forceReload = false)
         {
             var theme = EffectiveTheme;
             if (!IsEffectiveModernThemeCurrentForContext())
@@ -177,6 +311,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             var sourceItems = theme?.AllAchievementDisplayItems;
+            SetValue(GameNamePropertyKey, sourceItems?.FirstOrDefault()?.GameName);
+            UpdateSummaryItem(theme?.SelectedGameSummary);
             var settings = EffectiveSettings?.Persisted;
             var maxRows = settings?.DesktopThemeAchievementGridMaxRows;
             var orderedAchievements = useSourceOrder
@@ -192,6 +328,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             var needsReload =
+                forceReload ||
                 !ReferenceEquals(sourceItems, _lastSourceItems) ||
                 !ReferenceEquals(orderedAchievements, _lastOrderedAchievements) ||
                 _lastMaxRows != maxRows;
@@ -205,9 +342,23 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             _lastSourceItems = sourceItems;
             _lastOrderedAchievements = orderedAchievements;
             _lastMaxRows = maxRows;
+
             var revealedKeys = GetRevealedKeys(DisplayItems);
             var clonedItems = sourceItems.Select(item => item.Clone()).ToList();
             RestoreRevealedState(clonedItems, revealedKeys);
+
+            // Category rollups and dropdown options use the canonical definition order,
+            // independent of the configured theme sort or a user-applied column sort.
+            var categorySummaryItems = new List<AchievementDisplayItem>(clonedItems);
+            AchievementSortHelper.ApplyExplicitOrder(
+                categorySummaryItems,
+                AchievementSortHelper.CreateExplicitOrderKeys(theme?.AchievementDefaultOrder ?? new List<AchievementDetail>()));
+            if (AchievementsGrid != null)
+            {
+                AchievementsGrid.CategorySummarySource = categorySummaryItems;
+            }
+
+            _controlBarAdapter.UpdateOptions(categorySummaryItems);
 
             if (!string.IsNullOrWhiteSpace(_currentSortPath) && _currentSortDirection.HasValue)
             {
@@ -226,7 +377,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                     AchievementSortHelper.CreateExplicitOrderKeys(orderedAchievements));
             }
 
-            var displayItems = DisplayGridRowLimitHelper.Limit(clonedItems, maxRows);
+            AchievementSortHelper.ApplyGoalsFirst(clonedItems);
+
+            var filteredItems = _controlBarAdapter.Apply(clonedItems);
+            var displayItems = DisplayGridRowLimitHelper.Limit(filteredItems, maxRows);
 
             if (DisplayItems == null)
             {
@@ -239,6 +393,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                     displayItems,
                     (target, source) => target.UpdateFrom(source));
             }
+
+            // Retarget the comparison AFTER the display sync: the collection reuses row
+            // instances by position, so each instance may now represent a different
+            // achievement and its comparison fields must be re-resolved.
+            _friendCompare.SetGame(theme?.SelectedGameId, DisplayItems.ToList());
+
+            // On the live path the details are already capture-stamped by the runtime state
+            // builder and UpdateFrom carries the paths. This mark backstops the sources that
+            // bypass the builder: ThemeDataOverride preview items and states built before the
+            // capture library was wired.
+            Services.Captures.CapturePresenceMarker.MarkAchievements(
+                DisplayItems.ToList(), CaptureLibrary);
 
             if (useSourceOrder)
             {
@@ -258,6 +424,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             return propertyName == nameof(ModernThemeBindings.SelectedGameId) ||
                    propertyName == nameof(ModernThemeBindings.HasAchievements) ||
                    propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
+                   propertyName == nameof(ModernThemeBindings.SelectedGameSummary) ||
                    AchievementSortHelper.IsSelectedGameAchievementsPropertyName(propertyName) ||
                    propertyName == nameof(ModernThemeBindings.HasCustomAchievementOrder);
         }
@@ -342,6 +509,70 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
         }
 
+        private void SummaryGrid_RowPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingRightClickRow = row;
+            }
+        }
+
+        private void SummaryGrid_RowPreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                var targetRow = _pendingRightClickRow ?? row;
+                _pendingRightClickRow = null;
+                OpenGameContextMenuForRow(targetRow);
+            }
+        }
+
+        private bool OpenGameContextMenuForRow(DataGridRow row)
+        {
+            if (row == null || !row.IsLoaded || !(row.DataContext is GameSummaryItem))
+            {
+                return false;
+            }
+
+            var plugin = PlayniteAchievementsPlugin.Instance;
+            var menu = GameRowContextMenuBuilder.BuildGameMenu(
+                row.DataContext,
+                this,
+                new Common.RelayCommand(d =>
+                {
+                    if (GameRowContextMenuBuilder.TryGetGameId(d, out var id))
+                    {
+                        _ = plugin?.RequestSingleGameRefreshAsync(id);
+                    }
+                }),
+                new Common.RelayCommand(d =>
+                {
+                    if (GameRowContextMenuBuilder.TryGetGameId(d, out var id))
+                    {
+                        PlayniteUiProvider.RestoreMainView();
+                        API.Instance?.MainView?.SelectGame(id);
+                    }
+                }),
+                gameId => plugin?.OpenManageAchievementsView(gameId),
+                API.Instance,
+                plugin?.AchievementOverridesService,
+                plugin?.CacheManager,
+                LogManager.GetLogger(),
+                includeViewCaptures: true);
+            if (menu == null || menu.Items.Count == 0)
+            {
+                return false;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            row.ContextMenu = menu;
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
+            return true;
+        }
+
         private static bool TryResolveContextMenuRow(object sender, MouseButtonEventArgs e, out DataGridRow row)
         {
             row = sender as DataGridRow
@@ -362,12 +593,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 menu,
                 row.DataContext,
                 this,
-                RefreshAfterRowOptionsChanged);
+                RefreshAfterRowOptionsChanged,
+                includeViewCaptures: true,
+                onGoalChanged: ReapplyGoalOrderAfterRowOptionsChanged,
+                onCapstoneChanged: ApplyCapstoneAfterRowOptionsChanged);
             if (menu.Items.Count == 0)
             {
                 return false;
             }
 
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
             row.ContextMenu = menu;
             menu.PlacementTarget = row;
             menu.IsOpen = true;
@@ -379,6 +614,50 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             _lastSourceItems = null;
             _lastOrderedAchievements = null;
             LoadData();
+        }
+
+        /// <summary>
+        /// Re-stamps the capstone flag on the rows already on screen. Valid only when a capstone
+        /// is being set, where every other row becomes a non-capstone.
+        /// </summary>
+        private bool ApplyCapstoneAfterRowOptionsChanged(string capstoneApiName)
+        {
+            var items = DisplayItems;
+            if (items == null || items.Count == 0 || string.IsNullOrWhiteSpace(capstoneApiName))
+            {
+                return false;
+            }
+
+            foreach (var item in items)
+            {
+                if (item != null)
+                {
+                    item.IsCapstone = string.Equals(
+                        (item.ApiName ?? string.Empty).Trim(),
+                        capstoneApiName.Trim(),
+                        StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Re-partitions the rows already on screen after a goal toggle. LoadData would rebuild
+        /// from the theme state and re-run the control bar, which drops the user's active filters.
+        /// </summary>
+        private bool ReapplyGoalOrderAfterRowOptionsChanged()
+        {
+            var items = DisplayItems;
+            if (items == null || items.Count == 0)
+            {
+                return false;
+            }
+
+            var reordered = items.ToList();
+            AchievementSortHelper.ApplyGoalsFirst(reordered);
+            CollectionHelper.SynchronizeCollection(items, reordered);
+            return true;
         }
 
         private void ApplySorting(string sortMemberPath, ListSortDirection direction)
@@ -399,12 +678,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 ref _currentSortPath,
                 ref _currentSortDirection);
 
+            AchievementSortHelper.ApplyGoalsFirst(items);
+
+            // Keep dropdown options in canonical definition order rather than the new column sort.
+            _controlBarAdapter.UpdateOptions(AchievementsGrid?.CategorySummarySource ?? items);
+            var filteredItems = _controlBarAdapter.Apply(items);
             var displayItems = DisplayGridRowLimitHelper.Limit(
-                items,
+                filteredItems,
                 EffectiveSettings?.Persisted?.DesktopThemeAchievementGridMaxRows);
 
             // Synchronize in place to trigger efficient UI updates
             CollectionHelper.SynchronizeCollection(DisplayItems, displayItems);
+            _friendCompare.SetTargetItems(DisplayItems.ToList());
             ApplyCurrentSortIndicator(EffectiveTheme);
         }
 
@@ -426,6 +711,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             _lastSourceItems = null;
             _lastOrderedAchievements = null;
             _lastMaxRows = null;
+            SetValue(GameNamePropertyKey, null);
+            UpdateSummaryItem(null);
             if (resetSortState)
             {
                 ResetSortState();
@@ -438,6 +725,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             else
             {
                 DisplayItems.Clear();
+            }
+
+            _controlBarAdapter.Clear();
+            _friendCompare.SetGame(null, null);
+            if (AchievementsGrid != null)
+            {
+                AchievementsGrid.CategorySummarySource = null;
             }
 
             AchievementsGrid?.SetSortIndicator(null, null);

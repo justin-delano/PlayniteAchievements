@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,7 +10,9 @@ using Playnite.SDK;
 using Playnite.SDK.Data;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Tagging;
+using PlayniteAchievements.Services.Achievements;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -18,7 +22,7 @@ namespace PlayniteAchievements.Models.Settings
     /// Persisted user settings for PlayniteAchievements plugin.
     /// These settings are serialized to the plugin settings JSON file.
     /// </summary>
-    public class PersistedSettings : ObservableObject
+    public partial class PersistedSettings : ObservableObject
     {
         public const double DefaultAchievementDataGridMaxHeight = 600d;
         public const double MinimumGridRowHeight = 32d;
@@ -27,12 +31,26 @@ namespace PlayniteAchievements.Models.Settings
         public const double DefaultOverviewLeftColumnRatio = 0.5d;
         public const double MinOverviewLeftColumnRatio = 0.01d;
         public const double MaxOverviewLeftColumnRatio = 0.99d;
+        public const double DefaultFriendsOverviewFriendColumnRatio = 0.25d;
+        public const double DefaultFriendsOverviewGameColumnRatio = 0.31d;
+        public const double MinFriendsOverviewColumnRatio = 0.01d;
+        public const double MaxFriendsOverviewColumnRatio = 0.98d;
         public const GameActivityScope DefaultStartPageActivityScope = GameActivityScope.Played;
         public const GameProgressScope DefaultStartPageProgressScope =
             GameProgressScope.Completed | GameProgressScope.InProgress;
         public const string DefaultViewAchievementsHotkey = "Ctrl+Alt+V";
         public const string DefaultManageAchievementsHotkey = "Ctrl+Alt+M";
         public const string DefaultOverviewHotkey = "Ctrl+Alt+O";
+        public const string DefaultOpenSettingsHotkey = "Ctrl+Alt+P";
+        public const string DefaultCategoryModeHotkey = "C";
+        public const string DefaultTestUnlockHotkey = "Ctrl+Alt+T";
+
+        /// <summary>
+        /// Column key of the Progress column in game-summaries grids (matches the XAML ColumnKey and
+        /// the canonical key produced by <see cref="OverviewSettingsMigration"/>). The footer badge
+        /// layout in this column responds to its horizontal alignment, defaulting to Right.
+        /// </summary>
+        public const string ProgressColumnKey = "GameSummaryProgression";
 
         public PersistedSettings()
         {
@@ -45,26 +63,101 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enablePeriodicUpdates = true;
         private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
+        private bool _enableFriendsPeriodicUpdates = false;
+        private int _friendsPeriodicUpdateHours = 24;
+        private bool _enableInGamePolling = true;
+        private int _inGamePollIntervalSeconds = 15;
+        private bool _inGamePollRefreshFriends = false;
+        private int _inGameFriendRefreshMultiplier = 4;
+        private int _inGameFriendBatchSize = 10;
         private bool _enableNotifications = true;
-        private bool _notifyPeriodicUpdates = true;
-        private bool _notifyOnRebuild = true;
+        private bool _enableUnlockToasts = true;
+        private bool _enableFriendUnlockToasts = true;
+        private bool _enableProgressToasts = true;
+        private NotificationStyleSettings _notificationStyle;
+        private bool _toastUseThemeStyling = true;
+        private bool _frameUseThemeStyling = true;
+        private Dictionary<string, NotificationStyleSettings> _providerNotificationStyles;
+        private int _toastDurationSeconds = 6;
+        private double _notificationDelaySeconds = 0;
+        private double _captureDelaySeconds = 0;
+        private int _maxConcurrentToasts = 3;
+        private bool _enableControllerVibration = false;
+        private int _controllerVibrationStrengthPercent = 50;
+        private int _controllerVibrationDurationMs = 650;
+        private bool _useHiddenUnlockSound = false;
+        private bool _enableUnlockScreenshots = false;
+        private bool _unlockScreenshotClean = false;
+        private bool _unlockScreenshotWithToast = true;
+        private bool _unlockScreenshotFramed = false;
+        private string _unlockScreenshotSuffixClean = "clean";
+        private string _unlockScreenshotSuffixWithToast = "notification";
+        private string _unlockScreenshotSuffixFramed = "framed";
+        private string _unlockScreenshotDirectory;
+        private ScreenshotResolution _screenshotResolution = ScreenshotResolution.Native;
+        private RaritySelection _unlockScreenshotCleanRarities = RaritySelection.All;
+        private bool _unlockScreenshotCleanAlwaysCaptureCompletion = true;
+        private RaritySelection _unlockScreenshotWithToastRarities = RaritySelection.All;
+        private bool _unlockScreenshotWithToastAlwaysCaptureCompletion = true;
+        private RaritySelection _unlockScreenshotFramedRarities = RaritySelection.All;
+        private bool _unlockScreenshotFramedAlwaysCaptureCompletion = true;
+        private bool _enableUnlockRecordings = false;
+        private string _unlockRecordingDirectory;
+        private int _recordingClipSeconds = 15;
+        private int _recordingFps = 30;
+        private RecordingResolution _recordingResolution = RecordingResolution.Native;
+        private RecordingQuality _recordingQuality = RecordingQuality.Native;
+        private bool _recordingIncludeAudio = false;
+        private RecordingAudioSource _recordingAudioSource = RecordingAudioSource.FullSystem;
+        private bool _recordingIncludeMicrophone = false;
+        private RaritySelection _unlockRecordingRarities = RaritySelection.All;
+        private bool _unlockRecordingAlwaysCaptureCompletion = true;
+        private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
+            new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
+        private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
         private int _recentRefreshGamesCount = 10;
+        private RefreshModeType _defaultOverviewRefreshMode = RefreshModeType.Installed;
         private bool _enableAchievementHotkeys = true;
         private bool _enableGlobalAchievementHotkeys = false;
+        private bool _enableViewAchievementsHotkey = true;
+        private bool _enableManageAchievementsHotkey = true;
+        private bool _enableOverviewHotkey = true;
+        private bool _enableOpenSettingsHotkey = true;
+        private bool _enableCategoryModeHotkey = true;
+        private bool _enableTestUnlockHotkey = true;
+        private bool _enableCaptureTestFolder = false;
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
         private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
         private string _overviewHotkey = DefaultOverviewHotkey;
+        private string _openSettingsHotkey = DefaultOpenSettingsHotkey;
+        private string _categoryModeHotkey = DefaultCategoryModeHotkey;
+        private string _testUnlockHotkey = DefaultTestUnlockHotkey;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
         private bool _showHiddenSuffix = true;
         private bool _showLockedIcon = true;
-        private bool _preserveAchievementIconResolution = false;
         private bool _useSeparateLockedIconsWhenAvailable = false;
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
-        private bool _showRarityGlow = true;
+        private string _lockedFallbackIconPath = null;
+        private string _hiddenFallbackIconPath = null;
+        private bool _modernCompactListShowRarityGlow = true;
+        private bool _modernUnlockedListShowRarityGlow = true;
+        private bool _animateRarityGlows = true;
+        // Completion is included by default because the completed-game glow shipped on; the rays stay
+        // opt-in for everything.
+        private RaritySelection _rarityGlowSoftTiers = RaritySelection.All | RaritySelection.Completed;
+        private RaritySelection _rarityGlowRayTiers = RaritySelection.None;
+        private bool _showHardcoreBorder = true;
+        private double _rarityGlowPulseMinOpacity = 0.6;
+        private double _rarityGlowPulseMaxOpacity = 1.0;
+        private double _rarityGlowPulseSpeed = 0.5;
         private bool _useUniformRarityBadges = false;
-        private bool _useCoverImages = true;
+        private bool _useTrophiesForRarity = false;
+        private bool _roundRarityPercentages = false;
+        private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
+        private Dictionary<string, string> _providerColorOverrides =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
         private bool _showOverviewPrestigeScoreCard = true;
@@ -74,20 +167,24 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRarityPieChart = true;
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
+        private bool _showFriendSpoilers;
+        private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
         private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
         private bool _showOverviewBarCharts = true;
-        private bool _showOverviewGameMetadata = true;
         private bool _showTopMenuBarButton = true;
+        private bool _showCompletedProgressColoring = true;
         private bool _showCompactListRarityBar = true;
-        private bool _showCompletionBorder = true;
-        private bool _showGameSummariesGridColumnHeaders = true;
-        private bool _showOverviewRecentAchievementsGridColumnHeaders = true;
-        private bool _showOverviewSelectedGameGridColumnHeaders = true;
-        private bool _showDesktopThemeAchievementGridColumnHeaders = true;
+        private bool _progressColumnAlignmentDefaulted = false;
+        private bool _inlineSurfaceTransparencySeeded = true;
+
         private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
         private GridAlignment _gridCellAlignment = GridAlignment.Left;
         private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
+        private DateDisplayMode _unlockDateDisplayMode = DateDisplayMode.DateAndTime;
+        private PlaytimeDisplayMode _playtimeDisplayMode = PlaytimeDisplayMode.HoursAndMinutes;
+        private CategoryCompletionBadgeMode _categoryCompletionBadgeMode = CategoryCompletionBadgeMode.All;
+        private FriendNameDisplayMode _friendNameDisplayMode = FriendNameDisplayMode.PersonaAndNickname;
         private bool _enableAchievementCompactListControl = true;
         private bool _enableAchievementDataGridControl = true;
         private bool _enableAchievementCompactUnlockedListControl = true;
@@ -98,74 +195,27 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableAchievementViewItemControl = true;
         private bool _enableAchievementPieChartControl = true;
         private bool _enableAchievementBarChartControl = true;
-        private double? _achievementDataGridMaxHeight = DefaultAchievementDataGridMaxHeight;
-        private double? _singleGameGridRowHeight;
-        private double? _overviewGameSummariesGridRowHeight;
-        private double? _overviewRecentAchievementsGridRowHeight;
-        private double? _overviewSelectedGameGridRowHeight;
-        private double? _desktopThemeAchievementGridRowHeight;
-        private int? _singleGameGridMaxRows;
-        private int? _overviewGameSummariesGridMaxRows;
-        private int? _overviewRecentAchievementsGridMaxRows;
-        private int? _overviewSelectedGameGridMaxRows;
-        private int? _desktopThemeAchievementGridMaxRows;
-        private StartPageGameSummariesGridSettings _startPageGameSummariesGrid =
-            new StartPageGameSummariesGridSettings();
-        private StartPageRecentUnlocksGridSettings _startPageRecentUnlocksGrid =
-            new StartPageRecentUnlocksGridSettings();
+        private StartPageGameSummariesGridSettings _startPageGameSummariesGrid;
+        private StartPageRecentUnlocksGridSettings _startPageRecentUnlocksGrid;
+        private StartPageFriendsRecentUnlocksGridSettings _startPageFriendsRecentUnlocksGrid;
         private StartPagePieWidgetSettings _startPagePieCharts =
             new StartPagePieWidgetSettings();
+        private GridOptionsCatalog _gridOptions = new GridOptionsCatalog();
         private GameActivityScope _startPageActivityScope = DefaultStartPageActivityScope;
         private GameProgressScope _startPageProgressScope = DefaultStartPageProgressScope;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
+        // Deserialization target: left empty so a loaded config is taken verbatim. Newtonsoft
+        // populates an existing non-null dictionary in place rather than replacing it, so a
+        // pre-seeded field would re-introduce removed ("Follow Playnite") overrides on every load.
+        // Fresh installs seed transparent inline surfaces via the plugin-reference constructor.
+        private Dictionary<string, ResourceOverrideSetting> _resourceOverrides =
+            new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
-        private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _dataGridColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _overviewAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _overviewAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _overviewAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _overviewAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _overviewGameColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _overviewGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _overviewGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _overviewGameColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewGameColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _singleGameColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _singleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _singleGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _singleGameColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _singleGameColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _desktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _desktopThemeColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _desktopThemeColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _desktopThemeColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _overviewGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _overviewGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _overviewGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _overviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _startPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _startPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _startPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _startPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _startPageAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _startPageAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _startPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _startPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _startPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _startPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridVerticalAlignment> _startPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _startPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private double _overviewLeftColumnRatio = DefaultOverviewLeftColumnRatio;
+        private double _friendsOverviewFriendColumnRatio = DefaultFriendsOverviewFriendColumnRatio;
+        private double _friendsOverviewGameColumnRatio = DefaultFriendsOverviewGameColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
         private TimelineRange _overviewTimelineRange = TimelineRange.OneYear;
@@ -189,16 +239,14 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactUnlockedListSortDescending = false;
         private CompactListSortMode _compactLockedListSortMode = CompactListSortMode.None;
         private bool _compactLockedListSortDescending = false;
-        private GameSummariesSortMode _overviewGameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock;
-        private bool _overviewGameSummariesGridSortDescending = true;
-        private CompactListSortMode _overviewSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
-        private bool _overviewSelectedGameGridSortDescending = true;
-        private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
-        private bool _singleGameGridSortDescending = true;
-        private CompactListSortMode _achievementDataGridSortMode = CompactListSortMode.UnlockTime;
-        private bool _achievementDataGridSortDescending = true;
         private TaggingSettings _taggingSettings;
         private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
+        private bool _enableFriendsFeatures = true;
+        private HashSet<string> _autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys();
+        private bool _useExophaseForSteamFriendOwnership = false;
+        private bool _includeUnownedFriendGames = false;
+        private ObservableCollection<FriendSettingsEntry> _friends = new ObservableCollection<FriendSettingsEntry>();
+        private ObservableCollection<FriendMergeGroup> _friendMergeGroups = new ObservableCollection<FriendMergeGroup>();
 
         #endregion
 
@@ -212,6 +260,524 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _providerSettings;
             set => SetValue(ref _providerSettings, value ?? new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        #endregion
+
+        #region Friend Settings
+
+        public bool EnableFriendsFeatures
+        {
+            get => _enableFriendsFeatures;
+            set => SetValue(ref _enableFriendsFeatures, value);
+        }
+
+        public HashSet<string> AutoDiscoverFriendProviderKeys
+        {
+            get => _autoDiscoverFriendProviderKeys ?? (_autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys());
+            set => SetValue(ref _autoDiscoverFriendProviderKeys, NormalizeProviderKeySet(value));
+        }
+
+        public bool UseExophaseForSteamFriendOwnership
+        {
+            get => _useExophaseForSteamFriendOwnership;
+            set => SetValue(ref _useExophaseForSteamFriendOwnership, value);
+        }
+
+        /// <summary>
+        /// When true, friend refreshes may scan games the current user does not own (the Full
+        /// scope). When false, Full-scope requests are clamped to Shared so no unowned friend
+        /// games are ever scanned.
+        /// </summary>
+        public bool IncludeUnownedFriendGames
+        {
+            get => _includeUnownedFriendGames;
+            set => SetValue(ref _includeUnownedFriendGames, value);
+        }
+
+        public ObservableCollection<FriendSettingsEntry> Friends
+        {
+            get => _friends ?? (_friends = new ObservableCollection<FriendSettingsEntry>());
+            set
+            {
+                if (SetValueAndReturn(ref _friends, NormalizeFriendEntries(value)))
+                {
+                    FriendMergeGroups = FriendMergeGroups;
+                }
+            }
+        }
+
+        public ObservableCollection<FriendMergeGroup> FriendMergeGroups
+        {
+            get => _friendMergeGroups ?? (_friendMergeGroups = new ObservableCollection<FriendMergeGroup>());
+            set => SetValue(ref _friendMergeGroups, NormalizeFriendMergeGroups(value, Friends));
+        }
+
+        public static HashSet<string> CreateDefaultAutoDiscoverFriendProviderKeys()
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Steam",
+                "RetroAchievements"
+            };
+        }
+
+        public bool IsFriendAutoDiscoverEnabled(string providerKey)
+        {
+            return !string.IsNullOrWhiteSpace(providerKey) &&
+                   AutoDiscoverFriendProviderKeys.Contains(providerKey.Trim());
+        }
+
+        public void SetFriendAutoDiscoverEnabled(string providerKey, bool enabled)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var keys = NormalizeProviderKeySet(AutoDiscoverFriendProviderKeys);
+            var changed = enabled ? keys.Add(providerKey) : keys.Remove(providerKey);
+            if (changed)
+            {
+                AutoDiscoverFriendProviderKeys = keys;
+            }
+        }
+
+        public FriendSettingsEntry AddOrUpdateFriend(
+            FriendIdentity identity,
+            FriendSettingsSource source = FriendSettingsSource.AutoDiscovered)
+        {
+            if (identity == null)
+            {
+                return null;
+            }
+
+            return AddOrUpdateFriend(
+                identity.ProviderKey,
+                identity.ExternalUserId,
+                identity.DisplayName,
+                identity.AvatarUrl,
+                identity.AvatarPath,
+                source,
+                null,
+                identity.LastRefreshedUtc,
+                null,
+                null,
+                identity.ProviderNickname,
+                applyProviderNickname: true);
+        }
+
+        public FriendSettingsEntry AddOrUpdateFriend(
+            string providerKey,
+            string externalUserId,
+            string displayName,
+            string avatarUrl,
+            string avatarPath,
+            FriendSettingsSource source,
+            IEnumerable<string> selectedPlatforms = null,
+            DateTime? lastRefreshedUtc = null,
+            DateTime? lastProbedUtc = null,
+            string lastError = null,
+            string providerNickname = null,
+            bool applyProviderNickname = false)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            var entries = NormalizeFriendEntries(Friends);
+            var existing = entries.FirstOrDefault(entry =>
+                string.Equals(entry.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+            if (existing == null)
+            {
+                existing = new FriendSettingsEntry
+                {
+                    ProviderKey = providerKey,
+                    ExternalUserId = externalUserId,
+                    DisplayName = string.IsNullOrWhiteSpace(displayName) ? externalUserId : displayName.Trim(),
+                    Source = source,
+                    SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(selectedPlatforms),
+                    AddedUtc = DateTime.UtcNow
+                };
+                entries.Add(existing);
+            }
+            else
+            {
+                if (source == FriendSettingsSource.Manual)
+                {
+                    existing.Source = FriendSettingsSource.Manual;
+                }
+
+                if (selectedPlatforms != null)
+                {
+                    existing.SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(selectedPlatforms);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                existing.DisplayName = displayName.Trim();
+            }
+
+            // Overwrite (including to null) only when the caller carries roster data; other
+            // callers (manual add, probe updates) preserve the stored provider nickname.
+            if (applyProviderNickname)
+            {
+                existing.ProviderNickname = string.IsNullOrWhiteSpace(providerNickname)
+                    ? null
+                    : providerNickname.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                existing.AvatarUrl = avatarUrl.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarPath))
+            {
+                existing.AvatarPath = avatarPath.Trim();
+            }
+
+            if (lastRefreshedUtc.HasValue)
+            {
+                existing.LastRefreshedUtc = lastRefreshedUtc;
+            }
+
+            if (lastProbedUtc.HasValue)
+            {
+                existing.LastProbedUtc = lastProbedUtc;
+            }
+
+            if (lastError != null)
+            {
+                existing.LastError = string.IsNullOrWhiteSpace(lastError) ? null : lastError.Trim();
+            }
+
+            Friends = entries;
+            return GetFriendSetting(providerKey, externalUserId);
+        }
+
+        public bool SetFriendNickname(string providerKey, string externalUserId, string nickname)
+        {
+            var entry = GetFriendSetting(providerKey, externalUserId);
+            if (entry == null)
+            {
+                return false;
+            }
+
+            var normalized = string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim();
+            if (string.Equals(entry.Nickname, normalized, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            entry.Nickname = normalized;
+            Friends = Friends;
+            return true;
+        }
+
+        public FriendSettingsEntry GetFriendSetting(string providerKey, string externalUserId)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            return Friends.FirstOrDefault(entry =>
+                string.Equals(entry?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public List<FriendSettingsEntry> GetFriendSettings(string providerKey = null, bool includeIgnored = true)
+        {
+            var normalizedProvider = NormalizeProviderKeyToken(providerKey);
+            return Friends
+                .Where(entry => entry != null &&
+                                (string.IsNullOrWhiteSpace(normalizedProvider) ||
+                                 string.Equals(entry.ProviderKey, normalizedProvider, StringComparison.OrdinalIgnoreCase)) &&
+                                (includeIgnored || !entry.IsIgnored))
+                .Select(entry => entry.Clone().Normalize())
+                .ToList();
+        }
+
+        public List<FriendIdentity> GetActiveFriendIdentities(string providerKey = null)
+        {
+            return GetFriendSettings(providerKey, includeIgnored: false)
+                .Select(entry => new FriendIdentity
+                {
+                    ProviderKey = entry.ProviderKey,
+                    ExternalUserId = entry.ExternalUserId,
+                    DisplayName = entry.DisplayName,
+                    ProviderNickname = entry.ProviderNickname,
+                    AvatarUrl = entry.AvatarUrl,
+                    AvatarPath = entry.AvatarPath,
+                    LastRefreshedUtc = entry.LastRefreshedUtc
+                })
+                .ToList();
+        }
+
+        public HashSet<string> GetIgnoredFriendIds(string providerKey)
+        {
+            return new HashSet<string>(
+                GetFriendSettings(providerKey)
+                    .Where(entry => entry.IsIgnored)
+                    .Select(entry => entry.ExternalUserId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        public HashSet<string> GetFullScanExcludedFriendIds(string providerKey)
+        {
+            return new HashSet<string>(
+                GetFriendSettings(providerKey)
+                    .Where(entry => entry.ExcludeFromFullScans)
+                    .Select(entry => entry.ExternalUserId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        public bool SetFriendIgnored(string providerKey, string externalUserId, bool ignored)
+        {
+            var entry = GetFriendSetting(providerKey, externalUserId);
+            if (entry == null || entry.IsIgnored == ignored)
+            {
+                return false;
+            }
+
+            entry.IsIgnored = ignored;
+            Friends = Friends;
+            return true;
+        }
+
+        public HashSet<string> GetFavoriteFriendIds(string providerKey)
+        {
+            return new HashSet<string>(
+                GetFriendSettings(providerKey)
+                    .Where(entry => entry.IsFavorite)
+                    .Select(entry => entry.ExternalUserId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        public bool SetFriendFavorite(string providerKey, string externalUserId, bool favorite)
+        {
+            var entry = GetFriendSetting(providerKey, externalUserId);
+            if (entry == null || entry.IsFavorite == favorite)
+            {
+                return false;
+            }
+
+            entry.IsFavorite = favorite;
+            Friends = Friends;
+            return true;
+        }
+
+        public bool RemoveFriendSetting(string providerKey, string externalUserId)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return false;
+            }
+
+            var entries = NormalizeFriendEntries(Friends);
+            var removed = false;
+            for (var i = entries.Count - 1; i >= 0; i--)
+            {
+                var entry = entries[i];
+                if (string.Equals(entry?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(entry?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase))
+                {
+                    entries.RemoveAt(i);
+                    removed = true;
+                }
+            }
+
+            if (!removed)
+            {
+                return false;
+            }
+
+            Friends = entries;
+            PruneFriendMergeGroupsForRemovedAccount(providerKey, externalUserId);
+            return true;
+        }
+
+        public List<FriendMergeGroup> GetFriendMergeGroups()
+        {
+            return FriendMergeGroups
+                .Where(group => group?.IsValid == true)
+                .Select(group => group.Clone().Normalize())
+                .ToList();
+        }
+
+        public FriendMergeGroup GetFriendMergeGroup(string groupId)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                return null;
+            }
+
+            return FriendMergeGroups
+                .FirstOrDefault(group => string.Equals(group?.Id, groupId.Trim(), StringComparison.OrdinalIgnoreCase))
+                ?.Clone()
+                ?.Normalize();
+        }
+
+        public FriendMergeGroup GetFriendMergeGroupForAccount(string providerKey, string externalUserId)
+        {
+            return FriendMergeGroups
+                .FirstOrDefault(group => group?.Contains(providerKey, externalUserId) == true)
+                ?.Clone()
+                ?.Normalize();
+        }
+
+        public FriendMergeGroup AddOrUpdateFriendMergeGroup(
+            IEnumerable<FriendAccountRef> members,
+            string nickname = null,
+            FriendAccountRef avatarAccount = null,
+            string existingGroupId = null)
+        {
+            var normalizedMembers = NormalizeFriendMergeMembers(members, Friends);
+            if (normalizedMembers.Count < 2)
+            {
+                return null;
+            }
+
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var target = !string.IsNullOrWhiteSpace(existingGroupId)
+                ? groups.FirstOrDefault(group => string.Equals(group.Id, existingGroupId.Trim(), StringComparison.OrdinalIgnoreCase))
+                : null;
+            if (target == null)
+            {
+                target = new FriendMergeGroup
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    CreatedUtc = DateTime.UtcNow
+                };
+                groups.Add(target);
+            }
+
+            var memberKeys = new HashSet<string>(
+                normalizedMembers.Select(member => member.Key),
+                StringComparer.OrdinalIgnoreCase);
+            for (var i = groups.Count - 1; i >= 0; i--)
+            {
+                var group = groups[i];
+                if (ReferenceEquals(group, target))
+                {
+                    continue;
+                }
+
+                group.Members = (group.Members ?? new List<FriendAccountRef>())
+                    .Where(member => member != null && !memberKeys.Contains(member.Key))
+                    .ToList();
+                if (group.Members.Count < 2)
+                {
+                    groups.RemoveAt(i);
+                }
+            }
+
+            target.Members = normalizedMembers;
+            target.Nickname = string.IsNullOrWhiteSpace(nickname) ? target.Nickname : nickname.Trim();
+            target.AvatarAccount = avatarAccount?.Clone()?.Normalize();
+            target.Normalize();
+            FriendMergeGroups = groups;
+            return GetFriendMergeGroup(target.Id);
+        }
+
+        public bool RemoveFriendMergeGroup(string groupId)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                return false;
+            }
+
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var removed = false;
+            for (var i = groups.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(groups[i]?.Id, groupId.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    groups.RemoveAt(i);
+                    removed = true;
+                }
+            }
+
+            if (!removed)
+            {
+                return false;
+            }
+
+            FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(groups);
+            return true;
+        }
+
+        public bool SetFriendMergeGroupNickname(string groupId, string nickname)
+        {
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var group = groups.FirstOrDefault(item => string.Equals(item?.Id, groupId?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (group == null)
+            {
+                return false;
+            }
+
+            var normalized = string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim();
+            if (string.Equals(group.Nickname, normalized, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            group.Nickname = normalized;
+            FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(groups);
+            return true;
+        }
+
+        public bool SetFriendMergeGroupAvatar(string groupId, FriendAccountRef avatarAccount)
+        {
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var group = groups.FirstOrDefault(item => string.Equals(item?.Id, groupId?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (group == null)
+            {
+                return false;
+            }
+
+            var normalized = avatarAccount?.Clone()?.Normalize();
+            if (normalized == null || !group.Contains(normalized.ProviderKey, normalized.ExternalUserId))
+            {
+                normalized = group.Members.FirstOrDefault()?.Clone();
+            }
+
+            if (string.Equals(group.AvatarAccount?.Key, normalized?.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            group.AvatarAccount = normalized;
+            FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(groups);
+            return true;
+        }
+
+        public bool MigrateLegacyProviderFriends()
+        {
+            var changed = false;
+            var entries = NormalizeFriendEntries(Friends);
+            changed |= MigrateLegacySteamFriends(entries);
+            changed |= MigrateLegacyExophaseFriends(entries);
+            if (changed)
+            {
+                Friends = entries;
+            }
+
+            return changed;
         }
 
         #endregion
@@ -260,12 +826,69 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Enable the background periodic Recent friends refresh.
+        /// </summary>
+        public bool EnableFriendsPeriodicUpdates
+        {
+            get => _enableFriendsPeriodicUpdates;
+            set => SetValue(ref _enableFriendsPeriodicUpdates, value);
+        }
+
+        /// <summary>
+        /// Hours between periodic background Recent friends refreshes.
+        /// </summary>
+        public int FriendsPeriodicUpdateHours
+        {
+            get => _friendsPeriodicUpdateHours;
+            set => SetValue(ref _friendsPeriodicUpdateHours, Math.Max(1, value));
+        }
+
+        public bool EnableInGamePolling
+        {
+            get => _enableInGamePolling;
+            set => SetValue(ref _enableInGamePolling, value);
+        }
+
+        public int InGamePollIntervalSeconds
+        {
+            get => _inGamePollIntervalSeconds;
+            set => SetValue(ref _inGamePollIntervalSeconds, Math.Max(10, value));
+        }
+
+        public bool InGamePollRefreshFriends
+        {
+            get => _inGamePollRefreshFriends;
+            set => SetValue(ref _inGamePollRefreshFriends, value);
+        }
+
+        public int InGameFriendRefreshMultiplier
+        {
+            get => _inGameFriendRefreshMultiplier;
+            set => SetValue(ref _inGameFriendRefreshMultiplier, Math.Max(1, value));
+        }
+
+        public int InGameFriendBatchSize
+        {
+            get => _inGameFriendBatchSize;
+            set => SetValue(ref _inGameFriendBatchSize, Math.Max(0, value));
+        }
+
+        /// <summary>
         /// Maximum recent games to refresh when using Recent Refresh.
         /// </summary>
         public int RecentRefreshGamesCount
         {
             get => _recentRefreshGamesCount;
             set => SetValue(ref _recentRefreshGamesCount, Math.Max(1, value));
+        }
+
+        /// <summary>
+        /// Refresh mode the Overview view's refresh dropdown defaults to on open.
+        /// </summary>
+        public RefreshModeType DefaultOverviewRefreshMode
+        {
+            get => _defaultOverviewRefreshMode;
+            set => SetValue(ref _defaultOverviewRefreshMode, value);
         }
 
         /// <summary>
@@ -305,6 +928,75 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Enables the View Achievements shortcut individually. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableViewAchievementsHotkey
+        {
+            get => _enableViewAchievementsHotkey;
+            set => SetValue(ref _enableViewAchievementsHotkey, value);
+        }
+
+        /// <summary>
+        /// Enables the Manage Achievements shortcut individually. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableManageAchievementsHotkey
+        {
+            get => _enableManageAchievementsHotkey;
+            set => SetValue(ref _enableManageAchievementsHotkey, value);
+        }
+
+        /// <summary>
+        /// Enables the Achievements Overview shortcut individually. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableOverviewHotkey
+        {
+            get => _enableOverviewHotkey;
+            set => SetValue(ref _enableOverviewHotkey, value);
+        }
+
+        /// <summary>
+        /// Enables the Open Settings shortcut individually. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableOpenSettingsHotkey
+        {
+            get => _enableOpenSettingsHotkey;
+            set => SetValue(ref _enableOpenSettingsHotkey, value);
+        }
+
+        /// <summary>
+        /// Enables the category-mode shortcut individually. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableCategoryModeHotkey
+        {
+            get => _enableCategoryModeHotkey;
+            set => SetValue(ref _enableCategoryModeHotkey, value);
+        }
+
+        /// <summary>
+        /// Enables the shortcut that re-fires the notification for the running game's last-earned
+        /// achievement. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableTestUnlockHotkey
+        {
+            get => _enableTestUnlockHotkey;
+            set => SetValue(ref _enableTestUnlockHotkey, value);
+        }
+
+        /// <summary>
+        /// Routes retriggered captures into the shared "Test" subfolder of the capture root instead of
+        /// the game's own folder. The capture library hides that subfolder, so retriggers become
+        /// throwaway test output rather than part of the game's collection.
+        ///
+        /// Also the only way to retrigger with no game running: without it the shortcut is inert
+        /// outside a game, because there is no game folder to write to.
+        /// </summary>
+        public bool EnableCaptureTestFolder
+        {
+            get => _enableCaptureTestFolder;
+            set => SetValue(ref _enableCaptureTestFolder, value);
+        }
+
+        /// <summary>
         /// Shortcut that opens, focuses, or toggles the View Achievements window.
         /// </summary>
         public string ViewAchievementsHotkey
@@ -331,6 +1023,35 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _overviewHotkey, NormalizeHotkeyText(value));
         }
 
+        /// <summary>
+        /// Shortcut that opens the plugin settings window.
+        /// </summary>
+        public string OpenSettingsHotkey
+        {
+            get => _openSettingsHotkey;
+            set => SetValue(ref _openSettingsHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that flips category mode in a focused achievement grid, when the
+        /// category toggle is available there.
+        /// </summary>
+        public string CategoryModeHotkey
+        {
+            get => _categoryModeHotkey;
+            set => SetValue(ref _categoryModeHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that fires the full notification flow (notification, screenshot, recording)
+        /// for the running game's last-earned achievement.
+        /// </summary>
+        public string TestUnlockHotkey
+        {
+            get => _testUnlockHotkey;
+            set => SetValue(ref _testUnlockHotkey, NormalizeHotkeyText(value));
+        }
+
         #endregion
 
         #region Notification Settings
@@ -344,22 +1065,521 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _enableNotifications, value);
         }
 
-        /// <summary>
-        /// Show lightweight toast when periodic background updates complete.
-        /// </summary>
-        public bool NotifyPeriodicUpdates
+        public bool EnableUnlockToasts
         {
-            get => _notifyPeriodicUpdates;
-            set => SetValue(ref _notifyPeriodicUpdates, value);
+            get => _enableUnlockToasts;
+            set => SetValue(ref _enableUnlockToasts, value);
+        }
+
+        public bool EnableFriendUnlockToasts
+        {
+            get => _enableFriendUnlockToasts;
+            set => SetValue(ref _enableFriendUnlockToasts, value);
         }
 
         /// <summary>
-        /// Show a toast when a manual or managed rebuild completes or fails.
+        /// Show a silent, capture-free notification when a locked achievement's provider-reported
+        /// progress (e.g. 3/10) advances while its game is monitored. Per-provider overrides live
+        /// in <see cref="ProviderNotificationOverrides"/>.
         /// </summary>
-        public bool NotifyOnRebuild
+        public bool EnableProgressToasts
         {
-            get => _notifyOnRebuild;
-            set => SetValue(ref _notifyOnRebuild, value);
+            get => _enableProgressToasts;
+            set => SetValue(ref _enableProgressToasts, value);
+        }
+
+        /// <summary>
+        /// Global default appearance style for the toast and frame surfaces. Per-provider
+        /// whole-style copies live in <see cref="ProviderNotificationStyles"/>. Lazily
+        /// initialized; never null.
+        /// </summary>
+        public NotificationStyleSettings NotificationStyle
+        {
+            get => _notificationStyle ?? (_notificationStyle = NotificationStyleSettings.CreateDefault());
+            set => SetValue(ref _notificationStyle, value);
+        }
+
+        /// <summary>
+        /// When true, the active theme may override the on-screen toast surface (template,
+        /// storyboards, position, duration). When false, the bundled toast template and the
+        /// plugin's own settings always apply.
+        /// </summary>
+        public bool ToastUseThemeStyling
+        {
+            get => _toastUseThemeStyling;
+            set => SetValue(ref _toastUseThemeStyling, value);
+        }
+
+        /// <summary>
+        /// When true, the active theme may override the screenshot frame template. When
+        /// false, the bundled frame template always applies.
+        /// </summary>
+        public bool FrameUseThemeStyling
+        {
+            get => _frameUseThemeStyling;
+            set => SetValue(ref _frameUseThemeStyling, value);
+        }
+
+        public int ToastDurationSeconds
+        {
+            get => _toastDurationSeconds;
+            set => SetValue(ref _toastDurationSeconds, Math.Max(2, value));
+        }
+
+        /// <summary>
+        /// Holds the entire unlock notification wave — toast card, chime, vibration, and the
+        /// windowless screenshot-only wave alike — until this many seconds after the unlock was
+        /// observed (falling back to the moment the notification was queued when no observation
+        /// stamp exists, e.g. friend unlocks). Pipeline latency and time spent held while the game
+        /// is minimized both count toward the delay: the wave shows when the last gate clears.
+        ///
+        /// Independent of <see cref="CaptureDelaySeconds"/>, which then runs from the (delayed)
+        /// wave start, so the capture lands at roughly unlock + notification delay + capture delay.
+        ///
+        /// Deliberately has no upper bound; only negatives are rejected. Never applies to previews
+        /// or test fires, which show the instant they are asked for.
+        /// </summary>
+        public double NotificationDelaySeconds
+        {
+            get => _notificationDelaySeconds;
+            set => SetValue(ref _notificationDelaySeconds, Math.Max(0, value));
+        }
+
+        /// <summary>
+        /// Delays the unlock CAPTURE this many seconds. The screenshot's base frame is grabbed
+        /// this long after the wave starts to show, and the clip is anchored there too, with the
+        /// composited card placed at that same instant. The capture therefore shows the game a
+        /// moment further on while still reading as the notification's own frame.
+        ///
+        /// Measured from the wave starting to show, not from the unlock: with a notification
+        /// delay configured the wave start is itself already held past the unlock, and a wave held
+        /// by the foreground gate captures relative to when it is finally shown.
+        ///
+        /// Deliberately has no upper bound; only negatives are rejected. Never applies to previews or
+        /// retriggers, which capture the instant they are asked for.
+        /// </summary>
+        public double CaptureDelaySeconds
+        {
+            get => _captureDelaySeconds;
+            set => SetValue(ref _captureDelaySeconds, Math.Max(0, value));
+        }
+
+        public int MaxConcurrentToasts
+        {
+            get => _maxConcurrentToasts;
+            set => SetValue(ref _maxConcurrentToasts, Math.Max(1, value));
+        }
+
+        public ToastScreenCorner ToastPosition
+        {
+            get => _toastPosition;
+            set => SetValue(ref _toastPosition, value);
+        }
+
+        /// <summary>
+        /// Pulse connected game controllers when a notification shows.
+        /// </summary>
+        public bool EnableControllerVibration
+        {
+            get => _enableControllerVibration;
+            set => SetValue(ref _enableControllerVibration, value);
+        }
+
+        /// <summary>
+        /// Controller vibration strength as a percentage of full motor speed (0-100).
+        /// </summary>
+        public int ControllerVibrationStrengthPercent
+        {
+            get => _controllerVibrationStrengthPercent;
+            set => SetValue(ref _controllerVibrationStrengthPercent, Math.Max(0, Math.Min(100, value)));
+        }
+
+        /// <summary>
+        /// Controller vibration pulse length in milliseconds (100-5000).
+        /// </summary>
+        public int ControllerVibrationDurationMs
+        {
+            get => _controllerVibrationDurationMs;
+            set => SetValue(ref _controllerVibrationDurationMs, Math.Max(100, Math.Min(5000, value)));
+        }
+
+        /// <summary>
+        /// Request UniPlaySong's hidden-achievement sound instead of the rarity sound when a hidden
+        /// achievement unlocks. Off by default: UniPlaySong plays nothing for a sound it has no
+        /// audio assigned to, so enabling this before assigning one silences hidden unlocks rather
+        /// than falling back to the rarity sound.
+        /// </summary>
+        public bool UseHiddenUnlockSound
+        {
+            get => _useHiddenUnlockSound;
+            set => SetValue(ref _useHiddenUnlockSound, value);
+        }
+
+        /// <summary>
+        /// When true, a screenshot of the game's monitor is saved for each of your own unlock
+        /// waves. Fully independent of unlock toasts: every variant is produced whether or not a
+        /// notification is shown. Opt-in since it writes files to disk.
+        /// </summary>
+        public bool EnableUnlockScreenshots
+        {
+            get => _enableUnlockScreenshots;
+            set => SetValue(ref _enableUnlockScreenshots, value);
+        }
+
+        /// <summary>
+        /// Save a clean per-window capture of the game, taken before any notification window
+        /// exists (game only, no overlay).
+        /// </summary>
+        public bool UnlockScreenshotClean
+        {
+            get => _unlockScreenshotClean;
+            set => SetValue(ref _unlockScreenshotClean, value);
+        }
+
+        /// <summary>
+        /// Save the clean capture with this unlock's notification card composited into the corner.
+        /// The card is rendered for the shot even when notifications are turned off, so the file
+        /// always shows one.
+        /// </summary>
+        public bool UnlockScreenshotWithToast
+        {
+            get => _unlockScreenshotWithToast;
+            set => SetValue(ref _unlockScreenshotWithToast, value);
+        }
+
+        /// <summary>
+        /// Save a copy of the clean screenshot with the theme frame composited onto the image.
+        /// The frame is never shown on screen.
+        /// </summary>
+        public bool UnlockScreenshotFramed
+        {
+            get => _unlockScreenshotFramed;
+            set => SetValue(ref _unlockScreenshotFramed, value);
+        }
+
+        /// <summary>
+        /// Filename suffix appended to clean-variant screenshots. Blank means no suffix.
+        /// </summary>
+        public string UnlockScreenshotSuffixClean
+        {
+            get => _unlockScreenshotSuffixClean;
+            set => SetValue(ref _unlockScreenshotSuffixClean, value);
+        }
+
+        /// <summary>
+        /// Filename suffix appended to with-toast-variant screenshots. Blank means no suffix.
+        /// </summary>
+        public string UnlockScreenshotSuffixWithToast
+        {
+            get => _unlockScreenshotSuffixWithToast;
+            set => SetValue(ref _unlockScreenshotSuffixWithToast, value);
+        }
+
+        /// <summary>
+        /// Filename suffix appended to framed-variant screenshots. Blank means no suffix.
+        /// </summary>
+        public string UnlockScreenshotSuffixFramed
+        {
+            get => _unlockScreenshotSuffixFramed;
+            set => SetValue(ref _unlockScreenshotSuffixFramed, value);
+        }
+
+        /// <summary>
+        /// Base directory for unlock screenshots. Files are written to
+        /// &lt;dir&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png.
+        /// </summary>
+        public string UnlockScreenshotDirectory
+        {
+            get => _unlockScreenshotDirectory;
+            set => SetValue(ref _unlockScreenshotDirectory, value);
+        }
+
+        /// <summary>
+        /// Output height of unlock screenshots. The base capture is downscaled before the
+        /// notification card and frame are composited, so every variant shares the reduced size.
+        /// </summary>
+        public ScreenshotResolution ScreenshotResolution
+        {
+            get => _screenshotResolution;
+            set => SetValue(ref _screenshotResolution, value);
+        }
+
+        /// <summary>
+        /// The set of achievement rarity tiers that produce clean-variant unlock screenshots.
+        /// </summary>
+        public RaritySelection UnlockScreenshotCleanRarities
+        {
+            get => _unlockScreenshotCleanRarities;
+            set => SetValue(ref _unlockScreenshotCleanRarities, value);
+        }
+
+        /// <summary>
+        /// When true, completing achievements, capstones, and standalone game-complete events
+        /// bypass the clean-variant screenshot rarity threshold.
+        /// </summary>
+        public bool UnlockScreenshotCleanAlwaysCaptureCompletion
+        {
+            get => _unlockScreenshotCleanAlwaysCaptureCompletion;
+            set => SetValue(ref _unlockScreenshotCleanAlwaysCaptureCompletion, value);
+        }
+
+        /// <summary>
+        /// The set of achievement rarity tiers that produce with-notification-variant unlock screenshots.
+        /// </summary>
+        public RaritySelection UnlockScreenshotWithToastRarities
+        {
+            get => _unlockScreenshotWithToastRarities;
+            set => SetValue(ref _unlockScreenshotWithToastRarities, value);
+        }
+
+        /// <summary>
+        /// When true, completing achievements, capstones, and standalone game-complete events
+        /// bypass the with-notification-variant screenshot rarity threshold.
+        /// </summary>
+        public bool UnlockScreenshotWithToastAlwaysCaptureCompletion
+        {
+            get => _unlockScreenshotWithToastAlwaysCaptureCompletion;
+            set => SetValue(ref _unlockScreenshotWithToastAlwaysCaptureCompletion, value);
+        }
+
+        /// <summary>
+        /// The set of achievement rarity tiers that produce framed-variant unlock screenshots.
+        /// </summary>
+        public RaritySelection UnlockScreenshotFramedRarities
+        {
+            get => _unlockScreenshotFramedRarities;
+            set => SetValue(ref _unlockScreenshotFramedRarities, value);
+        }
+
+        /// <summary>
+        /// When true, completing achievements, capstones, and standalone game-complete events
+        /// bypass the framed-variant screenshot rarity threshold.
+        /// </summary>
+        public bool UnlockScreenshotFramedAlwaysCaptureCompletion
+        {
+            get => _unlockScreenshotFramedAlwaysCaptureCompletion;
+            set => SetValue(ref _unlockScreenshotFramedAlwaysCaptureCompletion, value);
+        }
+
+        /// <summary>
+        /// When true, a video clip of the game window is saved for each of your own unlocks while a
+        /// game is running, via an in-process Windows.Graphics.Capture + Media Foundation rolling
+        /// capture (occlusion-independent, HDR-correct; no external tools).
+        /// </summary>
+        public bool EnableUnlockRecordings
+        {
+            get => _enableUnlockRecordings;
+            set => SetValue(ref _enableUnlockRecordings, value);
+        }
+
+        /// <summary>
+        /// Base directory for unlock recordings. Blank falls back to
+        /// <see cref="UnlockScreenshotDirectory"/> at runtime. Files are written to
+        /// &lt;dir&gt;\Game\NNN_AchievementName.mp4.
+        /// </summary>
+        public string UnlockRecordingDirectory
+        {
+            get => _unlockRecordingDirectory;
+            set => SetValue(ref _unlockRecordingDirectory, value);
+        }
+
+        /// <summary>
+        /// Seconds recorded before the unlock/detection moment (pre-roll). The clip end follows
+        /// the observed toast's dismissal, so total length = pre-roll + the gap until that toast.
+        /// </summary>
+        public int RecordingClipSeconds
+        {
+            get => _recordingClipSeconds;
+            set => SetValue(ref _recordingClipSeconds, Math.Min(60, Math.Max(5, value)));
+        }
+
+        public int RecordingFps
+        {
+            get => _recordingFps;
+            set => SetValue(ref _recordingFps, Math.Min(60, Math.Max(10, value)));
+        }
+
+        public RecordingResolution RecordingResolution
+        {
+            get => _recordingResolution;
+            set => SetValue(ref _recordingResolution, value);
+        }
+
+        /// <summary>
+        /// Encoding quality of unlock clips: the size-versus-picture trade. Native is the bitrate
+        /// the plugin derives from resolution and frame rate; lower tiers scale it down, which also
+        /// lets the fixed capture buffer hold more footage.
+        /// </summary>
+        public RecordingQuality RecordingQuality
+        {
+            get => _recordingQuality;
+            set => SetValue(ref _recordingQuality, value);
+        }
+
+        /// <summary>
+        /// When true, unlock clips include audio captured alongside the rolling video. Off by
+        /// default; audio capture is best-effort and never blocks the video pipeline. The source
+        /// (all system audio vs. game only) is <see cref="RecordingAudioSource"/>, and the
+        /// microphone can be mixed in via <see cref="RecordingIncludeMicrophone"/>.
+        /// </summary>
+        public bool RecordingIncludeAudio
+        {
+            get => _recordingIncludeAudio;
+            set => SetValue(ref _recordingIncludeAudio, value);
+        }
+
+        /// <summary>
+        /// Which audio is recorded when <see cref="RecordingIncludeAudio"/> is on: all system audio
+        /// or just the game process's. GameOnly needs Windows 10 build 19041+; older builds fall
+        /// back to full system audio.
+        /// </summary>
+        public RecordingAudioSource RecordingAudioSource
+        {
+            get => _recordingAudioSource;
+            set => SetValue(ref _recordingAudioSource, value);
+        }
+
+        /// <summary>
+        /// When true (and <see cref="RecordingIncludeAudio"/> is on), the default microphone is mixed
+        /// into the clip on top of the chosen system/game audio.
+        /// </summary>
+        public bool RecordingIncludeMicrophone
+        {
+            get => _recordingIncludeMicrophone;
+            set => SetValue(ref _recordingIncludeMicrophone, value);
+        }
+
+        /// <summary>
+        /// The set of achievement rarity tiers that produce unlock recording clips.
+        /// </summary>
+        public RaritySelection UnlockRecordingRarities
+        {
+            get => _unlockRecordingRarities;
+            set => SetValue(ref _unlockRecordingRarities, value);
+        }
+
+        /// <summary>
+        /// When true, completing achievements, capstones, and standalone game-complete events
+        /// bypass the recording rarity threshold.
+        /// </summary>
+        public bool UnlockRecordingAlwaysCaptureCompletion
+        {
+            get => _unlockRecordingAlwaysCaptureCompletion;
+            set => SetValue(ref _unlockRecordingAlwaysCaptureCompletion, value);
+        }
+
+        /// <summary>
+        /// Per-provider notification overrides keyed by provider key. Only deviating providers
+        /// are stored; absent providers inherit the global notification defaults, so new
+        /// providers pick up the globals automatically.
+        /// </summary>
+        public Dictionary<string, ProviderNotificationOverride> ProviderNotificationOverrides
+        {
+            get => _providerNotificationOverrides ??
+                   (_providerNotificationOverrides =
+                       new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _providerNotificationOverrides, NormalizeProviderNotificationOverrides(value));
+        }
+
+        /// <summary>
+        /// The stored override for a provider, or null when the provider has no deviation and
+        /// inherits the global notification defaults.
+        /// </summary>
+        public ProviderNotificationOverride GetProviderNotificationOverride(string providerKey)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            return providerKey != null &&
+                   ProviderNotificationOverrides.TryGetValue(providerKey, out var value)
+                ? value
+                : null;
+        }
+
+        /// <summary>
+        /// Stores a clone of the override for a provider, removing the entry when the override
+        /// is null or all-inherit. Reassigns the dictionary so PropertyChanged is raised.
+        /// </summary>
+        public void SetProviderNotificationOverride(string providerKey, ProviderNotificationOverride value)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var overrides = new Dictionary<string, ProviderNotificationOverride>(
+                ProviderNotificationOverrides,
+                StringComparer.OrdinalIgnoreCase);
+            if (value == null || value.IsAllInherit)
+            {
+                if (!overrides.Remove(providerKey))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                overrides[providerKey] = value.Clone();
+            }
+
+            ProviderNotificationOverrides = overrides;
+        }
+
+        /// <summary>
+        /// Per-provider whole-style appearance copies keyed by provider key. Only customized
+        /// providers are stored; absent providers follow <see cref="NotificationStyle"/>.
+        /// Unlike <see cref="ProviderNotificationOverrides"/> there is no field-level inherit:
+        /// presence in this dictionary means the provider owns a full style copy.
+        /// </summary>
+        public Dictionary<string, NotificationStyleSettings> ProviderNotificationStyles
+        {
+            get => _providerNotificationStyles ??
+                   (_providerNotificationStyles =
+                       new Dictionary<string, NotificationStyleSettings>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _providerNotificationStyles, NormalizeProviderNotificationStyles(value));
+        }
+
+        /// <summary>
+        /// The stored style copy for a provider, or null when the provider is not customized
+        /// and follows the global <see cref="NotificationStyle"/>.
+        /// </summary>
+        public NotificationStyleSettings GetProviderNotificationStyle(string providerKey)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            return providerKey != null &&
+                   ProviderNotificationStyles.TryGetValue(providerKey, out var value)
+                ? value
+                : null;
+        }
+
+        /// <summary>
+        /// Stores a clone of the style copy for a provider, removing the entry when the value
+        /// is null (revert to the global default). Reassigns the dictionary so PropertyChanged
+        /// is raised.
+        /// </summary>
+        public void SetProviderNotificationStyle(string providerKey, NotificationStyleSettings value)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var styles = new Dictionary<string, NotificationStyleSettings>(
+                ProviderNotificationStyles,
+                StringComparer.OrdinalIgnoreCase);
+            if (value == null)
+            {
+                if (!styles.Remove(providerKey))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                styles[providerKey] = value.Clone();
+            }
+
+            ProviderNotificationStyles = styles;
         }
 
         #endregion
@@ -414,16 +1634,6 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, achievement icons are cached at their original decoded size instead of the optimized 128px cache mode.
-        /// Changes apply on the next refresh.
-        /// </summary>
-        public bool PreserveAchievementIconResolution
-        {
-            get => _preserveAchievementIconResolution;
-            set => SetValue(ref _preserveAchievementIconResolution, value);
-        }
-
-        /// <summary>
         /// When true, providers with distinct locked icons will cache and use them instead of grayscaling the unlocked icon.
         /// Changes apply on the next refresh for newly cached icons.
         /// </summary>
@@ -461,13 +1671,122 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, unlocked achievement icons display rarity-based glow effects.
+        /// Absolute path to the user's image for locked achievements, or null for the built-in
+        /// placeholder. When set it replaces both the masked-locked placeholder and the
+        /// grayscaled-unlocked fallback, so a locked achievement shows either a provider-supplied
+        /// locked icon or this image.
         /// </summary>
-        public bool ShowRarityGlow
+        public string LockedFallbackIconPath
         {
-            get => _showRarityGlow;
-            set => SetValue(ref _showRarityGlow, value);
+            get => _lockedFallbackIconPath;
+            set => SetValue(ref _lockedFallbackIconPath, value);
         }
+
+        /// <summary>
+        /// Absolute path to the user's image for hidden achievements whose icon is masked, or null
+        /// for the built-in placeholder. Takes precedence over <see cref="LockedFallbackIconPath"/>
+        /// when an achievement is both hidden and locked-masked.
+        /// </summary>
+        public string HiddenFallbackIconPath
+        {
+            get => _hiddenFallbackIconPath;
+            set => SetValue(ref _hiddenFallbackIconPath, value);
+        }
+
+        /// <summary>
+        /// When true, the modern compact list (and the legacy SuccessStory-compatible lists, which
+        /// follow it) shows rarity glow on unlocked icons.
+        /// </summary>
+        public bool ModernCompactListShowRarityGlow
+        {
+            get => _modernCompactListShowRarityGlow;
+            set => SetValue(ref _modernCompactListShowRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, the modern unlocked list shows rarity glow on unlocked icons.
+        /// </summary>
+        public bool ModernUnlockedListShowRarityGlow
+        {
+            get => _modernUnlockedListShowRarityGlow;
+            set => SetValue(ref _modernUnlockedListShowRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, rarity glows gently fade in and out (a subtle opacity pulse) wherever they
+        /// appear, and the rotating sunburst also turns. When false, glows render at static full
+        /// opacity and the sunburst is held still. Applies globally.
+        /// </summary>
+        public bool AnimateRarityGlows
+        {
+            get => _animateRarityGlows;
+            set => SetValue(ref _animateRarityGlows, value);
+        }
+
+        /// <summary>
+        /// Which rarity tiers get the soft halo around unlocked icons. Membership is exact, so a tier
+        /// with its bit clear shows no halo at all. Defaults to every tier, which is the original
+        /// behavior.
+        /// </summary>
+        public RaritySelection RarityGlowSoftTiers
+        {
+            get => _rarityGlowSoftTiers;
+            set => SetValue(ref _rarityGlowSoftTiers, value);
+        }
+
+        /// <summary>
+        /// Which rarity tiers additionally get the rotating sunburst behind that halo. Independent of
+        /// <see cref="RarityGlowSoftTiers"/>, so a tier can have either effect, both, or neither.
+        /// Defaults to none, so the rays are opt-in.
+        /// </summary>
+        public RaritySelection RarityGlowRayTiers
+        {
+            get => _rarityGlowRayTiers;
+            set => SetValue(ref _rarityGlowRayTiers, value);
+        }
+
+        /// <summary>
+        /// When true, Hardcore RetroAchievements unlocks get a crisp metallic border in place of any
+        /// glow. When false they are treated like any other unlock, so they take whichever glow their
+        /// rarity tier is selected for. On by default.
+        /// </summary>
+        public bool ShowHardcoreBorder
+        {
+            get => _showHardcoreBorder;
+            set => SetValue(ref _showHardcoreBorder, value);
+        }
+
+        /// <summary>
+        /// Low endpoint of the rarity-glow pulse, 0-1 (clamped). The glow fades between this and
+        /// <see cref="RarityGlowPulseMaxOpacity"/>. Higher = subtler pulse.
+        /// </summary>
+        public double RarityGlowPulseMinOpacity
+        {
+            get => _rarityGlowPulseMinOpacity;
+            set => SetValue(ref _rarityGlowPulseMinOpacity, Clamp01(value));
+        }
+
+        /// <summary>
+        /// High endpoint of the rarity-glow pulse, 0-1 (clamped). Usually 1.0 (full brightness);
+        /// lower values keep the glow from ever reaching full.
+        /// </summary>
+        public double RarityGlowPulseMaxOpacity
+        {
+            get => _rarityGlowPulseMaxOpacity;
+            set => SetValue(ref _rarityGlowPulseMaxOpacity, Clamp01(value));
+        }
+
+        /// <summary>
+        /// Pulse speed as a normalized 0-1 value (clamped): 0 = slowest, 1 = fastest. Mapped to a
+        /// concrete fade duration where the pulse is applied.
+        /// </summary>
+        public double RarityGlowPulseSpeed
+        {
+            get => _rarityGlowPulseSpeed;
+            set => SetValue(ref _rarityGlowPulseSpeed, Clamp01(value));
+        }
+
+        private static double Clamp01(double value) => value < 0.0 ? 0.0 : (value > 1.0 ? 1.0 : value);
 
         /// <summary>
         /// When true, all rarity badges use the hexagon shape while keeping rarity colors.
@@ -479,12 +1798,45 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, use Playnite cover images instead of icons/logos in the games list.
+        /// When true, rarity badges use the trophy geometry instead of the tier shapes while keeping rarity colors.
         /// </summary>
-        public bool UseCoverImages
+        public bool UseTrophiesForRarity
         {
-            get => _useCoverImages;
-            set => SetValue(ref _useCoverImages, value);
+            get => _useTrophiesForRarity;
+            set => SetValue(ref _useTrophiesForRarity, value);
+        }
+
+        /// <summary>
+        /// When true, rarity percentages display rounded to the nearest whole percent and values
+        /// under 1% display as "&lt;1%". Display-only; stored percent values are unaffected.
+        /// </summary>
+        public bool RoundRarityPercentages
+        {
+            get => _roundRarityPercentages;
+            set => SetValue(ref _roundRarityPercentages, value);
+        }
+
+        /// <summary>
+        /// User-selected base colors for rarity, completed game, and trophy badges.
+        /// </summary>
+        public RarityColorSettings RarityColors
+        {
+            get => _rarityColors;
+            set => SetValue(ref _rarityColors, value?.Clone() ?? RarityColorSettings.CreateDefault());
+        }
+
+        /// <summary>
+        /// User-selected provider colors keyed by provider key. Providers without an entry use
+        /// the brand color supplied by their IDataProvider implementation.
+        /// </summary>
+        public Dictionary<string, string> ProviderColorOverrides
+        {
+            get => _providerColorOverrides;
+            set => SetValue(
+                ref _providerColorOverrides,
+                value != null
+                    ? new Dictionary<string, string>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
         }
 
         public bool IncludeUnplayedGames
@@ -619,21 +1971,42 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows platform/playtime/region metadata under game names in the overview game summaries.
-        /// </summary>
-        public bool ShowOverviewGameMetadata
-        {
-            get => _showOverviewGameMetadata;
-            set => SetValue(ref _showOverviewGameMetadata, value);
-        }
-
-        /// <summary>
         /// When true, shows the top menu bar button for opening the achievements window.
         /// </summary>
         public bool ShowTopMenuBarButton
         {
             get => _showTopMenuBarButton;
             set => SetValue(ref _showTopMenuBarButton, value);
+        }
+
+        /// <summary>
+        /// When true, progress bars of fully completed games use the completed game colors
+        /// instead of the normal fill.
+        /// </summary>
+        public bool ShowCompletedProgressColoring
+        {
+            get => _showCompletedProgressColoring;
+            set => SetValue(ref _showCompletedProgressColoring, value);
+        }
+
+        /// <summary>
+        /// When false, friend achievement rows for achievements the current user has not unlocked
+        /// are obscured using the achievement visibility settings, as if locked for the user.
+        /// Applies to all friend surfaces (overview, friends achievements window, recent unlocks, themes).
+        /// </summary>
+        public bool ShowFriendSpoilers
+        {
+            get => _showFriendSpoilers;
+            set => SetValue(ref _showFriendSpoilers, value);
+        }
+
+        /// <summary>
+        /// Maximum number of recent friend unlocks shown in Friends Overview.
+        /// </summary>
+        public int FriendsOverviewRecentUnlockLimit
+        {
+            get => _friendsOverviewRecentUnlockLimit;
+            set => SetValue(ref _friendsOverviewRecentUnlockLimit, Math.Max(1, value));
         }
 
         /// <summary>
@@ -646,48 +2019,32 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, completed games display a blue border in the game summaries.
+        /// One-time bookkeeping flag: true once the Progress summary column has been seeded to Right
+        /// alignment. Defaults to false everywhere (like <see cref="FirstTimeSetupCompleted"/>) with
+        /// no fresh-install special-casing: the seeding migration is the sole thing that flips it
+        /// true, after forcing Right for a config where it is absent/false. A false or absent value
+        /// therefore always means "not yet seeded", so a config loaded without the migration ever
+        /// running stays eligible for seeding instead of permanently blocking it.
         /// </summary>
-        public bool ShowCompletionBorder
+        public bool ProgressColumnAlignmentDefaulted
         {
-            get => _showCompletionBorder;
-            set => SetValue(ref _showCompletionBorder, value);
+            get => _progressColumnAlignmentDefaulted;
+            set => SetValue(ref _progressColumnAlignmentDefaulted, value);
         }
 
         /// <summary>
-        /// When true, shows column headers in game summaries grids.
+        /// One-time bookkeeping flag: true once the transparent inline-surface overrides
+        /// (GridSurface, ControlSurface) have been seeded into the config. Migration seeds them for
+        /// existing configs where this is absent/false (so updating users gain the transparent
+        /// default) and then sets it true, after which a user's own later choice -- including
+        /// switching a surface back to Follow Playnite (which removes the entry) -- is respected and
+        /// never re-seeded. Defaults to true for fresh installs (which seed the overrides in the
+        /// plugin-reference constructor).
         /// </summary>
-        public bool ShowOverviewGameSummariesGridColumnHeaders
+        public bool InlineSurfaceTransparencySeeded
         {
-            get => _showGameSummariesGridColumnHeaders;
-            set => SetValue(ref _showGameSummariesGridColumnHeaders, value);
-        }
-
-        /// <summary>
-        /// When true, shows column headers in the overview recent achievements grid.
-        /// </summary>
-        public bool ShowOverviewRecentAchievementsGridColumnHeaders
-        {
-            get => _showOverviewRecentAchievementsGridColumnHeaders;
-            set => SetValue(ref _showOverviewRecentAchievementsGridColumnHeaders, value);
-        }
-
-        /// <summary>
-        /// When true, shows column headers in the overview selected game achievements grid.
-        /// </summary>
-        public bool ShowOverviewSelectedGameGridColumnHeaders
-        {
-            get => _showOverviewSelectedGameGridColumnHeaders;
-            set => SetValue(ref _showOverviewSelectedGameGridColumnHeaders, value);
-        }
-
-        /// <summary>
-        /// When true, shows column headers in desktop theme achievement grids.
-        /// </summary>
-        public bool ShowDesktopThemeAchievementGridColumnHeaders
-        {
-            get => _showDesktopThemeAchievementGridColumnHeaders;
-            set => SetValue(ref _showDesktopThemeAchievementGridColumnHeaders, value);
+            get => _inlineSurfaceTransparencySeeded;
+            set => SetValue(ref _inlineSurfaceTransparencySeeded, value);
         }
 
         /// <summary>
@@ -715,6 +2072,43 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _gridCellVerticalAlignment;
             set => SetValue(ref _gridCellVerticalAlignment, value);
+        }
+
+        /// <summary>
+        /// Date display mode for achievement unlock dates and friend last-unlock dates.
+        /// </summary>
+        public DateDisplayMode UnlockDateDisplayMode
+        {
+            get => _unlockDateDisplayMode;
+            set => SetValue(ref _unlockDateDisplayMode, value);
+        }
+
+        /// <summary>
+        /// Display mode for playtime text shown in summaries and metadata.
+        /// </summary>
+        public PlaytimeDisplayMode PlaytimeDisplayMode
+        {
+            get => _playtimeDisplayMode;
+            set => SetValue(ref _playtimeDisplayMode, value);
+        }
+
+        /// <summary>
+        /// Which category-mode summary rows may render the completion badge under their progress bar.
+        /// </summary>
+        public CategoryCompletionBadgeMode CategoryCompletionBadgeMode
+        {
+            get => _categoryCompletionBadgeMode;
+            set => SetValue(ref _categoryCompletionBadgeMode, value);
+        }
+
+        /// <summary>
+        /// How friend names combine the provider profile name and the provider-assigned nickname.
+        /// A manual plugin rename always takes precedence over this mode.
+        /// </summary>
+        public FriendNameDisplayMode FriendNameDisplayMode
+        {
+            get => _friendNameDisplayMode;
+            set => SetValue(ref _friendNameDisplayMode, value);
         }
 
         /// <summary>
@@ -864,263 +2258,24 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _compactLockedListSortDescending, value);
         }
 
-        /// <summary>
-        /// Sort mode for the overview game summaries grid.
-        /// </summary>
-        public GameSummariesSortMode OverviewGameSummariesGridSortMode
-        {
-            get => _overviewGameSummariesGridSortMode;
-            set => SetValue(ref _overviewGameSummariesGridSortMode, value);
-        }
-
-        /// <summary>
-        /// When true, reverses the configured sort direction for the overview game summaries grid.
-        /// </summary>
-        public bool OverviewGameSummariesGridSortDescending
-        {
-            get => _overviewGameSummariesGridSortDescending;
-            set => SetValue(ref _overviewGameSummariesGridSortDescending, value);
-        }
-
-        /// <summary>
-        /// Sort mode for the overview selected-game grid.
-        /// None preserves custom order when configured, otherwise provider order.
-        /// </summary>
-        public CompactListSortMode OverviewSelectedGameGridSortMode
-        {
-            get => _overviewSelectedGameGridSortMode;
-            set => SetValue(ref _overviewSelectedGameGridSortMode, value);
-        }
-
-        /// <summary>
-        /// When true, reverses the configured sort direction for the overview selected-game grid.
-        /// Ignored when OverviewSelectedGameGridSortMode is None.
-        /// </summary>
-        public bool OverviewSelectedGameGridSortDescending
-        {
-            get => _overviewSelectedGameGridSortDescending;
-            set => SetValue(ref _overviewSelectedGameGridSortDescending, value);
-        }
-
-        /// <summary>
-        /// Sort mode for the single-game achievement grid.
-        /// None preserves custom order when configured, otherwise provider order.
-        /// </summary>
-        public CompactListSortMode SingleGameGridSortMode
-        {
-            get => _singleGameGridSortMode;
-            set => SetValue(ref _singleGameGridSortMode, value);
-        }
-
-        /// <summary>
-        /// When true, reverses the configured sort direction for the single-game grid.
-        /// Ignored when SingleGameGridSortMode is None.
-        /// </summary>
-        public bool SingleGameGridSortDescending
-        {
-            get => _singleGameGridSortDescending;
-            set => SetValue(ref _singleGameGridSortDescending, value);
-        }
-
-        /// <summary>
-        /// Sort mode for the shared modern AchievementDataGrid control.
-        /// None preserves custom order when configured, otherwise provider order.
-        /// </summary>
-        public CompactListSortMode AchievementDataGridSortMode
-        {
-            get => _achievementDataGridSortMode;
-            set => SetValue(ref _achievementDataGridSortMode, value);
-        }
-
-        /// <summary>
-        /// When true, reverses the configured sort direction for the shared modern AchievementDataGrid control.
-        /// Ignored when AchievementDataGridSortMode is None.
-        /// </summary>
-        public bool AchievementDataGridSortDescending
-        {
-            get => _achievementDataGridSortDescending;
-            set => SetValue(ref _achievementDataGridSortDescending, value);
-        }
-
-        /// <summary>
-        /// Maximum height for AchievementDataGrid controls (null = unlimited).
-        /// Defaults to 600 so theme-hosted grids do not expand indefinitely.
-        /// </summary>
-        public double? AchievementDataGridMaxHeight
-        {
-            get => _achievementDataGridMaxHeight;
-            set => SetValue(ref _achievementDataGridMaxHeight, value);
-        }
-
-        /// <summary>
-        /// Fixed row height for the single-game achievement grid (null = automatic).
-        /// </summary>
-        public double? SingleGameGridRowHeight
-        {
-            get => _singleGameGridRowHeight;
-            set => SetValue(ref _singleGameGridRowHeight, NormalizeGridRowHeight(value));
-        }
-
-        /// <summary>
-        /// Fixed row height for the overview game summaries grid (null = automatic).
-        /// </summary>
-        public double? OverviewGameSummariesGridRowHeight
-        {
-            get => _overviewGameSummariesGridRowHeight;
-            set => SetValue(ref _overviewGameSummariesGridRowHeight, NormalizeGridRowHeight(value));
-        }
-
-        /// <summary>
-        /// Fixed row height for the overview recent achievements grid (null = automatic).
-        /// </summary>
-        public double? OverviewRecentAchievementsGridRowHeight
-        {
-            get => _overviewRecentAchievementsGridRowHeight;
-            set => SetValue(ref _overviewRecentAchievementsGridRowHeight, NormalizeGridRowHeight(value));
-        }
-
-        /// <summary>
-        /// Fixed row height for the overview selected-game achievement grid (null = automatic).
-        /// </summary>
-        public double? OverviewSelectedGameGridRowHeight
-        {
-            get => _overviewSelectedGameGridRowHeight;
-            set => SetValue(ref _overviewSelectedGameGridRowHeight, NormalizeGridRowHeight(value));
-        }
-
-        /// <summary>
-        /// Fixed row height for the Start Page game summaries grid (null = automatic).
-        /// </summary>
-        public double? StartPageGameSummariesGridRowHeight
-        {
-            get => StartPageGameSummariesGrid.RowHeight;
-            set => StartPageGameSummariesGrid.RowHeight = value;
-        }
-
-        /// <summary>
-        /// Fixed row height for the Start Page recent unlocks grid (null = automatic).
-        /// </summary>
-        public double? StartPageRecentAchievementsGridRowHeight
-        {
-            get => StartPageRecentUnlocksGrid.RowHeight;
-            set => StartPageRecentUnlocksGrid.RowHeight = value;
-        }
-
-        /// <summary>
-        /// Fixed row height for the desktop theme achievement grid (null = automatic).
-        /// </summary>
-        public double? DesktopThemeAchievementGridRowHeight
-        {
-            get => _desktopThemeAchievementGridRowHeight;
-            set => SetValue(ref _desktopThemeAchievementGridRowHeight, NormalizeGridRowHeight(value));
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the single-game achievement grid (null = unlimited).
-        /// </summary>
-        public int? SingleGameGridMaxRows
-        {
-            get => _singleGameGridMaxRows;
-            set => SetValue(ref _singleGameGridMaxRows, NormalizeGridMaxRows(value));
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the overview game summaries grid (null = unlimited).
-        /// </summary>
-        public int? OverviewGameSummariesGridMaxRows
-        {
-            get => _overviewGameSummariesGridMaxRows;
-            set => SetValue(ref _overviewGameSummariesGridMaxRows, NormalizeGridMaxRows(value));
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the overview recent achievements grid (null = unlimited).
-        /// </summary>
-        public int? OverviewRecentAchievementsGridMaxRows
-        {
-            get => _overviewRecentAchievementsGridMaxRows;
-            set => SetValue(ref _overviewRecentAchievementsGridMaxRows, NormalizeGridMaxRows(value));
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the overview selected-game achievement grid (null = unlimited).
-        /// </summary>
-        public int? OverviewSelectedGameGridMaxRows
-        {
-            get => _overviewSelectedGameGridMaxRows;
-            set => SetValue(ref _overviewSelectedGameGridMaxRows, NormalizeGridMaxRows(value));
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the Start Page game summaries grid (null = unlimited).
-        /// Defaults to 25 to preserve the previous Start Page behavior.
-        /// </summary>
-        public int? StartPageGameSummariesGridMaxRows
-        {
-            get => StartPageGameSummariesGrid.MaxRows;
-            set => StartPageGameSummariesGrid.MaxRows = value;
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the Start Page recent unlocks grid (null = unlimited).
-        /// Defaults to 25 to preserve the previous Start Page behavior.
-        /// </summary>
-        public int? StartPageRecentAchievementsGridMaxRows
-        {
-            get => StartPageRecentUnlocksGrid.MaxRows;
-            set => StartPageRecentUnlocksGrid.MaxRows = value;
-        }
-
-        /// <summary>
-        /// Maximum rendered rows for the desktop theme achievement grid (null = unlimited).
-        /// </summary>
-        public int? DesktopThemeAchievementGridMaxRows
-        {
-            get => _desktopThemeAchievementGridMaxRows;
-            set => SetValue(ref _desktopThemeAchievementGridMaxRows, NormalizeGridMaxRows(value));
-        }
-
-        public StartPageGameSummariesGridSettings StartPageGameSummariesGrid
-        {
-            get => _startPageGameSummariesGrid ?? (_startPageGameSummariesGrid = AttachStartPageSettings(
-                new StartPageGameSummariesGridSettings()));
-            set
-            {
-                var normalized = value ?? new StartPageGameSummariesGridSettings();
-                if (ReferenceEquals(_startPageGameSummariesGrid, normalized))
-                {
-                    return;
-                }
-
-                DetachStartPageSettings(_startPageGameSummariesGrid);
-                _startPageGameSummariesGrid = AttachStartPageSettings(normalized);
-                OnPropertyChanged();
-            }
-        }
-
-        public StartPageRecentUnlocksGridSettings StartPageRecentUnlocksGrid
-        {
-            get => _startPageRecentUnlocksGrid ?? (_startPageRecentUnlocksGrid = AttachStartPageSettings(
-                new StartPageRecentUnlocksGridSettings()));
-            set
-            {
-                var normalized = value ?? new StartPageRecentUnlocksGridSettings();
-                if (ReferenceEquals(_startPageRecentUnlocksGrid, normalized))
-                {
-                    return;
-                }
-
-                DetachStartPageSettings(_startPageRecentUnlocksGrid);
-                _startPageRecentUnlocksGrid = AttachStartPageSettings(normalized);
-                OnPropertyChanged();
-            }
-        }
-
         public StartPagePieWidgetSettings StartPagePieCharts
         {
             get => _startPagePieCharts ?? (_startPagePieCharts = AttachStartPageSettings(
                 new StartPagePieWidgetSettings()));
             set => SetStartPagePieSettings(ref _startPagePieCharts, value, nameof(StartPagePieCharts));
+        }
+
+        public GridOptionsCatalog GridOptions
+        {
+            get => AttachGridOptionsBridge(_gridOptions ?? (_gridOptions = new GridOptionsCatalog()));
+            set
+            {
+                if (SetValueAndReturn(ref _gridOptions, value?.Clone() ?? new GridOptionsCatalog()))
+                {
+                    AttachGridOptionsBridge(_gridOptions);
+                    RebindStartPageGridSettings();
+                }
+            }
         }
 
         public GameActivityScope StartPageActivityScope
@@ -1170,635 +2325,19 @@ namespace PlayniteAchievements.Models.Settings
 
         #region Theme Integration Settings
 
+        /// <summary>
+        /// Optional overrides for plugin semantic resources such as PlayAch.Brush.Text.
+        /// Missing entries follow the current Playnite theme resource mapped by the resolver.
+        /// </summary>
+        public Dictionary<string, ResourceOverrideSetting> ResourceOverrides
+        {
+            get => _resourceOverrides;
+            set => SetValue(ref _resourceOverrides, NormalizeResourceOverrides(value));
+        }
+
         #endregion
 
         #region UI Column Settings
-
-        /// <summary>
-        /// Persisted visibility state for shared achievement DataGrid columns.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> DataGridColumnVisibility
-        {
-            get => _dataGridColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _dataGridColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Legacy shared width storage for achievement DataGrid columns.
-        /// New installs use scope-specific maps; this remains for backward compatibility fallback.
-        /// </summary>
-        public Dictionary<string, double> DataGridColumnWidths
-        {
-            get => _dataGridColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _dataGridColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Legacy shared order storage for achievement DataGrid columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> DataGridColumnOrder
-        {
-            get => _dataGridColumnOrder;
-            set => SetValue(ref _dataGridColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted visibility state for overview recent achievement columns.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> OverviewRecentAchievementColumnVisibility
-        {
-            get => _overviewAchievementColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _overviewAchievementColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted widths for overview recent achievement columns.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> OverviewRecentAchievementColumnWidths
-        {
-            get => _overviewAchievementColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _overviewAchievementColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for overview recent achievement columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> OverviewRecentAchievementColumnOrder
-        {
-            get => _overviewAchievementColumnOrder;
-            set => SetValue(ref _overviewAchievementColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for overview recent achievement columns.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> OverviewRecentAchievementColumnAlignments
-        {
-            get => _overviewAchievementColumnAlignments;
-            set => SetValue(ref _overviewAchievementColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for overview recent achievement columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> OverviewRecentAchievementColumnVerticalAlignments
-        {
-            get => _overviewAchievementColumnVerticalAlignments;
-            set => SetValue(ref _overviewAchievementColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for overview recent achievement columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> OverviewRecentAchievementColumnHeaderAlignments
-        {
-            get => _overviewAchievementColumnHeaderAlignments;
-            set => SetValue(ref _overviewAchievementColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted visibility state for the overview selected game achievement columns.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> OverviewSelectedGameAchievementColumnVisibility
-        {
-            get => _overviewGameColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _overviewGameColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted widths for the overview selected game achievement columns.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> OverviewSelectedGameAchievementColumnWidths
-        {
-            get => _overviewGameColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _overviewGameColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for overview selected game achievement columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> OverviewSelectedGameAchievementColumnOrder
-        {
-            get => _overviewGameColumnOrder;
-            set => SetValue(ref _overviewGameColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for overview selected-game achievement columns.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> OverviewSelectedGameAchievementColumnAlignments
-        {
-            get => _overviewGameColumnAlignments;
-            set => SetValue(ref _overviewGameColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for overview selected-game achievement columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> OverviewSelectedGameAchievementColumnVerticalAlignments
-        {
-            get => _overviewGameColumnVerticalAlignments;
-            set => SetValue(ref _overviewGameColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for overview selected-game achievement columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> OverviewSelectedGameAchievementColumnHeaderAlignments
-        {
-            get => _overviewGameColumnHeaderAlignments;
-            set => SetValue(ref _overviewGameColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted visibility state for the single-game achievement columns.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> SingleGameColumnVisibility
-        {
-            get => _singleGameColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _singleGameColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted widths for the single-game achievement columns.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> SingleGameColumnWidths
-        {
-            get => _singleGameColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _singleGameColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for the single-game achievement columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> SingleGameColumnOrder
-        {
-            get => _singleGameColumnOrder;
-            set => SetValue(ref _singleGameColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for single-game achievement columns.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> SingleGameColumnAlignments
-        {
-            get => _singleGameColumnAlignments;
-            set => SetValue(ref _singleGameColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for single-game achievement columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> SingleGameColumnVerticalAlignments
-        {
-            get => _singleGameColumnVerticalAlignments;
-            set => SetValue(ref _singleGameColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for single-game achievement columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> SingleGameColumnHeaderAlignments
-        {
-            get => _singleGameColumnHeaderAlignments;
-            set => SetValue(ref _singleGameColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted widths for desktop theme integration achievement columns.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> DesktopThemeColumnWidths
-        {
-            get => _desktopThemeColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _desktopThemeColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for desktop theme integration achievement columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> DesktopThemeColumnOrder
-        {
-            get => _desktopThemeColumnOrder;
-            set => SetValue(ref _desktopThemeColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for desktop theme integration achievement columns.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> DesktopThemeColumnAlignments
-        {
-            get => _desktopThemeColumnAlignments;
-            set => SetValue(ref _desktopThemeColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for desktop theme integration achievement columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> DesktopThemeColumnVerticalAlignments
-        {
-            get => _desktopThemeColumnVerticalAlignments;
-            set => SetValue(ref _desktopThemeColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for desktop theme integration achievement columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> DesktopThemeColumnHeaderAlignments
-        {
-            get => _desktopThemeColumnHeaderAlignments;
-            set => SetValue(ref _desktopThemeColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted visibility state for game summaries columns in the overview.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> OverviewGameSummariesColumnVisibility
-        {
-            get => _overviewGameSummariesColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _overviewGameSummariesColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted widths for game summaries columns in the overview.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> OverviewGameSummariesColumnWidths
-        {
-            get => _overviewGameSummariesColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _overviewGameSummariesColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for game summaries columns in the overview.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> OverviewGameSummariesColumnOrder
-        {
-            get => _overviewGameSummariesColumnOrder;
-            set => SetValue(ref _overviewGameSummariesColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for game summaries columns in the overview.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> OverviewGameSummariesColumnAlignments
-        {
-            get => _overviewGameSummariesColumnAlignments;
-            set => SetValue(ref _overviewGameSummariesColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for game summaries columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> OverviewGameSummariesColumnVerticalAlignments
-        {
-            get => _overviewGameSummariesColumnVerticalAlignments;
-            set => SetValue(ref _overviewGameSummariesColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for game summaries columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> OverviewGameSummariesColumnHeaderAlignments
-        {
-            get => _overviewGameSummariesColumnHeaderAlignments;
-            set => SetValue(ref _overviewGameSummariesColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted visibility state for StartPage achievement grid columns.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> StartPageAchievementColumnVisibility
-        {
-            get => _startPageAchievementColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _startPageAchievementColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted widths for StartPage achievement grid columns.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> StartPageAchievementColumnWidths
-        {
-            get => _startPageAchievementColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _startPageAchievementColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for StartPage achievement grid columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> StartPageAchievementColumnOrder
-        {
-            get => _startPageAchievementColumnOrder;
-            set => SetValue(ref _startPageAchievementColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for StartPage achievement grid columns.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> StartPageAchievementColumnAlignments
-        {
-            get => _startPageAchievementColumnAlignments;
-            set => SetValue(ref _startPageAchievementColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for StartPage achievement grid columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> StartPageAchievementColumnVerticalAlignments
-        {
-            get => _startPageAchievementColumnVerticalAlignments;
-            set => SetValue(ref _startPageAchievementColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for StartPage achievement grid columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> StartPageAchievementColumnHeaderAlignments
-        {
-            get => _startPageAchievementColumnHeaderAlignments;
-            set => SetValue(ref _startPageAchievementColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted visibility state for StartPage game summaries grid columns.
-        /// Key is a stable column identifier, value indicates whether the column is visible.
-        /// </summary>
-        public Dictionary<string, bool> StartPageGameSummariesColumnVisibility
-        {
-            get => _startPageGameSummariesColumnVisibility;
-            set
-            {
-                var normalized = value != null
-                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _startPageGameSummariesColumnVisibility, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted widths for StartPage game summaries grid columns.
-        /// Key is a stable column identifier, value is pixel width.
-        /// </summary>
-        public Dictionary<string, double> StartPageGameSummariesColumnWidths
-        {
-            get => _startPageGameSummariesColumnWidths;
-            set
-            {
-                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                if (value != null)
-                {
-                    foreach (var pair in value)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
-                            !double.IsNaN(pair.Value) &&
-                            !double.IsInfinity(pair.Value) &&
-                            pair.Value > 0)
-                        {
-                            normalized[pair.Key] = pair.Value;
-                        }
-                    }
-                }
-
-                SetValue(ref _startPageGameSummariesColumnWidths, normalized);
-            }
-        }
-
-        /// <summary>
-        /// Persisted order for StartPage game summaries grid columns.
-        /// Key is a stable column identifier, value is DisplayIndex.
-        /// </summary>
-        public Dictionary<string, int> StartPageGameSummariesColumnOrder
-        {
-            get => _startPageGameSummariesColumnOrder;
-            set => SetValue(ref _startPageGameSummariesColumnOrder, NormalizeColumnOrder(value));
-        }
-
-        /// <summary>
-        /// Persisted cell text alignment overrides for StartPage game summaries grid columns.
-        /// Missing keys inherit the global GridCellAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> StartPageGameSummariesColumnAlignments
-        {
-            get => _startPageGameSummariesColumnAlignments;
-            set => SetValue(ref _startPageGameSummariesColumnAlignments, NormalizeColumnAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted cell vertical alignment overrides for StartPage game summaries grid columns.
-        /// Missing keys inherit the global GridCellVerticalAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridVerticalAlignment> StartPageGameSummariesColumnVerticalAlignments
-        {
-            get => _startPageGameSummariesColumnVerticalAlignments;
-            set => SetValue(ref _startPageGameSummariesColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
-        }
-
-        /// <summary>
-        /// Persisted header horizontal alignment overrides for StartPage game summaries grid columns.
-        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
-        /// </summary>
-        public Dictionary<string, GridAlignment> StartPageGameSummariesColumnHeaderAlignments
-        {
-            get => _startPageGameSummariesColumnHeaderAlignments;
-            set => SetValue(ref _startPageGameSummariesColumnHeaderAlignments, NormalizeColumnAlignments(value));
-        }
 
         /// <summary>
         /// Persisted overview splitter position. Represents left column width
@@ -1814,6 +2353,22 @@ namespace PlayniteAchievements.Models.Settings
                     : Math.Max(MinOverviewLeftColumnRatio, Math.Min(MaxOverviewLeftColumnRatio, value));
                 SetValue(ref _overviewLeftColumnRatio, normalized);
             }
+        }
+
+        public double FriendsOverviewFriendColumnRatio
+        {
+            get => _friendsOverviewFriendColumnRatio;
+            set => SetValue(
+                ref _friendsOverviewFriendColumnRatio,
+                NormalizeFriendsOverviewColumnRatio(value, DefaultFriendsOverviewFriendColumnRatio));
+        }
+
+        public double FriendsOverviewGameColumnRatio
+        {
+            get => _friendsOverviewGameColumnRatio;
+            set => SetValue(
+                ref _friendsOverviewGameColumnRatio,
+                NormalizeFriendsOverviewColumnRatio(value, DefaultFriendsOverviewGameColumnRatio));
         }
 
         /// <summary>
@@ -2026,11 +2581,27 @@ namespace PlayniteAchievements.Models.Settings
         private void AttachStartPageSettingsHandlers()
         {
             _startPageGameSummariesGrid = AttachStartPageSettings(
-                _startPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings());
+                _startPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings(GameSummariesStartPage));
             _startPageRecentUnlocksGrid = AttachStartPageSettings(
-                _startPageRecentUnlocksGrid ?? new StartPageRecentUnlocksGridSettings());
+                _startPageRecentUnlocksGrid ?? new StartPageRecentUnlocksGridSettings(AchievementStartPageRecent));
+            _startPageFriendsRecentUnlocksGrid = AttachStartPageSettings(
+                _startPageFriendsRecentUnlocksGrid ?? new StartPageFriendsRecentUnlocksGridSettings(AchievementStartPageFriendRecent));
             _startPagePieCharts = AttachStartPageSettings(
                 _startPagePieCharts ?? new StartPagePieWidgetSettings());
+        }
+
+        private void RebindStartPageGridSettings()
+        {
+            _startPageGameSummariesGrid?.SetOptions(GameSummariesStartPage);
+            _startPageRecentUnlocksGrid?.SetOptions(AchievementStartPageRecent);
+            _startPageFriendsRecentUnlocksGrid?.SetOptions(AchievementStartPageFriendRecent);
+        }
+
+        [System.Runtime.Serialization.OnDeserialized]
+        private void OnDeserialized(System.Runtime.Serialization.StreamingContext context)
+        {
+            AttachStartPageSettingsHandlers();
+            RebindStartPageGridSettings();
         }
 
         private T AttachStartPageSettings<T>(T settings)
@@ -2073,6 +2644,16 @@ namespace PlayniteAchievements.Models.Settings
                     childPropertyName,
                     nameof(StartPageRecentAchievementsGridRowHeight),
                     nameof(StartPageRecentAchievementsGridMaxRows));
+                return;
+            }
+
+            if (ReferenceEquals(sender, _startPageFriendsRecentUnlocksGrid))
+            {
+                RaiseStartPageSettingsChanged(nameof(StartPageFriendsRecentUnlocksGrid), childPropertyName);
+                RaiseLegacyStartPageGridPropertyChanged(
+                    childPropertyName,
+                    nameof(StartPageFriendsRecentAchievementsGridRowHeight),
+                    nameof(StartPageFriendsRecentAchievementsGridMaxRows));
                 return;
             }
 
@@ -2134,6 +2715,20 @@ namespace PlayniteAchievements.Models.Settings
             {
                 // Provider Settings Dictionary (contains all provider-specific settings)
                 ProviderSettings = clonedProviderSettings,
+                EnableFriendsFeatures = this.EnableFriendsFeatures,
+                AutoDiscoverFriendProviderKeys = this.AutoDiscoverFriendProviderKeys != null
+                    ? new HashSet<string>(this.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
+                    : CreateDefaultAutoDiscoverFriendProviderKeys(),
+                UseExophaseForSteamFriendOwnership = this.UseExophaseForSteamFriendOwnership,
+                IncludeUnownedFriendGames = this.IncludeUnownedFriendGames,
+                Friends = new ObservableCollection<FriendSettingsEntry>(
+                    (this.Friends ?? new ObservableCollection<FriendSettingsEntry>())
+                    .Where(friend => friend != null)
+                    .Select(friend => friend.Clone())),
+                FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(
+                    (this.FriendMergeGroups ?? new ObservableCollection<FriendMergeGroup>())
+                    .Where(group => group != null)
+                    .Select(group => group.Clone())),
 
                 // Global Settings
                 GlobalLanguage = this.GlobalLanguage,
@@ -2142,7 +2737,15 @@ namespace PlayniteAchievements.Models.Settings
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
+                EnableFriendsPeriodicUpdates = this.EnableFriendsPeriodicUpdates,
+                FriendsPeriodicUpdateHours = this.FriendsPeriodicUpdateHours,
+                EnableInGamePolling = this.EnableInGamePolling,
+                InGamePollIntervalSeconds = this.InGamePollIntervalSeconds,
+                InGamePollRefreshFriends = this.InGamePollRefreshFriends,
+                InGameFriendRefreshMultiplier = this.InGameFriendRefreshMultiplier,
+                InGameFriendBatchSize = this.InGameFriendBatchSize,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
+                DefaultOverviewRefreshMode = this.DefaultOverviewRefreshMode,
                 CustomRefreshPresets = this.CustomRefreshPresets != null
                     ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                     : new List<CustomRefreshPreset>(),
@@ -2150,14 +2753,75 @@ namespace PlayniteAchievements.Models.Settings
                 // Hotkey Settings
                 EnableAchievementHotkeys = this.EnableAchievementHotkeys,
                 EnableGlobalAchievementHotkeys = this.EnableGlobalAchievementHotkeys,
+                EnableViewAchievementsHotkey = this.EnableViewAchievementsHotkey,
+                EnableManageAchievementsHotkey = this.EnableManageAchievementsHotkey,
+                EnableOverviewHotkey = this.EnableOverviewHotkey,
+                EnableOpenSettingsHotkey = this.EnableOpenSettingsHotkey,
+                EnableCategoryModeHotkey = this.EnableCategoryModeHotkey,
+                EnableTestUnlockHotkey = this.EnableTestUnlockHotkey,
                 ViewAchievementsHotkey = this.ViewAchievementsHotkey,
                 ManageAchievementsHotkey = this.ManageAchievementsHotkey,
                 OverviewHotkey = this.OverviewHotkey,
+                OpenSettingsHotkey = this.OpenSettingsHotkey,
+                CategoryModeHotkey = this.CategoryModeHotkey,
+                TestUnlockHotkey = this.TestUnlockHotkey,
+                EnableCaptureTestFolder = this.EnableCaptureTestFolder,
 
                 // Notification Settings
                 EnableNotifications = this.EnableNotifications,
-                NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,
-                NotifyOnRebuild = this.NotifyOnRebuild,
+                EnableUnlockToasts = this.EnableUnlockToasts,
+                EnableFriendUnlockToasts = this.EnableFriendUnlockToasts,
+                EnableProgressToasts = this.EnableProgressToasts,
+                NotificationStyle = this.NotificationStyle?.Clone() ?? NotificationStyleSettings.CreateDefault(),
+                ToastUseThemeStyling = this.ToastUseThemeStyling,
+                FrameUseThemeStyling = this.FrameUseThemeStyling,
+                ProviderNotificationStyles = this.ProviderNotificationStyles != null
+                    ? this.ProviderNotificationStyles.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, NotificationStyleSettings>(StringComparer.OrdinalIgnoreCase),
+                ToastDurationSeconds = this.ToastDurationSeconds,
+                NotificationDelaySeconds = this.NotificationDelaySeconds,
+                CaptureDelaySeconds = this.CaptureDelaySeconds,
+                MaxConcurrentToasts = this.MaxConcurrentToasts,
+                ToastPosition = this.ToastPosition,
+                EnableControllerVibration = this.EnableControllerVibration,
+                ControllerVibrationStrengthPercent = this.ControllerVibrationStrengthPercent,
+                ControllerVibrationDurationMs = this.ControllerVibrationDurationMs,
+                UseHiddenUnlockSound = this.UseHiddenUnlockSound,
+                EnableUnlockScreenshots = this.EnableUnlockScreenshots,
+                UnlockScreenshotClean = this.UnlockScreenshotClean,
+                UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,
+                UnlockScreenshotFramed = this.UnlockScreenshotFramed,
+                UnlockScreenshotSuffixClean = this.UnlockScreenshotSuffixClean,
+                UnlockScreenshotSuffixWithToast = this.UnlockScreenshotSuffixWithToast,
+                UnlockScreenshotSuffixFramed = this.UnlockScreenshotSuffixFramed,
+                UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
+                ScreenshotResolution = this.ScreenshotResolution,
+                UnlockScreenshotCleanRarities = this.UnlockScreenshotCleanRarities,
+                UnlockScreenshotCleanAlwaysCaptureCompletion = this.UnlockScreenshotCleanAlwaysCaptureCompletion,
+                UnlockScreenshotWithToastRarities = this.UnlockScreenshotWithToastRarities,
+                UnlockScreenshotWithToastAlwaysCaptureCompletion = this.UnlockScreenshotWithToastAlwaysCaptureCompletion,
+                UnlockScreenshotFramedRarities = this.UnlockScreenshotFramedRarities,
+                UnlockScreenshotFramedAlwaysCaptureCompletion = this.UnlockScreenshotFramedAlwaysCaptureCompletion,
+                EnableUnlockRecordings = this.EnableUnlockRecordings,
+                UnlockRecordingDirectory = this.UnlockRecordingDirectory,
+                RecordingClipSeconds = this.RecordingClipSeconds,
+                RecordingFps = this.RecordingFps,
+                RecordingResolution = this.RecordingResolution,
+                RecordingQuality = this.RecordingQuality,
+                RecordingIncludeAudio = this.RecordingIncludeAudio,
+                RecordingAudioSource = this.RecordingAudioSource,
+                RecordingIncludeMicrophone = this.RecordingIncludeMicrophone,
+                UnlockRecordingRarities = this.UnlockRecordingRarities,
+                UnlockRecordingAlwaysCaptureCompletion = this.UnlockRecordingAlwaysCaptureCompletion,
+                ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
+                    ? this.ProviderNotificationOverrides.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase),
 
                 // Display Preferences
                 ShowHiddenIcon = this.ShowHiddenIcon,
@@ -2165,11 +2829,27 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowLockedIcon = this.ShowLockedIcon,
-                PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
-                ShowRarityGlow = this.ShowRarityGlow,
+                LockedFallbackIconPath = this.LockedFallbackIconPath,
+                HiddenFallbackIconPath = this.HiddenFallbackIconPath,
+                ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
+                ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
+                AnimateRarityGlows = this.AnimateRarityGlows,
+                RarityGlowSoftTiers = this.RarityGlowSoftTiers,
+                RarityGlowRayTiers = this.RarityGlowRayTiers,
+                ShowHardcoreBorder = this.ShowHardcoreBorder,
+                RarityGlowPulseMinOpacity = this.RarityGlowPulseMinOpacity,
+                RarityGlowPulseMaxOpacity = this.RarityGlowPulseMaxOpacity,
+                RarityGlowPulseSpeed = this.RarityGlowPulseSpeed,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
-                UseCoverImages = this.UseCoverImages,
+                UseTrophiesForRarity = this.UseTrophiesForRarity,
+                RoundRarityPercentages = this.RoundRarityPercentages,
+                RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
+                ProviderColorOverrides = this.ProviderColorOverrides != null
+                    ? new Dictionary<string, string>(
+                        this.ProviderColorOverrides,
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
                 ShowOverviewPrestigeScoreCard = this.ShowOverviewPrestigeScoreCard,
@@ -2181,17 +2861,20 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewPiePercentages = this.ShowOverviewPiePercentages,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
-                ShowOverviewGameMetadata = this.ShowOverviewGameMetadata,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
+                ShowCompletedProgressColoring = this.ShowCompletedProgressColoring,
+                ShowFriendSpoilers = this.ShowFriendSpoilers,
+                FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
-                ShowCompletionBorder = this.ShowCompletionBorder,
-                ShowOverviewGameSummariesGridColumnHeaders = this.ShowOverviewGameSummariesGridColumnHeaders,
-                ShowOverviewRecentAchievementsGridColumnHeaders = this.ShowOverviewRecentAchievementsGridColumnHeaders,
-                ShowOverviewSelectedGameGridColumnHeaders = this.ShowOverviewSelectedGameGridColumnHeaders,
-                ShowDesktopThemeAchievementGridColumnHeaders = this.ShowDesktopThemeAchievementGridColumnHeaders,
+                ProgressColumnAlignmentDefaulted = this.ProgressColumnAlignmentDefaulted,
+                InlineSurfaceTransparencySeeded = this.InlineSurfaceTransparencySeeded,
                 GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
                 GridCellAlignment = this.GridCellAlignment,
                 GridCellVerticalAlignment = this.GridCellVerticalAlignment,
+                UnlockDateDisplayMode = this.UnlockDateDisplayMode,
+                PlaytimeDisplayMode = this.PlaytimeDisplayMode,
+                CategoryCompletionBadgeMode = this.CategoryCompletionBadgeMode,
+                FriendNameDisplayMode = this.FriendNameDisplayMode,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
@@ -2208,175 +2891,25 @@ namespace PlayniteAchievements.Models.Settings
                 CompactUnlockedListSortDescending = this.CompactUnlockedListSortDescending,
                 CompactLockedListSortMode = this.CompactLockedListSortMode,
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
-                OverviewGameSummariesGridSortMode = this.OverviewGameSummariesGridSortMode,
-                OverviewGameSummariesGridSortDescending = this.OverviewGameSummariesGridSortDescending,
-                OverviewSelectedGameGridSortMode = this.OverviewSelectedGameGridSortMode,
-                OverviewSelectedGameGridSortDescending = this.OverviewSelectedGameGridSortDescending,
-                SingleGameGridSortMode = this.SingleGameGridSortMode,
-                SingleGameGridSortDescending = this.SingleGameGridSortDescending,
-                AchievementDataGridSortMode = this.AchievementDataGridSortMode,
-                AchievementDataGridSortDescending = this.AchievementDataGridSortDescending,
-                AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
-                SingleGameGridRowHeight = this.SingleGameGridRowHeight,
-                OverviewGameSummariesGridRowHeight = this.OverviewGameSummariesGridRowHeight,
-                OverviewRecentAchievementsGridRowHeight = this.OverviewRecentAchievementsGridRowHeight,
-                OverviewSelectedGameGridRowHeight = this.OverviewSelectedGameGridRowHeight,
-                StartPageGameSummariesGridRowHeight = this.StartPageGameSummariesGridRowHeight,
-                StartPageRecentAchievementsGridRowHeight = this.StartPageRecentAchievementsGridRowHeight,
-                DesktopThemeAchievementGridRowHeight = this.DesktopThemeAchievementGridRowHeight,
-                SingleGameGridMaxRows = this.SingleGameGridMaxRows,
-                OverviewGameSummariesGridMaxRows = this.OverviewGameSummariesGridMaxRows,
-                OverviewRecentAchievementsGridMaxRows = this.OverviewRecentAchievementsGridMaxRows,
-                OverviewSelectedGameGridMaxRows = this.OverviewSelectedGameGridMaxRows,
-                StartPageGameSummariesGridMaxRows = this.StartPageGameSummariesGridMaxRows,
-                StartPageRecentAchievementsGridMaxRows = this.StartPageRecentAchievementsGridMaxRows,
-                DesktopThemeAchievementGridMaxRows = this.DesktopThemeAchievementGridMaxRows,
-                StartPageGameSummariesGrid = this.StartPageGameSummariesGrid?.Clone() ??
-                    new StartPageGameSummariesGridSettings(),
-                StartPageRecentUnlocksGrid = this.StartPageRecentUnlocksGrid?.Clone() ??
-                    new StartPageRecentUnlocksGridSettings(),
                 StartPagePieCharts = this.StartPagePieCharts?.Clone() ??
                     new StartPagePieWidgetSettings(),
+                GridOptions = this.GridOptions?.Clone() ?? new GridOptionsCatalog(),
                 StartPageActivityScope = this.StartPageActivityScope,
                 StartPageProgressScope = this.StartPageProgressScope,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
+                ResourceOverrides = this.ResourceOverrides != null
+                    ? this.ResourceOverrides.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase),
 
-                // UI Column Settings
-                DataGridColumnVisibility = this.DataGridColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                DataGridColumnWidths = this.DataGridColumnWidths != null
-                    ? new Dictionary<string, double>(this.DataGridColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                DataGridColumnOrder = this.DataGridColumnOrder != null
-                    ? new Dictionary<string, int>(this.DataGridColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                OverviewRecentAchievementColumnVisibility = this.OverviewRecentAchievementColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.OverviewRecentAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                OverviewRecentAchievementColumnWidths = this.OverviewRecentAchievementColumnWidths != null
-                    ? new Dictionary<string, double>(this.OverviewRecentAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                OverviewRecentAchievementColumnOrder = this.OverviewRecentAchievementColumnOrder != null
-                    ? new Dictionary<string, int>(this.OverviewRecentAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                OverviewRecentAchievementColumnAlignments = this.OverviewRecentAchievementColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.OverviewRecentAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewRecentAchievementColumnVerticalAlignments = this.OverviewRecentAchievementColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.OverviewRecentAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewRecentAchievementColumnHeaderAlignments = this.OverviewRecentAchievementColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.OverviewRecentAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewSelectedGameAchievementColumnVisibility = this.OverviewSelectedGameAchievementColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.OverviewSelectedGameAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                OverviewSelectedGameAchievementColumnWidths = this.OverviewSelectedGameAchievementColumnWidths != null
-                    ? new Dictionary<string, double>(this.OverviewSelectedGameAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                OverviewSelectedGameAchievementColumnOrder = this.OverviewSelectedGameAchievementColumnOrder != null
-                    ? new Dictionary<string, int>(this.OverviewSelectedGameAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                OverviewSelectedGameAchievementColumnAlignments = this.OverviewSelectedGameAchievementColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.OverviewSelectedGameAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewSelectedGameAchievementColumnVerticalAlignments = this.OverviewSelectedGameAchievementColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.OverviewSelectedGameAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewSelectedGameAchievementColumnHeaderAlignments = this.OverviewSelectedGameAchievementColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.OverviewSelectedGameAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                SingleGameColumnVisibility = this.SingleGameColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.SingleGameColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                SingleGameColumnWidths = this.SingleGameColumnWidths != null
-                    ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                SingleGameColumnOrder = this.SingleGameColumnOrder != null
-                    ? new Dictionary<string, int>(this.SingleGameColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                SingleGameColumnAlignments = this.SingleGameColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.SingleGameColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                SingleGameColumnVerticalAlignments = this.SingleGameColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.SingleGameColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                SingleGameColumnHeaderAlignments = this.SingleGameColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.SingleGameColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                DesktopThemeColumnWidths = this.DesktopThemeColumnWidths != null
-                    ? new Dictionary<string, double>(this.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                DesktopThemeColumnOrder = this.DesktopThemeColumnOrder != null
-                    ? new Dictionary<string, int>(this.DesktopThemeColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                DesktopThemeColumnAlignments = this.DesktopThemeColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.DesktopThemeColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                DesktopThemeColumnVerticalAlignments = this.DesktopThemeColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.DesktopThemeColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                DesktopThemeColumnHeaderAlignments = this.DesktopThemeColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.DesktopThemeColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewGameSummariesColumnVisibility = this.OverviewGameSummariesColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.OverviewGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                OverviewGameSummariesColumnWidths = this.OverviewGameSummariesColumnWidths != null
-                    ? new Dictionary<string, double>(this.OverviewGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                OverviewGameSummariesColumnOrder = this.OverviewGameSummariesColumnOrder != null
-                    ? new Dictionary<string, int>(this.OverviewGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                OverviewGameSummariesColumnAlignments = this.OverviewGameSummariesColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.OverviewGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewGameSummariesColumnVerticalAlignments = this.OverviewGameSummariesColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.OverviewGameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                OverviewGameSummariesColumnHeaderAlignments = this.OverviewGameSummariesColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.OverviewGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageAchievementColumnVisibility = this.StartPageAchievementColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                StartPageAchievementColumnWidths = this.StartPageAchievementColumnWidths != null
-                    ? new Dictionary<string, double>(this.StartPageAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                StartPageAchievementColumnOrder = this.StartPageAchievementColumnOrder != null
-                    ? new Dictionary<string, int>(this.StartPageAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                StartPageAchievementColumnAlignments = this.StartPageAchievementColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.StartPageAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageAchievementColumnVerticalAlignments = this.StartPageAchievementColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.StartPageAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageAchievementColumnHeaderAlignments = this.StartPageAchievementColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.StartPageAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageGameSummariesColumnVisibility = this.StartPageGameSummariesColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.StartPageGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                StartPageGameSummariesColumnWidths = this.StartPageGameSummariesColumnWidths != null
-                    ? new Dictionary<string, double>(this.StartPageGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                StartPageGameSummariesColumnOrder = this.StartPageGameSummariesColumnOrder != null
-                    ? new Dictionary<string, int>(this.StartPageGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                StartPageGameSummariesColumnAlignments = this.StartPageGameSummariesColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.StartPageGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageGameSummariesColumnVerticalAlignments = this.StartPageGameSummariesColumnVerticalAlignments != null
-                    ? new Dictionary<string, GridVerticalAlignment>(this.StartPageGameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageGameSummariesColumnHeaderAlignments = this.StartPageGameSummariesColumnHeaderAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.StartPageGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                // Layout State
                 OverviewLeftColumnRatio = this.OverviewLeftColumnRatio,
+                FriendsOverviewFriendColumnRatio = this.FriendsOverviewFriendColumnRatio,
+                FriendsOverviewGameColumnRatio = this.FriendsOverviewGameColumnRatio,
                 WindowPlacements = this.WindowPlacements != null
                     ? this.WindowPlacements.ToDictionary(
                         kvp => kvp.Key,
@@ -2454,12 +2987,26 @@ namespace PlayniteAchievements.Models.Settings
             ShowHiddenDescription = defaults.ShowHiddenDescription;
             ShowHiddenSuffix = defaults.ShowHiddenSuffix;
             ShowLockedIcon = defaults.ShowLockedIcon;
-            PreserveAchievementIconResolution = defaults.PreserveAchievementIconResolution;
+            ShowFriendSpoilers = defaults.ShowFriendSpoilers;
             UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
-            ShowRarityGlow = defaults.ShowRarityGlow;
+            LockedFallbackIconPath = defaults.LockedFallbackIconPath;
+            HiddenFallbackIconPath = defaults.HiddenFallbackIconPath;
+            ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;
+            ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
+            AnimateRarityGlows = defaults.AnimateRarityGlows;
+            RarityGlowSoftTiers = defaults.RarityGlowSoftTiers;
+            RarityGlowRayTiers = defaults.RarityGlowRayTiers;
+            ShowHardcoreBorder = defaults.ShowHardcoreBorder;
+            RarityGlowPulseMinOpacity = defaults.RarityGlowPulseMinOpacity;
+            RarityGlowPulseMaxOpacity = defaults.RarityGlowPulseMaxOpacity;
+            RarityGlowPulseSpeed = defaults.RarityGlowPulseSpeed;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
-            UseCoverImages = defaults.UseCoverImages;
+            UseTrophiesForRarity = defaults.UseTrophiesForRarity;
+            RoundRarityPercentages = defaults.RoundRarityPercentages;
+            RarityColors = RarityColorSettings.CreateDefault();
+            ProviderColorOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            ResourceOverrides = CreateDefaultResourceOverrides();
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
@@ -2471,18 +3018,17 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewPiePercentages = defaults.ShowOverviewPiePercentages;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
-            ShowOverviewGameMetadata = defaults.ShowOverviewGameMetadata;
             ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
+            ShowCompletedProgressColoring = defaults.ShowCompletedProgressColoring;
             ShowCompactListRarityBar = defaults.ShowCompactListRarityBar;
-            ShowCompletionBorder = defaults.ShowCompletionBorder;
 
-            ShowOverviewGameSummariesGridColumnHeaders = defaults.ShowOverviewGameSummariesGridColumnHeaders;
-            ShowOverviewRecentAchievementsGridColumnHeaders = defaults.ShowOverviewRecentAchievementsGridColumnHeaders;
-            ShowOverviewSelectedGameGridColumnHeaders = defaults.ShowOverviewSelectedGameGridColumnHeaders;
-            ShowDesktopThemeAchievementGridColumnHeaders = defaults.ShowDesktopThemeAchievementGridColumnHeaders;
             GridColumnHeaderAlignment = defaults.GridColumnHeaderAlignment;
             GridCellAlignment = defaults.GridCellAlignment;
             GridCellVerticalAlignment = defaults.GridCellVerticalAlignment;
+            UnlockDateDisplayMode = defaults.UnlockDateDisplayMode;
+            PlaytimeDisplayMode = defaults.PlaytimeDisplayMode;
+            CategoryCompletionBadgeMode = defaults.CategoryCompletionBadgeMode;
+            FriendNameDisplayMode = defaults.FriendNameDisplayMode;
 
             EnableAchievementCompactListControl = defaults.EnableAchievementCompactListControl;
             EnableAchievementDataGridControl = defaults.EnableAchievementDataGridControl;
@@ -2501,85 +3047,31 @@ namespace PlayniteAchievements.Models.Settings
             CompactUnlockedListSortDescending = defaults.CompactUnlockedListSortDescending;
             CompactLockedListSortMode = defaults.CompactLockedListSortMode;
             CompactLockedListSortDescending = defaults.CompactLockedListSortDescending;
-            OverviewGameSummariesGridSortMode = defaults.OverviewGameSummariesGridSortMode;
-            OverviewGameSummariesGridSortDescending = defaults.OverviewGameSummariesGridSortDescending;
-            OverviewSelectedGameGridSortMode = defaults.OverviewSelectedGameGridSortMode;
-            OverviewSelectedGameGridSortDescending = defaults.OverviewSelectedGameGridSortDescending;
-            SingleGameGridSortMode = defaults.SingleGameGridSortMode;
-            SingleGameGridSortDescending = defaults.SingleGameGridSortDescending;
-            AchievementDataGridSortMode = defaults.AchievementDataGridSortMode;
-            AchievementDataGridSortDescending = defaults.AchievementDataGridSortDescending;
 
-            AchievementDataGridMaxHeight = defaults.AchievementDataGridMaxHeight;
-            SingleGameGridRowHeight = defaults.SingleGameGridRowHeight;
-            OverviewGameSummariesGridRowHeight = defaults.OverviewGameSummariesGridRowHeight;
-            OverviewRecentAchievementsGridRowHeight = defaults.OverviewRecentAchievementsGridRowHeight;
-            OverviewSelectedGameGridRowHeight = defaults.OverviewSelectedGameGridRowHeight;
-            StartPageGameSummariesGridRowHeight = defaults.StartPageGameSummariesGridRowHeight;
-            StartPageRecentAchievementsGridRowHeight = defaults.StartPageRecentAchievementsGridRowHeight;
-            DesktopThemeAchievementGridRowHeight = defaults.DesktopThemeAchievementGridRowHeight;
-            SingleGameGridMaxRows = defaults.SingleGameGridMaxRows;
-            OverviewGameSummariesGridMaxRows = defaults.OverviewGameSummariesGridMaxRows;
-            OverviewRecentAchievementsGridMaxRows = defaults.OverviewRecentAchievementsGridMaxRows;
-            OverviewSelectedGameGridMaxRows = defaults.OverviewSelectedGameGridMaxRows;
-            StartPageGameSummariesGridMaxRows = defaults.StartPageGameSummariesGridMaxRows;
-            StartPageRecentAchievementsGridMaxRows = defaults.StartPageRecentAchievementsGridMaxRows;
-            DesktopThemeAchievementGridMaxRows = defaults.DesktopThemeAchievementGridMaxRows;
 
-            StartPageGameSummariesGrid = new StartPageGameSummariesGridSettings();
-            StartPageRecentUnlocksGrid = new StartPageRecentUnlocksGridSettings();
             StartPagePieCharts = new StartPagePieWidgetSettings();
+            GridOptions = new GridOptionsCatalog();
             StartPageActivityScope = defaults.StartPageActivityScope;
             StartPageProgressScope = defaults.StartPageProgressScope;
 
-            DataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            DataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            DataGridColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            OverviewRecentAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            OverviewRecentAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            OverviewRecentAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            OverviewRecentAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewRecentAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewRecentAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewSelectedGameAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            OverviewSelectedGameAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            OverviewSelectedGameAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            OverviewSelectedGameAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewSelectedGameAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewSelectedGameAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            SingleGameColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            SingleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            SingleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            SingleGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            SingleGameColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            SingleGameColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            DesktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            DesktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            DesktopThemeColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            DesktopThemeColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            DesktopThemeColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            StartPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            StartPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            StartPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            StartPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            StartPageAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            StartPageAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
 
             OverviewLeftColumnRatio = defaults.OverviewLeftColumnRatio;
+            FriendsOverviewFriendColumnRatio = defaults.FriendsOverviewFriendColumnRatio;
+            FriendsOverviewGameColumnRatio = defaults.FriendsOverviewGameColumnRatio;
             ViewAchievementsTimelineRange = defaults.ViewAchievementsTimelineRange;
             ViewAchievementsTimelineVisible = defaults.ViewAchievementsTimelineVisible;
+        }
+
+        private static double NormalizeFriendsOverviewColumnRatio(double value, double fallback)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return fallback;
+            }
+
+            return Math.Max(
+                MinFriendsOverviewColumnRatio,
+                Math.Min(MaxFriendsOverviewColumnRatio, value));
         }
 
         public static double? NormalizeGridRowHeight(double? value)
@@ -2627,9 +3119,35 @@ namespace PlayniteAchievements.Models.Settings
                 : string.Empty;
         }
 
-        private static Dictionary<string, int> NormalizeColumnOrder(Dictionary<string, int> value)
+        // Content surfaces that ship transparent by default so embedded views blend into the host
+        // theme. Popout windows back themselves with the opaque PopupSurface instead (see
+        // PlayniteUiProvider.ApplyWindowThemeBrushes), so seeding WindowSurface transparent here does
+        // not make standalone windows see-through. Seeded for fresh installs / display reset and,
+        // once, for existing configs via AppearanceSettingsMigration.
+        internal static Dictionary<string, ResourceOverrideSetting> CreateDefaultResourceOverrides()
         {
-            var normalized = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var defaults = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in new[]
+            {
+                "PlayAch.Brush.GridSurface",
+                "PlayAch.Brush.ControlSurface",
+                "PlayAch.Brush.WindowSurface"
+            })
+            {
+                defaults[key] = new ResourceOverrideSetting
+                {
+                    Mode = ResourceOverrideMode.Transparent,
+                    CustomValue = ResourceOverrideSetting.TransparentValue
+                };
+            }
+
+            return defaults;
+        }
+
+        private static Dictionary<string, ResourceOverrideSetting> NormalizeResourceOverrides(
+            Dictionary<string, ResourceOverrideSetting> value)
+        {
+            var normalized = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
             if (value == null)
             {
                 return normalized;
@@ -2638,57 +3156,448 @@ namespace PlayniteAchievements.Models.Settings
             foreach (var pair in value)
             {
                 var key = (pair.Key ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(key) && pair.Value >= 0)
+                if (string.IsNullOrWhiteSpace(key) || pair.Value == null)
                 {
-                    normalized[key] = pair.Value;
+                    continue;
+                }
+
+                var setting = pair.Value;
+                switch (setting.Mode)
+                {
+                    case ResourceOverrideMode.FollowPlaynite:
+                        continue;
+
+                    case ResourceOverrideMode.Transparent:
+                        normalized[key] = new ResourceOverrideSetting
+                        {
+                            Mode = ResourceOverrideMode.Transparent,
+                            CustomValue = ResourceOverrideSetting.TransparentValue
+                        };
+                        break;
+
+                    case ResourceOverrideMode.Custom:
+                        var customValue = setting.CustomValue?.Trim();
+                        if (string.IsNullOrWhiteSpace(customValue))
+                        {
+                            continue;
+                        }
+
+                        normalized[key] = new ResourceOverrideSetting
+                        {
+                            Mode = ResourceOverrideMode.Custom,
+                            CustomValue = customValue
+                        };
+                        break;
                 }
             }
 
             return normalized;
         }
 
-        private static Dictionary<string, GridAlignment> NormalizeColumnAlignments(Dictionary<string, GridAlignment> value)
+        private static Dictionary<string, ProviderNotificationOverride> NormalizeProviderNotificationOverrides(
+            IEnumerable<KeyValuePair<string, ProviderNotificationOverride>> value)
         {
-            var normalized = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in value ?? Enumerable.Empty<KeyValuePair<string, ProviderNotificationOverride>>())
+            {
+                var key = NormalizeProviderKeyToken(pair.Key);
+                if (key == null || pair.Value == null || pair.Value.IsAllInherit)
+                {
+                    continue;
+                }
+
+                normalized[key] = pair.Value;
+            }
+
+            return normalized;
+        }
+
+        private static Dictionary<string, NotificationStyleSettings> NormalizeProviderNotificationStyles(
+            IEnumerable<KeyValuePair<string, NotificationStyleSettings>> value)
+        {
+            var normalized = new Dictionary<string, NotificationStyleSettings>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in value ?? Enumerable.Empty<KeyValuePair<string, NotificationStyleSettings>>())
+            {
+                var key = NormalizeProviderKeyToken(pair.Key);
+                if (key == null || pair.Value == null)
+                {
+                    continue;
+                }
+
+                normalized[key] = pair.Value;
+            }
+
+            return normalized;
+        }
+
+        private static HashSet<string> NormalizeProviderKeySet(IEnumerable<string> value)
+        {
             if (value == null)
             {
-                return normalized;
+                return CreateDefaultAutoDiscoverFriendProviderKeys();
             }
 
-            foreach (var pair in value)
+            var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in value)
             {
-                var key = (pair.Key ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(key) &&
-                    Enum.IsDefined(typeof(GridAlignment), pair.Value))
+                var token = NormalizeProviderKeyToken(key);
+                if (!string.IsNullOrWhiteSpace(token))
                 {
-                    normalized[key] = pair.Value;
+                    normalized.Add(token);
                 }
             }
 
             return normalized;
         }
 
-        private static Dictionary<string, GridVerticalAlignment> NormalizeColumnVerticalAlignments(
-            Dictionary<string, GridVerticalAlignment> value)
+        private static ObservableCollection<FriendSettingsEntry> NormalizeFriendEntries(
+            IEnumerable<FriendSettingsEntry> value)
         {
-            var normalized = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
-            if (value == null)
+            var normalized = new ObservableCollection<FriendSettingsEntry>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var friend in value ?? Enumerable.Empty<FriendSettingsEntry>())
             {
-                return normalized;
-            }
-
-            foreach (var pair in value)
-            {
-                var key = (pair.Key ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(key) &&
-                    Enum.IsDefined(typeof(GridVerticalAlignment), pair.Value))
+                var entry = friend?.Clone()?.Normalize();
+                var key = FriendSettingsEntry.BuildKey(entry?.ProviderKey, entry?.ExternalUserId);
+                if (string.IsNullOrWhiteSpace(key) || !seen.Add(key))
                 {
-                    normalized[key] = pair.Value;
+                    continue;
                 }
+
+                normalized.Add(entry);
             }
 
             return normalized;
         }
+
+        private static ObservableCollection<FriendMergeGroup> NormalizeFriendMergeGroups(
+            IEnumerable<FriendMergeGroup> value,
+            IEnumerable<FriendSettingsEntry> friends)
+        {
+            var normalized = new ObservableCollection<FriendMergeGroup>();
+            var friendKeys = new HashSet<string>(
+                (friends ?? Enumerable.Empty<FriendSettingsEntry>())
+                    .Select(friend => FriendAccountRef.BuildKey(friend?.ProviderKey, friend?.ExternalUserId))
+                    .Where(key => !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
+            var claimedAccounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenGroupIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var source in value ?? Enumerable.Empty<FriendMergeGroup>())
+            {
+                var group = source?.Clone()?.Normalize();
+                if (group == null || string.IsNullOrWhiteSpace(group.Id) || !seenGroupIds.Add(group.Id))
+                {
+                    continue;
+                }
+
+                group.Members = NormalizeFriendMergeMembers(group.Members, friends)
+                    .Where(member => !claimedAccounts.Contains(member.Key))
+                    .ToList();
+                if (friendKeys.Count > 0)
+                {
+                    group.Members = group.Members
+                        .Where(member => friendKeys.Contains(member.Key))
+                        .ToList();
+                }
+
+                if (group.Members.Count < 2)
+                {
+                    continue;
+                }
+
+                foreach (var member in group.Members)
+                {
+                    claimedAccounts.Add(member.Key);
+                }
+
+                if (group.AvatarAccount == null ||
+                    !group.Members.Any(member => member.Matches(group.AvatarAccount.ProviderKey, group.AvatarAccount.ExternalUserId)))
+                {
+                    group.AvatarAccount = group.Members.FirstOrDefault()?.Clone();
+                }
+
+                normalized.Add(group.Normalize());
+            }
+
+            return normalized;
+        }
+
+        private static List<FriendAccountRef> NormalizeFriendMergeMembers(
+            IEnumerable<FriendAccountRef> members,
+            IEnumerable<FriendSettingsEntry> friends)
+        {
+            var friendKeys = new HashSet<string>(
+                (friends ?? Enumerable.Empty<FriendSettingsEntry>())
+                    .Select(friend => FriendAccountRef.BuildKey(friend?.ProviderKey, friend?.ExternalUserId))
+                    .Where(key => !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
+            var seenAccounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new List<FriendAccountRef>();
+
+            foreach (var member in members ?? Enumerable.Empty<FriendAccountRef>())
+            {
+                var account = member?.Clone()?.Normalize();
+                var key = account?.Key;
+                if (string.IsNullOrWhiteSpace(key) ||
+                    !seenAccounts.Add(key) ||
+                    !seenProviders.Add(account.ProviderKey) ||
+                    (friendKeys.Count > 0 && !friendKeys.Contains(key)))
+                {
+                    continue;
+                }
+
+                normalized.Add(account);
+            }
+
+            return normalized
+                .OrderBy(member => member.ProviderKey, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.ExternalUserId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private void PruneFriendMergeGroupsForRemovedAccount(string providerKey, string externalUserId)
+        {
+            var removedKey = FriendAccountRef.BuildKey(providerKey, externalUserId);
+            if (string.IsNullOrWhiteSpace(removedKey) || FriendMergeGroups.Count == 0)
+            {
+                return;
+            }
+
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            foreach (var group in groups)
+            {
+                group.Members = (group.Members ?? new List<FriendAccountRef>())
+                    .Where(member => !string.Equals(member?.Key, removedKey, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            FriendMergeGroups = groups;
+        }
+
+        private bool MigrateLegacySteamFriends(ObservableCollection<FriendSettingsEntry> entries)
+        {
+            var steam = GetProviderSettingsObject("Steam");
+            if (steam == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var item in steam["IgnoredFriends"] as JArray ?? new JArray())
+            {
+                if (!(item is JObject row))
+                {
+                    continue;
+                }
+
+                var steamId = NormalizeProviderKeyToken(row["SteamId"]?.ToString());
+                if (string.IsNullOrWhiteSpace(steamId))
+                {
+                    continue;
+                }
+
+                var existed = ContainsFriendEntry(entries, "Steam", steamId);
+                var entry = EnsureFriendEntry(
+                    entries,
+                    "Steam",
+                    steamId,
+                    row["DisplayName"]?.ToString(),
+                    row["AvatarUrl"]?.ToString(),
+                    null,
+                    FriendSettingsSource.AutoDiscovered);
+                changed |= !existed;
+                if (!entry.IsIgnored)
+                {
+                    entry.IsIgnored = true;
+                    changed = true;
+                }
+            }
+
+            foreach (var item in steam["FullLibraryFriends"] as JArray ?? new JArray())
+            {
+                if (!(item is JObject row))
+                {
+                    continue;
+                }
+
+                var steamId = NormalizeProviderKeyToken(row["SteamId"]?.ToString());
+                if (string.IsNullOrWhiteSpace(steamId))
+                {
+                    continue;
+                }
+
+                var existed = ContainsFriendEntry(entries, "Steam", steamId);
+                EnsureFriendEntry(
+                    entries,
+                    "Steam",
+                    steamId,
+                    row["DisplayName"]?.ToString(),
+                    row["AvatarUrl"]?.ToString(),
+                    null,
+                    FriendSettingsSource.AutoDiscovered);
+                changed |= !existed;
+            }
+
+            return changed;
+        }
+
+        private bool MigrateLegacyExophaseFriends(ObservableCollection<FriendSettingsEntry> entries)
+        {
+            var exophase = GetProviderSettingsObject("Exophase");
+            var friends = exophase?["Friends"] as JArray;
+            if (friends == null || friends.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var item in friends)
+            {
+                if (!(item is JObject row))
+                {
+                    continue;
+                }
+
+                var username = NormalizeProviderKeyToken(row["Username"]?.ToString());
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                    continue;
+                }
+
+                var existed = ContainsFriendEntry(entries, "Exophase", username);
+                var entry = EnsureFriendEntry(
+                    entries,
+                    "Exophase",
+                    username,
+                    row["DisplayName"]?.ToString(),
+                    row["AvatarUrl"]?.ToString(),
+                    row["AvatarPath"]?.ToString(),
+                    FriendSettingsSource.Manual);
+                changed |= !existed;
+
+                var nextPlatforms = FriendSettingsEntry.NormalizePlatformList(
+                    (row["SelectedPlatforms"] as JArray)?.Select(token => token?.ToString()));
+
+                var previousPlatformText = string.Join("\u001f", entry.SelectedPlatforms ?? new List<string>());
+                var nextPlatformText = string.Join("\u001f", nextPlatforms);
+                if (entry.Source != FriendSettingsSource.Manual)
+                {
+                    entry.Source = FriendSettingsSource.Manual;
+                    changed = true;
+                }
+
+                if (!string.Equals(previousPlatformText, nextPlatformText, StringComparison.OrdinalIgnoreCase))
+                {
+                    entry.SelectedPlatforms = nextPlatforms;
+                    changed = true;
+                }
+
+                entry.LastRefreshedUtc = ParseNullableUtc(row["LastRefreshedUtc"]) ?? entry.LastRefreshedUtc;
+                entry.LastProbedUtc = ParseNullableUtc(row["LastProbedUtc"]) ?? entry.LastProbedUtc;
+                entry.LastProbeStatus = NormalizeNullableString(row["LastProbeStatus"]?.ToString()) ?? entry.LastProbeStatus;
+                entry.LastError = NormalizeNullableString(row["LastError"]?.ToString()) ?? entry.LastError;
+            }
+
+            return changed;
+        }
+
+        private JObject GetProviderSettingsObject(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey) ||
+                ProviderSettings == null ||
+                !ProviderSettings.TryGetValue(providerKey, out var settings))
+            {
+                return null;
+            }
+
+            return settings;
+        }
+
+        private static bool ContainsFriendEntry(
+            IEnumerable<FriendSettingsEntry> entries,
+            string providerKey,
+            string externalUserId)
+        {
+            return (entries ?? Enumerable.Empty<FriendSettingsEntry>()).Any(entry =>
+                string.Equals(entry?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static FriendSettingsEntry EnsureFriendEntry(
+            ObservableCollection<FriendSettingsEntry> entries,
+            string providerKey,
+            string externalUserId,
+            string displayName,
+            string avatarUrl,
+            string avatarPath,
+            FriendSettingsSource source)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            var entry = entries.FirstOrDefault(item =>
+                string.Equals(item?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(item?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+            if (entry == null)
+            {
+                entry = new FriendSettingsEntry
+                {
+                    ProviderKey = providerKey,
+                    ExternalUserId = externalUserId,
+                    DisplayName = string.IsNullOrWhiteSpace(displayName) ? externalUserId : displayName.Trim(),
+                    AvatarUrl = NormalizeNullableString(avatarUrl),
+                    AvatarPath = NormalizeNullableString(avatarPath),
+                    Source = source,
+                    AddedUtc = DateTime.UtcNow
+                };
+                entries.Add(entry);
+                return entry;
+            }
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                entry.DisplayName = displayName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                entry.AvatarUrl = avatarUrl.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarPath))
+            {
+                entry.AvatarPath = avatarPath.Trim();
+            }
+
+            return entry;
+        }
+
+        private static DateTime? ParseNullableUtc(JToken token)
+        {
+            if (token == null || string.IsNullOrWhiteSpace(token.ToString()))
+            {
+                return null;
+            }
+
+            if (!DateTime.TryParse(token.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+            {
+                return null;
+            }
+
+            return parsed.Kind == DateTimeKind.Local ? parsed.ToUniversalTime() : DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+        }
+
+        private static string NormalizeProviderKeyToken(string value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private static string NormalizeNullableString(string value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
         private static Dictionary<Guid, List<string>> NormalizeAchievementOrderOverrides(
             Dictionary<Guid, List<string>> value)
@@ -2701,7 +3610,7 @@ namespace PlayniteAchievements.Models.Settings
 
             foreach (var pair in value)
             {
-                var order = Services.AchievementOrderHelper.NormalizeApiNames(pair.Value);
+                var order = Services.Achievements.AchievementOrderHelper.NormalizeApiNames(pair.Value);
                 if (order.Count > 0)
                 {
                     normalized[pair.Key] = order;
@@ -2764,7 +3673,7 @@ namespace PlayniteAchievements.Models.Settings
                     foreach (var categoryTypePair in gamePair.Value)
                     {
                         var key = (categoryTypePair.Key ?? string.Empty).Trim();
-                        var categoryType = Services.AchievementCategoryTypeHelper.Normalize(categoryTypePair.Value);
+                        var categoryType = Services.Achievements.AchievementCategoryTypeHelper.Normalize(categoryTypePair.Value);
                         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(categoryType))
                         {
                             continue;
@@ -2786,5 +3695,3 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
     }
 }
-
-

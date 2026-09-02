@@ -5,19 +5,39 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Dialogs;
 
 namespace PlayniteAchievements.Views.Helpers
 {
     internal static class AchievementRowOptionsMenuBuilder
     {
+        /// <param name="onGoalChanged">
+        /// Optional cheap re-sort for a goal toggle. Toggling a goal only changes ordering, so a
+        /// surface that can re-sort its existing rows should do that instead of paying for
+        /// <paramref name="onChanged"/>, which reloads the game's achievements from cache and
+        /// rebuilds every row. Return false to fall back to the full reload.
+        /// </param>
+        /// <param name="onCapstoneChanged">
+        /// Optional cheap re-stamp for setting a capstone, given the new capstone's ApiName. Only
+        /// called when a capstone is being set: clearing one has to restore provider-assigned
+        /// capstones, which only hydration knows, so that case still takes
+        /// <paramref name="onChanged"/>. Return false to fall back to the full reload.
+        /// </param>
         public static bool AppendAchievementOptions(
             ContextMenu menu,
             object data,
             FrameworkElement resourceOwner,
-            Action onChanged)
+            Action onChanged,
+            bool includeViewCaptures = false,
+            Func<bool> onGoalChanged = null,
+            Func<string, bool> onCapstoneChanged = null)
         {
             if (menu == null || !AchievementRowContext.TryCreate(data, out var context))
             {
@@ -29,48 +49,115 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Add(new Separator());
             }
 
-            menu.Items.Add(CreateSetCapstoneItem(context, resourceOwner, onChanged));
+            // User-earned achievements only (opted in by the caller); disabled when the achievement
+            // has no saved captures. Friend achievement rows never opt in.
+            if (includeViewCaptures && data is AchievementDisplayItem achItem && !(data is FriendAchievementDisplayItem))
+            {
+                // Live presence check (cached per game) so this works in every user-scope grid,
+                // including theme grids whose rows aren't presence-marked.
+                var hasCaptures = PlayniteAchievementsPlugin.Instance?.CaptureLibraryService?
+                    .AchievementHasCaptures(achItem.GameName, achItem.DisplayName) == true;
+                var captureItem = new MenuItem
+                {
+                    Header = L(resourceOwner, "LOCPlayAch_Menu_ViewCaptures"),
+                    IsEnabled = hasCaptures
+                };
+                captureItem.Click += (_, __) => PlayniteAchievementsPlugin.Instance?.OpenCapturesViewer(achItem);
+                menu.Items.Add(captureItem);
+            }
+
+            // A friend's row describes their progress, not the user's, so its goal/capstone state
+            // would drive the toggle in the wrong direction. Theme grids can be pointed at friend
+            // collections, so gate here rather than relying on the caller.
+            if (!(data is FriendAchievementDisplayItem))
+            {
+                menu.Items.Add(CreateSetGoalItem(context, resourceOwner, onChanged, onGoalChanged));
+                menu.Items.Add(CreateSetCapstoneItem(context, resourceOwner, onChanged, onCapstoneChanged));
+            }
+
             menu.Items.Add(CreateCategoriesMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateFiltersMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateNotesMenu(context, resourceOwner, onChanged));
             return true;
         }
 
-        private static MenuItem CreateSetCapstoneItem(
+        private static MenuItem CreateSetGoalItem(
             AchievementRowContext context,
             FrameworkElement resourceOwner,
-            Action onChanged)
+            Action onChanged,
+            Func<bool> onGoalChanged)
         {
-            var manualCapstone = GameCustomDataLookup.GetManualCapstone(
-                context.GameId,
-                CurrentSettings,
-                CurrentStore);
-            var isManualCapstone = string.Equals(
-                manualCapstone,
-                context.ApiName,
-                StringComparison.OrdinalIgnoreCase);
-            var isEffectiveCapstone = context.IsCapstone || isManualCapstone;
-
+            // A goal is something still to be earned, and unlocking one retires it, so offering
+            // the toggle on an unlocked row would be a dead end.
             var item = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Menu_SetCapstone", "Set Capstone"),
+                Header = L(resourceOwner, "LOCPlayAch_Menu_SetGoal"),
                 IsCheckable = true,
-                IsChecked = isEffectiveCapstone
+                IsChecked = context.IsGoal,
+                IsEnabled = !context.Unlocked
             };
             item.Click += (_, __) =>
             {
-                var service = CurrentOverridesService;
-                if (service == null)
+                // The write returns the new goal position, so the row can be stamped without a
+                // second read. The surface then re-sorts in the same pass, landing the accent and
+                // the new position in one frame.
+                var result = CurrentMarkerToggle?.ToggleGoal(context.ToMarkerTarget())
+                    ?? default(AchievementMarkerToggle.GoalToggleResult);
+                if (!result.Attempted)
                 {
                     return;
                 }
 
-                var result = service.SetCapstone(
-                    context.GameId,
-                    isEffectiveCapstone ? null : context.ApiName);
+                context.ApplyGoal(result.IsGoal, result.GoalOrderIndex);
+
+                if (onGoalChanged?.Invoke() == true)
+                {
+                    return;
+                }
+
+                onChanged?.Invoke();
+            };
+
+            return item;
+        }
+
+        private static MenuItem CreateSetCapstoneItem(
+            AchievementRowContext context,
+            FrameworkElement resourceOwner,
+            Action onChanged,
+            Func<string, bool> onCapstoneChanged)
+        {
+            var item = new MenuItem
+            {
+                Header = L(resourceOwner, "LOCPlayAch_Menu_SetCapstone"),
+                IsCheckable = true,
+                IsChecked = CurrentMarkerToggle?.IsEffectiveCapstone(context.ToMarkerTarget()) == true
+            };
+            item.Click += async (_, __) =>
+            {
+                var toggle = CurrentMarkerToggle;
+                if (toggle == null)
+                {
+                    return;
+                }
+
+                var result = await toggle.ToggleCapstoneAsync(context.ToMarkerTarget());
+                if (!result.Attempted)
+                {
+                    return;
+                }
+
                 if (!result.Success)
                 {
                     ShowError(result.ErrorMessage);
+                    return;
+                }
+
+                // Setting a capstone makes every other row a non-capstone, which is exactly what
+                // hydration would do, so the rows can be re-stamped in place. Clearing one lets
+                // provider-assigned capstones reappear, and only hydration knows those.
+                if (result.WasSet && onCapstoneChanged?.Invoke(result.CapstoneApiName) == true)
+                {
                     return;
                 }
 
@@ -87,29 +174,44 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Category", "Categories")
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Category")
             };
 
-            var addTypeMenu = new MenuItem
+            var typesMenu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Common_AddType", "Add Type")
+                Header = L(resourceOwner, "LOCPlayAch_Common_Label_Type")
             };
-            foreach (var categoryType in AchievementCategoryTypeHelper.AllowedCategoryTypes.Where(type =>
-                         !string.Equals(type, AchievementCategoryTypeHelper.DefaultCategoryType, StringComparison.OrdinalIgnoreCase)))
+            var effectiveTypes = AchievementCategoryTypeHelper.ParseValues(context.CategoryType);
+            foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
                 var capturedType = categoryType;
-                addTypeMenu.Items.Add(CreateMenuItem(
-                    ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
-                    () =>
+                var typeItem = new MenuItem
+                {
+                    Header = ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = effectiveTypes.Any(value =>
+                        string.Equals(value, capturedType, StringComparison.OrdinalIgnoreCase))
+                };
+                typeItem.Click += (_, __) =>
+                {
+                    if (typeItem.IsChecked)
                     {
                         AddCategoryType(context, capturedType);
-                        onChanged?.Invoke();
-                    }));
+                    }
+                    else
+                    {
+                        RemoveCategoryType(context, capturedType);
+                    }
+
+                    onChanged?.Invoke();
+                };
+                typesMenu.Items.Add(typeItem);
             }
 
-            menu.Items.Add(addTypeMenu);
+            menu.Items.Add(typesMenu);
             menu.Items.Add(CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Common_SetLabelEllipsis", "Set Label..."),
+                L(resourceOwner, "LOCPlayAch_Common_SetLabelEllipsis"),
                 () =>
                 {
                     if (SetCategoryLabel(context, resourceOwner))
@@ -118,7 +220,7 @@ namespace PlayniteAchievements.Views.Helpers
                     }
                 }));
             menu.Items.Add(CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Button_Clear", "Clear"),
+                L(resourceOwner, "LOCPlayAch_Button_Clear"),
                 () =>
                 {
                     if (ClearCategories(context))
@@ -148,12 +250,12 @@ namespace PlayniteAchievements.Views.Helpers
 
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Menu_Filters", "Filters")
+                Header = L(resourceOwner, "LOCPlayAch_Menu_Filters")
             };
 
             var filterOutItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut", "Filter Out"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut"),
                 IsCheckable = true,
                 IsChecked = isFiltered
             };
@@ -166,7 +268,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var summaryItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries", "Filter Out of Summaries"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries"),
                 IsCheckable = true,
                 IsChecked = isFiltered || isSummaryFiltered,
                 IsEnabled = !isFiltered
@@ -198,17 +300,17 @@ namespace PlayniteAchievements.Views.Helpers
 
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Notes", "Notes")
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Notes")
             };
 
             var viewItem = CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Common_View", "View"),
+                L(resourceOwner, "LOCPlayAch_Common_View"),
                 () => OpenNoteDialog(context, note, isEditMode: false, resourceOwner, onChanged));
             viewItem.IsEnabled = hasNote;
             menu.Items.Add(viewItem);
 
             menu.Items.Add(CreateMenuItem(
-                L(resourceOwner, "LOCPlayAch_Common_Edit", "Edit"),
+                L(resourceOwner, "LOCPlayAch_Common_Edit"),
                 () => OpenNoteDialog(context, note, isEditMode: true, resourceOwner, onChanged)));
 
             return menu;
@@ -222,10 +324,7 @@ namespace PlayniteAchievements.Views.Helpers
                 CurrentStore);
             var normalizedMap = CloneStringMap(map);
             var currentEffective = AchievementCategoryTypeHelper.NormalizeOrDefault(context.CategoryType);
-            var merged = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                AchievementCategoryTypeHelper.Combine(
-                    AchievementCategoryTypeHelper.ParseValues(currentEffective)
-                        .Concat(new[] { categoryType })));
+            var merged = AchievementCategoryTypeHelper.WithCategoryType(currentEffective, categoryType, include: true);
             if (string.Equals(merged, currentEffective, StringComparison.Ordinal))
             {
                 return;
@@ -236,15 +335,69 @@ namespace PlayniteAchievements.Views.Helpers
             context.ApplyCategoryType(merged);
         }
 
+        private static void RemoveCategoryType(AchievementRowContext context, string categoryType)
+        {
+            var map = GameCustomDataLookup.GetAchievementCategoryTypeOverrides(
+                context.GameId,
+                CurrentSettings,
+                CurrentStore);
+            var normalizedMap = CloneStringMap(map);
+            var currentEffective = AchievementCategoryTypeHelper.NormalizeOrDefault(context.CategoryType);
+            var remaining = AchievementCategoryTypeHelper.WithCategoryType(currentEffective, categoryType, include: false);
+            if (string.Equals(remaining, currentEffective, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            normalizedMap[context.ApiName] = remaining;
+            CurrentOverridesService?.SetAchievementCategoryTypeOverrides(context.GameId, normalizedMap);
+            context.ApplyCategoryType(remaining);
+        }
+
+        /// <summary>
+        /// Every category the game currently has, in the achievement cache's own order, for the
+        /// Set Category Label picker.
+        ///
+        /// Read from the achievement data rather than rebuilt from the category override maps: the
+        /// overrides only hold categories somebody has already edited, so a picker built from them
+        /// would omit every provider-supplied category - normally the whole list. One cached
+        /// single-game read, on a menu click.
+        /// </summary>
+        private static IReadOnlyList<string> ResolveGameCategoryLabels(Guid gameId)
+        {
+            var achievements = PlayniteAchievementsPlugin.Instance?
+                .AchievementDataService?
+                .GetGameAchievementData(gameId)?
+                .Achievements;
+            if (achievements == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var labels = new List<string>();
+            foreach (var achievement in achievements)
+            {
+                var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement?.Category);
+                if (!string.IsNullOrWhiteSpace(label) && seen.Add(label))
+                {
+                    labels.Add(label);
+                }
+            }
+
+            return labels;
+        }
+
         private static bool SetCategoryLabel(
             AchievementRowContext context,
             FrameworkElement resourceOwner)
         {
-            var inputDialog = new TextInputDialog(
-                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint", "Enter a category label for the selected achievements."),
+            var inputDialog = new CategoryPickerDialog(
+                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint"),
+                ResolveGameCategoryLabels(context.GameId),
                 context.CategoryLabel);
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle", "Set Category Label"),
+                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle"),
                 inputDialog,
                 new WindowOptions
                 {
@@ -264,7 +417,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return false;
             }
 
-            var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategory(inputDialog.InputText);
+            var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategory(inputDialog.SelectedCategory);
             if (string.IsNullOrWhiteSpace(normalizedCategory))
             {
                 return false;
@@ -300,9 +453,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return false;
             }
 
-            var service = CurrentOverridesService;
-            service?.SetAchievementCategoryOverrides(context.GameId, categoryMap);
-            service?.SetAchievementCategoryTypeOverrides(context.GameId, typeMap);
+            CurrentOverridesService?.SetAchievementCategoryOverrides(context.GameId, categoryMap, typeMap);
             return true;
         }
 
@@ -358,8 +509,8 @@ namespace PlayniteAchievements.Views.Helpers
                 isReadOnly: !isEditMode,
                 achievementIconSource: context.DisplayIcon);
             var title = isEditMode
-                ? L(resourceOwner, "LOCPlayAch_NotesDialog_EditTitle", "Edit Note")
-                : L(resourceOwner, "LOCPlayAch_NotesDialog_ViewTitle", "View Note");
+                ? L(resourceOwner, "LOCPlayAch_NotesDialog_EditTitle")
+                : L(resourceOwner, "LOCPlayAch_NotesDialog_ViewTitle");
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 title,
                 dialog,
@@ -428,7 +579,7 @@ namespace PlayniteAchievements.Views.Helpers
                 MessageBoxImage.Error);
         }
 
-        private static string L(FrameworkElement owner, string key, string fallback)
+        private static string L(FrameworkElement owner, string key)
         {
             var resourceValue = owner?.TryFindResource(key) as string;
             if (!string.IsNullOrWhiteSpace(resourceValue))
@@ -436,12 +587,14 @@ namespace PlayniteAchievements.Views.Helpers
                 return resourceValue;
             }
 
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return ResourceProvider.GetString(key);
         }
 
         private static AchievementOverridesService CurrentOverridesService =>
             PlayniteAchievementsPlugin.Instance?.AchievementOverridesService;
+
+        private static AchievementMarkerToggle CurrentMarkerToggle =>
+            PlayniteAchievementsPlugin.Instance?.AchievementMarkerToggle;
 
         private static PlayniteAchievements.Models.Settings.PersistedSettings CurrentSettings =>
             PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
@@ -463,6 +616,10 @@ namespace PlayniteAchievements.Views.Helpers
             public string DisplayIcon { get; private set; }
 
             public bool IsCapstone { get; private set; }
+
+            public bool IsGoal { get; private set; }
+
+            public bool Unlocked { get; private set; }
 
             public string CategoryLabel { get; private set; }
 
@@ -488,6 +645,8 @@ namespace PlayniteAchievements.Views.Helpers
                         DisplayName = displayItem.DisplayNameResolved,
                         DisplayIcon = displayItem.DisplayIcon,
                         IsCapstone = displayItem.Source?.IsCapstone == true,
+                        IsGoal = displayItem.IsGoal,
+                        Unlocked = displayItem.Unlocked,
                         CategoryLabel = displayItem.CategoryLabel,
                         CategoryType = displayItem.CategoryType
                     };
@@ -511,6 +670,9 @@ namespace PlayniteAchievements.Views.Helpers
                         DisplayName = recentItem.Name,
                         DisplayIcon = recentItem.DisplayIcon,
                         IsCapstone = false,
+                        // Recent rows are unlocks by definition, so they are never goals.
+                        IsGoal = false,
+                        Unlocked = true,
                         CategoryLabel = recentItem.CategoryLabel,
                         CategoryType = recentItem.CategoryType
                     };
@@ -519,6 +681,9 @@ namespace PlayniteAchievements.Views.Helpers
 
                 return false;
             }
+
+            public AchievementMarkerTarget ToMarkerTarget() =>
+                new AchievementMarkerTarget(GameId, ApiName, IsCapstone, IsGoal, Unlocked);
 
             public void ApplyCategoryLabel(string value)
             {
@@ -545,6 +710,16 @@ namespace PlayniteAchievements.Views.Helpers
                 if (_recentItem != null)
                 {
                     _recentItem.CategoryType = value;
+                }
+            }
+
+            public void ApplyGoal(bool isGoal, int goalOrderIndex)
+            {
+                IsGoal = isGoal;
+                if (_displayItem != null)
+                {
+                    _displayItem.IsGoal = isGoal;
+                    _displayItem.GoalOrderIndex = goalOrderIndex;
                 }
             }
 

@@ -3,23 +3,32 @@ using PlayniteAchievements.Providers;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Providers.Steam.Models;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ProgressReporting;
+using PlayniteAchievements.Services.Friends;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     /// <summary>
     /// Manages user achievement refreshing and caching operations.
     /// </summary>
-    public class RefreshRuntime : IDisposable
+    public partial class RefreshRuntime : IDisposable
     {
         public event EventHandler<ProgressReport> RebuildProgress;
 
@@ -29,11 +38,6 @@ namespace PlayniteAchievements.Services
         public List<Guid> LastRefreshedGameIds { get; private set; } = new List<Guid>();
 
         /// <summary>
-        /// Gets the provider keys that failed authentication in the most recent refresh.
-        /// </summary>
-        public List<string> GetLastFailedAuthProviderKeys() => new List<string>(_lastFailedAuthProviderKeys);
-
-        /// <summary>
         /// Raised after each individual game is refreshed and cached.
         /// Argument is the game ID that was refreshed.
         /// </summary>
@@ -41,6 +45,16 @@ namespace PlayniteAchievements.Services
 
         public ProgressReport GetLastRebuildProgress() => _progressReportingService.GetLastProgress();
         public string GetLastRebuildStatus() => _progressReportingService.GetLastStatus();
+
+        /// <summary>
+        /// The most recent completed or failed run's outcome, or null when no run has finished
+        /// since startup and after a user cancel. Set once per run, after the run ends. Reference
+        /// assignment, so a reader on another thread sees either the whole outcome or the previous
+        /// one, never a half-written mix.
+        /// </summary>
+        public RebuildOutcome GetLastRebuildOutcome() => _lastRebuildOutcome;
+
+        private RebuildOutcome _lastRebuildOutcome;
 
         public bool IsRebuilding
         {
@@ -58,10 +72,17 @@ namespace PlayniteAchievements.Services
         private readonly TargetSelectionResolver _targetSelectionResolver;
         private readonly RefreshRequestPlanner _refreshRequestPlanner;
         private readonly RefreshProgressReporter _refreshProgressReporter;
-        private readonly ProviderRegistry _providerRegistry;
+        private readonly PlayniteAchievements.Providers.ProviderRegistry _providerRegistry;
         private readonly Action<RebuildPayload> _onRefreshCompleted;
         private int _savedGamesInCurrentRun;
-        private volatile List<string> _lastFailedAuthProviderKeys = new List<string>();
+
+        // A refresh that saves many games or scrapes many friend rows fetches many provider web
+        // pages (multi-MB HTML on the LOH), inflating the working set the CLR then holds. After a
+        // large run, request a one-time LOH compaction. The gate takes the max of current-user
+        // saved games and friend scrape volume so combined runs whose weight is on the friend
+        // side still compact, while Single/Recent runs (a handful of games) never trigger a
+        // collection.
+        private const int LohCompactionSavedGamesThreshold = 25;
 
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
@@ -71,14 +92,22 @@ namespace PlayniteAchievements.Services
         /// <summary>
         /// Gets the provider registry for checking/modifying provider enabled state.
         /// </summary>
-        public ProviderRegistry ProviderRegistry => _providerRegistry;
+        public PlayniteAchievements.Providers.ProviderRegistry ProviderRegistry => _providerRegistry;
 
-        internal async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken ct = default)
+        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextOrShowDialogAsync(
+            RefreshRequest request,
+            CancellationToken ct = default)
         {
-            var authenticatedProviders = await GetAuthenticatedProvidersAsync(ct).ConfigureAwait(false);
-            if (authenticatedProviders.Count > 0)
+            var authContext = await GetRefreshAuthContextAsync(request, ct).ConfigureAwait(false);
+            if (authContext.HasAuthenticatedProviders)
             {
-                return authenticatedProviders;
+                return authContext;
+            }
+
+            if (HasSteamTransientAuthFailure(authContext))
+            {
+                _logger.Warn("Refresh skipped because Steam web authentication could not be verified; suppressing generic authentication modal.");
+                return authContext;
             }
 
             _logger.Info("Refresh attempted but no platforms are authenticated.");
@@ -87,7 +116,13 @@ namespace PlayniteAchievements.Services
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning));
-            return Array.Empty<IDataProvider>();
+            return authContext;
+        }
+
+        internal virtual async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken ct = default)
+        {
+            var authContext = await GetRefreshAuthContextOrShowDialogAsync(null, ct).ConfigureAwait(false);
+            return authContext?.AuthenticatedProviders ?? Array.Empty<IDataProvider>();
         }
 
         /// <summary>
@@ -96,11 +131,38 @@ namespace PlayniteAchievements.Services
         public IReadOnlyList<IDataProvider> Providers => _providers;
 
         /// <summary>
+        /// Resolves the single provider that would service a running game using the same enabled,
+        /// authenticated, forced-override, and configured-priority rules as a normal refresh.
+        /// This is intentionally synchronous and side-effect free so game start never opens an
+        /// authentication dialog.
+        /// </summary>
+        internal IDataProvider ResolveInGameProvider(Game game)
+        {
+            if (game == null)
+            {
+                return null;
+            }
+
+            var candidates = _providers
+                .Where(provider =>
+                    provider != null &&
+                    _providerRegistry.IsProviderEnabled(provider.ProviderKey) &&
+                    provider.IsAuthenticated)
+                .ToList();
+
+            return _targetSelectionResolver.ResolveProviderForGame(
+                game,
+                candidates,
+                new TargetSelectionCache());
+        }
+
+        /// <summary>
         /// Gets the list of available refresh modes with localized display names.
         /// </summary>
         public IReadOnlyList<RefreshMode> GetRefreshModes()
         {
             return ((RefreshModeType[])Enum.GetValues(typeof(RefreshModeType)))
+                .Where(modeType => !modeType.IsFriendRefreshMode())
                 .Select(modeType =>
             {
                 var mode = new RefreshMode(modeType, modeType.GetResourceKey(), modeType.GetShortResourceKey())
@@ -126,10 +188,28 @@ namespace PlayniteAchievements.Services
             remove => _cacheService.CacheDeltaUpdated -= value;
         }
 
-        public event EventHandler CacheInvalidated
+        public event EventHandler<CacheInvalidatedEventArgs> CacheInvalidated
         {
             add => _cacheService.CacheInvalidated += value;
             remove => _cacheService.CacheInvalidated -= value;
+        }
+
+        public event EventHandler<FriendCacheInvalidatedEventArgs> FriendCacheInvalidated
+        {
+            add
+            {
+                if (_cacheService is IFriendCacheManager friendCache)
+                {
+                    friendCache.FriendCacheInvalidated += value;
+                }
+            }
+            remove
+            {
+                if (_cacheService is IFriendCacheManager friendCache)
+                {
+                    friendCache.FriendCacheInvalidated -= value;
+                }
+            }
         }
 
         public RefreshRuntime(
@@ -140,7 +220,7 @@ namespace PlayniteAchievements.Services
             IEnumerable<IDataProvider> providers,
             DiskImageService diskImageService,
             ManagedCustomIconService managedCustomIconService,
-            ProviderRegistry providerRegistry,
+            PlayniteAchievements.Providers.ProviderRegistry providerRegistry,
             IEnumerable<string> refreshOrder,
             Action<RebuildPayload> onRefreshCompleted = null)
         {
@@ -154,7 +234,7 @@ namespace PlayniteAchievements.Services
             _achievementIconService = new AchievementIconService(
                 _diskImageService,
                 managedCustomIconService ?? throw new ArgumentNullException(nameof(managedCustomIconService)),
-                settings?.Persisted,
+                () => _settings?.Persisted,
                 _logger);
             _progressReportingService = new ProgressReportingService(_logger, PostToUi);
             _refreshStateManager = new RefreshStateManager();
@@ -164,8 +244,8 @@ namespace PlayniteAchievements.Services
                 _settings,
                 _logger,
                 _targetSelectionResolver);
-            _refreshProgressReporter = new RefreshProgressReporter((report, prioritizePending) => Report(report, prioritizePending));
             _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
+            _refreshProgressReporter = new RefreshProgressReporter((report, prioritizePending) => Report(report, prioritizePending));
             _onRefreshCompleted = onRefreshCompleted;
 
             _providers = providers.ToList();
@@ -346,6 +426,47 @@ namespace PlayniteAchievements.Services
                 .ToList() ?? new List<IDataProvider>();
         }
 
+        private static List<IRefreshAuthContextReceiver> BeginScopedRefreshAuthContext(
+            RefreshAuthContext authContext,
+            IEnumerable<IDataProvider> providers)
+        {
+            var receivers = new List<IRefreshAuthContextReceiver>();
+            if (authContext == null)
+            {
+                return receivers;
+            }
+
+            foreach (var receiver in (providers ?? Enumerable.Empty<IDataProvider>())
+                .OfType<IRefreshAuthContextReceiver>())
+            {
+                receiver.BeginRefreshAuthContext(authContext);
+                receivers.Add(receiver);
+            }
+
+            return receivers;
+        }
+
+        private static void EndScopedRefreshAuthContext(
+            RefreshAuthContext authContext,
+            IReadOnlyList<IRefreshAuthContextReceiver> receivers)
+        {
+            if (authContext == null || receivers == null)
+            {
+                return;
+            }
+
+            for (var i = receivers.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    receivers[i]?.EndRefreshAuthContext(authContext);
+                }
+                catch
+                {
+                }
+            }
+        }
+
         private async Task RunManagedAsync(
             RefreshModeType mode,
             Guid? singleGameId,
@@ -353,16 +474,20 @@ namespace PlayniteAchievements.Services
             Func<Guid, CancellationToken, Task<RebuildPayload>> runner,
             Func<RebuildPayload, string> finalMessage,
             string errorLogMessage,
-            IReadOnlyList<IDataProvider> providerScope = null)
+            IReadOnlyList<IDataProvider> providerScope = null,
+            RefreshAuthContext authContext = null,
+            bool surfaceUserNotices = false)
         {
             var operationId = Guid.NewGuid();
 
-            var effectiveProviderScope = MaterializeProviderScope(providerScope);
-            if (effectiveProviderScope.Count == 0 && providerScope == null)
+            var effectiveAuthContext = authContext;
+            if (effectiveAuthContext == null && providerScope == null)
             {
-                effectiveProviderScope = MaterializeProviderScope(
-                    await GetAuthenticatedProvidersAsync(externalToken).ConfigureAwait(false));
+                effectiveAuthContext = await GetRefreshAuthContextAsync(externalToken).ConfigureAwait(false);
             }
+
+            var effectiveProviderScope = MaterializeProviderScope(
+                providerScope ?? effectiveAuthContext?.AuthenticatedProviders);
 
             if (effectiveProviderScope.Count == 0)
             {
@@ -382,6 +507,10 @@ namespace PlayniteAchievements.Services
 
             _refreshProgressReporter.Reset();
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
+            List<IRefreshAuthContextReceiver> authContextReceivers = null;
+
+            var memBaseline = MemoryDiagnostics.Log(_logger, "refresh.start", $"mode={mode} operation={operationId}");
+            var memSampler = MemoryDiagnostics.StartSampler(_logger, $"mode={mode}", TimeSpan.FromSeconds(60));
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
@@ -394,8 +523,13 @@ namespace PlayniteAchievements.Services
                 currentGameId: singleGameId);
 
             RebuildPayload payload = null;
+            // This run's outcome for GetLastRebuildOutcome. A run that throws decides it in the
+            // catch; a run that completes resolves it from its payload in the finally.
+            RebuildOutcome runOutcome = null;
             try
             {
+                authContextReceivers = BeginScopedRefreshAuthContext(effectiveAuthContext, effectiveProviderScope);
+
                 // Run refresh setup/execution on background thread so UI commands are never blocked
                 // by synchronous pre-refresh work (game filtering, capability checks, etc.).
                 payload = await Task.Run(
@@ -411,11 +545,21 @@ namespace PlayniteAchievements.Services
                 {
                     LastRefreshedGameIds = new List<Guid>();
                 }
-
-                // Store failed provider keys for notification consumers.
-                _lastFailedAuthProviderKeys = payload?.FailedProviderKeys?.Count > 0
-                    ? new List<string>(payload.FailedProviderKeys)
-                    : new List<string>();
+            }
+            catch (OperationCanceledException ex) when (!cts.IsCancellationRequested)
+            {
+                // A cancellation-shaped exception (e.g. an HttpClient timeout's
+                // TaskCanceledException) without the run token being cancelled is a failure,
+                // not a user cancel; log it with its stack so the timeout site is identifiable.
+                _logger.Error(ex, $"{errorLogMessage} (operation canceled without the run token being cancelled)");
+                runOutcome = RebuildOutcome.Failed(ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"));
+                Report(
+                    runOutcome.Status,
+                    0,
+                    1,
+                    operationId: operationId,
+                    mode: mode,
+                    currentGameId: singleGameId);
             }
             catch (OperationCanceledException)
             {
@@ -432,8 +576,9 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger.Error(ex, errorLogMessage);
+                runOutcome = RebuildOutcome.Failed(ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"));
                 Report(
-                    ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"),
+                    runOutcome.Status,
                     0,
                     1,
                     operationId: operationId,
@@ -442,37 +587,130 @@ namespace PlayniteAchievements.Services
             }
             finally
             {
-                var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
+                memSampler?.Dispose();
+                EndScopedRefreshAuthContext(effectiveAuthContext, authContextReceivers);
+                var savedGamesCount = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
+                var hasSavedGames = savedGamesCount > 0;
                 var wasCanceled = cts.IsCancellationRequested;
-                var totalGames = _refreshProgressReporter.TotalGames;
+                var finalTotalSteps = _refreshProgressReporter.CompletionTotalSteps;
                 EndRun();
 
                 // Send final completion report AFTER EndRun so IsRebuilding is false when UI processes it
                 if (!wasCanceled && payload != null)
                 {
-                    var msg = ResolveFinalSuccessMessage(payload, finalMessage);
+                    var outcome = ResolveFinalOutcome(payload, finalMessage);
+                    // A run that already threw keeps its failure: reaching here with a payload only
+                    // means the throw happened after the payload was produced.
+                    runOutcome = runOutcome ?? outcome;
                     Report(
-                        msg,
-                        totalGames,
-                        totalGames,
+                        outcome.Status,
+                        finalTotalSteps,
+                        finalTotalSteps,
                         operationId: operationId,
                         mode: mode,
                         currentGameId: singleGameId);
                 }
 
+                // Published after the run ends so a completion handler reads this run's result and
+                // never a previous one's. Null for a user cancel: nothing failed and nothing
+                // completed, so there is nothing to report.
+                _lastRebuildOutcome = runOutcome;
+
                 if (hasSavedGames)
                 {
-                    _cacheService.NotifyCacheInvalidated();
+                    // Scoped when the run knows which games it refreshed (a monitor refresh names
+                    // exactly one); null or an over-large list degrades to a full invalidation.
+                    _cacheService.NotifyCacheInvalidated(payload?.Summary?.RefreshedGameIds);
                 }
 
-                // Notify refresh completion subscribers (e.g., auth failure notifications).
+                MemoryDiagnostics.Log(
+                    _logger,
+                    "refresh.end",
+                    memBaseline,
+                    $"mode={mode} savedGames={savedGamesCount} canceled={wasCanceled}");
+
+                // Runs on a threadpool continuation (the run body is awaited with
+                // ConfigureAwait(false)), so the blocking collection stays off the UI thread.
+                // payload is null on cancel/exception paths, so friend volume is 0 there and
+                // only current-user saves can gate the compaction (matching prior behavior).
+                var compactionWorkVolume = Math.Max(
+                    savedGamesCount, FriendRefreshCoordinator.GetFriendScrapeVolume(payload));
+                MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
+                    compactionWorkVolume,
+                    LohCompactionSavedGamesThreshold,
+                    _logger,
+                    context: $"refresh.end mode={mode}");
+                ScheduleFollowUpCompaction(compactionWorkVolume, mode);
+
+                // Notify refresh completion subscribers (the provider auth-failed notification).
+                // Only a refresh of a selected game may add or clear that notification: a polling,
+                // periodic, or bulk refresh that hit an expired session would otherwise re-add the
+                // notification on every tick, and one that succeeded would clear a notification a
+                // selected-game refresh had legitimately raised. Suppressed failures stay in the
+                // log so an expiry is still diagnosable.
                 if (!wasCanceled && payload != null)
                 {
-                    try { _onRefreshCompleted?.Invoke(payload); } catch { }
+                    if (surfaceUserNotices)
+                    {
+                        try { _onRefreshCompleted?.Invoke(payload); } catch (Exception ex) { _logger?.Debug(ex, "Refresh completion callback failed."); }
+                    }
+                    else if (payload.FailedProviderKeys?.Count > 0)
+                    {
+                        _logger?.Debug(
+                            $"Suppressing auth-failed notification for non-targeted refresh (mode={mode}, providers={string.Join(", ", payload.FailedProviderKeys)}).");
+                    }
                 }
 
                 _refreshProgressReporter.Reset();
             }
+        }
+
+        // The completion compaction returns the scrape peak, but the post-refresh rebuild wave
+        // (final friends snapshot build, overview and theme refreshes) keeps allocating after
+        // refresh end, and that garbage otherwise lingers in the working set until an unrelated
+        // gen-2 collection. Measured on a large scan, the wave settles within ~20s, so the first
+        // follow-up sweeps then; a later one catches stragglers (demand-driven theme rebuilds).
+        // Same work-volume gate; a sweep is skipped (and the chain stopped) when a newer refresh
+        // is already running, since its own completion compaction covers it.
+        private static readonly TimeSpan[] FollowUpCompactionDelays =
+        {
+            TimeSpan.FromSeconds(20),
+            TimeSpan.FromSeconds(90)
+        };
+
+        private void ScheduleFollowUpCompaction(int workVolume, RefreshModeType mode)
+        {
+            if (workVolume < LohCompactionSavedGamesThreshold)
+            {
+                return;
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var elapsed = TimeSpan.Zero;
+                    foreach (var delay in FollowUpCompactionDelays)
+                    {
+                        await Task.Delay(delay - elapsed).ConfigureAwait(false);
+                        elapsed = delay;
+                        if (IsRebuilding)
+                        {
+                            return;
+                        }
+
+                        MemoryMaintenance.CompactLargeObjectHeapAfterLargeScan(
+                            workVolume,
+                            LohCompactionSavedGamesThreshold,
+                            _logger,
+                            context: $"refresh.followUp mode={mode} atSeconds={(int)delay.TotalSeconds}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Follow-up LOH compaction failed.");
+                }
+            });
         }
 
         private sealed class RefreshGameTarget
@@ -481,61 +719,185 @@ namespace PlayniteAchievements.Services
             public IDataProvider Provider { get; set; }
         }
 
-        public async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersAsync(CancellationToken ct = default)
+        private sealed class CurrentRefreshPlanBuildResult
         {
-            var authenticatedProviders = new List<IDataProvider>();
-
-            foreach (var provider in _providers)
-            {
-                if (provider == null || !_providerRegistry.IsProviderEnabled(provider.ProviderKey))
-                {
-                    continue;
-                }
-
-                if (await IsProviderAuthenticatedAsync(provider, ct).ConfigureAwait(false))
-                {
-                    authenticatedProviders.Add(provider);
-                }
-            }
-
-            return authenticatedProviders;
+            public IReadOnlyList<IDataProvider> Providers { get; set; } = Array.Empty<IDataProvider>();
+            public List<RefreshGameTarget> Targets { get; set; } = new List<RefreshGameTarget>();
+            public List<ProviderRefreshExecutor.ProviderExecutionPlan> ProviderPlans { get; set; } =
+                new List<ProviderRefreshExecutor.ProviderExecutionPlan>();
         }
 
-        private List<RefreshGameTarget> GetRefreshTargets(CacheRefreshOptions options, IReadOnlyList<IDataProvider> providers)
+        internal Task<RefreshAuthContext> GetRefreshAuthContextAsync(CancellationToken ct = default)
         {
-            return _targetSelectionResolver.GetRefreshTargets(options, providers)
+            return GetRefreshAuthContextAsync(null, ct);
+        }
+
+        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextAsync(
+            RefreshRequest request,
+            CancellationToken ct = default)
+        {
+            var context = new RefreshAuthContext(Guid.NewGuid());
+            var enabledProviders = GetEnabledProviders();
+            if (enabledProviders.Count == 0)
+            {
+                return context;
+            }
+
+            var targetSelectionCache = new TargetSelectionCache();
+            context.TargetSelectionCache = targetSelectionCache;
+
+            IReadOnlyList<IDataProvider> probeCandidates = enabledProviders;
+            if (request != null && _refreshRequestPlanner != null)
+            {
+                var filterTimer = Stopwatch.StartNew();
+                probeCandidates = _refreshRequestPlanner.ResolveAuthProbeCandidates(
+                    request,
+                    enabledProviders,
+                    targetSelectionCache);
+                filterTimer.Stop();
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=auth.preflight.filter enabled={enabledProviders.Count} candidates={probeCandidates.Count} ms={filterTimer.ElapsedMilliseconds}");
+            }
+
+            await ProbeProvidersForAuthContextAsync(probeCandidates, context, ct).ConfigureAwait(false);
+
+            if (probeCandidates.Count < enabledProviders.Count &&
+                !enabledProviders.Any(provider => context.IsProviderAuthenticated(provider.ProviderKey)))
+            {
+                // Second chance: when no capability-filtered provider authenticates, probe the
+                // remaining enabled providers so failure dialogs and dead-end messages match an
+                // unfiltered preflight.
+                var probedKeys = new HashSet<string>(
+                    probeCandidates.Select(provider => provider.ProviderKey),
+                    StringComparer.OrdinalIgnoreCase);
+                var remaining = enabledProviders
+                    .Where(provider => !probedKeys.Contains(provider.ProviderKey))
+                    .ToList();
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=auth.preflight.secondchance remaining={remaining.Count}");
+                await ProbeProvidersForAuthContextAsync(remaining, context, ct).ConfigureAwait(false);
+            }
+
+            context.SetAuthenticatedProviders(
+                enabledProviders.Where(provider =>
+                    context.IsProviderAuthenticated(provider.ProviderKey) ||
+                    CanAttemptOfflineRefresh(provider)));
+            return context;
+        }
+
+        private static bool CanAttemptOfflineRefresh(IDataProvider provider)
+        {
+            try
+            {
+                return provider is IOfflineRefreshFallbackProvider fallback &&
+                       fallback.CanAttemptOfflineRefresh;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private List<IDataProvider> GetEnabledProviders()
+        {
+            return _providers
+                .Where(provider => provider != null &&
+                                   (_providerRegistry == null ||
+                                    _providerRegistry.IsProviderEnabled(provider.ProviderKey)))
+                .ToList();
+        }
+
+        private async Task ProbeProvidersForAuthContextAsync(
+            IReadOnlyList<IDataProvider> providers,
+            RefreshAuthContext context,
+            CancellationToken ct)
+        {
+            if (providers == null || providers.Count == 0)
+            {
+                return;
+            }
+
+            var maxParallelism = Math.Max(1, Math.Min(8, providers.Count));
+            using (var gate = new SemaphoreSlim(maxParallelism, maxParallelism))
+            {
+                var tasks = providers
+                    .Select(provider => ProbeProviderForAuthContextAsync(provider, context, gate, ct))
+                    .ToArray();
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
+        }
+
+        public async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersAsync(CancellationToken ct = default)
+        {
+            var context = await GetRefreshAuthContextAsync(ct).ConfigureAwait(false);
+            return context.AuthenticatedProviders;
+        }
+
+        private async Task ProbeProviderForAuthContextAsync(
+            IDataProvider provider,
+            RefreshAuthContext context,
+            SemaphoreSlim gate,
+            CancellationToken ct)
+        {
+            await gate.WaitAsync(ct).ConfigureAwait(false);
+            var timer = Stopwatch.StartNew();
+            AuthProbeResult result = null;
+            object artifact = null;
+
+            try
+            {
+                result = await ProbeProviderAuthStateAsync(provider, ct).ConfigureAwait(false);
+                if (result?.IsSuccess == true &&
+                    provider?.AuthSession is IRefreshAuthArtifactSource artifactSource)
+                {
+                    artifact = artifactSource.GetRefreshAuthArtifact(result);
+                }
+            }
+            finally
+            {
+                timer.Stop();
+                context.SetProbeResult(provider?.ProviderKey, result, timer.ElapsedMilliseconds, artifact);
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=auth.preflight provider={provider?.ProviderKey ?? "unknown"} ms={timer.ElapsedMilliseconds} outcome={result?.Outcome.ToString() ?? "null"} success={result?.IsSuccess == true}");
+                gate.Release();
+            }
+        }
+
+        private List<RefreshGameTarget> GetRefreshTargets(
+            CacheRefreshOptions options,
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache = null)
+        {
+            return _targetSelectionResolver.GetRefreshTargets(options, providers, targetSelectionCache)
                 .Select(target => new RefreshGameTarget { Game = target.Game, Provider = target.Provider })
                 .ToList();
         }
 
-        private async Task<RebuildPayload> RefreshAsync(
+        private CurrentRefreshPlanBuildResult BuildCurrentRefreshPlans(
             CacheRefreshOptions options,
-            CancellationToken cancel,
-            Guid operationId,
-            RefreshModeType mode,
-            Guid? singleGameId = null,
-            bool forceIconRefresh = false,
-            IReadOnlyList<IDataProvider> providerScope = null,
-            bool? runProvidersInParallelOverride = null)
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache = null)
         {
             options ??= new CacheRefreshOptions();
-
-            var authenticatedProviders = providerScope == null
-                ? MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
-                : MaterializeProviderScope(providerScope);
-            if (authenticatedProviders.Count == 0)
+            var scopedProviders = MaterializeProviderScope(providers);
+            var result = new CurrentRefreshPlanBuildResult
             {
-                _logger?.Warn("No authenticated platforms available for refresh.");
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                Providers = scopedProviders
+            };
+
+            if (scopedProviders.Count == 0)
+            {
+                return result;
             }
 
-            var refreshTargets = GetRefreshTargets(options, authenticatedProviders);
-            var orderedProviders = _targetSelectionResolver.OrderProvidersForRefresh(authenticatedProviders);
+            var refreshTargets = GetRefreshTargets(options, scopedProviders, targetSelectionCache);
+            var orderedProviders = _targetSelectionResolver.OrderProvidersForRefresh(scopedProviders);
             var providerOrder = orderedProviders
                 .Select((provider, index) => new { provider, index })
                 .ToDictionary(x => x.provider, x => x.index);
 
-            var providerPlans = refreshTargets
+            result.Targets = refreshTargets;
+            result.ProviderPlans = refreshTargets
                 .GroupBy(x => x.Provider)
                 .OrderBy(group => providerOrder.TryGetValue(group.Key, out var index) ? index : int.MaxValue)
                 .Select(group => new ProviderRefreshExecutor.ProviderExecutionPlan
@@ -549,22 +911,116 @@ namespace PlayniteAchievements.Services
                 "Games to refresh: {0}, Platforms: {1}, Grouped platforms: {2}",
                 refreshTargets.Count,
                 _providers.Count,
-                providerPlans.Count));
+                result.ProviderPlans.Count));
 
-            if (providerPlans.Count == 0)
+            return result;
+        }
+
+        private async Task<RebuildPayload> RefreshAsync(
+            CacheRefreshOptions options,
+            CancellationToken cancel,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId = null,
+            bool forceIconRefresh = false,
+            IReadOnlyList<IDataProvider> providerScope = null,
+            bool? runProvidersInParallelOverride = null,
+            TargetSelectionCache targetSelectionCache = null)
+        {
+            var providers = providerScope == null
+                ? MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
+                : MaterializeProviderScope(providerScope);
+            if (providers.Count == 0)
+            {
+                _logger?.Warn("No authenticated platforms available for refresh.");
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            var planBuild = BuildCurrentRefreshPlans(options, providers, targetSelectionCache);
+            if (planBuild.ProviderPlans.Count == 0)
             {
                 _logger?.Warn("No matching platforms available for refresh options.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            _refreshProgressReporter.Initialize(refreshTargets.Count);
+            return await ExecuteCurrentProviderPlansAsync(
+                planBuild.ProviderPlans,
+                planBuild.Targets.Count,
+                cancel,
+                operationId,
+                mode,
+                singleGameId,
+                forceIconRefresh,
+                runProvidersInParallelOverride,
+                initializeProgress: true).ConfigureAwait(false);
+        }
+
+        private async Task<RebuildPayload> ExecuteCurrentProviderPlansAsync(
+            IReadOnlyList<ProviderRefreshExecutor.ProviderExecutionPlan> providerPlans,
+            int totalGames,
+            CancellationToken cancel,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId = null,
+            bool forceIconRefresh = false,
+            bool? runProvidersInParallelOverride = null,
+            bool initializeProgress = true)
+        {
+            var plans = providerPlans?
+                .Where(plan => plan?.Provider != null && plan.Games?.Count > 0)
+                .ToList() ?? new List<ProviderRefreshExecutor.ProviderExecutionPlan>();
+            if (plans.Count == 0)
+            {
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            if (initializeProgress)
+            {
+                // Run the owned-game refresh in weighted units [0, TotalUnits] so per-game icon downloads
+                // can advance the bar fractionally within a game. The plain game-count scale is too coarse
+                // (a single-game refresh would sit at 0 until completion, then jump to 100%).
+                _refreshProgressReporter.ConfigureWeightedProgress(
+                    FriendRefreshProgressSession.TotalUnits, 0, FriendRefreshProgressSession.TotalUnits);
+                // One id per (game, provider) pass; the reporter counts distinct games so multi-provider
+                // games do not inflate the "n/total" denominator.
+                _refreshProgressReporter.Initialize(
+                    plans.SelectMany(plan => plan.Games).Select(game => game?.Id ?? Guid.Empty));
+            }
+
             var progressScope = new RefreshProgressScope(operationId, mode, singleGameId);
 
             var runProvidersInParallel = runProvidersInParallelOverride ?? (_settings?.Persisted?.EnableParallelProviderRefresh ?? true);
+            var timer = Stopwatch.StartNew();
+            _logger?.Debug(
+                $"[RefreshPerf] phase=current.start mode={mode} providers={plans.Count} games={totalGames} parallel={runProvidersInParallel}");
             var providerResults = await ProviderRefreshExecutor.ExecuteProvidersAsync(
-                providerPlans,
+                plans,
                 runProvidersInParallel,
-                plan => plan.Provider.RefreshAsync(
+                plan => ExecuteCurrentProviderPlanAsync(plan, progressScope, forceIconRefresh, cancel),
+                cancel).ConfigureAwait(false);
+
+            var payload = CreateCurrentRefreshPayload(providerResults);
+            timer.Stop();
+            _logger?.Debug(
+                $"[RefreshPerf] phase=current.total mode={mode} ms={timer.ElapsedMilliseconds} providers={plans.Count} games={totalGames} refreshed={payload.Summary.GamesRefreshed} withAchievements={payload.Summary.GamesWithAchievements} withoutAchievements={payload.Summary.GamesWithoutAchievements}");
+            return payload;
+        }
+
+        private async Task<RebuildPayload> ExecuteCurrentProviderPlanAsync(
+            ProviderRefreshExecutor.ProviderExecutionPlan plan,
+            RefreshProgressScope progressScope,
+            bool forceIconRefresh,
+            CancellationToken cancel)
+        {
+            if (plan?.Provider == null || plan.Games == null || plan.Games.Count == 0)
+            {
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            var timer = Stopwatch.StartNew();
+            try
+            {
+                return await plan.Provider.RefreshAsync(
                     plan.Games,
                     game => _refreshProgressReporter.ReportGameStarting(game, progressScope),
                     (game, data) => _refreshProgressReporter.OnProviderGameCompletedAsync(
@@ -575,25 +1031,44 @@ namespace PlayniteAchievements.Services
                         cancel,
                         (provider, refreshedGame, refreshedData, scope, token) =>
                             OnGameRefreshed(provider, refreshedGame, refreshedData, scope, forceIconRefresh, token)),
-                    cancel),
-                cancel).ConfigureAwait(false);
+                    cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                timer.Stop();
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=current.provider provider={plan.Provider.ProviderKey} ms={timer.ElapsedMilliseconds} games={plan.Games.Count}");
+            }
+        }
 
+        private RebuildPayload CreateCurrentRefreshPayload(
+            IReadOnlyList<ProviderRefreshExecutor.ProviderExecutionResult> providerResults)
+        {
             var mergedSummary = new RebuildSummary();
             var authRequired = false;
             var failedProviderKeys = new List<string>();
+            var faultedProviderKeys = new List<string>();
+            var executedProviderKeys = new List<string>();
 
             foreach (var result in providerResults)
             {
+                // Recorded before the payload check: a provider that produced no payload still ran,
+                // and its notification should still be eligible for clearing.
+                RecordExecutedProvider(result, executedProviderKeys);
+
                 if (result?.Payload == null)
                 {
                     continue;
                 }
 
+                RecordProviderFault(result, faultedProviderKeys);
+
                 if (result.Payload.AuthRequired)
                 {
                     authRequired = true;
                     var key = result.Provider?.ProviderKey;
-                    if (!string.IsNullOrWhiteSpace(key))
+                    if (!string.IsNullOrWhiteSpace(key) &&
+                        !failedProviderKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
                     {
                         failedProviderKeys.Add(key);
                     }
@@ -604,7 +1079,6 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
-                mergedSummary.GamesRefreshed += result.Payload.Summary.GamesRefreshed;
                 mergedSummary.GamesWithAchievements += result.Payload.Summary.GamesWithAchievements;
                 mergedSummary.GamesWithoutAchievements += result.Payload.Summary.GamesWithoutAchievements;
 
@@ -614,12 +1088,422 @@ namespace PlayniteAchievements.Services
                 }
             }
 
+            // Providers count their own passes, so summing per-provider GamesRefreshed counts a game
+            // once per servicing provider. The user-facing count is distinct games refreshed.
+            mergedSummary.GamesRefreshed = mergedSummary.RefreshedGameIds.Distinct().Count();
+
             return new RebuildPayload
             {
                 Summary = mergedSummary,
                 AuthRequired = authRequired,
-                FailedProviderKeys = failedProviderKeys
+                FailedProviderKeys = failedProviderKeys,
+                FaultedProviderKeys = faultedProviderKeys,
+                ExecutedProviderKeys = executedProviderKeys
             };
+        }
+
+        /// <summary>
+        /// Records that a provider took part in this refresh, so clearing its auth-failed
+        /// notification is scoped to the providers the run actually spoke to.
+        /// </summary>
+        private static void RecordExecutedProvider(
+            ProviderRefreshExecutor.ProviderExecutionResult result,
+            List<string> executedProviderKeys)
+        {
+            var key = result?.Provider?.ProviderKey;
+            if (!string.IsNullOrWhiteSpace(key) &&
+                !executedProviderKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                executedProviderKeys.Add(key);
+            }
+        }
+
+        /// <summary>
+        /// Logs a provider execution fault and records its provider key so the completion
+        /// message can name the provider whose games did not refresh.
+        /// </summary>
+        private void RecordProviderFault(
+            ProviderRefreshExecutor.ProviderExecutionResult result,
+            List<string> faultedProviderKeys)
+        {
+            if (result?.Fault == null)
+            {
+                return;
+            }
+
+            var key = result.Provider?.ProviderKey;
+            _logger?.Error(
+                result.Fault,
+                $"Provider '{key ?? "unknown"}' refresh faulted; remaining providers continued.");
+
+            if (!string.IsNullOrWhiteSpace(key) &&
+                !faultedProviderKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                faultedProviderKeys.Add(key);
+            }
+        }
+
+        /// <summary>
+        /// Refreshes only the friend roster (friend list + avatars) for authenticated friend-capable
+        /// providers, without ownership/definition/achievement work. Backs the in-settings
+        /// "refresh friends list" action. Returns the number of active friends saved.
+        /// </summary>
+        public async Task<int> RefreshFriendRosterAsync(CancellationToken cancel = default)
+        {
+            var autoProviderKeys = _settings?.Persisted?.AutoDiscoverFriendProviderKeys;
+            return await RefreshFriendRosterAsync(autoProviderKeys, cancel).ConfigureAwait(false);
+        }
+
+        public async Task<int> RefreshFriendRosterAsync(
+            IReadOnlyCollection<string> providerKeys,
+            CancellationToken cancel = default)
+        {
+            if ((_cacheService as IFriendCacheManager) == null)
+            {
+                return 0;
+            }
+
+            var providerKeySet = providerKeys == null
+                ? null
+                : new HashSet<string>(
+                    providerKeys
+                        .Where(key => !string.IsNullOrWhiteSpace(key))
+                        .Select(key => key.Trim()),
+                    StringComparer.OrdinalIgnoreCase);
+
+            var friendProviders = GetEnabledProviders()
+                .Where(provider => provider.Friends != null &&
+                                   (providerKeySet == null || providerKeySet.Count == 0 ||
+                                    providerKeySet.Contains(provider.ProviderKey)))
+                .ToList();
+            var authContext = new RefreshAuthContext(Guid.NewGuid());
+            await ProbeProvidersForAuthContextAsync(friendProviders, authContext, cancel).ConfigureAwait(false);
+            authContext.SetAuthenticatedProviders(
+                friendProviders.Where(provider => authContext.IsProviderAuthenticated(provider.ProviderKey)));
+            var providers = MaterializeProviderScope(authContext.AuthenticatedProviders);
+
+            if (providers.Count == 0)
+            {
+                _logger?.Warn("No authenticated friend-capable platforms available for friend roster refresh.");
+                return 0;
+            }
+
+            var receivers = BeginScopedRefreshAuthContext(authContext, providers);
+            try
+            {
+                return await RefreshFriendRosterAsync(providers, cancel)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                EndScopedRefreshAuthContext(authContext, receivers);
+            }
+        }
+
+        private async Task<RebuildPayload> RefreshFriendsAsync(
+            FriendRefreshOptions options,
+            CancellationToken cancel,
+            Guid operationId,
+            RefreshModeType mode,
+            IReadOnlyList<IDataProvider> providerScope = null)
+        {
+            var providers = providerScope == null
+                ? MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
+                : MaterializeProviderScope(providerScope);
+
+            providers = providers
+                .Where(provider => provider?.Friends != null)
+                .ToList();
+
+            if (providers.Count == 0 || (_cacheService as IFriendCacheManager) == null)
+            {
+                _logger?.Warn("No authenticated friend-capable platforms available for friends refresh.");
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            void ReportFriendProgress(string message, int current, int total)
+            {
+                _refreshProgressReporter.ReportFriendProgress(
+                    message,
+                    Math.Max(0, Math.Min(current, Math.Max(1, total) - 1)),
+                    Math.Max(1, total),
+                    new RefreshProgressScope(operationId, mode, null));
+            }
+
+            return await RefreshAsync(providers, options, ReportFriendProgress, cancel)
+                .ConfigureAwait(false);
+        }
+
+        private async Task<RebuildPayload> ExecuteRefreshPlanAsync(
+            RefreshRequestPlanner.ResolvedRequest resolved,
+            CancellationToken cancel,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId,
+            TargetSelectionCache targetSelectionCache = null)
+        {
+            var payload = new RebuildPayload();
+            if (resolved == null)
+            {
+                return payload;
+            }
+
+            var currentOptions = resolved.CurrentUserOptions;
+            var friendOptions = resolved.FriendOptions;
+            var forceIconRefresh = resolved.Options?.ForceIconRefresh == true;
+
+            if (currentOptions == null)
+            {
+                return await RefreshFriendsAsync(
+                    friendOptions,
+                    cancel,
+                    operationId,
+                    mode,
+                    resolved.FriendProviderScope).ConfigureAwait(false);
+            }
+
+            if (friendOptions == null)
+            {
+                return await RefreshAsync(
+                    currentOptions,
+                    cancel,
+                    operationId,
+                    mode,
+                    singleGameId,
+                    forceIconRefresh,
+                    resolved.CurrentProviderScope,
+                    resolved.RunProvidersInParallelOverride,
+                    targetSelectionCache).ConfigureAwait(false);
+            }
+
+            var currentProviders = MaterializeProviderScope(resolved.CurrentProviderScope);
+            var friendProviders = MaterializeProviderScope(resolved.FriendProviderScope)
+                .Where(provider => provider?.Friends != null)
+                .ToList();
+
+            var currentPlanBuild = BuildCurrentRefreshPlans(currentOptions, currentProviders, targetSelectionCache);
+            var currentPlansByProvider = currentPlanBuild.ProviderPlans
+                .Where(plan => plan?.Provider != null && plan.Games?.Count > 0)
+                .ToDictionary(plan => plan.Provider);
+
+            var hasCurrentWork = currentPlansByProvider.Count > 0;
+            var hasFriendWork = friendProviders.Count > 0 && (_cacheService as IFriendCacheManager) != null;
+            if (!hasCurrentWork && !hasFriendWork)
+            {
+                _logger?.Warn("No matching platforms available for refresh options.");
+                return payload;
+            }
+
+            if (friendOptions != null && friendProviders.Count == 0)
+            {
+                _logger?.Warn("No authenticated friend-capable platforms available for friends refresh.");
+            }
+
+            if (!hasFriendWork)
+            {
+                return await RefreshAsync(
+                    currentOptions,
+                    cancel,
+                    operationId,
+                    mode,
+                    singleGameId,
+                    forceIconRefresh,
+                    resolved.CurrentProviderScope,
+                    resolved.RunProvidersInParallelOverride,
+                    targetSelectionCache).ConfigureAwait(false);
+            }
+
+            if (!hasCurrentWork)
+            {
+                return await RefreshFriendsAsync(
+                    friendOptions,
+                    cancel,
+                    operationId,
+                    mode,
+                    resolved.FriendProviderScope).ConfigureAwait(false);
+            }
+
+            var friendProviderSet = new HashSet<IDataProvider>(friendProviders);
+            var providerOrder = ResolveCombinedProviderOrder(currentPlansByProvider.Keys.Concat(friendProviders));
+            if (providerOrder.Count == 0)
+            {
+                return payload;
+            }
+
+            const int totalUnits = FriendRefreshProgressSession.TotalUnits;
+            const int maxReportUnits = totalUnits - 1;
+            var preparationUnits = hasFriendWork
+                ? Math.Min(3500, Math.Max(1500, maxReportUnits / 3))
+                : maxReportUnits;
+
+            void ReportFriendProgress(string message, int current, int total)
+            {
+                _refreshProgressReporter.ReportFriendProgress(
+                    message,
+                    Math.Max(0, Math.Min(current, Math.Max(1, total) - 1)),
+                    Math.Max(1, total),
+                    new RefreshProgressScope(operationId, mode, singleGameId));
+            }
+
+            var progressScope = new RefreshProgressScope(operationId, mode, singleGameId);
+            var friendProgress = new FriendRefreshProgressSession(ReportFriendProgress);
+            var orderedFriendProviders = providerOrder
+                .Where(provider => friendProviderSet.Contains(provider))
+                .ToList();
+            var friendProviderIndexByProvider = orderedFriendProviders
+                .Select((provider, index) => new { provider, index })
+                .ToDictionary(item => item.provider, item => item.index);
+            friendProgress.InitializeProviderTotal(orderedFriendProviders.Count);
+
+            var providerWorkPlans = providerOrder
+                .Where(provider => currentPlansByProvider.ContainsKey(provider) || friendProviderSet.Contains(provider))
+                .Select(provider => new ProviderRefreshExecutor.ProviderExecutionPlan
+                {
+                    Provider = provider,
+                    Games = currentPlansByProvider.TryGetValue(provider, out var currentPlan)
+                        ? currentPlan.Games
+                        : Array.Empty<Game>()
+                })
+                .ToList();
+
+            var runProvidersInParallel = resolved.RunProvidersInParallelOverride ??
+                                         (_settings?.Persisted?.EnableParallelProviderRefresh ?? true);
+            var contexts = new List<FriendRefreshCoordinator.FriendProviderRefreshContext>();
+            var contextsLock = new object();
+            var payloadLock = new object();
+            var friendPerf = new FriendRefreshCoordinator.FriendRefreshPerfSession(_logger, friendOptions, friendProviders.Count, "combined");
+            var friendPrepareTimer = Stopwatch.StartNew();
+
+            using (var friendInvalidationBatch = hasFriendWork ? _friendCache?.BeginFriendCacheInvalidationBatch() : null)
+            {
+                try
+                {
+                    // Combined preparation runs current-game refreshes and friend-roster loads concurrently.
+                    // Drive one shared aggregate over [0, preparationUnits] so the two workstreams cannot
+                    // collide or freeze each other. Initialize still tracks the current-game targets (one
+                    // id per provider pass, counted as distinct games) so the per-game status text
+                    // ("Refreshing X (n/total)") stays correct.
+                    _refreshProgressReporter.Initialize(
+                        currentPlanBuild.Targets.Select(target => target.Game?.Id ?? Guid.Empty));
+                    _refreshProgressReporter.InitializePreparation(
+                        currentPlanBuild.Targets.Count + orderedFriendProviders.Count,
+                        preparationUnits,
+                        totalUnits);
+                    var providerResults = await ProviderRefreshExecutor.ExecuteProvidersAsync(
+                        providerWorkPlans,
+                        runProvidersInParallel,
+                        async plan =>
+                        {
+                            cancel.ThrowIfCancellationRequested();
+                            var providerPayload = new RebuildPayload();
+                            var provider = plan.Provider;
+
+                            if (currentPlansByProvider.TryGetValue(provider, out var currentPlan))
+                            {
+                                var currentPayload = await ExecuteCurrentProviderPlanAsync(
+                                    currentPlan,
+                                    progressScope,
+                                    forceIconRefresh,
+                                    cancel).ConfigureAwait(false);
+                                FriendRefreshCoordinator.Merge(providerPayload, currentPayload);
+                                FriendRefreshCoordinator.MarkAuthFailure(providerPayload, provider.ProviderKey, currentPayload?.AuthRequired == true);
+                            }
+
+                            if (friendProviderIndexByProvider.TryGetValue(provider, out var friendProviderIndex))
+                            {
+                                // Suppress the friend session's roster emission during phase 1 (pass null
+                                // progress); roster loads are reflected through the shared preparation
+                                // aggregate instead, so they no longer collide with current-game progress.
+                                var context = await FriendRefresh.PrepareProviderRefreshAsync(
+                                    provider.Friends,
+                                    friendOptions,
+                                    providerPayload,
+                                    progress: null,
+                                    friendProviderIndex,
+                                    orderedFriendProviders.Count,
+                                    cancel).ConfigureAwait(false);
+
+                                var rosterFormat = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_Progress_LoadingFriends");
+                                if (string.IsNullOrWhiteSpace(rosterFormat))
+                                {
+                                    rosterFormat = "Loading friends {1}/{2}: {0}";
+                                }
+
+                                _refreshProgressReporter.ReportPreparationUnitCompleted(
+                                    string.Format(
+                                        rosterFormat,
+                                        string.IsNullOrWhiteSpace(provider.ProviderKey) ? "provider" : provider.ProviderKey.Trim(),
+                                        friendProviderIndex + 1,
+                                        orderedFriendProviders.Count),
+                                    progressScope);
+
+                                if (context != null)
+                                {
+                                    lock (contextsLock)
+                                    {
+                                        contexts.Add(context);
+                                    }
+                                }
+                            }
+
+                            return providerPayload;
+                        },
+                        cancel).ConfigureAwait(false);
+
+                    foreach (var result in providerResults)
+                    {
+                        FriendRefreshCoordinator.Merge(payload, result?.Payload);
+                        RecordProviderFault(result, payload.FaultedProviderKeys);
+                        RecordExecutedProvider(result, payload.ExecutedProviderKeys);
+                    }
+
+                    // Merge dedupes RefreshedGameIds but sums per-provider pass counts; report the
+                    // user-facing count as distinct games refreshed.
+                    if (payload.Summary != null)
+                    {
+                        payload.Summary.GamesRefreshed = payload.Summary.RefreshedGameIds?.Distinct().Count()
+                            ?? payload.Summary.GamesRefreshed;
+                    }
+
+                    if (hasFriendWork)
+                    {
+                        friendPerf.LogPrepare(friendPrepareTimer, contexts, "combinedProviderWork=true");
+                        friendInvalidationBatch?.Flush();
+                        _refreshProgressReporter.ConfigureWeightedProgress(totalUnits, preparationUnits, maxReportUnits);
+                        await FriendRefresh.RefreshPreparedFriendContextsAsync(
+                            contexts,
+                            friendOptions,
+                            payload,
+                            payloadLock,
+                            friendProgress,
+                            friendPerf,
+                            friendInvalidationBatch,
+                            cancel).ConfigureAwait(false);
+                        friendPerf.LogTotal(payload, contexts);
+                        friendInvalidationBatch?.Flush();
+                    }
+                }
+                finally
+                {
+                    FriendRefresh.EndFriendRefreshContexts(contexts);
+                }
+            }
+
+            return payload;
+        }
+
+        private IReadOnlyList<IDataProvider> ResolveCombinedProviderOrder(IEnumerable<IDataProvider> providers)
+        {
+            var unique = new List<IDataProvider>();
+            foreach (var provider in providers ?? Enumerable.Empty<IDataProvider>())
+            {
+                if (provider != null && !unique.Contains(provider))
+                {
+                    unique.Add(provider);
+                }
+            }
+
+            return _targetSelectionResolver.OrderProvidersForRefresh(unique);
         }
 
         private async Task OnGameRefreshed(
@@ -640,8 +1524,67 @@ namespace PlayniteAchievements.Services
                     data.ProviderKey = provider?.ProviderKey;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "Failed to backfill provider key on refreshed game data.");
+            }
+
+            var key = data.PlayniteGameId.Value.ToString();
+
+            GameAchievementData previous = null;
+            try
+            {
+                previous = _cacheService.LoadGameData(key);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to load cached achievement data for '{game?.Name}' before persisting a refresh.");
+            }
+
+            // The cache write is destructive: rows absent from the payload are deleted and a locked
+            // achievement overwrites an unlocked one. A payload that is empty or reports no unlocks
+            // for a game that already has some would erase them, so keep the cached data and let a
+            // later refresh supply a complete result.
+            if (AchievementWriteGuard.ShouldRejectWrite(previous, data, out var rejectionReason))
+            {
+                var incomingTotal = data.Achievements?.Count ?? 0;
+                var incomingUnlockedCount = data.Achievements?.Count(a => a != null && a.Unlocked) ?? 0;
+                _logger?.Warn(
+                    $"Rejected refreshed achievement data for '{game?.Name}' from provider '{provider?.ProviderKey ?? data.ProviderKey}': " +
+                    $"{rejectionReason}. Incoming total={incomingTotal}, unlocked={incomingUnlockedCount}, hasAchievements={data.HasAchievements}. " +
+                    "Cache left unchanged.");
+                return;
+            }
+
+            if (AchievementWriteGuard.IsPartialUnlockRegression(previous, data, out var previousUnlocked, out var incomingUnlocked))
+            {
+                _logger?.Debug(
+                    $"Refreshed achievement data for '{game?.Name}' reports fewer unlocks than the cache " +
+                    $"({previousUnlocked} -> {incomingUnlocked}).");
+            }
+
+            // Restore unlocks the payload reports as locked before anything downstream reads it: the
+            // payload is what lands in the memory cache and what the unlocked aggregate is counted
+            // from, so correcting it here keeps the memory cache, the rows, and the count in step.
+            var preservedUnlocks = AchievementWriteGuard.PreserveCachedUnlocks(previous, data);
+            if (preservedUnlocks > 0)
+            {
+                _logger?.Debug(
+                    $"Kept {preservedUnlocks} cached unlock(s) that the refreshed payload for " +
+                    $"'{game?.Name}' reported as locked.");
+            }
+
+            // When a provider reports which source the achievements came from, a changed
+            // key means previously cached icon files (keyed by ApiName) may hold another
+            // game's art; force an overwrite so icons follow the new source.
+            var forceRefreshExistingTargets = forceIconRefresh;
+            if (!forceRefreshExistingTargets &&
+                !string.IsNullOrWhiteSpace(data.ProviderGameKey) &&
+                previous != null &&
+                HasProviderSourceKeyChanged(previous.ProviderGameKey, data.ProviderGameKey))
+            {
+                forceRefreshExistingTargets = true;
+                _logger?.Info($"Provider source for '{game?.Name}' changed from '{previous.ProviderGameKey ?? "(none)"}' to '{data.ProviderGameKey}'; overwriting cached achievement icons.");
             }
 
             var unlockedIconOverrides = GameCustomDataLookup.GetAchievementUnlockedIconOverrides(data.PlayniteGameId.Value);
@@ -653,10 +1596,8 @@ namespace PlayniteAchievements.Services
                 lockedIconOverrides,
                 cancel,
                 (downloaded, total) => _refreshProgressReporter.ReportIconProgress(game, data, downloaded, total, progressScope),
-                forceRefreshExistingTargets: forceIconRefresh)
+                forceRefreshExistingTargets: forceRefreshExistingTargets)
                 .ConfigureAwait(false);
-
-            var key = data.PlayniteGameId.Value.ToString();
 
             if (!string.IsNullOrWhiteSpace(key))
             {
@@ -678,33 +1619,147 @@ namespace PlayniteAchievements.Services
                 }
 
                 Interlocked.Increment(ref _savedGamesInCurrentRun);
-                _cacheService.NotifyCacheInvalidated();
+
+                // Runs against what the provider just wrote, so it is the refresh that moves a
+                // game off the old flat "Parent - Child" labels and onto real paths.
+                RepointMigratedCategoryMetadata(game, data);
+
+                // The persisted icon paths now point at original-resolution files, so the game's
+                // retired compressed 128px folder (if any) is no longer referenced and can go.
+                _achievementIconService.DeleteLegacyCompressedIconFolder(key);
+
+                FriendRefresh.PromoteMatchingProviderOnlyFriendGame(provider, data);
 
                 // Fire per-game refresh event for amortized tag syncing
-                try { GameRefreshed?.Invoke(game.Id); } catch { }
+                try { GameRefreshed?.Invoke(game.Id); } catch (Exception ex) { _logger?.Debug(ex, "GameRefreshed event handler failed."); }
             }
         }
 
         /// <summary>
-        /// Downloads and caches achievement icons for a GameAchievementData object.
-        /// Updates icon paths in-place to point to local cached files.
+        /// Reports whether the provider-reported source key for a game's achievements
+        /// differs from the previously persisted one. A missing previous key counts as
+        /// changed so caches poisoned before keys were recorded heal on the next refresh.
         /// </summary>
-        public async Task DownloadAchievementIconsAsync(
-            GameAchievementData data,
-            CancellationToken cancel = default)
+        internal static bool HasProviderSourceKeyChanged(string previous, string current)
         {
-            var unlockedIconOverrides = data?.PlayniteGameId != null
-                ? GameCustomDataLookup.GetAchievementUnlockedIconOverrides(data.PlayniteGameId.Value)
-                : null;
-            var lockedIconOverrides = data?.PlayniteGameId != null
-                ? GameCustomDataLookup.GetAchievementLockedIconOverrides(data.PlayniteGameId.Value)
-                : null;
-            await _achievementIconService
-                .DownloadAchievementIconsAsync(data, unlockedIconOverrides, lockedIconOverrides, cancel)
-                .ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(current))
+            {
+                return false;
+            }
+
+            return !string.Equals(previous?.Trim(), current.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
-        private string ResolveFinalSuccessMessage(RebuildPayload payload, Func<RebuildPayload, string> finalMessage)
+        /// <summary>
+        /// Moves this game's label-keyed category metadata onto the nested paths a provider now
+        /// supplies, for the providers that used to compose two segments into one flat
+        /// "Parent - Child" label. Membership follows the achievements on its own; only the custom
+        /// order, the category art and the summary selection are keyed by label.
+        ///
+        /// Plans nothing once a game has moved, so this stays a no-op on every later refresh
+        /// rather than needing a one-time flag. Failure is non-fatal: the metadata simply stays
+        /// where it was and the refresh itself has already been persisted.
+        /// </summary>
+        private void RepointMigratedCategoryMetadata(Game game, GameAchievementData data)
+        {
+            try
+            {
+                var gameId = data?.PlayniteGameId ?? Guid.Empty;
+                if (gameId == Guid.Empty || data.Achievements == null || data.Achievements.Count == 0)
+                {
+                    return;
+                }
+
+                var overridesService = PlayniteAchievementsPlugin.Instance?.AchievementOverridesService;
+                if (overridesService == null)
+                {
+                    return;
+                }
+
+                var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(gameId);
+                var plan = ProviderCategoryPathMigration.Plan(
+                    data.Achievements.Select(achievement => achievement?.Category),
+                    GameCustomDataLookup.GetAchievementCategoryOrder(gameId),
+                    GameCustomDataLookup.GetAchievementCategoryImageOverrides(gameId),
+                    summaryCategory);
+
+                if (plan == null)
+                {
+                    return;
+                }
+
+                // Only a moved summary selection changes what a library rollup reads; an order or
+                // art move is per-game display state and must not queue a library-wide pass.
+                overridesService.SetAchievementCategoryMetadata(
+                    gameId,
+                    plan.Order,
+                    plan.Images,
+                    plan.SummaryCategory,
+                    affectsSummaryData: !ReferenceEquals(plan.SummaryCategory, summaryCategory));
+
+                _logger?.Info(
+                    $"Repointed category metadata for '{game?.Name}' onto the provider's nested category paths.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to repoint category metadata onto provider-supplied nested paths.");
+            }
+        }
+
+        // Applies icon overrides for the given achievements against the cached game data without
+        // running providers: materialize changed overrides (or restore cleared ones to the cached
+        // provider default) and persist the rewritten paths. The legacy compressed folder is kept
+        // because a clear-restore may resolve into it, and GameRefreshed/tag sync is not raised;
+        // the store's CustomDataChanged side effects already cover the override edit itself.
+        public async Task ApplyAchievementIconOverridesAsync(
+            Guid gameId,
+            IReadOnlyCollection<string> changedApiNames,
+            CancellationToken cancel = default)
+        {
+            if (gameId == Guid.Empty ||
+                changedApiNames == null ||
+                changedApiNames.Count == 0 ||
+                _achievementIconService == null ||
+                _cacheService == null)
+            {
+                return;
+            }
+
+            var key = gameId.ToString();
+            var data = _cacheService.LoadGameData(key);
+            if (data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            var unlockedIconOverrides = GameCustomDataLookup.GetAchievementUnlockedIconOverrides(gameId);
+            var lockedIconOverrides = GameCustomDataLookup.GetAchievementLockedIconOverrides(gameId);
+            var forceApiNames = new HashSet<string>(changedApiNames, StringComparer.OrdinalIgnoreCase);
+
+            await _achievementIconService.PopulateAchievementIconCacheAsync(
+                    data,
+                    unlockedIconOverrides,
+                    lockedIconOverrides,
+                    cancel,
+                    onIconProgress: null,
+                    forceRefreshExistingTargets: false,
+                    forceOverrideApiNames: forceApiNames)
+                .ConfigureAwait(false);
+
+            var writeResult = _cacheService.SaveGameData(key, data);
+            if (writeResult == null || !writeResult.Success)
+            {
+                _logger?.Error(
+                    $"Persisting icon override apply failed. key={key}, code={writeResult?.ErrorCode ?? "unknown"}, message={writeResult?.ErrorMessage ?? "Unknown cache persistence failure."}");
+            }
+        }
+
+        /// <summary>
+        /// The run's final status text together with whether it faulted. Both are decided here, in
+        /// one place, so the message the user reads and the flag that drives the failure
+        /// notification cannot disagree.
+        /// </summary>
+        private RebuildOutcome ResolveFinalOutcome(RebuildPayload payload, Func<RebuildPayload, string> finalMessage)
         {
             var defaultMessage = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
             string resolvedMessage = null;
@@ -730,6 +1785,24 @@ namespace PlayniteAchievements.Services
                 resolvedMessage = defaultMessage;
             }
 
+            if (payload?.FaultedProviderKeys?.Count > 0)
+            {
+                var failedFormat = ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed");
+                if (string.IsNullOrWhiteSpace(failedFormat))
+                {
+                    failedFormat = "Refresh failed: {0}";
+                }
+
+                resolvedMessage = string.Concat(
+                    resolvedMessage,
+                    " ",
+                    string.Format(failedFormat, string.Join(", ", payload.FaultedProviderKeys)));
+            }
+
+            // Re-authentication counts as a fault: the provider silently stopped delivering data,
+            // which is exactly the case an unattended refresh needs to surface.
+            var faulted = payload?.FaultedProviderKeys?.Count > 0 || payload?.AuthRequired == true;
+
             if (payload?.AuthRequired == true)
             {
                 var suffix = ResourceProvider.GetString("LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix");
@@ -738,60 +1811,74 @@ namespace PlayniteAchievements.Services
                     suffix = "Some providers require authentication.";
                 }
 
-                return string.Concat(resolvedMessage, " ", suffix);
+                return new RebuildOutcome(string.Concat(resolvedMessage, " ", suffix), faulted);
             }
 
-            return resolvedMessage;
+            return new RebuildOutcome(resolvedMessage, faulted);
         }
 
         // -----------------------------
         // Public refresh methods
         // -----------------------------
 
-        private Task StartManagedRefreshCoreAsync(
-            RefreshModeType mode,
-            CacheRefreshOptions options,
-            Func<RebuildPayload, string> finalMessage,
-            string errorLogMessage,
-            Guid? singleGameId = null,
-            bool forceIconRefresh = false,
-            IReadOnlyList<IDataProvider> providerScope = null,
-            bool? runProvidersInParallelOverride = null,
+        private Task StartManagedResolvedRequestAsync(
+            RefreshRequestPlanner.ResolvedRequest resolved,
+            RefreshAuthContext authContext = null,
+            TargetSelectionCache targetSelectionCache = null,
             CancellationToken externalToken = default)
         {
             return RunManagedAsync(
-                mode,
-                singleGameId,
-                externalToken,
-                (operationId, cancel) => RefreshAsync(
-                    options,
-                    cancel,
-                    operationId,
-                    mode,
-                    singleGameId,
-                    forceIconRefresh,
-                    providerScope,
-                    runProvidersInParallelOverride),
-                finalMessage,
-                errorLogMessage,
-                providerScope
-            );
-        }
-
-        private Task StartManagedResolvedRequestAsync(
-            RefreshRequestPlanner.ResolvedRequest resolved,
-            CancellationToken externalToken = default)
-        {
-            return StartManagedRefreshCoreAsync(
                 resolved.Mode,
-                resolved.Options,
+                resolved.SingleGameId,
+                externalToken,
+                (operationId, cancel) => RefreshResolvedAsync(resolved, operationId, cancel, targetSelectionCache),
                 payload => FormatRefreshCompletionForResolvedRequest(resolved, payload),
                 resolved.ErrorLogMessage ?? "Refresh failed.",
-                singleGameId: resolved.SingleGameId,
-                forceIconRefresh: resolved.ForceIconRefresh,
-                providerScope: resolved.ProviderScope,
-                runProvidersInParallelOverride: resolved.RunProvidersInParallelOverride,
-                externalToken: externalToken);
+                resolved.ProviderScope,
+                authContext,
+                resolved.SurfaceUserNotices);
+        }
+
+        private async Task<RebuildPayload> RefreshResolvedAsync(
+            RefreshRequestPlanner.ResolvedRequest resolved,
+            Guid operationId,
+            CancellationToken cancel,
+            TargetSelectionCache targetSelectionCache = null)
+        {
+            var payload = new RebuildPayload();
+            if (resolved == null)
+            {
+                return payload;
+            }
+
+            if (resolved.CurrentUserOptions != null || resolved.FriendOptions != null)
+            {
+                return await ExecuteRefreshPlanAsync(
+                    resolved,
+                    cancel,
+                    operationId,
+                    resolved.Mode,
+                    resolved.SingleGameId,
+                    targetSelectionCache).ConfigureAwait(false);
+            }
+
+            return payload;
+        }
+
+        private static string FormatFriendRefreshCompletionForResolvedRequest(
+            RefreshRequestPlanner.ResolvedRequest resolved,
+            RebuildPayload payload)
+        {
+            var format = ResourceProvider.GetString("LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount");
+            if (string.IsNullOrWhiteSpace(format))
+            {
+                format = "{0} complete. {1} friend game checks refreshed.";
+            }
+
+            return string.Format(
+                format,
+                GetRefreshModeShortName(resolved.Mode),
+                Math.Max(0, payload?.FriendSummary?.CandidatesRefreshed ?? 0));
         }
 
         private static string GetRefreshModeShortName(RefreshModeType mode)
@@ -825,12 +1912,21 @@ namespace PlayniteAchievements.Services
                 MessageBoxImage.Warning);
         }
 
+        private static bool HasSteamTransientAuthFailure(RefreshAuthContext authContext)
+        {
+            var result = authContext?.GetProbeResult("Steam");
+            return result != null &&
+                   !result.IsSuccess &&
+                   (result.Outcome == AuthOutcome.TimedOut ||
+                    result.Outcome == AuthOutcome.ProbeFailed);
+        }
+
         public Task ExecuteRefreshAsync(CustomRefreshOptions options, CancellationToken externalToken = default)
         {
             return ExecuteRefreshAsync(new RefreshRequest
             {
                 Mode = RefreshModeType.Custom,
-                CustomOptions = options
+                Options = RefreshOptions.FromCustom(options)
             }, externalToken);
         }
 
@@ -846,24 +1942,40 @@ namespace PlayniteAchievements.Services
             }, externalToken);
         }
 
-        public Task ExecuteRefreshAsync(RefreshRequest request, CancellationToken externalToken = default)
+        public virtual Task ExecuteRefreshAsync(RefreshRequest request, CancellationToken externalToken = default)
         {
-            return ExecuteRefreshAsync(request, authenticatedProviders: null, externalToken);
+            return ExecuteRefreshAsync(request, authContext: null, externalToken);
         }
 
-        internal async Task ExecuteRefreshAsync(
+        internal virtual async Task ExecuteRefreshAsync(
             RefreshRequest request,
             IReadOnlyList<IDataProvider> authenticatedProviders,
             CancellationToken externalToken = default)
         {
-            var effectiveAuthenticatedProviders = MaterializeProviderScope(authenticatedProviders);
-            if (effectiveAuthenticatedProviders.Count == 0 && authenticatedProviders == null)
+            var authContext = authenticatedProviders == null
+                ? null
+                : RefreshAuthContext.FromAuthenticatedProviders(authenticatedProviders);
+            await ExecuteRefreshAsync(request, authContext, externalToken).ConfigureAwait(false);
+        }
+
+        internal virtual async Task ExecuteRefreshAsync(
+            RefreshRequest request,
+            RefreshAuthContext authContext,
+            CancellationToken externalToken = default)
+        {
+            var effectiveAuthContext = authContext;
+            if (effectiveAuthContext == null)
             {
-                effectiveAuthenticatedProviders = MaterializeProviderScope(
-                    await GetAuthenticatedProvidersAsync(externalToken).ConfigureAwait(false));
+                effectiveAuthContext = await GetRefreshAuthContextAsync(request, externalToken).ConfigureAwait(false);
             }
 
-            var resolved = _refreshRequestPlanner.Resolve(request, effectiveAuthenticatedProviders);
+            var effectiveAuthenticatedProviders = MaterializeProviderScope(
+                effectiveAuthContext?.AuthenticatedProviders);
+            var targetSelectionCache = effectiveAuthContext?.TargetSelectionCache ?? new TargetSelectionCache();
+            var resolved = _refreshRequestPlanner.Resolve(
+                request,
+                effectiveAuthenticatedProviders,
+                targetSelectionCache);
             if (!resolved.ShouldExecute)
             {
                 if (!string.IsNullOrWhiteSpace(resolved.EmptySelectionLogMessage))
@@ -874,14 +1986,33 @@ namespace PlayniteAchievements.Services
 
                 if (!string.IsNullOrWhiteSpace(resolved.UserMessage))
                 {
-                    ShowCustomRefreshMessage(resolved.UserMessage);
+                    if (request?.SurfaceUserNotices != true)
+                    {
+                        // Only refreshes of a selected game opt in to the no-capable-provider
+                        // modal. Polling, background, import, and bulk refreshes leave the flag
+                        // false and fail silently rather than interrupting the user.
+                        _logger.Info("Refresh selection produced no targets; suppressing no-target modal for non-targeted refresh.");
+                    }
+                    else if (HasSteamTransientAuthFailure(effectiveAuthContext))
+                    {
+                        _logger.Warn("Refresh selection produced no targets because Steam web authentication could not be verified; suppressing generic no-target modal.");
+                    }
+                    else
+                    {
+                        ShowCustomRefreshMessage(resolved.UserMessage);
+                    }
                 }
 
                 return;
             }
 
             resolved.ProviderScope ??= effectiveAuthenticatedProviders;
-            await StartManagedResolvedRequestAsync(resolved, externalToken).ConfigureAwait(false);
+            await StartManagedResolvedRequestAsync(
+                    resolved,
+                    effectiveAuthContext,
+                    targetSelectionCache,
+                    externalToken)
+                .ConfigureAwait(false);
         }
 
         public Task ExecuteRefreshForGamesAsync(IEnumerable<Guid> gameIds, CancellationToken externalToken = default)
@@ -908,6 +2039,26 @@ namespace PlayniteAchievements.Services
             RefreshRequestPlanner.ResolvedRequest resolved,
             RebuildPayload payload)
         {
+            if (resolved?.CurrentUserOptions != null && resolved.FriendOptions != null)
+            {
+                var format = ResourceProvider.GetString("LOCPlayAch_Status_CombinedRefreshCompleteWithModeAndCounts");
+                if (string.IsNullOrWhiteSpace(format))
+                {
+                    format = "{0} complete: {1} games refreshed; {2} friend game checks refreshed.";
+                }
+
+                return string.Format(
+                    format,
+                    GetRefreshModeShortName(resolved.Mode),
+                    Math.Max(0, payload?.Summary?.GamesRefreshed ?? 0),
+                    Math.Max(0, payload?.FriendSummary?.CandidatesRefreshed ?? 0));
+            }
+
+            if (resolved?.FriendOptions != null)
+            {
+                return FormatFriendRefreshCompletionForResolvedRequest(resolved, payload);
+            }
+
             if (resolved.Mode == RefreshModeType.Single)
             {
                 return ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
@@ -957,5 +2108,386 @@ namespace PlayniteAchievements.Services
             }
         }
 
+
+        // -----------------------------
+        // Friends refresh helpers
+        // -----------------------------
+        // The friend-refresh subsystem lives in FriendRefreshCoordinator (FriendRefreshCoordinator.cs,
+        // with pure policy predicates in FriendRefreshWorkPolicy.cs); the members below delegate to it.
+
+        private IFriendCacheManager _friendCache => _cacheService as IFriendCacheManager;
+
+        private FriendRefreshCoordinator _friendRefreshCoordinator;
+
+        // Created lazily so every constructor path (including the test-only partial-class
+        // constructors) produces a coordinator over the same fields.
+        private FriendRefreshCoordinator FriendRefresh =>
+            _friendRefreshCoordinator ?? (_friendRefreshCoordinator = new FriendRefreshCoordinator(
+                _api,
+                _settings,
+                _logger,
+                _cacheService,
+                _achievementIconService,
+                _providerRegistry,
+                _providers));
+
+        public Task<RebuildPayload> RefreshAsync(
+            IReadOnlyList<IDataProvider> providerScope,
+            FriendRefreshOptions options,
+            Action<string, int, int> reportProgress,
+            CancellationToken cancel = default)
+        {
+            return FriendRefresh.RefreshAsync(providerScope, options, reportProgress, cancel);
+        }
+
+        /// <summary>
+        /// Refreshes only the friend roster (the list of friends and their avatars) for each
+        /// friend-capable provider, without fetching ownership, game definitions, or achievements.
+        /// Used by the in-settings "refresh friends list" action. Returns the number of active friends
+        /// saved across providers.
+        /// </summary>
+        public Task<int> RefreshFriendRosterAsync(
+            IReadOnlyList<IDataProvider> providerScope,
+            CancellationToken cancel = default)
+        {
+            return FriendRefresh.RefreshFriendRosterAsync(providerScope, cancel);
+        }
+
+    internal sealed class FriendRefreshProgressSession
+    {
+        internal const int TotalUnits = 10000;
+        private const int MaxReportUnits = TotalUnits - 1;
+        private const int RosterStart = 0;
+        private const int RosterEnd = 1000;
+        private const int LibraryStart = 1000;
+        private const int LibraryEnd = 4200;
+        private const int GameStart = 4200;
+        // The game-check band is split into an ordered definitions sub-band [GameStart, GameChecksSplit]
+        // and an achievement-scrape sub-band [GameChecksSplit, GameEnd]. Each sub-band's total is known
+        // before it emits any completion, so the monotonic clamp never freezes mid-phase. The split is a
+        // fixed midpoint (a fully proportional split is impossible because the scrape total is not known
+        // until after the definitions phase runs); when there are no due definitions the scrape phase
+        // collapses to use the full [GameStart, GameEnd] range so no dead gap appears.
+        private const int GameChecksSplit = 7050;
+        private const int GameEnd = 9900;
+
+        private readonly Action<string, int, int> _reportProgress;
+        private readonly object _sync = new object();
+        private int _lastReportedUnits;
+        private int _providerTotal = 1;
+        private int _providersCompleted;
+        private int _libraryTotal;
+        private int _librariesCompleted;
+        private int _definitionTotal;
+        private int _definitionsCompleted;
+        private int _scrapeTotal;
+        private int _scrapeCompleted;
+        private bool _definitionsEmittedAny;
+
+        public FriendRefreshProgressSession(Action<string, int, int> reportProgress)
+        {
+            _reportProgress = reportProgress;
+        }
+
+        public FriendRefreshProgressSession(Action<string, int, int> reportProgress, int providerCount)
+            : this(reportProgress)
+        {
+            InitializeProviderTotal(providerCount);
+        }
+
+        public void InitializeProviderTotal(int total)
+        {
+            lock (_sync)
+            {
+                _providerTotal = Math.Max(1, total);
+                _providersCompleted = 0;
+            }
+        }
+
+        public void ReportLoadingFriends()
+        {
+            ReportLoadingFriends(null, 0, _providerTotal);
+        }
+
+        public void ReportLoadingFriends(string providerKey, int providerIndex, int providerTotal)
+        {
+            var total = Math.Max(1, providerTotal);
+            var current = Math.Max(0, Math.Min(providerIndex, total - 1));
+            var message = Format(
+                "LOCPlayAch_FriendsRefresh_Progress_LoadingFriends",
+                "Loading friends {1}/{2}: {0}",
+                string.IsNullOrWhiteSpace(providerKey) ? "provider" : providerKey.Trim(),
+                current + 1,
+                total);
+            ReportCountAt(RosterStart, RosterEnd, current, total, message);
+        }
+
+        public void ReportProviderRosterLoaded(string providerKey)
+        {
+            int current;
+            int total;
+            lock (_sync)
+            {
+                total = Math.Max(1, _providerTotal);
+                _providersCompleted = Math.Max(0, Math.Min(total, _providersCompleted + 1));
+                current = _providersCompleted;
+            }
+
+            var message = Format(
+                "LOCPlayAch_FriendsRefresh_Progress_LoadingFriends",
+                "Loading friends {1}/{2}: {0}",
+                string.IsNullOrWhiteSpace(providerKey) ? "provider" : providerKey.Trim(),
+                current,
+                total);
+            ReportCountAt(RosterStart, RosterEnd, current, total, message);
+        }
+
+        public void InitializeFriendLibraryTotal(int total)
+        {
+            lock (_sync)
+            {
+                _libraryTotal = Math.Max(0, total);
+                _librariesCompleted = 0;
+            }
+        }
+
+        public void ReportFriendLibraryCompleted(string friendName = null)
+        {
+            int current;
+            int total;
+            lock (_sync)
+            {
+                total = Math.Max(1, _libraryTotal);
+                _librariesCompleted = Math.Max(0, Math.Min(total, _librariesCompleted + 1));
+                current = _librariesCompleted;
+            }
+
+            ReportCount(
+                LibraryStart,
+                LibraryEnd,
+                current,
+                total,
+                friendName,
+                "LOCPlayAch_FriendsRefresh_Progress_Libraries",
+                "Refreshing friend libraries {0}/{1}",
+                "LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed",
+                "Refreshing friend libraries {0}/{1}: {2}");
+        }
+
+        public void InitializeDefinitionChecksTotal(int total)
+        {
+            lock (_sync)
+            {
+                _definitionTotal = Math.Max(0, total);
+                _definitionsCompleted = 0;
+            }
+        }
+
+        public void InitializeAchievementScrapeTotal(int total)
+        {
+            lock (_sync)
+            {
+                _scrapeTotal = Math.Max(0, total);
+                _scrapeCompleted = 0;
+            }
+        }
+
+        public void ReportDefinitionCheckActive(string detail = null)
+        {
+            int current;
+            int total;
+            lock (_sync)
+            {
+                current = Math.Max(0, _definitionsCompleted);
+                total = Math.Max(1, _definitionTotal);
+            }
+
+            ReportDefinitionChecks(current, total, detail);
+        }
+
+        public void ReportDefinitionCheckCompleted(string detail = null)
+        {
+            int current;
+            int total;
+            lock (_sync)
+            {
+                total = Math.Max(1, _definitionTotal);
+                _definitionsCompleted = Math.Max(0, Math.Min(total, _definitionsCompleted + 1));
+                current = _definitionsCompleted;
+            }
+
+            ReportDefinitionChecks(current, total, detail);
+        }
+
+        public void ReportAchievementScrapeCompleted(string detail = null)
+        {
+            int current;
+            int total;
+            int scrapeStart;
+            lock (_sync)
+            {
+                total = Math.Max(1, _scrapeTotal);
+                _scrapeCompleted = Math.Max(0, Math.Min(total, _scrapeCompleted + 1));
+                current = _scrapeCompleted;
+                scrapeStart = _definitionsEmittedAny ? GameChecksSplit : GameStart;
+            }
+
+            ReportCount(
+                scrapeStart,
+                GameEnd,
+                current,
+                total,
+                detail,
+                "LOCPlayAch_FriendsRefresh_Progress_GameChecks",
+                "Refreshing friend games {0}/{1}",
+                "LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed",
+                "Refreshing friend games {0}/{1}: {2}");
+        }
+
+        // Achievement-icon and game-image downloads are sub-steps of the game-definition check for a given
+        // friend game. They advance the bar fractionally within that game's check unit but keep the SAME
+        // "Checking friend games" status text, so the message never bounces between "checking games" and
+        // "downloading images".
+        public void ReportAchievementImages(int completed, int total, string gameName = null)
+        {
+            ReportImageProgress(completed, total, gameName);
+        }
+
+        public void ReportFriendGameImages(int completed, int total, string gameName = null)
+        {
+            ReportImageProgress(completed, total, gameName);
+        }
+
+        private void ReportDefinitionChecks(int completed, int total, string detail)
+        {
+            lock (_sync)
+            {
+                _definitionsEmittedAny = true;
+            }
+
+            ReportCount(
+                GameStart,
+                GameChecksSplit,
+                completed,
+                total,
+                detail,
+                "LOCPlayAch_FriendsRefresh_Progress_GameChecks",
+                "Refreshing friend games {0}/{1}",
+                "LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed",
+                "Refreshing friend games {0}/{1}: {2}");
+        }
+
+        private void ReportImageProgress(int completed, int total, string detail)
+        {
+            total = Math.Max(1, total);
+            completed = Math.Max(0, Math.Min(completed, total));
+            // Image downloads happen during the definitions phase (per due game), so their fractional
+            // sub-progress maps into the definitions sub-band over the definitions total. This keeps
+            // image progress from leaking into (and freezing) the achievement-scrape sub-band. The image
+            // completed/total drive only the fractional bar position; the visible text reuses the shared
+            // "Checking friend games" message (with the game-check counts) so the phrasing never changes.
+            int definitionsCompleted;
+            int definitionTotal;
+            lock (_sync)
+            {
+                _definitionsEmittedAny = true;
+                definitionsCompleted = Math.Max(0, _definitionsCompleted);
+                definitionTotal = Math.Max(1, _definitionTotal);
+            }
+
+            var fractional = completed <= 0
+                ? 0d
+                : Math.Min(0.85d, completed / (double)total * 0.85d);
+            var effectiveCompleted = Math.Min(definitionTotal, definitionsCompleted + fractional);
+            var units = GameStart + (int)((GameChecksSplit - GameStart) * effectiveCompleted / definitionTotal);
+            var message = FormatCount(
+                "LOCPlayAch_FriendsRefresh_Progress_GameChecks",
+                "Refreshing friend games {0}/{1}",
+                "LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed",
+                "Checking friend games {0}/{1}: {2}",
+                definitionsCompleted,
+                definitionTotal,
+                detail);
+            ReportAt(units, message);
+        }
+
+        private void ReportCount(
+            int start,
+            int end,
+            int completed,
+            int total,
+            string detail,
+            string resourceKey,
+            string fallback,
+            string namedResourceKey,
+            string namedFallback)
+        {
+            total = Math.Max(1, total);
+            completed = Math.Max(0, Math.Min(completed, total));
+            var localUnits = start + (int)((long)(end - start) * completed / total);
+            var message = FormatCount(resourceKey, fallback, namedResourceKey, namedFallback, completed, total, detail);
+            ReportAt(localUnits, message);
+        }
+
+        private void ReportCountAt(int start, int end, int completed, int total, string message)
+        {
+            total = Math.Max(1, total);
+            completed = Math.Max(0, Math.Min(completed, total));
+            var localUnits = start + (int)((long)(end - start) * completed / total);
+            ReportAt(localUnits, message);
+        }
+
+        private void ReportAt(int localUnits, string message)
+        {
+            if (_reportProgress == null)
+            {
+                return;
+            }
+
+            var globalUnits = Math.Max(0, Math.Min(MaxReportUnits, localUnits));
+            lock (_sync)
+            {
+                if (globalUnits < _lastReportedUnits)
+                {
+                    globalUnits = _lastReportedUnits;
+                }
+                else
+                {
+                    _lastReportedUnits = globalUnits;
+                }
+            }
+
+            _reportProgress(message, globalUnits, TotalUnits);
+        }
+
+        private static string FormatCount(
+            string resourceKey,
+            string fallback,
+            string namedResourceKey,
+            string namedFallback,
+            int current,
+            int total,
+            string detail)
+        {
+            if (!string.IsNullOrWhiteSpace(detail))
+            {
+                return Format(namedResourceKey, namedFallback, current, total, detail.Trim());
+            }
+
+            return Format(resourceKey, fallback, current, total);
+        }
+
+        private static string Format(string resourceKey, string fallback, params object[] args)
+        {
+            var format = ResourceProvider.GetString(resourceKey);
+            if (string.IsNullOrWhiteSpace(format) ||
+                (format.StartsWith("<!", StringComparison.Ordinal) && format.EndsWith("!>", StringComparison.Ordinal)))
+            {
+                format = fallback;
+            }
+
+            return string.Format(format, args ?? Array.Empty<object>());
+        }
     }
+}
 }

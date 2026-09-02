@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public sealed class GameCustomDataPortableFile
     {
-        public int SchemaVersion { get; set; } = 5;
+        public int SchemaVersion { get; set; } = 7;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -23,9 +23,17 @@ namespace PlayniteAchievements.Models.Settings
 
         public Dictionary<string, string> AchievementCategoryTypeOverrides { get; set; }
 
+        public List<string> AchievementCategoryOrder { get; set; }
+
+        public Dictionary<string, CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
+
+        public GameSummaryCategoryData GameSummaryCategory { get; set; }
+
         public List<string> FilteredAchievementApiNames { get; set; }
 
         public List<string> SummaryFilteredAchievementApiNames { get; set; }
+
+        public List<string> GoalAchievementApiNames { get; set; }
 
         public Dictionary<string, string> AchievementUnlockedIconOverrides { get; set; }
 
@@ -43,7 +51,11 @@ namespace PlayniteAchievements.Models.Settings
 
         public string ExophaseSlugOverride { get; set; }
 
+        public GameNotificationAppearanceOverride NotificationAppearanceOverride { get; set; }
+
         public ProviderOverrideData ProviderOverride { get; set; }
+
+        public string ExophaseEnrichmentSlugOverride { get; set; }
 
         public ManualAchievementLink ManualLink { get; set; }
 
@@ -66,11 +78,19 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = AchievementCategoryOrder != null
+                    ? new List<string>(AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = GameCustomDataFile.CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
+                GameSummaryCategory = GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
                 SummaryFilteredAchievementApiNames = SummaryFilteredAchievementApiNames != null
                     ? new List<string>(SummaryFilteredAchievementApiNames)
+                    : null,
+                GoalAchievementApiNames = GoalAchievementApiNames != null
+                    ? new List<string>(GoalAchievementApiNames)
                     : null,
                 AchievementUnlockedIconOverrides = AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
@@ -86,7 +106,9 @@ namespace PlayniteAchievements.Models.Settings
                 ShadPS4MatchIdOverride = ShadPS4MatchIdOverride,
                 ForceUseExophase = ForceUseExophase,
                 ExophaseSlugOverride = ExophaseSlugOverride,
+                NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
+                ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
                 ManualLink = ManualLink?.Clone(),
                 CustomAchievements = CustomAchievements != null
                     ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)

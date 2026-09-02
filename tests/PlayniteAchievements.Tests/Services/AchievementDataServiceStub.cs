@@ -1,8 +1,9 @@
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Cache;
 using System;
 using System.Collections.Generic;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     // Test-only seam for ThemeIntegrationService compilation in isolated test project.
     public class AchievementDataService
@@ -11,6 +12,9 @@ namespace PlayniteAchievements.Services
         public List<GameAchievementData> AllGameData { get; set; } = new List<GameAchievementData>();
         public Dictionary<Guid, GameAchievementData> VisibleGameDataById { get; } = new Dictionary<Guid, GameAchievementData>();
         public List<GameAchievementData> VisibleAllGameData { get; set; }
+        internal CachedSummaryData CachedSummaryDataForTheme { get; set; }
+        public int CachedSummaryDataForThemeCalls { get; private set; }
+        public int VisibleAllGameDataForThemeCalls { get; private set; }
 
         public virtual GameAchievementData GetGameAchievementData(Guid playniteGameId)
         {
@@ -36,7 +40,14 @@ namespace PlayniteAchievements.Services
 
         public virtual List<GameAchievementData> GetAllVisibleGameAchievementDataForTheme()
         {
+            VisibleAllGameDataForThemeCalls++;
             return VisibleAllGameData ?? GetAllGameAchievementDataForTheme();
+        }
+
+        internal virtual CachedSummaryData GetCachedSummaryDataForTheme(int recentAchievementDetailLimit = 0)
+        {
+            CachedSummaryDataForThemeCalls++;
+            return CachedSummaryDataForTheme;
         }
 
         public virtual List<string> GetCachedGameIds()

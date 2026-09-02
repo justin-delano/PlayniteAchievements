@@ -5,13 +5,15 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.EmuLibrary;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Xenia.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -64,34 +66,41 @@ namespace PlayniteAchievements.Providers.Xenia
 
             var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
 
-            return await ProviderRefreshExecutor.RunProviderGamesAsync(
-                gamesToRefresh,
-                onGameStarting,
-                async (game, token) =>
-                {
-                    var data = GetAchievementData(game);
-                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
-                    return new ProviderRefreshExecutor.ProviderGameResult
+            try
+            {
+                return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, token) =>
                     {
-                        Data = data
-                    };
-                },
-                onGameCompleted,
-                isAuthRequiredException: _ => false,
-                onGameError: (game, ex, consecutiveErrors) =>
-                {
-                    _logger?.Warn(ex, $"[Xenia] Failed to scan game '{game?.Name}'");
-                },
-                delayBetweenGamesAsync: null,
-                delayAfterErrorAsync: null,
-                cancel).ConfigureAwait(false);
+                        var data = GetAchievementData(game);
+                        await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                        return new ProviderRefreshExecutor.ProviderGameResult
+                        {
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: _ => false,
+                    onGameError: (game, ex, consecutiveErrors) =>
+                    {
+                        _logger?.Warn(ex, $"[Xenia] Failed to scan game '{game?.Name}'");
+                    },
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: null,
+                    cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                rarityEnricher?.Dispose();
+            }
         }
 
         private GameAchievementData GetAchievementData(Game game)
         {
             if (!ResolveTitleID(game, out var titleID))
             {
-                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", $"[Xenia] TitleID not found for {game.Name}! Has the game been launched?", NotificationType.Error));
+                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", string.Format(ResourceProvider.GetString("LOCPlayAch_Xenia_NotFoundWarning"), "TitleID", game.Name), NotificationType.Error));
                 return null;
             }
 
@@ -99,7 +108,7 @@ namespace PlayniteAchievements.Providers.Xenia
 
             if (!File.Exists($"{_providerSettings.AccountPath}\\{titleID}.gpd"))
             {
-                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", $"[Xenia] {titleID}.gpd file not found for {game.Name}! Has the game been launched?", NotificationType.Info));
+                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", string.Format(ResourceProvider.GetString("LOCPlayAch_Xenia_NotFoundWarning"), $"{titleID}.gpd", game.Name), NotificationType.Info));
                 _logger.Warn($"[Xenia] {titleID}.gpd file in {_providerSettings.AccountPath} not found for {game.Name}!");
                 data = new GameAchievementData
                 {
@@ -221,17 +230,11 @@ namespace PlayniteAchievements.Providers.Xenia
                 return true;
             }
 
+            var candidatePaths = GetCandidateRomPaths(game);
+
             // Try to find game in recent.toml
-            foreach (var rom in game.Roms)
+            foreach (var path in candidatePaths)
             {
-                var path = PathExpansion.ExpandGamePath(_playniteApi, game, rom?.Path);
-                if (string.IsNullOrWhiteSpace(path))
-                {
-                    continue;
-                }
-
-                path = path.Replace("\\\\", "\\").Trim('"');
-
                 var xeniapath = _providerSettings.AccountPath + "\\..\\..\\..\\..\\..\\";
                 if (File.Exists($"{xeniapath}recent.toml"))
                 {
@@ -278,8 +281,10 @@ namespace PlayniteAchievements.Providers.Xenia
                             if (gpdFilePath.EndsWith("FFFE07D1.gpd"))
                                 continue;
 
-                            var gpdfile = new GPDResolver().LoadGPD(gpdFilePath);
-                            var gameName = gpdfile.StringData.Replace("\0", "");
+                            if (!GPDResolver.TryReadTitleString(gpdFilePath, out var stringData))
+                                continue;
+
+                            var gameName = stringData.Replace("\0", "");
                             gameName = gameName.Replace("\"", "");
 
                             if (gameName == ROMTitle)
@@ -296,98 +301,69 @@ namespace PlayniteAchievements.Providers.Xenia
 
             // Try to find TitleID in file
             int exeAreaSize = 300;
-            foreach (var rom in game.Roms)
+            foreach (var path in candidatePaths)
             {
-                var path = PathExpansion.ExpandGamePath(_playniteApi, game, rom?.Path);
-                if (string.IsNullOrWhiteSpace(path))
+                if (!File.Exists(path))
                 {
                     continue;
                 }
 
-                path = path.Replace("\\\\", "\\").Trim('"');
-
                 if (path.EndsWith(".iso") || path.EndsWith(".xex") || string.IsNullOrEmpty(Path.GetExtension(path)))
                 {
-                    using var mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
-
-                    Int64 accessoroffset = 0;
-                    var filesize = new FileInfo(path).Length;
-                    bool filecomplete = false;
-
-                    // Place this outside of loop to combat potential edge-case where .exe/.pe is found at the start of
-                    // the 1.5gb chunk but titleID is in the previous 1.5GB chunk that has been wiped
                     var chunksize = 8 * 1024; // 8 KB buffer
                     var buffer = new byte[chunksize];
+                    // Carries the tail of the previous read so a marker straddling a read boundary is still found
                     var previousbuffer = new byte[chunksize];
+                    byte[] combinedbuffer = new byte[chunksize * 2];
+                    byte[] exeChunk = new byte[exeAreaSize];
+                    byte[] exeMarker = Encoding.UTF8.GetBytes(".exe");
+                    byte[] peMarker = Encoding.UTF8.GetBytes(".pe");
 
-                    // Accessor needs to be split into sub 2GB chunks due to virtual address max size on 32bit
-                    // This didn't need chunking in my testing on .NET8 but we are on .NET4
-                    do
+                    // Playnite is a 32-bit process; the file must be streamed, never memory-mapped,
+                    // because a large contiguous view reservation exhausts virtual address space
+                    using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, chunksize, FileOptions.SequentialScan);
+
+                    int bytesRead;
+                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
                     {
-                        Int64 filechunk = 1500000000;
-                        if(filechunk + accessoroffset > filesize)
+                        Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
+                        Array.Copy(buffer, 0, combinedbuffer, chunksize, bytesRead);
+
+                        var combinedLength = previousbuffer.Length + bytesRead;
+                        var foundexe = IndexOf(combinedbuffer, combinedLength, exeMarker);
+                        var foundpe = IndexOf(combinedbuffer, combinedLength, peMarker);
+
+                        if (foundexe >= exeAreaSize)
                         {
-                            filechunk = filesize - accessoroffset;
-                            filecomplete = true;
+                            // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
+                            Array.Copy(combinedbuffer, foundexe - exeAreaSize, exeChunk, 0, exeAreaSize);
+
+                            var temptitleID = CheckChunk(ref exeChunk);
+                            if (!string.IsNullOrEmpty(temptitleID))
+                            {
+                                titleID = temptitleID;
+                                CacheTitleId(game.Id, temptitleID);
+                                return true;
+
+                            }
+                        }
+                        if (foundpe >= exeAreaSize)
+                        {
+                            Array.Copy(combinedbuffer, foundpe - exeAreaSize, exeChunk, 0, exeAreaSize);
+
+                            var temptitleID = CheckChunk(ref exeChunk);
+                            if (!string.IsNullOrEmpty(temptitleID))
+                            {
+                                titleID = temptitleID;
+                                CacheTitleId(game.Id, temptitleID);
+                                return true;
+                            }
                         }
 
-                        using var accessor = mmf.CreateViewStream(accessoroffset, filechunk, MemoryMappedFileAccess.Read);
-                        accessoroffset += filechunk;
-                        var position = 0;
-                        var bytesRead = 0;
-                        byte[] combinedbuffer = new byte[chunksize * 2];
-                        byte[] exeChunk = new byte[exeAreaSize];
-
-                        while (accessor.Position < accessor.Length)
-                        {
-                            bytesRead = accessor.Read(buffer, 0, buffer.Length);
-                            if (bytesRead == 0) break;
-
-                            Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
-                            Array.Copy(buffer, 0, combinedbuffer, chunksize, bytesRead);
-
-                            var combinedLength = previousbuffer.Length + bytesRead;
-                            var foundexe = IndexOf(combinedbuffer, combinedLength, Encoding.UTF8.GetBytes(".exe"));
-                            var foundpe = IndexOf(combinedbuffer, combinedLength, Encoding.UTF8.GetBytes(".pe"));
-
-                            if (foundexe >= exeAreaSize)
-                            {
-                                // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
-                                Array.Copy(combinedbuffer, foundexe - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                                var temptitleID = CheckChunk(ref exeChunk);
-                                if (!string.IsNullOrEmpty(temptitleID))
-                                {
-                                    titleID = temptitleID;
-                                    CacheTitleId(game.Id, temptitleID);
-                                    return true;
-
-                                }
-                            }
-                            if (foundpe >= exeAreaSize)
-                            {
-                                Array.Copy(combinedbuffer, foundpe - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                                var temptitleID = CheckChunk(ref exeChunk);
-                                if (!string.IsNullOrEmpty(temptitleID))
-                                {
-                                    titleID = temptitleID;
-                                    CacheTitleId(game.Id, temptitleID);
-                                    return true;
-                                }
-                            }
-
-                            position += bytesRead;
-                            Array.Clear(previousbuffer, 0, previousbuffer.Length);
-                            var tailCount = Math.Min(previousbuffer.Length, bytesRead);
-                            Array.Copy(buffer, bytesRead - tailCount, previousbuffer, previousbuffer.Length - tailCount, tailCount);
-                        }
-
-
-
-                    } while (!filecomplete);
-                    
-
+                        Array.Clear(previousbuffer, 0, previousbuffer.Length);
+                        var tailCount = Math.Min(previousbuffer.Length, bytesRead);
+                        Array.Copy(buffer, bytesRead - tailCount, previousbuffer, previousbuffer.Length - tailCount, tailCount);
+                    }
                 }
                 else
                 {
@@ -397,6 +373,45 @@ namespace PlayniteAchievements.Providers.Xenia
 
             titleID = "";
             return false;
+        }
+
+        /// <summary>
+        /// Collects normalized candidate rom paths for a game: explicit rom entries plus,
+        /// for uninstalled EmuLibrary games, the source file decoded from the game id.
+        /// </summary>
+        private List<string> GetCandidateRomPaths(Game game)
+        {
+            var paths = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (game?.Roms != null)
+            {
+                foreach (var rom in game.Roms)
+                {
+                    AddCandidateRomPath(paths, seen, PathExpansion.ExpandGamePath(_playniteApi, game, rom?.Path));
+                }
+            }
+
+            if (EmuLibraryPathResolver.TryResolveSourceFilePath(_playniteApi, game, out var emuLibrarySourceFile))
+            {
+                AddCandidateRomPath(paths, seen, emuLibrarySourceFile);
+            }
+
+            return paths;
+        }
+
+        private static void AddCandidateRomPath(List<string> paths, HashSet<string> seen, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            var normalized = path.Replace("\\\\", "\\").Trim('"');
+            if (!string.IsNullOrWhiteSpace(normalized) && seen.Add(normalized))
+            {
+                paths.Add(normalized);
+            }
         }
 
         internal bool TryGetCachedTitleId(Guid gameId, out string titleId)

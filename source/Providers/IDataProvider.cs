@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK.Models;
 using System;
@@ -31,6 +32,12 @@ namespace PlayniteAchievements.Providers
         /// </summary>
         ISessionManager AuthSession { get; }
 
+        /// <summary>
+        /// Gets the optional provider-owned friends capability.
+        /// Providers that do not support friends return null.
+        /// </summary>
+        IFriendsProvider Friends { get; }
+
         Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
             Action<Game> onGameStarting,
@@ -51,5 +58,14 @@ namespace PlayniteAchievements.Providers
         /// Creates the settings view for this provider.
         /// </summary>
         ProviderSettingsViewBase CreateSettingsView();
+    }
+
+    /// <summary>
+    /// Optional current-user refresh capability for providers that can produce a safe result
+    /// without live web authentication. The provider still owns the final per-game decision.
+    /// </summary>
+    internal interface IOfflineRefreshFallbackProvider
+    {
+        bool CanAttemptOfflineRefresh { get; }
     }
 }

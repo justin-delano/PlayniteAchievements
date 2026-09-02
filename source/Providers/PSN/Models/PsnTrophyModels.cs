@@ -19,6 +19,12 @@ namespace PlayniteAchievements.Providers.PSN.Models
     {
         [JsonProperty("npCommunicationId")]
         public string NpCommunicationId { get; set; }
+
+        [JsonProperty("trophyTitleName")]
+        public string TrophyTitleName { get; set; }
+
+        [JsonProperty("trophyTitleIconUrl")]
+        public string TrophyTitleIconUrl { get; set; }
     }
 
     /// <summary>
@@ -70,6 +76,25 @@ namespace PlayniteAchievements.Providers.PSN.Models
     {
         [JsonProperty("trophies")]
         public List<PsnTrophyDetail> Trophies { get; set; }
+    }
+
+    /// <summary>
+    /// Response from /npCommunicationIds/{id}/trophyGroups - the trophy group metadata
+    /// (base group plus each DLC group) carrying human-readable group titles.
+    /// </summary>
+    internal sealed class PsnTrophyGroupsResponse
+    {
+        [JsonProperty("trophyGroups")]
+        public List<PsnTrophyGroup> TrophyGroups { get; set; }
+    }
+
+    internal sealed class PsnTrophyGroup
+    {
+        [JsonProperty("trophyGroupId")]
+        public string TrophyGroupId { get; set; }
+
+        [JsonProperty("trophyGroupName")]
+        public string TrophyGroupName { get; set; }
     }
 
     internal sealed class PsnTrophyDetail

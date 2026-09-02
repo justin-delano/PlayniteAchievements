@@ -1,18 +1,24 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Navigation;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.BattleNet.Models;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
-    public partial class BattleNetSettingsView : ProviderSettingsViewBase
+    public partial class BattleNetSettingsView : ProviderSettingsViewBase, IAuthRefreshable
     {
         private static readonly ILogger Logger = PluginLogger.GetLogger(nameof(BattleNetSettingsView));
         private readonly BattleNetApiClient _apiClient;
+        private readonly BattleNetSessionManager _sessionManager;
+        private readonly DataForAzerothSessionManager _dataForAzerothSession;
         private readonly ILogger _logger;
         private BattleNetSettings _battleNetSettings;
 
@@ -25,15 +31,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             set => SetValue(WowConfiguredProperty, value);
         }
 
-        public static readonly DependencyProperty Sc2ConfiguredProperty =
-            DependencyProperty.Register(nameof(Sc2Configured), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
-
-        public bool Sc2Configured
-        {
-            get => (bool)GetValue(Sc2ConfiguredProperty);
-            set => SetValue(Sc2ConfiguredProperty, value);
-        }
-
         public static readonly DependencyProperty WowStatusProperty =
             DependencyProperty.Register(nameof(WowStatus), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
 
@@ -43,22 +40,82 @@ namespace PlayniteAchievements.Providers.BattleNet
             set => SetValue(WowStatusProperty, value);
         }
 
-        public static readonly DependencyProperty Sc2StatusProperty =
-            DependencyProperty.Register(nameof(Sc2Status), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
+        public static readonly DependencyProperty AuthBusyProperty =
+            DependencyProperty.Register(nameof(AuthBusy), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
 
-        public string Sc2Status
+        public bool AuthBusy
         {
-            get => (string)GetValue(Sc2StatusProperty);
-            set => SetValue(Sc2StatusProperty, value);
+            get => (bool)GetValue(AuthBusyProperty);
+            set => SetValue(AuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty AuthStatusProperty =
+            DependencyProperty.Register(nameof(AuthStatus), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
+
+        public string AuthStatus
+        {
+            get => (string)GetValue(AuthStatusProperty);
+            set => SetValue(AuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty DataForAzerothCheckedProperty =
+            DependencyProperty.Register(nameof(DataForAzerothChecked), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
+
+        /// <summary>Whether the Data for Azeroth site check is currently cleared.</summary>
+        public bool DataForAzerothChecked
+        {
+            get => (bool)GetValue(DataForAzerothCheckedProperty);
+            set => SetValue(DataForAzerothCheckedProperty, value);
+        }
+
+        public static readonly DependencyProperty DataForAzerothStatusProperty =
+            DependencyProperty.Register(nameof(DataForAzerothStatus), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
+
+        public string DataForAzerothStatus
+        {
+            get => (string)GetValue(DataForAzerothStatusProperty);
+            set => SetValue(DataForAzerothStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty DataForAzerothPendingProperty =
+            DependencyProperty.Register(nameof(DataForAzerothPending), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(true));
+
+        /// <summary>Nothing probed yet, so the card claims neither success nor failure.</summary>
+        public bool DataForAzerothPending
+        {
+            get => (bool)GetValue(DataForAzerothPendingProperty);
+            set => SetValue(DataForAzerothPendingProperty, value);
+        }
+
+        public static readonly DependencyProperty DataForAzerothCheckingProperty =
+            DependencyProperty.Register(nameof(DataForAzerothChecking), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
+
+        public bool DataForAzerothChecking
+        {
+            get => (bool)GetValue(DataForAzerothCheckingProperty);
+            set => SetValue(DataForAzerothCheckingProperty, value);
         }
 
         public new BattleNetSettings Settings => _battleNetSettings;
 
-        public BattleNetSettingsView(BattleNetApiClient apiClient, ILogger logger)
+        public BattleNetSettingsView(
+            BattleNetApiClient apiClient,
+            BattleNetSessionManager sessionManager,
+            DataForAzerothSessionManager dataForAzerothSession,
+            ILogger logger)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            // Null when no browser is available; the panel then stays inert rather than lying.
+            _dataForAzerothSession = dataForAzerothSession;
             _logger = logger ?? Logger;
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet"));
+            AuthLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderAuth"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -77,26 +134,29 @@ namespace PlayniteAchievements.Providers.BattleNet
             base.Initialize(settings);
             if (_battleNetSettings != null)
             {
+                if (BattleNetSettings.IsLegacyDefaultRedirectUri(_battleNetSettings.BattleNetRedirectUri))
+                {
+                    _battleNetSettings.BattleNetRedirectUri = BattleNetSettings.DefaultRedirectUri;
+                }
+
                 _battleNetSettings.PropertyChanged += BattleNetSettings_PropertyChanged;
-                ClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
+                WowClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
             }
 
             LoadWowRegions();
             UpdateWowStatus();
-            UpdateSc2Status();
+            SetAuthStatusVisualState(pending: true, success: false);
+            AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
+            DataForAzerothChecked = false;
+            DataForAzerothChecking = false;
+            DataForAzerothPending = true;
+            DataForAzerothStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
         }
 
         private void BattleNetSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
-                case nameof(BattleNetSettings.BattleNetClientId):
-                case nameof(BattleNetSettings.BattleNetClientSecret):
-                case nameof(BattleNetSettings.Sc2RegionId):
-                case nameof(BattleNetSettings.Sc2RealmId):
-                case nameof(BattleNetSettings.Sc2ProfileId):
-                    UpdateSc2Status();
-                    break;
                 case nameof(BattleNetSettings.WowRegion):
                 case nameof(BattleNetSettings.WowRealmSlug):
                 case nameof(BattleNetSettings.WowCharacter):
@@ -120,27 +180,281 @@ namespace PlayniteAchievements.Providers.BattleNet
                 : "LOCPlayAch_Settings_BattleNet_Status_WowIncomplete");
         }
 
-        private void UpdateSc2Status()
+        private void WowClientSecret_Changed(object sender, RoutedEventArgs e)
         {
             if (_battleNetSettings == null)
             {
                 return;
             }
 
-            Sc2Configured = BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings);
-            Sc2Status = ResourceProvider.GetString(Sc2Configured
-                ? "LOCPlayAch_Settings_BattleNet_Status_Sc2Detected"
-                : "LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
+            _battleNetSettings.BattleNetClientSecret = WowClientSecretBox.Password;
         }
 
-        private void ClientSecret_Changed(object sender, RoutedEventArgs e)
+        public async Task RefreshAuthStatusAsync()
         {
-            if (_battleNetSettings == null)
+            PersistCurrentSettingsForAuth();
+
+            SetAuthStatusChecking();
+            AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Checking");
+
+            AuthProbeResult result;
+            try
+            {
+                result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Battle.net auth probe failed during settings refresh.");
+                result = AuthProbeResult.ProbeFailed();
+            }
+
+            UpdateAuthStatus(result);
+
+            // Probed here rather than on a timer or during a refresh: opening this page is the one
+            // moment the user is present and able to act, and the site check lapses periodically.
+            await RefreshDataForAzerothStatusAsync();
+        }
+
+        private async Task RefreshDataForAzerothStatusAsync()
+        {
+            if (_dataForAzerothSession == null || _battleNetSettings?.UseDataForAzerothForWowRarity != true)
+            {
+                DataForAzerothChecked = false;
+                DataForAzerothChecking = false;
+                DataForAzerothPending = true;
+                DataForAzerothStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
+                return;
+            }
+
+            DataForAzerothChecking = true;
+            DataForAzerothStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Checking");
+
+            AuthProbeResult result;
+            try
+            {
+                result = await _dataForAzerothSession.ProbeAuthStateAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Data for Azeroth site check probe failed during settings refresh.");
+                result = AuthProbeResult.ProbeFailed();
+            }
+
+            UpdateDataForAzerothStatus(result);
+        }
+
+        private void UpdateDataForAzerothStatus(AuthProbeResult result)
+        {
+            var cleared = result?.IsSuccess ?? false;
+            DataForAzerothChecked = cleared;
+            DataForAzerothChecking = false;
+            DataForAzerothPending = false;
+
+            if (cleared)
+            {
+                // Same "Authenticated as {0}" treatment the Blizzard card gets, falling back to the
+                // plain label when the site session carries no name we can show.
+                var authenticatedAsFormat = ResourceProvider.GetString("LOCPlayAch_Auth_AuthenticatedAs");
+                DataForAzerothStatus = string.IsNullOrWhiteSpace(result.UserId) ||
+                    string.IsNullOrWhiteSpace(authenticatedAsFormat) ||
+                    string.Equals(authenticatedAsFormat, "LOCPlayAch_Auth_AuthenticatedAs", StringComparison.Ordinal)
+                    ? ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated")
+                    : string.Format(authenticatedAsFormat, result.UserId);
+                return;
+            }
+
+            // "Could not reach a verdict" is not the same as "the site is asking for a check", and
+            // telling the user to go tick a box when the request merely failed wastes their time.
+            var indeterminate = result == null ||
+                result.Outcome == AuthOutcome.ProbeFailed ||
+                result.Outcome == AuthOutcome.Cancelled ||
+                result.Outcome == AuthOutcome.TimedOut;
+
+            DataForAzerothStatus = ResourceProvider.GetString(indeterminate
+                ? "LOCPlayAch_Auth_TemporaryFailure"
+                : "LOCPlayAch_Settings_BattleNet_DataForAzerothSignInHint");
+        }
+
+        private async void DataForAzeroth_Login_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataForAzerothSession == null)
             {
                 return;
             }
 
-            _battleNetSettings.BattleNetClientSecret = ClientSecretBox.Password;
+            try
+            {
+                SetAuthBusy(true);
+                var result = await _dataForAzerothSession.AuthenticateInteractiveAsync(
+                    forceInteractive: true,
+                    CancellationToken.None);
+
+                if (result.IsSuccess)
+                {
+                    await RefreshDataForAzerothStatusAsync();
+                }
+                else
+                {
+                    UpdateDataForAzerothStatus(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Data for Azeroth site check verification failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void DataForAzeroth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                await RefreshDataForAzerothStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Data for Azeroth site check probe failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void DataForAzeroth_Clear_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataForAzerothSession == null)
+            {
+                return;
+            }
+
+            try
+            {
+                SetAuthBusy(true);
+                await _dataForAzerothSession.ClearSessionAsync(CancellationToken.None);
+                await RefreshDataForAzerothStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Data for Azeroth site check reset failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private void UpdateAuthStatus(AuthProbeResult result)
+        {
+            var isAuthenticated = result?.IsSuccess ?? false;
+            SetAuthStatusVisualState(pending: false, success: isAuthenticated);
+
+            if (isAuthenticated)
+            {
+                var settings = ProviderRegistry.Settings<BattleNetSettings>();
+                var authenticatedText = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
+                var authenticatedAsFormat = ResourceProvider.GetString("LOCPlayAch_Auth_AuthenticatedAs");
+                AuthStatus = string.IsNullOrWhiteSpace(settings.BattleNetBattleTag) ||
+                    string.IsNullOrWhiteSpace(authenticatedAsFormat) ||
+                    string.Equals(authenticatedAsFormat, "LOCPlayAch_Auth_AuthenticatedAs", StringComparison.Ordinal)
+                    ? authenticatedText
+                    : string.Format(authenticatedAsFormat, settings.BattleNetBattleTag);
+                return;
+            }
+
+            var localized = !string.IsNullOrWhiteSpace(result?.MessageKey)
+                ? ResourceProvider.GetString(result.MessageKey)
+                : null;
+            AuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
+                ? ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated")
+                : localized;
+        }
+
+        private async void Auth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                await RefreshAuthStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net auth check failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void LoginWeb_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                PersistCurrentSettingsForAuth();
+                var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
+                if (result.IsSuccess)
+                {
+                    await RefreshAuthStatusAsync();
+                    PlayniteAchievementsPlugin.NotifySettingsSaved();
+                }
+                else
+                {
+                    UpdateAuthStatus(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net web login failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                _sessionManager.ClearSession();
+                await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net logout failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private void PersistCurrentSettingsForAuth()
+        {
+            if (_battleNetSettings != null)
+            {
+                ProviderRegistry.Write(_battleNetSettings, persistToDisk: true);
+            }
+        }
+
+        private void SetAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                AuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
+            }
         }
 
         private void LoadWowRegions()
@@ -222,47 +536,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 _battleNetSettings.WowRealmSlug = realm.Slug;
                 UpdateWowStatus();
             }
-        }
-
-        private static string Bool(bool value) => value ? "true" : "false";
-
-        private static string MaskId(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "<empty>";
-            }
-
-            var trimmed = value.Trim();
-            if (trimmed.Length <= 4)
-            {
-                return "****";
-            }
-
-            return $"{new string('*', Math.Min(8, trimmed.Length - 4))}{trimmed.Substring(trimmed.Length - 4)}";
-        }
-
-        private static string Presence(string value) => string.IsNullOrWhiteSpace(value) ? "missing" : "set";
-
-        private static string SettingsSummary(BattleNetSettings settings)
-        {
-            if (settings == null)
-            {
-                return "<null settings>";
-            }
-
-            return string.Format(
-                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}, useExophaseForRarity={9}",
-                Bool(settings.IsEnabled),
-                Presence(settings.BattleNetClientId),
-                Presence(settings.BattleNetClientSecret),
-                settings.Sc2RegionId,
-                settings.Sc2RealmId,
-                settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
-                string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
-                string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,
-                Presence(settings.WowCharacter),
-                Bool(settings.UseExophaseForRarity));
         }
     }
 }

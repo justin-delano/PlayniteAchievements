@@ -1,0 +1,68 @@
+using System;
+using System.Collections.Generic;
+namespace PlayniteAchievements.Services.Achievements
+{
+    internal static class AchievementIconOverrideHelper
+    {
+        public static bool HasOverrides(IReadOnlyDictionary<string, string> unlockedOverrides, IReadOnlyDictionary<string, string> lockedOverrides)
+        {
+            return (unlockedOverrides != null && unlockedOverrides.Count > 0) ||
+                   (lockedOverrides != null && lockedOverrides.Count > 0);
+        }
+
+        public static string GetOverrideValue(
+            IReadOnlyDictionary<string, string> overrides,
+            string apiName)
+        {
+            if (overrides == null)
+            {
+                return null;
+            }
+
+            var normalizedKey = NormalizeKey(apiName);
+            if (string.IsNullOrWhiteSpace(normalizedKey) ||
+                !overrides.TryGetValue(normalizedKey, out var value))
+            {
+                return null;
+            }
+
+            return NormalizeKey(value);
+        }
+
+        /// <summary>
+        /// The locked path to persist for one achievement: an explicit locked override when there is
+        /// one, otherwise the real locked icon while separate locked icons are enabled, otherwise the
+        /// unlocked path.
+        ///
+        /// A custom *unlocked* override does not suppress the locked icon. It used to, which
+        /// discarded the provider's locked path in the cache and left nothing to reveal behind a
+        /// locked cover.
+        /// </summary>
+        public static string ResolveEffectiveLockedPath(
+            string unlockedIconPath,
+            string lockedIconPath,
+            bool useSeparateLockedIcons,
+            bool hasExplicitLockedIcon)
+        {
+            if (hasExplicitLockedIcon && !string.IsNullOrWhiteSpace(lockedIconPath))
+            {
+                return lockedIconPath;
+            }
+
+            if (!useSeparateLockedIcons)
+            {
+                return unlockedIconPath;
+            }
+
+            return !string.IsNullOrWhiteSpace(lockedIconPath)
+                ? lockedIconPath
+                : unlockedIconPath;
+        }
+
+        private static string NormalizeKey(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+    }
+}

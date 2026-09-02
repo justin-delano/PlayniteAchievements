@@ -1,0 +1,393 @@
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Overrides;
+using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
+using Playnite.SDK;
+using Playnite.SDK.Models;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace PlayniteAchievements.Providers.Ffxiv
+{
+    /// <summary>
+    /// Final Fantasy XIV achievement provider backed by the FFXIV Collect API.
+    /// FFXIV achievements are account/character-wide, so the resolved set is
+    /// attached to the matched FFXIV entry in the Playnite library.
+    /// </summary>
+    internal sealed class FfxivDataProvider : DataProviderBase<FfxivSettings>, IDataProvider, IProviderOverride, IDisposable
+    {
+        // Presence-only binding: forces a game to be treated as FFXIV (account/character-wide data).
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.None();
+
+        // Playnite notification ids. Stable so repeated refreshes replace the entry
+        // rather than stacking, and so a run that gets through can clear them.
+        private const string NotOnCollectNotificationId = "PA_FFXIV_NotOnCollect";
+        private const string AchievementsPrivateNotificationId = "PA_FFXIV_AchievementsPrivate";
+
+        private const string CollectCharactersUrl = "https://ffxivcollect.com/characters";
+
+        private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
+
+        private readonly object _initLock = new object();
+        private FfxivApiClient _apiClient;
+        private FfxivCatalogCache _catalogCache;
+
+        public FfxivDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
+        }
+
+        public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_FFXIV");
+        public string ProviderKey => "FFXIV";
+        public string ProviderIconKey => "ProviderIconFFXIV";
+        public string ProviderColorHex => "#C0392B";
+        public ISessionManager AuthSession => null;
+
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
+        /// <summary>
+        /// FFXIV is authenticated once a character name and world are configured.
+        /// </summary>
+        public bool IsAuthenticated
+        {
+            get
+            {
+                var s = ProviderRegistry.Settings<FfxivSettings>();
+                return !string.IsNullOrWhiteSpace(s.CharacterName) &&
+                       !string.IsNullOrWhiteSpace(s.World);
+            }
+        }
+
+        public bool IsCapable(Game game)
+        {
+            if (game == null)
+            {
+                return false;
+            }
+
+            if (!IsAuthenticated)
+            {
+                return false;
+            }
+
+            // Manual override binding takes precedence.
+            if (GameCustomDataLookup.TryGetProviderOverride(game.Id, out var providerOverride) &&
+                string.Equals(providerOverride.ProviderKey, ProviderKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return IsFinalFantasyXivGame(game);
+        }
+
+        private static bool IsFinalFantasyXivGame(Game game)
+        {
+            return FfxivParsing.IsFinalFantasyXivTitle(game?.Name);
+        }
+
+        public async Task<RebuildPayload> RefreshAsync(
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
+            CancellationToken cancel)
+        {
+            var providerSettings = ProviderRegistry.Settings<FfxivSettings>();
+
+            if (string.IsNullOrWhiteSpace(providerSettings.CharacterName) ||
+                string.IsNullOrWhiteSpace(providerSettings.World))
+            {
+                _logger?.Warn("[FFXIV] Missing character name/world - cannot fetch achievements.");
+                return new RebuildPayload { Summary = new RebuildSummary(), AuthRequired = true };
+            }
+
+            if (gamesToRefresh == null || gamesToRefresh.Count == 0)
+            {
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            EnsureInitialized();
+
+            var resolution = await ResolveCharacterIdAsync(providerSettings, cancel).ConfigureAwait(false);
+            if (resolution.Outcome == FfxivResolveOutcome.LookupFailed)
+            {
+                // The Lodestone could not be asked, so nothing is known about the character.
+                // Reporting this as a configuration problem would be wrong.
+                _logger?.Warn($"[FFXIV] Lodestone lookup failed for '{providerSettings.CharacterName}' @ '{providerSettings.World}'; skipping this run.");
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            if (resolution.Outcome != FfxivResolveOutcome.Resolved)
+            {
+                _logger?.Warn($"[FFXIV] Could not resolve character '{providerSettings.CharacterName}' @ '{providerSettings.World}'.");
+                return new RebuildPayload { Summary = new RebuildSummary(), AuthRequired = true };
+            }
+
+            var characterId = resolution.CharacterId;
+            var catalog = await _catalogCache.GetCatalogAsync(_apiClient, cancel).ConfigureAwait(false);
+
+            FfxivCharacter character;
+            try
+            {
+                character = await _apiClient.FetchCharacterAsync(characterId, cancel).ConfigureAwait(false);
+            }
+            catch (FfxivCharacterNotIndexedException ex)
+            {
+                _logger?.Warn($"[FFXIV] Character {ex.LodestoneId} is not indexed on FFXIV Collect; it has to be added there once before achievements can be read.");
+                ShowNotification(
+                    NotOnCollectNotificationId,
+                    "LOCPlayAch_Settings_FFXIV_NotOnCollect",
+                    () => OpenUrl(CollectCharactersUrl));
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            // The character answered, so whatever prompted the indexing warning is resolved.
+            ClearNotification(NotOnCollectNotificationId);
+
+            // Either way there is no obtained data, and importing the catalog against an
+            // empty obtained map would write every achievement as locked over stored unlocks.
+            if (character?.Achievements == null)
+            {
+                // FFXIV Collect answered for the character but returned no achievement block.
+                // The cause is not knowable from here, so log it rather than assert one.
+                _logger?.Warn($"[FFXIV] Character '{providerSettings.CharacterName}' returned no achievement data from FFXIV Collect; skipping this run.");
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            if (!character.Achievements.Public)
+            {
+                _logger?.Warn($"[FFXIV] Character '{providerSettings.CharacterName}' has achievements hidden on the Lodestone; skipping this run rather than importing them all as locked.");
+                ShowNotification(AchievementsPrivateNotificationId, "LOCPlayAch_Settings_FFXIV_AchievementsPrivate", null);
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            ClearNotification(AchievementsPrivateNotificationId);
+
+            var obtained = BuildObtainedMap(character);
+
+            return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                gamesToRefresh,
+                onGameStarting,
+                (game, token) =>
+                {
+                    if (!IsCapable(game))
+                    {
+                        return Task.FromResult(ProviderRefreshExecutor.ProviderGameResult.Skipped());
+                    }
+
+                    var data = BuildGameData(game, catalog, obtained);
+                    return Task.FromResult(new ProviderRefreshExecutor.ProviderGameResult { Data = data });
+                },
+                onGameCompleted,
+                isAuthRequiredException: _ => false,
+                onGameError: (game, ex, consecutiveErrors) =>
+                {
+                    _logger?.Warn(ex, $"[FFXIV] Failed to build achievements for '{game?.Name}' after {consecutiveErrors} consecutive errors.");
+                },
+                delayBetweenGamesAsync: null,
+                delayAfterErrorAsync: null,
+                cancel).ConfigureAwait(false);
+        }
+
+        private async Task<FfxivCharacterResolution> ResolveCharacterIdAsync(FfxivSettings providerSettings, CancellationToken cancel)
+        {
+            if (providerSettings.ResolvedCharacterId > 0)
+            {
+                return FfxivCharacterResolution.Resolved(providerSettings.ResolvedCharacterId);
+            }
+
+            var resolution = await _apiClient.ResolveCharacterIdAsync(
+                providerSettings.CharacterName,
+                providerSettings.World,
+                providerSettings.Region,
+                cancel).ConfigureAwait(false);
+
+            if (resolution.Outcome == FfxivResolveOutcome.Resolved)
+            {
+                providerSettings.ResolvedCharacterId = resolution.CharacterId;
+                ProviderRegistry.Write(providerSettings);
+            }
+
+            return resolution;
+        }
+
+        /// <summary>
+        /// Raises a Playnite notification under a stable id, so repeated refreshes of the
+        /// same unresolved problem leave one entry rather than a stack of them.
+        /// </summary>
+        private void ShowNotification(string notificationId, string messageKey, Action onClick)
+        {
+            if (_playniteApi?.Notifications == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var message = ResourceProvider.GetString(messageKey);
+                _playniteApi.Notifications.Add(onClick == null
+                    ? new NotificationMessage(notificationId, message, NotificationType.Error)
+                    : new NotificationMessage(notificationId, message, NotificationType.Error, onClick));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[FFXIV] Failed to show notification {notificationId}.");
+            }
+        }
+
+        /// <summary>
+        /// Drops one provider notification once the run gets past the condition it described,
+        /// so a stale warning does not outlive the problem.
+        /// </summary>
+        private void ClearNotification(string notificationId)
+        {
+            if (_playniteApi?.Notifications == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _playniteApi.Notifications.Remove(notificationId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[FFXIV] Failed to clear notification {notificationId}.");
+            }
+        }
+
+        private void OpenUrl(string url)
+        {
+            try
+            {
+                Process.Start(url);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[FFXIV] Failed to open {url}.");
+            }
+        }
+
+        private GameAchievementData BuildGameData(
+            Game game,
+            IReadOnlyList<FfxivAchievement> catalog,
+            IReadOnlyDictionary<int, DateTime?> obtained)
+        {
+            var achievements = new List<AchievementDetail>(catalog?.Count ?? 0);
+
+            if (catalog != null)
+            {
+                foreach (var achievement in catalog)
+                {
+                    if (achievement == null) continue;
+                    achievements.Add(BuildAchievementDetail(achievement, obtained));
+                }
+            }
+
+            return new GameAchievementData
+            {
+                ProviderKey = ProviderKey,
+                GameName = game?.Name,
+                LibrarySourceName = game?.Source?.Name,
+                LastUpdatedUtc = DateTime.UtcNow,
+                HasAchievements = achievements.Count > 0,
+                PlayniteGameId = game?.Id,
+                Achievements = achievements
+            };
+        }
+
+        private static AchievementDetail BuildAchievementDetail(
+            FfxivAchievement achievement,
+            IReadOnlyDictionary<int, DateTime?> obtained)
+        {
+            DateTime? unlockTimeUtc = null;
+            var unlocked = obtained != null && obtained.TryGetValue(achievement.Id, out unlockTimeUtc);
+            if (unlockTimeUtc.HasValue && unlockTimeUtc.Value.Kind != DateTimeKind.Utc)
+            {
+                unlockTimeUtc = unlockTimeUtc.Value.ToUniversalTime();
+            }
+
+            var globalPercent = FfxivParsing.ParseOwnedPercent(achievement.Owned);
+
+            return new AchievementDetail
+            {
+                ApiName = achievement.Id.ToString(CultureInfo.InvariantCulture),
+                DisplayName = achievement.Name,
+                Description = achievement.Description,
+                UnlockedIconPath = achievement.Icon,
+                Points = achievement.Points,
+                // FFXIV Collect's "type" is the in-game achievement tab (Battle, Quests, ...) and
+                // "category" the section inside it. A category name is only unique within its type
+                // - "General" occurs under six of them, "Seasonal Events" under two - so the flat
+                // label merged unrelated sections into one bucket.
+                Category = CategoryPathHelper.JoinRaw(achievement.Type?.Name, achievement.Category?.Name),
+
+                // Keyed on the leaf: the Missable rule matches a category name, not a path.
+                CategoryType = FfxivParsing.ResolveCategoryType(achievement.Category?.Name),
+                UnlockTimeUtc = unlockTimeUtc,
+                Unlocked = unlocked,
+                Hidden = false,
+                GlobalPercentUnlocked = globalPercent,
+                Rarity = globalPercent.HasValue
+                    ? PercentRarityHelper.GetRarityTier(globalPercent.Value)
+                    : RarityTier.Common
+            };
+        }
+
+        private static Dictionary<int, DateTime?> BuildObtainedMap(FfxivCharacter character)
+        {
+            var map = new Dictionary<int, DateTime?>();
+            var obtained = character?.Achievements?.Obtained;
+            if (obtained == null)
+            {
+                return map;
+            }
+
+            foreach (var entry in obtained)
+            {
+                if (entry == null) continue;
+                map[entry.Id] = entry.Time;
+            }
+
+            return map;
+        }
+
+        private void EnsureInitialized()
+        {
+            lock (_initLock)
+            {
+                if (_apiClient == null)
+                {
+                    _apiClient = new FfxivApiClient(_logger);
+                }
+
+                if (_catalogCache == null)
+                {
+                    _catalogCache = new FfxivCatalogCache(_logger, _pluginUserDataPath);
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            _apiClient?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new FfxivSettingsView();
+    }
+}

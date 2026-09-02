@@ -11,6 +11,8 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Services.Tagging
@@ -23,7 +25,11 @@ namespace PlayniteAchievements.Services.Tagging
     {
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
-        private readonly PersistedSettings _settings;
+        // Holds the settings wrapper rather than its PersistedSettings: CancelEdit
+        // replaces the Persisted instance, so a captured instance would keep serving
+        // the values the user reverted.
+        private readonly PlayniteAchievementsSettings _settingsHost;
+        private readonly Lazy<DefaultTagNameCatalog> _defaultNameCatalog;
         private TaggingSettings _subscribedTaggingSettings;
 
         // Cache of tag IDs by tag type to avoid repeated database lookups
@@ -32,21 +38,31 @@ namespace PlayniteAchievements.Services.Tagging
         public TagSyncService(
             IPlayniteAPI api,
             ILogger logger,
-            PersistedSettings settings)
+            PlayniteAchievementsSettings settings,
+            string localizationDirectory = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _settingsHost = settings ?? throw new ArgumentNullException(nameof(settings));
+            _defaultNameCatalog = new Lazy<DefaultTagNameCatalog>(
+                () => new DefaultTagNameCatalog(localizationDirectory, _logger));
         }
+
+        private PersistedSettings Settings => _settingsHost.Persisted;
+
+        private TaggingSettings Tagging => Settings?.TaggingSettings;
+
+        private bool TaggingEnabled => Tagging?.EnableTagging == true;
 
         /// <summary>
         /// Ensures tagging settings are initialized with defaults and subscribes
-        /// to tagging property changes.
+        /// to tagging property changes. Idempotent, so it can be re-run when the
+        /// persisted settings instance is replaced.
         /// </summary>
         public void InitializeAndSubscribeTaggingSettings()
         {
             EnsureTaggingSettingsInitialized();
-            SubscribeToTaggingSettingsChanges(_settings.TaggingSettings);
+            SubscribeToTaggingSettingsChanges(Settings?.TaggingSettings);
         }
 
         /// <summary>
@@ -62,8 +78,7 @@ namespace PlayniteAchievements.Services.Tagging
             if (e.PropertyName == nameof(PersistedSettings.TaggingSettings))
             {
                 _logger.Debug("TaggingSettings property changed; reinitializing tagging bindings.");
-                EnsureTaggingSettingsInitialized();
-                SubscribeToTaggingSettingsChanges(_settings.TaggingSettings);
+                InitializeAndSubscribeTaggingSettings();
             }
         }
 
@@ -81,26 +96,98 @@ namespace PlayniteAchievements.Services.Tagging
 
         private void EnsureTaggingSettingsInitialized()
         {
-            if (_settings.TaggingSettings == null)
+            var settings = Settings;
+            if (settings == null)
             {
-                _settings.TaggingSettings = new TaggingSettings();
+                return;
             }
 
-            _settings.TaggingSettings.InitializeDefaults(tagType =>
+            if (settings.TaggingSettings == null)
             {
-                return tagType switch
+                settings.TaggingSettings = new TaggingSettings();
+            }
+
+            settings.TaggingSettings.InitializeDefaults(GetLocalizedDefaultName);
+        }
+
+        /// <summary>
+        /// Resolves the default display name for a tag type in the current Playnite language.
+        /// </summary>
+        private static string GetLocalizedDefaultName(TagType tagType)
+        {
+            return DefaultTagNameCatalog.StatusResourceKeys.TryGetValue(tagType, out var statusResourceKey)
+                ? FormatTagName(statusResourceKey)
+                : TaggingSettings.GetDefaultDisplayName(tagType);
+        }
+
+        private static string FormatTagName(string statusResourceKey)
+        {
+            return string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Tag_PrefixFormat"),
+                ResourceProvider.GetString(statusResourceKey));
+        }
+
+        /// <summary>
+        /// Updates tag display names that still match a known default (from any shipped
+        /// language) to the current language's default, and renames the corresponding
+        /// Playnite tags in place. Customized names are left untouched. Requires the
+        /// Playnite database to be open, so call from OnApplicationStarted or later.
+        /// </summary>
+        /// <returns>True when any display name changed and settings should be persisted.</returns>
+        public bool RelocalizeDefaultTagNames()
+        {
+            var tagConfigs = Tagging?.TagConfigs;
+            if (tagConfigs == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var kvp in tagConfigs)
+            {
+                var config = kvp.Value;
+                if (config == null)
                 {
-                    TagType.HasAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_HasAchievements"),
-                    TagType.InProgress => ResourceProvider.GetString("LOCPlayAch_Tag_InProgress"),
-                    TagType.Completed => ResourceProvider.GetString("LOCPlayAch_Tag_Completed"),
-                    TagType.NoAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_NoAchievements"),
-                    TagType.Customized => ResourceProvider.GetString("LOCPlayAch_Tag_Customized"),
-                    TagType.NotCustomized => ResourceProvider.GetString("LOCPlayAch_Tag_NotCustomized"),
-                    TagType.Excluded => ResourceProvider.GetString("LOCPlayAch_Tag_Excluded"),
-                    TagType.ExcludedFromSummaries => ResourceProvider.GetString("LOCPlayAch_Tag_ExcludedFromSummaries"),
-                    _ => TaggingSettings.GetDefaultDisplayName(tagType)
-                };
-            });
+                    continue;
+                }
+
+                var newName = _defaultNameCatalog.Value.GetRelocalizedName(
+                    kvp.Key,
+                    config.DisplayName,
+                    GetLocalizedDefaultName(kvp.Key));
+                if (newName == null)
+                {
+                    continue;
+                }
+
+                var oldName = config.DisplayName;
+                config.DisplayName = newName;
+                changed = true;
+                RenamePlayniteTag(config, oldName, newName);
+            }
+
+            return changed;
+        }
+
+        private void RenamePlayniteTag(TagConfig config, string oldName, string newName)
+        {
+            try
+            {
+                if (config.TagId is Guid tagId && tagId != Guid.Empty)
+                {
+                    var tag = _api.Database.Tags.Get(tagId);
+                    if (tag != null && !string.Equals(tag.Name, newName, StringComparison.Ordinal))
+                    {
+                        tag.Name = newName;
+                        _api.Database.Tags.Update(tag);
+                        _logger.Info($"Renamed tag '{oldName}' to '{newName}' to match the current language.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to rename tag '{oldName}' to '{newName}'.");
+            }
         }
 
         private void SubscribeToTaggingSettingsChanges(TaggingSettings taggingSettings)
@@ -127,7 +214,7 @@ namespace PlayniteAchievements.Services.Tagging
 
             try
             {
-                var taggingSettings = _settings.TaggingSettings;
+                var taggingSettings = Tagging;
                 if (taggingSettings == null)
                 {
                     return;
@@ -176,7 +263,7 @@ namespace PlayniteAchievements.Services.Tagging
         /// <param name="silent">If true, runs without showing a progress dialog.</param>
         public void SyncAllTags(bool silent)
         {
-            if (!_settings.TaggingSettings?.EnableTagging ?? true)
+            if (!TaggingEnabled)
             {
                 _logger.Info("Tag sync skipped: tagging is disabled");
                 return;
@@ -204,11 +291,13 @@ namespace PlayniteAchievements.Services.Tagging
 
         private void ExecuteSyncAllTags(GlobalProgressActionArgs progress)
         {
+            var tagConfigs = Tagging?.TagConfigs;
+
             // Capture old tag IDs BEFORE we update them, so we can remove old tags from games
             var oldTagIds = new HashSet<Guid>();
-            if (_settings.TaggingSettings?.TagConfigs != null)
+            if (tagConfigs != null)
             {
-                foreach (var config in _settings.TaggingSettings.TagConfigs.Values)
+                foreach (var config in tagConfigs.Values)
                 {
                     if (config?.TagId.HasValue == true)
                     {
@@ -217,12 +306,12 @@ namespace PlayniteAchievements.Services.Tagging
                 }
             }
 
-            // Step 1: Ensure all configured tags exist in the database
-            // This updates TagConfig.TagId to the new tag IDs
-            var tagConfigs = _settings.TaggingSettings.TagConfigs;
+            // Step 1: Ensure the enabled tags exist in the database. This updates
+            // TagConfig.TagId to the new tag IDs; disabled kinds are left alone.
             EnsureConfiguredTagIds(tagConfigs);
 
-            // Combine old and new tag IDs for removal (handles renames)
+            // Combine old and new tag IDs for removal (handles renames, and strips the
+            // tags of kinds the user has since disabled).
             var allManagedTagIds = new HashSet<Guid>(oldTagIds);
             foreach (var tagId in _tagIdCache.Values)
             {
@@ -240,89 +329,43 @@ namespace PlayniteAchievements.Services.Tagging
 
             // Pre-compute completion status target if needed
             Guid? targetCompletionStatusId = null;
-            var setCompletionStatus = _settings.TaggingSettings?.SetCompletionStatus ?? false;
+            var setCompletionStatus = Tagging?.SetCompletionStatus ?? false;
             if (setCompletionStatus)
             {
                 targetCompletionStatusId = GetCompletionStatusId();
             }
 
-            foreach (var game in games)
+            // Buffer database writes so all game updates in this pass raise a single
+            // coalesced ItemUpdated event instead of one event per game.
+            using (_api.Database.BufferedUpdate())
             {
-                if (game == null) continue;
-
-                if (progress != null)
+                foreach (var game in games)
                 {
-                    progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
-                    progress.CurrentProgressValue++;
-                }
-
-                try
-                {
-                    var tagTypes = DetermineTagTypes(game);
-                    if (SyncGameTags(game, tagConfigs, tagTypes, allManagedTagIds))
-                    {
-                        updatedCount++;
-                    }
-
-                    // Also update completion status in the same pass
-                    if (targetCompletionStatusId.HasValue)
-                    {
-                        if (tagTypes.Contains(TagType.Completed) &&
-                            game.CompletionStatusId != targetCompletionStatusId.Value)
-                        {
-                            game.CompletionStatusId = targetCompletionStatusId.Value;
-                            _api.Database.Games.Update(game);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
-                }
-            }
-
-            // Step 2: Clean up orphan tags from the database AFTER games are synced
-            // This must come after syncing so we don't delete tags that games still reference
-            // Pass only the NEW tag IDs as current - old tags not in new set should be deleted
-            var newTagIds = new HashSet<Guid>(_tagIdCache.Values);
-            CleanupOrphanTags(oldTagIds, newTagIds);
-
-            _logger.Info($"Tag sync complete: {updatedCount} games updated");
-        }
-        /// Does not show a progress dialog - runs silently in background.
-        /// </summary>
-        public void SyncTagsForGames(List<Guid> gameIds)
-        {
-            if (!_settings.TaggingSettings?.EnableTagging ?? true || gameIds == null || gameIds.Count == 0)
-            {
-                return;
-            }
-
-            try
-            {
-                var tagConfigs = _settings.TaggingSettings.TagConfigs;
-                EnsureConfiguredTagIds(tagConfigs);
-                var targetStatusId = (_settings.TaggingSettings?.SetCompletionStatus ?? false)
-                    ? GetCompletionStatusId()
-                    : (Guid?)null;
-
-                foreach (var gameId in gameIds)
-                {
-                    var game = _api.Database.Games.Get(gameId);
                     if (game == null) continue;
+
+                    if (progress != null)
+                    {
+                        progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
+                        progress.CurrentProgressValue++;
+                    }
 
                     try
                     {
-                        var tagTypes = DetermineTagTypes(game);
-                        SyncGameTags(game, tagConfigs, tagTypes);
-
-                        // Also update completion status if enabled
-                        if (targetStatusId.HasValue)
+                        var evaluation = EvaluateGame(game);
+                        if (SyncGameTags(game, tagConfigs, evaluation.TagTypes, allManagedTagIds))
                         {
-                            if (tagTypes.Contains(TagType.Completed) &&
-                                game.CompletionStatusId != targetStatusId.Value)
+                            updatedCount++;
+                        }
+
+                        // Also update completion status in the same pass. Keyed off the
+                        // game's own completion, not the Completed tag, so disabling that
+                        // tag does not disable completion status syncing.
+                        if (targetCompletionStatusId.HasValue)
+                        {
+                            if (evaluation.IsCompleted &&
+                                game.CompletionStatusId != targetCompletionStatusId.Value)
                             {
-                                game.CompletionStatusId = targetStatusId.Value;
+                                game.CompletionStatusId = targetCompletionStatusId.Value;
                                 _api.Database.Games.Update(game);
                             }
                         }
@@ -330,6 +373,66 @@ namespace PlayniteAchievements.Services.Tagging
                     catch (Exception ex)
                     {
                         _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                    }
+                }
+            }
+
+            // Step 2: Clean up orphan tags from the database AFTER games are synced.
+            // This must come after syncing so we don't delete tags that games still
+            // reference. Only the enabled kinds count as current, so a kind the user
+            // disabled loses its Playnite tag here rather than lingering in the tag
+            // list and filter panel.
+            CleanupOrphanTags(oldTagIds, GetEnabledTagIds(tagConfigs));
+
+            _logger.Info($"Tag sync complete: {updatedCount} games updated");
+        }
+        /// Does not show a progress dialog - runs silently in background.
+        /// </summary>
+        public void SyncTagsForGames(List<Guid> gameIds)
+        {
+            if (!TaggingEnabled || gameIds == null || gameIds.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var tagConfigs = Tagging?.TagConfigs;
+                EnsureConfiguredTagIds(tagConfigs);
+                var targetStatusId = (Tagging?.SetCompletionStatus ?? false)
+                    ? GetCompletionStatusId()
+                    : (Guid?)null;
+
+                // Buffer database writes so all game updates in this batch raise a single
+                // coalesced ItemUpdated event instead of one event per game.
+                using (_api.Database.BufferedUpdate())
+                {
+                    foreach (var gameId in gameIds)
+                    {
+                        var game = _api.Database.Games.Get(gameId);
+                        if (game == null) continue;
+
+                        try
+                        {
+                            var evaluation = EvaluateGame(game);
+                            SyncGameTags(game, tagConfigs, evaluation.TagTypes);
+
+                            // Also update completion status if enabled. Keyed off the
+                            // game's own completion, not the Completed tag.
+                            if (targetStatusId.HasValue)
+                            {
+                                if (evaluation.IsCompleted &&
+                                    game.CompletionStatusId != targetStatusId.Value)
+                                {
+                                    game.CompletionStatusId = targetStatusId.Value;
+                                    _api.Database.Games.Update(game);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                        }
                     }
                 }
 
@@ -342,15 +445,11 @@ namespace PlayniteAchievements.Services.Tagging
         }
 
         /// <summary>
-        /// Ensures all configured tags exist in the database.
-        /// Called during sync to create tags even if no games currently have them.
-        /// Also updates the TagConfig.TagId to track the actual tag ID.
+        /// Resolves (creating when needed) the Playnite tag for every enabled kind.
+        /// Disabled kinds are skipped so their tags are never created, but they keep any
+        /// TagId they already have: the removal pass needs it to strip the tag from games
+        /// before the tag itself is deleted.
         /// </summary>
-        private void EnsureAllTagsExist()
-        {
-            EnsureConfiguredTagIds(_settings.TaggingSettings?.TagConfigs);
-        }
-
         private void EnsureConfiguredTagIds(Dictionary<TagType, TagConfig> tagConfigs)
         {
             if (tagConfigs == null)
@@ -360,8 +459,45 @@ namespace PlayniteAchievements.Services.Tagging
 
             foreach (var kvp in tagConfigs)
             {
+                if (kvp.Value?.IsEnabled != true)
+                {
+                    continue;
+                }
+
                 ResolveConfiguredTagId(kvp.Key, kvp.Value);
             }
+        }
+
+        /// <summary>
+        /// The tag IDs of the currently enabled kinds - the set that should survive a sync.
+        /// </summary>
+        private HashSet<Guid> GetEnabledTagIds(Dictionary<TagType, TagConfig> tagConfigs)
+        {
+            var tagIds = new HashSet<Guid>();
+            if (tagConfigs == null)
+            {
+                return tagIds;
+            }
+
+            foreach (var kvp in tagConfigs)
+            {
+                var config = kvp.Value;
+                if (config?.IsEnabled != true)
+                {
+                    continue;
+                }
+
+                if (_tagIdCache.TryGetValue(kvp.Key, out var cachedTagId))
+                {
+                    tagIds.Add(cachedTagId);
+                }
+                else if (config.TagId.HasValue && config.TagId.Value != Guid.Empty)
+                {
+                    tagIds.Add(config.TagId.Value);
+                }
+            }
+
+            return tagIds;
         }
 
         private Guid? ResolveConfiguredTagId(TagType tagType, TagConfig config)
@@ -396,11 +532,12 @@ namespace PlayniteAchievements.Services.Tagging
         }
 
         /// <summary>
-        /// Removes orphan tags from the database.
-        /// These are tags that were previously used but are no longer in the current config.
+        /// Removes orphan tags from the database: tags that were previously used but are
+        /// no longer current, either because the kind was renamed or because the user
+        /// disabled it.
         /// </summary>
         /// <param name="oldTagIds">Tag IDs that were captured before the sync (for rename detection).</param>
-        /// <param name="currentManagedTagIds">All tag IDs currently managed by this plugin.</param>
+        /// <param name="currentManagedTagIds">Tag IDs of the currently enabled kinds.</param>
         private void CleanupOrphanTags(HashSet<Guid> oldTagIds, HashSet<Guid> currentManagedTagIds)
         {
             // Tags to delete: old tags that are no longer in current managed set
@@ -441,9 +578,30 @@ namespace PlayniteAchievements.Services.Tagging
             // Clear the cache since tags may have been deleted
             _tagIdCache.Clear();
 
+            // Drop the deleted IDs from the configs so a re-enabled kind creates a fresh
+            // tag instead of carrying a dangling ID in the saved settings.
+            ForgetDeletedTagIds(tagsToDelete);
+
             if (deletedCount > 0)
             {
                 _logger.Info($"Cleaned up {deletedCount} orphan tags");
+            }
+        }
+
+        private void ForgetDeletedTagIds(HashSet<Guid> deletedTagIds)
+        {
+            var tagConfigs = Tagging?.TagConfigs;
+            if (tagConfigs == null)
+            {
+                return;
+            }
+
+            foreach (var config in tagConfigs.Values)
+            {
+                if (config?.TagId.HasValue == true && deletedTagIds.Contains(config.TagId.Value))
+                {
+                    config.TagId = null;
+                }
             }
         }
 
@@ -452,7 +610,7 @@ namespace PlayniteAchievements.Services.Tagging
         /// </summary>
         private Guid? GetCompletionStatusId()
         {
-            var completionStatusId = _settings.TaggingSettings.CompletionStatusId;
+            var completionStatusId = Tagging?.CompletionStatusId;
 
             if (completionStatusId.HasValue && completionStatusId.Value != Guid.Empty)
             {
@@ -474,12 +632,12 @@ namespace PlayniteAchievements.Services.Tagging
         /// <returns>True if any tags were changed.</returns>
         public bool SyncGameTags(Game game, HashSet<Guid> tagIdsToRemove = null)
         {
-            if (!_settings.TaggingSettings?.EnableTagging ?? true)
+            if (!TaggingEnabled)
             {
                 return false;
             }
 
-            var tagConfigs = _settings.TaggingSettings.TagConfigs;
+            var tagConfigs = Tagging?.TagConfigs;
             EnsureConfiguredTagIds(tagConfigs);
             var tagTypes = DetermineTagTypes(game);
             return SyncGameTags(game, tagConfigs, tagTypes, tagIdsToRemove);
@@ -532,6 +690,17 @@ namespace PlayniteAchievements.Services.Tagging
         }
 
         /// <summary>
+        /// The applicable tag types for a game plus whether the game counts as completed.
+        /// Both come out of one evaluation so a sync pass loads each game's achievement
+        /// data once.
+        /// </summary>
+        private struct GameTagEvaluation
+        {
+            public List<TagType> TagTypes;
+            public bool IsCompleted;
+        }
+
+        /// <summary>
         /// Determines all applicable tag types for a game.
         /// A game can have multiple tags (e.g., HasAchievements + InProgress).
         /// Excluded is exclusive and removes other tags.
@@ -539,29 +708,46 @@ namespace PlayniteAchievements.Services.Tagging
         /// </summary>
         private List<TagType> DetermineTagTypes(Game game)
         {
+            return EvaluateGame(game).TagTypes;
+        }
+
+        /// <summary>
+        /// Whether a game counts as completed for completion-status syncing: every
+        /// achievement unlocked, or the manual capstone earned. Deliberately independent
+        /// of the Completed tag, so disabling that tag does not stop completion status
+        /// from being applied.
+        /// </summary>
+        private bool IsGameCompleted(Game game)
+        {
+            return EvaluateGame(game).IsCompleted;
+        }
+
+        private GameTagEvaluation EvaluateGame(Game game)
+        {
             var types = new List<TagType>();
+            var result = new GameTagEvaluation { TagTypes = types, IsCompleted = false };
 
             if (game == null)
             {
                 types.Add(TagType.NoAchievements);
-                return types;
+                return result;
             }
 
             var gameId = game.Id;
             types.Add(
-                GameCustomDataLookup.HasVisibleCustomization(gameId, _settings)
+                GameCustomDataLookup.HasVisibleCustomization(gameId, Settings)
                     ? TagType.Customized
                     : TagType.NotCustomized);
 
             // Full exclusion is exclusive - no other tags
-            if (GameCustomDataLookup.IsExcludedFromRefreshes(gameId, _settings))
+            if (GameCustomDataLookup.IsExcludedFromRefreshes(gameId, Settings))
             {
                 types.Add(TagType.Excluded);
-                return types;
+                return result;
             }
 
             // Check if excluded from summaries (can coexist with other tags)
-            var excludedFromSummaries = GameCustomDataLookup.IsExcludedFromSummaries(gameId, _settings);
+            var excludedFromSummaries = GameCustomDataLookup.IsExcludedFromSummaries(gameId, Settings);
             if (excludedFromSummaries)
             {
                 types.Add(TagType.ExcludedFromSummaries);
@@ -573,14 +759,14 @@ namespace PlayniteAchievements.Services.Tagging
             if (data == null || !data.HasAchievements)
             {
                 types.Add(TagType.NoAchievements);
-                return types;
+                return result;
             }
 
             // If the game is excluded by user
             if (data.ExcludedByUser)
             {
                 types.Add(TagType.Excluded);
-                return types;
+                return result;
             }
 
             // Game has achievements - add HasAchievements tag
@@ -591,7 +777,7 @@ namespace PlayniteAchievements.Services.Tagging
 
             // Also check for manual capstone override from settings
             // (raw cached data doesn't have IsCapstone set - that's applied during hydration)
-            var capstoneApiName = GameCustomDataLookup.GetManualCapstone(gameId, _settings);
+            var capstoneApiName = GameCustomDataLookup.GetManualCapstone(gameId, Settings);
             if (!isCompleted && !string.IsNullOrWhiteSpace(capstoneApiName))
             {
                 var capstoneAchievement = data.Achievements?.FirstOrDefault(a =>
@@ -601,6 +787,8 @@ namespace PlayniteAchievements.Services.Tagging
                     isCompleted = true;
                 }
             }
+
+            result.IsCompleted = isCompleted;
 
             // Add status tag based on progress
             if (isCompleted)
@@ -616,20 +804,7 @@ namespace PlayniteAchievements.Services.Tagging
                 }
             }
 
-            return types;
-        }
-
-        /// <summary>
-        /// Determines the primary tag type for a game based on its achievement status.
-        /// Used for completion status syncing.
-        /// </summary>
-        public TagType DetermineTagType(Game game)
-        {
-            var types = DetermineTagTypes(game);
-            // Return the most significant status tag
-            if (types.Contains(TagType.Completed)) return TagType.Completed;
-            if (types.Contains(TagType.InProgress)) return TagType.InProgress;
-            return types.FirstOrDefault();
+            return result;
         }
 
         /// <summary>
@@ -653,31 +828,37 @@ namespace PlayniteAchievements.Services.Tagging
 
                 var removedCount = 0;
 
-                foreach (var game in games)
+                // Buffer database writes so all game updates in this pass raise a single
+                // coalesced ItemUpdated event instead of one event per game.
+                using (_api.Database.BufferedUpdate())
                 {
-                    if (game == null) continue;
-
-                    progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_RemovingProgress")}: {game.Name}";
-                    progress.CurrentProgressValue++;
-
-                    try
+                    foreach (var game in games)
                     {
-                        if (RemoveManagedTags(game))
+                        if (game == null) continue;
+
+                        progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_RemovingProgress")}: {game.Name}";
+                        progress.CurrentProgressValue++;
+
+                        try
                         {
-                            _api.Database.Games.Update(game);
-                            removedCount++;
+                            if (RemoveManagedTags(game))
+                            {
+                                _api.Database.Games.Update(game);
+                                removedCount++;
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, $"Failed to remove tags for game {game.Name}");
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, $"Failed to remove tags for game {game.Name}");
+                        }
                     }
                 }
 
                 // Delete only the exact tag names from config
-                if (_settings.TaggingSettings?.TagConfigs != null)
+                var removalConfigs = Tagging?.TagConfigs;
+                if (removalConfigs != null)
                 {
-                    var tagNames = _settings.TaggingSettings.TagConfigs.Values
+                    var tagNames = removalConfigs.Values
                         .Where(c => c != null && !string.IsNullOrWhiteSpace(c.DisplayName))
                         .Select(c => c.DisplayName)
                         .ToList();
@@ -746,10 +927,12 @@ namespace PlayniteAchievements.Services.Tagging
                 tagIds.Add(tagId);
             }
 
-            // Add tracked tag IDs from config (for handling renames)
-            if (_settings.TaggingSettings?.TagConfigs != null)
+            // Add tracked tag IDs from config (for handling renames, and for kinds the
+            // user disabled whose tags have not been cleaned up yet)
+            var tagConfigs = Tagging?.TagConfigs;
+            if (tagConfigs != null)
             {
-                foreach (var config in _settings.TaggingSettings.TagConfigs.Values)
+                foreach (var config in tagConfigs.Values)
                 {
                     if (config?.TagId.HasValue == true)
                     {
@@ -766,12 +949,12 @@ namespace PlayniteAchievements.Services.Tagging
         /// </summary>
         public void SyncCompletionStatus()
         {
-            if (!(_settings.TaggingSettings?.SetCompletionStatus ?? false))
+            if (!(Tagging?.SetCompletionStatus ?? false))
             {
                 return;
             }
 
-            var completionStatusId = _settings.TaggingSettings.CompletionStatusId;
+            var completionStatusId = Tagging?.CompletionStatusId;
             Guid? targetStatusId;
 
             if (completionStatusId.HasValue && completionStatusId.Value != Guid.Empty)
@@ -808,26 +991,30 @@ namespace PlayniteAchievements.Services.Tagging
 
                 var updatedCount = 0;
 
-                foreach (var game in games)
+                // Buffer database writes so all game updates in this pass raise a single
+                // coalesced ItemUpdated event instead of one event per game.
+                using (_api.Database.BufferedUpdate())
                 {
-                    if (game == null) continue;
-
-                    progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
-                    progress.CurrentProgressValue++;
-
-                    try
+                    foreach (var game in games)
                     {
-                        var tagType = DetermineTagType(game);
-                        if (tagType == TagType.Completed && game.CompletionStatusId != targetStatusId)
+                        if (game == null) continue;
+
+                        progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
+                        progress.CurrentProgressValue++;
+
+                        try
                         {
-                            game.CompletionStatusId = targetStatusId.Value;
-                            _api.Database.Games.Update(game);
-                            updatedCount++;
+                            if (IsGameCompleted(game) && game.CompletionStatusId != targetStatusId)
+                            {
+                                game.CompletionStatusId = targetStatusId.Value;
+                                _api.Database.Games.Update(game);
+                                updatedCount++;
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, $"Failed to update completion status for game {game.Name}");
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, $"Failed to update completion status for game {game.Name}");
+                        }
                     }
                 }
 

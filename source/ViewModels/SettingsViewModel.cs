@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using Playnite.SDK;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -82,7 +85,10 @@ namespace PlayniteAchievements.ViewModels
                 var rawJson = File.ReadAllText(settingsFilePath);
                 var migratedJson = ProviderSettingsMigration.MigrateFromJson(rawJson);
                 var overviewMigratedJson = OverviewSettingsMigration.MigrateFromJson(migratedJson);
-                var fullyMigratedJson = GameCustomDataStore.MigrateLegacyConfig(overviewMigratedJson);
+                var gridOptionsMigratedJson = GridOptionsSettingsMigration.MigrateFromJson(overviewMigratedJson);
+                var appearanceMigratedJson = AppearanceSettingsMigration.MigrateFromJson(gridOptionsMigratedJson);
+                var notificationStyleMigratedJson = NotificationStyleSettingsMigration.MigrateFromJson(appearanceMigratedJson);
+                var fullyMigratedJson = GameCustomDataStore.MigrateLegacyConfig(notificationStyleMigratedJson);
 
                 // If migration changed the JSON, save the migrated version
                 if (fullyMigratedJson != rawJson)
@@ -149,6 +155,7 @@ namespace PlayniteAchievements.ViewModels
             _plugin.ProviderRegistry?.CancelEditSession();
             _plugin.ProviderRegistry?.SyncFromSettings(Settings.Persisted);
             GameCustomDataStore?.SyncRuntimeCaches();
+            ApplyThemeResources();
         }
 
         public void EndEdit()
@@ -162,6 +169,7 @@ namespace PlayniteAchievements.ViewModels
             // Sync provider registry from the updated settings
             _plugin.ProviderRegistry?.SyncFromSettings(Settings.Persisted);
             GameCustomDataStore?.SyncRuntimeCaches();
+            ApplyThemeResources();
 
             // Notify listeners that settings have been saved (e.g., to refresh provider status in landing page)
             PlayniteAchievementsPlugin.NotifySettingsSaved();
@@ -182,22 +190,41 @@ namespace PlayniteAchievements.ViewModels
 
         private static void ValidateAchievementHotkeys(PersistedSettings persisted, List<string> errors)
         {
-            var viewLabel = L("LOCPlayAch_Menu_ViewAchievements", "View Achievements");
-            var manageLabel = L("LOCPlayAch_Menu_ManageAchievements", "Manage Achievements");
-            var overviewLabel = L("LOCPlayAch_Menu_OpenOverview", "Achievements Overview");
-            var invalidMessage = L(
-                "LOCPlayAch_Hotkeys_InvalidShortcut",
-                "Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.");
-            var duplicateMessage = L("LOCPlayAch_Hotkeys_DuplicateShortcut", "That shortcut is already assigned.");
+            var viewLabel = L("LOCPlayAch_Menu_ViewAchievements");
+            var manageLabel = L("LOCPlayAch_Menu_ManageAchievements");
+            var overviewLabel = L("LOCPlayAch_Menu_OpenOverview");
+            var openSettingsLabel = L("LOCPlayAch_Landing_OpenSettings");
+            var categoryModeLabel = L("LOCPlayAch_CategorySummaries_ToggleToolTip");
+            var testUnlockLabel = L("LOCPlayAch_Hotkeys_FireTestNotification");
+            var invalidMessage = L("LOCPlayAch_Hotkeys_InvalidShortcut");
+            var duplicateMessage = L("LOCPlayAch_Hotkeys_DuplicateShortcut");
 
             var viewValid = TryValidateHotkey(viewLabel, persisted.ViewAchievementsHotkey, invalidMessage, errors, out var viewGesture);
             var manageValid = TryValidateHotkey(manageLabel, persisted.ManageAchievementsHotkey, invalidMessage, errors, out var manageGesture);
             var overviewValid = TryValidateHotkey(overviewLabel, persisted.OverviewHotkey, invalidMessage, errors, out var overviewGesture);
+            var openSettingsValid = TryValidateHotkey(openSettingsLabel, persisted.OpenSettingsHotkey, invalidMessage, errors, out var openSettingsGesture);
+            var categoryModeValid = TryValidateHotkey(categoryModeLabel, persisted.CategoryModeHotkey, invalidMessage, errors, out var categoryModeGesture);
+            var testUnlockValid = TryValidateHotkey(testUnlockLabel, persisted.TestUnlockHotkey, invalidMessage, errors, out var testUnlockGesture);
 
             var assignedGestures = new List<AchievementHotkeyGesture>();
             AddDuplicateHotkeyError(viewValid, viewGesture, assignedGestures, duplicateMessage, errors);
             AddDuplicateHotkeyError(manageValid, manageGesture, assignedGestures, duplicateMessage, errors);
             AddDuplicateHotkeyError(overviewValid, overviewGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(openSettingsValid, openSettingsGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(categoryModeValid, categoryModeGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(testUnlockValid, testUnlockGesture, assignedGestures, duplicateMessage, errors);
+        }
+
+        private void ApplyThemeResources()
+        {
+            var resources = Application.Current?.Resources;
+            if (resources != null)
+            {
+                PlayAchResourceService.Apply(
+                    resources,
+                    Settings?.Persisted?.ResourceOverrides,
+                    Settings?.Persisted);
+            }
         }
 
         private static void AddDuplicateHotkeyError(
@@ -250,9 +277,9 @@ namespace PlayniteAchievements.ViewModels
             return false;
         }
 
-        private static string L(string key, string fallback)
+        private static string L(string key)
         {
-            return ResourceProvider.GetString(key) ?? fallback;
+            return ResourceProvider.GetString(key);
         }
 
         private PlayniteAchievementsSettings _editingClone;

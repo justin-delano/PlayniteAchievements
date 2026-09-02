@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
 
@@ -11,6 +12,80 @@ namespace PlayniteAchievements.Models.Tests
     [TestClass]
     public class PersistedSettingsDefaultsTests
     {
+        [TestMethod]
+        public void Constructor_DefaultsCaptureRaritiesToAll()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(RaritySelection.All, settings.UnlockScreenshotCleanRarities);
+            Assert.IsTrue(settings.UnlockScreenshotCleanAlwaysCaptureCompletion);
+            Assert.AreEqual(RaritySelection.All, settings.UnlockScreenshotWithToastRarities);
+            Assert.IsTrue(settings.UnlockScreenshotWithToastAlwaysCaptureCompletion);
+            Assert.AreEqual(RaritySelection.All, settings.UnlockScreenshotFramedRarities);
+            Assert.IsTrue(settings.UnlockScreenshotFramedAlwaysCaptureCompletion);
+            Assert.AreEqual(RaritySelection.All, settings.UnlockRecordingRarities);
+            Assert.IsTrue(settings.UnlockRecordingAlwaysCaptureCompletion);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsCaptureResolutionsToNative()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(ScreenshotResolution.Native, settings.ScreenshotResolution);
+            Assert.AreEqual(RecordingResolution.Native, settings.RecordingResolution);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreservePerSectionCaptureRarities()
+        {
+            var source = new PersistedSettings
+            {
+                UnlockScreenshotCleanRarities = RaritySelection.Uncommon | RaritySelection.Rare,
+                UnlockScreenshotCleanAlwaysCaptureCompletion = false,
+                UnlockScreenshotWithToastRarities = RaritySelection.None,
+                UnlockScreenshotWithToastAlwaysCaptureCompletion = false,
+                UnlockScreenshotFramedRarities = RaritySelection.UltraRare,
+                UnlockScreenshotFramedAlwaysCaptureCompletion = false,
+                UnlockRecordingRarities = RaritySelection.Common
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(RaritySelection.Uncommon | RaritySelection.Rare, copy.UnlockScreenshotCleanRarities);
+                Assert.IsFalse(copy.UnlockScreenshotCleanAlwaysCaptureCompletion);
+                Assert.AreEqual(RaritySelection.None, copy.UnlockScreenshotWithToastRarities);
+                Assert.IsFalse(copy.UnlockScreenshotWithToastAlwaysCaptureCompletion);
+                Assert.AreEqual(RaritySelection.UltraRare, copy.UnlockScreenshotFramedRarities);
+                Assert.IsFalse(copy.UnlockScreenshotFramedAlwaysCaptureCompletion);
+                Assert.AreEqual(RaritySelection.Common, copy.UnlockRecordingRarities);
+            }
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveCaptureResolutions()
+        {
+            var source = new PersistedSettings
+            {
+                ScreenshotResolution = ScreenshotResolution.P720,
+                RecordingResolution = RecordingResolution.P1080
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(ScreenshotResolution.P720, copy.ScreenshotResolution);
+                Assert.AreEqual(RecordingResolution.P1080, copy.RecordingResolution);
+            }
+        }
+
         [TestMethod]
         public void Constructor_DefaultsAchievementDataGridMaxHeight()
         {
@@ -22,6 +97,344 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsProgressColumnToRightAcrossSurfaces()
+        {
+            var settings = new PersistedSettings();
+
+            // The parameterless ctor is the deserialization target: it must leave the seed flag
+            // false so an upgrading config stays eligible for the seeding migration. The Right
+            // alignment itself comes from the grid-options defaults, independent of the flag.
+            Assert.IsFalse(settings.ProgressColumnAlignmentDefaulted);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.OverviewGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.StartPageGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.ViewAchievementsGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.FriendsOverviewGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.FriendsOverviewSelectedFriendGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsRetroAchievementsAutoDiscoveryEnabled()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsTrue(settings.IsFriendAutoDiscoverEnabled("Steam"));
+            Assert.IsTrue(settings.IsFriendAutoDiscoverEnabled("RetroAchievements"));
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsExophaseSteamFriendOwnershipReplacementDisabled()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsFalse(settings.UseExophaseForSteamFriendOwnership);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsEnableFriendsFeaturesOn()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsTrue(settings.EnableFriendsFeatures);
+        }
+
+        [TestMethod]
+        public void FriendNameDisplayMode_DefaultsToPersonaAndNickname()
+        {
+            Assert.AreEqual(FriendNameDisplayMode.PersonaAndNickname, new PersistedSettings().FriendNameDisplayMode);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveFriendNameDisplayMode()
+        {
+            var source = new PersistedSettings
+            {
+                FriendNameDisplayMode = FriendNameDisplayMode.Nickname
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(FriendNameDisplayMode.Nickname, clone.FriendNameDisplayMode);
+            Assert.AreEqual(FriendNameDisplayMode.Nickname, target.FriendNameDisplayMode);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveEnableFriendsFeatures()
+        {
+            var source = new PersistedSettings
+            {
+                EnableFriendsFeatures = false
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsFalse(clone.EnableFriendsFeatures);
+            Assert.IsFalse(target.EnableFriendsFeatures);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveExophaseSteamFriendOwnershipReplacement()
+        {
+            var source = new PersistedSettings
+            {
+                UseExophaseForSteamFriendOwnership = true
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsTrue(clone.UseExophaseForSteamFriendOwnership);
+            Assert.IsTrue(target.UseExophaseForSteamFriendOwnership);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveUseTrophiesForRarity()
+        {
+            var source = new PersistedSettings
+            {
+                UseTrophiesForRarity = true
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsTrue(clone.UseTrophiesForRarity);
+            Assert.IsTrue(target.UseTrophiesForRarity);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsRoundRarityPercentagesOff()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsFalse(settings.RoundRarityPercentages);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveRoundRarityPercentages()
+        {
+            var source = new PersistedSettings
+            {
+                RoundRarityPercentages = true
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsTrue(clone.RoundRarityPercentages);
+            Assert.IsTrue(target.RoundRarityPercentages);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsCategoryCompletionBadgeModeToAll()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(CategoryCompletionBadgeMode.All, settings.CategoryCompletionBadgeMode);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveCategoryCompletionBadgeMode()
+        {
+            var source = new PersistedSettings
+            {
+                CategoryCompletionBadgeMode = CategoryCompletionBadgeMode.First
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(CategoryCompletionBadgeMode.First, clone.CategoryCompletionBadgeMode);
+            Assert.AreEqual(CategoryCompletionBadgeMode.First, target.CategoryCompletionBadgeMode);
+        }
+
+        [TestMethod]
+        public void ResetDisplaySettingsToDefaults_RestoresCategoryCompletionBadgeMode()
+        {
+            var settings = new PersistedSettings
+            {
+                CategoryCompletionBadgeMode = CategoryCompletionBadgeMode.None
+            };
+
+            settings.ResetDisplaySettingsToDefaults();
+
+            Assert.AreEqual(CategoryCompletionBadgeMode.All, settings.CategoryCompletionBadgeMode);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveProgressColumnAlignmentDefaultedFlag()
+        {
+            var source = new PersistedSettings { ProgressColumnAlignmentDefaulted = false };
+
+            var clone = source.Clone();
+            Assert.IsFalse(clone.ProgressColumnAlignmentDefaulted);
+
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+            Assert.IsFalse(target.ProgressColumnAlignmentDefaulted);
+        }
+
+        [TestMethod]
+        public void EnableProgressToasts_DefaultsOn()
+        {
+            Assert.IsTrue(new PersistedSettings().EnableProgressToasts);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveInGamePollingAndToastSettings()
+        {
+            var source = new PersistedSettings
+            {
+                EnableInGamePolling = false,
+                InGamePollIntervalSeconds = 21,
+                InGamePollRefreshFriends = true,
+                InGameFriendRefreshMultiplier = 5,
+                InGameFriendBatchSize = 7,
+                EnableUnlockToasts = false,
+                EnableFriendUnlockToasts = false,
+                EnableProgressToasts = false,
+                NotificationStyle = new NotificationStyleSettings
+                {
+                    Toast = new NotificationSurfaceStyle
+                    {
+                        ShowRarityGlow = false,
+                        RarityColoredName = false,
+                        ShowRarityPercent = false,
+                        ShowDescription = false,
+                        ShowCategory = false,
+                        ShowGameName = false
+                    }
+                },
+                ToastUseThemeStyling = false,
+                FrameUseThemeStyling = false,
+                ToastDurationSeconds = 8,
+                NotificationDelaySeconds = 0.4,
+                CaptureDelaySeconds = 0.7,
+                MaxConcurrentToasts = 4,
+                ToastPosition = ToastScreenCorner.TopLeft
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            AssertInGamePollingAndToastSettings(source, clone);
+            AssertInGamePollingAndToastSettings(source, target);
+        }
+
+        [TestMethod]
+        public void InGamePollingAndToastSettings_ClampUnsafeValues()
+        {
+            var settings = new PersistedSettings
+            {
+                InGamePollIntervalSeconds = 1,
+                InGameFriendRefreshMultiplier = 0,
+                InGameFriendBatchSize = -1,
+                ToastDurationSeconds = 0,
+                MaxConcurrentToasts = 0
+            };
+
+            Assert.AreEqual(10, settings.InGamePollIntervalSeconds);
+            Assert.AreEqual(1, settings.InGameFriendRefreshMultiplier);
+            Assert.AreEqual(0, settings.InGameFriendBatchSize);
+            Assert.AreEqual(2, settings.ToastDurationSeconds);
+            Assert.AreEqual(1, settings.MaxConcurrentToasts);
+        }
+
+        /// <summary>
+        /// Both delays are deliberately uncapped — a user may want to hold a notification or its
+        /// capture for as long as they like — so only negatives are rejected. Asserting a large
+        /// value survives keeps a ceiling from being reintroduced as an unnoticed "sanity clamp".
+        /// </summary>
+        [TestMethod]
+        public void NotificationDelay_FloorsNegativesAndKeepsLargeValues()
+        {
+            var settings = new PersistedSettings { NotificationDelaySeconds = -1.5 };
+            Assert.AreEqual(0, settings.NotificationDelaySeconds);
+
+            settings.NotificationDelaySeconds = 0.4;
+            Assert.AreEqual(0.4, settings.NotificationDelaySeconds);
+
+            settings.NotificationDelaySeconds = 120;
+            Assert.AreEqual(120, settings.NotificationDelaySeconds);
+        }
+
+        [TestMethod]
+        public void CaptureDelay_FloorsNegativesAndKeepsLargeValues()
+        {
+            var settings = new PersistedSettings { CaptureDelaySeconds = -1.5 };
+            Assert.AreEqual(0, settings.CaptureDelaySeconds);
+
+            settings.CaptureDelaySeconds = 0.4;
+            Assert.AreEqual(0.4, settings.CaptureDelaySeconds);
+
+            settings.CaptureDelaySeconds = 120;
+            Assert.AreEqual(120, settings.CaptureDelaySeconds);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsUnlockScreenshotsOff()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsFalse(settings.EnableUnlockScreenshots);
+            Assert.IsTrue(string.IsNullOrEmpty(settings.UnlockScreenshotDirectory));
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsUnlockScreenshotSuffixes()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual("clean", settings.UnlockScreenshotSuffixClean);
+            Assert.AreEqual("notification", settings.UnlockScreenshotSuffixWithToast);
+            Assert.AreEqual("framed", settings.UnlockScreenshotSuffixFramed);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveUnlockScreenshotSettings()
+        {
+            var source = new PersistedSettings
+            {
+                EnableUnlockScreenshots = true,
+                UnlockScreenshotDirectory = @"C:\Shots\PlayniteAchievements",
+                UnlockScreenshotSuffixClean = "raw",
+                UnlockScreenshotSuffixWithToast = "",
+                UnlockScreenshotSuffixFramed = "fancy"
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.IsTrue(copy.EnableUnlockScreenshots);
+                Assert.AreEqual(source.UnlockScreenshotDirectory, copy.UnlockScreenshotDirectory);
+                Assert.AreEqual("raw", copy.UnlockScreenshotSuffixClean);
+                Assert.AreEqual("", copy.UnlockScreenshotSuffixWithToast);
+                Assert.AreEqual("fancy", copy.UnlockScreenshotSuffixFramed);
+            }
+        }
+
+        [TestMethod]
         public void Constructor_DefaultsOverviewColumnRatio()
         {
             var settings = new PersistedSettings();
@@ -29,6 +442,12 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(
                 PersistedSettings.DefaultOverviewLeftColumnRatio,
                 settings.OverviewLeftColumnRatio);
+            Assert.AreEqual(
+                PersistedSettings.DefaultFriendsOverviewFriendColumnRatio,
+                settings.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(
+                PersistedSettings.DefaultFriendsOverviewGameColumnRatio,
+                settings.FriendsOverviewGameColumnRatio);
         }
 
         [TestMethod]
@@ -56,7 +475,22 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.IsTrue(settings.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.IsTrue(settings.ShowOverviewRecentAchievementsGridColumnHeaders);
+            Assert.IsTrue(settings.ShowViewAchievementsAchievementGridColumnHeaders);
             Assert.IsTrue(settings.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.IsTrue(settings.ShowOverviewGameSummariesGridControlBar);
+            Assert.IsTrue(settings.ShowOverviewRecentAchievementsGridControlBar);
+            Assert.IsTrue(settings.ShowOverviewSelectedGameGridControlBar);
+            Assert.IsTrue(settings.ShowViewAchievementsAchievementGridControlBar);
+            Assert.IsTrue(settings.ShowDesktopThemeAchievementGridControlBar);
+            Assert.IsTrue(settings.ShowFriendsOverviewFriendSummariesGridControlBar);
+            Assert.IsTrue(settings.ShowFriendsOverviewGameSummariesGridControlBar);
+            Assert.IsTrue(settings.ShowFriendsOverviewAchievementsGridControlBar);
+            Assert.IsFalse(settings.OverviewSelectedGameAchievementsStartInCategoryMode);
+            Assert.IsFalse(settings.ViewAchievementsAchievementGridStartInCategoryMode);
+            Assert.IsFalse(settings.FriendsOverviewAchievementsStartInCategoryMode);
+            Assert.IsFalse(settings.DesktopThemeAchievementGridStartInCategoryMode);
+            Assert.IsFalse(settings.StartPageGameSummariesGrid.ShowControlBar);
+            Assert.IsFalse(settings.StartPageRecentUnlocksGrid.ShowControlBar);
         }
 
         [TestMethod]
@@ -109,9 +543,22 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.IsTrue(settings.EnableAchievementHotkeys);
             Assert.IsFalse(settings.EnableGlobalAchievementHotkeys);
+            Assert.IsTrue(settings.EnableViewAchievementsHotkey);
+            Assert.IsTrue(settings.EnableManageAchievementsHotkey);
+            Assert.IsTrue(settings.EnableOverviewHotkey);
+            Assert.IsTrue(settings.EnableOpenSettingsHotkey);
+            Assert.IsTrue(settings.EnableCategoryModeHotkey);
+            Assert.IsTrue(settings.EnableTestUnlockHotkey);
+
+            // Off by default: a retrigger captures into the game's own folder, and the test folder
+            // is the opt-in that turns it into throwaway output instead.
+            Assert.IsFalse(settings.EnableCaptureTestFolder);
             Assert.AreEqual(PersistedSettings.DefaultViewAchievementsHotkey, settings.ViewAchievementsHotkey);
             Assert.AreEqual(PersistedSettings.DefaultManageAchievementsHotkey, settings.ManageAchievementsHotkey);
             Assert.AreEqual(PersistedSettings.DefaultOverviewHotkey, settings.OverviewHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultOpenSettingsHotkey, settings.OpenSettingsHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultCategoryModeHotkey, settings.CategoryModeHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultTestUnlockHotkey, settings.TestUnlockHotkey);
         }
 
         [TestMethod]
@@ -163,6 +610,21 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(
                 PersistedSettings.DefaultOverviewLeftColumnRatio,
                 settings.OverviewLeftColumnRatio);
+
+            settings.FriendsOverviewFriendColumnRatio = -1d;
+            Assert.AreEqual(
+                PersistedSettings.MinFriendsOverviewColumnRatio,
+                settings.FriendsOverviewFriendColumnRatio);
+
+            settings.FriendsOverviewGameColumnRatio = 2d;
+            Assert.AreEqual(
+                PersistedSettings.MaxFriendsOverviewColumnRatio,
+                settings.FriendsOverviewGameColumnRatio);
+
+            settings.FriendsOverviewFriendColumnRatio = double.NaN;
+            Assert.AreEqual(
+                PersistedSettings.DefaultFriendsOverviewFriendColumnRatio,
+                settings.FriendsOverviewFriendColumnRatio);
         }
 
         [TestMethod]
@@ -170,7 +632,9 @@ namespace PlayniteAchievements.Models.Tests
         {
             var source = new PersistedSettings
             {
-                OverviewLeftColumnRatio = 0.64d
+                OverviewLeftColumnRatio = 0.64d,
+                FriendsOverviewFriendColumnRatio = 0.24d,
+                FriendsOverviewGameColumnRatio = 0.32d
             };
 
             var clone = source.Clone();
@@ -179,6 +643,280 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.AreEqual(0.64d, clone.OverviewLeftColumnRatio);
             Assert.AreEqual(0.64d, target.OverviewLeftColumnRatio);
+            Assert.AreEqual(0.24d, clone.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(0.24d, target.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(0.32d, clone.FriendsOverviewGameColumnRatio);
+            Assert.AreEqual(0.32d, target.FriendsOverviewGameColumnRatio);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveDefaultOverviewRefreshMode()
+        {
+            var source = new PersistedSettings
+            {
+                DefaultOverviewRefreshMode = RefreshModeType.Recent
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(RefreshModeType.Recent, clone.DefaultOverviewRefreshMode);
+            Assert.AreEqual(RefreshModeType.Recent, target.DefaultOverviewRefreshMode);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreservePerSurfaceDateDisplayModes()
+        {
+            var source = new PersistedSettings
+            {
+                OverviewGameSummariesLastPlayedDateMode = DateDisplayMode.DateOnly,
+                ViewAchievementsGameSummariesLastPlayedDateMode = DateDisplayMode.Relative,
+                StartPageGameSummariesLastPlayedDateMode = DateDisplayMode.DateOnly,
+                OverviewRecentAchievementsUnlockDateMode = DateDisplayMode.Relative,
+                OverviewSelectedGameAchievementsUnlockDateMode = DateDisplayMode.DateOnly,
+                ViewAchievementsAchievementsUnlockDateMode = DateDisplayMode.Relative,
+                StartPageAchievementsUnlockDateMode = DateDisplayMode.DateOnly,
+                DesktopThemeAchievementsUnlockDateMode = DateDisplayMode.Relative,
+                FriendsOverviewFriendSummariesLastUnlockDateMode = DateDisplayMode.DateOnly,
+                FriendsOverviewGameSummariesLastPlayedDateMode = DateDisplayMode.Relative,
+                FriendsOverviewAchievementsUnlockDateMode = DateDisplayMode.DateOnly,
+                UnlockDateDisplayMode = DateDisplayMode.Relative,
+                PlaytimeDisplayMode = PlaytimeDisplayMode.HoursOnly
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.OverviewGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.ViewAchievementsGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.StartPageGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.OverviewRecentAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.OverviewSelectedGameAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.ViewAchievementsAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.StartPageAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.DesktopThemeAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.FriendsOverviewFriendSummariesLastUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.FriendsOverviewGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.FriendsOverviewAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.UnlockDateDisplayMode);
+                Assert.AreEqual(PlaytimeDisplayMode.HoursOnly, copy.PlaytimeDisplayMode);
+            }
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveFriendsOverviewDisplaySettings()
+        {
+            var defaults = new PersistedSettings();
+            var source = new PersistedSettings
+            {
+                FriendsOverviewGameSummariesUseCoverImages = !defaults.FriendsOverviewGameSummariesUseCoverImages,
+                FriendsOverviewGameSummariesShowMetadataPlatform = !defaults.FriendsOverviewGameSummariesShowMetadataPlatform,
+                FriendsOverviewGameSummariesShowMetadataPlaytime = !defaults.FriendsOverviewGameSummariesShowMetadataPlaytime,
+                FriendsOverviewGameSummariesShowMetadataRegion = !defaults.FriendsOverviewGameSummariesShowMetadataRegion,
+                FriendsOverviewAchievementsUseCoverImages = !defaults.FriendsOverviewAchievementsUseCoverImages,
+                FriendsOverviewAchievementsShowRarityGlow = !defaults.FriendsOverviewAchievementsShowRarityGlow,
+                FriendsOverviewAchievementsColorNamesByRarity = !defaults.FriendsOverviewAchievementsColorNamesByRarity,
+                FriendsOverviewAchievementsColorRarityColumnsByRarity = !defaults.FriendsOverviewAchievementsColorRarityColumnsByRarity,
+                FriendsOverviewAchievementsStartInCategoryMode = !defaults.FriendsOverviewAchievementsStartInCategoryMode,
+                ShowFriendsOverviewFriendSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders,
+                ShowFriendsOverviewGameSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders,
+                ShowFriendsOverviewAchievementsGridColumnHeaders = !defaults.ShowFriendsOverviewAchievementsGridColumnHeaders,
+                ShowFriendsOverviewFriendSummariesGridControlBar = !defaults.ShowFriendsOverviewFriendSummariesGridControlBar,
+                ShowFriendsOverviewGameSummariesGridControlBar = !defaults.ShowFriendsOverviewGameSummariesGridControlBar,
+                ShowFriendsOverviewAchievementsGridControlBar = !defaults.ShowFriendsOverviewAchievementsGridControlBar,
+                FriendsOverviewFriendSummariesGridRowHeight = 41d,
+                FriendsOverviewGameSummariesGridRowHeight = 42d,
+                FriendsOverviewAchievementsGridRowHeight = 43d,
+                FriendsOverviewFriendSummariesGridMaxRows = 11,
+                FriendsOverviewGameSummariesGridMaxRows = 12,
+                FriendsOverviewAchievementsGridMaxRows = 13,
+                FriendsOverviewAchievementColumnVisibility = new Dictionary<string, bool> { ["Friend"] = false },
+                FriendsOverviewAchievementColumnWidths = new Dictionary<string, double> { ["Friend"] = 144d },
+                FriendsOverviewAchievementColumnOrder = new Dictionary<string, int> { ["Friend"] = 2 },
+                FriendsOverviewAchievementColumnAlignments = new Dictionary<string, GridAlignment> { ["Friend"] = GridAlignment.Center },
+                FriendsOverviewAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["Friend"] = GridVerticalAlignment.Bottom },
+                FriendsOverviewAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["Friend"] = GridAlignment.Right },
+                FriendsOverviewFriendSummariesColumnVisibility = new Dictionary<string, bool> { ["FriendSummaryFriend"] = false },
+                FriendsOverviewFriendSummariesColumnWidths = new Dictionary<string, double> { ["FriendSummaryFriend"] = 188d },
+                FriendsOverviewFriendSummariesColumnOrder = new Dictionary<string, int> { ["FriendSummaryFriend"] = 3 },
+                FriendsOverviewFriendSummariesColumnAlignments = new Dictionary<string, GridAlignment> { ["FriendSummaryFriend"] = GridAlignment.Center },
+                FriendsOverviewFriendSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["FriendSummaryFriend"] = GridVerticalAlignment.Top },
+                FriendsOverviewFriendSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["FriendSummaryFriend"] = GridAlignment.Right },
+                FriendsOverviewGameSummariesColumnVisibility = new Dictionary<string, bool> { ["GameSummaryName"] = false },
+                FriendsOverviewGameSummariesColumnWidths = new Dictionary<string, double> { ["GameSummaryName"] = 96d },
+                FriendsOverviewGameSummariesColumnOrder = new Dictionary<string, int> { ["GameSummaryName"] = 4 },
+                FriendsOverviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment> { ["GameSummaryName"] = GridAlignment.Right },
+                FriendsOverviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["GameSummaryName"] = GridVerticalAlignment.Bottom },
+                FriendsOverviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["GameSummaryName"] = GridAlignment.Center },
+                FriendsOverviewSelectedFriendGameSummariesColumnVisibility = new Dictionary<string, bool> { ["GameSummaryLastUnlock"] = true },
+                FriendsOverviewSelectedFriendGameSummariesColumnWidths = new Dictionary<string, double> { ["GameSummaryLastUnlock"] = 112d },
+                FriendsOverviewSelectedFriendGameSummariesColumnOrder = new Dictionary<string, int> { ["GameSummaryLastUnlock"] = 5 },
+                FriendsOverviewSelectedFriendGameSummariesColumnAlignments = new Dictionary<string, GridAlignment> { ["GameSummaryLastUnlock"] = GridAlignment.Left },
+                FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["GameSummaryLastUnlock"] = GridVerticalAlignment.Top },
+                FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["GameSummaryLastUnlock"] = GridAlignment.Right }
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(source.FriendsOverviewGameSummariesUseCoverImages, copy.FriendsOverviewGameSummariesUseCoverImages);
+                Assert.AreEqual(source.FriendsOverviewGameSummariesShowMetadataPlatform, copy.FriendsOverviewGameSummariesShowMetadataPlatform);
+                Assert.AreEqual(source.FriendsOverviewGameSummariesShowMetadataPlaytime, copy.FriendsOverviewGameSummariesShowMetadataPlaytime);
+                Assert.AreEqual(source.FriendsOverviewGameSummariesShowMetadataRegion, copy.FriendsOverviewGameSummariesShowMetadataRegion);
+                Assert.AreEqual(source.FriendsOverviewAchievementsUseCoverImages, copy.FriendsOverviewAchievementsUseCoverImages);
+                Assert.AreEqual(source.FriendsOverviewAchievementsShowRarityGlow, copy.FriendsOverviewAchievementsShowRarityGlow);
+                Assert.AreEqual(source.FriendsOverviewAchievementsColorNamesByRarity, copy.FriendsOverviewAchievementsColorNamesByRarity);
+                Assert.AreEqual(source.FriendsOverviewAchievementsColorRarityColumnsByRarity, copy.FriendsOverviewAchievementsColorRarityColumnsByRarity);
+                Assert.AreEqual(source.FriendsOverviewAchievementsStartInCategoryMode, copy.FriendsOverviewAchievementsStartInCategoryMode);
+                Assert.AreEqual(source.ShowFriendsOverviewFriendSummariesGridColumnHeaders, copy.ShowFriendsOverviewFriendSummariesGridColumnHeaders);
+                Assert.AreEqual(source.ShowFriendsOverviewGameSummariesGridColumnHeaders, copy.ShowFriendsOverviewGameSummariesGridColumnHeaders);
+                Assert.AreEqual(source.ShowFriendsOverviewAchievementsGridColumnHeaders, copy.ShowFriendsOverviewAchievementsGridColumnHeaders);
+                Assert.AreEqual(source.ShowFriendsOverviewFriendSummariesGridControlBar, copy.ShowFriendsOverviewFriendSummariesGridControlBar);
+                Assert.AreEqual(source.ShowFriendsOverviewGameSummariesGridControlBar, copy.ShowFriendsOverviewGameSummariesGridControlBar);
+                Assert.AreEqual(source.ShowFriendsOverviewAchievementsGridControlBar, copy.ShowFriendsOverviewAchievementsGridControlBar);
+                Assert.AreEqual(41d, copy.FriendsOverviewFriendSummariesGridRowHeight);
+                Assert.AreEqual(42d, copy.FriendsOverviewGameSummariesGridRowHeight);
+                Assert.AreEqual(43d, copy.FriendsOverviewAchievementsGridRowHeight);
+                Assert.AreEqual(11, copy.FriendsOverviewFriendSummariesGridMaxRows);
+                Assert.AreEqual(12, copy.FriendsOverviewGameSummariesGridMaxRows);
+                Assert.AreEqual(13, copy.FriendsOverviewAchievementsGridMaxRows);
+                Assert.IsFalse(copy.FriendsOverviewAchievementColumnVisibility["Friend"]);
+                Assert.AreEqual(144d, copy.FriendsOverviewAchievementColumnWidths["Friend"]);
+                Assert.AreEqual(2, copy.FriendsOverviewAchievementColumnOrder["Friend"]);
+                Assert.AreEqual(GridAlignment.Center, copy.FriendsOverviewAchievementColumnAlignments["Friend"]);
+                Assert.AreEqual(GridVerticalAlignment.Bottom, copy.FriendsOverviewAchievementColumnVerticalAlignments["Friend"]);
+                Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewAchievementColumnHeaderAlignments["Friend"]);
+                Assert.IsFalse(copy.FriendsOverviewFriendSummariesColumnVisibility["FriendSummaryFriend"]);
+                Assert.AreEqual(188d, copy.FriendsOverviewFriendSummariesColumnWidths["FriendSummaryFriend"]);
+                Assert.AreEqual(3, copy.FriendsOverviewFriendSummariesColumnOrder["FriendSummaryFriend"]);
+                Assert.AreEqual(GridAlignment.Center, copy.FriendsOverviewFriendSummariesColumnAlignments["FriendSummaryFriend"]);
+                Assert.AreEqual(GridVerticalAlignment.Top, copy.FriendsOverviewFriendSummariesColumnVerticalAlignments["FriendSummaryFriend"]);
+                Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewFriendSummariesColumnHeaderAlignments["FriendSummaryFriend"]);
+                Assert.IsFalse(copy.FriendsOverviewGameSummariesColumnVisibility["GameSummaryName"]);
+                Assert.AreEqual(96d, copy.FriendsOverviewGameSummariesColumnWidths["GameSummaryName"]);
+                Assert.AreEqual(4, copy.FriendsOverviewGameSummariesColumnOrder["GameSummaryName"]);
+                Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewGameSummariesColumnAlignments["GameSummaryName"]);
+                Assert.AreEqual(GridVerticalAlignment.Bottom, copy.FriendsOverviewGameSummariesColumnVerticalAlignments["GameSummaryName"]);
+                Assert.AreEqual(GridAlignment.Center, copy.FriendsOverviewGameSummariesColumnHeaderAlignments["GameSummaryName"]);
+                Assert.IsTrue(copy.FriendsOverviewSelectedFriendGameSummariesColumnVisibility["GameSummaryLastUnlock"]);
+                Assert.AreEqual(112d, copy.FriendsOverviewSelectedFriendGameSummariesColumnWidths["GameSummaryLastUnlock"]);
+                Assert.AreEqual(5, copy.FriendsOverviewSelectedFriendGameSummariesColumnOrder["GameSummaryLastUnlock"]);
+                Assert.AreEqual(GridAlignment.Left, copy.FriendsOverviewSelectedFriendGameSummariesColumnAlignments["GameSummaryLastUnlock"]);
+                Assert.AreEqual(GridVerticalAlignment.Top, copy.FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments["GameSummaryLastUnlock"]);
+                Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments["GameSummaryLastUnlock"]);
+            }
+
+            Assert.AreNotSame(source.FriendsOverviewAchievementColumnVisibility, clone.FriendsOverviewAchievementColumnVisibility);
+            Assert.AreNotSame(source.FriendsOverviewAchievementColumnWidths, target.FriendsOverviewAchievementColumnWidths);
+            Assert.AreNotSame(source.FriendsOverviewFriendSummariesColumnOrder, clone.FriendsOverviewFriendSummariesColumnOrder);
+            Assert.AreNotSame(source.FriendsOverviewFriendSummariesColumnAlignments, target.FriendsOverviewFriendSummariesColumnAlignments);
+            Assert.AreNotSame(source.FriendsOverviewGameSummariesColumnVerticalAlignments, clone.FriendsOverviewGameSummariesColumnVerticalAlignments);
+            Assert.AreNotSame(source.FriendsOverviewGameSummariesColumnHeaderAlignments, target.FriendsOverviewGameSummariesColumnHeaderAlignments);
+            Assert.AreNotSame(source.FriendsOverviewSelectedFriendGameSummariesColumnVisibility, clone.FriendsOverviewSelectedFriendGameSummariesColumnVisibility);
+            Assert.AreNotSame(source.FriendsOverviewSelectedFriendGameSummariesColumnWidths, target.FriendsOverviewSelectedFriendGameSummariesColumnWidths);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveControlTogglesAndViewAchievementsGameSummaries()
+        {
+            var defaults = new PersistedSettings();
+            var source = new PersistedSettings
+            {
+                // Use the inverse of each default so an omission would surface as a reset.
+                OverviewRecentAchievementsColorNamesByRarity = !defaults.OverviewRecentAchievementsColorNamesByRarity,
+                OverviewSelectedGameColorNamesByRarity = !defaults.OverviewSelectedGameColorNamesByRarity,
+                ViewAchievementsAchievementGridShowRarityGlow = !defaults.ViewAchievementsAchievementGridShowRarityGlow,
+                ViewAchievementsAchievementGridColorNamesByRarity = !defaults.ViewAchievementsAchievementGridColorNamesByRarity,
+                OverviewRecentAchievementsColorRarityColumnsByRarity = !defaults.OverviewRecentAchievementsColorRarityColumnsByRarity,
+                OverviewSelectedGameColorRarityColumnsByRarity = !defaults.OverviewSelectedGameColorRarityColumnsByRarity,
+                ViewAchievementsAchievementGridColorRarityColumnsByRarity = !defaults.ViewAchievementsAchievementGridColorRarityColumnsByRarity,
+                ViewFriendsAchievementsColorRarityColumnsByRarity = !defaults.ViewFriendsAchievementsColorRarityColumnsByRarity,
+                OverviewSelectedGameAchievementsStartInCategoryMode = !defaults.OverviewSelectedGameAchievementsStartInCategoryMode,
+                ModernDataGridColorNamesByRarity = !defaults.ModernDataGridColorNamesByRarity,
+                ModernDataGridColorRarityColumnsByRarity = !defaults.ModernDataGridColorRarityColumnsByRarity,
+                ShowDesktopThemeAchievementGridControlBar = !defaults.ShowDesktopThemeAchievementGridControlBar,
+                EnableAchievementCompactListControl = !defaults.EnableAchievementCompactListControl,
+                EnableAchievementDataGridControl = !defaults.EnableAchievementDataGridControl,
+                EnableAchievementCompactUnlockedListControl = !defaults.EnableAchievementCompactUnlockedListControl,
+                EnableAchievementCompactLockedListControl = !defaults.EnableAchievementCompactLockedListControl,
+                EnableAchievementProgressBarControl = !defaults.EnableAchievementProgressBarControl,
+                EnableAchievementStatsControl = !defaults.EnableAchievementStatsControl,
+                EnableAchievementButtonControl = !defaults.EnableAchievementButtonControl,
+                EnableAchievementViewItemControl = !defaults.EnableAchievementViewItemControl,
+                EnableAchievementPieChartControl = !defaults.EnableAchievementPieChartControl,
+                EnableAchievementBarChartControl = !defaults.EnableAchievementBarChartControl,
+                ViewAchievementsGameSummariesUseCoverImages = !defaults.ViewAchievementsGameSummariesUseCoverImages,
+                ViewAchievementsGameSummariesShowMetadataPlatform = !defaults.ViewAchievementsGameSummariesShowMetadataPlatform,
+                ViewAchievementsGameSummariesShowMetadataPlaytime = !defaults.ViewAchievementsGameSummariesShowMetadataPlaytime,
+                ViewAchievementsGameSummariesShowMetadataRegion = !defaults.ViewAchievementsGameSummariesShowMetadataRegion,
+                ViewAchievementsGameSummariesShowCompletionGlow = !defaults.ViewAchievementsGameSummariesShowCompletionGlow,
+                ShowViewAchievementsGameSummariesGridColumnHeaders = !defaults.ShowViewAchievementsGameSummariesGridColumnHeaders,
+                ShowViewAchievementsAchievementGridColumnHeaders = !defaults.ShowViewAchievementsAchievementGridColumnHeaders,
+                ShowViewAchievementsAchievementGridControlBar = !defaults.ShowViewAchievementsAchievementGridControlBar,
+                ViewAchievementsAchievementGridStartInCategoryMode = !defaults.ViewAchievementsAchievementGridStartInCategoryMode,
+                DesktopThemeAchievementGridStartInCategoryMode = !defaults.DesktopThemeAchievementGridStartInCategoryMode,
+                ViewAchievementsGameSummariesGridRowHeight = 88d,
+                ViewAchievementsGameSummariesColumnVisibility = new System.Collections.Generic.Dictionary<string, bool>
+                {
+                    ["GameSummaryName"] = false
+                },
+                ViewAchievementsGameSummariesColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["GameSummaryName"] = 3
+                }
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(source.OverviewRecentAchievementsColorNamesByRarity, copy.OverviewRecentAchievementsColorNamesByRarity);
+                Assert.AreEqual(source.OverviewSelectedGameColorNamesByRarity, copy.OverviewSelectedGameColorNamesByRarity);
+                Assert.AreEqual(source.ViewAchievementsAchievementGridShowRarityGlow, copy.ViewAchievementsAchievementGridShowRarityGlow);
+                Assert.AreEqual(source.ViewAchievementsAchievementGridColorNamesByRarity, copy.ViewAchievementsAchievementGridColorNamesByRarity);
+                Assert.AreEqual(source.OverviewRecentAchievementsColorRarityColumnsByRarity, copy.OverviewRecentAchievementsColorRarityColumnsByRarity);
+                Assert.AreEqual(source.OverviewSelectedGameColorRarityColumnsByRarity, copy.OverviewSelectedGameColorRarityColumnsByRarity);
+                Assert.AreEqual(source.ViewAchievementsAchievementGridColorRarityColumnsByRarity, copy.ViewAchievementsAchievementGridColorRarityColumnsByRarity);
+                Assert.AreEqual(source.ViewFriendsAchievementsColorRarityColumnsByRarity, copy.ViewFriendsAchievementsColorRarityColumnsByRarity);
+                Assert.AreEqual(source.OverviewSelectedGameAchievementsStartInCategoryMode, copy.OverviewSelectedGameAchievementsStartInCategoryMode);
+                Assert.AreEqual(source.ModernDataGridColorNamesByRarity, copy.ModernDataGridColorNamesByRarity);
+                Assert.AreEqual(source.ModernDataGridColorRarityColumnsByRarity, copy.ModernDataGridColorRarityColumnsByRarity);
+                Assert.AreEqual(source.ShowDesktopThemeAchievementGridControlBar, copy.ShowDesktopThemeAchievementGridControlBar);
+                Assert.AreEqual(source.EnableAchievementCompactListControl, copy.EnableAchievementCompactListControl);
+                Assert.AreEqual(source.EnableAchievementDataGridControl, copy.EnableAchievementDataGridControl);
+                Assert.AreEqual(source.EnableAchievementCompactUnlockedListControl, copy.EnableAchievementCompactUnlockedListControl);
+                Assert.AreEqual(source.EnableAchievementCompactLockedListControl, copy.EnableAchievementCompactLockedListControl);
+                Assert.AreEqual(source.EnableAchievementProgressBarControl, copy.EnableAchievementProgressBarControl);
+                Assert.AreEqual(source.EnableAchievementStatsControl, copy.EnableAchievementStatsControl);
+                Assert.AreEqual(source.EnableAchievementButtonControl, copy.EnableAchievementButtonControl);
+                Assert.AreEqual(source.EnableAchievementViewItemControl, copy.EnableAchievementViewItemControl);
+                Assert.AreEqual(source.EnableAchievementPieChartControl, copy.EnableAchievementPieChartControl);
+                Assert.AreEqual(source.EnableAchievementBarChartControl, copy.EnableAchievementBarChartControl);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesUseCoverImages, copy.ViewAchievementsGameSummariesUseCoverImages);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataPlatform, copy.ViewAchievementsGameSummariesShowMetadataPlatform);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataPlaytime, copy.ViewAchievementsGameSummariesShowMetadataPlaytime);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataRegion, copy.ViewAchievementsGameSummariesShowMetadataRegion);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowCompletionGlow, copy.ViewAchievementsGameSummariesShowCompletionGlow);
+                Assert.AreEqual(source.ShowViewAchievementsGameSummariesGridColumnHeaders, copy.ShowViewAchievementsGameSummariesGridColumnHeaders);
+                Assert.AreEqual(source.ShowViewAchievementsAchievementGridColumnHeaders, copy.ShowViewAchievementsAchievementGridColumnHeaders);
+                Assert.AreEqual(source.ShowViewAchievementsAchievementGridControlBar, copy.ShowViewAchievementsAchievementGridControlBar);
+                Assert.AreEqual(source.ViewAchievementsAchievementGridStartInCategoryMode, copy.ViewAchievementsAchievementGridStartInCategoryMode);
+                Assert.AreEqual(source.DesktopThemeAchievementGridStartInCategoryMode, copy.DesktopThemeAchievementGridStartInCategoryMode);
+                Assert.AreEqual(88d, copy.ViewAchievementsGameSummariesGridRowHeight);
+                Assert.IsFalse(copy.ViewAchievementsGameSummariesColumnVisibility["GameSummaryName"]);
+                Assert.AreEqual(3, copy.ViewAchievementsGameSummariesColumnOrder["GameSummaryName"]);
+                Assert.AreNotSame(source.ViewAchievementsGameSummariesColumnVisibility, copy.ViewAchievementsGameSummariesColumnVisibility);
+                Assert.AreNotSame(source.ViewAchievementsGameSummariesColumnOrder, copy.ViewAchievementsGameSummariesColumnOrder);
+            }
         }
 
         [TestMethod]
@@ -226,9 +964,19 @@ namespace PlayniteAchievements.Models.Tests
             {
                 EnableAchievementHotkeys = false,
                 EnableGlobalAchievementHotkeys = true,
+                EnableViewAchievementsHotkey = false,
+                EnableManageAchievementsHotkey = false,
+                EnableOverviewHotkey = false,
+                EnableOpenSettingsHotkey = false,
+                EnableCategoryModeHotkey = false,
+                EnableTestUnlockHotkey = false,
+                EnableCaptureTestFolder = true,
                 ViewAchievementsHotkey = "F8",
                 ManageAchievementsHotkey = "Shift+F9",
-                OverviewHotkey = "F10"
+                OverviewHotkey = "F10",
+                OpenSettingsHotkey = "F11",
+                CategoryModeHotkey = "Shift+G",
+                TestUnlockHotkey = "Ctrl+Alt+K"
             };
 
             var clone = source.Clone();
@@ -237,15 +985,35 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.IsFalse(clone.EnableAchievementHotkeys);
             Assert.IsTrue(clone.EnableGlobalAchievementHotkeys);
+            Assert.IsFalse(clone.EnableViewAchievementsHotkey);
+            Assert.IsFalse(clone.EnableManageAchievementsHotkey);
+            Assert.IsFalse(clone.EnableOverviewHotkey);
+            Assert.IsFalse(clone.EnableOpenSettingsHotkey);
+            Assert.IsFalse(clone.EnableCategoryModeHotkey);
+            Assert.IsFalse(clone.EnableTestUnlockHotkey);
+            Assert.IsTrue(clone.EnableCaptureTestFolder);
             Assert.AreEqual("F8", clone.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", clone.ManageAchievementsHotkey);
             Assert.AreEqual("F10", clone.OverviewHotkey);
+            Assert.AreEqual("F11", clone.OpenSettingsHotkey);
+            Assert.AreEqual("Shift+G", clone.CategoryModeHotkey);
+            Assert.AreEqual("Ctrl+Alt+K", clone.TestUnlockHotkey);
 
             Assert.IsFalse(target.EnableAchievementHotkeys);
             Assert.IsTrue(target.EnableGlobalAchievementHotkeys);
+            Assert.IsFalse(target.EnableViewAchievementsHotkey);
+            Assert.IsFalse(target.EnableManageAchievementsHotkey);
+            Assert.IsFalse(target.EnableOverviewHotkey);
+            Assert.IsFalse(target.EnableOpenSettingsHotkey);
+            Assert.IsFalse(target.EnableCategoryModeHotkey);
+            Assert.IsFalse(target.EnableTestUnlockHotkey);
+            Assert.IsTrue(target.EnableCaptureTestFolder);
             Assert.AreEqual("F8", target.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", target.ManageAchievementsHotkey);
             Assert.AreEqual("F10", target.OverviewHotkey);
+            Assert.AreEqual("F11", target.OpenSettingsHotkey);
+            Assert.AreEqual("Shift+G", target.CategoryModeHotkey);
+            Assert.AreEqual("Ctrl+Alt+K", target.TestUnlockHotkey);
         }
 
         [TestMethod]
@@ -256,6 +1024,10 @@ namespace PlayniteAchievements.Models.Tests
                 ShowOverviewGameSummariesGridColumnHeaders = false,
                 ShowOverviewRecentAchievementsGridColumnHeaders = false,
                 ShowDesktopThemeAchievementGridColumnHeaders = false,
+                ShowOverviewGameSummariesGridControlBar = false,
+                ShowOverviewRecentAchievementsGridControlBar = false,
+                ShowOverviewSelectedGameGridControlBar = false,
+                ShowDesktopThemeAchievementGridControlBar = false,
                 GridColumnHeaderAlignment = GridAlignment.Right,
                 GridCellAlignment = GridAlignment.Center,
                 GridCellVerticalAlignment = GridVerticalAlignment.Bottom,
@@ -332,9 +1104,17 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(clone.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.IsFalse(clone.ShowOverviewRecentAchievementsGridColumnHeaders);
             Assert.IsFalse(clone.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.IsFalse(clone.ShowOverviewGameSummariesGridControlBar);
+            Assert.IsFalse(clone.ShowOverviewRecentAchievementsGridControlBar);
+            Assert.IsFalse(clone.ShowOverviewSelectedGameGridControlBar);
+            Assert.IsFalse(clone.ShowDesktopThemeAchievementGridControlBar);
             Assert.IsFalse(target.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.IsFalse(target.ShowOverviewRecentAchievementsGridColumnHeaders);
             Assert.IsFalse(target.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.IsFalse(target.ShowOverviewGameSummariesGridControlBar);
+            Assert.IsFalse(target.ShowOverviewRecentAchievementsGridControlBar);
+            Assert.IsFalse(target.ShowOverviewSelectedGameGridControlBar);
+            Assert.IsFalse(target.ShowDesktopThemeAchievementGridControlBar);
             Assert.AreEqual(GridAlignment.Right, clone.GridColumnHeaderAlignment);
             Assert.AreEqual(GridAlignment.Center, clone.GridCellAlignment);
             Assert.AreEqual(GridVerticalAlignment.Bottom, clone.GridCellVerticalAlignment);
@@ -404,13 +1184,19 @@ namespace PlayniteAchievements.Models.Tests
                 StartPageGameSummariesGridRowHeight = 120d,
                 StartPageRecentAchievementsGridRowHeight = 132d,
                 DesktopThemeAchievementGridRowHeight = 144d,
+                FriendsOverviewFriendSummariesGridRowHeight = 145d,
+                FriendsOverviewGameSummariesGridRowHeight = 146d,
+                FriendsOverviewAchievementsGridRowHeight = 147d,
                 SingleGameGridMaxRows = 2,
                 OverviewGameSummariesGridMaxRows = 3,
                 OverviewRecentAchievementsGridMaxRows = 4,
                 OverviewSelectedGameGridMaxRows = 5,
                 StartPageGameSummariesGridMaxRows = 6,
                 StartPageRecentAchievementsGridMaxRows = 7,
-                DesktopThemeAchievementGridMaxRows = 8
+                DesktopThemeAchievementGridMaxRows = 8,
+                FriendsOverviewFriendSummariesGridMaxRows = 9,
+                FriendsOverviewGameSummariesGridMaxRows = 10,
+                FriendsOverviewAchievementsGridMaxRows = 11
             };
 
             var clone = source.Clone();
@@ -424,6 +1210,9 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(120d, clone.StartPageGameSummariesGridRowHeight);
             Assert.AreEqual(132d, clone.StartPageRecentAchievementsGridRowHeight);
             Assert.AreEqual(144d, clone.DesktopThemeAchievementGridRowHeight);
+            Assert.AreEqual(145d, clone.FriendsOverviewFriendSummariesGridRowHeight);
+            Assert.AreEqual(146d, clone.FriendsOverviewGameSummariesGridRowHeight);
+            Assert.AreEqual(147d, clone.FriendsOverviewAchievementsGridRowHeight);
             Assert.AreEqual(2, clone.SingleGameGridMaxRows);
             Assert.AreEqual(3, clone.OverviewGameSummariesGridMaxRows);
             Assert.AreEqual(4, clone.OverviewRecentAchievementsGridMaxRows);
@@ -431,6 +1220,9 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(6, clone.StartPageGameSummariesGridMaxRows);
             Assert.AreEqual(7, clone.StartPageRecentAchievementsGridMaxRows);
             Assert.AreEqual(8, clone.DesktopThemeAchievementGridMaxRows);
+            Assert.AreEqual(9, clone.FriendsOverviewFriendSummariesGridMaxRows);
+            Assert.AreEqual(10, clone.FriendsOverviewGameSummariesGridMaxRows);
+            Assert.AreEqual(11, clone.FriendsOverviewAchievementsGridMaxRows);
 
             Assert.AreEqual(clone.SingleGameGridRowHeight, target.SingleGameGridRowHeight);
             Assert.AreEqual(clone.OverviewGameSummariesGridRowHeight, target.OverviewGameSummariesGridRowHeight);
@@ -439,6 +1231,9 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(clone.StartPageGameSummariesGridRowHeight, target.StartPageGameSummariesGridRowHeight);
             Assert.AreEqual(clone.StartPageRecentAchievementsGridRowHeight, target.StartPageRecentAchievementsGridRowHeight);
             Assert.AreEqual(clone.DesktopThemeAchievementGridRowHeight, target.DesktopThemeAchievementGridRowHeight);
+            Assert.AreEqual(clone.FriendsOverviewFriendSummariesGridRowHeight, target.FriendsOverviewFriendSummariesGridRowHeight);
+            Assert.AreEqual(clone.FriendsOverviewGameSummariesGridRowHeight, target.FriendsOverviewGameSummariesGridRowHeight);
+            Assert.AreEqual(clone.FriendsOverviewAchievementsGridRowHeight, target.FriendsOverviewAchievementsGridRowHeight);
             Assert.AreEqual(clone.SingleGameGridMaxRows, target.SingleGameGridMaxRows);
             Assert.AreEqual(clone.OverviewGameSummariesGridMaxRows, target.OverviewGameSummariesGridMaxRows);
             Assert.AreEqual(clone.OverviewRecentAchievementsGridMaxRows, target.OverviewRecentAchievementsGridMaxRows);
@@ -446,6 +1241,95 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(clone.StartPageGameSummariesGridMaxRows, target.StartPageGameSummariesGridMaxRows);
             Assert.AreEqual(clone.StartPageRecentAchievementsGridMaxRows, target.StartPageRecentAchievementsGridMaxRows);
             Assert.AreEqual(clone.DesktopThemeAchievementGridMaxRows, target.DesktopThemeAchievementGridMaxRows);
+            Assert.AreEqual(clone.FriendsOverviewFriendSummariesGridMaxRows, target.FriendsOverviewFriendSummariesGridMaxRows);
+            Assert.AreEqual(clone.FriendsOverviewGameSummariesGridMaxRows, target.FriendsOverviewGameSummariesGridMaxRows);
+            Assert.AreEqual(clone.FriendsOverviewAchievementsGridMaxRows, target.FriendsOverviewAchievementsGridMaxRows);
+        }
+
+        [TestMethod]
+        public void ResetDisplaySettingsToDefaults_ResetsFriendsOverviewGridSettings()
+        {
+            var defaults = new PersistedSettings();
+            var settings = new PersistedSettings
+            {
+                FriendsOverviewGameSummariesUseCoverImages = !defaults.FriendsOverviewGameSummariesUseCoverImages,
+                FriendsOverviewGameSummariesShowMetadataPlatform = !defaults.FriendsOverviewGameSummariesShowMetadataPlatform,
+                FriendsOverviewGameSummariesShowMetadataPlaytime = !defaults.FriendsOverviewGameSummariesShowMetadataPlaytime,
+                FriendsOverviewGameSummariesShowMetadataRegion = !defaults.FriendsOverviewGameSummariesShowMetadataRegion,
+                FriendsOverviewAchievementsUseCoverImages = !defaults.FriendsOverviewAchievementsUseCoverImages,
+                FriendsOverviewAchievementsShowRarityGlow = !defaults.FriendsOverviewAchievementsShowRarityGlow,
+                FriendsOverviewAchievementsColorNamesByRarity = !defaults.FriendsOverviewAchievementsColorNamesByRarity,
+                FriendsOverviewAchievementsColorRarityColumnsByRarity = !defaults.FriendsOverviewAchievementsColorRarityColumnsByRarity,
+                ShowFriendsOverviewFriendSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders,
+                ShowFriendsOverviewGameSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders,
+                ShowFriendsOverviewAchievementsGridColumnHeaders = !defaults.ShowFriendsOverviewAchievementsGridColumnHeaders,
+                ShowFriendsOverviewFriendSummariesGridControlBar = !defaults.ShowFriendsOverviewFriendSummariesGridControlBar,
+                ShowFriendsOverviewGameSummariesGridControlBar = !defaults.ShowFriendsOverviewGameSummariesGridControlBar,
+                ShowFriendsOverviewAchievementsGridControlBar = !defaults.ShowFriendsOverviewAchievementsGridControlBar,
+                FriendsOverviewFriendSummariesGridRowHeight = 45d,
+                FriendsOverviewGameSummariesGridRowHeight = 46d,
+                FriendsOverviewAchievementsGridRowHeight = 47d,
+                FriendsOverviewFriendSummariesGridMaxRows = 2,
+                FriendsOverviewGameSummariesGridMaxRows = 3,
+                FriendsOverviewAchievementsGridMaxRows = 4,
+                FriendsOverviewFriendColumnRatio = 0.22d,
+                FriendsOverviewGameColumnRatio = 0.36d
+            };
+            settings.FriendsOverviewAchievementColumnVisibility["Friend"] = false;
+            settings.FriendsOverviewAchievementColumnWidths["Friend"] = 144d;
+            settings.FriendsOverviewAchievementColumnOrder["Friend"] = 1;
+            settings.FriendsOverviewFriendSummariesColumnVisibility["FriendSummaryFriend"] = false;
+            settings.FriendsOverviewFriendSummariesColumnWidths["FriendSummaryFriend"] = 188d;
+            settings.FriendsOverviewFriendSummariesColumnOrder["FriendSummaryFriend"] = 2;
+            settings.FriendsOverviewGameSummariesColumnVisibility["GameSummaryName"] = false;
+            settings.FriendsOverviewGameSummariesColumnWidths["GameSummaryName"] = 96d;
+            settings.FriendsOverviewGameSummariesColumnOrder["GameSummaryName"] = 3;
+            settings.FriendsOverviewGameSummariesColumnAlignments["GameSummaryName"] = GridAlignment.Right;
+            settings.FriendsOverviewSelectedFriendGameSummariesColumnVisibility["GameSummaryLastUnlock"] = true;
+            settings.FriendsOverviewSelectedFriendGameSummariesColumnWidths["GameSummaryLastUnlock"] = 112d;
+            settings.FriendsOverviewSelectedFriendGameSummariesColumnOrder["GameSummaryLastUnlock"] = 4;
+            settings.FriendsOverviewSelectedFriendGameSummariesColumnAlignments["GameSummaryLastUnlock"] = GridAlignment.Left;
+
+            settings.ResetDisplaySettingsToDefaults();
+
+            Assert.AreEqual(defaults.FriendsOverviewGameSummariesUseCoverImages, settings.FriendsOverviewGameSummariesUseCoverImages);
+            Assert.AreEqual(defaults.FriendsOverviewGameSummariesShowMetadataPlatform, settings.FriendsOverviewGameSummariesShowMetadataPlatform);
+            Assert.AreEqual(defaults.FriendsOverviewGameSummariesShowMetadataPlaytime, settings.FriendsOverviewGameSummariesShowMetadataPlaytime);
+            Assert.AreEqual(defaults.FriendsOverviewGameSummariesShowMetadataRegion, settings.FriendsOverviewGameSummariesShowMetadataRegion);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsUseCoverImages, settings.FriendsOverviewAchievementsUseCoverImages);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsShowRarityGlow, settings.FriendsOverviewAchievementsShowRarityGlow);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsColorNamesByRarity, settings.FriendsOverviewAchievementsColorNamesByRarity);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsColorRarityColumnsByRarity, settings.FriendsOverviewAchievementsColorRarityColumnsByRarity);
+            Assert.AreEqual(defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders, settings.ShowFriendsOverviewFriendSummariesGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders, settings.ShowFriendsOverviewGameSummariesGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowFriendsOverviewAchievementsGridColumnHeaders, settings.ShowFriendsOverviewAchievementsGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowFriendsOverviewFriendSummariesGridControlBar, settings.ShowFriendsOverviewFriendSummariesGridControlBar);
+            Assert.AreEqual(defaults.ShowFriendsOverviewGameSummariesGridControlBar, settings.ShowFriendsOverviewGameSummariesGridControlBar);
+            Assert.AreEqual(defaults.ShowFriendsOverviewAchievementsGridControlBar, settings.ShowFriendsOverviewAchievementsGridControlBar);
+            Assert.AreEqual(defaults.FriendsOverviewFriendSummariesGridRowHeight, settings.FriendsOverviewFriendSummariesGridRowHeight);
+            Assert.AreEqual(defaults.FriendsOverviewGameSummariesGridRowHeight, settings.FriendsOverviewGameSummariesGridRowHeight);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsGridRowHeight, settings.FriendsOverviewAchievementsGridRowHeight);
+            Assert.AreEqual(defaults.FriendsOverviewFriendSummariesGridMaxRows, settings.FriendsOverviewFriendSummariesGridMaxRows);
+            Assert.AreEqual(defaults.FriendsOverviewGameSummariesGridMaxRows, settings.FriendsOverviewGameSummariesGridMaxRows);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsGridMaxRows, settings.FriendsOverviewAchievementsGridMaxRows);
+            Assert.AreEqual(defaults.FriendsOverviewFriendColumnRatio, settings.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(defaults.FriendsOverviewGameColumnRatio, settings.FriendsOverviewGameColumnRatio);
+            Assert.AreEqual(0, settings.FriendsOverviewAchievementColumnVisibility.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewAchievementColumnWidths.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewAchievementColumnOrder.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewFriendSummariesColumnVisibility.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewFriendSummariesColumnWidths.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewFriendSummariesColumnOrder.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewGameSummariesColumnVisibility.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewGameSummariesColumnWidths.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewGameSummariesColumnOrder.Count);
+            Assert.AreEqual(1, settings.FriendsOverviewGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(GridAlignment.Right, settings.FriendsOverviewGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(0, settings.FriendsOverviewSelectedFriendGameSummariesColumnVisibility.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewSelectedFriendGameSummariesColumnWidths.Count);
+            Assert.AreEqual(0, settings.FriendsOverviewSelectedFriendGameSummariesColumnOrder.Count);
+            Assert.AreEqual(1, settings.FriendsOverviewSelectedFriendGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(GridAlignment.Right, settings.FriendsOverviewSelectedFriendGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
         }
 
         [TestMethod]
@@ -517,20 +1401,44 @@ namespace PlayniteAchievements.Models.Tests
                 },
 
                 ShowHiddenIcon = true,
-                ShowRarityGlow = false,
+                OverviewRecentAchievementsShowRarityGlow = false,
+                OverviewSelectedGameShowRarityGlow = false,
+                ViewAchievementsAchievementGridShowRarityGlow = false,
+                ModernDataGridShowRarityGlow = false,
+                ModernCompactListShowRarityGlow = false,
+                ModernUnlockedListShowRarityGlow = false,
                 UseUniformRarityBadges = true,
-                UseCoverImages = false,
+                UseTrophiesForRarity = true,
+                RoundRarityPercentages = true,
+                OverviewGameSummariesUseCoverImages = false,
+                OverviewRecentAchievementsUseCoverImages = false,
                 ShowOverviewCollectionScoreCard = false,
                 ShowOverviewPrestigeScoreCard = false,
                 ShowOverviewPieCharts = false,
                 ShowOverviewBarCharts = false,
-                ShowOverviewGameMetadata = false,
+                ShowOverviewGameMetadataPlatform = false,
+                ShowOverviewGameMetadataPlaytime = false,
+                ShowOverviewGameMetadataRegion = false,
                 ShowTopMenuBarButton = false,
+                ShowCompletedProgressColoring = false,
                 ShowCompactListRarityBar = false,
-                ShowCompletionBorder = false,
+                ShowCompletionGlow = false,
                 ShowOverviewGameSummariesGridColumnHeaders = false,
                 ShowOverviewRecentAchievementsGridColumnHeaders = false,
+                ShowViewAchievementsAchievementGridColumnHeaders = false,
                 ShowDesktopThemeAchievementGridColumnHeaders = false,
+                ShowOverviewGameSummariesGridControlBar = false,
+                ShowOverviewRecentAchievementsGridControlBar = false,
+                ShowOverviewSelectedGameGridControlBar = false,
+                ShowViewAchievementsAchievementGridControlBar = false,
+                ShowDesktopThemeAchievementGridControlBar = false,
+                ShowFriendsOverviewFriendSummariesGridControlBar = false,
+                ShowFriendsOverviewGameSummariesGridControlBar = false,
+                ShowFriendsOverviewAchievementsGridControlBar = false,
+                OverviewSelectedGameAchievementsStartInCategoryMode = true,
+                ViewAchievementsAchievementGridStartInCategoryMode = true,
+                FriendsOverviewAchievementsStartInCategoryMode = true,
+                DesktopThemeAchievementGridStartInCategoryMode = true,
                 GridColumnHeaderAlignment = GridAlignment.Right,
                 GridCellAlignment = GridAlignment.Center,
                 GridCellVerticalAlignment = GridVerticalAlignment.Bottom,
@@ -543,6 +1451,8 @@ namespace PlayniteAchievements.Models.Tests
                 OverviewGameSummariesGridRowHeight = 64d,
                 OverviewGameSummariesGridMaxRows = 4,
                 OverviewLeftColumnRatio = 0.72d,
+                FriendsOverviewFriendColumnRatio = 0.23d,
+                FriendsOverviewGameColumnRatio = 0.37d,
                 ViewAchievementsTimelineRange = TimelineRange.All,
                 ViewAchievementsTimelineVisible = true
             };
@@ -550,9 +1460,11 @@ namespace PlayniteAchievements.Models.Tests
             settings.TaggingSettings.CompletedConfig.DisplayName = "Done";
             settings.TaggingSettings.CompletedConfig.IsEnabled = false;
             settings.StartPageGameSummariesGrid.ShowColumnHeaders = false;
+            settings.StartPageGameSummariesGrid.ShowControlBar = true;
             settings.StartPageGameSummariesGrid.RowHeight = 70d;
             settings.StartPageGameSummariesGrid.MaxRows = 3;
             settings.StartPageRecentUnlocksGrid.ShowColumnHeaders = false;
+            settings.StartPageRecentUnlocksGrid.ShowControlBar = true;
             settings.StartPageRecentUnlocksGrid.RowHeight = 72d;
             settings.StartPageRecentUnlocksGrid.MaxRows = 4;
             settings.StartPagePieCharts.ShowCenterPercentage = false;
@@ -593,9 +1505,17 @@ namespace PlayniteAchievements.Models.Tests
             settings.ResetDisplaySettingsToDefaults();
 
             Assert.AreEqual(defaults.ShowHiddenIcon, settings.ShowHiddenIcon);
-            Assert.AreEqual(defaults.ShowRarityGlow, settings.ShowRarityGlow);
+            Assert.AreEqual(defaults.OverviewRecentAchievementsShowRarityGlow, settings.OverviewRecentAchievementsShowRarityGlow);
+            Assert.AreEqual(defaults.OverviewSelectedGameShowRarityGlow, settings.OverviewSelectedGameShowRarityGlow);
+            Assert.AreEqual(defaults.ViewAchievementsAchievementGridShowRarityGlow, settings.ViewAchievementsAchievementGridShowRarityGlow);
+            Assert.AreEqual(defaults.ModernDataGridShowRarityGlow, settings.ModernDataGridShowRarityGlow);
+            Assert.AreEqual(defaults.ModernCompactListShowRarityGlow, settings.ModernCompactListShowRarityGlow);
+            Assert.AreEqual(defaults.ModernUnlockedListShowRarityGlow, settings.ModernUnlockedListShowRarityGlow);
             Assert.AreEqual(defaults.UseUniformRarityBadges, settings.UseUniformRarityBadges);
-            Assert.AreEqual(defaults.UseCoverImages, settings.UseCoverImages);
+            Assert.AreEqual(defaults.UseTrophiesForRarity, settings.UseTrophiesForRarity);
+            Assert.AreEqual(defaults.RoundRarityPercentages, settings.RoundRarityPercentages);
+            Assert.AreEqual(defaults.OverviewGameSummariesUseCoverImages, settings.OverviewGameSummariesUseCoverImages);
+            Assert.AreEqual(defaults.OverviewRecentAchievementsUseCoverImages, settings.OverviewRecentAchievementsUseCoverImages);
             Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);
             Assert.AreEqual(defaults.ShowOverviewPrestigeScoreCard, settings.ShowOverviewPrestigeScoreCard);
             Assert.AreEqual(defaults.ShowOverviewPieCharts, settings.ShowOverviewPieCharts);
@@ -604,13 +1524,29 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.ShowOverviewRarityPieChart, settings.ShowOverviewRarityPieChart);
             Assert.AreEqual(defaults.ShowOverviewTrophyPieChart, settings.ShowOverviewTrophyPieChart);
             Assert.AreEqual(defaults.ShowOverviewBarCharts, settings.ShowOverviewBarCharts);
-            Assert.AreEqual(defaults.ShowOverviewGameMetadata, settings.ShowOverviewGameMetadata);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadataPlatform, settings.ShowOverviewGameMetadataPlatform);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadataPlaytime, settings.ShowOverviewGameMetadataPlaytime);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadataRegion, settings.ShowOverviewGameMetadataRegion);
             Assert.AreEqual(defaults.ShowTopMenuBarButton, settings.ShowTopMenuBarButton);
+            Assert.AreEqual(defaults.ShowCompletedProgressColoring, settings.ShowCompletedProgressColoring);
             Assert.AreEqual(defaults.ShowCompactListRarityBar, settings.ShowCompactListRarityBar);
-            Assert.AreEqual(defaults.ShowCompletionBorder, settings.ShowCompletionBorder);
+            Assert.AreEqual(defaults.ShowCompletionGlow, settings.ShowCompletionGlow);
             Assert.AreEqual(defaults.ShowOverviewGameSummariesGridColumnHeaders, settings.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.AreEqual(defaults.ShowOverviewRecentAchievementsGridColumnHeaders, settings.ShowOverviewRecentAchievementsGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowViewAchievementsAchievementGridColumnHeaders, settings.ShowViewAchievementsAchievementGridColumnHeaders);
             Assert.AreEqual(defaults.ShowDesktopThemeAchievementGridColumnHeaders, settings.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowOverviewGameSummariesGridControlBar, settings.ShowOverviewGameSummariesGridControlBar);
+            Assert.AreEqual(defaults.ShowOverviewRecentAchievementsGridControlBar, settings.ShowOverviewRecentAchievementsGridControlBar);
+            Assert.AreEqual(defaults.ShowOverviewSelectedGameGridControlBar, settings.ShowOverviewSelectedGameGridControlBar);
+            Assert.AreEqual(defaults.ShowViewAchievementsAchievementGridControlBar, settings.ShowViewAchievementsAchievementGridControlBar);
+            Assert.AreEqual(defaults.ShowDesktopThemeAchievementGridControlBar, settings.ShowDesktopThemeAchievementGridControlBar);
+            Assert.AreEqual(defaults.ShowFriendsOverviewFriendSummariesGridControlBar, settings.ShowFriendsOverviewFriendSummariesGridControlBar);
+            Assert.AreEqual(defaults.ShowFriendsOverviewGameSummariesGridControlBar, settings.ShowFriendsOverviewGameSummariesGridControlBar);
+            Assert.AreEqual(defaults.ShowFriendsOverviewAchievementsGridControlBar, settings.ShowFriendsOverviewAchievementsGridControlBar);
+            Assert.AreEqual(defaults.OverviewSelectedGameAchievementsStartInCategoryMode, settings.OverviewSelectedGameAchievementsStartInCategoryMode);
+            Assert.AreEqual(defaults.ViewAchievementsAchievementGridStartInCategoryMode, settings.ViewAchievementsAchievementGridStartInCategoryMode);
+            Assert.AreEqual(defaults.FriendsOverviewAchievementsStartInCategoryMode, settings.FriendsOverviewAchievementsStartInCategoryMode);
+            Assert.AreEqual(defaults.DesktopThemeAchievementGridStartInCategoryMode, settings.DesktopThemeAchievementGridStartInCategoryMode);
             Assert.AreEqual(defaults.GridColumnHeaderAlignment, settings.GridColumnHeaderAlignment);
             Assert.AreEqual(defaults.GridCellAlignment, settings.GridCellAlignment);
             Assert.AreEqual(defaults.GridCellVerticalAlignment, settings.GridCellVerticalAlignment);
@@ -623,9 +1559,11 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.OverviewGameSummariesGridRowHeight, settings.OverviewGameSummariesGridRowHeight);
             Assert.AreEqual(defaults.OverviewGameSummariesGridMaxRows, settings.OverviewGameSummariesGridMaxRows);
             Assert.AreEqual(defaults.StartPageGameSummariesGrid.ShowColumnHeaders, settings.StartPageGameSummariesGrid.ShowColumnHeaders);
+            Assert.AreEqual(defaults.StartPageGameSummariesGrid.ShowControlBar, settings.StartPageGameSummariesGrid.ShowControlBar);
             Assert.AreEqual(defaults.StartPageGameSummariesGridRowHeight, settings.StartPageGameSummariesGridRowHeight);
             Assert.AreEqual(defaults.StartPageGameSummariesGridMaxRows, settings.StartPageGameSummariesGridMaxRows);
             Assert.AreEqual(defaults.StartPageRecentUnlocksGrid.ShowColumnHeaders, settings.StartPageRecentUnlocksGrid.ShowColumnHeaders);
+            Assert.AreEqual(defaults.StartPageRecentUnlocksGrid.ShowControlBar, settings.StartPageRecentUnlocksGrid.ShowControlBar);
             Assert.AreEqual(defaults.StartPageRecentAchievementsGridRowHeight, settings.StartPageRecentAchievementsGridRowHeight);
             Assert.AreEqual(defaults.StartPageRecentAchievementsGridMaxRows, settings.StartPageRecentAchievementsGridMaxRows);
             Assert.AreEqual(defaults.StartPagePieCharts.ShowCenterPercentage, settings.StartPagePieCharts.ShowCenterPercentage);
@@ -633,6 +1571,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.StartPageActivityScope, settings.StartPageActivityScope);
             Assert.AreEqual(defaults.StartPageProgressScope, settings.StartPageProgressScope);
             Assert.AreEqual(defaults.OverviewLeftColumnRatio, settings.OverviewLeftColumnRatio);
+            Assert.AreEqual(defaults.FriendsOverviewFriendColumnRatio, settings.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(defaults.FriendsOverviewGameColumnRatio, settings.FriendsOverviewGameColumnRatio);
             Assert.AreEqual(defaults.ViewAchievementsTimelineRange, settings.ViewAchievementsTimelineRange);
             Assert.AreEqual(defaults.ViewAchievementsTimelineVisible, settings.ViewAchievementsTimelineVisible);
 
@@ -657,7 +1597,10 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(0, settings.OverviewGameSummariesColumnVisibility.Count);
             Assert.AreEqual(0, settings.OverviewGameSummariesColumnWidths.Count);
             Assert.AreEqual(0, settings.OverviewGameSummariesColumnOrder.Count);
-            Assert.AreEqual(0, settings.OverviewGameSummariesColumnAlignments.Count);
+            // Progress column defaults to Right alignment (seeded in the ctor) so the footer keeps its
+            // legacy layout now that it responds to alignment.
+            Assert.AreEqual(1, settings.OverviewGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(GridAlignment.Right, settings.OverviewGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
             Assert.AreEqual(0, settings.StartPageAchievementColumnVisibility.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnWidths.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnOrder.Count);
@@ -665,7 +1608,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(0, settings.StartPageGameSummariesColumnVisibility.Count);
             Assert.AreEqual(0, settings.StartPageGameSummariesColumnWidths.Count);
             Assert.AreEqual(0, settings.StartPageGameSummariesColumnOrder.Count);
-            Assert.AreEqual(0, settings.StartPageGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(1, settings.StartPageGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(GridAlignment.Right, settings.StartPageGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
 
             Assert.AreEqual("secret", settings.ProviderSettings["Steam"]["ApiKey"].Value<string>());
             Assert.IsFalse(settings.EnablePeriodicUpdates);
@@ -690,6 +1634,32 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(statusId, settings.TaggingSettings.CompletionStatusId);
             Assert.AreEqual("Done", settings.TaggingSettings.CompletedConfig.DisplayName);
             Assert.IsFalse(settings.TaggingSettings.CompletedConfig.IsEnabled);
+        }
+
+        private static void AssertInGamePollingAndToastSettings(PersistedSettings expected, PersistedSettings actual)
+        {
+            Assert.AreEqual(expected.EnableInGamePolling, actual.EnableInGamePolling);
+            Assert.AreEqual(expected.InGamePollIntervalSeconds, actual.InGamePollIntervalSeconds);
+            Assert.AreEqual(expected.InGamePollRefreshFriends, actual.InGamePollRefreshFriends);
+            Assert.AreEqual(expected.InGameFriendRefreshMultiplier, actual.InGameFriendRefreshMultiplier);
+            Assert.AreEqual(expected.InGameFriendBatchSize, actual.InGameFriendBatchSize);
+            Assert.AreEqual(expected.EnableUnlockToasts, actual.EnableUnlockToasts);
+            Assert.AreEqual(expected.EnableFriendUnlockToasts, actual.EnableFriendUnlockToasts);
+            Assert.AreEqual(expected.EnableProgressToasts, actual.EnableProgressToasts);
+            Assert.AreEqual(expected.NotificationStyle.Toast.ShowRarityGlow, actual.NotificationStyle.Toast.ShowRarityGlow);
+            Assert.AreEqual(expected.NotificationStyle.Toast.RarityColoredName, actual.NotificationStyle.Toast.RarityColoredName);
+            Assert.AreEqual(expected.NotificationStyle.Toast.ShowRarityPercent, actual.NotificationStyle.Toast.ShowRarityPercent);
+            Assert.AreEqual(expected.NotificationStyle.Toast.ShowDescription, actual.NotificationStyle.Toast.ShowDescription);
+            Assert.AreEqual(expected.NotificationStyle.Toast.ShowCategory, actual.NotificationStyle.Toast.ShowCategory);
+            Assert.AreEqual(expected.NotificationStyle.Toast.ShowGameName, actual.NotificationStyle.Toast.ShowGameName);
+            Assert.AreNotSame(expected.NotificationStyle, actual.NotificationStyle);
+            Assert.AreEqual(expected.ToastUseThemeStyling, actual.ToastUseThemeStyling);
+            Assert.AreEqual(expected.FrameUseThemeStyling, actual.FrameUseThemeStyling);
+            Assert.AreEqual(expected.ToastDurationSeconds, actual.ToastDurationSeconds);
+            Assert.AreEqual(expected.NotificationDelaySeconds, actual.NotificationDelaySeconds);
+            Assert.AreEqual(expected.CaptureDelaySeconds, actual.CaptureDelaySeconds);
+            Assert.AreEqual(expected.MaxConcurrentToasts, actual.MaxConcurrentToasts);
+            Assert.AreEqual(expected.ToastPosition, actual.ToastPosition);
         }
     }
 }

@@ -7,6 +7,8 @@ using System.Windows;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views;
 using Playnite.SDK;
@@ -17,8 +19,11 @@ namespace PlayniteAchievements
 {
     public partial class PlayniteAchievementsPlugin
     {
-        private const string PluginGameMenuSection = "Playnite Achievements";
-        private const string PluginMainMenuSection = "@Playnite Achievements";
+        private static string PluginGameMenuSection => ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+        // Nested "Maintenance" submenu under the plugin's game-menu section (Playnite uses | to nest).
+        private static string PluginGameMaintenanceSection =>
+            PluginGameMenuSection + "|" + ResourceProvider.GetString("LOCPlayAch_Settings_Maintenance_Title");
+        private static string PluginMainMenuSection => "@" + ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
         private int _fullscreenMenuGlobalProgressActive;
 
         private bool IsRefreshInProgress()
@@ -127,7 +132,7 @@ namespace PlayniteAchievements
             {
                 yield return new GameMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewRefreshProgress"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_Common_View"),
                     MenuSection = PluginGameMenuSection,
                     Action = (a) =>
                     {
@@ -165,7 +170,7 @@ namespace PlayniteAchievements
             {
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewRefreshProgress"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_Common_View"),
                     MenuSection = PluginMainMenuSection,
                     Action = (a) =>
                     {
@@ -234,7 +239,7 @@ namespace PlayniteAchievements
                 yield return new GameMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearData"),
-                    MenuSection = PluginGameMenuSection,
+                    MenuSection = PluginGameMaintenanceSection,
                     Action = (a) =>
                     {
                         ClearSelectedGamesData(selectedGames);
@@ -247,7 +252,7 @@ namespace PlayniteAchievements
                     Description = allExcludedFromSummaries
                         ? ResourceProvider.GetString("LOCPlayAch_Common_Action_IncludeInSummaries")
                         : ResourceProvider.GetString("LOCPlayAch_Common_Action_ExcludeFromSummaries"),
-                    MenuSection = PluginGameMenuSection,
+                    MenuSection = PluginGameMaintenanceSection,
                     Action = (a) =>
                     {
                         ToggleExcludedFromSummaries(selectedGames);
@@ -260,7 +265,7 @@ namespace PlayniteAchievements
                     Description = allExcludedFromRefreshes
                         ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeInRefreshes")
                         : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeFromRefreshes"),
-                    MenuSection = PluginGameMenuSection,
+                    MenuSection = PluginGameMaintenanceSection,
                     Action = (a) =>
                     {
                         ToggleExcludedFromRefreshes(selectedGames, clearDataWhenExcluding: false, confirmWhenClearingData: false);
@@ -272,7 +277,7 @@ namespace PlayniteAchievements
                     Description = allExcludedFromRefreshes
                         ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeInRefreshesAndRefresh")
                         : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData"),
-                    MenuSection = PluginGameMenuSection,
+                    MenuSection = PluginGameMaintenanceSection,
                     Action = (a) =>
                     {
                         ToggleExcludedFromRefreshesAndRefresh(selectedGames);
@@ -307,6 +312,19 @@ namespace PlayniteAchievements
                 }
             };
 
+            if (_settingsViewModel?.Settings?.Persisted?.EnableFriendsFeatures == true)
+            {
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewFriendsAchievements"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        OpenViewFriendsAchievementsWindow(game.Id);
+                    }
+                };
+            }
+
             if (!refreshInProgress)
             {
                 yield return new GameMenuItem
@@ -319,7 +337,8 @@ namespace PlayniteAchievements
                             new RefreshRequest
                             {
                                 Mode = RefreshModeType.Single,
-                                SingleGameId = game.Id
+                                SingleGameId = game.Id,
+                                SurfaceUserNotices = true
                             },
                             game.Id);
                     }
@@ -336,16 +355,25 @@ namespace PlayniteAchievements
                 }
             };
 
-            yield return new GameMenuItem
+            // Only shown when the game actually has saved captures (Playnite menu items can't be
+            // greyed out, so absence is the "inactive" state here).
+            if (_captureLibraryService?.GameHasCaptures(game.Name) == true)
             {
-                Description = "-",
-                MenuSection = PluginGameMenuSection
-            };
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewCaptures"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        OpenCapturesViewerForGame(game.Name);
+                    }
+                };
+            }
 
             yield return new GameMenuItem
             {
                 Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearData"),
-                MenuSection = PluginGameMenuSection,
+                MenuSection = PluginGameMaintenanceSection,
                 Action = (a) =>
                 {
                     ClearSingleGameData(game);
@@ -358,7 +386,7 @@ namespace PlayniteAchievements
                 Description = excludedFromSummaries
                     ? ResourceProvider.GetString("LOCPlayAch_Common_Action_IncludeInSummaries")
                     : ResourceProvider.GetString("LOCPlayAch_Common_Action_ExcludeFromSummaries"),
-                MenuSection = PluginGameMenuSection,
+                MenuSection = PluginGameMaintenanceSection,
                 Action = (a) =>
                 {
                     ToggleExcludedFromSummaries(new[] { game });
@@ -371,7 +399,7 @@ namespace PlayniteAchievements
                 Description = excludedFromRefreshes
                     ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeInRefreshes")
                     : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeFromRefreshes"),
-                MenuSection = PluginGameMenuSection,
+                MenuSection = PluginGameMaintenanceSection,
                 Action = (a) =>
                 {
                     ToggleExcludedFromRefreshes(new[] { game }, clearDataWhenExcluding: false, confirmWhenClearingData: false);
@@ -383,7 +411,7 @@ namespace PlayniteAchievements
                 Description = excludedFromRefreshes
                     ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeInRefreshesAndRefresh")
                     : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData"),
-                MenuSection = PluginGameMenuSection,
+                MenuSection = PluginGameMaintenanceSection,
                 Action = (a) =>
                 {
                     ToggleExcludedFromRefreshesAndRefresh(new[] { game });
@@ -539,7 +567,8 @@ namespace PlayniteAchievements
                     new RefreshRequest
                     {
                         Mode = RefreshModeType.Single,
-                        SingleGameId = gameId
+                        SingleGameId = gameId,
+                        SurfaceUserNotices = true
                     },
                     gameId);
             }
@@ -717,6 +746,20 @@ namespace PlayniteAchievements
                         }
                     };
 
+                    // Fullscreen can't open Playnite's native plugin-settings dialog
+                    // (OpenSettingsView is a no-op there), so host the plugin's settings UI in a
+                    // managed popout instead — giving fullscreen access to the notification
+                    // appearance editor and fire-tests. Closing the window saves.
+                    yield return new MainMenuItem
+                    {
+                        Description = ResourceProvider.GetString("LOCPlayAch_Landing_OpenSettings"),
+                        MenuSection = PluginMainMenuSection,
+                        Action = (a) =>
+                        {
+                            OpenSettingsWindow();
+                        }
+                    };
+
                     yield return new MainMenuItem
                     {
                         Description = "-",
@@ -805,9 +848,39 @@ namespace PlayniteAchievements
                             new RefreshRequest
                             {
                                 Mode = RefreshModeType.Custom,
-                                CustomOptions = customOptions
+                                Options = RefreshOptions.FromCustom(customOptions)
                             });
                     }
+                };
+            }
+
+            // Developer-only diagnostic, hidden unless the hardcoded PerfScope.PerfTracingEnabled
+            // flag is on (never shown in a tracing-off build). Deliberately not localized.
+            // Available mid-refresh: capturing memory state during and after large scans is the
+            // point. The compacting collect logs a managed-vs-native breakdown of residual memory.
+            if (Common.MemoryDiagnostics.Enabled)
+            {
+                yield return new MainMenuItem
+                {
+                    Description = "Log Memory Diagnostics",
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) => _ = Task.Run(() =>
+                    {
+                        try
+                        {
+                            var before = Common.MemoryDiagnostics.Log(_logger, "manual", "trigger=menu");
+                            System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
+                                System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                            GC.Collect();
+                            Common.MemoryDiagnostics.Log(_logger, "manual.afterGC", before, "trigger=menu");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Debug(ex, "Manual memory diagnostics failed.");
+                        }
+                    })
                 };
             }
         }

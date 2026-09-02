@@ -22,13 +22,16 @@ namespace PlayniteAchievements.Services.UI
         private const int ViewAchievementsHotkeyId = 0x504101;
         private const int ManageAchievementsHotkeyId = 0x504102;
         private const int OverviewHotkeyId = 0x504103;
+        private const int TestUnlockHotkeyId = 0x504104;
+        private const int OpenSettingsHotkeyId = 0x504105;
         private const int WmHotkey = 0x0312;
         private const uint ModAlt = 0x0001;
         private const uint ModControl = 0x0002;
         private const uint ModShift = 0x0004;
         private const uint ModWin = 0x0008;
         private const uint ModNoRepeat = 0x4000;
-        private const int WsPopup = unchecked((int)0x80000000);
+        private const int WsExToolWindow = 0x00000080;
+        private static readonly IntPtr HwndMessage = new IntPtr(-3);
 
         private readonly IPlayniteAPI _api;
         private readonly PlayniteAchievementsSettings _settings;
@@ -37,6 +40,10 @@ namespace PlayniteAchievements.Services.UI
         private readonly Action<Guid> _toggleViewAchievementsWindow;
         private readonly Action<Guid> _toggleManageAchievementsWindow;
         private readonly Action _toggleOverviewWindow;
+        private readonly Action _openSettings;
+        private readonly Func<bool> _tryFlipCategoryMode;
+        private readonly Func<bool> _tryRefreshFocusedView;
+        private readonly Action<Guid> _fireTestUnlock;
         private readonly Dictionary<int, AchievementHotkeyAction> _registeredGlobalHotkeys =
             new Dictionary<int, AchievementHotkeyAction>();
 
@@ -47,8 +54,12 @@ namespace PlayniteAchievements.Services.UI
         private AchievementHotkeyGesture _viewGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyGesture _manageGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyGesture _overviewGesture = AchievementHotkeyGesture.Empty;
+        private AchievementHotkeyGesture _openSettingsGesture = AchievementHotkeyGesture.Empty;
+        private AchievementHotkeyGesture _categoryModeGesture = AchievementHotkeyGesture.Empty;
+        private AchievementHotkeyGesture _testUnlockGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyAction? _lastHandledAction;
         private DateTime _lastHandledAtUtc;
+        private string _lastGlobalRegistrationFailureSignature;
 
         public AchievementHotkeyService(
             IPlayniteAPI api,
@@ -57,7 +68,11 @@ namespace PlayniteAchievements.Services.UI
             ILogger logger,
             Action<Guid> toggleViewAchievementsWindow,
             Action<Guid> toggleManageAchievementsWindow,
-            Action toggleOverviewWindow)
+            Action toggleOverviewWindow,
+            Action openSettings = null,
+            Func<bool> tryFlipCategoryMode = null,
+            Func<bool> tryRefreshFocusedView = null,
+            Action<Guid> fireTestUnlock = null)
         {
             _api = api;
             _settings = settings;
@@ -66,6 +81,10 @@ namespace PlayniteAchievements.Services.UI
             _toggleViewAchievementsWindow = toggleViewAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleViewAchievementsWindow));
             _toggleManageAchievementsWindow = toggleManageAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleManageAchievementsWindow));
             _toggleOverviewWindow = toggleOverviewWindow ?? throw new ArgumentNullException(nameof(toggleOverviewWindow));
+            _openSettings = openSettings;
+            _tryFlipCategoryMode = tryFlipCategoryMode;
+            _tryRefreshFocusedView = tryRefreshFocusedView;
+            _fireTestUnlock = fireTestUnlock;
         }
 
         private Dispatcher UiDispatcher =>
@@ -119,7 +138,7 @@ namespace PlayniteAchievements.Services.UI
                         InputManager.Current.PreProcessInput -= OnPreProcessInput;
                     }
 
-                    UnregisterGlobalHotkeys();
+                    UnregisterGlobalHotkeys(disposeSink: true);
                     _started = false;
                 }), DispatcherPriority.Normal);
             }
@@ -136,17 +155,39 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            _viewGesture = ParseGesture(_settings?.Persisted?.ViewAchievementsHotkey);
-            _manageGesture = ParseGesture(_settings?.Persisted?.ManageAchievementsHotkey);
-            _overviewGesture = ParseGesture(_settings?.Persisted?.OverviewHotkey);
-            UnregisterGlobalHotkeys();
-
             var persisted = _settings?.Persisted;
-            if (persisted?.EnableAchievementHotkeys == true &&
-                persisted.EnableGlobalAchievementHotkeys)
+
+            // A hotkey whose individual enable flag is off resolves to an empty gesture, so every
+            // downstream IsEmpty check (global registration and in-app resolution) skips it without
+            // any extra gating. The master EnableAchievementHotkeys switch is enforced separately.
+            _viewGesture = ResolveGesture(persisted?.EnableViewAchievementsHotkey, persisted?.ViewAchievementsHotkey);
+            _manageGesture = ResolveGesture(persisted?.EnableManageAchievementsHotkey, persisted?.ManageAchievementsHotkey);
+            _overviewGesture = ResolveGesture(persisted?.EnableOverviewHotkey, persisted?.OverviewHotkey);
+            _openSettingsGesture = ResolveGesture(persisted?.EnableOpenSettingsHotkey, persisted?.OpenSettingsHotkey);
+            _categoryModeGesture = ResolveGesture(persisted?.EnableCategoryModeHotkey, persisted?.CategoryModeHotkey);
+            _testUnlockGesture = ResolveGesture(persisted?.EnableTestUnlockHotkey, persisted?.TestUnlockHotkey);
+
+            var enableGlobalHotkeys = persisted?.EnableAchievementHotkeys == true &&
+                                      persisted.EnableGlobalAchievementHotkeys;
+
+            _logger?.Debug(
+                $"Refreshing achievement hotkeys. enabled={persisted?.EnableAchievementHotkeys == true}, global={enableGlobalHotkeys}, view='{_viewGesture}', manage='{_manageGesture}', overview='{_overviewGesture}', openSettings='{_openSettingsGesture}', categoryMode='{_categoryModeGesture}', testUnlock='{_testUnlockGesture}', sinkHandle={_globalHotkeyWindowHandle}");
+
+            UnregisterGlobalHotkeys(disposeSink: !enableGlobalHotkeys);
+
+            if (enableGlobalHotkeys)
             {
                 RegisterGlobalHotkeys();
             }
+            else
+            {
+                _lastGlobalRegistrationFailureSignature = null;
+            }
+        }
+
+        private static AchievementHotkeyGesture ResolveGesture(bool? enabled, string text)
+        {
+            return enabled == true ? ParseGesture(text) : AchievementHotkeyGesture.Empty;
         }
 
         private static AchievementHotkeyGesture ParseGesture(string text)
@@ -159,29 +200,74 @@ namespace PlayniteAchievements.Services.UI
         private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
         {
             if (_disposed ||
-                _settings?.Persisted?.EnableAchievementHotkeys != true ||
                 e?.StagingItem?.Input is not KeyEventArgs keyArgs ||
                 keyArgs.RoutedEvent != Keyboard.KeyDownEvent ||
                 keyArgs.IsRepeat ||
-                keyArgs.Handled ||
-                IsTextInputFocused())
+                keyArgs.Handled)
             {
                 return;
             }
 
-            var key = GetEffectiveKey(keyArgs);
-            if (!AchievementHotkeyGesture.TryCreate(key, Keyboard.Modifiers, out var gesture))
+            // This handler runs synchronously inside WPF's input pipeline. It must never let an
+            // exception escape: the work below walks the live window/visual tree (focus scope,
+            // active-view refresh, category-mode flip), which can throw while the tree is only
+            // partially built during startup. An unhandled throw here corrupts the input pipeline
+            // and permanently disables hotkeys for the rest of the session, so swallow and log.
+            try
             {
-                return;
-            }
+                // Fixed F5 -> refresh, scoped to the plugin's own views via focus. Handled here
+                // (before the routed KeyDown) so it preempts Playnite's F5 InputBinding. Independent
+                // of the configurable achievement-hotkey feature and active even in a focused search box.
+                if (GetEffectiveKey(keyArgs) == Key.F5 &&
+                    Keyboard.Modifiers == ModifierKeys.None &&
+                    _tryRefreshFocusedView?.Invoke() == true)
+                {
+                    keyArgs.Handled = true;
+                    return;
+                }
 
-            if (!TryResolveAction(gesture, out var action))
+                if (_settings?.Persisted?.EnableAchievementHotkeys != true)
+                {
+                    return;
+                }
+
+                var key = GetEffectiveKey(keyArgs);
+                if (!AchievementHotkeyGesture.TryCreate(key, Keyboard.Modifiers, out var gesture))
+                {
+                    return;
+                }
+
+                // Only typeable gestures (no Ctrl/Alt/Win modifier) are suppressed while a
+                // text input has focus, so bare-letter shortcuts never fire mid-typing but
+                // modified shortcuts keep working from any focused Playnite window.
+                if ((gesture.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Windows)) == ModifierKeys.None &&
+                    KeyboardFocusScope.IsTextInputFocused())
+                {
+                    return;
+                }
+
+                if (!TryResolveAction(gesture, out var action))
+                {
+                    // The category-mode gesture is scoped, not app-wide: it is handled synchronously
+                    // so the key passes through untouched whenever the active window hosts no
+                    // achievement grid whose category toggle is currently available.
+                    if (!_categoryModeGesture.IsEmpty &&
+                        gesture.Equals(_categoryModeGesture) &&
+                        _tryFlipCategoryMode?.Invoke() == true)
+                    {
+                        keyArgs.Handled = true;
+                    }
+
+                    return;
+                }
+
+                keyArgs.Handled = true;
+                DispatchAction(action);
+            }
+            catch (Exception ex)
             {
-                return;
+                _logger?.Debug(ex, "Failed to process achievement hotkey input; passing the key through.");
             }
-
-            keyArgs.Handled = true;
-            DispatchAction(action);
         }
 
         private static Key GetEffectiveKey(KeyEventArgs keyArgs)
@@ -230,6 +316,18 @@ namespace PlayniteAchievements.Services.UI
                 return true;
             }
 
+            if (_openSettings != null && !_openSettingsGesture.IsEmpty && gesture.Equals(_openSettingsGesture))
+            {
+                action = AchievementHotkeyAction.OpenSettings;
+                return true;
+            }
+
+            if (_fireTestUnlock != null && !_testUnlockGesture.IsEmpty && gesture.Equals(_testUnlockGesture))
+            {
+                action = AchievementHotkeyAction.FireTestUnlock;
+                return true;
+            }
+
             return false;
         }
 
@@ -261,13 +359,42 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
+            if (action == AchievementHotkeyAction.OpenSettings)
+            {
+                _openSettings?.Invoke();
+                return;
+            }
+
+            if (action == AchievementHotkeyAction.FireTestUnlock)
+            {
+                // Only a genuinely running game scopes the fire to that game; with none running we
+                // pass Guid.Empty so the monitor uses the library-wide most recent unlock (not the
+                // merely-selected game). No "no target" prompt: the library-wide path resolves it.
+                var running = _targetResolver.ResolveRunningGame();
+                var hasRunningGame = running?.HasTarget == true;
+
+                // Out of a game a retrigger has nowhere sensible to go: there is no gameplay to
+                // capture, and its full-monitor screenshot would enter a game's collection as if it
+                // were a real unlock. The test folder is the case where that is wanted, so it is
+                // also what enables the shortcut here. Silent by design — the shortcut is global,
+                // so a stray press outside a game should cost nothing.
+                if (!hasRunningGame && !(_settings?.Persisted?.EnableCaptureTestFolder ?? false))
+                {
+                    _logger?.Debug(
+                        "[Hotkey] Retrigger ignored: no game is running and the capture test folder is disabled.");
+                    return;
+                }
+
+                _fireTestUnlock?.Invoke(hasRunningGame ? running.GameId : Guid.Empty);
+                return;
+            }
+
             var target = _targetResolver.Resolve();
             if (target?.HasTarget != true)
             {
                 ShowNotification(
                     "PlayniteAchievements-Hotkey-NoTarget",
-                    ResourceProvider.GetString("LOCPlayAch_Hotkeys_NoTarget") ??
-                    "Select one game or start a game before using achievement hotkeys.",
+                    ResourceProvider.GetString("LOCPlayAch_Hotkeys_NoTarget"),
                     NotificationType.Info);
                 return;
             }
@@ -289,9 +416,17 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            RegisterGlobalHotkey(ViewAchievementsHotkeyId, AchievementHotkeyAction.ViewAchievements, _viewGesture);
-            RegisterGlobalHotkey(ManageAchievementsHotkeyId, AchievementHotkeyAction.ManageAchievements, _manageGesture);
-            RegisterGlobalHotkey(OverviewHotkeyId, AchievementHotkeyAction.Overview, _overviewGesture);
+            var failedGestures = new List<string>();
+            RegisterGlobalHotkey(ViewAchievementsHotkeyId, AchievementHotkeyAction.ViewAchievements, _viewGesture, failedGestures);
+            RegisterGlobalHotkey(ManageAchievementsHotkeyId, AchievementHotkeyAction.ManageAchievements, _manageGesture, failedGestures);
+            RegisterGlobalHotkey(OverviewHotkeyId, AchievementHotkeyAction.Overview, _overviewGesture, failedGestures);
+            if (_openSettings != null)
+            {
+                RegisterGlobalHotkey(OpenSettingsHotkeyId, AchievementHotkeyAction.OpenSettings, _openSettingsGesture, failedGestures);
+            }
+
+            RegisterGlobalHotkey(TestUnlockHotkeyId, AchievementHotkeyAction.FireTestUnlock, _testUnlockGesture, failedGestures);
+            ShowGlobalRegistrationFailureNotification(failedGestures);
         }
 
         private bool EnsureGlobalHotkeySink()
@@ -308,7 +443,9 @@ namespace PlayniteAchievements.Services.UI
                 {
                     Width = 0,
                     Height = 0,
-                    WindowStyle = WsPopup
+                    ParentWindow = HwndMessage,
+                    WindowStyle = 0,
+                    ExtendedWindowStyle = WsExToolWindow
                 };
 
                 _globalHotkeySource = new HwndSource(parameters);
@@ -322,6 +459,7 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 _globalHotkeySource.AddHook(WndProc);
+                _logger?.Debug($"Created achievement global hotkey message sink. handle={_globalHotkeyWindowHandle}");
                 return true;
             }
             catch (Exception ex)
@@ -333,7 +471,11 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private void RegisterGlobalHotkey(int id, AchievementHotkeyAction action, AchievementHotkeyGesture gesture)
+        private void RegisterGlobalHotkey(
+            int id,
+            AchievementHotkeyAction action,
+            AchievementHotkeyGesture gesture,
+            ICollection<string> failedGestures)
         {
             if (gesture == null || gesture.IsEmpty || !gesture.CanRegisterGlobally)
             {
@@ -350,21 +492,55 @@ namespace PlayniteAchievements.Services.UI
             if (RegisterHotKey(_globalHotkeyWindowHandle, id, modifiers, virtualKey))
             {
                 _registeredGlobalHotkeys[id] = action;
+                _logger?.Debug($"Registered global achievement hotkey '{gesture}' for action={action}, id={id}, sinkHandle={_globalHotkeyWindowHandle}.");
                 return;
             }
 
             var errorCode = Marshal.GetLastWin32Error();
             _logger?.Warn($"Failed to register global achievement hotkey '{gesture}' (Win32 error {errorCode}).");
+            failedGestures?.Add(gesture.ToString());
+        }
+
+        private void ShowGlobalRegistrationFailureNotification(IReadOnlyCollection<string> failedGestures)
+        {
+            if (failedGestures == null || failedGestures.Count == 0)
+            {
+                _lastGlobalRegistrationFailureSignature = null;
+                return;
+            }
+
+            var gestures = failedGestures
+                .Where(gesture => !string.IsNullOrWhiteSpace(gesture))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(gesture => gesture, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (gestures.Count == 0)
+            {
+                _lastGlobalRegistrationFailureSignature = null;
+                return;
+            }
+
+            var signature = string.Join("|", gestures);
+            if (string.Equals(signature, _lastGlobalRegistrationFailureSignature, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _lastGlobalRegistrationFailureSignature = signature;
+            var displayText = string.Join(", ", gestures);
+            var messageFormat = ResourceProvider.GetString("LOCPlayAch_Hotkeys_GlobalRegistrationFailed");
+            if (string.IsNullOrWhiteSpace(messageFormat))
+            {
+                messageFormat = "Global shortcut unavailable: {0}. Another app may already be using the same key.";
+            }
+
             ShowNotification(
-                $"PlayniteAchievements-Hotkey-GlobalFailed-{id}",
-                string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Hotkeys_GlobalRegistrationFailed") ??
-                    "Could not register global hotkey {0}. Another app may already be using it.",
-                    gesture),
+                "PlayniteAchievements-Hotkey-GlobalFailed",
+                string.Format(messageFormat, displayText),
                 NotificationType.Error);
         }
 
-        private void UnregisterGlobalHotkeys()
+        private void UnregisterGlobalHotkeys(bool disposeSink)
         {
             foreach (var id in _registeredGlobalHotkeys.Keys.ToList())
             {
@@ -383,6 +559,12 @@ namespace PlayniteAchievements.Services.UI
 
             _registeredGlobalHotkeys.Clear();
 
+            if (!disposeSink)
+            {
+                _logger?.Debug($"Unregistered achievement global hotkeys; kept sinkHandle={_globalHotkeyWindowHandle}.");
+                return;
+            }
+
             try
             {
                 _globalHotkeySource?.RemoveHook(WndProc);
@@ -394,6 +576,7 @@ namespace PlayniteAchievements.Services.UI
 
             _globalHotkeySource = null;
             _globalHotkeyWindowHandle = IntPtr.Zero;
+            _logger?.Debug("Disposed achievement global hotkey message sink.");
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -407,6 +590,7 @@ namespace PlayniteAchievements.Services.UI
             if (_registeredGlobalHotkeys.TryGetValue(id, out var action))
             {
                 handled = true;
+                _logger?.Debug($"Received global achievement hotkey id={id}, action={action}.");
                 DispatchAction(action);
             }
 
@@ -417,7 +601,8 @@ namespace PlayniteAchievements.Services.UI
         {
             try
             {
-                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements";
+                _logger?.Debug($"Showing achievement hotkey notification id='{id}', type={type}, message='{message}'");
+                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
                 _api?.Notifications?.Add(new NotificationMessage(
                     id,
                     $"{title}\n{message}",
@@ -452,54 +637,6 @@ namespace PlayniteAchievements.Services.UI
             return result;
         }
 
-        private static bool IsTextInputFocused()
-        {
-            var element = Keyboard.FocusedElement as DependencyObject;
-            while (element != null)
-            {
-                if (element is TextBoxBase ||
-                    element is PasswordBox ||
-                    element is RichTextBox)
-                {
-                    return true;
-                }
-
-                if (element is ComboBox comboBox && comboBox.IsEditable)
-                {
-                    return true;
-                }
-
-                element = GetParent(element);
-            }
-
-            return false;
-        }
-
-        private static DependencyObject GetParent(DependencyObject element)
-        {
-            if (element == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                if (element is Visual || element is Visual3D)
-                {
-                    var parent = VisualTreeHelper.GetParent(element);
-                    if (parent != null)
-                    {
-                        return parent;
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            return LogicalTreeHelper.GetParent(element);
-        }
-
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
@@ -510,7 +647,12 @@ namespace PlayniteAchievements.Services.UI
         {
             ViewAchievements,
             ManageAchievements,
-            Overview
+            Overview,
+
+            OpenSettings,
+
+            // Fires the full notification flow for the running game's last-earned achievement.
+            FireTestUnlock
         }
     }
 }

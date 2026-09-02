@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
@@ -20,7 +21,12 @@ namespace PlayniteAchievements.Services.Images
         private static readonly ILogger StaticLogger = PluginLogger.GetLogger(nameof(MemoryImageService));
         private const int DefaultDecodePixel = 64;
         private const int MinDecodePixel = 16;
-        private const int MaxDecodePixel = 1024;
+
+        // Upper bound for a single decode. Sized for a full-screen capture on a 4K display at
+        // 150% scaling, where AsyncImage.InferDecodePixel asks for roughly 4700 px. A lower cap
+        // silently truncates the request and the surface then upscales a downsampled bitmap.
+        // Callers that want the file's native resolution pass a negative decodePixel instead.
+        private const int MaxDecodePixel = 4096;
         private const string CacheBustPrefix = "cachebust|";
         private const string PreviewHttpPrefix = "previewhttp:";
 
@@ -51,11 +57,22 @@ namespace PlayniteAchievements.Services.Images
             _logger = logger ?? StaticLogger;
             _diskService = diskService ?? throw new ArgumentNullException(nameof(diskService));
             _maxItems = Math.Max(64, maxItems);
+            _diskService.ImageFileOverwritten += OnImageFileOverwritten;
         }
+
+        /// <summary>
+        /// Raised for every eviction by uri segment, so caches derived from these bitmaps can drop the
+        /// same entries. Every invalidation signal in the plugin funnels through
+        /// <see cref="EvictByUriSegment"/>, so subscribing here covers all of them.
+        /// </summary>
+        public event Action<string> UriSegmentEvicted;
+
+        /// <summary>Raised when the whole memory cache is dropped.</summary>
+        public event Action CacheCleared;
 
         public void Dispose()
         {
-            // No unmanaged resources to dispose.
+            _diskService.ImageFileOverwritten -= OnImageFileOverwritten;
         }
 
         public void Clear()
@@ -64,6 +81,63 @@ namespace PlayniteAchievements.Services.Images
             {
                 _cache.Clear();
                 _lru.Clear();
+            }
+
+            CacheCleared?.Invoke();
+        }
+
+        private void OnImageFileOverwritten(string path)
+        {
+            EvictByUriSegment(path);
+        }
+
+        /// <summary>
+        /// Removes every cached bitmap whose key contains the given segment
+        /// (case-insensitive). Because keys are "{size}{uri}" and the uri may carry
+        /// gray:/cachebust prefixes, a path or path fragment matches all of its decode-size
+        /// and prefix variants.
+        /// </summary>
+        public void EvictByUriSegment(string segment)
+        {
+            if (string.IsNullOrWhiteSpace(segment))
+            {
+                return;
+            }
+
+            // The WebP animation frame cache is keyed by the token-stripped file path, so it
+            // must drop its entries on the same invalidation signals as the bitmap cache. GIFs
+            // need no signal here: NativeGifPayloadCache keys on the file's size and write time.
+            Views.Helpers.AnimatedImageHelper.EvictBySegment(segment);
+            UriSegmentEvicted?.Invoke(segment);
+
+            lock (_cacheLock)
+            {
+                List<string> keysToEvict = null;
+                foreach (var key in _cache.Keys)
+                {
+                    if (key.IndexOf(segment, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        (keysToEvict ?? (keysToEvict = new List<string>())).Add(key);
+                    }
+                }
+
+                if (keysToEvict == null)
+                {
+                    return;
+                }
+
+                foreach (var key in keysToEvict)
+                {
+                    if (_cache.TryGetValue(key, out var entry))
+                    {
+                        if (entry?.Node != null)
+                        {
+                            _lru.Remove(entry.Node);
+                        }
+
+                        _cache.Remove(key);
+                    }
+                }
             }
         }
 
@@ -80,9 +154,24 @@ namespace PlayniteAchievements.Services.Images
             return _diskService.ClearIconCache(scope, additionalPaths, reportDeleteProgress);
         }
 
+        public void ClearGameCache(string gameId)
+        {
+            _diskService.ClearGameCache(gameId);
+            // Game icon paths always contain the game id segment (icon_cache/<gameId>/...),
+            // so evict just that game's bitmaps instead of wiping the whole memory cache.
+            EvictByUriSegment(gameId);
+        }
+
         private const string GrayPrefix = "gray:";
 
-        public Task<BitmapSource> GetAsync(string uri, int decodePixel, CancellationToken cancel)
+        /// <param name="cacheResult">
+        /// When false the decoded bitmap is returned but never enters the LRU. For callers that consume
+        /// a bitmap once and keep only something derived from it — silhouette analysis, say — which
+        /// would otherwise hold a cache slot that an on-screen icon needs. Inflight deduping still
+        /// applies, so a concurrent display request for the same key shares the work either way.
+        /// </param>
+        public Task<BitmapSource> GetAsync(
+            string uri, int decodePixel, CancellationToken cancel, bool cacheResult = true)
         {
             var requestedUri = (uri ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(requestedUri))
@@ -99,7 +188,7 @@ namespace PlayniteAchievements.Services.Images
             }
 
             // Dedupe work per key, but allow UI-level cancellation (we just won't apply the result).
-            var inflight = _inflight.GetOrAdd(key, _ => LoadAndCacheAsync(key, requestedUri, size));
+            var inflight = _inflight.GetOrAdd(key, _ => LoadAndCacheAsync(key, requestedUri, size, cacheResult));
             return inflight.WithCancellation(cancel);
         }
 
@@ -124,7 +213,8 @@ namespace PlayniteAchievements.Services.Images
             return false;
         }
 
-        private async Task<BitmapSource> LoadAndCacheAsync(string key, string requestedUri, int decodePixel)
+        private async Task<BitmapSource> LoadAndCacheAsync(
+            string key, string requestedUri, int decodePixel, bool cacheResult)
         {
             try
             {
@@ -146,7 +236,11 @@ namespace PlayniteAchievements.Services.Images
                 }
                 else
                 {
-                    bmp = LoadLocal(uri, decodePixel);
+                    // Decode off the calling thread; GetAsync runs synchronously up to the first
+                    // await, so an inline decode would run on the UI thread that requested the
+                    // image. The bitmap is frozen below before crossing back. Mirrors the
+                    // disk-cache path's Task.Run decode.
+                    bmp = await Task.Run(() => LoadLocal(uri, decodePixel)).ConfigureAwait(false);
                 }
 
                 if (gray && bmp != null)
@@ -159,7 +253,7 @@ namespace PlayniteAchievements.Services.Images
                     bmp.Freeze();
                 }
 
-                if (bmp != null)
+                if (bmp != null && cacheResult)
                 {
                     AddToCache(key, bmp);
                 }
@@ -293,7 +387,13 @@ namespace PlayniteAchievements.Services.Images
 
         private static int NormalizeDecodePixel(int decodePixel)
         {
-            if (decodePixel <= 0)
+            if (decodePixel < 0)
+            {
+                // Negative requests native-resolution decode (no DecodePixelWidth).
+                return 0;
+            }
+
+            if (decodePixel == 0)
             {
                 return DefaultDecodePixel;
             }
@@ -334,13 +434,16 @@ namespace PlayniteAchievements.Services.Images
         {
             try
             {
-                var isGif = IsGifPathOrUri(uri);
+                var isAnimated = ImageFormats.IsAnimatedFile(uri);
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                // IgnoreImageCache bypasses WPF's URI-keyed decode cache, which would
+                // otherwise serve stale pixels for files overwritten at the same path.
+                // This service is the caching layer, so the WPF cache is redundant here.
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
 
-                if (!isGif && decodePixel > 0)
+                if (!isAnimated && decodePixel > 0)
                 {
                     bitmap.DecodePixelWidth = decodePixel;
                 }
@@ -362,7 +465,9 @@ namespace PlayniteAchievements.Services.Images
         {
             try
             {
-                var decodeForCache = IsGifPathOrUri(uri) ? 0 : decodePixel;
+                // Extension-based, not content-based: the file may not exist locally yet, and
+                // re-encoding an animation to PNG on the way into the cache would flatten it.
+                var decodeForCache = ImageFormats.IsAnimationCandidate(uri) ? 0 : decodePixel;
                 var cachePath = _diskService.GetIconCachePathFromUri(uri, decodeForCache, gameId: null);
                 if (string.IsNullOrWhiteSpace(cachePath))
                 {
@@ -381,15 +486,17 @@ namespace PlayniteAchievements.Services.Images
                     return null;
                 }
 
-                var isGif = IsGifPathOrUri(cachePath);
+                // Content-based here: the file exists, so a still WebP keeps its decode-time
+                // downscale instead of paying full resolution for a format that merely could animate.
+                var isAnimated = ImageFormats.IsAnimatedFile(cachePath);
 
                 return await Task.Run(() =>
                 {
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                    if (!isGif && decodePixel > 0)
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
+                    if (!isAnimated && decodePixel > 0)
                     {
                         bitmap.DecodePixelWidth = decodePixel;
                     }
@@ -411,26 +518,6 @@ namespace PlayniteAchievements.Services.Images
                    url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsGifPathOrUri(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            try
-            {
-                if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
-                {
-                    return uri.AbsolutePath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
-                }
-            }
-            catch
-            {
-            }
-
-            return value.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
-        }
     }
 
     internal static class TaskCancellationExtensions

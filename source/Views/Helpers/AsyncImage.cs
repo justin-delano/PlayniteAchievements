@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.Helpers
 {
@@ -14,6 +16,8 @@ namespace PlayniteAchievements.Views.Helpers
     /// </summary>
     public static class AsyncImage
     {
+        private static readonly ILogger Logger = LogManager.GetLogger();
+
         private const string GrayPrefix = "gray:";
         private const int DefaultDecodePixel = 64;
         private const double DecodeOverscan = 1.25;
@@ -45,6 +49,46 @@ namespace PlayniteAchievements.Views.Helpers
 
         public static void SetGray(DependencyObject element, bool value) => element.SetValue(GrayProperty, value);
         public static bool GetGray(DependencyObject element) => (bool)element.GetValue(GrayProperty);
+
+        // When true (default), retained-frame WebP animations phase-lock to the process-wide epoch
+        // so recreated elements resume mid-cycle. GIFs intentionally ignore this value and start at
+        // frame one; the settings background preview preserves continuity by sharing one persistent
+        // Source.
+        public static readonly DependencyProperty PhaseLockProperty = DependencyProperty.RegisterAttached(
+            "PhaseLock",
+            typeof(bool),
+            typeof(AsyncImage),
+            new PropertyMetadata(true));
+
+        public static void SetPhaseLock(DependencyObject element, bool value) => element.SetValue(PhaseLockProperty, value);
+        public static bool GetPhaseLock(DependencyObject element) => (bool)element.GetValue(PhaseLockProperty);
+
+        /// <summary>
+        /// Raised when a new source object has finished loading and is ready to be shared with
+        /// another visual. This is deliberately separate from Image.Source change notifications:
+        /// WPF reports every WriteableBitmap frame invalidation as a Source sub-property change.
+        /// </summary>
+        public static readonly RoutedEvent SourceReadyEvent = EventManager.RegisterRoutedEvent(
+            "SourceReady",
+            RoutingStrategy.Direct,
+            typeof(RoutedEventHandler),
+            typeof(AsyncImage));
+
+        public static void AddSourceReadyHandler(DependencyObject element, RoutedEventHandler handler)
+        {
+            if (element is UIElement uiElement)
+            {
+                uiElement.AddHandler(SourceReadyEvent, handler);
+            }
+        }
+
+        public static void RemoveSourceReadyHandler(DependencyObject element, RoutedEventHandler handler)
+        {
+            if (element is UIElement uiElement)
+            {
+                uiElement.RemoveHandler(SourceReadyEvent, handler);
+            }
+        }
 
         // Private attached state
         private static readonly DependencyProperty LoadCtsProperty = DependencyProperty.RegisterAttached(
@@ -83,17 +127,66 @@ namespace PlayniteAchievements.Views.Helpers
         private static void SetLastEffectiveSourceIdentity(DependencyObject element, object value) =>
             element.SetValue(LastEffectiveSourceIdentityProperty, value);
 
-        private static readonly DependencyProperty ActiveAnimatedGifSourceProperty = DependencyProperty.RegisterAttached(
-            "ActiveAnimatedGifSource",
+        private static readonly DependencyProperty ActiveAnimationSourceProperty = DependencyProperty.RegisterAttached(
+            "ActiveAnimationSource",
             typeof(string),
             typeof(AsyncImage),
             new PropertyMetadata(null));
 
-        private static string GetActiveAnimatedGifSource(DependencyObject element) =>
-            element?.GetValue(ActiveAnimatedGifSourceProperty) as string;
+        private static string GetActiveAnimationSource(DependencyObject element) =>
+            element?.GetValue(ActiveAnimationSourceProperty) as string;
 
-        private static void SetActiveAnimatedGifSource(DependencyObject element, string value) =>
-            element?.SetValue(ActiveAnimatedGifSourceProperty, value);
+        private static void SetActiveAnimationSource(DependencyObject element, string value) =>
+            element?.SetValue(ActiveAnimationSourceProperty, value);
+
+        private static readonly DependencyProperty NativeGifAnimationProperty = DependencyProperty.RegisterAttached(
+            "NativeGifAnimation",
+            typeof(NativeGifAnimation),
+            typeof(AsyncImage),
+            new PropertyMetadata(null));
+
+        private static NativeGifAnimation GetNativeGifAnimation(DependencyObject element) =>
+            element?.GetValue(NativeGifAnimationProperty) as NativeGifAnimation;
+
+        private static void SetNativeGifAnimation(DependencyObject element, NativeGifAnimation value) =>
+            element?.SetValue(NativeGifAnimationProperty, value);
+
+        /// <summary>
+        /// Pauses every native GIF decoder in <paramref name="root"/>'s visual tree for the
+        /// notification slide's span. Animated WebP is deliberately not paused: its frames are
+        /// discrete keyframe swaps of already-decoded frozen bitmaps, so it costs the slide
+        /// nothing, and re-stamping its animation would deep-copy every frame. UI thread only.
+        /// </summary>
+        public static void PauseGifAnimationsUnder(DependencyObject root)
+        {
+            ForEachNativeGifAnimation(root, animation => animation.Pause());
+        }
+
+        /// <summary>Resumes the decoders <see cref="PauseGifAnimationsUnder"/> paused.</summary>
+        public static void ResumeGifAnimationsUnder(DependencyObject root)
+        {
+            ForEachNativeGifAnimation(root, animation => animation.Resume());
+        }
+
+        private static void ForEachNativeGifAnimation(
+            DependencyObject root, Action<NativeGifAnimation> action)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            if (GetNativeGifAnimation(root) is NativeGifAnimation animation)
+            {
+                action(animation);
+            }
+
+            var count = VisualTreeHelper.GetChildrenCount(root);
+            for (var i = 0; i < count; i++)
+            {
+                ForEachNativeGifAnimation(VisualTreeHelper.GetChild(root, i), action);
+            }
+        }
 
         private static void OnUriChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -105,6 +198,22 @@ namespace PlayniteAchievements.Views.Helpers
             var previousIdentity = GetLastEffectiveSourceIdentity(d);
             var nextIdentity = GetEffectiveSourceIdentity(d);
             var sourceIdentityChanged = !Equals(previousIdentity, nextIdentity);
+
+            // A mutable ImageSource stored in this attached property reports every frame dirty as
+            // a dependency-property sub-change. Its identity has not changed, so leave the shared
+            // source attached and let WPF redraw it instead of reapplying it on every GIF frame.
+            if (!sourceIdentityChanged && GetUri(d) is ImageSource)
+            {
+                return;
+            }
+
+            // Native GIFs render at their own dimensions, so DecodePixel changes do not require a
+            // reload. PhaseLock has no change callback; a running native GIF likewise ignores it.
+            // Gray participates in the effective identity and therefore still restarts correctly.
+            if (!sourceIdentityChanged && GetNativeGifAnimation(d) != null)
+            {
+                return;
+            }
 
             CancelExisting(d);
             SetLastRequestedDecodePixel(d, 0);
@@ -181,11 +290,14 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            var normalizedGifUri = GifAnimationHelper.NormalizeGifSourceUri(uri);
-            if (!string.IsNullOrWhiteSpace(normalizedGifUri) &&
-                normalizedGifUri.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+            var normalizedUri = AnimatedImageHelper.NormalizeSourceUri(uri);
+            if (!string.IsNullOrWhiteSpace(normalizedUri) &&
+                Services.Images.ImageFormats.IsAnimatedFile(normalizedUri))
             {
-                // GIFs do not benefit from decode-pixel resize reloads and reloading causes visible animation flicker.
+                // Animation frames use the decode size resolved by the initial load. Rebuilding a
+                // running animation for every inferred-size increase causes visible flicker; the
+                // surfaces where animation resolution matters (such as toast backgrounds) set an
+                // explicit DecodePixel.
                 return;
             }
 
@@ -225,11 +337,24 @@ namespace PlayniteAchievements.Views.Helpers
 
             if (fe.IsVisible)
             {
+                // An animation kept alive across the hide is still attached to the element,
+                // so re-loading would needlessly tear it down (and the async rebuild can race a
+                // subsequent hide, leaving a static frame). Only (re)start when nothing is running.
+                if (GetActiveAnimationSource(fe) != null)
+                {
+                    return;
+                }
+
                 _ = StartLoadAsync(fe);
                 return;
             }
 
-            CancelExisting(fe);
+            // The element (or its window) was hidden — e.g. the toast's focus-hiding loop toggling
+            // window visibility while a game is foreground. Cancel a pending async load so a late
+            // static frame cannot overwrite the animation, but leave any running animation in
+            // place: its timeline keeps advancing and resumes rendering when the element reappears,
+            // instead of restarting from scratch on every focus flip.
+            CancelPendingLoad(fe);
         }
 
         private static void CancelExisting(DependencyObject d)
@@ -238,6 +363,29 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 StopAnimation(d);
 
+                var existing = GetLoadCts(d);
+                if (existing != null)
+                {
+                    existing.Cancel();
+                    existing.Dispose();
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                SetLoadCts(d, null);
+            }
+        }
+
+        // Cancels only a pending async load (leaving any running animation untouched), used
+        // when an element is merely hidden rather than having its logical source change. Keeping
+        // the animation attached lets it resume on re-show without an async rebuild.
+        private static void CancelPendingLoad(DependencyObject d)
+        {
+            try
+            {
                 var existing = GetLoadCts(d);
                 if (existing != null)
                 {
@@ -305,39 +453,46 @@ namespace PlayniteAchievements.Views.Helpers
                 var decode = ResolveDecodePixel(d);
                 SetLastRequestedDecodePixel(d, decode);
 
-                BitmapSource bmp = await service.GetAsync(uriString, decode, cts.Token).ConfigureAwait(false);
+                // Resume on the UI thread: StartLoadAsync is only entered from dispatcher
+                // contexts, and the whole tail below (ApplySource, animation start, finally
+                // bookkeeping) touches thread-affine DependencyObjects.
+                BitmapSource bmp = await service.GetAsync(uriString, decode, cts.Token);
                 if (cts.IsCancellationRequested)
                 {
                     return;
                 }
 
-                // Apply on UI thread if needed.
-                var dispatcher = Application.Current?.Dispatcher;
-                if (dispatcher != null && !dispatcher.CheckAccess())
+                // XamlAnimatedGif clears Image.Source while it initializes. Do not first publish
+                // the static frame for a GIF and create a visible static -> blank -> live flash;
+                // keep it blank until the live bitmap is attached, retaining bmp only as the
+                // corrupt/unsupported fallback.
+                var applyGray = GetGray(d) || AnimatedImageHelper.HasGrayPrefix(uriString);
+                if (d is System.Windows.Controls.Image image)
                 {
-                    _ = dispatcher.BeginInvoke(new Action(() =>
+                    if (await TryStartNativeGifAsync(image, uriString, bmp, applyGray, cts.Token))
                     {
-                        if (!cts.IsCancellationRequested)
-                        {
-                            ApplySource(d, bmp);
-                        }
-                    }));
-                }
-                else
-                {
-                    ApplySource(d, bmp);
+                        LogGifPath(uriString, "native");
+                        return;
+                    }
+
+                    LogGifPath(uriString, "frames");
                 }
 
-                // Start GIF animation asynchronously after the first static frame is already visible.
-                _ = StartGifAnimationAsync(d, uriString, cts.Token);
+                ApplySource(d, bmp);
+
+                // Start animation after the first static frame is available. Await setup so this
+                // CTS remains cancellable until the native decoder or retained-frame fallback has
+                // actually been attached; a recycled control cannot receive an obsolete source.
+                await StartAnimationAsync(d, uriString, decode, cts.Token);
             }
             catch (OperationCanceledException)
             {
                 // ignore
             }
-            catch
+            catch (Exception ex)
             {
-                // ignore; keep blank
+                // Keep blank on failure.
+                Logger?.Debug(ex, $"AsyncImage load failed for '{uriString}'.");
             }
             finally
             {
@@ -351,7 +506,11 @@ namespace PlayniteAchievements.Views.Helpers
             }
         }
 
-        private static async Task StartGifAnimationAsync(DependencyObject d, string uriString, CancellationToken cancellationToken)
+        private static async Task StartAnimationAsync(
+            DependencyObject d,
+            string uriString,
+            int decodePixel,
+            CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(uriString))
             {
@@ -360,50 +519,138 @@ namespace PlayniteAchievements.Views.Helpers
 
             try
             {
-                var applyGray = GetGray(d);
-                var created = await Task.Run(() =>
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return (ok: false, normalized: (string)null, firstFrame: (ImageSource)null, animation: (ObjectAnimationUsingKeyFrames)null);
-                    }
+                // Read on the UI thread so the background decode below never touches the target.
+                var applyGray = GetGray(d) || AnimatedImageHelper.HasGrayPrefix(uriString);
 
-                    var ok = GifAnimationHelper.TryCreateAnimation(
-                        uriString,
-                        applyGray,
-                        out var normalized,
-                        out var firstFrame,
-                        out var animation);
-                    return (ok, normalized, firstFrame, animation);
-                }, cancellationToken).ConfigureAwait(false);
-
-                if (!created.ok || cancellationToken.IsCancellationRequested)
+                // Fast path: with the frames already cached (e.g. a settings mockup
+                // rebuilt during a slider drag), building the animation is cheap — attach it
+                // synchronously, in the same dispatcher pass as the static bitmap, so the
+                // element never renders an out-of-phase frame.
+                if (TryApplyCachedAnimation(d, uriString, applyGray, decodePixel))
                 {
                     return;
                 }
 
-                var dispatcher = Application.Current?.Dispatcher;
-                if (dispatcher != null && !dispatcher.CheckAccess())
+                // Cache miss: decode off the UI thread. Only the frozen frames cross back; the
+                // animation is always built at apply time so its phase-locked BeginTime never has
+                // to be stamped onto an already-frozen instance.
+                var decoded = await Task.Run(
+                    () => !cancellationToken.IsCancellationRequested &&
+                          AnimatedImageHelper.TryEnsureCachedFrames(uriString, applyGray, decodePixel),
+                    cancellationToken);
+
+                if (!decoded || cancellationToken.IsCancellationRequested)
                 {
-                    _ = dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        if (!cancellationToken.IsCancellationRequested)
-                        {
-                            ApplyAnimatedFrames(d, created.normalized, created.firstFrame, created.animation);
-                        }
-                    }));
+                    return;
                 }
-                else if (!cancellationToken.IsCancellationRequested)
+
+                if (!cancellationToken.IsCancellationRequested)
                 {
-                    ApplyAnimatedFrames(d, created.normalized, created.firstFrame, created.animation);
+                    TryApplyCachedAnimation(d, uriString, applyGray, decodePixel);
                 }
             }
             catch (OperationCanceledException)
             {
             }
+            catch (Exception ex)
+            {
+                Logger?.Debug(ex, $"Animation setup failed for '{uriString}'.");
+            }
+        }
+
+        private static async Task<bool> TryStartNativeGifAsync(
+            System.Windows.Controls.Image image,
+            string uriString,
+            ImageSource fallback,
+            bool applyGray,
+            CancellationToken cancellationToken)
+        {
+            var localPath = AnimatedImageHelper.NormalizeSourceUri(uriString);
+            if (string.IsNullOrWhiteSpace(localPath) ||
+                !Services.Images.ImageFormats.IsGifExtension(
+                    Services.Images.ImageFormats.GetExtension(localPath)) ||
+                !System.IO.Path.IsPathRooted(localPath) ||
+                !System.IO.File.Exists(localPath))
+            {
+                return false;
+            }
+
+            NativeGifAnimation animation = null;
+            try
+            {
+                animation = await NativeGifAnimation.CreateAsync(
+                    image,
+                    uriString,
+                    localPath,
+                    fallback,
+                    applyGray,
+                    cancellationToken,
+                    ex => Logger?.Debug(ex, $"Native GIF playback failed for '{uriString}'."),
+                    () => RaiseSourceReady(image));
+
+                cancellationToken.ThrowIfCancellationRequested();
+                animation.Failed += OnNativeGifFailed;
+                SetNativeGifAnimation(image, animation);
+                SetActiveAnimationSource(image, localPath);
+                animation.Start();
+                return true;
+            }
             catch
             {
+                if (animation != null)
+                {
+                    animation.Failed -= OnNativeGifFailed;
+                    animation.Dispose();
+                }
+
+                image.Source = fallback;
+                RaiseSourceReady(image);
+                throw;
             }
+        }
+
+        private static void OnNativeGifFailed(object sender, EventArgs e)
+        {
+            if (!(sender is NativeGifAnimation animation))
+            {
+                return;
+            }
+
+            var image = animation.Target;
+            animation.Failed -= OnNativeGifFailed;
+            if (ReferenceEquals(GetNativeGifAnimation(image), animation))
+            {
+                SetNativeGifAnimation(image, null);
+                SetActiveAnimationSource(image, null);
+            }
+        }
+
+        /// <summary>
+        /// Builds the animation over the cached frames and attaches it. Returns false when the
+        /// source is not decoded yet, leaving the target untouched. UI thread only: the phase-lock
+        /// flag is read off the target here, at attach time, so a late-set PhaseLock still takes
+        /// effect.
+        /// </summary>
+        private static bool TryApplyCachedAnimation(
+            DependencyObject target,
+            string uriString,
+            bool applyGray,
+            int decodePixel)
+        {
+            if (!AnimatedImageHelper.TryCreateAnimationFromCache(
+                    uriString,
+                    applyGray,
+                    decodePixel,
+                    GetPhaseLock(target),
+                    out var normalizedSource,
+                    out var firstFrame,
+                    out var animation))
+            {
+                return false;
+            }
+
+            ApplyAnimatedFrames(target, normalizedSource, firstFrame, animation);
+            return true;
         }
 
         private static void ApplySource(DependencyObject d, ImageSource source)
@@ -412,6 +659,7 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 StopAnimation(d);
                 img.Source = source;
+                RaiseSourceReady(img);
                 return;
             }
 
@@ -420,6 +668,45 @@ namespace PlayniteAchievements.Views.Helpers
                 StopAnimation(d);
                 brush.ImageSource = source;
                 return;
+            }
+        }
+
+        private static void RaiseSourceReady(System.Windows.Controls.Image image)
+        {
+            image?.RaiseEvent(new RoutedEventArgs(SourceReadyEvent, image));
+        }
+
+        // GIF-candidate URIs whose chosen playback path has already been reported, so the line is
+        // one per source per session rather than one per element per reload.
+        private static readonly HashSet<string> LoggedGifPaths =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Reports which playback path a GIF took. The two behave differently for anyone reusing
+        /// the Image's Source: "native" mutates one bitmap in place, so an ImageBrush holding that
+        /// object animates with it, while "frames" replaces Source per frame, leaving such a brush
+        /// on whichever frame it captured. The settings background mockup depends on the former.
+        /// </summary>
+        private static void LogGifPath(string uriString, string path)
+        {
+            try
+            {
+                var normalized = AnimatedImageHelper.NormalizeSourceUri(uriString);
+                if (string.IsNullOrWhiteSpace(normalized) ||
+                    !Services.Images.ImageFormats.IsGifExtension(
+                        Services.Images.ImageFormats.GetExtension(normalized)) ||
+                    !LoggedGifPaths.Add(normalized + "|" + path))
+                {
+                    return;
+                }
+
+                Logger?.Info(
+                    $"[Image] GIF '{normalized}' plays via the {path} path " +
+                    $"(rooted={System.IO.Path.IsPathRooted(normalized)}, " +
+                    $"exists={System.IO.File.Exists(normalized)}).");
+            }
+            catch
+            {
             }
         }
 
@@ -458,6 +745,14 @@ namespace PlayniteAchievements.Views.Helpers
         private static int ResolveDecodePixel(DependencyObject d)
         {
             var explicitDecode = GetDecodePixel(d);
+            if (explicitDecode < 0)
+            {
+                // Negative opt-out: decode at native resolution (no DecodePixelWidth
+                // downscale and no size-inferred reloads). Passed through negative so
+                // MemoryImageService can distinguish it from "unset".
+                return -1;
+            }
+
             if (!(d is FrameworkElement fe))
             {
                 return explicitDecode > 0 ? explicitDecode : DefaultDecodePixel;
@@ -480,8 +775,13 @@ namespace PlayniteAchievements.Views.Helpers
         private static void ApplyAnimatedFrames(DependencyObject target, string normalizedSource, ImageSource firstFrame, ObjectAnimationUsingKeyFrames animation)
         {
             StopAnimation(target);
-            SetActiveAnimatedGifSource(target, normalizedSource);
+            SetActiveAnimationSource(target, normalizedSource);
 
+            // The animation arrives already stamped with its phase-locked BeginTime and frozen
+            // (see AnimatedImageHelper.TryCreateAnimationFromCache), so it is attached as-is. Never
+            // clone it to adjust BeginTime here: Freezable.Clone on a frozen animation deep-copies
+            // every key frame's bitmap through CachedBitmap.CloneCore, which reallocates every
+            // decoded frame per attach and exhausts memory on long animations.
             if (target is System.Windows.Controls.Image image)
             {
                 image.Source = firstFrame;
@@ -498,10 +798,18 @@ namespace PlayniteAchievements.Views.Helpers
 
         private static void StopAnimation(DependencyObject target)
         {
-            SetActiveAnimatedGifSource(target, null);
+            SetActiveAnimationSource(target, null);
 
             if (target is System.Windows.Controls.Image image)
             {
+                var nativeGif = GetNativeGifAnimation(image);
+                if (nativeGif != null)
+                {
+                    SetNativeGifAnimation(image, null);
+                    nativeGif.Failed -= OnNativeGifFailed;
+                    nativeGif.Dispose();
+                }
+
                 image.BeginAnimation(System.Windows.Controls.Image.SourceProperty, null);
                 return;
             }

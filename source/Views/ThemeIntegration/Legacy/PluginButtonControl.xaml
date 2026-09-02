@@ -8,10 +8,24 @@
                    xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    mc:Ignorable="d"
                    d:DesignHeight="40" d:DesignWidth="200">
+    <local:ThemeControlBase.Style>
+        <Style TargetType="local:ThemeControlBase">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Persisted.EnableAchievementButtonControl}"
+                             Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </local:ThemeControlBase.Style>
+
     <local:ThemeControlBase.Resources>
-        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-        <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
-        <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/LogoResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </local:ThemeControlBase.Resources>
 
     <Button Name="PART_PluginButton" Click="PART_PluginButton_Click">
@@ -22,10 +36,14 @@
             </Grid.ColumnDefinitions>
 
             <!-- Trophy icon (shown when DisplayDetails=False) -->
-            <TextBlock Text="&#xedd7;" FontFamily="{DynamicResource FontIcoFont}"
-                       Grid.Column="0" VerticalAlignment="Center"
-                       Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=DisplayDetails, Converter={StaticResource InverseBoolToVisConverter}}"
-                       FontSize="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=FontSize, FallbackValue=14}" />
+            <Path Grid.Column="0"
+                  Data="{StaticResource PlayAch.Geometry.TrophyIcon}"
+                  Stretch="Uniform"
+                  Fill="{Binding (TextElement.Foreground), RelativeSource={RelativeSource Self}}"
+                  VerticalAlignment="Center"
+                  Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=DisplayDetails, Converter={StaticResource InverseBoolToVisConverter}}"
+                  Width="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=FontSize, FallbackValue=14}"
+                  Height="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=FontSize, FallbackValue=14}" />
 
             <!-- Details grid (shown when DisplayDetails=True) -->
             <Grid Grid.Column="1" HorizontalAlignment="Stretch"
@@ -57,7 +75,7 @@
                 <TextBlock Margin="0,-3,0,-3" Grid.Column="1" Grid.Row="2" Padding="5,3,5,5"
                            FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}">
                     <TextBlock.Text>
-                        <MultiBinding StringFormat="{}{0}/{1}">
+                        <MultiBinding StringFormat="{}{0:N0}/{1:N0}">
                             <Binding Path="UnlockedCount" FallbackValue="0" />
                             <Binding Path="AchievementCount" FallbackValue="0" />
                         </MultiBinding>

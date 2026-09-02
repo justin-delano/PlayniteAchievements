@@ -1,0 +1,883 @@
+using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using NAudio.Wave;
+using PlayniteAchievements.Common;
+
+namespace PlayniteAchievements.Services.Recording
+{
+    /// <summary>One captured packet and the instant its audio was rendered.</summary>
+    internal sealed class StampedPacketEventArgs : EventArgs
+    {
+        public StampedPacketEventArgs(byte[] buffer, int bytes, DateTime? captureUtc)
+        {
+            Buffer = buffer;
+            Bytes = bytes;
+            CaptureUtc = captureUtc;
+        }
+
+        public byte[] Buffer { get; }
+
+        public int Bytes { get; }
+
+        public DateTime? CaptureUtc { get; }
+    }
+
+    /// <summary>
+    /// Captures the audio of a single process tree (the game) via the Windows Application Loopback
+    /// API — <c>ActivateAudioInterfaceAsync</c> against the virtual process-loopback device with
+    /// <c>PROCESS_LOOPBACK</c> activation params — exposed as an <see cref="IWaveIn"/> so it drops
+    /// into <see cref="AudioLoopbackRecorder"/> in place of the full-system loopback. Requires
+    /// Windows 10 build 19041+; callers gate on <see cref="IsSupported"/> and fall back to full
+    /// system audio when it's unavailable or activation fails. The mixed stream is delivered as
+    /// 48 kHz stereo 32-bit float, polled off a background thread.
+    /// <para>
+    /// The same client also captures one render <em>endpoint</em> (<see cref="ForEndpoint"/>):
+    /// an endpoint id is itself a device interface path, so only the activation params and the
+    /// OS requirement differ. Sharing the client is what keeps the two tracks comparable — same
+    /// poll loop, same QPC packet stamps, same gap padding, and the same audio-engine conversion
+    /// into 48 kHz stereo float — which is what lets one be cancelled from the other.
+    /// </para>
+    /// </summary>
+    internal sealed class ProcessLoopbackCapture : IWaveIn
+    {
+        private const string VirtualAudioDeviceProcessLoopback = "VAD\\Process_Loopback";
+        private const int AUDCLNT_STREAMFLAGS_LOOPBACK = 0x00020000;
+
+        // Let the audio engine convert an endpoint's own mix format (which can be 44.1 kHz, or
+        // multichannel on a controller endpoint) into the format below, instead of failing the
+        // Initialize. The virtual process-loopback device needs neither flag: it mixes to whatever
+        // format is asked for.
+        private const int AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM = unchecked((int)0x80000000);
+        private const int AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY = 0x08000000;
+        private const int AUDCLNT_SHAREMODE_SHARED = 0;
+        private const uint WAVE_FORMAT_IEEE_FLOAT = 3;
+        // ActivationType: 0 = default, 1 = process loopback. Mode: 0 = include target tree.
+        private const int ProcessLoopbackActivation = 1;
+        private const int IncludeTargetProcessTree = 0;
+        private const int ExcludeTargetProcessTree = 1;
+
+        // AUDCLNT_BUFFERFLAGS_SILENT: the packet is digital silence, so its zeroed buffer stands.
+        private const int BufferFlagsSilent = 0x2;
+
+        // AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR: the engine could not stamp this packet reliably.
+        // Such a stamp can look plausible while being off by tens of milliseconds — enough to
+        // read as a dropout — so gap arithmetic must treat the packet as unstamped.
+        private const int BufferFlagsTimestampError = 0x4;
+
+        /// <summary>
+        /// The most dropped audio one gap will stand silence in for. A consumer buffering these
+        /// packets must size its ring well above this: the pad arrives as a single burst, so a ring
+        /// merely equal to it is filled by one gap and drops everything else it held.
+        /// </summary>
+        internal const int MaxGapSeconds = 5;
+
+        private static readonly Guid IID_IAudioClient = new Guid("1CB9AD4C-DBFA-4C32-B178-C2F568A703B2");
+        private static readonly Guid IID_IAudioCaptureClient = new Guid("C8ADBD64-E71E-48A0-A4DE-185C395CD317");
+        private static readonly Guid IeeeFloatSubFormat =
+            new Guid("00000003-0000-0010-8000-00aa00389b71");
+
+        private readonly int _processId;
+        private readonly int _mode;
+        private readonly bool _endpointCapture;
+        private readonly bool _nativeEndpointFormat;
+        private readonly bool _inputEndpoint;
+        private IAudioClient _audioClient;
+        private IAudioCaptureClient _captureClient;
+        private Thread _pollThread;
+        private volatile bool _capturing;
+        private bool _disposed;
+        private int _clientsReleased;
+
+        public event EventHandler<WaveInEventArgs> DataAvailable;
+        public event EventHandler<StoppedEventArgs> RecordingStopped;
+
+        /// <summary>
+        /// Every packet with the instant its audio was rendered, from the same QPC stamp
+        /// <see cref="FirstPacketCaptureUtc"/> comes from. Null on a packet whose stamp the driver
+        /// did not report usably.
+        /// </summary>
+        public event EventHandler<StampedPacketEventArgs> StampedDataAvailable;
+
+        /// <summary>
+        /// When the first delivered packet's audio was actually rendered, from the QPC stamp
+        /// <c>IAudioCaptureClient.GetBuffer</c> reports alongside it, or null while no packet has
+        /// arrived (or when the driver reports no usable stamp).
+        /// <para>
+        /// Packets reach us later than the audio they carry, by the engine's buffering plus this
+        /// poll loop's own interval. A consumer pacing writes to wall clock therefore places every
+        /// sample late by that delay unless it anchors to this instead of to the moment capture
+        /// started.
+        /// </para>
+        /// </summary>
+        public DateTime? FirstPacketCaptureUtc => _firstPacketCaptureUtc;
+
+        private DateTime? _firstPacketCaptureUtc;
+
+        /// <summary>
+        /// Frames of silence delivered in place of audio the engine dropped, over this capture's life.
+        /// Non-zero means the track carries real glitches — worth reporting before a listener blames
+        /// the gaps on a sync bug.
+        /// </summary>
+        public long PaddedGapFrames => _gapTracker?.PaddedGapFrames ?? 0;
+
+        /// <summary>
+        /// Frames of silence to stand in before the packet at hand. The arithmetic lives in
+        /// <see cref="AudioGapTracker"/>: gaps are measured from the packets' QPC stamps, whose
+        /// unit is fixed, rather than from <c>devicePosition</c> deltas, whose unit a client
+        /// that asked the engine to convert format (AUTOCONVERTPCM, which every forced-format
+        /// endpoint capture uses) cannot assume — a field machine advanced that counter at 4x
+        /// the frames delivered and padded 3 s of silence per real second. The position counter
+        /// remains the fallback for packets whose stamp is unusable, and the wall-clock
+        /// allowance still bounds every path.
+        /// </summary>
+        private long TakeGapBefore(
+            long devicePosition, uint framesAvailable, long qpcPosition, bool stampUsable)
+        {
+            var elapsedFrames = (long)(
+                (CaptureTimelineClock.UtcNow - _captureStartedUtc).TotalSeconds * WaveFormat.SampleRate);
+            return _gapTracker.TakeGapBefore(
+                devicePosition, framesAvailable, qpcPosition, stampUsable, elapsedFrames);
+        }
+
+        /// <summary>
+        /// Silence a gap witness asked for beyond what the wall clock allows. Non-zero means a
+        /// witness is lying — a position counter not in this capture's frames, or a wild stamp.
+        /// </summary>
+        public long ImpossibleGapFrames => _gapTracker?.ImpossibleGapFrames ?? 0;
+
+        /// <summary>
+        /// How fast the device position counter actually advances, in its own units per second,
+        /// measured against the packets' QPC stamps. Zero until measurable. Deviation from
+        /// <see cref="WaveFormat"/>'s rate names the unit mismatch the summary above describes.
+        /// </summary>
+        public double MeasuredDevicePositionRate => _gapTracker?.MeasuredDevicePositionRate ?? 0;
+
+        /// <summary>
+        /// Forces gap arithmetic onto the devicePosition fallback, ignoring stamps. A seam for
+        /// <c>tools/capture-harness/CaptureStarvationProbe</c> (--legacy-gap) so the pre-stamp
+        /// behavior stays reproducible from the same binary. Nothing in the plugin changes it.
+        /// </summary>
+        internal static bool ForceDevicePositionGaps { get; set; }
+
+        private AudioGapTracker _gapTracker;
+        private DateTime _captureStartedUtc = DateTime.UtcNow;
+
+        /// <summary>
+        /// The endpoint's own mix format, when this capture forced a different one. Null for
+        /// process-loopback clients, which have no endpoint of their own.
+        /// </summary>
+        public WaveFormat NativeMixFormat { get; private set; }
+
+        /// <summary>
+        /// Converts a GetBuffer QPC stamp (100-ns units on the performance counter's timebase) to
+        /// UTC, by measuring how old it is against the counter's current value. Returns null when
+        /// the driver reports no stamp, or when the result is not plausibly recent -- some drivers
+        /// report zero or a value on an unrelated timebase, and a bad anchor is worse than none.
+        /// </summary>
+        private static DateTime? QpcToUtc(long qpcPosition100ns)
+        {
+            if (qpcPosition100ns <= 0)
+            {
+                return null;
+            }
+
+            var utc = CaptureTimelineClock.FromQpc100ns(qpcPosition100ns, out var age100ns);
+
+            // A packet is at most a second away. A small future presentation time is valid for a
+            // render-loopback packet and must not force AwaitAnchor onto its 750 ms fallback.
+            if (Math.Abs(age100ns) > 10_000_000L)
+            {
+                return null;
+            }
+
+            return utc;
+        }
+
+        /// <summary>
+        /// The same conversion for placing a packet on a timeline rather than anchoring one. Two
+        /// differences, both because a consumer here only needs stamps to be consistent with each
+        /// other: a stamp may sit in the FUTURE, which is normal for a render endpoint's loopback —
+        /// the audio being captured is about to be played, so it carries its presentation instant —
+        /// and the window is wider. Measured on a real endpoint, the strict anchoring window accepted
+        /// 3 packets in 432; the rest were rejected purely for being ahead of now.
+        /// </summary>
+        private static DateTime? QpcToUtcForPlacement(long qpcPosition100ns)
+        {
+            if (qpcPosition100ns <= 0)
+            {
+                return null;
+            }
+
+            var utc = CaptureTimelineClock.FromQpc100ns(qpcPosition100ns, out var age100ns);
+            if (Math.Abs(age100ns) > 20_000_000L)
+            {
+                // Two seconds out in either direction is a timebase we do not understand.
+                return null;
+            }
+
+            return utc;
+        }
+
+        /// <summary>48 kHz stereo 32-bit IEEE float — the format the loopback client mixes the process to.</summary>
+        public WaveFormat WaveFormat { get; set; } = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
+
+        /// <summary>
+        /// Priority of every capture poll thread. A seam for
+        /// <c>tools/capture-harness/CaptureStarvationProbe</c>, which A/Bs it under CPU load to
+        /// show what a missed 200 ms deadline costs. Nothing in the plugin changes it.
+        /// </summary>
+        internal static ThreadPriority PollThreadPriority { get; set; } = ThreadPriority.AboveNormal;
+
+        /// <summary>Process-loopback activation exists on Windows 10 build 19041+ (20H1).</summary>
+        public static bool IsSupported
+        {
+            get
+            {
+                try
+                {
+                    return Environment.OSVersion.Platform == PlatformID.Win32NT &&
+                           Environment.OSVersion.Version >= new Version(10, 0, 19041);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        public ProcessLoopbackCapture(int processId, bool includeProcessTree = true)
+        {
+            _processId = processId;
+            _mode = includeProcessTree ? IncludeTargetProcessTree : ExcludeTargetProcessTree;
+            try
+            {
+                _audioClient = ActivateProcessLoopbackClient(processId, _mode);
+                InitializeClient();
+            }
+            catch
+            {
+                ReleaseClients();
+                throw;
+            }
+        }
+
+        private ProcessLoopbackCapture(string deviceId, bool nativeFormat, bool inputEndpoint = false)
+        {
+            _endpointCapture = true;
+            _nativeEndpointFormat = nativeFormat;
+            _inputEndpoint = inputEndpoint;
+            try
+            {
+                _audioClient = ActivateEndpointClient(deviceId);
+                InitializeClient();
+            }
+            catch
+            {
+                ReleaseClients();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Captures everything rendered to one endpoint, by its id (an endpoint id is the device
+        /// interface path <c>ActivateAudioInterfaceAsync</c> takes). Unlike process loopback this
+        /// needs no particular Windows build — plain endpoint loopback is as old as WASAPI.
+        /// </summary>
+        public static ProcessLoopbackCapture ForEndpoint(string deviceId)
+        {
+            if (string.IsNullOrEmpty(deviceId))
+            {
+                throw new ArgumentNullException(nameof(deviceId));
+            }
+
+            return new ProcessLoopbackCapture(deviceId, nativeFormat: false);
+        }
+
+        /// <summary>
+        /// Captures an endpoint in its shared-mode native mix format. This lets the recorder retain
+        /// only the program channels when a controller is itself the default output. Callers must
+        /// inspect <see cref="WaveFormat"/> and convert retained packets; ordinary endpoint callers
+        /// should use <see cref="ForEndpoint"/>.
+        /// </summary>
+        public static ProcessLoopbackCapture ForEndpointNative(string deviceId)
+        {
+            if (string.IsNullOrEmpty(deviceId))
+            {
+                throw new ArgumentNullException(nameof(deviceId));
+            }
+
+            return new ProcessLoopbackCapture(deviceId, nativeFormat: true);
+        }
+
+        /// <summary>
+        /// Captures an <em>input</em> endpoint — a microphone — by its id. Identical to
+        /// <see cref="ForEndpoint"/> but for the loopback flag, which a capture endpoint must not
+        /// carry: its stream is already what the device records. Delivered in the same 48 kHz
+        /// stereo float as every other track here, so the mixer needs no special case.
+        /// </summary>
+        public static ProcessLoopbackCapture ForCaptureEndpoint(string deviceId)
+        {
+            if (string.IsNullOrEmpty(deviceId))
+            {
+                throw new ArgumentNullException(nameof(deviceId));
+            }
+
+            return new ProcessLoopbackCapture(deviceId, nativeFormat: false, inputEndpoint: true);
+        }
+
+        /// <summary>The verified DualSense native layout: FL, FR, left actuator, right actuator.</summary>
+        internal static bool IsDualSenseActuatorFormat(WaveFormat format)
+        {
+            var extensible = format as WaveFormatExtensible;
+            if (extensible == null || format.SampleRate != 48000 || format.Channels != 4 ||
+                format.BitsPerSample != 32 || format.BlockAlign != 16 ||
+                extensible.SubFormat != IeeeFloatSubFormat)
+            {
+                return false;
+            }
+
+            var maskField = typeof(WaveFormatExtensible).GetField(
+                "dwChannelMask",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            return maskField != null && Convert.ToUInt32(maskField.GetValue(extensible)) == 0x33u;
+        }
+
+        /// <summary>
+        /// Extracts the native front-left/right program channels and discards the two actuator
+        /// channels. This is used when the DualSense is itself the user's default output.
+        /// </summary>
+        internal static byte[] ExtractDualSenseProgramAudio(
+            byte[] source,
+            int bytes,
+            WaveFormat format)
+        {
+            if (source == null || !IsDualSenseActuatorFormat(format))
+            {
+                return null;
+            }
+
+            var frames = Math.Min(Math.Max(0, bytes), source.Length) / format.BlockAlign;
+            var output = new byte[checked(frames * 2 * sizeof(float))];
+            for (var frame = 0; frame < frames; frame++)
+            {
+                var sourceOffset = frame * format.BlockAlign;
+                var outputOffset = frame * 2 * sizeof(float);
+                Buffer.BlockCopy(source, sourceOffset, output, outputOffset, 2 * sizeof(float));
+            }
+
+            return output;
+        }
+
+        private IAudioClient ActivateProcessLoopbackClient(int processId, int mode)
+        {
+            var activationParams = new AUDIOCLIENT_ACTIVATION_PARAMS
+            {
+                ActivationType = ProcessLoopbackActivation,
+                ProcessLoopbackParams = new AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS
+                {
+                    TargetProcessId = processId,
+                    ProcessLoopbackMode = mode,
+                },
+            };
+
+            var paramSize = Marshal.SizeOf(typeof(AUDIOCLIENT_ACTIVATION_PARAMS));
+            var paramPtr = Marshal.AllocHGlobal(paramSize);
+            try
+            {
+                Marshal.StructureToPtr(activationParams, paramPtr, false);
+
+                var prop = new PROPVARIANT
+                {
+                    vt = 65, // VT_BLOB
+                    blobSize = paramSize,
+                    blobData = paramPtr,
+                };
+
+                return ActivateAudioClient(VirtualAudioDeviceProcessLoopback, prop);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(paramPtr);
+            }
+        }
+
+        /// <summary>
+        /// Activates a real endpoint through the device enumerator. Not
+        /// <c>ActivateAudioInterfaceAsync</c>: that one takes a device INTERFACE PATH
+        /// (<c>\\?\SWD#MMDEVAPI#...</c>), and handing it an endpoint id fails with
+        /// ERROR_FILE_NOT_FOUND. <c>IMMDevice::Activate</c> takes the endpoint itself, needs no
+        /// path translation, and is not gated on a Windows build.
+        /// </summary>
+        private static IAudioClient ActivateEndpointClient(string deviceId)
+        {
+            // Through AudioEndpointEnumerator rather than NAudio: two managed types claiming the
+            // enumerator's one CLSID make the activation hand back whichever was registered first,
+            // which then fails to cast. See that file.
+            return (IAudioClient)AudioEndpointEnumerator.ActivateEndpointInterface(
+                deviceId, IID_IAudioClient);
+        }
+
+        private static IAudioClient ActivateAudioClient(string devicePath, PROPVARIANT activationParams)
+        {
+            var handler = new ActivationHandler();
+            IActivateAudioInterfaceAsyncOperation op = null;
+            try
+            {
+                var iid = IID_IAudioClient;
+                var hr = ActivateAudioInterfaceAsync(
+                    devicePath, ref iid, ref activationParams, handler, out op);
+                if (hr != 0)
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
+
+                if (!handler.Completed.WaitOne(TimeSpan.FromSeconds(5)))
+                {
+                    throw new TimeoutException("ActivateAudioInterfaceAsync did not complete.");
+                }
+
+                if (handler.ActivateHr != 0 || handler.Interface == null)
+                {
+                    Marshal.ThrowExceptionForHR(
+                        handler.ActivateHr != 0 ? handler.ActivateHr : unchecked((int)0x80004005));
+                }
+
+                return (IAudioClient)handler.Interface;
+            }
+            finally
+            {
+                if (op != null)
+                {
+                    Marshal.ReleaseComObject(op);
+                }
+            }
+        }
+
+        private void InitializeClient()
+        {
+            IntPtr formatPtr;
+            var nativeAllocation = false;
+            if (_nativeEndpointFormat)
+            {
+                var mixHr = _audioClient.GetMixFormat(out formatPtr);
+                if (mixHr != 0 || formatPtr == IntPtr.Zero)
+                {
+                    Marshal.ThrowExceptionForHR(mixHr != 0 ? mixHr : unchecked((int)0x80004005));
+                }
+
+                nativeAllocation = true;
+                WaveFormat = WaveFormat.MarshalFromPtr(formatPtr);
+            }
+            else
+            {
+                // Read the endpoint's own mix format even though we are about to force ours. It is
+                // what the device clock counts in, so it is the first thing to look at when
+                // devicePosition and the frames we are handed disagree — see TakeGapBefore.
+                try
+                {
+                    if (_audioClient.GetMixFormat(out var nativePtr) == 0 && nativePtr != IntPtr.Zero)
+                    {
+                        NativeMixFormat = WaveFormat.MarshalFromPtr(nativePtr);
+                        Marshal.FreeCoTaskMem(nativePtr);
+                    }
+                }
+                catch
+                {
+                }
+
+                var format = new WAVEFORMATEX
+                {
+                    wFormatTag = (ushort)WAVE_FORMAT_IEEE_FLOAT,
+                    nChannels = (ushort)WaveFormat.Channels,
+                    nSamplesPerSec = (uint)WaveFormat.SampleRate,
+                    wBitsPerSample = (ushort)WaveFormat.BitsPerSample,
+                    nBlockAlign = (ushort)(WaveFormat.Channels * WaveFormat.BitsPerSample / 8),
+                    cbSize = 0,
+                };
+                format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+                formatPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WAVEFORMATEX)));
+                Marshal.StructureToPtr(format, formatPtr, false);
+            }
+
+            try
+            {
+                // 200 ms buffer (100-ns units). Loopback modes require shared mode + the loopback
+                // flag; an input endpoint records directly and must not carry it. A forced-format
+                // endpoint additionally needs the engine's converter, while a native endpoint
+                // supplies GetMixFormat verbatim and needs no conversion flags.
+                var flags = _inputEndpoint ? 0 : AUDCLNT_STREAMFLAGS_LOOPBACK;
+                if (_endpointCapture && !_nativeEndpointFormat)
+                {
+                    flags |= AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+                }
+
+                var hr = _audioClient.Initialize(
+                    AUDCLNT_SHAREMODE_SHARED, flags, 2_000_000, 0, formatPtr, IntPtr.Zero);
+                if (hr != 0)
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
+            }
+            finally
+            {
+                if (nativeAllocation)
+                {
+                    Marshal.FreeCoTaskMem(formatPtr);
+                }
+                else
+                {
+                    Marshal.FreeHGlobal(formatPtr);
+                }
+            }
+
+            var captureIid = IID_IAudioCaptureClient;
+            var svcHr = _audioClient.GetService(ref captureIid, out var captureObj);
+            if (svcHr != 0 || captureObj == null)
+            {
+                Marshal.ThrowExceptionForHR(svcHr != 0 ? svcHr : unchecked((int)0x80004005));
+            }
+
+            _captureClient = (IAudioCaptureClient)captureObj;
+        }
+
+        public void StartRecording()
+        {
+            if (_capturing || _disposed)
+            {
+                return;
+            }
+
+            // Neither the device counter nor the stamp chain is meaningful across a restart:
+            // carrying either would read the stopped interval as an enormous gap and pad the
+            // track with silence that never happened.
+            _gapTracker = new AudioGapTracker(
+                WaveFormat.SampleRate, MaxGapSeconds, stampsDisabled: ForceDevicePositionGaps);
+            _captureStartedUtc = CaptureTimelineClock.UtcNow;
+            _audioClient.Start();
+            _capturing = true;
+            _pollThread = new Thread(PollLoop)
+            {
+                IsBackground = true,
+                Name = "PA-ProcLoopback",
+                // This loop has a HARD 200 ms deadline: that is the client's buffer duration
+                // (2_000_000 in 100-ns units, see InitializeClient), and WASAPI overwrites the ring
+                // once it is full. A late wake here does not cost latency, it destroys audio --
+                // the engine's device position jumps and TakeGapBefore pads the hole with silence
+                // that never played.
+                //
+                // It ran BelowNormal, which held while a GPU-bound title left CPU headroom and
+                // collapsed under an emulator that did not: a field log shows a RetroArch session
+                // reporting more padded dropout and discarded overflow than the session was long,
+                // heard as continuous stutter. There are up to four of these clients live at once
+                // (endpoint, game reference, non-game, chime sidecar), so all four have to make
+                // the deadline.
+                Priority = PollThreadPriority,
+            };
+            _pollThread.Start();
+        }
+
+        private void PollLoop()
+        {
+            Exception error = null;
+            try
+            {
+                var blockAlign = WaveFormat.BlockAlign;
+                while (_capturing)
+                {
+                    var packet = _captureClient.GetNextPacketSize(out var frames) == 0 ? frames : 0;
+                    if (packet == 0)
+                    {
+                        Thread.Sleep(10);
+                        continue;
+                    }
+
+                    while (frames > 0)
+                    {
+                        if (_captureClient.GetBuffer(
+                                out var dataPtr, out var framesAvailable, out var flags,
+                                out var devicePosition, out var qpcPosition) != 0)
+                        {
+                            break;
+                        }
+
+                        var bytes = (int)framesAvailable * blockAlign;
+
+                        // Read before ReleaseBuffer so the stamp still belongs to this packet.
+                        var packetUtc = bytes > 0 ? QpcToUtcForPlacement(qpcPosition) : null;
+                        if (_firstPacketCaptureUtc == null && bytes > 0)
+                        {
+                            _firstPacketCaptureUtc = QpcToUtc(qpcPosition);
+                        }
+
+                        // The placement conversion already vetted the stamp (positive, plausibly
+                        // recent); the engine's own error flag vetoes it besides. SILENT packets
+                        // pass through here too — their positions and stamps keep the chain whole.
+                        var stampUsable = packetUtc.HasValue &&
+                            (flags & BufferFlagsTimestampError) == 0;
+                        var gapFrames = TakeGapBefore(
+                            devicePosition, framesAvailable, qpcPosition, stampUsable);
+
+                        var buffer = new byte[bytes];
+                        if ((flags & BufferFlagsSilent) == 0 && dataPtr != IntPtr.Zero && bytes > 0)
+                        {
+                            Marshal.Copy(dataPtr, buffer, 0, bytes);
+                        }
+
+                        _captureClient.ReleaseBuffer(framesAvailable);
+
+                        // Stand silence in for what the engine dropped, before the packet that follows
+                        // it. Delivering the packets back to back instead would pull all later audio
+                        // permanently early against picture — A/V drift that never recovers.
+                        if (gapFrames > 0)
+                        {
+                            var gapBytes = (int)gapFrames * blockAlign;
+                            DataAvailable?.Invoke(this, new WaveInEventArgs(new byte[gapBytes], gapBytes));
+                        }
+
+                        if (bytes > 0)
+                        {
+                            // Stamped delivery carries the packet's own capture instant, so a
+                            // consumer can place it on a timeline of its own rather than inferring
+                            // its position from arrival order and its own pacing. Gap padding is not
+                            // reported here: a consumer placing by stamp derives gaps from the
+                            // positions themselves, and would otherwise count them twice.
+                            StampedDataAvailable?.Invoke(
+                                this, new StampedPacketEventArgs(buffer, bytes, packetUtc));
+                            DataAvailable?.Invoke(this, new WaveInEventArgs(buffer, bytes));
+                        }
+
+                        if (_captureClient.GetNextPacketSize(out frames) != 0)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+            finally
+            {
+                RecordingStopped?.Invoke(this, new StoppedEventArgs(error));
+            }
+        }
+
+        public void StopRecording()
+        {
+            if (!_capturing)
+            {
+                return;
+            }
+
+            _capturing = false;
+            // Stop the native engine first so a poll blocked in an audio-client call can return.
+            try { _audioClient?.Stop(); } catch { }
+            try { _pollThread?.Join(500); } catch { }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            StopRecording();
+            var poll = _pollThread;
+            if (poll != null && poll.IsAlive)
+            {
+                // Never release COM interfaces while PollLoop can still call through them. A slow
+                // driver may outlive the bounded Dispose call, so retain ownership until it exits.
+                Task.Run(() =>
+                {
+                    try { poll.Join(); } catch { }
+                    ReleaseClients();
+                });
+                return;
+            }
+
+            ReleaseClients();
+        }
+
+        private void ReleaseClients()
+        {
+            if (Interlocked.Exchange(ref _clientsReleased, 1) != 0)
+            {
+                return;
+            }
+
+            if (_captureClient != null)
+            {
+                Marshal.ReleaseComObject(_captureClient);
+                _captureClient = null;
+            }
+
+            if (_audioClient != null)
+            {
+                Marshal.ReleaseComObject(_audioClient);
+                _audioClient = null;
+            }
+        }
+
+        // === Native interop ===
+
+        [DllImport("mmdevapi.dll", ExactSpelling = true, PreserveSig = true)]
+        private static extern int ActivateAudioInterfaceAsync(
+            [MarshalAs(UnmanagedType.LPWStr)] string deviceInterfacePath,
+            ref Guid riid,
+            ref PROPVARIANT activationParams,
+            IActivateAudioInterfaceCompletionHandler completionHandler,
+            out IActivateAudioInterfaceAsyncOperation activationOperation);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS
+        {
+            public int TargetProcessId;
+            public int ProcessLoopbackMode;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct AUDIOCLIENT_ACTIVATION_PARAMS
+        {
+            public int ActivationType;
+            public AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS ProcessLoopbackParams;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROPVARIANT
+        {
+            public ushort vt;
+            public ushort r1;
+            public ushort r2;
+            public ushort r3;
+            public int blobSize;
+            public IntPtr blobData;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WAVEFORMATEX
+        {
+            public ushort wFormatTag;
+            public ushort nChannels;
+            public uint nSamplesPerSec;
+            public uint nAvgBytesPerSec;
+            public ushort nBlockAlign;
+            public ushort wBitsPerSample;
+            public ushort cbSize;
+        }
+
+        [ComImport, Guid("41D949AB-9862-444A-80F6-C261334DA5EB"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IActivateAudioInterfaceCompletionHandler
+        {
+            void ActivateCompleted(IActivateAudioInterfaceAsyncOperation activateOperation);
+        }
+
+        [ComImport, Guid("72A22D78-CDE4-431D-B8CC-843A71199B6D"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IActivateAudioInterfaceAsyncOperation
+        {
+            void GetActivateResult(
+                [MarshalAs(UnmanagedType.Error)] out int activateResult,
+                [MarshalAs(UnmanagedType.IUnknown)] out object activatedInterface);
+        }
+
+        [ComImport, Guid("1CB9AD4C-DBFA-4C32-B178-C2F568A703B2"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAudioClient
+        {
+            [PreserveSig]
+            int Initialize(
+                int shareMode, int streamFlags, long bufferDuration, long periodicity,
+                IntPtr format, IntPtr audioSessionGuid);
+
+            [PreserveSig]
+            int GetBufferSize(out uint bufferFrames);
+
+            [PreserveSig]
+            int GetStreamLatency(out long latency);
+
+            [PreserveSig]
+            int GetCurrentPadding(out uint padding);
+
+            [PreserveSig]
+            int IsFormatSupported(int shareMode, IntPtr format, out IntPtr closestMatch);
+
+            [PreserveSig]
+            int GetMixFormat(out IntPtr format);
+
+            [PreserveSig]
+            int GetDevicePeriod(out long defaultPeriod, out long minimumPeriod);
+
+            [PreserveSig]
+            int Start();
+
+            [PreserveSig]
+            int Stop();
+
+            [PreserveSig]
+            int Reset();
+
+            [PreserveSig]
+            int SetEventHandle(IntPtr eventHandle);
+
+            [PreserveSig]
+            int GetService(ref Guid interfaceId, [MarshalAs(UnmanagedType.IUnknown)] out object service);
+        }
+
+        [ComImport, Guid("C8ADBD64-E71E-48A0-A4DE-185C395CD317"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAudioCaptureClient
+        {
+            [PreserveSig]
+            int GetBuffer(out IntPtr dataBuffer, out uint framesToRead, out int bufferFlags, out long devicePosition, out long qpcPosition);
+
+            [PreserveSig]
+            int ReleaseBuffer(uint framesWritten);
+
+            [PreserveSig]
+            int GetNextPacketSize(out uint framesInNextPacket);
+        }
+
+        /// <summary>
+        /// Marker interface making the completion handler's CCW apartment-agile.
+        /// ActivateAudioInterfaceAsync rejects non-agile handlers with E_ILLEGAL_METHOD_CALL
+        /// (0x8000000E); .NET Core CCWs are agile by default, but .NET Framework's are not, so
+        /// the handler must implement this explicitly.
+        /// </summary>
+        [ComImport, Guid("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IAgileObject
+        {
+        }
+
+        /// <summary>Blocks the caller until the async activation completes, capturing its result.</summary>
+        private sealed class ActivationHandler : IActivateAudioInterfaceCompletionHandler, IAgileObject
+        {
+            public readonly ManualResetEvent Completed = new ManualResetEvent(false);
+            public int ActivateHr;
+            public object Interface;
+
+            public void ActivateCompleted(IActivateAudioInterfaceAsyncOperation activateOperation)
+            {
+                try
+                {
+                    activateOperation.GetActivateResult(out ActivateHr, out Interface);
+                }
+                catch (Exception ex)
+                {
+                    ActivateHr = Marshal.GetHRForException(ex);
+                }
+                finally
+                {
+                    Completed.Set();
+                }
+            }
+        }
+    }
+}

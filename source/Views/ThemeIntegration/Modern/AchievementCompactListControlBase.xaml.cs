@@ -11,7 +11,11 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.Views.Controls;
+using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
@@ -45,6 +49,89 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             get => (double)GetValue(IconSizeProperty);
             set => SetValue(IconSizeProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the ShowRarityGlow dependency property.
+        /// When true, unlocked achievement icons in this list display rarity-based glow effects.
+        /// </summary>
+        public static readonly DependencyProperty ShowRarityGlowProperty =
+            DependencyProperty.Register(nameof(ShowRarityGlow), typeof(bool), typeof(AchievementCompactListControlBase),
+                new PropertyMetadata(true));
+
+        /// <summary>
+        /// Gets or sets whether unlocked achievement icons in this list display rarity glow.
+        /// </summary>
+        public bool ShowRarityGlow
+        {
+            get => (bool)GetValue(ShowRarityGlowProperty);
+            set => SetValue(ShowRarityGlowProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the AnimateRarityGlows dependency property. When true, rarity glows in this
+        /// list gently fade in and out. Self-bound to the global setting in the constructor.
+        /// </summary>
+        public static readonly DependencyProperty AnimateRarityGlowsProperty =
+            DependencyProperty.Register(nameof(AnimateRarityGlows), typeof(bool),
+                typeof(AchievementCompactListControlBase), new PropertyMetadata(true));
+
+        /// <summary>
+        /// Gets or sets whether rarity glows in this list fade in and out.
+        /// </summary>
+        public bool AnimateRarityGlows
+        {
+            get => (bool)GetValue(AnimateRarityGlowsProperty);
+            set => SetValue(AnimateRarityGlowsProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the SoftGlowTiers dependency property: which rarity tiers show the soft halo in
+        /// this list. Self-bound to the global setting in the constructor.
+        /// </summary>
+        public static readonly DependencyProperty SoftGlowTiersProperty =
+            DependencyProperty.Register(nameof(SoftGlowTiers), typeof(RaritySelection),
+                typeof(AchievementCompactListControlBase), new PropertyMetadata(RaritySelection.All));
+
+        /// <summary>
+        /// Gets or sets which rarity tiers show the soft halo in this list.
+        /// </summary>
+        public RaritySelection SoftGlowTiers
+        {
+            get => (RaritySelection)GetValue(SoftGlowTiersProperty);
+            set => SetValue(SoftGlowTiersProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the RayGlowTiers dependency property: which rarity tiers show the rays, and with
+        /// them the edge along the artwork. The ray layer self-binds this; the edge is an effect on a
+        /// list item, which needs the selection reachable from the template.
+        /// </summary>
+        public static readonly DependencyProperty RayGlowTiersProperty =
+            DependencyProperty.Register(nameof(RayGlowTiers), typeof(RaritySelection),
+                typeof(AchievementCompactListControlBase), new PropertyMetadata(RaritySelection.None));
+
+        /// <summary>
+        /// Gets or sets which rarity tiers show the rays in this list.
+        /// </summary>
+        public RaritySelection RayGlowTiers
+        {
+            get => (RaritySelection)GetValue(RayGlowTiersProperty);
+            set => SetValue(RayGlowTiersProperty, value);
+        }
+
+        /// <summary>
+        /// Whether Hardcore unlocks take the crisp metallic border in place of a glow. Self-bound to
+        /// the global setting.
+        /// </summary>
+        public static readonly DependencyProperty ShowHardcoreBorderProperty =
+            DependencyProperty.Register(nameof(ShowHardcoreBorder), typeof(bool),
+                typeof(AchievementCompactListControlBase), new PropertyMetadata(true));
+
+        public bool ShowHardcoreBorder
+        {
+            get => (bool)GetValue(ShowHardcoreBorderProperty);
+            set => SetValue(ShowHardcoreBorderProperty, value);
         }
 
         #endregion
@@ -146,6 +233,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected AchievementCompactListControlBase()
         {
             DataContext = this;
+            RarityAppearanceHelper.BindAnimateRarityGlows(this, AnimateRarityGlowsProperty);
+            RarityAppearanceHelper.BindSoftGlowTiers(this, SoftGlowTiersProperty);
+            RarityAppearanceHelper.BindRayGlowTiers(this, RayGlowTiersProperty);
+            RarityAppearanceHelper.BindShowHardcoreBorder(this, ShowHardcoreBorderProperty);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
@@ -350,6 +441,39 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             return map;
+        }
+
+        /// <summary>
+        /// Opens the View Achievements window focused on the clicked achievement.
+        /// Handled on the tunneling event: theme-provided implicit styles/behaviors
+        /// (e.g. drag-scroll ScrollViewer styles) can consume the bubbling event
+        /// inside this control's template, so the bubble phase never reliably
+        /// reaches this control. Reveal clicks keep priority: an obscured item is
+        /// left for the compact item control's own preview handler to reveal.
+        /// </summary>
+        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseLeftButtonDown(e);
+            if (e.Handled)
+            {
+                return;
+            }
+
+            var itemControl = VisualTreeHelpers.FindVisualParent<AchievementCompactItemControl>(
+                e.OriginalSource as DependencyObject);
+            if (!(itemControl?.DataContext is AchievementDisplayItem item))
+            {
+                return;
+            }
+
+            if (item.CanReveal && !item.IsRevealed)
+            {
+                // Let the click tunnel on to the item control, which reveals it.
+                return;
+            }
+
+            e.Handled = true;
+            OpenViewAchievementsWindowFocused(item.PlayniteGameId, item.ApiName, item.DisplayName);
         }
 
         /// <summary>

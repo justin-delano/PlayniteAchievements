@@ -1,9 +1,133 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 3.1.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-08-23
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.1.3/PlayniteAchievements_3_1_3.pext
+    Changelog:
+    - "[New] Achievement Goals! Right-click any achievement to set it as a goal. Goals are pinned to the top of your achievement lists (including in themes), marked with a pin in the status column, and managed from a new Goals tab in Manage Achievements. A goal retires itself automatically when you unlock it."
+    - "[New] RPCS3 trophies can now be read directly from PS3 disc images, without extracting the ISO first."
+    - "[New] Themes can now offer capstone and goal toggles on achievement rows."
+    - "[New] Display option to hide completion badges from category mode grids."
+    - "[Adjusted] Recent friend refreshes now also pick up friends' games you don't own, when unowned games are enabled. A new Skip Full Scans checkbox in Friends settings stops this discovery for chosen friends, while their already-tracked games keep updating."
+    - "[Fixed] RPCS3 and ShadPS4 trophies now show names and descriptions in your language when the game includes translations."
+    - "[Fixed] RPCS3, ShadPS4, and Xenia have improved rarity fetching from Exophase."
+    - "[Fixed] Notifications slide in more smoothly, and animated images in notifications play more efficiently."
+    - "[Fixed] Smoother rarity glow animations when many achievements are on screen."
+    - "[Fixed] Some cases where RetroAchievements video captures would have duplicate audio."
+    - "[Fixed] The View Achievements window now correctly uses its own settings for rarity glow, achievement name color, and column headers."
+    - "[Fixed] World of Warcraft rarity fetching from DataForAzeroth was fixed by adding a new authentication flow in settings."
+    - "[Adjusted] Smaller download: the plugin no longer ships debug files it does not use."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+  - Version: 3.1.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-08-12
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.1.2/PlayniteAchievements_3_1_2.pext
+    Changelog:
+    - "[New] Added a rotating sunburst glow, and you can now pick which rarities get the halo, the sunburst, both, or neither."
+    - "[New] Added settings for screenshot size and clip quality."
+    - "[New] Added a Compress Cached Images button to settings, to shrink oversized images and free up disk space."
+    - "[New] Added a separate unlock sound for hidden achievements."
+    - "[New] The rarity percentage in notifications can now use its own font."
+    - "[New] Right-clicking a game can now launch it, alongside opening it in your library."
+    - "[Adjusted] The compare dropdown is now available in the View Friends Achievements window and in Category Mode."
+    - "[Fixed] In-game notifications and unlock clips no longer stay silent until you finish first-time setup."
+    - "[Fixed] Steam unlocks are detected in game more reliably, including when Steam is installed somewhere unusual or a game has never saved its stats locally."
+    - "[Fixed] Many recording fixes: smoother playback, sound in sync with the picture, correct notification timing, and recording keeps working when you resize the game window."
+    - "[Fixed] Fixed issues with disappearing achievements and duplicate notifications."
+    - "[Fixed] Games with a manual capstone no longer show a Game Complete notification on every unlock after it."
+    - "[Fixed] Animated images no longer play too fast or loop only their beginning."
+    - "[Fixed] Fixed clip seeking in the captures viewer, and added a volume slider."
+    - "[Fixed] The Captures button no longer disappears when you unlock something, and now appears as soon as a screenshot or clip is taken in game."
+    - "[Fixed] More reliable controller vibration on DualSense and DualShock 4."
+    - "[Fixed] Notification text no longer cuts off the bottoms of letters."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+  - Version: 3.1.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-08-06
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.1.1/PlayniteAchievements_3_1_1.pext
+    Changelog:
+    - "[Fixed] Fixed cases where notifications appeared in the wrong spot, or settings and popout windows looked blurry, on scaled or multi-monitor setups."
+    - "[Fixed] Improved the colors in recorded clips, and the quality of screenshots taken at higher resolutions."
+    - "[Fixed] Improved detection of RetroAchievements unlocks that the emulator does not report right away."
+    - "[Fixed] Fixed cases where a bad notification preset or style file could break notification settings."
+    - "[New] Controller vibration now also works with DualSense, DualShock 4, and Steam Controller."
+    - "[New] Font pickers are now searchable dropdowns with more weight options, and animated WebP images can be used anywhere GIFs can."
+    - "[New] Manual tracking now lets you choose which platform a game shows as."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+  - Version: 3.1.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-08-04
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.1.0/PlayniteAchievements_3_1_0.pext
+    Changelog:
+    - "Notifications 2.0!"
+    - "[New] Many new customization options for Notifications and Screenshot Frames."
+    - "[New] You can now choose which rarities should be captured by screenshhots/videos."
+    - "[New] Notifications and Screenshot Frame configurations can be exported and imported, allowing for easy sharing."
+    - "[New] Notifications and Screenshot Frames can be customized per game."
+    - "[New] The screenshot and video capture engine has been completely rewritten, and will be able to capture obscured windows and windows that are not in focus. FFMPEG is no longer required."
+    - "[New] Captures viewer in achievement grids, and via context menus."
+    - "[New] Vibration setting for controllers, which fire when you get an achievement notification."
+    - "[New] New GameJolt provider support, with full authentication and achievement tracking."
+    - "[New] Steam and RetroAchievements will now instantly detect achievement unlocks while in game."
+    - "[New] Dropdown to compare against your friends in achievement grids."
+    - "[New] More controls in Friends settings, and the ability to differentiate between Steam Display names and Nicknames."
+    - "[New] Option to mark Favorite friends."
+    - "[Fixed] Xbox icons will return to a square aspect ratio following a refresh."
+    - "[Fixed] Removed many cases where a no provider found error would pop up."
+    - "[Fixed] Many RPCS3 improvements."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+
+  - Version: 3.0.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-07-26
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.0.0/PlayniteAchievements_3_0_0.pext
+    Changelog:
+    - "The largest PlayniteAchievements update yet! Almost every file in the project was touched in some way, and many large new features have been added. This changelog will cover the largest changes, but there are dozens of smaller improvements and fixes that are documented in the Wiki."
+    - "[New] Added support for Friend Achievements. Steam, RetroAchievements, and Exophase now support tracking your friends' achievements, and comparing them to your own."
+    - "[New] Added Category Mode for all achievement grids. Toggling into Category Mode will group achievements by their category."
+    - "[Adjusted] Redesigned Categories tab in Manage Achievements. Now, categories can be re-ordered, and given custom Category Art."
+    - "[New] Added SteamHunters support to the Steam platform. Enabling this setting now automatically fetches SteamHunters category data for your Steam games, after a refresh."
+    - "[New] Added live achievement polling while in game."
+    - "[New] Added a customizable notification overlay for in-game achievement unlocks. Themes have full control over the overlay's appearance as well."
+    - "[New] Added achievement unlock music, enabled when UniPlaySong (https://github.com/aHuddini/UniPlaySong) is installed. Please check it out, and consider supporting the developer!"
+    - "[New] Added Screenshot and Recording support. When new achievements are unlocked via live achievement polling, screenshots and videos can now be automatically captured."
+    - "[New] Added Appearance customization. Now, every color in the theme can be customized, including rarity badges. Presets are available, and colors follow Playnite by default."
+    - "[New] Added support for Final Fantasy XIV achievements."
+    - "[Fixed] Greatly improved World of Warcraft achievement support."
+    - "[New] Many new column customization options for grids, for various colors and features."
+    - "[New] Added Hardcore icon borders for RetroAchievements."
+    - "[Fixed] Too many things to count."
+    - "[Fixed] Many performance improvements, especially for large libraries."
+    - "[Feedback] Please continue to leave Github issues, or come chat in the Playnite discord."
+    - "[Plug] Check out Aniki-ReMake 3.3.0 (https://github.com/Mike-Aniki/Aniki-ReMake), which fully supports the new Friend features in this update!"
+    - "[Plug] Check out UniPlaySong (https://github.com/aHuddini/UniPlaySong), which adds achievement unlock music support!"
+    - "[Plug] This update has taken an immense amount of work to develop, and I would greatly appreciate any support you can provide! Please consider supporting me on Ko-fi (https://ko-fi.com/justindelano)!"
+
+  - Version: 2.5.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-21
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.3/PlayniteAchievements_2_5_3.pext
+    Changelog:
+    - "[Fixed] More performance improvements."
+    - "[Fixed] Image columns in grids have better width defaults, minimums, and maximums."
+
+  - Version: 2.5.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-19
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.2/PlayniteAchievements_2_5_2.pext
+    Changelog:
+    - "[Fixed] Performance improvements when editing in Manage Achievements window."
+    - "[Fixed] Memory leak during large library refreshes."
+
   - Version: 2.5.1
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-18
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.1/PlayniteAchievements_2_5_1.pext
     Changelog:
     - "[New] Added Note marker and Note column to achievement grids."
@@ -18,7 +142,7 @@ Packages:
 
   - Version: 2.5.0
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-15
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.0/PlayniteAchievements_2_5_0.pext
     Changelog:
     - "A massive customization update!"
@@ -43,7 +167,7 @@ Packages:
 
   - Version: 2.4.0
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-02
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.4.0/PlayniteAchievements_2_4_0.pext
     Changelog:
     - "Added native support for EA achievements. These do not come with Icons or Rarity data natively at the moment, but this additional data can be fetched from Exophase."
