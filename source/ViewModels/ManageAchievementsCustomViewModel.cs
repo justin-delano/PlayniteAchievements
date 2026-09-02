@@ -6,7 +6,9 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.CustomProviders;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.ViewModels.Items;
@@ -36,8 +38,15 @@ namespace PlayniteAchievements.ViewModels
         private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly CustomProviderStore _customProviderStore;
+        private readonly Func<string, string> _pickColor;
         private bool _isRefreshingAssignments;
         private bool _isSyncingTypeOptions;
+        private bool _isSyncingCustomProvider;
+        private bool _isCustomOnlyGame;
+        private CustomProviderOption _selectedCustomProviderOption;
+        private CustomProviderDefinition _selectedCustomProvider;
+        private string _selectedProviderColorHex;
 
         private CustomAchievementEditItem _selectedRow;
         private bool _hasChanges;
@@ -55,7 +64,9 @@ namespace PlayniteAchievements.ViewModels
             ManagedCustomIconService managedCustomIconService,
             ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             PlayniteAchievementsSettings settings,
-            ILogger logger)
+            ILogger logger,
+            CustomProviderStore customProviderStore = null,
+            Func<string, string> pickColor = null)
         {
             _gameId = gameId;
             _gameIdText = gameId.ToString("D");
@@ -65,6 +76,18 @@ namespace PlayniteAchievements.ViewModels
             _gameDataSnapshotProvider = gameDataSnapshotProvider;
             _settings = settings;
             _logger = logger;
+            _customProviderStore = customProviderStore;
+            _pickColor = pickColor;
+            if (_customProviderStore != null)
+            {
+                _customProviderStore.Changed += CustomProviderStore_Changed;
+            }
+
+            CustomProviderOptions = new ObservableCollection<CustomProviderOption>();
+            AddCustomProviderCommand = new RelayCommand(_ => AddCustomProvider(), _ => IsCustomOnlyGame && _customProviderStore != null && !IsSaving);
+            DeleteCustomProviderCommand = new RelayCommand(_ => DeleteCustomProvider(), _ => HasSelectedCustomProvider && !IsSaving);
+            BrowseSvgCommand = new RelayCommand(_ => BrowseSvg(), _ => HasSelectedCustomProvider && !IsSaving);
+            PickColorCommand = new RelayCommand(_ => PickColor(), _ => HasSelectedCustomProvider && _pickColor != null && !IsSaving);
 
             AchievementRows = new ObservableCollection<CustomAchievementEditItem>();
             AssignableCategoryOptions = new ObservableCollection<string>();
@@ -116,6 +139,107 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ExportAchievementsCommand { get; }
 
         public RelayCommand ClearCommand { get; }
+
+        public RelayCommand AddCustomProviderCommand { get; }
+
+        public RelayCommand DeleteCustomProviderCommand { get; }
+
+        public RelayCommand BrowseSvgCommand { get; }
+
+        public RelayCommand PickColorCommand { get; }
+
+        /// <summary>
+        /// Default first, then every stored custom provider. Only shown for custom-only games.
+        /// </summary>
+        public ObservableCollection<CustomProviderOption> CustomProviderOptions { get; }
+
+        /// <summary>
+        /// True when the game's achievements exist only as custom definitions (no cached provider
+        /// data), which is the only case where a custom provider can be assigned.
+        /// </summary>
+        public bool IsCustomOnlyGame
+        {
+            get => _isCustomOnlyGame;
+            private set
+            {
+                if (SetValueAndReturn(ref _isCustomOnlyGame, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public CustomProviderOption SelectedCustomProviderOption
+        {
+            get => _selectedCustomProviderOption;
+            set
+            {
+                if (!SetValueAndReturn(ref _selectedCustomProviderOption, value))
+                {
+                    return;
+                }
+
+                if (!_isSyncingCustomProvider && value != null)
+                {
+                    ApplyCustomProviderAssignment(value.Id);
+                }
+
+                LoadSelectedProviderEditor();
+            }
+        }
+
+        public bool HasSelectedCustomProvider => _selectedCustomProvider != null;
+
+        public string SelectedProviderName
+        {
+            get => _selectedCustomProvider?.Name;
+            set
+            {
+                var name = NormalizeText(value);
+                if (_selectedCustomProvider == null || string.Equals(name, _selectedCustomProvider.Name, StringComparison.Ordinal))
+                {
+                    OnPropertyChanged(nameof(SelectedProviderName));
+                    return;
+                }
+
+                if (name == null)
+                {
+                    // A blank name is not persisted; the editor snaps back to the stored one.
+                    OnPropertyChanged(nameof(SelectedProviderName));
+                    return;
+                }
+
+                PersistSelectedProvider(definition => definition.Name = name);
+            }
+        }
+
+        public string SelectedProviderColorHex
+        {
+            get => _selectedProviderColorHex;
+            set
+            {
+                if (!SetValueAndReturn(ref _selectedProviderColorHex, value) || _selectedCustomProvider == null)
+                {
+                    return;
+                }
+
+                var color = NormalizeText(value);
+                if (color == null || !CustomProviderStore.IsValidColor(color))
+                {
+                    SetStatus(ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor"), true);
+                    return;
+                }
+
+                PersistSelectedProvider(definition => definition.ColorHex = color);
+            }
+        }
+
+        public string SelectedProviderIconKey =>
+            _selectedCustomProvider == null ? null : CustomProviderKeys.BuildIconKey(_selectedCustomProvider.Id);
+
+        public string SelectedProviderPreviewColorHex => _selectedCustomProvider?.ColorHex;
+
+        public string SelectedProviderIconFileName => _selectedCustomProvider?.IconSourceFileName;
 
         public CustomAchievementEditItem SelectedRow
         {
@@ -233,6 +357,7 @@ namespace PlayniteAchievements.ViewModels
                     .Select(CustomAchievementEditItem.FromDefinition));
                 CaptureCollectionBaseline();
                 RefreshAssignmentState();
+                RefreshCustomProviderState();
                 SetStatus(null, false);
                 RefreshComputedState();
             }
@@ -249,6 +374,260 @@ namespace PlayniteAchievements.ViewModels
             if (!HasChanges)
             {
                 ReloadData();
+            }
+            else
+            {
+                RefreshCustomProviderState();
+            }
+        }
+
+        /// <summary>
+        /// Drops the store subscription when the Manage window discards this view model.
+        /// </summary>
+        public void Detach()
+        {
+            if (_customProviderStore != null)
+            {
+                _customProviderStore.Changed -= CustomProviderStore_Changed;
+            }
+        }
+
+        private void RefreshCustomProviderState()
+        {
+            // The raw snapshot is the synthetic custom projection only when the cache holds no
+            // provider data for the game; a real provider key means the assignment does not apply.
+            var rawData = _gameDataSnapshotProvider?.GetRawGameData();
+            IsCustomOnlyGame = _customProviderStore != null &&
+                               rawData != null &&
+                               CustomProviderKeys.IsBaseKey(rawData.ProviderKey);
+            RebuildCustomProviderOptions();
+        }
+
+        private void RebuildCustomProviderOptions()
+        {
+            _isSyncingCustomProvider = true;
+            try
+            {
+                var assignedId = CustomProviderKeys.NormalizeId(_gameCustomDataStore.LoadOrDefault(_gameId)?.CustomProviderId);
+                CustomProviderOptions.Clear();
+
+                ProviderRegistry.TryResolveProviderVisuals(CustomProviderKeys.BaseKey, out var defaultIconKey, out var defaultColorHex);
+                var defaultOption = new CustomProviderOption(
+                    null,
+                    ResourceProvider.GetString("LOCPlayAch_Common_Default"),
+                    defaultIconKey,
+                    defaultColorHex);
+                CustomProviderOptions.Add(defaultOption);
+
+                var selected = defaultOption;
+                foreach (var definition in _customProviderStore?.GetAll() ?? (IReadOnlyList<CustomProviderDefinition>)Array.Empty<CustomProviderDefinition>())
+                {
+                    var option = new CustomProviderOption(
+                        definition.Id,
+                        definition.Name,
+                        CustomProviderKeys.BuildIconKey(definition.Id),
+                        definition.ColorHex);
+                    CustomProviderOptions.Add(option);
+                    if (assignedId != null && string.Equals(option.Id, assignedId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        selected = option;
+                    }
+                }
+
+                SelectedCustomProviderOption = selected;
+            }
+            finally
+            {
+                _isSyncingCustomProvider = false;
+            }
+
+            LoadSelectedProviderEditor();
+        }
+
+        private void LoadSelectedProviderEditor()
+        {
+            var id = SelectedCustomProviderOption?.Id;
+            _selectedCustomProvider = id != null &&
+                                      _customProviderStore != null &&
+                                      _customProviderStore.TryGet(id, out var definition)
+                ? definition
+                : null;
+            _selectedProviderColorHex = _selectedCustomProvider?.ColorHex;
+
+            OnPropertyChanged(nameof(HasSelectedCustomProvider));
+            OnPropertyChanged(nameof(SelectedProviderName));
+            OnPropertyChanged(nameof(SelectedProviderColorHex));
+            OnPropertyChanged(nameof(SelectedProviderIconKey));
+            OnPropertyChanged(nameof(SelectedProviderPreviewColorHex));
+            OnPropertyChanged(nameof(SelectedProviderIconFileName));
+            RaiseCommandStates();
+        }
+
+        private void ApplyCustomProviderAssignment(string customProviderId)
+        {
+            try
+            {
+                _achievementOverridesService.SetCustomProvider(_gameId, customProviderId);
+                SetStatus(null, false);
+                // The Manage window header re-resolves the provider name on this event.
+                CustomAchievementsSaved?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed assigning custom provider '{customProviderId}' for gameId={_gameId}.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+            }
+        }
+
+        private void PersistSelectedProvider(Action<CustomProviderDefinition> mutate)
+        {
+            if (_selectedCustomProvider == null || _customProviderStore == null)
+            {
+                return;
+            }
+
+            var updated = _selectedCustomProvider.Clone();
+            mutate(updated);
+            try
+            {
+                // The store raises Changed, which rebuilds the options and reloads the editor.
+                _customProviderStore.Upsert(updated);
+                SetStatus(null, false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed saving custom provider '{updated.Id}'.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+            }
+        }
+
+        private void CustomProviderStore_Changed(object sender, CustomProviderChangedEventArgs e)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(RebuildCustomProviderOptions));
+                return;
+            }
+
+            RebuildCustomProviderOptions();
+        }
+
+        private void AddCustomProvider()
+        {
+            if (_customProviderStore == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var created = _customProviderStore.CreateNew(
+                    ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Custom_ProviderNewName"));
+                // Changed already rebuilt the options; selecting the new one assigns it to this game.
+                var option = CustomProviderOptions.FirstOrDefault(candidate =>
+                    string.Equals(candidate?.Id, created.Id, StringComparison.OrdinalIgnoreCase));
+                if (option != null)
+                {
+                    SelectedCustomProviderOption = option;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed creating a custom provider.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+            }
+        }
+
+        private void DeleteCustomProvider()
+        {
+            var definition = _selectedCustomProvider;
+            if (definition == null || _customProviderStore == null)
+            {
+                return;
+            }
+
+            var otherGameCount = _gameCustomDataStore.LoadAll()
+                .Count(data => data != null &&
+                               data.PlayniteGameId != _gameId &&
+                               string.Equals(data.CustomProviderId, definition.Id, StringComparison.OrdinalIgnoreCase));
+            var result = MessageBox.Show(
+                string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm"),
+                    definition.Name,
+                    otherGameCount),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+            if (result != MessageBoxResult.OK)
+            {
+                return;
+            }
+
+            try
+            {
+                // The plugin clears every assignment of a deleted provider through the store, so
+                // this game falls back to Default through the same path as the others.
+                _customProviderStore.Delete(definition.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed deleting custom provider '{definition.Id}'.");
+                SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+            }
+        }
+
+        private void BrowseSvg()
+        {
+            if (_selectedCustomProvider == null)
+            {
+                return;
+            }
+
+            var dialog = new OpenFileDialog
+            {
+                Filter = "SVG Files (*.svg)|*.svg|All Files (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            try
+            {
+                var pathData = SvgGeometryImporter.ImportFile(dialog.FileName);
+                var fileName = Path.GetFileName(dialog.FileName);
+                PersistSelectedProvider(definition =>
+                {
+                    definition.IconPathData = pathData;
+                    definition.IconSourceFileName = fileName;
+                });
+            }
+            catch (SvgGeometryImportException ex)
+            {
+                _logger?.Warn(ex, $"Failed importing SVG '{dialog.FileName}' for a custom provider.");
+                SetStatus(
+                    ResourceProvider.GetString(ex.NoDrawableShapes
+                        ? "LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes"
+                        : "LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid"),
+                    true);
+            }
+        }
+
+        private void PickColor()
+        {
+            if (_selectedCustomProvider == null || _pickColor == null)
+            {
+                return;
+            }
+
+            var color = _pickColor(_selectedCustomProvider.ColorHex);
+            if (!string.IsNullOrWhiteSpace(color))
+            {
+                SelectedProviderColorHex = color;
             }
         }
 
@@ -481,6 +860,9 @@ namespace PlayniteAchievements.ViewModels
                 CommitRowsInPlace(definitions);
                 RefreshComputedState();
                 CustomAchievementsSaved?.Invoke(this, EventArgs.Empty);
+                // The first saved achievement turns a game custom-only (and the last deleted one
+                // reverts it); the snapshot was just invalidated by the save handler above.
+                RefreshCustomProviderState();
             }
             catch (Exception ex)
             {
@@ -1072,6 +1454,10 @@ namespace PlayniteAchievements.ViewModels
             ExportTemplateCommand.RaiseCanExecuteChanged();
             ExportAchievementsCommand.RaiseCanExecuteChanged();
             ClearCommand.RaiseCanExecuteChanged();
+            AddCustomProviderCommand?.RaiseCanExecuteChanged();
+            DeleteCustomProviderCommand?.RaiseCanExecuteChanged();
+            BrowseSvgCommand?.RaiseCanExecuteChanged();
+            PickColorCommand?.RaiseCanExecuteChanged();
         }
 
         private void SetStatus(string value, bool isError)
@@ -1098,6 +1484,33 @@ namespace PlayniteAchievements.ViewModels
             var value = ResourceProvider.GetString(key);
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
         }
+    }
+
+    /// <summary>
+    /// A row of the custom provider selector: the Default entry (null id, bare Custom visuals)
+    /// or one stored custom provider.
+    /// </summary>
+    public sealed class CustomProviderOption
+    {
+        public CustomProviderOption(string id, string displayName, string iconKey, string colorHex)
+        {
+            Id = id;
+            DisplayName = displayName;
+            IconKey = iconKey;
+            ColorHex = colorHex;
+        }
+
+        public string Id { get; }
+
+        public string DisplayName { get; }
+
+        public string IconKey { get; }
+
+        public string ColorHex { get; }
+
+        public bool IsDefault => Id == null;
+
+        public override string ToString() => DisplayName;
     }
 
     public sealed class CustomAchievementEditItem : ObservableObject
