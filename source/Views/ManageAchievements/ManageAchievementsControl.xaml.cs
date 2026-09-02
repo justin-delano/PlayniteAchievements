@@ -1047,7 +1047,9 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void CustomViewModel_CustomAchievementsSaved(object sender, EventArgs e)
         {
-            HandleStateChanged(refreshCapstone: true);
+            // The Custom tab persists on every completed edit and already reflects the change;
+            // reloading it here would rebuild its rows under the user's focus.
+            HandleStateChanged(refreshCapstone: true, refreshCustom: false);
         }
 
         private void CustomViewModel_AssignmentsChanged(object sender, EventArgs e)
@@ -1155,13 +1157,13 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _ = Dispatcher.BeginInvoke(new Action(() => HandleStateChanged(refreshCapstone)));
         }
 
-        private void HandleStateChanged(bool refreshCapstone)
+        private void HandleStateChanged(bool refreshCapstone, bool refreshCustom = true)
         {
             _gameDataSnapshotProvider?.Invalidate();
             _viewModel.Reload();
 
             _manualRefreshPending = true;
-            _customRefreshPending = true;
+            _customRefreshPending = refreshCustom;
             _achievementOrderRefreshPending = true;
             _goalsRefreshPending = true;
             _categoryRefreshPending = true;
