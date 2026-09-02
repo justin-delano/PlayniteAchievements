@@ -259,6 +259,15 @@ namespace PlayniteAchievements.Views
         {
             var elements = new List<UIElement>
             {
+                // Header provider row first (top-left); the IsVisible filter below drops it for
+                // games that have real provider data.
+                CustomProviderComboBox,
+                AddCustomProviderButton,
+                ProviderNameTextBox,
+                ProviderColorTextBox,
+                PickProviderColorButton,
+                BrowseProviderSvgButton,
+                DeleteCustomProviderButton,
                 AddButton,
                 DuplicateButton,
                 DeleteButton,
