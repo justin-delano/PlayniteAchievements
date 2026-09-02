@@ -70,7 +70,7 @@ namespace PlayniteAchievements.Services.Tests
             var pathData = SvgGeometryImporter.ImportMarkup(
                 $"<svg xmlns='{SvgNs}'><path fill-rule='evenodd' d='M0 0h10v10H0z M2 2h6v6H2z'/></svg>");
 
-            var geometry = (PathGeometry)Parse(pathData);
+            var geometry = (StreamGeometry)Parse(pathData);
             Assert.AreEqual(FillRule.EvenOdd, geometry.FillRule);
             Assert.IsFalse(pathData.StartsWith("F1", StringComparison.Ordinal));
         }
