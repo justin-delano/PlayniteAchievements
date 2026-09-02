@@ -284,7 +284,7 @@ namespace PlayniteAchievements.Services.CustomProviders
                 Name = name,
                 ColorHex = colorHex,
                 IconPathData = string.IsNullOrWhiteSpace(definition.IconPathData) ? null : definition.IconPathData.Trim(),
-                IconSourceFileName = string.IsNullOrWhiteSpace(definition.IconSourceFileName) ? null : definition.IconSourceFileName.Trim()
+                IconSource = string.IsNullOrWhiteSpace(definition.IconSource) ? null : definition.IconSource.Trim()
             };
         }
 
