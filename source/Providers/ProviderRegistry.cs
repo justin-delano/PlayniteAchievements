@@ -9,9 +9,27 @@ using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services.CustomProviders;
 
 namespace PlayniteAchievements.Providers
 {
+    /// <summary>
+    /// Name and color of a user-defined custom provider, supplied to <see cref="ProviderRegistry"/>
+    /// through <see cref="ProviderRegistry.CustomProviderResolver"/>.
+    /// </summary>
+    public sealed class CustomProviderVisuals
+    {
+        public CustomProviderVisuals(string name, string colorHex)
+        {
+            Name = name;
+            ColorHex = colorHex;
+        }
+
+        public string Name { get; }
+
+        public string ColorHex { get; }
+    }
+
     /// <summary>
     /// Central registry for provider management at runtime.
     /// </summary>
@@ -197,9 +215,28 @@ namespace PlayniteAchievements.Providers
 
         // ===================== LOCALIZATION =====================
 
+        /// <summary>
+        /// Resolves a custom provider id to its name and color. Set by the plugin from the custom
+        /// provider store; kept as a hook so this registry stays free of the store type.
+        /// </summary>
+        public static Func<string, CustomProviderVisuals> CustomProviderResolver { get; set; }
+
         public static string GetLocalizedName(string providerKey)
         {
             if (string.IsNullOrWhiteSpace(providerKey)) return "Unknown";
+            if (CustomProviderKeys.TryGetId(providerKey, out var customProviderId))
+            {
+                var custom = CustomProviderResolver?.Invoke(customProviderId);
+                if (!string.IsNullOrWhiteSpace(custom?.Name))
+                {
+                    return custom.Name.Trim();
+                }
+
+                // An id that no longer resolves displays as plain Custom instead of a missing
+                // resource marker.
+                providerKey = CustomProviderKeys.BaseKey;
+            }
+
             var value = ResourceProvider.GetString($"LOCPlayAch_Provider_{providerKey}");
             return string.IsNullOrWhiteSpace(value) ? providerKey : value;
         }
@@ -232,6 +269,11 @@ namespace PlayniteAchievements.Providers
                 return false;
             }
 
+            if (TryResolveCustomProviderVisuals(providerKey, ResolveEffectiveColor, out iconKey, out colorHex))
+            {
+                return true;
+            }
+
             if (_providersByKey.TryGetValue(providerKey, out var provider) && provider != null)
             {
                 iconKey = provider.ProviderIconKey;
@@ -250,7 +292,57 @@ namespace PlayniteAchievements.Providers
             iconKey = null;
             colorHex = null;
             var instance = Instance;
-            return instance != null && instance.TryGetProviderVisuals(providerKey, out iconKey, out colorHex);
+            if (instance == null)
+            {
+                return TryResolveCustomProviderVisuals(providerKey, null, out iconKey, out colorHex);
+            }
+
+            return instance.TryGetProviderVisuals(providerKey, out iconKey, out colorHex);
+        }
+
+        /// <summary>
+        /// Visuals for the bare Custom key and for <c>Custom:&lt;id&gt;</c> keys. An assigned id that
+        /// resolves yields its own icon key and color; an unresolved id falls back to the bare
+        /// Custom visuals (the Manual provider's icon and color) so the game never renders without
+        /// an icon.
+        /// </summary>
+        private static bool TryResolveCustomProviderVisuals(
+            string providerKey,
+            Func<string, string, string> resolveEffectiveColor,
+            out string iconKey,
+            out string colorHex)
+        {
+            iconKey = null;
+            colorHex = null;
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return false;
+            }
+
+            if (CustomProviderKeys.TryGetId(providerKey, out var customProviderId))
+            {
+                var custom = CustomProviderResolver?.Invoke(customProviderId);
+                if (custom != null && IsValidColor(custom.ColorHex))
+                {
+                    iconKey = CustomProviderKeys.BuildIconKey(customProviderId);
+                    colorHex = custom.ColorHex.Trim();
+                    return true;
+                }
+
+                providerKey = CustomProviderKeys.BaseKey;
+            }
+
+            if (!CustomProviderKeys.IsBaseKey(providerKey))
+            {
+                return false;
+            }
+
+            // Plain Custom borrows the Manual provider's icon and color, including any user
+            // recolor of Manual.
+            iconKey = CustomProviderKeys.BaseIconKey;
+            colorHex = resolveEffectiveColor?.Invoke(CustomProviderKeys.FallbackProviderKey, CustomProviderKeys.DefaultColorHex)
+                       ?? CustomProviderKeys.DefaultColorHex;
+            return true;
         }
 
         public static string GetProviderColorHex(string providerKey, string fallback = "#888888")
