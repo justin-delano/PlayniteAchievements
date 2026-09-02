@@ -180,104 +180,13 @@
                                     Command="{Binding AddCustomProviderCommand}"
                                     Style="{StaticResource ToolbarButtonStyle}"
                                     Margin="8,0,0,0" />
+                            <Button x:Name="EditCustomProviderButton"
+                                    Content="{DynamicResource LOCPlayAch_Common_Edit}"
+                                    Command="{Binding EditCustomProviderCommand}"
+                                    Style="{StaticResource ToolbarButtonStyle}"
+                                    Margin="0" />
                         </StackPanel>
 
-                        <Grid Margin="0,8,0,0"
-                              Visibility="{Binding HasSelectedCustomProvider, Converter={StaticResource BoolToVis}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" MaxWidth="220" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" MaxWidth="320" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-
-                            <Border Grid.Column="0"
-                                    Style="{StaticResource PreviewBorderStyle}"
-                                    VerticalAlignment="Bottom"
-                                    Margin="0,0,8,0">
-                                <Image Margin="5" Stretch="Uniform">
-                                    <Image.Source>
-                                        <MultiBinding Converter="{StaticResource ProviderIconConverter}">
-                                            <Binding Path="SelectedProviderIconKey" />
-                                            <Binding Path="SelectedProviderPreviewColorHex" />
-                                        </MultiBinding>
-                                    </Image.Source>
-                                </Image>
-                            </Border>
-
-                            <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Column_Name}"
-                                           Style="{StaticResource FieldLabelStyle}"
-                                           Margin="0,0,0,2" />
-                                <TextBox x:Name="ProviderNameTextBox"
-                                         Style="{StaticResource GridEditorTextBoxStyle}"
-                                         Text="{Binding SelectedProviderName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                         KeyDown="EditorTextBox_KeyDown" />
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="2" Margin="0,0,4,0">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Common_Color}"
-                                           Style="{StaticResource FieldLabelStyle}"
-                                           Margin="0,0,0,2" />
-                                <StackPanel Orientation="Horizontal">
-                                    <!-- Swatch mirrors the Display > Appearance platform color rows. -->
-                                    <Border Width="26"
-                                            Height="26"
-                                            CornerRadius="4"
-                                            Margin="0,0,4,0"
-                                            BorderBrush="{DynamicResource NormalBorderBrush}"
-                                            BorderThickness="1"
-                                            Background="{Binding SelectedProviderColorBrush}" />
-                                    <TextBox x:Name="ProviderColorTextBox"
-                                             Width="96"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             Text="{Binding SelectedProviderColorHex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                             KeyDown="EditorTextBox_KeyDown" />
-                                </StackPanel>
-                            </StackPanel>
-
-                            <Button x:Name="PickProviderColorButton"
-                                    Grid.Column="3"
-                                    Content="{DynamicResource LOCPlayAch_Button_Pick}"
-                                    Command="{Binding PickColorCommand}"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    VerticalAlignment="Bottom"
-                                    Margin="0,0,8,0" />
-
-                            <StackPanel Grid.Column="4" Margin="0,0,4,0">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Column_Icon}"
-                                           Style="{StaticResource FieldLabelStyle}"
-                                           Margin="0,0,0,2" />
-                                <!-- Link or local path to an SVG; blank keeps the default icon. -->
-                                <TextBox x:Name="ProviderIconSourceTextBox"
-                                         Style="{StaticResource GridEditorTextBoxStyle}"
-                                         Text="{Binding SelectedProviderIconSource, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                         KeyDown="EditorTextBox_KeyDown" />
-                            </StackPanel>
-                            <Button x:Name="BrowseProviderSvgButton"
-                                    Grid.Column="5"
-                                    Content="{DynamicResource LOCPlayAch_Button_Browse}"
-                                    Command="{Binding BrowseSvgCommand}"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    VerticalAlignment="Bottom"
-                                    Margin="0,0,8,0" />
-                            <Button x:Name="DeleteCustomProviderButton"
-                                    Grid.Column="6"
-                                    Content="{DynamicResource LOCPlayAch_Common_Delete}"
-                                    Command="{Binding DeleteCustomProviderCommand}"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    VerticalAlignment="Bottom"
-                                    Margin="0" />
-                        </Grid>
-
-                        <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProviderHint}"
-                                   Style="{StaticResource FieldLabelStyle}"
-                                   Margin="0,4,0,0"
-                                   TextWrapping="Wrap"
-                                   Visibility="{Binding HasSelectedCustomProvider, Converter={StaticResource BoolToVis}}" />
                     </StackPanel>
                 </StackPanel>
 
@@ -335,14 +244,14 @@
                 <ColumnDefinition Width="340" />
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <!-- The grid sizes to its rows so the add button follows the last one; the outer
+                 scroll viewer takes over scrolling, which is fine at custom-achievement counts. -->
+            <ScrollViewer Grid.Column="0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
 
             <DataGrid x:Name="CustomAchievementsGrid"
-                      Grid.Row="0"
                       ItemsSource="{Binding AchievementRows}"
                       SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
                       AutoGenerateColumns="False"
@@ -365,6 +274,7 @@
                       VirtualizingStackPanel.VirtualizationMode="Recycling"
                       VirtualizingStackPanel.ScrollUnit="Pixel"
                       ScrollViewer.CanContentScroll="True"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ColumnHeaderStyle="{StaticResource ManageAchievementsColumnHeaderStyle}"
                       helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
@@ -655,9 +565,8 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-                <!-- A second Add at the foot of the list, where a new row appears. -->
+                <!-- A second Add right under the last row, where the new row will appear. -->
                 <Button x:Name="AddRowFooterButton"
-                        Grid.Row="1"
                         Content="&#x2B;"
                         FontSize="16"
                         FontWeight="SemiBold"
@@ -667,7 +576,8 @@
                         MinHeight="26"
                         Padding="0"
                         Margin="0,6,0,0" />
-            </Grid>
+            </StackPanel>
+            </ScrollViewer>
 
             <Border Grid.Column="2"
                     Style="{StaticResource CardBorderStyle}">
