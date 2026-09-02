@@ -90,6 +90,8 @@ namespace PlayniteAchievements.Services.GameCustomData
         private ManagedCustomIconService _managedCustomIconService;
         private NotificationImageStore _notificationImageStore;
         private AchievementDataService _achievementDataService;
+        private Func<string, CustomProviderDefinition> _tryGetCustomProvider;
+        private Func<CustomProviderDefinition, bool> _importCustomProviderIfMissing;
         private Dictionary<Guid, GameCustomDataFile> _cacheByGameId;
         private HashSet<Guid> _missingGameIds;
 
@@ -122,6 +124,19 @@ namespace PlayniteAchievements.Services.GameCustomData
         public void AttachRuntimeSettings(PlayniteAchievementsSettings settings)
         {
             _ = settings;
+        }
+
+        /// <summary>
+        /// Connects the custom provider catalog so portable exports embed the assigned provider's
+        /// definition and imports recreate a missing one. Delegates keep this store free of the
+        /// catalog type.
+        /// </summary>
+        public void AttachCustomProviderCatalog(
+            Func<string, CustomProviderDefinition> tryGetCustomProvider,
+            Func<CustomProviderDefinition, bool> importCustomProviderIfMissing)
+        {
+            _tryGetCustomProvider = tryGetCustomProvider;
+            _importCustomProviderIfMissing = importCustomProviderIfMissing;
         }
 
         public bool TryLoad(Guid playniteGameId, out GameCustomDataFile data)
@@ -578,7 +593,38 @@ namespace PlayniteAchievements.Services.GameCustomData
                 throw new InvalidOperationException("No exportable custom data exists for this game.");
             }
 
+            portable.CustomProvider = string.IsNullOrWhiteSpace(portable.CustomProviderId)
+                ? null
+                : _tryGetCustomProvider?.Invoke(portable.CustomProviderId)?.Clone();
             return portable;
+        }
+
+        /// <summary>
+        /// Keeps an imported assignment only when the id resolves locally, or when the package's
+        /// embedded definition could be recreated under that id. A local definition wins.
+        /// </summary>
+        private string ResolveImportedCustomProviderId(GameCustomDataPortableFile portable)
+        {
+            var id = portable?.CustomProviderId;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return null;
+            }
+
+            if (_tryGetCustomProvider?.Invoke(id) != null)
+            {
+                return id;
+            }
+
+            var snapshot = portable.CustomProvider;
+            if (snapshot == null || _importCustomProviderIfMissing == null)
+            {
+                return null;
+            }
+
+            var definition = snapshot.Clone();
+            definition.Id = id;
+            return _importCustomProviderIfMissing(definition) ? id : null;
         }
 
         private PortableGameCustomDataImportResult ImportReplacePortablePackage(Guid playniteGameId, string sourcePath)
@@ -1380,6 +1426,8 @@ namespace PlayniteAchievements.Services.GameCustomData
                 throw new InvalidOperationException(invalidDataMessage);
             }
 
+            normalizedPortable.CustomProviderId = ResolveImportedCustomProviderId(normalizedPortable);
+
             var current = _repository.LoadOrDefault(playniteGameId);
             var merged = GameCustomDataFile.FromPortable(
                 normalizedPortable,
@@ -2002,6 +2050,15 @@ namespace PlayniteAchievements.Services.GameCustomData
             }
 
             _ = LoadAll();
+        }
+
+        /// <summary>
+        /// Raises <see cref="CustomDataChanged"/> without writing, for changes that alter how a
+        /// game's stored custom data resolves (such as an edited custom provider definition).
+        /// </summary>
+        public void NotifyChanged(Guid playniteGameId, bool affectsSummaryData = true)
+        {
+            RaiseCustomDataChanged(playniteGameId, affectsSummaryData);
         }
 
         private void RaiseCustomDataChanged(Guid playniteGameId, bool affectsSummaryData = true)
