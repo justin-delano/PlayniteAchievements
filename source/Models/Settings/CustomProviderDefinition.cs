@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Models.Settings
 
         public string IconPathData { get; set; }
 
-        public string IconSourceFileName { get; set; }
+        public string IconSource { get; set; }
 
         public CustomProviderDefinition Clone()
         {
@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Models.Settings
                 Name = Name,
                 ColorHex = ColorHex,
                 IconPathData = IconPathData,
-                IconSourceFileName = IconSourceFileName
+                IconSource = IconSource
             };
         }
     }
