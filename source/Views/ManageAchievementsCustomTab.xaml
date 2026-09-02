@@ -200,7 +200,6 @@
                       CanUserResizeColumns="True"
                       CanUserReorderColumns="False"
                       CanUserSortColumns="True"
-                      RowHeight="96"
                       EnableRowVirtualization="True"
                       EnableColumnVirtualization="True"
                       VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -218,7 +217,6 @@
 
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource ManageAchievementsDataGridRowStyle}">
-                        <Setter Property="MinHeight" Value="72" />
                         <Setter Property="ClipToBounds" Value="True" />
                     </Style>
                 </DataGrid.RowStyle>
@@ -275,8 +273,7 @@
                                 <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          Style="{StaticResource GridEditorTextBoxStyle}"
                                          TextWrapping="Wrap"
-                                         AcceptsReturn="True"
-                                         VerticalScrollBarVisibility="Auto" />
+                                         AcceptsReturn="True" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -288,32 +285,6 @@
                             <DataTemplate>
                                 <TextBox Text="{Binding Id, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          Style="{StaticResource GridEditorTextBoxStyle}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_Label_Category}"
-                                            Width="140"
-                                            SortMemberPath="Category">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBox Text="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource GridEditorTextBoxStyle}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_Label_Type}"
-                                            Width="145"
-                                            SortMemberPath="CategoryType">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.CategoryTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          SelectedValue="{Binding CategoryType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          SelectedValuePath="Value"
-                                          DisplayMemberPath="DisplayName"
-                                          MinHeight="30"
-                                          VerticalContentAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -442,9 +413,6 @@
                             <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
                                       IsChecked="{Binding Hidden, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       Margin="0,10,0,0" />
-                            <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Capstone}"
-                                      IsChecked="{Binding IsCapstone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      Margin="0,6,0,0" />
 
                             <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_TrophyType}"
                                        Style="{StaticResource FieldLabelStyle}" />
@@ -460,14 +428,6 @@
                             <TextBox Text="{Binding GlobalPercentUnlockedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource GridEditorTextBoxStyle}"
                                      Tag="Percent"
-                                     PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                     DataObject.Pasting="NumericTextBox_Pasting" />
-
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ScaledPoints}"
-                                       Style="{StaticResource FieldLabelStyle}" />
-                            <TextBox Text="{Binding ScaledPointsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Style="{StaticResource GridEditorTextBoxStyle}"
-                                     Tag="NonNegativeInt"
                                      PreviewTextInput="NumericTextBox_PreviewTextInput"
                                      DataObject.Pasting="NumericTextBox_Pasting" />
 
