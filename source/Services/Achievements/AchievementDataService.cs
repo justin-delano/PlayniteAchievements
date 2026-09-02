@@ -154,6 +154,37 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
+        /// <summary>
+        /// Raw cached data plus the game's custom achievement projections, with no overlays
+        /// applied. A game with only custom achievements yields the synthetic custom data.
+        /// </summary>
+        public GameAchievementData GetRawGameAchievementDataWithCustomAchievements(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return null;
+            }
+
+            try
+            {
+                var data = _cacheService.LoadGameData(playniteGameId.ToString());
+                if (data == null)
+                {
+                    return CreateSyntheticCustomGameData(playniteGameId, LoadCustomData(playniteGameId));
+                }
+
+                _hydrator.AppendCustomAchievements(data);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, string.Format(
+                    "Failed to get achievement data for gameId={0}",
+                    playniteGameId));
+                return null;
+            }
+        }
+
         public List<string> GetCachedGameIds()
         {
             try
