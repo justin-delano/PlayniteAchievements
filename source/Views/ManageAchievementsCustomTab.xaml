@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="620"
@@ -310,13 +311,67 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="ID"
-                                            Width="150"
-                                            SortMemberPath="Id">
+                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
+                                            Width="300"
+                                            SortMemberPath="UnlockTime">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Id, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource GridEditorTextBoxStyle}" />
+                                <Grid VerticalAlignment="Center"
+                                      Margin="4,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding HasUnlockTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding Unlocked}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Focusable="False"
+                                              IsTabStop="False" />
+
+                                    <Grid Grid.Column="1"
+                                          Margin="8,0,0,0"
+                                          VerticalAlignment="Center">
+                                        <TextBlock Text="-"
+                                                   Opacity="0.5"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding CanEditUnlockTime, Converter={StaticResource InverseBoolToVis}}" />
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{Binding CanEditUnlockTime, Converter={StaticResource BoolToVis}}">
+                                            <DatePicker SelectedDate="{Binding UnlockDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Padding="4,2"
+                                                        Margin="0,0,6,0" />
+                                            <TextBox Text="{Binding TimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Width="62"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Center"
+                                                     Padding="4,0"
+                                                     MaxLength="5">
+                                                <TextBox.Style>
+                                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsValidTime}" Value="False">
+                                                                <Setter Property="BorderBrush" Value="#FFE07070" />
+                                                                <Setter Property="BorderThickness" Value="2" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBox.Style>
+                                            </TextBox>
+                                            <ComboBox ItemsSource="{Binding AvailableTimeModes}"
+                                                      SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      Width="74"
+                                                      VerticalContentAlignment="Center"
+                                                      Padding="4,0"
+                                                      Margin="2,0,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -448,117 +503,6 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Trophy}"
-                                            Width="120"
-                                            SortMemberPath="TrophyType">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.TrophyTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          SelectedValue="{Binding TrophyType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          SelectedValuePath="Value"
-                                          MinHeight="26"
-                                          VerticalAlignment="Center"
-                                          VerticalContentAlignment="Center">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Width="16"
-                                                       Height="16"
-                                                       Margin="0,0,6,0"
-                                                       VerticalAlignment="Center">
-                                                    <Image.Style>
-                                                        <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Value}" Value="platinum">
-                                                                    <Setter Property="Source" Value="{DynamicResource TrophyPlatinum}" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Value}" Value="gold">
-                                                                    <Setter Property="Source" Value="{DynamicResource TrophyGold}" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Value}" Value="silver">
-                                                                    <Setter Property="Source" Value="{DynamicResource TrophySilver}" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Value}" Value="bronze">
-                                                                    <Setter Property="Source" Value="{DynamicResource TrophyBronze}" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Image.Style>
-                                                </Image>
-                                                <TextBlock Text="{Binding DisplayName}"
-                                                           VerticalAlignment="Center" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
-                                            Width="300"
-                                            SortMemberPath="UnlockTime">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Grid VerticalAlignment="Center"
-                                      Margin="4,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <CheckBox Grid.Column="0"
-                                              IsChecked="{Binding HasUnlockTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                              IsEnabled="{Binding Unlocked}"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              Focusable="False"
-                                              IsTabStop="False" />
-
-                                    <Grid Grid.Column="1"
-                                          Margin="8,0,0,0"
-                                          VerticalAlignment="Center">
-                                        <TextBlock Text="-"
-                                                   Opacity="0.5"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   Visibility="{Binding CanEditUnlockTime, Converter={StaticResource InverseBoolToVis}}" />
-                                        <StackPanel Orientation="Horizontal"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    Visibility="{Binding CanEditUnlockTime, Converter={StaticResource BoolToVis}}">
-                                            <DatePicker SelectedDate="{Binding UnlockDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                        Padding="4,2"
-                                                        Margin="0,0,6,0" />
-                                            <TextBox Text="{Binding TimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     Width="62"
-                                                     VerticalContentAlignment="Center"
-                                                     HorizontalContentAlignment="Center"
-                                                     Padding="4,0"
-                                                     MaxLength="5">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsValidTime}" Value="False">
-                                                                <Setter Property="BorderBrush" Value="#FFE07070" />
-                                                                <Setter Property="BorderThickness" Value="2" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
-                                            <ComboBox ItemsSource="{Binding AvailableTimeModes}"
-                                                      SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                      Width="74"
-                                                      VerticalContentAlignment="Center"
-                                                      Padding="4,0"
-                                                      Margin="2,0,0,0" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Grid>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
 
@@ -582,38 +526,6 @@
                             <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
                                       IsChecked="{Binding Hidden, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       Margin="0,12,0,0" />
-
-                            <Grid Margin="0,8,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressNum}"
-                                               Style="{StaticResource FieldLabelStyle}" />
-                                    <TextBox Text="{Binding ProgressNumText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             Tag="NonNegativeInt"
-                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                             DataObject.Pasting="NumericTextBox_Pasting" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressDenom}"
-                                               Style="{StaticResource FieldLabelStyle}" />
-                                    <TextBox Text="{Binding ProgressDenomText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             Tag="PositiveInt"
-                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                             DataObject.Pasting="NumericTextBox_Pasting" />
-                                </StackPanel>
-                            </Grid>
-
-                            <TextBlock Text="{Binding ValidationMessage}"
-                                       Foreground="#FFE07070"
-                                       TextWrapping="Wrap"
-                                       Margin="0,12,0,0"
-                                       Visibility="{Binding HasValidationMessage, Converter={StaticResource BoolToVis}}" />
                         </StackPanel>
 
                         <Border Margin="0,14,0,0"
@@ -734,6 +646,113 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
+
+                        <StackPanel DataContext="{Binding SelectedRow}"
+                                    Margin="0,14,0,0"
+                                    Visibility="{Binding DataContext.HasSelectedRow, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
+                            <!-- Capstone, category, and type are ApiName-keyed custom data shared with
+                                 the Capstones and Category tabs; they persist immediately. A row gets
+                                 its ApiName and first save when it is created, so they are live at once. -->
+                            <CheckBox x:Name="CapstoneCheckBox"
+                                      Content="{DynamicResource LOCPlayAch_Dynamic_Capstone}"
+                                      IsChecked="{Binding IsCapstone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEnabled="{Binding CanEditAssignments}" />
+
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <controls:CategoryPickerBox x:Name="CategoryPicker"
+                                                        Categories="{Binding DataContext.AssignableCategoryOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        Placeholder="{DynamicResource LOCPlayAch_ManageAchievements_Category_InputPlaceholder}"
+                                                        IsEnabled="{Binding CanEditAssignments}" />
+
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <Button x:Name="TypeSelectionButton"
+                                    Style="{StaticResource AchievementSelectorButtonStyle}"
+                                    Content="{Binding CategoryTypeDisplayText}"
+                                    IsEnabled="{Binding CanEditAssignments}"
+                                    Click="TypeSelectionButton_Click"
+                                    MinHeight="26"
+                                    HorizontalAlignment="Stretch">
+                                <Button.ContextMenu>
+                                    <ContextMenu x:Name="TypeSelectionContextMenu"
+                                                 Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                                 ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}" />
+                                </Button.ContextMenu>
+                            </Button>
+
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Column_Trophy}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <ComboBox ItemsSource="{Binding DataContext.TrophyTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                      SelectedValue="{Binding TrophyType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Value"
+                                      MinHeight="26"
+                                      VerticalContentAlignment="Center">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Image Width="16"
+                                                   Height="16"
+                                                   Margin="0,0,6,0"
+                                                   VerticalAlignment="Center">
+                                                <Image.Style>
+                                                    <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Value}" Value="platinum">
+                                                                <Setter Property="Source" Value="{DynamicResource TrophyPlatinum}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Value}" Value="gold">
+                                                                <Setter Property="Source" Value="{DynamicResource TrophyGold}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Value}" Value="silver">
+                                                                <Setter Property="Source" Value="{DynamicResource TrophySilver}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Value}" Value="bronze">
+                                                                <Setter Property="Source" Value="{DynamicResource TrophyBronze}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressNum}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox Text="{Binding ProgressNumText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource GridEditorTextBoxStyle}"
+                                             Tag="NonNegativeInt"
+                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                             DataObject.Pasting="NumericTextBox_Pasting" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressDenom}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox Text="{Binding ProgressDenomText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource GridEditorTextBoxStyle}"
+                                             Tag="PositiveInt"
+                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                             DataObject.Pasting="NumericTextBox_Pasting" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="{Binding ValidationMessage}"
+                                       Foreground="#FFE07070"
+                                       TextWrapping="Wrap"
+                                       Margin="0,12,0,0"
+                                       Visibility="{Binding HasValidationMessage, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
