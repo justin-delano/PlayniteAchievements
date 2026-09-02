@@ -139,51 +139,48 @@
                                Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}" />
                 </StackPanel>
 
+                <!-- Three groups: row edits, transfer, and the destructive clear kept apart on the right. -->
                 <WrapPanel Grid.Column="1"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Top"
                            Margin="12,0,0,0">
-                    <Button x:Name="AddButton"
-                            Content="{DynamicResource LOCPlayAch_Common_Add}"
-                            Command="{Binding AddCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
-                    <Button x:Name="DuplicateButton"
-                            Content="{DynamicResource LOCPlayAch_Common_Duplicate}"
-                            Command="{Binding DuplicateCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
-                    <Button x:Name="DeleteButton"
-                            Content="{DynamicResource LOCPlayAch_Common_Delete}"
-                            Command="{Binding DeleteCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
-                    <Button x:Name="ImportFileButton"
-                            Content="{DynamicResource LOCPlayAch_Common_Import}"
-                            Command="{Binding ImportFileCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
-                    <Button x:Name="ExportButton"
-                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
-                            Click="ContextMenuButton_Click"
-                            Style="{StaticResource ToolbarButtonStyle}">
-                        <Button.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportAchievements}"
-                                          Command="{Binding ExportAchievementsCommand}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportTemplate}"
-                                          Command="{Binding ExportTemplateCommand}" />
-                            </ContextMenu>
-                        </Button.ContextMenu>
-                    </Button>
-                    <Button x:Name="RevertButton"
-                            Content="{DynamicResource LOCPlayAch_Common_RevertChanges}"
-                            Command="{Binding RevertCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
+                        <Button x:Name="AddButton"
+                                Content="{DynamicResource LOCPlayAch_Common_Add}"
+                                Command="{Binding AddCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}" />
+                        <Button x:Name="DuplicateButton"
+                                Content="{DynamicResource LOCPlayAch_Common_Duplicate}"
+                                Command="{Binding DuplicateCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}" />
+                        <Button x:Name="DeleteButton"
+                                Content="{DynamicResource LOCPlayAch_Common_Delete}"
+                                Command="{Binding DeleteCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
+                        <Button x:Name="ImportFileButton"
+                                Content="{DynamicResource LOCPlayAch_Common_Import}"
+                                Command="{Binding ImportFileCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}" />
+                        <Button x:Name="ExportButton"
+                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                                Click="ContextMenuButton_Click"
+                                Style="{StaticResource ToolbarButtonStyle}">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportAchievements}"
+                                              Command="{Binding ExportAchievementsCommand}" />
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportTemplate}"
+                                              Command="{Binding ExportTemplateCommand}" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </StackPanel>
                     <Button x:Name="ClearButton"
-                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ClearAll}"
+                            Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Command="{Binding ClearCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
-                    <Button x:Name="SaveButton"
-                            Content="{DynamicResource LOCPlayAch_Button_Save}"
-                            Command="{Binding SaveCommand}"
-                            Padding="12,6"
+                            Style="{StaticResource ToolbarButtonStyle}"
                             Margin="0,0,0,8" />
                 </WrapPanel>
             </Grid>
@@ -196,8 +193,14 @@
                 <ColumnDefinition Width="340" />
             </Grid.ColumnDefinitions>
 
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
             <DataGrid x:Name="CustomAchievementsGrid"
-                      Grid.Column="0"
+                      Grid.Row="0"
                       ItemsSource="{Binding AchievementRows}"
                       SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
                       AutoGenerateColumns="False"
@@ -292,8 +295,9 @@
                                             SortMemberPath="DisplayName">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource GridEditorTextBoxStyle}" />
+                                <TextBox Text="{Binding DisplayName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                         KeyDown="EditorTextBox_KeyDown" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -303,7 +307,7 @@
                                             SortMemberPath="Description">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                          Style="{StaticResource GridEditorTextBoxStyle}"
                                          TextWrapping="Wrap"
                                          AcceptsReturn="True" />
@@ -346,7 +350,8 @@
                                             <DatePicker SelectedDate="{Binding UnlockDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                         Padding="4,2"
                                                         Margin="0,0,6,0" />
-                                            <TextBox Text="{Binding TimeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            <TextBox Text="{Binding TimeText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                     KeyDown="EditorTextBox_KeyDown"
                                                      Width="62"
                                                      VerticalContentAlignment="Center"
                                                      HorizontalContentAlignment="Center"
@@ -422,8 +427,9 @@
                                     </Image>
                                     <TextBox x:Name="RarityInputBox"
                                              Grid.Column="1"
-                                             Text="{Binding RarityInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}" />
+                                             Text="{Binding RarityInput, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                             Style="{StaticResource GridEditorTextBoxStyle}"
+                                             KeyDown="EditorTextBox_KeyDown" />
                                     <TextBlock Grid.Column="1"
                                                Text="100%"
                                                IsHitTestVisible="False"
@@ -493,9 +499,10 @@
                                             SortMemberPath="PointsText">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding PointsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox Text="{Binding PointsText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                          Style="{StaticResource GridEditorTextBoxStyle}"
                                          HorizontalContentAlignment="Center"
+                                         KeyDown="EditorTextBox_KeyDown"
                                          Tag="NonNegativeInt"
                                          PreviewTextInput="NumericTextBox_PreviewTextInput"
                                          DataObject.Pasting="NumericTextBox_Pasting" />
@@ -505,6 +512,20 @@
 
                 </DataGrid.Columns>
             </DataGrid>
+
+                <!-- A second Add at the foot of the list, where a new row appears. -->
+                <Button x:Name="AddRowFooterButton"
+                        Grid.Row="1"
+                        Content="&#x2B;"
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Command="{Binding AddCommand}"
+                        ToolTip="{DynamicResource LOCPlayAch_Common_Add}"
+                        HorizontalAlignment="Stretch"
+                        MinHeight="26"
+                        Padding="0"
+                        Margin="0,6,0,0" />
+            </Grid>
 
             <Border Grid.Column="2"
                     Style="{StaticResource CardBorderStyle}">
@@ -520,13 +541,6 @@
                                    TextWrapping="Wrap"
                                    Margin="0,10,0,0"
                                    Visibility="{Binding HasSelectedRow, Converter={StaticResource InverseBoolToVis}}" />
-
-                        <StackPanel DataContext="{Binding SelectedRow}"
-                                    Visibility="{Binding DataContext.HasSelectedRow, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
-                            <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
-                                      IsChecked="{Binding Hidden, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      Margin="0,12,0,0" />
-                        </StackPanel>
 
                         <Border Margin="0,14,0,0"
                                 Padding="0,12,0,0"
@@ -570,8 +584,9 @@
 
                                     <Grid Grid.Column="2"
                                           Margin="8,0,0,0">
-                                        <TextBox Text="{Binding UnlockedIconPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        <TextBox Text="{Binding UnlockedIconDisplayText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                                  Style="{StaticResource GridEditorTextBoxStyle}"
+                                                 KeyDown="EditorTextBox_KeyDown"
                                                  Tag="Unlocked"
                                                  ToolTip="{Binding UnlockedIconPath}"
                                                  AllowDrop="True"
@@ -623,8 +638,9 @@
 
                                     <Grid Grid.Column="2"
                                           Margin="8,0,0,0">
-                                        <TextBox Text="{Binding LockedIconPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        <TextBox Text="{Binding LockedIconDisplayText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                                  Style="{StaticResource GridEditorTextBoxStyle}"
+                                                 KeyDown="EditorTextBox_KeyDown"
                                                  Tag="Locked"
                                                  ToolTip="{Binding LockedIconPath}"
                                                  AllowDrop="True"
@@ -653,10 +669,23 @@
                             <!-- Capstone, category, and type are ApiName-keyed custom data shared with
                                  the Capstones and Category tabs; they persist immediately. A row gets
                                  its ApiName and first save when it is created, so they are live at once. -->
-                            <CheckBox x:Name="CapstoneCheckBox"
-                                      Content="{DynamicResource LOCPlayAch_Dynamic_Capstone}"
-                                      IsChecked="{Binding IsCapstone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEnabled="{Binding CanEditAssignments}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="{DynamicResource BadgeCompletedGame}"
+                                       Style="{StaticResource RarityIcon}"
+                                       Width="16"
+                                       Height="16"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center" />
+                                <CheckBox x:Name="CapstoneCheckBox"
+                                          Content="{DynamicResource LOCPlayAch_Dynamic_Capstone}"
+                                          IsChecked="{Binding IsCapstone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          IsEnabled="{Binding CanEditAssignments}"
+                                          VerticalAlignment="Center" />
+                                <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
+                                          IsChecked="{Binding Hidden, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Margin="18,0,0,0"
+                                          VerticalAlignment="Center" />
+                            </StackPanel>
 
                             <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Category}"
                                        Style="{StaticResource FieldLabelStyle}" />
@@ -665,7 +694,7 @@
                                                         Placeholder="{DynamicResource LOCPlayAch_ManageAchievements_Category_InputPlaceholder}"
                                                         IsEnabled="{Binding CanEditAssignments}" />
 
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Type}"
                                        Style="{StaticResource FieldLabelStyle}" />
                             <Button x:Name="TypeSelectionButton"
                                     Style="{StaticResource AchievementSelectorButtonStyle}"
@@ -730,8 +759,9 @@
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressNum}"
                                                Style="{StaticResource FieldLabelStyle}" />
-                                    <TextBox Text="{Binding ProgressNumText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding ProgressNumText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                              Style="{StaticResource GridEditorTextBoxStyle}"
+                                             KeyDown="EditorTextBox_KeyDown"
                                              Tag="NonNegativeInt"
                                              PreviewTextInput="NumericTextBox_PreviewTextInput"
                                              DataObject.Pasting="NumericTextBox_Pasting" />
@@ -739,8 +769,9 @@
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressDenom}"
                                                Style="{StaticResource FieldLabelStyle}" />
-                                    <TextBox Text="{Binding ProgressDenomText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding ProgressDenomText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                              Style="{StaticResource GridEditorTextBoxStyle}"
+                                             KeyDown="EditorTextBox_KeyDown"
                                              Tag="PositiveInt"
                                              PreviewTextInput="NumericTextBox_PreviewTextInput"
                                              DataObject.Pasting="NumericTextBox_Pasting" />
