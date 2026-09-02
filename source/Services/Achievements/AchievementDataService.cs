@@ -373,7 +373,8 @@ namespace PlayniteAchievements.Services.Achievements
                 excludedSummaryIds,
                 recentAchievementDetailLimit,
                 gameId => GetGame(gameId)?.Name,
-                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService);
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                ResolveCustomProviderPlatformKey);
 
             var gameIdsNeedingCompletionOverrides = new HashSet<Guid>(
                 summaryData.Games
@@ -1196,7 +1197,22 @@ namespace PlayniteAchievements.Services.Achievements
                 playniteGameId,
                 GetGame(playniteGameId),
                 customData.CustomAchievements,
-                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService);
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                ResolveCustomProviderPlatformKey(customData.CustomProviderId));
+        }
+
+        /// <summary>
+        /// The display key for an assigned custom provider, or null when the id is blank or no
+        /// longer names a stored provider (the game then displays as plain Custom).
+        /// </summary>
+        private static string ResolveCustomProviderPlatformKey(string customProviderId)
+        {
+            if (string.IsNullOrWhiteSpace(customProviderId))
+            {
+                return null;
+            }
+
+            return PlayniteAchievementsPlugin.Instance?.CustomProviderStore?.ResolveDisplayKey(customProviderId);
         }
 
         private Playnite.SDK.Models.Game GetGame(Guid playniteGameId)
