@@ -92,6 +92,8 @@
     <Compile Include="..\..\source\Services\Refresh\RefreshEntryPoint.cs" Link="Source\Services\Refresh\RefreshEntryPoint.cs" />
     <Compile Include="..\..\source\Services\LegacyManualLinkImporter.cs" Link="Source\Services\LegacyManualLinkImporter.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataStore.cs" Link="Source\Services\GameCustomData\GameCustomDataStore.cs" />
+    <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataStore.CustomAchievementsPackage.cs" Link="Source\Services\GameCustomData\GameCustomDataStore.CustomAchievementsPackage.cs" />
+    <Compile Include="..\..\source\Services\CustomAchievementCsvFormat.cs" Link="Source\Services\CustomAchievementCsvFormat.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLookup.cs" Link="Source\Services\GameCustomData\GameCustomDataLookup.cs" />
     <Compile Include="..\..\source\Services\CustomAchievementProjectionService.cs" Link="Source\Services\CustomAchievementProjectionService.cs" />
     <Compile Include="..\..\source\Services\CustomAchievementTextImportService.cs" Link="Source\Services\CustomAchievementTextImportService.cs" />
