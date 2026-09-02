@@ -23,6 +23,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Back">Back</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Color">Color</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Delete">Delete</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
@@ -306,6 +307,12 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoSelection">Select a custom achievement row.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">Progress Total</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressNum">Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm">Delete "{0}"? {1} other game(s) use this platform and will show as Custom.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">Changes to this platform apply to every game assigned to it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor">Enter a valid color such as #FF652C.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderNewName">New Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid">This file could not be read as an SVG image.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes">No drawable shapes were found in this SVG file.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Unlocked Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Filtered</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Filtered from Summaries</sys:String>
