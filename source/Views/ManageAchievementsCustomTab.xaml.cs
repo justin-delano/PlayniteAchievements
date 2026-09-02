@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Views
             ViewModel?.RefreshData();
         }
 
-        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        private void ContextMenuButton_Click(object sender, RoutedEventArgs e)
         {
             if (!(sender is Button button) || button.ContextMenu == null)
             {
@@ -55,6 +55,21 @@ namespace PlayniteAchievements.Views
             button.ContextMenu.PlacementTarget = button;
             button.ContextMenu.Placement = PlacementMode.Bottom;
             button.ContextMenu.IsOpen = true;
+        }
+
+        private void RarityMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(e.OriginalSource is MenuItem menuItem) ||
+                !(menuItem.DataContext is CustomAchievementSelectionOption option))
+            {
+                return;
+            }
+
+            var menu = ItemsControl.ItemsControlFromItemContainer(menuItem) as ContextMenu;
+            if ((menu?.PlacementTarget as FrameworkElement)?.DataContext is CustomAchievementEditItem row)
+            {
+                row.RarityInput = option.DisplayName;
+            }
         }
 
         private void BrowseIconButton_Click(object sender, RoutedEventArgs e)
@@ -167,7 +182,6 @@ namespace PlayniteAchievements.Views
                 AddButton,
                 DuplicateButton,
                 DeleteButton,
-                PasteImportButton,
                 ImportFileButton,
                 ExportButton,
                 RevertButton,
