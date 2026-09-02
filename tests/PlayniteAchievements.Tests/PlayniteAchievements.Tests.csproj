@@ -382,6 +382,9 @@
     <Compile Include="..\..\source\Models\Settings\GameCustomDataFile.cs" Link="Source\Models\Settings\GameCustomDataFile.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataPortableFile.cs" Link="Source\Models\Settings\GameCustomDataPortableFile.cs" />
     <Compile Include="..\..\source\Models\Settings\CustomAchievementDefinition.cs" Link="Source\Models\Settings\CustomAchievementDefinition.cs" />
+    <Compile Include="..\..\source\Models\Settings\CustomProviderDefinition.cs" Link="Source\Models\Settings\CustomProviderDefinition.cs" />
+    <Compile Include="..\..\source\Services\CustomProviders\CustomProviderKeys.cs" Link="Source\Services\CustomProviders\CustomProviderKeys.cs" />
+    <Compile Include="..\..\source\Services\CustomProviders\SvgGeometryImporter.cs" Link="Source\Services\CustomProviders\SvgGeometryImporter.cs" />
     <Compile Include="..\..\source\Models\Settings\OverviewPieSmallSliceMode.cs" Link="Source\Models\Settings\OverviewPieSmallSliceMode.cs" />
     <Compile Include="..\..\source\Models\Settings\SettingsExtensions.cs" Link="Source\Models\Settings\SettingsExtensions.cs" />
     <Compile Include="..\..\source\Models\AchievementUnlockedEventArgs.cs" Link="Source\Models\AchievementUnlockedEventArgs.cs" />
