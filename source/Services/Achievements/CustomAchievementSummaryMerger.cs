@@ -33,6 +33,7 @@ namespace PlayniteAchievements.Services.Achievements
 
             summaryData.Games ??= new List<CachedGameSummaryData>();
             summaryData.RecentUnlocks ??= new List<CachedRecentUnlockData>();
+            summaryData.Achievements ??= new List<CachedRecentUnlockData>();
             summaryData.GlobalUnlockCountsByDate ??= new Dictionary<DateTime, int>();
             summaryData.UnlockCountsByDateByGame ??= new Dictionary<Guid, Dictionary<DateTime, int>>();
 
@@ -113,7 +114,15 @@ namespace PlayniteAchievements.Services.Achievements
                         Increment(gameCounts, unlockDate.Value);
                     }
 
-                    summaryData.RecentUnlocks.Add(CreateRecentUnlock(game, achievement));
+                    var recentUnlock = CreateRecentUnlock(game, achievement);
+                    summaryData.RecentUnlocks.Add(recentUnlock);
+                    if (recentAchievementDetailLimit == 0)
+                    {
+                        // Unbounded reads fill Achievements with every unlocked row and derive
+                        // RecentUnlocks from it, so append to both lists to keep that contract.
+                        summaryData.Achievements.Add(recentUnlock);
+                    }
+
                     addedRecent = true;
                 }
 
@@ -133,6 +142,12 @@ namespace PlayniteAchievements.Services.Achievements
             summaryData.RecentUnlocks = summaryData.RecentUnlocks
                 .OrderByDescending(recent => recent?.UnlockTimeUtc ?? DateTime.MinValue)
                 .ToList();
+            if (recentAchievementDetailLimit == 0)
+            {
+                summaryData.Achievements = summaryData.Achievements
+                    .OrderByDescending(item => item?.UnlockTimeUtc ?? DateTime.MinValue)
+                    .ToList();
+            }
             if (recentAchievementDetailLimit > 0 && summaryData.RecentUnlocks.Count > recentAchievementDetailLimit)
             {
                 summaryData.HasMoreRecentUnlocks = true;
@@ -229,6 +244,7 @@ namespace PlayniteAchievements.Services.Achievements
                 IsCapstone = achievement.IsCapstone,
                 GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
                 Rarity = achievement.Rarity,
+                Unlocked = achievement.Unlocked,
                 UnlockTimeUtc = achievement.UnlockTimeUtc,
                 ProgressNum = achievement.ProgressNum,
                 ProgressDenom = achievement.ProgressDenom
