@@ -700,7 +700,35 @@ namespace PlayniteAchievements.Views
                 return BuildFriendMenu(friend, menuSource);
             }
 
+            if (data is AchievementDisplayItem)
+            {
+                return BuildAchievementMenu(data, menuSource);
+            }
+
             return null;
+        }
+
+        /// <summary>
+        /// The achievement options act on the user's own per-game data, so the shared builder only
+        /// offers them for a game the user owns; a friend's unowned game yields none. Either way the
+        /// row still reaches its grid's display settings rather than doing nothing.
+        /// </summary>
+        private ContextMenu BuildAchievementMenu(object data, DependencyObject menuSource)
+        {
+            var menu = new ContextMenu();
+            var appended = AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
+                menu,
+                data,
+                this,
+                () => _ = _viewModel?.LoadAsync(),
+                menuSource);
+
+            if (!appended)
+            {
+                GridDisplaySettingsMenuBuilder.Append(menu, this, menuSource);
+            }
+
+            return menu;
         }
 
         private ContextMenu BuildGameMenu(object data, DependencyObject menuSource = null)
