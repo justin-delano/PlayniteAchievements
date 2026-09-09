@@ -1,14 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Threading;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Settings;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.Settings.Controls;
 
@@ -17,29 +15,38 @@ namespace PlayniteAchievements.Views.Dialogs
     /// <summary>
     /// The per-grid display settings popup, opened from a grid's own context menu.
     ///
-    /// Edits the LIVE grid options catalog records rather than clones, so changes apply to the
-    /// grid behind the window immediately. Persistence is therefore not this window's Save button
-    /// (it has none) but one of two paths:
+    /// Edits apply to the LIVE catalog records, so the grid behind the window changes as options are
+    /// changed, and a snapshot taken on open lets Cancel put them back. Closing the window without
+    /// pressing Save reverts, like any dialog with a Cancel button.
     ///
-    /// - With no settings edit session pending, a debounced write, matching the showcase widget
-    ///   options control.
-    /// - While a settings window holds a pending edit snapshot, no write at all: the settings
-    ///   window's OK/Cancel decides, so a grid changed behind an open settings window follows that
-    ///   window's Save/Revert. A Revert replaces the whole persisted instance, which this window
-    ///   detects and rebinds to.
+    /// Saving is delegated to <see cref="DebouncedSettingsPersist"/>, which also declines to write
+    /// while a settings window holds a pending edit snapshot -- there, that window's OK/Cancel
+    /// governs these records too. A settings window Cancel replaces the whole persisted instance,
+    /// which this window detects and rebinds to.
     /// </summary>
     public sealed class GridDisplaySettingsDialog : UserControl
     {
+        private const double WindowWidth = 480;
+        private const double ContentWidth = WindowWidth - 28;
+        private const double FallbackHeight = 620;
+        private const double MinimumHeight = 300;
+
+        // One key for every grid, not one per surface: the user sizes this window once and expects
+        // it to stay put, and a key per surface would grow an entry for each of the twenty grids.
+        // The measured height above is only the first-open default; a saved placement wins.
+        private const string WindowPlacementKey = "GridDisplaySettings";
+
         private readonly GridOptionKind _kind;
         private readonly string _surfaceKey;
         private readonly string _categorySurfaceKey;
-        private readonly List<INotifyPropertyChanged> _records = new List<INotifyPropertyChanged>();
 
         private GridOptionsEditor _primaryEditor;
         private GridOptionsEditor _categoryEditor;
         private CheckBox _hideCategoryRowCheckBox;
-        private DispatcherTimer _persistTimer;
+        private GridOptionsSnapshot _snapshot;
+        private DebouncedSettingsPersist _persist;
         private PersistedSettingsSubscription _persistedSubscription;
+        private bool _saved;
 
         private GridDisplaySettingsDialog(GridOptionKind kind, string surfaceKey, string categorySurfaceKey)
         {
@@ -47,14 +54,19 @@ namespace PlayniteAchievements.Views.Dialogs
             _surfaceKey = surfaceKey;
             _categorySurfaceKey = categorySurfaceKey;
 
-            // The editor merges its own dictionaries, but this control's own header and checkbox
-            // need the settings window's keyed and implicit styles too.
+            // The editor merges its own dictionaries, but this control's own header, checkbox and
+            // buttons need the settings window's keyed and implicit styles too.
             Resources.MergedDictionaries.Add(new ResourceDictionary
             {
                 Source = new Uri(
                     "pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml",
                     UriKind.Absolute)
             });
+
+            _persist = new DebouncedSettingsPersist(
+                this,
+                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
+                () => PlayniteAchievementsPlugin.Instance?.IsSettingsEditSessionActive == true);
 
             Content = BuildContent();
             FormattingCulture.Apply(this);
@@ -87,19 +99,41 @@ namespace PlayniteAchievements.Views.Dialogs
                 new WindowOptions
                 {
                     Width = WindowWidth,
-                    Height = editor.MeasureContentHeight(),
+                    Height = SettingsDialogSizing.MeasureHeight(
+                        editor,
+                        ContentWidth,
+                        MinimumHeight,
+                        FallbackHeight),
                     CanBeResizable = true,
                     ShowCloseButton = true,
                     ShowMinimizeButton = false,
                     ShowMaximizeButton = false
                 });
+
+            window.MinWidth = 360;
+            window.MinHeight = MinimumHeight;
+            WindowPlacementPersistenceService.Attach(
+                window,
+                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted,
+                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
+                WindowPlacementKey);
+
+            // Closing by the window chrome is a cancel: the edits are already applied to the live
+            // records, so without this the X would silently keep them and Cancel would be the only
+            // way out.
+            window.Closed += (_, __) =>
+            {
+                if (!editor._saved)
+                {
+                    editor.Revert();
+                }
+
+                editor._persist?.Dispose();
+                editor._persist = null;
+            };
+
             window.ShowDialog();
         }
-
-        private const double WindowWidth = 480;
-        private const double ContentWidth = WindowWidth - 28;
-        private const double FallbackHeight = 620;
-        private const double MinimumHeight = 260;
 
         private static string Localize(string key)
         {
@@ -155,28 +189,81 @@ namespace PlayniteAchievements.Views.Dialogs
 
             BindRecords();
 
-            return new ScrollViewer
+            var root = new Grid { Margin = new Thickness(12) };
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var scroller = new ScrollViewer
             {
-                Margin = new Thickness(12),
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
                 Content = panel
             };
+            Grid.SetRow(scroller, 0);
+            root.Children.Add(scroller);
+
+            var buttons = BuildButtons();
+            Grid.SetRow(buttons, 1);
+            root.Children.Add(buttons);
+
+            return root;
+        }
+
+        private UIElement BuildButtons()
+        {
+            var row = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 12, 0, 0)
+            };
+
+            var cancel = new Button
+            {
+                Content = Localize("LOCPlayAch_Button_Cancel"),
+                MinWidth = 90,
+                IsCancel = true,
+                Margin = new Thickness(0, 0, 8, 0)
+            };
+            cancel.Click += (_, __) => CloseWindow();
+
+            var save = new Button
+            {
+                Content = Localize("LOCPlayAch_Button_Save"),
+                MinWidth = 90,
+                IsDefault = true
+            };
+            save.Click += (_, __) =>
+            {
+                _saved = true;
+                _persist?.Flush();
+                CloseWindow();
+            };
+
+            row.Children.Add(cancel);
+            row.Children.Add(save);
+            return row;
+        }
+
+        private void CloseWindow()
+        {
+            Window.GetWindow(this)?.Close();
         }
 
         /// <summary>
-        /// Points the editors at the current catalog records. Called again when the persisted
-        /// instance is replaced, so the window keeps editing the tree that is actually live.
+        /// Points the editors at the current catalog records and snapshots their values. Called
+        /// again when the persisted instance is replaced, so the window keeps editing the tree that
+        /// is actually live and its snapshot describes that tree.
         /// </summary>
         private void BindRecords()
         {
-            DetachRecords();
-
             var catalog = Catalog;
             if (catalog == null)
             {
                 return;
             }
+
+            _persist?.ClearRecords();
 
             var primary = ResolveRecord(catalog, _kind, _surfaceKey);
             if (_primaryEditor != null)
@@ -184,18 +271,20 @@ namespace PlayniteAchievements.Views.Dialogs
                 _primaryEditor.Options = primary;
             }
 
-            Track(primary);
-
+            object category = null;
             if (_categoryEditor != null)
             {
-                var category = catalog.GetCategorySummaries(_categorySurfaceKey);
+                category = catalog.GetCategorySummaries(_categorySurfaceKey);
                 _categoryEditor.Options = category;
-                Track(category);
             }
+
+            _snapshot = new GridOptionsSnapshot(primary, category);
+            _persist?.Watch(primary);
+            _persist?.Watch(category);
 
             if (_hideCategoryRowCheckBox != null)
             {
-                // Rebound rather than left pointing at the previous record's property.
+                // Rebound rather than left pointing at a replaced record's property.
                 BindingOperations.ClearBinding(_hideCategoryRowCheckBox, ToggleButton.IsCheckedProperty);
                 if (primary != null)
                 {
@@ -207,6 +296,19 @@ namespace PlayniteAchievements.Views.Dialogs
                     });
                 }
             }
+        }
+
+        /// <summary>
+        /// Puts the records back as they were when the window opened, then writes, because a
+        /// debounced save may already have committed an intermediate state to disk.
+        /// </summary>
+        private void Revert()
+        {
+            // Dropped before restoring so the restore's own property changes cannot schedule a
+            // save of the values being undone.
+            _persist?.ClearRecords();
+            _snapshot?.Restore();
+            _persist?.PersistNow();
         }
 
         private static object ResolveRecord(GridOptionsCatalog catalog, GridOptionKind kind, string surfaceKey)
@@ -226,63 +328,8 @@ namespace PlayniteAchievements.Views.Dialogs
             }
         }
 
-        private void Track(object record)
-        {
-            if (record is INotifyPropertyChanged observable)
-            {
-                _records.Add(observable);
-                if (IsLoaded)
-                {
-                    observable.PropertyChanged -= OnRecordChanged;
-                    observable.PropertyChanged += OnRecordChanged;
-                }
-            }
-        }
-
-        private void DetachRecords()
-        {
-            foreach (var record in _records)
-            {
-                record.PropertyChanged -= OnRecordChanged;
-            }
-
-            _records.Clear();
-        }
-
-        /// <summary>
-        /// Sizes the window to the rows the surface actually offers. The editor's root is a stack
-        /// panel and its visible row count is fixed by the capability table, so a measure pass is
-        /// accurate; the window is resizable and the content scrolls, so an inaccurate measure
-        /// only costs some empty space.
-        /// </summary>
-        private double MeasureContentHeight()
-        {
-            try
-            {
-                Measure(new Size(ContentWidth, double.PositiveInfinity));
-                var desired = DesiredSize.Height + 56;
-                if (double.IsNaN(desired) || double.IsInfinity(desired) || desired <= 0)
-                {
-                    return FallbackHeight;
-                }
-
-                var ceiling = SystemParameters.WorkArea.Height * 0.85;
-                return Math.Min(Math.Max(desired, MinimumHeight), ceiling);
-            }
-            catch (Exception)
-            {
-                return FallbackHeight;
-            }
-        }
-
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            foreach (var record in _records)
-            {
-                record.PropertyChanged -= OnRecordChanged;
-                record.PropertyChanged += OnRecordChanged;
-            }
-
             var settings = PlayniteAchievementsPlugin.Instance?.Settings;
             if (settings != null && _persistedSubscription == null)
             {
@@ -295,56 +342,19 @@ namespace PlayniteAchievements.Views.Dialogs
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            DetachRecords();
             _persistedSubscription?.Dispose();
             _persistedSubscription = null;
-            FlushPendingPersist();
         }
 
         /// <summary>
-        /// A settings window Revert replaces the whole persisted instance, orphaning the records
-        /// these editors were bound to. Drop the pending write (the reverted state is the intended
-        /// one) and rebind to the new tree so the window shows the reverted values.
+        /// A settings window Cancel replaces the whole persisted instance, orphaning the records
+        /// these editors were bound to. Rebind to the new tree so the window shows the reverted
+        /// values and its own Cancel refers to them, and drop the stale pending write.
         /// </summary>
         private void OnPersistedInstanceChanged()
         {
-            _persistTimer?.Stop();
+            _persist?.Cancel();
             BindRecords();
-        }
-
-        private void OnRecordChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (_persistTimer == null)
-            {
-                _persistTimer = new DispatcherTimer
-                {
-                    Interval = TimeSpan.FromMilliseconds(600)
-                };
-                _persistTimer.Tick += (_, __) => FlushPendingPersist();
-            }
-
-            // Restart the window on every edit so a burst of toggles produces one write.
-            _persistTimer.Stop();
-            _persistTimer.Start();
-        }
-
-        private void FlushPendingPersist()
-        {
-            if (_persistTimer == null || !_persistTimer.IsEnabled)
-            {
-                return;
-            }
-
-            _persistTimer.Stop();
-
-            var plugin = PlayniteAchievementsPlugin.Instance;
-            if (plugin == null || plugin.IsSettingsEditSessionActive)
-            {
-                // A settings window owns the write; its OK/Cancel governs these edits.
-                return;
-            }
-
-            plugin.PersistSettingsForUi();
         }
     }
 }
