@@ -109,6 +109,9 @@ namespace PlayniteAchievements.Services.Tests.Captures
 
             // Delete Braid's captures behind the service's back. A targeted invalidate of Portal
             // must not re-enumerate (and therefore must not notice) the untouched game.
+            // Only observable because the test service does not watch the directory: with a
+            // watcher running this races it, and the deletion is noticed under load but not when
+            // the test runs alone.
             Directory.Delete(
                 Path.Combine(_root, UnlockScreenshotService.SanitizeCaptureGameName("Braid")),
                 recursive: true);

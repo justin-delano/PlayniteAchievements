@@ -38,11 +38,22 @@ namespace PlayniteAchievements.Services.Captures
         private string _captureConfigurationKey;
         private Timer _changeDebounce;
         private bool _disposed;
+        private readonly bool _watchForChanges;
 
-        public CaptureLibraryService(Func<PersistedSettings> settingsAccessor, ILogger logger)
+        /// <param name="watchForChanges">
+        /// Whether to watch the capture directories for changes made outside the plugin. Off only
+        /// for tests: with a watcher running, nothing happens to the directories behind the
+        /// service's back, so a test that changes them out of band is racing the watcher thread
+        /// rather than observing the caching behavior it means to assert.
+        /// </param>
+        public CaptureLibraryService(
+            Func<PersistedSettings> settingsAccessor,
+            ILogger logger,
+            bool watchForChanges = true)
         {
             _settingsAccessor = settingsAccessor;
             _logger = logger;
+            _watchForChanges = watchForChanges;
         }
 
         /// <summary>
@@ -345,6 +356,11 @@ namespace PlayniteAchievements.Services.Captures
 
         private void EnsureWatchers()
         {
+            if (!_watchForChanges)
+            {
+                return;
+            }
+
             var persisted = _settingsAccessor?.Invoke();
             var desired = ResolveBaseDirectories()
                 .Where(Directory.Exists)
