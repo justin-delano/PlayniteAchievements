@@ -612,6 +612,20 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(AllowColumnVisibilityMenuProperty, value);
         }
 
+        /// <summary>
+        /// When false, the grid offers no "Display settings…" entry. Independent of
+        /// <see cref="AllowColumnVisibilityMenu"/>, which governs only the column menu.
+        /// </summary>
+        public static readonly DependencyProperty AllowDisplaySettingsMenuProperty =
+            DependencyProperty.Register(nameof(AllowDisplaySettingsMenu), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        public bool AllowDisplaySettingsMenu
+        {
+            get => (bool)GetValue(AllowDisplaySettingsMenuProperty);
+            set => SetValue(AllowDisplaySettingsMenuProperty, value);
+        }
+
         public static readonly DependencyProperty DelayInitialRenderUntilNormalizedProperty =
             DependencyProperty.Register(nameof(DelayInitialRenderUntilNormalized), typeof(bool),
                 typeof(AchievementDataGridControl), new PropertyMetadata(false, OnDelayInitialRenderUntilNormalizedChanged));
@@ -3485,28 +3499,31 @@ namespace PlayniteAchievements.Views.Controls
             return true;
         }
 
-        private void DataGridColumnMenu_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// Tunnels ahead of the row handlers, so it must decline a row hit and leave the row menu
+        /// to run. Handles a column header hit, then falls back to the display settings menu for a
+        /// click on the grid itself.
+        /// </summary>
+        private void DataGrid_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!AllowColumnVisibilityMenu)
-            {
-                e.Handled = true;
-                return;
-            }
-
             if (!(sender is DataGrid grid))
             {
                 return;
             }
 
             var header = VisualTreeHelpers.FindVisualParent<DataGridColumnHeader>(e.OriginalSource as DependencyObject);
-            if (header?.Column == null)
+            if (header?.Column != null)
             {
+                e.Handled = true;
+                if (AllowColumnVisibilityMenu)
+                {
+                    OpenColumnVisibilityMenu(grid, header, useControllerPlacement: false);
+                }
+
                 return;
             }
 
-            e.Handled = true;
-
-            OpenColumnVisibilityMenu(grid, header, useControllerPlacement: false);
+            GridDisplaySettingsMenuBuilder.TryOpenFallbackMenu(this, grid, e);
         }
 
         public bool OpenColumnVisibilityMenuForController()
