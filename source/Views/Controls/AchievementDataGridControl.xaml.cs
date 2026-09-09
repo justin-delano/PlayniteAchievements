@@ -2283,6 +2283,7 @@ namespace PlayniteAchievements.Views.Controls
                     gameId,
                     ManageAchievementsTab.Category,
                     selectManageCategoriesSubTab: true)));
+            GridDisplaySettingsMenuBuilder.Append(menu, this, row);
             ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
             row.ContextMenu = menu;
             menu.PlacementTarget = row;
@@ -3471,7 +3472,15 @@ namespace PlayniteAchievements.Views.Controls
 
         private void AchievementRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            ForwardRowMouseEvent(e, RowPreviewMouseRightButtonUpEvent, sender);
+            if (ForwardRowMouseEvent(e, RowPreviewMouseRightButtonUpEvent, sender))
+            {
+                return;
+            }
+
+            // Hosts that build a row menu append the display settings item themselves. Where a
+            // host offers no row menu, the row would otherwise be dead, so offer the display
+            // settings on their own.
+            GridDisplaySettingsMenuBuilder.TryOpenRowFallbackMenu(this, sender as DataGridRow, e);
         }
 
         private bool ForwardRowMouseEvent(MouseButtonEventArgs sourceEvent, RoutedEvent routedEvent, object source)

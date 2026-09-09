@@ -560,7 +560,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 plugin?.AchievementOverridesService,
                 plugin?.CacheManager,
                 LogManager.GetLogger(),
-                includeViewCaptures: true);
+                includeViewCaptures: true,
+                menuSource: row);
             if (menu == null || menu.Items.Count == 0)
             {
                 return false;
@@ -596,7 +597,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 RefreshAfterRowOptionsChanged,
                 includeViewCaptures: true,
                 onGoalChanged: ReapplyGoalOrderAfterRowOptionsChanged,
-                onCapstoneChanged: ApplyCapstoneAfterRowOptionsChanged);
+                onCapstoneChanged: ApplyCapstoneAfterRowOptionsChanged,
+                menuSource: row);
             if (menu.Items.Count == 0)
             {
                 return false;

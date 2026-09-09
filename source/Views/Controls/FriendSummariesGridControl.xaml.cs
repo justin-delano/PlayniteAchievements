@@ -569,6 +569,14 @@ namespace PlayniteAchievements.Views.Controls
         private void DataGridRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
             ForwardRowMouseEvent(e, RowPreviewMouseRightButtonUpEvent, sender);
+            if (e.Handled)
+            {
+                return;
+            }
+
+            // Hosts that build a row menu append the display settings item themselves. Where a
+            // host offers no row menu, offer the display settings on their own.
+            GridDisplaySettingsMenuBuilder.TryOpenRowFallbackMenu(this, sender as DataGridRow, e);
         }
 
         private void ForwardRowMouseEvent(MouseButtonEventArgs sourceEvent, RoutedEvent routedEvent, object source)

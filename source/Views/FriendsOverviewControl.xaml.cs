@@ -675,7 +675,7 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            var menu = BuildRowContextMenu(row.DataContext);
+            var menu = BuildRowContextMenu(row.DataContext, row);
             if (menu == null || menu.Items.Count == 0)
             {
                 return false;
@@ -688,22 +688,22 @@ namespace PlayniteAchievements.Views
             return true;
         }
 
-        private ContextMenu BuildRowContextMenu(object data)
+        private ContextMenu BuildRowContextMenu(object data, DependencyObject menuSource = null)
         {
             if (data is FriendGameSummaryItem || data is GameSummaryItem)
             {
-                return BuildGameMenu(data);
+                return BuildGameMenu(data, menuSource);
             }
 
             if (data is FriendSummaryItem friend)
             {
-                return BuildFriendMenu(friend);
+                return BuildFriendMenu(friend, menuSource);
             }
 
             return null;
         }
 
-        private ContextMenu BuildGameMenu(object data)
+        private ContextMenu BuildGameMenu(object data, DependencyObject menuSource = null)
         {
             var menu = GameRowContextMenuBuilder.BuildGameMenu(
                 data,
@@ -714,7 +714,8 @@ namespace PlayniteAchievements.Views
                 _playniteApi,
                 _achievementOverridesService,
                 _cacheManager,
-                _logger);
+                _logger,
+                menuSource: menuSource);
 
             // Unowned (provider-only) friend games have no Playnite Guid, so the shared builder
             // offers them only Refresh. Add a Clear Data item that removes the game's cached
@@ -966,7 +967,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private ContextMenu BuildFriendMenu(FriendSummaryItem friend)
+        private ContextMenu BuildFriendMenu(FriendSummaryItem friend, DependencyObject menuSource = null)
         {
             var menu = new ContextMenu();
             var refreshCommand = _viewModel?.RefreshFriendSelectedGameCommand;
@@ -1010,6 +1011,7 @@ namespace PlayniteAchievements.Views
             };
             ignoreItem.Click += (_, __) => IgnoreFriend(friend);
             menu.Items.Add(ignoreItem);
+            GridDisplaySettingsMenuBuilder.Append(menu, this, menuSource);
             return menu;
         }
 
