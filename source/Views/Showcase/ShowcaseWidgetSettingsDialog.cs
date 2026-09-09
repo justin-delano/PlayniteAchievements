@@ -98,9 +98,9 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var root = new Grid
             {
-                Margin = new Thickness(12),
                 Background = Brushes.Transparent
             };
+            root.SetResourceReference(MarginProperty, "PlayAch.Thickness.CardPadding");
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
@@ -135,15 +135,15 @@ namespace PlayniteAchievements.Views.Showcase
             var buttons = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 10, 0, 0)
+                HorizontalAlignment = HorizontalAlignment.Right
             };
+            buttons.SetResourceReference(MarginProperty, "PlayAch.Thickness.Top.Md");
             var cancel = new Button
             {
                 Content = Localize("LOCPlayAch_Button_Cancel"),
-                MinWidth = 82,
-                Margin = new Thickness(0, 0, 8, 0)
+                MinWidth = 82
             };
+            cancel.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
             cancel.Click += (_, __) => Window.GetWindow(this)?.Close();
             var save = new Button
             {
@@ -166,9 +166,9 @@ namespace PlayniteAchievements.Views.Showcase
                 Text = Localize("LOCPlayAch_Showcase_ProfileProviderHint"),
                 FontStyle = FontStyles.Italic,
                 Opacity = 0.7,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 6)
+                TextWrapping = TextWrapping.Wrap
             };
+            providerHint.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Sm");
             providerHint.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             panel.Children.Add(providerHint);
 
@@ -246,11 +246,12 @@ namespace PlayniteAchievements.Views.Showcase
             string label,
             string value)
         {
-            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            var row = new Grid();
+            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             var labelBlock = CreateLabel(label);
-            labelBlock.Margin = new Thickness(0, 0, 10, 0);
+            labelBlock.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
             labelBlock.VerticalAlignment = VerticalAlignment.Center;
             row.Children.Add(labelBlock);
             var box = new TextBox
@@ -268,13 +269,14 @@ namespace PlayniteAchievements.Views.Showcase
 
         private static TextBox AddImagePicker(Panel panel, string label, string value)
         {
-            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            var row = new Grid();
+            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var labelBlock = CreateLabel(label);
-            labelBlock.Margin = new Thickness(0, 0, 10, 0);
+            labelBlock.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
             labelBlock.VerticalAlignment = VerticalAlignment.Center;
             row.Children.Add(labelBlock);
             var box = new TextBox
@@ -289,9 +291,9 @@ namespace PlayniteAchievements.Views.Showcase
             var browse = new Button
             {
                 Content = Localize("LOCPlayAch_Button_Browse"),
-                MinWidth = 82,
-                Margin = new Thickness(8, 0, 0, 0)
+                MinWidth = 82
             };
+            browse.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");
             browse.Click += (_, __) =>
             {
                 var dialog = new OpenFileDialog
@@ -310,9 +312,9 @@ namespace PlayniteAchievements.Views.Showcase
             var clear = new Button
             {
                 Content = Localize("LOCPlayAch_Button_Clear"),
-                MinWidth = 72,
-                Margin = new Thickness(8, 0, 0, 0)
+                MinWidth = 72
             };
+            clear.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");
             clear.Click += (_, __) => box.Text = string.Empty;
             Grid.SetColumn(clear, 3);
             row.Children.Add(clear);

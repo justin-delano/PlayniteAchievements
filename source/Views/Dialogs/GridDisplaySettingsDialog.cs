@@ -162,17 +162,17 @@ namespace PlayniteAchievements.Views.Dialogs
             {
                 var header = new TextBlock
                 {
-                    Text = Localize("LOCPlayAch_Settings_CategoryGrid"),
-                    Margin = new Thickness(0, 12, 0, 6)
+                    Text = Localize("LOCPlayAch_Settings_CategoryGrid")
                 };
                 header.SetResourceReference(StyleProperty, "SubSectionHeaderStyle");
+                header.SetResourceReference(MarginProperty, "PlayAch.Thickness.Top.Md");
                 panel.Children.Add(header);
 
                 _hideCategoryRowCheckBox = new CheckBox
                 {
-                    Content = Localize("LOCPlayAch_Settings_HideCategorySummaryRow"),
-                    Margin = new Thickness(0, 0, 0, 6)
+                    Content = Localize("LOCPlayAch_Settings_HideCategorySummaryRow")
                 };
+                _hideCategoryRowCheckBox.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
                 panel.Children.Add(_hideCategoryRowCheckBox);
 
                 _categoryEditor = new GridOptionsEditor
@@ -185,7 +185,8 @@ namespace PlayniteAchievements.Views.Dialogs
 
             BindRecords();
 
-            var root = new Grid { Margin = new Thickness(12) };
+            var root = new Grid();
+            root.SetResourceReference(MarginProperty, "PlayAch.Thickness.CardPadding");
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
@@ -210,17 +211,17 @@ namespace PlayniteAchievements.Views.Dialogs
             var row = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 12, 0, 0)
+                HorizontalAlignment = HorizontalAlignment.Right
             };
+            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Top.Md");
 
             var cancel = new Button
             {
                 Content = Localize("LOCPlayAch_Button_Cancel"),
                 MinWidth = 90,
-                IsCancel = true,
-                Margin = new Thickness(0, 0, 8, 0)
+                IsCancel = true
             };
+            cancel.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
             cancel.Click += (_, __) => CloseWindow();
 
             var save = new Button

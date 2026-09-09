@@ -343,7 +343,7 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_AchievementName}"
-                                            Width="190"
+                                            Width="240"
                                             SortMemberPath="DisplayName">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -371,7 +371,7 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
-                                            Width="300"
+                                            Width="320"
                                             SortMemberPath="UnlockTime">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -437,7 +437,7 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Rarity}"
-                                            Width="170"
+                                            Width="190"
                                             SortMemberPath="Rarity">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -545,22 +545,6 @@
                                         </Button.ContextMenu>
                                     </Button>
                                 </Grid>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Points}"
-                                            Width="90"
-                                            SortMemberPath="PointsText">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBox Text="{Binding PointsText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                         Style="{StaticResource GridEditorTextBoxStyle}"
-                                         HorizontalContentAlignment="Center"
-                                         KeyDown="EditorTextBox_KeyDown"
-                                         Tag="NonNegativeInt"
-                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                         DataObject.Pasting="NumericTextBox_Pasting" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -804,6 +788,15 @@
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
+
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Column_Points}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <TextBox Text="{Binding PointsText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                     Style="{StaticResource GridEditorTextBoxStyle}"
+                                     KeyDown="EditorTextBox_KeyDown"
+                                     Tag="NonNegativeInt"
+                                     PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                     DataObject.Pasting="NumericTextBox_Pasting" />
 
                             <Grid Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>

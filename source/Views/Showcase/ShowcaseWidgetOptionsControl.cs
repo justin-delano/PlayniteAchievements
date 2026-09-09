@@ -459,10 +459,8 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            var editor = new GridOptionsEditor
-            {
-                Margin = new Thickness(0, 8, 0, 0)
-            };
+            var editor = new GridOptionsEditor();
+            editor.SetResourceReference(MarginProperty, "PlayAch.Thickness.Top.Md");
             object options;
             if (ShowcaseGridSurfaces.IsAchievementSurface(surfaceKey))
             {
@@ -667,13 +665,14 @@ namespace PlayniteAchievements.Views.Showcase
         /// </summary>
         private Grid AddNumberRow(Panel panel, string label, Func<int> read, Action<int> apply)
         {
-            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            var row = new Grid();
+            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
             var labelBlock = new TextBlock
             {
                 Text = label,
-                Margin = new Thickness(0, 0, 10, 0),
+                Margin = new Thickness(0, 0, 8, 0),
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -761,13 +760,14 @@ namespace PlayniteAchievements.Views.Showcase
             Action<T> apply,
             Func<T, string> display)
         {
-            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            var row = new Grid();
+            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
             var labelBlock = new TextBlock
             {
                 Text = label,
-                Margin = new Thickness(0, 0, 10, 0),
+                Margin = new Thickness(0, 0, 8, 0),
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center
             };
