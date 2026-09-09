@@ -98,6 +98,7 @@ namespace PlayniteAchievements
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly InGameAchievementMonitor _inGameMonitor;
         private readonly ActiveGameWindowTracker _windowTracker;
+        private readonly Services.Sound.UnlockSoundService _unlockSounds;
         private readonly ToastNotificationService _toastNotifications;
         private readonly Services.Recording.UnlockRecordingService _unlockRecordings;
         private readonly Services.Captures.CaptureLibraryService _captureLibraryService;
@@ -138,6 +139,9 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
         public ProviderRegistry ProviderRegistry => _providerRegistry;
+
+        /// <summary>The unlock sound service, for the settings page's per-tier table and Test buttons.</summary>
+        internal Services.Sound.UnlockSoundService UnlockSounds => _unlockSounds;
         public GameCustomDataStore GameCustomDataStore => _gameCustomDataStore;
         public Services.CustomProviders.CustomProviderStore CustomProviderStore => _customProviderStore;
         public IReadOnlyList<IDataProvider> Providers => _refreshService?.Providers;
@@ -280,17 +284,39 @@ namespace PlayniteAchievements
         /// </summary>
         private string GetPluginLocalizationDirectory()
         {
+            var installDirectory = GetPluginInstallDirectory();
+            return string.IsNullOrEmpty(installDirectory)
+                ? null
+                : Path.Combine(installDirectory, "Localization");
+        }
+
+        /// <summary>
+        /// The extension's install directory (where the plugin dll, the bundled sounds and the sound
+        /// host exe live), resolved from the assembly location. Null when it cannot be resolved.
+        /// </summary>
+        private string GetPluginInstallDirectory()
+        {
             try
             {
                 var installDirectory = Path.GetDirectoryName(typeof(PlayniteAchievementsPlugin).Assembly.Location);
-                return string.IsNullOrEmpty(installDirectory)
-                    ? null
-                    : Path.Combine(installDirectory, "Localization");
+                return string.IsNullOrEmpty(installDirectory) ? null : installDirectory;
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed to resolve plugin localization directory.");
+                _logger?.Debug(ex, "Failed to resolve plugin install directory.");
                 return null;
+            }
+        }
+
+        private void OnSettingsSavedForUnlockSounds(object sender, EventArgs e)
+        {
+            try
+            {
+                _unlockSounds?.ApplySettings();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Applying unlock sound settings failed.");
             }
         }
 
@@ -597,6 +623,28 @@ namespace PlayniteAchievements
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
                     _windowTracker = new ActiveGameWindowTracker(_logger);
+                    var soundThemeResolver = new AchievementToastTemplateResolver(PlayniteApi, _logger);
+                    var pluginInstallDirectory = GetPluginInstallDirectory();
+                    _unlockSounds = new Services.Sound.UnlockSoundService(
+                        settings,
+                        new UnlockSoundResolver(
+                            () => settings?.Persisted?.UnlockSounds,
+                            () => soundThemeResolver.ResolveActiveThemeDirectories(Application.Current?.Resources),
+                            UnlockSoundResolver.GetBundledSoundsDirectory(pluginInstallDirectory),
+                            _logger,
+                            () => settings?.Persisted?.AllowThemeUnlockSounds ?? true,
+                            mode => soundThemeResolver.ResolveThemeDirectoriesForMode(
+                                Application.Current?.Resources,
+                                mode),
+                            () => soundThemeResolver.ActiveThemeModeName),
+                        pluginInstallDirectory,
+                        _logger);
+                    SettingsSaved += OnSettingsSavedForUnlockSounds;
+                    // Bound a sound by the card it belongs to. Read through a delegate because the
+                    // toast service is constructed below this one, and because the effective
+                    // duration can come from a theme override rather than the setting.
+                    _unlockSounds.MaxPlaybackSeconds =
+                        () => _toastNotifications?.GetEffectiveToastDurationSecondsSafe();
                     _toastNotifications = new ToastNotificationService(
                         PlayniteApi,
                         settings,
@@ -609,7 +657,8 @@ namespace PlayniteAchievements
                         // toast service only ever invokes these from an unlock handler, long after
                         // the field is assigned.
                         e => _unlockRecordings?.WouldRequestClip(e) ?? false,
-                        (e, capHeight) => _unlockRecordings?.TryCaptureAnchorFrame(e, capHeight));
+                        (e, capHeight) => _unlockRecordings?.TryCaptureAnchorFrame(e, capHeight),
+                        _unlockSounds);
                     _unlockRecordings = new Services.Recording.UnlockRecordingService(
                         PlayniteApi,
                         settings,
@@ -622,7 +671,12 @@ namespace PlayniteAchievements
                         // Fails open while the provider registry is still being built: refusing to
                         // refresh a game we cannot classify is free, but refusing to capture one
                         // costs a clip that cannot be recovered afterwards.
-                        game => Providers == null || AnyProviderCapable(game));
+                        game => Providers == null || AnyProviderCapable(game),
+                        // The sound host's pid, so the recorder excludes its process from clip
+                        // captures, and its measured onsets, so composited chimes land where the
+                        // live ones were heard.
+                        () => _unlockSounds?.HostProcessId,
+                        id => _unlockSounds?.TryGetAudibleOnsetUtc(id));
                     _captureLibraryService = new Services.Captures.CaptureLibraryService(
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
@@ -1066,6 +1120,10 @@ namespace PlayniteAchievements
             {
                 _applicationStarted = true;
 
+                // Launch and preload the sound host off the UI thread so the first unlock plays with
+                // no device-open or decode cost; a settings save re-applies the same step.
+                System.Threading.Tasks.Task.Run(() => OnSettingsSavedForUnlockSounds(this, EventArgs.Empty));
+
                 // Warm the overview/start-page projection now that the game library is loaded, so
                 // resolved game presentation (cover, icon, playtime, last played, metadata) reflects
                 // Playnite's populated database rather than the blank values an early startup warm
@@ -1346,6 +1404,9 @@ namespace PlayniteAchievements
             try { _inGameMonitor?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGameMonitor"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
             try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
+            // After the recordings: a session in flight still reads the host's pid until then.
+            SettingsSaved -= OnSettingsSavedForUnlockSounds;
+            try { _unlockSounds?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockSounds"); }
             try { _windowTracker?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowTracker"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
