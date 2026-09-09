@@ -93,6 +93,30 @@ namespace PlayniteAchievements.Views.Helpers
             return true;
         }
 
+        /// <summary>
+        /// Opens the display settings menu on a row whose host offers no row menu of its own, so
+        /// no grid has a dead right-click.
+        /// </summary>
+        public static bool TryOpenRowFallbackMenu(FrameworkElement host, DataGridRow row, MouseButtonEventArgs e)
+        {
+            if (host == null || row == null || e == null || row.ContextMenu != null)
+            {
+                return false;
+            }
+
+            var menu = BuildStandalone(host, row);
+            if (menu == null)
+            {
+                return false;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(host, menu);
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
+            e.Handled = true;
+            return true;
+        }
+
         private static MenuItem CreateItem(
             FrameworkElement resourceOwner,
             GridOptionKind kind,

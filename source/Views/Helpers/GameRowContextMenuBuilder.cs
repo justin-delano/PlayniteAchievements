@@ -34,7 +34,8 @@ namespace PlayniteAchievements.Views.Helpers
             AchievementOverridesService overridesService,
             ICacheManager cacheManager,
             ILogger logger,
-            bool includeViewCaptures = false)
+            bool includeViewCaptures = false,
+            DependencyObject menuSource = null)
         {
             var menu = new ContextMenu();
             var hasPlayniteGameId = TryGetGameId(data, out var menuGameId);
@@ -114,6 +115,9 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Add(maintenance);
             }
 
+            // The clicked row identifies which grid to configure. Callers that pass no source
+            // keep their previous menu.
+            GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
             return menu;
         }
 

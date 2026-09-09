@@ -38,7 +38,8 @@ namespace PlayniteAchievements.Views.Helpers
             Action onChanged,
             bool includeViewCaptures = false,
             Func<bool> onGoalChanged = null,
-            Func<string, bool> onCapstoneChanged = null)
+            Func<string, bool> onCapstoneChanged = null,
+            DependencyObject menuSource = null)
         {
             if (menu == null || !AchievementRowContext.TryCreate(data, out var context))
             {
@@ -80,6 +81,10 @@ namespace PlayniteAchievements.Views.Helpers
             menu.Items.Add(CreateCategoriesMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateFiltersMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateNotesMenu(context, resourceOwner, onChanged));
+
+            // The clicked row identifies which grid to configure. Callers that pass no source
+            // keep their previous menu.
+            GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
             return true;
         }
 
