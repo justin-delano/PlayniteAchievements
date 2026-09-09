@@ -19,7 +19,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
     /// <summary>
     /// The <see cref="GridOptionsEditor"/> rows a single grid surface offers. Only deviations from
     /// the editor's own flag defaults are stated, so a surface that offers every applicable row
-    /// needs no arguments.
+    /// needs no arguments. Plain data: the editor reads these, they know nothing of the control.
     /// </summary>
     public sealed class GridDisplayRowCapabilities
     {
@@ -69,29 +69,6 @@ namespace PlayniteAchievements.Views.Settings.Controls
         public bool ShowMetadataRows { get; }
         public bool ShowCompletionGlowRow { get; }
         public bool ShowGameSortPinOrderChoice { get; }
-
-        public void ApplyTo(GridOptionsEditor editor)
-        {
-            if (editor == null)
-            {
-                return;
-            }
-
-            editor.ShowColumnHeadersRow = ShowColumnHeadersRow;
-            editor.ShowControlBarRow = ShowControlBarRow;
-            editor.ShowRowHeightRow = ShowRowHeightRow;
-            editor.ShowMaxRowsRow = ShowMaxRowsRow;
-            editor.ShowSortRow = ShowSortRow;
-            editor.ShowMaxHeightRow = ShowMaxHeightRow;
-            editor.ShowCoverImagesRow = ShowCoverImagesRow;
-            editor.ShowRarityGlowRow = ShowRarityGlowRow;
-            editor.ShowColorNamesRow = ShowColorNamesRow;
-            editor.ShowCategoryModeRow = ShowCategoryModeRow;
-            editor.ShowDateModeRow = ShowDateModeRow;
-            editor.ShowMetadataRows = ShowMetadataRows;
-            editor.ShowCompletionGlowRow = ShowCompletionGlowRow;
-            editor.ShowGameSortPinOrderChoice = ShowGameSortPinOrderChoice;
-        }
     }
 
     /// <summary>

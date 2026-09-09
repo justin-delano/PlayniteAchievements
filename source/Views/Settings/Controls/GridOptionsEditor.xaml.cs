@@ -172,7 +172,21 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 return;
             }
 
-            GridDisplaySurfaces.Resolve(kind.Value, key).ApplyTo(editor);
+            var rows = GridDisplaySurfaces.Resolve(kind.Value, key);
+            editor.ShowColumnHeadersRow = rows.ShowColumnHeadersRow;
+            editor.ShowControlBarRow = rows.ShowControlBarRow;
+            editor.ShowRowHeightRow = rows.ShowRowHeightRow;
+            editor.ShowMaxRowsRow = rows.ShowMaxRowsRow;
+            editor.ShowSortRow = rows.ShowSortRow;
+            editor.ShowMaxHeightRow = rows.ShowMaxHeightRow;
+            editor.ShowCoverImagesRow = rows.ShowCoverImagesRow;
+            editor.ShowRarityGlowRow = rows.ShowRarityGlowRow;
+            editor.ShowColorNamesRow = rows.ShowColorNamesRow;
+            editor.ShowCategoryModeRow = rows.ShowCategoryModeRow;
+            editor.ShowDateModeRow = rows.ShowDateModeRow;
+            editor.ShowMetadataRows = rows.ShowMetadataRows;
+            editor.ShowCompletionGlowRow = rows.ShowCompletionGlowRow;
+            editor.ShowGameSortPinOrderChoice = rows.ShowGameSortPinOrderChoice;
         }
 
         private static DependencyProperty RegisterFlag(string name, bool defaultValue)
