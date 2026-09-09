@@ -1,5 +1,7 @@
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Services.CustomProviders;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services.Achievements;
@@ -75,6 +77,8 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.NotificationAppearanceOverride =
                 NormalizeNotificationAppearanceOverride(normalized.NotificationAppearanceOverride);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
+            normalized.CustomAchievements = NormalizeCustomAchievements(normalized.CustomAchievements);
+            normalized.CustomProviderId = NormalizeCustomProviderId(normalized.CustomProviderId, normalized.CustomAchievements);
             return normalized;
         }
 
@@ -113,6 +117,9 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.NotificationAppearanceOverride =
                 NormalizeNotificationAppearanceOverride(normalized.NotificationAppearanceOverride);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
+            normalized.CustomAchievements = NormalizeCustomAchievements(normalized.CustomAchievements);
+            normalized.CustomProviderId = NormalizeCustomProviderId(normalized.CustomProviderId, normalized.CustomAchievements);
+            normalized.CustomProvider = NormalizeCustomProviderSnapshot(normalized.CustomProvider, normalized.CustomProviderId);
             return normalized;
         }
 
@@ -147,7 +154,9 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
-                    data.ManualLink != null;
+                   data.ManualLink != null ||
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static bool HasPortableData(GameCustomDataFile data)
@@ -184,7 +193,9 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
-                    data.ManualLink != null;
+                   data.ManualLink != null ||
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static bool HasVisibleCustomization(GameCustomDataFile data)
@@ -216,7 +227,9 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
-                    data.ManualLink != null;
+                   data.ManualLink != null ||
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static GameCustomDataFile MergePreferExisting(GameCustomDataFile existing, GameCustomDataFile legacy)
@@ -305,7 +318,16 @@ namespace PlayniteAchievements.Services.GameCustomData
                 ExophaseEnrichmentSlugOverride = !string.IsNullOrWhiteSpace(existing.ExophaseEnrichmentSlugOverride)
                     ? existing.ExophaseEnrichmentSlugOverride
                     : legacy.ExophaseEnrichmentSlugOverride,
-                ManualLink = existing.ManualLink?.Clone() ?? legacy.ManualLink?.Clone()
+                ManualLink = existing.ManualLink?.Clone() ?? legacy.ManualLink?.Clone(),
+                CustomAchievements = existing.CustomAchievements != null && existing.CustomAchievements.Count > 0
+                    ? existing.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : legacy.CustomAchievements != null && legacy.CustomAchievements.Count > 0
+                        ? legacy.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                        : null,
+                // Follows whichever side supplied the custom achievements it belongs to.
+                CustomProviderId = existing.CustomAchievements != null && existing.CustomAchievements.Count > 0
+                    ? existing.CustomProviderId
+                    : legacy.CustomProviderId
             };
         }
 
@@ -955,6 +977,175 @@ namespace PlayniteAchievements.Services.GameCustomData
                 CreatedUtc = createdUtc,
                 LastModifiedUtc = lastModifiedUtc
             };
+        }
+
+        /// <summary>
+        /// A custom provider assignment only has meaning while the game has custom achievements, so
+        /// the id is dropped otherwise and never keeps an empty row alive.
+        /// </summary>
+        private static string NormalizeCustomProviderId(
+            string customProviderId,
+            IReadOnlyCollection<CustomAchievementDefinition> customAchievements)
+        {
+            var normalized = CustomProviderKeys.NormalizeId(customProviderId);
+            return normalized != null && customAchievements != null && customAchievements.Count > 0
+                ? normalized
+                : null;
+        }
+
+        private static CustomProviderDefinition NormalizeCustomProviderSnapshot(
+            CustomProviderDefinition snapshot,
+            string customProviderId)
+        {
+            var name = NormalizeString(snapshot?.Name);
+            if (snapshot == null || customProviderId == null || name == null)
+            {
+                return null;
+            }
+
+            return new CustomProviderDefinition
+            {
+                Id = customProviderId,
+                Name = name,
+                ColorHex = NormalizeString(snapshot.ColorHex),
+                IconPathData = NormalizeString(snapshot.IconPathData),
+                IconSource = NormalizeString(snapshot.IconSource)
+            };
+        }
+
+        private static List<CustomAchievementDefinition> NormalizeCustomAchievements(
+            IEnumerable<CustomAchievementDefinition> definitions)
+        {
+            if (definitions == null)
+            {
+                return null;
+            }
+
+            var normalized = new List<CustomAchievementDefinition>();
+            var usedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var definition in definitions)
+            {
+                var displayName = NormalizeString(definition?.DisplayName);
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    continue;
+                }
+
+                var id = CustomAchievementProjectionService.NormalizeId(definition.Id);
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    id = CustomAchievementProjectionService.GenerateId(displayName, usedIds);
+                }
+
+                if (!usedIds.Add(id))
+                {
+                    continue;
+                }
+
+                var unlocked = definition.Unlocked;
+                normalized.Add(new CustomAchievementDefinition
+                {
+                    Id = id,
+                    DisplayName = displayName,
+                    Description = NormalizeString(definition.Description),
+                    Unlocked = unlocked,
+                    UnlockTimeUtc = unlocked ? NormalizeUtc(definition.UnlockTimeUtc) : null,
+                    UnlockedIconPath = NormalizeString(definition.UnlockedIconPath),
+                    LockedIconPath = NormalizeString(definition.LockedIconPath),
+                    Points = NormalizeNonNegativeInt(definition.Points),
+                    ScaledPoints = NormalizeNonNegativeInt(definition.ScaledPoints),
+                    Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(definition.Category),
+                    CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(definition.CategoryType),
+                    TrophyType = NormalizeTrophyType(definition.TrophyType),
+                    Hidden = definition.Hidden,
+                    IsCapstone = definition.IsCapstone,
+                    Rarity = NormalizeRarity(definition.Rarity),
+                    GlobalPercentUnlocked = NormalizePercent(definition.GlobalPercentUnlocked),
+                    ProgressNum = NormalizeProgressNum(definition.ProgressNum, definition.ProgressDenom),
+                    ProgressDenom = NormalizeProgressDenom(definition.ProgressNum, definition.ProgressDenom)
+                });
+            }
+
+            return normalized.Count > 0 ? normalized : null;
+        }
+
+        private static DateTime? NormalizeUtc(DateTime? value)
+        {
+            if (!value.HasValue || value.Value == DateTime.MinValue)
+            {
+                return null;
+            }
+
+            var date = value.Value;
+            if (date.Kind == DateTimeKind.Unspecified)
+            {
+                return DateTime.SpecifyKind(date, DateTimeKind.Utc);
+            }
+
+            return date.ToUniversalTime();
+        }
+
+        private static int? NormalizeNonNegativeInt(int? value)
+        {
+            return value.HasValue && value.Value >= 0 ? value : null;
+        }
+
+        private static double? NormalizePercent(double? value)
+        {
+            return value.HasValue && value.Value >= 0 && value.Value <= 100 ? value : null;
+        }
+
+        private static int? NormalizeProgressDenom(int? num, int? denom)
+        {
+            return denom.HasValue &&
+                   denom.Value > 0 &&
+                   (!num.HasValue || (num.Value >= 0 && num.Value <= denom.Value))
+                ? denom
+                : null;
+        }
+
+        private static int? NormalizeProgressNum(int? num, int? denom)
+        {
+            return denom.HasValue &&
+                   denom.Value > 0 &&
+                   num.HasValue &&
+                   num.Value >= 0 &&
+                   num.Value <= denom.Value
+                ? num
+                : null;
+        }
+
+        private static string NormalizeRarity(string value)
+        {
+            var normalized = NormalizeString(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            return RarityTierExtensions.TryParse(normalized, out var tier)
+                ? tier.ToString()
+                : null;
+        }
+
+        private static string NormalizeTrophyType(string value)
+        {
+            var normalized = NormalizeString(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            switch (normalized.ToLowerInvariant())
+            {
+                case "bronze":
+                case "silver":
+                case "gold":
+                case "platinum":
+                    return normalized.ToLowerInvariant();
+                default:
+                    return null;
+            }
         }
     }
 }

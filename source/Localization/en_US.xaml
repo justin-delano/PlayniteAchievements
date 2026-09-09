@@ -12,6 +12,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Actions">Actions</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Add">Add</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclude from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Include in Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Apply to Selected</sys:String>
@@ -22,15 +23,21 @@
     <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Back">Back</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Color">Color</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Delete">Delete</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Descending">Descending</sys:String>
+    <!-- Common_Desktop / Common_Fullscreen: bare names of Playnite's two modes (and their themes) -->
+    <sys:String x:Key="LOCPlayAch_Common_Desktop">Desktop</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Duplicate">Duplicate</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Edit">Edit</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Enabled">Enabled</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_FilterAchievementsPlaceholder">Filter achievements...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Fullscreen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_General">General</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Hide</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Import">Import</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">Category</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Platform">Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Playtime</sys:String>
@@ -118,6 +125,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Accounts">Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Description">Description</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Collection Level</sys:String>
@@ -179,6 +187,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Battle.net</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Apple">Apple</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_EA">EA</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
@@ -289,10 +298,30 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">Open Icons Folder</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">The extension data path is unavailable.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">One or more icon values are invalid. Use image links (http:// or https://) or local image files.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ClearConfirm">Clear all custom achievements for this game?</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_Details">Details</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ExportAchievements">Export Custom Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ExportTemplate">Export Template</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_Hidden">Hidden</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSummary">Imported {0} rows ({1} added, {2} updated).</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_LockedIcon">Locked Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoImportRows">No importable achievements were found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoSelection">Select a custom achievement row.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">Progress Total</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressNum">Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderEditorTitle">Custom Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm">Delete "{0}"? {1} other game(s) use this platform and will show as Custom.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">Changes to this platform apply to every game assigned to it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor">Enter a valid color such as #FF652C.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderNewName">New Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid">This file could not be read as an SVG image.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes">No drawable shapes were found in this SVG file.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Unlocked Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Filtered</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Filtered from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filter</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Filter from Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Control which achievements appear in achievement views and summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Unfiltered">Unfiltered</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Goals_Hint">Goals are listed first and can be dragged to set which comes first. Changes save immediately, and a goal clears when its achievement unlocks.</sys:String>
@@ -379,6 +408,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_AchievementOrder">Order</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Capstones">Capstones</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Category">Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_FilterPlaceholder">Filter Categories...</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ToggleToolTip">Group achievements by category</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ExpandAll">Expand All</sys:String>
@@ -576,8 +606,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_EnableControllerVibration">Vibrate controller on notification</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ControllerVibrationStrength">Vibration strength (%):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ControllerVibrationDuration">Vibration duration (ms):</sys:String>
-    <!-- UniPlaySong is a separate Playnite extension name: do not translate it -->
-    <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundHint">Unlock sounds are provided by the UniPlaySong extension. Install it and assign sounds there to hear audio when achievements unlock.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockSounds">Play a sound on unlock notifications</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundVolume">Volume (%):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundFilesHint">A blank tier is never silent: it plays your theme's sound when theme sounds are on, otherwise the built-in default named on the row. Game completion uses the Capstone sound.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseThemeUnlockSounds">Use unlock sounds provided by the active theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundTheme_Tooltip">Play the unlock sound the active desktop or fullscreen theme provides for this tier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseHiddenUnlockSound">Use the hidden achievement sound instead of the rarity sound</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomRight">Bottom right</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomLeft">Bottom left</sys:String>

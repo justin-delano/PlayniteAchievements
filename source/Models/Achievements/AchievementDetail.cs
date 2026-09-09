@@ -102,6 +102,12 @@ namespace PlayniteAchievements.Models.Achievements
         public string ProviderKey { get; set; }
 
         /// <summary>
+        /// Runtime-only flag for achievements projected from per-game custom data.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsCustom { get; set; }
+
+        /// <summary>
         /// Runtime-only provider-assigned category label, captured by the hydrator before
         /// user rename overrides overwrite <see cref="Category"/>. Default category images
         /// are keyed by this label, so resolution stays stable across renames.

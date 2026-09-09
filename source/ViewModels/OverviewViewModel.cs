@@ -3432,7 +3432,7 @@ namespace PlayniteAchievements.ViewModels
 
             GamesPieChart?.SetGameData(gamesPieSnapshot.TotalGames, gamesPieSnapshot.CompletedGames, completedLabel, incompleteLabel);
 
-            var providerLookup = BuildProviderLookup();
+            var providerLookup = BuildProviderLookup(snapshot.UnlockedByProvider.Keys);
             var providerDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var providerKey in snapshot.UnlockedByProvider.Keys)
             {
@@ -3556,17 +3556,32 @@ namespace PlayniteAchievements.ViewModels
             };
         }
 
-        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
+        /// <param name="displayProviderKeys">
+        /// Provider keys present in the data being charted. Custom-only games display as keys no
+        /// registered provider owns (Custom and Custom:&lt;id&gt;), so they resolve here by key rather
+        /// than through the provider list.
+        /// </param>
+        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup(
+            IEnumerable<string> displayProviderKeys = null)
         {
             var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            foreach (var provider in _refreshService.Providers)
+            var keys = _refreshService.Providers
+                .Select(provider => provider?.ProviderKey)
+                .Concat(displayProviderKeys ?? Enumerable.Empty<string>())
+                .Where(key => !string.IsNullOrWhiteSpace(key));
+            foreach (var providerKey in keys)
             {
+                if (providerLookup.ContainsKey(providerKey))
+                {
+                    continue;
+                }
+
                 if (ProviderRegistry.TryResolveProviderVisuals(
-                    provider.ProviderKey,
+                    providerKey,
                     out var iconKey,
                     out var colorHex))
                 {
-                    providerLookup[provider.ProviderKey] = (iconKey, colorHex);
+                    providerLookup[providerKey] = (iconKey, colorHex);
                 }
             }
             return providerLookup;

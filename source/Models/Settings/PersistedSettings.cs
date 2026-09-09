@@ -87,6 +87,11 @@ namespace PlayniteAchievements.Models.Settings
         private int _controllerVibrationStrengthPercent = 50;
         private int _controllerVibrationDurationMs = 650;
         private bool _useHiddenUnlockSound = false;
+        private bool _enableUnlockSounds = true;
+        private bool _allowThemeUnlockSounds = true;
+        private int _unlockSoundVolumePercent = 50;
+        private UnlockSoundSettings _unlockSounds = UnlockSoundSettings.CreateDefault();
+        private bool _unlockSoundsSeededFromUniPlaySong = false;
         private bool _enableUnlockScreenshots = false;
         private bool _unlockScreenshotClean = false;
         private bool _unlockScreenshotWithToast = true;
@@ -1206,15 +1211,64 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Request UniPlaySong's hidden-achievement sound instead of the rarity sound when a hidden
-        /// achievement unlocks. Off by default: UniPlaySong plays nothing for a sound it has no
-        /// audio assigned to, so enabling this before assigning one silences hidden unlocks rather
-        /// than falling back to the rarity sound.
+        /// Play the hidden-achievement sound slot instead of the rarity slot when a hidden
+        /// achievement unlocks. Off by default so hidden unlocks sound like their rarity unless the
+        /// user wants them distinct; the hidden slot resolves through the same custom, theme,
+        /// bundled chain as every other tier, so enabling it never silences an unlock.
         /// </summary>
         public bool UseHiddenUnlockSound
         {
             get => _useHiddenUnlockSound;
             set => SetValue(ref _useHiddenUnlockSound, value);
+        }
+
+        /// <summary>Master switch for the unlock sound played with a notification wave.</summary>
+        public bool EnableUnlockSounds
+        {
+            get => _enableUnlockSounds;
+            set => SetValue(ref _enableUnlockSounds, value);
+        }
+
+        /// <summary>
+        /// Whether a tier with no file of the user's own may take the active theme's sound. On by
+        /// default, so a theme that ships sounds is heard without the user configuring anything.
+        /// Turning it off drops the theme step out of the chain, leaving the user's own file and
+        /// the bundled default, which is how someone keeps the built-in pack while running a theme
+        /// whose sounds they do not want.
+        /// </summary>
+        public bool AllowThemeUnlockSounds
+        {
+            get => _allowThemeUnlockSounds;
+            set => SetValue(ref _allowThemeUnlockSounds, value);
+        }
+
+        /// <summary>
+        /// Linear playback volume for unlock sounds, 0-100. Also the gain at which the sound is
+        /// mixed into exported clips, so a clip's chime is as loud as the live one was.
+        /// </summary>
+        public int UnlockSoundVolumePercent
+        {
+            get => _unlockSoundVolumePercent;
+            set => SetValue(ref _unlockSoundVolumePercent, Math.Max(0, Math.Min(100, value)));
+        }
+
+        /// <summary>The user's own sound file per tier; blank slots fall back to theme, then bundled.</summary>
+        public UnlockSoundSettings UnlockSounds
+        {
+            get => _unlockSounds;
+            set => SetValue(ref _unlockSounds, value ?? UnlockSoundSettings.CreateDefault());
+        }
+
+        /// <summary>
+        /// One-time flag: whether the unlock sound settings were seeded from an installed
+        /// UniPlaySong configuration (volume, master switch, custom per-tier paths). Defaults
+        /// false; only <see cref="UnlockSoundSettingsMigration"/> sets it true, after which the
+        /// user's own values are never overwritten again.
+        /// </summary>
+        public bool UnlockSoundsSeededFromUniPlaySong
+        {
+            get => _unlockSoundsSeededFromUniPlaySong;
+            set => SetValue(ref _unlockSoundsSeededFromUniPlaySong, value);
         }
 
         /// <summary>
@@ -2822,6 +2876,11 @@ namespace PlayniteAchievements.Models.Settings
                 ControllerVibrationStrengthPercent = this.ControllerVibrationStrengthPercent,
                 ControllerVibrationDurationMs = this.ControllerVibrationDurationMs,
                 UseHiddenUnlockSound = this.UseHiddenUnlockSound,
+                EnableUnlockSounds = this.EnableUnlockSounds,
+                AllowThemeUnlockSounds = this.AllowThemeUnlockSounds,
+                UnlockSoundVolumePercent = this.UnlockSoundVolumePercent,
+                UnlockSounds = this.UnlockSounds?.Clone() ?? UnlockSoundSettings.CreateDefault(),
+                UnlockSoundsSeededFromUniPlaySong = this.UnlockSoundsSeededFromUniPlaySong,
                 EnableUnlockScreenshots = this.EnableUnlockScreenshots,
                 UnlockScreenshotClean = this.UnlockScreenshotClean,
                 UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,

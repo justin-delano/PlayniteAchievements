@@ -78,6 +78,20 @@ namespace PlayniteAchievements.Models.Achievements
         UltraRare
     }
 
+    public static class RarityTierExtensions
+    {
+        public static bool TryParse(string value, out RarityTier tier)
+        {
+            if (Enum.TryParse(value, true, out tier))
+            {
+                return true;
+            }
+
+            tier = RarityTier.Common;
+            return false;
+        }
+    }
+
     public static class PercentRarityHelper
     {
         private static double _ultraRareThreshold = 5;
@@ -151,6 +165,8 @@ namespace PlayniteAchievements.Models.Achievements
         public string ProviderCategory { get; set; }
 
         public string ProviderKey { get; set; }
+
+        public bool IsCustom { get; set; }
 
         public Game Game { get; set; }
 

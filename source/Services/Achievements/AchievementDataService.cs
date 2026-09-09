@@ -49,6 +49,7 @@ namespace PlayniteAchievements.Services.Achievements
         private readonly IAchievementFilterMirror _filterMirror;
         private readonly GameDataHydrator _hydrator;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _api;
         private readonly GameCustomDataStore _gameCustomDataStore;
         // The settings wrapper, not its PersistedSettings: CancelEdit replaces the
         // Persisted instance, so a captured instance would keep serving the values the
@@ -77,6 +78,7 @@ namespace PlayniteAchievements.Services.Achievements
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             _logger = logger;
+            _api = api;
             _gameCustomDataStore = gameCustomDataStore;
             _settings = settings;
             _cacheReadOptimizations = cacheService as ICacheReadOptimizations;
@@ -141,6 +143,37 @@ namespace PlayniteAchievements.Services.Achievements
             try
             {
                 return _cacheService.LoadGameData(playniteGameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, string.Format(
+                    "Failed to get achievement data for gameId={0}",
+                    playniteGameId));
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Raw cached data plus the game's custom achievement projections, with no overlays
+        /// applied. A game with only custom achievements yields the synthetic custom data.
+        /// </summary>
+        public GameAchievementData GetRawGameAchievementDataWithCustomAchievements(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return null;
+            }
+
+            try
+            {
+                var data = _cacheService.LoadGameData(playniteGameId.ToString());
+                if (data == null)
+                {
+                    return CreateSyntheticCustomGameData(playniteGameId, LoadCustomData(playniteGameId));
+                }
+
+                _hydrator.AppendCustomAchievements(data);
+                return data;
             }
             catch (Exception ex)
             {
@@ -281,7 +314,7 @@ namespace PlayniteAchievements.Services.Achievements
             CachedSummaryData hydratedSummary;
             try
             {
-                hydratedSummary = ApplyOverviewSummaryHydration(summaryData);
+                hydratedSummary = ApplyOverviewSummaryHydration(summaryData, normalizedLimit);
             }
             catch (Exception ex)
             {
@@ -308,7 +341,7 @@ namespace PlayniteAchievements.Services.Achievements
             return GetCachedSummaryDataForOverview(recentAchievementDetailLimit);
         }
 
-        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData)
+        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData, int recentAchievementDetailLimit)
         {
             summaryData ??= new CachedSummaryData();
             summaryData.Games ??= new List<CachedGameSummaryData>();
@@ -338,6 +371,16 @@ namespace PlayniteAchievements.Services.Achievements
                     summaryData.UnlockCountsByDateByGame,
                     excludedSummaryIds);
             }
+
+            // SQL summaries never see custom achievements, which live only in custom data.
+            CustomAchievementSummaryMerger.Merge(
+                summaryData,
+                customDataByGameId,
+                excludedSummaryIds,
+                recentAchievementDetailLimit,
+                gameId => GetGame(gameId)?.Name,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                ResolveCustomProviderPlatformKey);
 
             var gameIdsNeedingCompletionOverrides = new HashSet<Guid>(
                 summaryData.Games
@@ -1082,13 +1125,16 @@ namespace PlayniteAchievements.Services.Achievements
 
         private List<GameAchievementData> LoadAllCachedGameData()
         {
+            List<GameAchievementData> result;
             if (_cacheReadOptimizations != null)
             {
-                return _cacheReadOptimizations.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                result = _cacheReadOptimizations.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                AppendSyntheticCustomOnlyGameData(result);
+                return result;
             }
 
             var gameIds = _cacheService.GetCachedGameIds();
-            var result = new List<GameAchievementData>();
+            result = new List<GameAchievementData>();
             foreach (var gameId in gameIds)
             {
                 var gameData = _cacheService.LoadGameData(gameId);
@@ -1098,6 +1144,7 @@ namespace PlayniteAchievements.Services.Achievements
                 }
             }
 
+            AppendSyntheticCustomOnlyGameData(result);
             return result;
         }
 
@@ -1106,6 +1153,11 @@ namespace PlayniteAchievements.Services.Achievements
             bool includeAchievementOverlays)
         {
             var data = _cacheService.LoadGameData(playniteGameId);
+            if (data == null && Guid.TryParse(playniteGameId, out var parsedGameId))
+            {
+                data = CreateSyntheticCustomGameData(parsedGameId, LoadCustomData(parsedGameId));
+            }
+
             if (includeAchievementOverlays)
             {
                 _hydrator.Hydrate(data);
@@ -1116,6 +1168,94 @@ namespace PlayniteAchievements.Services.Achievements
             }
 
             return data;
+        }
+
+        private void AppendSyntheticCustomOnlyGameData(ICollection<GameAchievementData> result)
+        {
+            if (result == null || _gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            var existingIds = new HashSet<Guid>(
+                result
+                    .Where(data => data?.PlayniteGameId.HasValue == true && data.PlayniteGameId.Value != Guid.Empty)
+                    .Select(data => data.PlayniteGameId.Value));
+
+            foreach (var customData in LoadCustomDataByGameId().Values)
+            {
+                if (customData == null ||
+                    customData.PlayniteGameId == Guid.Empty ||
+                    existingIds.Contains(customData.PlayniteGameId) ||
+                    !CustomAchievementProjectionService.HasCustomAchievements(customData))
+                {
+                    continue;
+                }
+
+                var synthetic = CreateSyntheticCustomGameData(customData.PlayniteGameId, customData);
+                if (synthetic == null)
+                {
+                    continue;
+                }
+
+                result.Add(synthetic);
+                existingIds.Add(customData.PlayniteGameId);
+            }
+        }
+
+        private GameCustomDataFile LoadCustomData(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty || _gameCustomDataStore == null)
+            {
+                return null;
+            }
+
+            return _gameCustomDataStore.TryLoad(playniteGameId, out var data)
+                ? data
+                : null;
+        }
+
+        private GameAchievementData CreateSyntheticCustomGameData(
+            Guid playniteGameId,
+            GameCustomDataFile customData)
+        {
+            if (!CustomAchievementProjectionService.HasCustomAchievements(customData))
+            {
+                return null;
+            }
+
+            return CustomAchievementProjectionService.CreateSyntheticGameData(
+                playniteGameId,
+                GetGame(playniteGameId),
+                customData.CustomAchievements,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                ResolveCustomProviderPlatformKey(customData.CustomProviderId));
+        }
+
+        /// <summary>
+        /// The display key for an assigned custom provider, or null when the id is blank or no
+        /// longer names a stored provider (the game then displays as plain Custom).
+        /// </summary>
+        private static string ResolveCustomProviderPlatformKey(string customProviderId)
+        {
+            if (string.IsNullOrWhiteSpace(customProviderId))
+            {
+                return null;
+            }
+
+            return PlayniteAchievementsPlugin.Instance?.CustomProviderStore?.ResolveDisplayKey(customProviderId);
+        }
+
+        private Playnite.SDK.Models.Game GetGame(Guid playniteGameId)
+        {
+            try
+            {
+                return _api?.Database?.Games?.Get(playniteGameId);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void HydrateAll(IEnumerable<GameAchievementData> games, bool includeAchievementOverlays)

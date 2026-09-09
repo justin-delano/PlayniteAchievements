@@ -1743,6 +1743,23 @@ namespace PlayniteAchievements.ViewModels.Items
                 LockedIconPath);
         }
 
+        /// <summary>
+        /// Custom achievements carry the bare Custom provider key; when their custom-only game
+        /// displays as an assigned custom provider, the row follows the game so theme summaries
+        /// derived from rows name that provider.
+        /// </summary>
+        private static string ResolveDisplayProviderKey(AchievementDetail achievement, GameAchievementData gameData)
+        {
+            var effectiveGameKey = gameData?.EffectiveProviderKey;
+            if (Services.CustomProviders.CustomProviderKeys.IsBaseKey(achievement.ProviderKey) &&
+                Services.CustomProviders.CustomProviderKeys.IsCustomProviderKey(effectiveGameKey))
+            {
+                return effectiveGameKey;
+            }
+
+            return achievement.ProviderKey ?? effectiveGameKey ?? gameData?.ProviderKey;
+        }
+
         private static AchievementDisplayItem CreateBaseItem(
             GameAchievementData gameData,
             AchievementDetail achievement,
@@ -1752,7 +1769,7 @@ namespace PlayniteAchievements.ViewModels.Items
         {
             var item = new AchievementDisplayItem();
             item.SetSource(achievement, notifyChanges: false);
-            item.ProviderKey = achievement.ProviderKey ?? gameData?.EffectiveProviderKey ?? gameData?.ProviderKey;
+            item.ProviderKey = ResolveDisplayProviderKey(achievement, gameData);
             item.GameName = gameData?.GameName ?? "Unknown";
             item.SortingName = gameData?.SortingName ?? gameData?.GameName ?? "Unknown";
             item.PlayniteGameId = playniteGameId;

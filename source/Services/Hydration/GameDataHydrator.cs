@@ -80,6 +80,7 @@ namespace PlayniteAchievements.Services.Hydration
             data.GameSummaryCategory = customData.GameSummaryCategory;
 
             // Hydrate achievements with settings overlays (capstone + category/category-type overrides).
+            AppendCustomAchievements(data, gameId, customData);
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
                 _achievementHydrator.HydrateAllWithCapstoneOverride(
@@ -118,6 +119,7 @@ namespace PlayniteAchievements.Services.Hydration
                 : null;
             data.GameSummaryCategory = customData.GameSummaryCategory;
 
+            AppendCustomAchievements(data, gameId, customData);
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
                 _achievementHydrator.HydrateAllWithCapstoneOverride(
@@ -128,6 +130,64 @@ namespace PlayniteAchievements.Services.Hydration
 
                 ApplyAchievementIconOverrides(gameId, data.Achievements);
             }
+        }
+
+        /// <summary>
+        /// Appends the game's custom achievement projections with no overlays applied. Custom
+        /// achievements exist only in custom data, so a raw cache read omits them; callers that
+        /// need the un-overlaid row set including custom rows go through here.
+        /// </summary>
+        public void AppendCustomAchievements(GameAchievementData data)
+        {
+            if (data?.PlayniteGameId == null)
+            {
+                return;
+            }
+
+            var gameId = data.PlayniteGameId.Value;
+            var customData = GameCustomDataLookup.ResolveGameCustomData(gameId, Persisted, _gameCustomDataStore);
+            AppendCustomAchievements(data, gameId, customData);
+        }
+
+        private static void AppendCustomAchievements(
+            GameAchievementData data,
+            Guid gameId,
+            ResolvedGameCustomData customData)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            data.Achievements ??= new List<AchievementDetail>();
+            for (var i = data.Achievements.Count - 1; i >= 0; i--)
+            {
+                var achievement = data.Achievements[i];
+                if (achievement?.IsCustom == true ||
+                    CustomAchievementProjectionService.IsCustomApiName(achievement?.ApiName))
+                {
+                    data.Achievements.RemoveAt(i);
+                }
+            }
+
+            var definitions = customData?.CustomAchievements;
+            if (definitions == null || definitions.Count == 0)
+            {
+                return;
+            }
+
+            var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
+            var projected = CustomAchievementProjectionService.ProjectAchievements(
+                gameId,
+                definitions,
+                managedCustomIconService);
+            if (projected.Count == 0)
+            {
+                return;
+            }
+
+            data.HasAchievements = true;
+            data.Achievements.AddRange(projected);
         }
 
         /// <summary>

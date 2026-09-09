@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Recording;
 
@@ -96,6 +97,44 @@ namespace PlayniteAchievements.Services.Tests.Recording
             var gap = tracker.TakeGapBefore(
                 pos + 192000, PacketFrames, qpc + TicksPerSecond, stampUsable: true, elapsed);
             Assert.AreEqual(Rate, gap, delta: Rate / 50);
+        }
+
+        [TestMethod]
+        public void AgreedGapIsSizedByThePositionCounterNotTheJitteredStamp()
+        {
+            // A 200 ms dropout whose closing stamp arrived 0.4 ms late (scheduling jitter). The
+            // stamp alone would pad 19 extra frames and shift everything after the gap by 0.4 ms,
+            // which is the tear that left the tail of a live chime at another lag in the
+            // 2026-09-05 clips. The position counter counts the engine's own frames.
+            foreach (var positionRate in new[] { (long)Rate, 192000L })
+            {
+                var tracker = NewTracker();
+                var (pos, qpc) = FeedHealthy(tracker, 1000, positionRate);
+                var dropoutFrames = Rate / 5;
+                var positionJump = dropoutFrames * positionRate / Rate;
+                var elapsed = (long)(10.3 * Rate);
+                var gap = tracker.TakeGapBefore(
+                    pos + positionJump,
+                    PacketFrames,
+                    qpc + dropoutFrames * TicksPerSecond / Rate + 4_000,
+                    stampUsable: true,
+                    elapsed);
+                Assert.AreEqual(dropoutFrames, gap, $"positionRate={positionRate}");
+            }
+        }
+
+        [TestMethod]
+        public void DisagreeingWitnessesStillTakeTheSmallerClaim()
+        {
+            var tracker = NewTracker();
+            var (pos, qpc) = FeedHealthy(tracker, 1000, positionRate: Rate);
+
+            // The stamp claims a 1 s hole; the counter only advanced 100 ms of frames. Beyond the
+            // jitter threshold the witnesses disagree and the smaller claim is padded.
+            var elapsed = (long)(11.1 * Rate);
+            var gap = tracker.TakeGapBefore(
+                pos + Rate / 10, PacketFrames, qpc + TicksPerSecond, stampUsable: true, elapsed);
+            Assert.AreEqual(Rate / 10, gap, delta: 2);
         }
 
         [TestMethod]
@@ -232,6 +271,47 @@ namespace PlayniteAchievements.Services.Tests.Recording
             }
 
             Assert.AreEqual(192000, tracker.MeasuredDevicePositionRate, delta: 400);
+        }
+
+        [TestMethod]
+        public void TimelineAnchorConsensus_RejectsOnePlausibleStartupOutlier()
+        {
+            var consensus = new AudioTimelineAnchorConsensus(Rate);
+            var expected = new DateTime(638923104000000000L, DateTimeKind.Utc);
+            for (var packet = 0; packet < AudioTimelineAnchorConsensus.RequiredSamples; packet++)
+            {
+                var framesBefore = (long)packet * PacketFrames;
+                var packetUtc = expected.AddTicks(framesBefore * TicksPerSecond / Rate);
+                if (packet == 0)
+                {
+                    packetUtc = packetUtc.AddMilliseconds(215);
+                }
+
+                consensus.Observe(packetUtc, framesBefore);
+            }
+
+            Assert.IsTrue(consensus.TryGet(false, out var actual, out var samples, out var spread));
+            Assert.AreEqual(AudioTimelineAnchorConsensus.RequiredSamples, samples);
+            Assert.AreEqual(expected, actual);
+            Assert.AreEqual(0, spread, 0.001);
+        }
+
+        [TestMethod]
+        public void TimelineAnchorConsensus_AccountsForPacketsBufferedBeforeFirstUsableStamp()
+        {
+            var consensus = new AudioTimelineAnchorConsensus(Rate);
+            var expected = new DateTime(638923104000000000L, DateTimeKind.Utc);
+
+            // The first three packets were delivered but their stamps were unusable. The first
+            // vote must still subtract those frames; anchoring to this packet itself would move
+            // every sample 30 ms late for the rest of the session.
+            consensus.Observe(expected.AddMilliseconds(30), 3L * PacketFrames);
+
+            Assert.IsFalse(consensus.TryGet(false, out _, out _, out _));
+            Assert.IsTrue(consensus.TryGet(true, out var actual, out var samples, out var spread));
+            Assert.AreEqual(1, samples);
+            Assert.AreEqual(expected, actual);
+            Assert.AreEqual(0, spread, 0.001);
         }
     }
 }

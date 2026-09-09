@@ -115,6 +115,36 @@ namespace PlayniteAchievements.Services.Recording
 
         private DateTime? _firstPacketCaptureUtc;
 
+        // Unlike FirstPacketCaptureUtc, this is frame-zero inferred from several packets. The
+        // endpoint pump consumes DataAvailable in sequence, including explicit gap padding, so a
+        // later packet's vote has to subtract every frame that precedes it in that exact stream.
+        private AudioTimelineAnchorConsensus _timelineAnchor;
+        private long _timelineFramesDelivered;
+
+        /// <summary>
+        /// Gets a consensus origin for the sequential DataAvailable stream. See
+        /// <see cref="AudioTimelineAnchorConsensus"/>. A timeout caller may allow fewer than the
+        /// ordinary nine samples so a sparse startup still uses every stamp it did receive.
+        /// </summary>
+        public bool TryGetTimelineOrigin(
+            bool allowPartial,
+            out DateTime originUtc,
+            out int samples,
+            out double spreadMilliseconds)
+        {
+            var anchor = _timelineAnchor;
+            if (anchor == null)
+            {
+                originUtc = default(DateTime);
+                samples = 0;
+                spreadMilliseconds = 0;
+                return false;
+            }
+
+            return anchor.TryGet(
+                allowPartial, out originUtc, out samples, out spreadMilliseconds);
+        }
+
         /// <summary>
         /// Frames of silence delivered in place of audio the engine dropped, over this capture's life.
         /// Non-zero means the track carries real glitches — worth reporting before a listener blames
@@ -248,9 +278,25 @@ namespace PlayniteAchievements.Services.Recording
         }
 
         public ProcessLoopbackCapture(int processId, bool includeProcessTree = true)
+            : this(processId, includeProcessTree, null)
+        {
+        }
+
+        /// <summary>
+        /// Process loopback in the given capture format. More than two channels asks the engine
+        /// for a WAVEFORMATEXTENSIBLE with the standard speaker mask for that count (4 = quad, 6 =
+        /// 5.1, 8 = 7.1), so a contributing multichannel stream keeps its channel identity instead
+        /// of being folded into a stereo mix. Null keeps the 48 kHz stereo default.
+        /// </summary>
+        public ProcessLoopbackCapture(int processId, bool includeProcessTree, WaveFormat captureFormat)
         {
             _processId = processId;
             _mode = includeProcessTree ? IncludeTargetProcessTree : ExcludeTargetProcessTree;
+            if (captureFormat != null)
+            {
+                WaveFormat = captureFormat;
+            }
+
             try
             {
                 _audioClient = ActivateProcessLoopbackClient(processId, _mode);
@@ -498,8 +544,27 @@ namespace PlayniteAchievements.Services.Recording
                     cbSize = 0,
                 };
                 format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
-                formatPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WAVEFORMATEX)));
-                Marshal.StructureToPtr(format, formatPtr, false);
+                if (WaveFormat.Channels > 2)
+                {
+                    // Shared-mode formats beyond stereo must say which speaker each channel is;
+                    // the plain WAVEFORMATEX has no mask, so the engine would refuse or guess.
+                    format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+                    format.cbSize = 22;
+                    var extensible = new WAVEFORMATEXTENSIBLE
+                    {
+                        Format = format,
+                        wValidBitsPerSample = (ushort)WaveFormat.BitsPerSample,
+                        dwChannelMask = SpeakerMaskFor(WaveFormat.Channels),
+                        SubFormat = IeeeFloatSubFormat,
+                    };
+                    formatPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WAVEFORMATEXTENSIBLE)));
+                    Marshal.StructureToPtr(extensible, formatPtr, false);
+                }
+                else
+                {
+                    formatPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WAVEFORMATEX)));
+                    Marshal.StructureToPtr(format, formatPtr, false);
+                }
             }
 
             try
@@ -555,6 +620,8 @@ namespace PlayniteAchievements.Services.Recording
             // track with silence that never happened.
             _gapTracker = new AudioGapTracker(
                 WaveFormat.SampleRate, MaxGapSeconds, stampsDisabled: ForceDevicePositionGaps);
+            _timelineAnchor = new AudioTimelineAnchorConsensus(WaveFormat.SampleRate);
+            _timelineFramesDelivered = 0;
             _captureStartedUtc = CaptureTimelineClock.UtcNow;
             _audioClient.Start();
             _capturing = true;
@@ -619,6 +686,7 @@ namespace PlayniteAchievements.Services.Recording
                             (flags & BufferFlagsTimestampError) == 0;
                         var gapFrames = TakeGapBefore(
                             devicePosition, framesAvailable, qpcPosition, stampUsable);
+                        var timelineFramesBeforePacket = _timelineFramesDelivered + gapFrames;
 
                         var buffer = new byte[bytes];
                         if ((flags & BufferFlagsSilent) == 0 && dataPtr != IntPtr.Zero && bytes > 0)
@@ -647,6 +715,24 @@ namespace PlayniteAchievements.Services.Recording
                             StampedDataAvailable?.Invoke(
                                 this, new StampedPacketEventArgs(buffer, bytes, packetUtc));
                             DataAvailable?.Invoke(this, new WaveInEventArgs(buffer, bytes));
+                        }
+
+                        _timelineFramesDelivered += gapFrames + framesAvailable;
+
+                        // Publish the vote only after DataAvailable synchronously appended this
+                        // packet. Otherwise AwaitAnchor could wake on the ninth vote, ask the pump
+                        // for nine packets, and have ReadFully manufacture silence for the ninth
+                        // while it was still waiting below this event callback.
+                        //
+                        // The packet stamp names its first frame. Gap padding belongs immediately
+                        // before it, while all earlier delivered packets precede both. Subtracting
+                        // that full frame count turns every packet into an independent vote for
+                        // frame zero; the median rejects a bad-but-plausible startup stamp.
+                        if (stampUsable)
+                        {
+                            _timelineAnchor?.Observe(
+                                packetUtc.Value,
+                                timelineFramesBeforePacket);
                         }
 
                         if (_captureClient.GetNextPacketSize(out frames) != 0)
@@ -759,7 +845,9 @@ namespace PlayniteAchievements.Services.Recording
             public IntPtr blobData;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        // Pack = 2: the native struct is 18 bytes with WORD alignment. Default packing pads it to
+        // 20, which is harmless alone but shifts every field of a WAVEFORMATEXTENSIBLE built on it.
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
         private struct WAVEFORMATEX
         {
             public ushort wFormatTag;
@@ -769,6 +857,28 @@ namespace PlayniteAchievements.Services.Recording
             public ushort nBlockAlign;
             public ushort wBitsPerSample;
             public ushort cbSize;
+        }
+
+        private const ushort WAVE_FORMAT_EXTENSIBLE = 0xFFFE;
+
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
+        private struct WAVEFORMATEXTENSIBLE
+        {
+            public WAVEFORMATEX Format;
+            public ushort wValidBitsPerSample;
+            public uint dwChannelMask;
+            public Guid SubFormat;
+        }
+
+        /// <summary>The standard speaker mask for a channel count: quad, 5.1, 7.1; quad otherwise.</summary>
+        internal static uint SpeakerMaskFor(int channels)
+        {
+            switch (channels)
+            {
+                case 6: return 0x3F;
+                case 8: return 0x63F;
+                default: return 0x33;
+            }
         }
 
         [ComImport, Guid("41D949AB-9862-444A-80F6-C261334DA5EB"),
