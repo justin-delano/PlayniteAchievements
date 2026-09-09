@@ -1116,11 +1116,65 @@ namespace PlayniteAchievements
 
         // === Lifecycle ===
 
+        /// <summary>
+        /// Logs the plugin build and host context once at startup, so a user-submitted log can be
+        /// tied to a specific release without having to ask.
+        /// </summary>
+        private void LogStartupBanner()
+        {
+            try
+            {
+                _logger.Info(
+                    $"[Startup] Playnite Achievements {ReadManifestVersion() ?? "<unknown>"}; " +
+                    $"playnite={PlayniteApi?.ApplicationInfo?.ApplicationVersion?.ToString() ?? "<unknown>"}, " +
+                    $"mode={PlayniteApi?.ApplicationInfo?.Mode.ToString() ?? "<unknown>"}, " +
+                    $"portable={PlayniteApi?.ApplicationInfo?.IsPortable.ToString() ?? "<unknown>"}.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "[Startup] Could not log the startup banner.");
+            }
+        }
+
+        /// <summary>
+        /// Reads <c>Version</c> from the manifest shipped next to the plugin assembly. The assembly
+        /// itself carries no meaningful version, so extension.yaml is the only source that matches
+        /// the number users see in Playnite's add-on list.
+        /// </summary>
+        private static string ReadManifestVersion()
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (string.IsNullOrWhiteSpace(assemblyDirectory))
+            {
+                return null;
+            }
+
+            var manifestPath = Path.Combine(assemblyDirectory, "extension.yaml");
+            if (!File.Exists(manifestPath))
+            {
+                return null;
+            }
+
+            foreach (var line in File.ReadAllLines(manifestPath))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("Version:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = trimmed.Substring("Version:".Length).Trim().Trim('"', '\'');
+                    return string.IsNullOrWhiteSpace(value) ? null : value;
+                }
+            }
+
+            return null;
+        }
+
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             using (PerfScope.StartStartup(_logger, "OnApplicationStarted", thresholdMs: 50))
             {
                 _applicationStarted = true;
+
+                LogStartupBanner();
 
                 // Launch and preload the sound host off the UI thread so the first unlock plays with
                 // no device-open or decode cost; a settings save re-applies the same step.
