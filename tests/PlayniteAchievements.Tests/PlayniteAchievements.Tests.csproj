@@ -92,7 +92,12 @@
     <Compile Include="..\..\source\Services\Refresh\RefreshEntryPoint.cs" Link="Source\Services\Refresh\RefreshEntryPoint.cs" />
     <Compile Include="..\..\source\Services\LegacyManualLinkImporter.cs" Link="Source\Services\LegacyManualLinkImporter.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataStore.cs" Link="Source\Services\GameCustomData\GameCustomDataStore.cs" />
+    <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataStore.CustomAchievementsPackage.cs" Link="Source\Services\GameCustomData\GameCustomDataStore.CustomAchievementsPackage.cs" />
+    <Compile Include="..\..\source\Services\CustomAchievementCsvFormat.cs" Link="Source\Services\CustomAchievementCsvFormat.cs" />
+    <Compile Include="..\..\source\Services\Achievements\CustomAchievementSummaryMerger.cs" Link="Source\Services\Achievements\CustomAchievementSummaryMerger.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLookup.cs" Link="Source\Services\GameCustomData\GameCustomDataLookup.cs" />
+    <Compile Include="..\..\source\Services\CustomAchievementProjectionService.cs" Link="Source\Services\CustomAchievementProjectionService.cs" />
+    <Compile Include="..\..\source\Services\CustomAchievementTextImportService.cs" Link="Source\Services\CustomAchievementTextImportService.cs" />
     <Compile Include="..\..\source\Services\Notifications\NotificationStylePortableStore.cs" Link="Source\Services\Notifications\NotificationStylePortableStore.cs" />
     <Compile Include="..\..\source\Services\Notifications\NotificationStylePresetStore.cs" Link="Source\Services\Notifications\NotificationStylePresetStore.cs" />
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValueKind.cs" Link="Source\Providers\Overrides\ProviderOverrideValueKind.cs" />
@@ -379,6 +384,10 @@
     <Compile Include="..\..\source\Models\Settings\StartPageWidgetSettings.cs" Link="Source\Models\Settings\StartPageWidgetSettings.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataFile.cs" Link="Source\Models\Settings\GameCustomDataFile.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataPortableFile.cs" Link="Source\Models\Settings\GameCustomDataPortableFile.cs" />
+    <Compile Include="..\..\source\Models\Settings\CustomAchievementDefinition.cs" Link="Source\Models\Settings\CustomAchievementDefinition.cs" />
+    <Compile Include="..\..\source\Models\Settings\CustomProviderDefinition.cs" Link="Source\Models\Settings\CustomProviderDefinition.cs" />
+    <Compile Include="..\..\source\Services\CustomProviders\CustomProviderKeys.cs" Link="Source\Services\CustomProviders\CustomProviderKeys.cs" />
+    <Compile Include="..\..\source\Services\CustomProviders\SvgGeometryImporter.cs" Link="Source\Services\CustomProviders\SvgGeometryImporter.cs" />
     <Compile Include="..\..\source\Models\Settings\OverviewPieSmallSliceMode.cs" Link="Source\Models\Settings\OverviewPieSmallSliceMode.cs" />
     <Compile Include="..\..\source\Models\Settings\SettingsExtensions.cs" Link="Source\Models\Settings\SettingsExtensions.cs" />
     <Compile Include="..\..\source\Models\AchievementUnlockedEventArgs.cs" Link="Source\Models\AchievementUnlockedEventArgs.cs" />

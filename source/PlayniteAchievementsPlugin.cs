@@ -91,6 +91,7 @@ namespace PlayniteAchievements
         private readonly NotificationPublisher _notifications;
         private readonly ProviderRegistry _providerRegistry;
         private readonly GameCustomDataStore _gameCustomDataStore;
+        private readonly Services.CustomProviders.CustomProviderStore _customProviderStore;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly SubscriptionCollection _eventSubscriptions = new SubscriptionCollection();
 
@@ -142,6 +143,7 @@ namespace PlayniteAchievements
         /// <summary>The unlock sound service, for the settings page's per-tier table and Test buttons.</summary>
         internal Services.Sound.UnlockSoundService UnlockSounds => _unlockSounds;
         public GameCustomDataStore GameCustomDataStore => _gameCustomDataStore;
+        public Services.CustomProviders.CustomProviderStore CustomProviderStore => _customProviderStore;
         public IReadOnlyList<IDataProvider> Providers => _refreshService?.Providers;
         public RefreshRuntime RefreshRuntime => _refreshService;
         public AchievementOverridesService AchievementOverridesService => _achievementOverridesService;
@@ -487,12 +489,22 @@ namespace PlayniteAchievements
                 var pluginUserDataPath = GetPluginUserDataPath();
                 _manualSourceRegistry = new ManualSourceRegistry(_logger, settings, PlayniteApi, pluginUserDataPath);
 
+                // User-defined custom providers resolve through static hooks so the registry and
+                // the icon converter stay free of the store type (both are linked into the tests).
+                _customProviderStore = new Services.CustomProviders.CustomProviderStore(pluginUserDataPath, _logger);
+                ProviderRegistry.CustomProviderResolver = ResolveCustomProviderVisuals;
+                Views.Converters.ProviderIconConverter.CustomGeometryResolver = id => _customProviderStore?.GetGeometry(id);
+                Views.Converters.ProviderIconConverter.CustomGeometryVersionResolver = id => _customProviderStore?.GetVersion(id) ?? 0;
+
                 // Create provider registry
                 _providerRegistry = new ProviderRegistry(settings, ProviderDisplayOrder, _logger, _manualSourceRegistry);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
                 settings.Persisted?.MigrateLegacyProviderFriends();
                 _gameCustomDataStore = _settingsViewModel.GameCustomDataStore;
                 _gameCustomDataStore.AttachRuntimeSettings(settings);
+                _gameCustomDataStore.AttachCustomProviderCatalog(
+                    id => _customProviderStore.TryGet(id, out var definition) ? definition : null,
+                    definition => _customProviderStore.ImportIfMissing(definition));
                 TryWarmCustomDataCache();
 
                 List<IDataProvider> providers;
@@ -1497,6 +1509,11 @@ namespace PlayniteAchievements
         {
             _refreshService.GameRefreshed += OnAchievementGameRefreshed;
             _eventSubscriptions.Add(() => _refreshService.GameRefreshed -= OnAchievementGameRefreshed);
+            if (_customProviderStore != null)
+            {
+                _customProviderStore.Changed += CustomProviderStore_Changed;
+                _eventSubscriptions.Add(() => _customProviderStore.Changed -= CustomProviderStore_Changed);
+            }
             _inGameMonitor.ProgressApplied += OnAchievementGameRefreshed;
             _eventSubscriptions.Add(() => _inGameMonitor.ProgressApplied -= OnAchievementGameRefreshed);
 
@@ -1592,6 +1609,56 @@ namespace PlayniteAchievements
             foreach (var change in pending)
             {
                 HandleCustomDataChanged(change.Key, change.Value);
+            }
+        }
+
+        private CustomProviderVisuals ResolveCustomProviderVisuals(string customProviderId)
+        {
+            return _customProviderStore != null && _customProviderStore.TryGet(customProviderId, out var definition)
+                ? new CustomProviderVisuals(
+                    definition.Name,
+                    definition.ColorHex,
+                    hasIcon: !string.IsNullOrWhiteSpace(definition.IconPathData))
+                : null;
+        }
+
+        // A definition edit changes how every assigned game resolves its provider name, icon and
+        // color. The converter's tinted-icon cache is cleared first, then each assigned game
+        // re-projects through the same CustomDataChanged path an assignment change uses. A
+        // deletion clears the assignments instead, which raises the same event through the write.
+        private void CustomProviderStore_Changed(object sender, Services.CustomProviders.CustomProviderChangedEventArgs e)
+        {
+            if (e == null || string.IsNullOrWhiteSpace(e.Id) || _gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Views.Converters.ProviderIconConverter.Invalidate("GeoCustom:" + e.Id + "|");
+
+                var affectedGameIds = _gameCustomDataStore.LoadAll()
+                    .Where(data => data != null &&
+                                   data.PlayniteGameId != Guid.Empty &&
+                                   string.Equals(data.CustomProviderId, e.Id, StringComparison.OrdinalIgnoreCase))
+                    .Select(data => data.PlayniteGameId)
+                    .ToList();
+
+                foreach (var gameId in affectedGameIds)
+                {
+                    if (e.Deleted)
+                    {
+                        _gameCustomDataStore.Update(gameId, data => data.CustomProviderId = null);
+                    }
+                    else
+                    {
+                        _gameCustomDataStore.NotifyChanged(gameId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed propagating custom provider change for id={e.Id}.");
             }
         }
 

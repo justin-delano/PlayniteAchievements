@@ -148,6 +148,14 @@ namespace PlayniteAchievements.Models.Settings
 
         public ManualAchievementLink ManualLink { get; set; }
 
+        public List<CustomAchievementDefinition> CustomAchievements { get; set; }
+
+        /// <summary>
+        /// Id of the user-defined custom provider a custom-only game displays as. Only meaningful
+        /// while the game has custom achievements and no cached provider data.
+        /// </summary>
+        public string CustomProviderId { get; set; }
+
         public GameCustomDataFile Clone()
         {
             return new GameCustomDataFile
@@ -198,7 +206,11 @@ namespace PlayniteAchievements.Models.Settings
                 NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
                 ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
-                ManualLink = ManualLink?.Clone()
+                ManualLink = ManualLink?.Clone(),
+                CustomAchievements = CustomAchievements != null
+                    ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null,
+                CustomProviderId = CustomProviderId
             };
         }
 
@@ -250,7 +262,13 @@ namespace PlayniteAchievements.Models.Settings
                 NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
                 ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
-                ManualLink = ManualLink?.Clone()
+                ManualLink = ManualLink?.Clone(),
+                CustomAchievements = CustomAchievements != null
+                    ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null,
+                // The provider snapshot is filled by the store at export time; the model has no
+                // access to the custom provider catalog.
+                CustomProviderId = CustomProviderId
             };
         }
 
@@ -308,7 +326,11 @@ namespace PlayniteAchievements.Models.Settings
                 NotificationAppearanceOverride = portable?.NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = portable?.ProviderOverride?.Clone(),
                 ExophaseEnrichmentSlugOverride = portable?.ExophaseEnrichmentSlugOverride,
-                ManualLink = portable?.ManualLink?.Clone()
+                ManualLink = portable?.ManualLink?.Clone(),
+                CustomAchievements = portable?.CustomAchievements != null
+                    ? portable.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null,
+                CustomProviderId = portable?.CustomProviderId
             };
         }
 

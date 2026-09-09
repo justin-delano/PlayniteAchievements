@@ -11,6 +11,7 @@ using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace PlayniteAchievements.Services.GameCustomData
 {
@@ -55,6 +56,9 @@ namespace PlayniteAchievements.Services.GameCustomData
 
         public Dictionary<string, string> AchievementNotes { get; set; } =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public List<CustomAchievementDefinition> CustomAchievements { get; set; } =
+            new List<CustomAchievementDefinition>();
     }
 
     internal sealed class ResolvedOverviewGameCustomData
@@ -149,7 +153,10 @@ namespace PlayniteAchievements.Services.GameCustomData
                     : new List<string>(),
                 AchievementNotes = hasCustomData
                     ? CloneNoteMap(customData?.AchievementNotes)
-                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                CustomAchievements = hasCustomData
+                    ? CloneCustomAchievements(customData?.CustomAchievements)
+                    : new List<CustomAchievementDefinition>()
             };
 
             return resolved;
@@ -405,6 +412,26 @@ namespace PlayniteAchievements.Services.GameCustomData
             GameCustomDataStore store = null)
         {
             return ResolveGameCustomData(gameId, fallbackSettings, store).AchievementNotes;
+        }
+
+        public static List<CustomAchievementDefinition> GetCustomAchievements(
+            Guid gameId,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            return ResolveGameCustomData(gameId, fallbackSettings, store).CustomAchievements;
+        }
+
+        public static bool HasAnyCustomAchievements(GameCustomDataStore store = null)
+        {
+            var resolvedStore = ResolveStore(store);
+            if (resolvedStore == null)
+            {
+                return false;
+            }
+
+            var rows = resolvedStore.LoadAll();
+            return rows != null && rows.Any(CustomAchievementProjectionService.HasCustomAchievements);
         }
 
         public static string GetAchievementNote(
@@ -851,6 +878,17 @@ namespace PlayniteAchievements.Services.GameCustomData
             }
 
             return map;
+        }
+
+        private static List<CustomAchievementDefinition> CloneCustomAchievements(
+            IEnumerable<CustomAchievementDefinition> source)
+        {
+            return source == null
+                ? new List<CustomAchievementDefinition>()
+                : source
+                    .Select(definition => definition?.Clone())
+                    .Where(definition => definition != null)
+                    .ToList();
         }
 
         private static bool TryGetPositiveId(string value, out int id)

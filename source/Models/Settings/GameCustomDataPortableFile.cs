@@ -59,6 +59,17 @@ namespace PlayniteAchievements.Models.Settings
 
         public ManualAchievementLink ManualLink { get; set; }
 
+        public List<CustomAchievementDefinition> CustomAchievements { get; set; }
+
+        public string CustomProviderId { get; set; }
+
+        /// <summary>
+        /// Snapshot of the assigned custom provider (name, color, icon path data) so a package
+        /// imported on another machine can recreate it. A local definition with the same id wins
+        /// on import.
+        /// </summary>
+        public CustomProviderDefinition CustomProvider { get; set; }
+
         public GameCustomDataPortableFile Clone()
         {
             return new GameCustomDataPortableFile
@@ -107,7 +118,12 @@ namespace PlayniteAchievements.Models.Settings
                 NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
                 ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
-                ManualLink = ManualLink?.Clone()
+                ManualLink = ManualLink?.Clone(),
+                CustomAchievements = CustomAchievements != null
+                    ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null,
+                CustomProviderId = CustomProviderId,
+                CustomProvider = CustomProvider?.Clone()
             };
         }
     }

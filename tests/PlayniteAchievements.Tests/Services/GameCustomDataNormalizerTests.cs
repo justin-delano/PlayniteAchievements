@@ -890,5 +890,86 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsNull(data.ForceUseExophase);
             Assert.IsNull(data.ExophaseSlugOverride);
         }
+
+        [TestMethod]
+        public void CustomProviderId_RoundTripsAndIsClearedWithoutCustomAchievements()
+        {
+            var gameId = Guid.NewGuid();
+            var data = new GameCustomDataFile
+            {
+                PlayniteGameId = gameId,
+                CustomProviderId = " abc ",
+                CustomAchievements = new List<CustomAchievementDefinition>
+                {
+                    new CustomAchievementDefinition { DisplayName = "Solo" }
+                }
+            };
+
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(data, gameId);
+            Assert.AreEqual("abc", normalized.CustomProviderId);
+            Assert.AreEqual("abc", normalized.Clone().CustomProviderId);
+
+            var portable = normalized.ToPortable();
+            Assert.AreEqual("abc", portable.CustomProviderId);
+            Assert.AreEqual("abc", portable.Clone().CustomProviderId);
+            Assert.AreEqual("abc", GameCustomDataFile.FromPortable(portable, gameId, null, null).CustomProviderId);
+            Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(new GameCustomDataFile { CustomProviderId = "abc" }));
+
+            var orphan = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile { PlayniteGameId = gameId, CustomProviderId = "abc" },
+                gameId);
+            Assert.IsNull(orphan.CustomProviderId, "an assignment without custom achievements is dropped");
+            Assert.IsFalse(GameCustomDataNormalizer.HasInternalData(orphan));
+        }
+
+        [TestMethod]
+        public void NormalizePortable_CustomProviderSnapshot_FollowsTheAssignedId()
+        {
+            var gameId = Guid.NewGuid();
+            var achievements = new List<CustomAchievementDefinition>
+            {
+                new CustomAchievementDefinition { DisplayName = "Solo" }
+            };
+
+            var normalized = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    CustomProviderId = "abc",
+                    CustomProvider = new CustomProviderDefinition
+                    {
+                        Id = "other",
+                        Name = " Shelf ",
+                        ColorHex = "#123456",
+                        IconPathData = " M0 0h1v1z "
+                    },
+                    CustomAchievements = achievements
+                },
+                gameId);
+
+            Assert.AreEqual("abc", normalized.CustomProvider.Id);
+            Assert.AreEqual("Shelf", normalized.CustomProvider.Name);
+            Assert.AreEqual("#123456", normalized.CustomProvider.ColorHex);
+            Assert.AreEqual("M0 0h1v1z", normalized.CustomProvider.IconPathData);
+
+            var nameless = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    CustomProviderId = "abc",
+                    CustomProvider = new CustomProviderDefinition { Id = "abc" },
+                    CustomAchievements = achievements
+                },
+                gameId);
+            Assert.IsNull(nameless.CustomProvider);
+            Assert.AreEqual("abc", nameless.CustomProviderId);
+
+            var unassigned = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    CustomProvider = new CustomProviderDefinition { Id = "abc", Name = "Shelf" },
+                    CustomAchievements = achievements
+                },
+                gameId);
+            Assert.IsNull(unassigned.CustomProvider);
+        }
     }
 }
