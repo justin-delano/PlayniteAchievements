@@ -438,10 +438,18 @@ namespace PlayniteAchievements.Services.Achievements
                 affectsSummaryData: false);
         }
 
-        public void SetAchievementIconOverrides(
+        /// <summary>
+        /// Writes both icon override maps and the custom achievements' own icon paths in one store
+        /// update. Custom achievements carry their icons on the definition rather than in the
+        /// override maps, and the Icons tab edits both halves at once. Each Update is a load,
+        /// normalize, serialize, write and change notification, so writing the halves separately
+        /// paid that twice for a single edit.
+        /// </summary>
+        public void SetIconOverridesAndCustomAchievementIcons(
             Guid gameId,
             IReadOnlyDictionary<string, string> unlockedIconOverrides,
-            IReadOnlyDictionary<string, string> lockedIconOverrides)
+            IReadOnlyDictionary<string, string> lockedIconOverrides,
+            IReadOnlyDictionary<string, (string Unlocked, string Locked)> customIconsByApiName)
         {
             if (gameId == Guid.Empty)
             {
@@ -450,9 +458,44 @@ namespace PlayniteAchievements.Services.Achievements
 
             _gameCustomDataStore.Update(gameId, customData =>
             {
-                customData.AchievementUnlockedIconOverrides = CopyStringOverrides(unlockedIconOverrides);
-                customData.AchievementLockedIconOverrides = CopyStringOverrides(lockedIconOverrides);
+                ApplyAchievementIconOverrides(customData, unlockedIconOverrides, lockedIconOverrides);
+                ApplyCustomAchievementIcons(customData, customIconsByApiName);
             });
+        }
+
+        private static void ApplyAchievementIconOverrides(
+            GameCustomDataFile customData,
+            IReadOnlyDictionary<string, string> unlockedIconOverrides,
+            IReadOnlyDictionary<string, string> lockedIconOverrides)
+        {
+            customData.AchievementUnlockedIconOverrides = CopyStringOverrides(unlockedIconOverrides);
+            customData.AchievementLockedIconOverrides = CopyStringOverrides(lockedIconOverrides);
+        }
+
+        private static void ApplyCustomAchievementIcons(
+            GameCustomDataFile customData,
+            IReadOnlyDictionary<string, (string Unlocked, string Locked)> iconsByApiName)
+        {
+            if (iconsByApiName == null ||
+                iconsByApiName.Count == 0 ||
+                customData.CustomAchievements == null)
+            {
+                return;
+            }
+
+            foreach (var definition in customData.CustomAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (definition == null ||
+                    string.IsNullOrWhiteSpace(apiName) ||
+                    !iconsByApiName.TryGetValue(apiName, out var icons))
+                {
+                    continue;
+                }
+
+                definition.UnlockedIconPath = string.IsNullOrWhiteSpace(icons.Unlocked) ? null : icons.Unlocked.Trim();
+                definition.LockedIconPath = string.IsNullOrWhiteSpace(icons.Locked) ? null : icons.Locked.Trim();
+            }
         }
 
         /// <summary>
@@ -479,43 +522,6 @@ namespace PlayniteAchievements.Services.Achievements
                 customData.CustomAchievements = definitions != null
                     ? definitions.Select(definition => definition?.Clone()).Where(definition => definition != null).ToList()
                     : null;
-            });
-        }
-
-        /// <summary>
-        /// Writes icon paths edited in the Icons tab straight into the matching custom achievement
-        /// definitions, keyed by projected ApiName. Custom achievements carry their icons on the
-        /// definition rather than in the override maps, so both tabs edit one value.
-        /// </summary>
-        public void SetCustomAchievementIcons(
-            Guid gameId,
-            IReadOnlyDictionary<string, (string Unlocked, string Locked)> iconsByApiName)
-        {
-            if (gameId == Guid.Empty || iconsByApiName == null || iconsByApiName.Count == 0)
-            {
-                return;
-            }
-
-            _gameCustomDataStore.Update(gameId, customData =>
-            {
-                if (customData.CustomAchievements == null)
-                {
-                    return;
-                }
-
-                foreach (var definition in customData.CustomAchievements)
-                {
-                    var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
-                    if (definition == null ||
-                        string.IsNullOrWhiteSpace(apiName) ||
-                        !iconsByApiName.TryGetValue(apiName, out var icons))
-                    {
-                        continue;
-                    }
-
-                    definition.UnlockedIconPath = string.IsNullOrWhiteSpace(icons.Unlocked) ? null : icons.Unlocked.Trim();
-                    definition.LockedIconPath = string.IsNullOrWhiteSpace(icons.Locked) ? null : icons.Locked.Trim();
-                }
             });
         }
 

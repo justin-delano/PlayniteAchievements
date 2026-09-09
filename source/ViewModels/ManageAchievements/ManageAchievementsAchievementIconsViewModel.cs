@@ -325,8 +325,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     }
                 }
 
-                _achievementOverridesService.SetAchievementIconOverrides(_gameId, unlockedOverrides, lockedOverrides);
-                _achievementOverridesService.SetCustomAchievementIcons(_gameId, customIcons);
+                _achievementOverridesService.SetIconOverridesAndCustomAchievementIcons(
+                    _gameId,
+                    unlockedOverrides,
+                    lockedOverrides,
+                    customIcons);
 
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
