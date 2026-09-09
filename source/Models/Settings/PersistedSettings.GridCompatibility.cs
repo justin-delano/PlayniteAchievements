@@ -5,6 +5,25 @@ using Newtonsoft.Json;
 
 namespace PlayniteAchievements.Models.Settings
 {
+    /// <summary>
+    /// Flat per-surface accessors over <see cref="GridOptionsCatalog"/>. These look like duplication
+    /// of the catalog and are not: each one carries a job the catalog cannot do on its own.
+    ///
+    /// - They are how the window grids receive values. The grid controls do not read their own
+    ///   catalog record; their dependency properties are bound to these flat names in XAML, and
+    ///   PersistedSettings.GridCompatibility.Notifications.cs raises PropertyChanged for a flat name
+    ///   when the underlying record member changes. That bridge is what makes an edit in the grid
+    ///   display settings popup show up in the grid behind it.
+    /// - The settings migrations read old configs by these names
+    ///   (GridOptionsSettingsMigration, OverviewSettingsMigration), so a name that disappears takes
+    ///   an upgrade path with it.
+    /// - They are public on the settings object, so a user's theme can bind any of them through
+    ///   Playnite's PluginSettings markup. Nothing in this repository can prove a given name is
+    ///   unused out there.
+    ///
+    /// So do not "consolidate" these away. Replacing them means moving the window grids onto
+    /// record-reading bindings first, and even then the names have to stay for migration.
+    /// </summary>
     public partial class PersistedSettings
     {
         private AchievementGridOptions AchievementDefault => GridOptions.GetAchievement(GridOptionKeys.Achievement.Default);
