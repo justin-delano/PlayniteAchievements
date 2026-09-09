@@ -1,12 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Views.Settings.Display.ThemeControls;
 using PlayniteAchievements.Views.Settings.Navigation;
 
@@ -20,10 +18,6 @@ namespace PlayniteAchievements.Views.Settings.Display
     public partial class DisplaySettingsTab : UserControl, IDisposable
     {
         private ObservableCollection<SettingsNavigationItem> _navigationItems;
-        private SettingsNavigationItem _friendsOverviewNavigationItem;
-        private SettingsNavigationItem _friendsAchievementsNavigationItem;
-        private PlayniteAchievementsSettings _settings;
-        private PersistedSettingsSubscription _persistedSubscription;
 
         private DisplayGeneralSection _generalSection;
         private AppearanceSection _appearanceSection;
@@ -46,25 +40,14 @@ namespace PlayniteAchievements.Views.Settings.Display
             if (plugin == null) throw new ArgumentNullException(nameof(plugin));
             if (pickColor == null) throw new ArgumentNullException(nameof(pickColor));
 
-            _settings = settings;
             _previewState = new ThemeControlPreviewState(settings);
             _themeMigrationController = new ThemeMigrationController(settings, plugin, logger);
 
             var themeControlsGroup = ResourceProvider.GetString("LOCPlayAch_Settings_Display_ThemeIntegration");
             var themeMigrationGroup = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title");
 
-            _friendsOverviewNavigationItem = new SettingsNavigationItem(
-                "FriendsOverview",
-                ResourceProvider.GetString("LOCPlayAch_FriendsOverview_Title"),
-                iconGlyph: "",
-                viewFactory: () => new FriendsOverviewDisplaySection());
-
-            _friendsAchievementsNavigationItem = new SettingsNavigationItem(
-                "FriendsAchievementsWindow",
-                ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_TitleFallback"),
-                iconGlyph: "",
-                viewFactory: () => new FriendsAchievementsWindowDisplaySection());
-
+            // Per-grid display options are edited from each grid's own "Display settings" menu,
+            // so this tab carries only the settings that are not tied to a single grid.
             _navigationItems = new ObservableCollection<SettingsNavigationItem>
             {
                 new SettingsNavigationItem(
@@ -81,14 +64,9 @@ namespace PlayniteAchievements.Views.Settings.Display
                         new AppearanceSection(settings, plugin.ProviderRegistry, pickColor)),
                 new SettingsNavigationItem(
                     "Overview",
-                    ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Tab_Overview"),
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Display_OverviewLayout"),
                     iconGlyph: "",
                     viewFactory: () => new OverviewDisplaySection()),
-                new SettingsNavigationItem(
-                    "AchievementsWindow",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_ViewAchievementsWindow"),
-                    iconGlyph: "",
-                    viewFactory: () => new AchievementsWindowDisplaySection()),
                 new SettingsNavigationItem(
                     "DataGrid",
                     ResourceProvider.GetString("LOCPlayAch_Settings_AchievementDataGridPreview"),
@@ -157,71 +135,8 @@ namespace PlayniteAchievements.Views.Settings.Display
                     viewFactory: () => new MigrationThemePage(_themeMigrationController))
             };
 
-            if (settings.Persisted.EnableFriendsFeatures)
-            {
-                InsertFriendsNavigationItems();
-            }
-
             MasterDetail.ItemsSource = _navigationItems;
             MasterDetail.SelectedItem = _navigationItems[0];
-
-            // Tracks the current Persisted instance: the plugin's own settings popout can
-            // overlap a Playnite addon-settings session, so a cancel in one can replace the
-            // instance under the other.
-            _persistedSubscription = new PersistedSettingsSubscription(
-                settings,
-                Persisted_PropertyChanged,
-                SyncFriendsNavigationItems);
-        }
-
-        private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e?.PropertyName != nameof(PersistedSettings.EnableFriendsFeatures))
-            {
-                return;
-            }
-
-            SyncFriendsNavigationItems();
-        }
-
-        private void SyncFriendsNavigationItems()
-        {
-            if (_settings?.Persisted?.EnableFriendsFeatures == true)
-            {
-                InsertFriendsNavigationItems();
-            }
-            else
-            {
-                var wasSelected = MasterDetail.SelectedItem == _friendsOverviewNavigationItem ||
-                                  MasterDetail.SelectedItem == _friendsAchievementsNavigationItem;
-                _navigationItems.Remove(_friendsOverviewNavigationItem);
-                _navigationItems.Remove(_friendsAchievementsNavigationItem);
-                if (wasSelected)
-                {
-                    MasterDetail.SelectedItem = _navigationItems[0];
-                }
-            }
-        }
-
-        private void InsertFriendsNavigationItems()
-        {
-            InsertNavigationItemAfter(_friendsOverviewNavigationItem, "Overview");
-            InsertNavigationItemAfter(_friendsAchievementsNavigationItem, "AchievementsWindow");
-        }
-
-        private void InsertNavigationItemAfter(SettingsNavigationItem item, string precedingKey)
-        {
-            if (_navigationItems.Contains(item))
-            {
-                return;
-            }
-
-            var precedingItem = _navigationItems.FirstOrDefault(x =>
-                string.Equals(x.Key, precedingKey, StringComparison.OrdinalIgnoreCase));
-            var insertIndex = precedingItem == null
-                ? _navigationItems.Count
-                : _navigationItems.IndexOf(precedingItem) + 1;
-            _navigationItems.Insert(Math.Min(insertIndex, _navigationItems.Count), item);
         }
 
         /// <summary>
@@ -250,8 +165,6 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         public void Dispose()
         {
-            _persistedSubscription?.Dispose();
-            _persistedSubscription = null;
             _generalSection?.Dispose();
             _appearanceSection?.Dispose();
             _previewState?.Dispose();
