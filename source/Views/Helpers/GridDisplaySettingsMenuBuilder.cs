@@ -164,7 +164,11 @@ namespace PlayniteAchievements.Views.Helpers
                 var rawKey = achievementHost.ColumnSettingsKey;
 
                 kind = GridOptionKind.Achievement;
-                surfaceKey = GridOptionsCatalog.ResolveAchievementId(rawKey);
+                if (!GridOptionsCatalog.TryResolveAchievementId(rawKey, out surfaceKey))
+                {
+                    return false;
+                }
+
                 categorySurfaceKey = GridOptionsCatalog.ResolveCategorySummariesId(
                     achievementHost.ResolvedCategoryColumnSettingsKey);
                 return true;
@@ -181,8 +185,7 @@ namespace PlayniteAchievements.Views.Helpers
                 var rawKey = gameHost.ColumnSettingsKey;
 
                 kind = GridOptionKind.GameSummaries;
-                surfaceKey = GridOptionsCatalog.ResolveGameSummariesId(rawKey);
-                return true;
+                return GridOptionsCatalog.TryResolveGameSummariesId(rawKey, out surfaceKey);
             }
 
             var friendHost = VisualTreeHelpers.FindVisualParent<FriendSummariesGridControl>(source);
@@ -194,8 +197,9 @@ namespace PlayniteAchievements.Views.Helpers
                 }
 
                 kind = GridOptionKind.FriendSummaries;
-                surfaceKey = GridOptionsCatalog.ResolveFriendSummariesId(friendHost.ColumnSettingsKey);
-                return true;
+                return GridOptionsCatalog.TryResolveFriendSummariesId(
+                    friendHost.ColumnSettingsKey,
+                    out surfaceKey);
             }
 
             return false;

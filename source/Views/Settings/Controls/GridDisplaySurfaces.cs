@@ -91,7 +91,10 @@ namespace PlayniteAchievements.Views.Settings.Controls
         private static readonly Dictionary<string, GridDisplayRowCapabilities> AchievementSurfaces =
             new Dictionary<string, GridDisplayRowCapabilities>(StringComparer.OrdinalIgnoreCase)
             {
-                // The theme controls' shared fallback record, which contributes only a max height.
+                // The legacy theme DataGrid record, reached by the ModernDataGrid aliases and the
+                // pre-catalog "DataGrid" migration. Not a neutral default despite the name: it
+                // contributes only a max height, which is why an unrecognised grid must not be
+                // pointed at it (see GridOptionsCatalog.TryResolveAchievementId).
                 [GridOptionKeys.Achievement.Default] = new GridDisplayRowCapabilities(
                     showColumnHeadersRow: false,
                     showControlBarRow: false,
