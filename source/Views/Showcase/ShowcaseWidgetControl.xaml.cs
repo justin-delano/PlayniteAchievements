@@ -377,6 +377,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             DisposeBodyVisuals(BodyHost.Content);
             BodyHost.Content = null;
+            (_bodyViewModel as IDisposable)?.Dispose();
             _bodyViewModel = null;
         }
 
@@ -389,6 +390,9 @@ namespace PlayniteAchievements.Views.Showcase
         {
             if (!(_bodyViewModel is T typed))
             {
+                // The replaced view model may hold something rooted by a process-lifetime event
+                // (the pie's chart is), so release it rather than dropping the reference.
+                (_bodyViewModel as IDisposable)?.Dispose();
                 typed = new T();
                 _bodyViewModel = typed;
             }

@@ -60,7 +60,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// optional legend (a per-widget setting) capped to 8 rows. A fresh chart is produced per
     /// refresh so the bound control always reflects the latest data.
     /// </summary>
-    public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase
+    public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase, IDisposable
     {
         private PieChartViewModel _chart = new PieChartViewModel();
         private bool _showCenterPercentage = true;
@@ -177,6 +177,17 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             LegendRows.ReplaceAll((chart.LegendItems ?? Enumerable.Empty<LegendItem>())
                 .Take(8)
                 .Select(item => new PieLegendRowViewModel(item)));
+        }
+
+        /// <summary>
+        /// Releases the current chart. Refresh only disposes the chart it replaces, so without
+        /// this the last one survives whenever the widget view model itself is discarded (a kind
+        /// swap, a deleted widget, dashboard teardown) and stays rooted by the process-lifetime
+        /// appearance event for the rest of the session.
+        /// </summary>
+        public void Dispose()
+        {
+            _chart?.Dispose();
         }
 
         private static string Localize(string key) => ResourceProvider.GetString(key);
