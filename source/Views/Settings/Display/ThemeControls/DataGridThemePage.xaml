@@ -55,38 +55,29 @@
                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Context_Settings}"
                                        Style="{StaticResource ContextLabelStyle}"/>
-                            <!-- The theme grid renders one game's achievements and never swaps icons
-                                 for cover art, so the cover images row has nothing to act on. -->
+                            <!-- Which rows each surface offers comes from GridDisplaySurfaces, so
+                                 this page and the per-grid display settings popup always agree. -->
                             <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[DesktopTheme]}"
-                                                        ShowCategoryModeRow="True"
-                                                        ShowCoverImagesRow="False"
-                                                        ShowRarityGlowRow="False"
-                                                        ShowColorNamesRow="False"
-                                                        ShowSortRow="False"/>
+                                                        SurfaceKind="Achievement"
+                                                        SurfaceKey="DesktopTheme"/>
                             <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[Default]}"
-                                                        ShowMaxHeightRow="True"
-                                                        ShowCoverImagesRow="False"
-                                                        ShowColumnHeadersRow="False"
-                                                        ShowControlBarRow="False"
-                                                        ShowDateModeRow="False"
-                                                        ShowRowHeightRow="False"
-                                                        ShowMaxRowsRow="False"/>
+                                                        SurfaceKind="Achievement"
+                                                        SurfaceKey="Default"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
                                        Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
-                            <!-- The theme grid's game summary is a fixed single header row without a
-                                 control bar, so the control bar, row limit and sort rows are inert. -->
                             <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[DesktopTheme]}"
-                                                        ShowControlBarRow="False"
-                                                        ShowMaxRowsRow="False"
-                                                        ShowSortRow="False"/>
+                                                        SurfaceKind="GameSummaries"
+                                                        SurfaceKey="DesktopTheme"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
                                        Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
                                       IsChecked="{Binding Persisted.GridOptions.Achievement[DesktopTheme].HideCategorySummaryRow}"
                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                            <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.CategorySummaries[DesktopTheme]}"/>
+                            <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.CategorySummaries[DesktopTheme]}"
+                                                        SurfaceKind="CategorySummaries"
+                                                        SurfaceKey="DesktopTheme"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
