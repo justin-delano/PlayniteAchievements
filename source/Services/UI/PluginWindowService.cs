@@ -1516,6 +1516,8 @@ namespace PlayniteAchievements.Services.UI
                     windowOptions
                 );
 
+                AttachWindowPlacement(window, "ModernThemeControlsTest", isFullscreen: false);
+
                 try
                 {
                     if (window.Owner == null)
@@ -1576,6 +1578,7 @@ namespace PlayniteAchievements.Services.UI
 
                 window.MinWidth = 900;
                 window.MinHeight = 640;
+                AttachWindowPlacement(window, "DynamicThemeCommandTest", isFullscreen: false);
 
                 try
                 {
@@ -1745,6 +1748,7 @@ namespace PlayniteAchievements.Services.UI
                 var window = PlayniteUiProvider.CreateExtensionWindow(title, view, windowOptions);
                 window.MinWidth = 700;
                 window.MinHeight = 500;
+                AttachWindowPlacement(window, "ParityTest", isFullscreen: false);
                 window.ShowDialog();
             }
             catch (Exception ex)

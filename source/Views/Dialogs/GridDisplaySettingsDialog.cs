@@ -112,11 +112,7 @@ namespace PlayniteAchievements.Views.Dialogs
 
             window.MinWidth = 360;
             window.MinHeight = MinimumHeight;
-            WindowPlacementPersistenceService.Attach(
-                window,
-                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted,
-                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
-                WindowPlacementKey);
+            WindowPlacementPersistenceService.Attach(window, WindowPlacementKey);
 
             // Closing by the window chrome is a cancel: the edits are already applied to the live
             // records, so without this the X would silently keep them and Cancel would be the only

@@ -45,6 +45,8 @@ namespace PlayniteAchievements.Views.Dialogs
                     Height = 360
                 });
 
+            WindowPlacementPersistenceService.Attach(window, "CustomProviderEditor");
+
             try
             {
                 if (window.Owner == null)

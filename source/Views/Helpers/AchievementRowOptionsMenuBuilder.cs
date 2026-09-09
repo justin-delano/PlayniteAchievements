@@ -442,6 +442,7 @@ namespace PlayniteAchievements.Views.Helpers
                     Height = 200
                 });
 
+            WindowPlacementPersistenceService.Attach(window, "CategoryPicker");
             inputDialog.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 
@@ -557,6 +558,9 @@ namespace PlayniteAchievements.Views.Helpers
                     Height = isEditMode ? 560 : 420
                 });
 
+            WindowPlacementPersistenceService.Attach(
+                window,
+                isEditMode ? "AchievementNoteEdit" : "AchievementNoteView");
             dialog.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 

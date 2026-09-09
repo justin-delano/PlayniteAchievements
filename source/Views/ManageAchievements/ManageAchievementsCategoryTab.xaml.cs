@@ -1003,6 +1003,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                     Height = 200
                 });
 
+            WindowPlacementPersistenceService.Attach(window, "CategoryPicker");
             inputDialog.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 

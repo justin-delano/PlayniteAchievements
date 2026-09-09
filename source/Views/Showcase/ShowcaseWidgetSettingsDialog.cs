@@ -88,11 +88,7 @@ namespace PlayniteAchievements.Views.Showcase
             window.MinWidth = 360;
             window.MinHeight = MinimumDialogHeight;
             // The measured height is the first-open default; a saved placement wins.
-            WindowPlacementPersistenceService.Attach(
-                window,
-                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted,
-                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
-                WindowPlacementKey);
+            WindowPlacementPersistenceService.Attach(window, WindowPlacementKey);
 
             window.ShowDialog();
             return editor.Saved;
