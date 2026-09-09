@@ -139,6 +139,13 @@ namespace PlayniteAchievements
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
         public ProviderRegistry ProviderRegistry => _providerRegistry;
 
+        /// <summary>
+        /// True while a settings window holds a pending edit snapshot. Editors that write straight
+        /// to the live persisted tree suppress their own save while this is true, leaving the
+        /// settings window's OK/Cancel to decide.
+        /// </summary>
+        public bool IsSettingsEditSessionActive => _settingsViewModel?.IsEditSessionActive ?? false;
+
         /// <summary>The unlock sound service, for the settings page's per-tier table and Test buttons.</summary>
         internal Services.Sound.UnlockSoundService UnlockSounds => _unlockSounds;
         public GameCustomDataStore GameCustomDataStore => _gameCustomDataStore;

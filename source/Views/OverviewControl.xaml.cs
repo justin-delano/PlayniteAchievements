@@ -1713,7 +1713,7 @@ namespace PlayniteAchievements.Views
         {
             if (row == null || !row.IsLoaded || row.DataContext == null) return false;
 
-            var menu = BuildRowContextMenu(row.DataContext);
+            var menu = BuildRowContextMenu(row.DataContext, row);
             if (menu == null || menu.Items.Count == 0) return false;
 
             ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
@@ -1728,14 +1728,14 @@ namespace PlayniteAchievements.Views
             return true;
         }
 
-        private ContextMenu BuildRowContextMenu(object data)
+        private ContextMenu BuildRowContextMenu(object data, DependencyObject menuSource = null)
         {
-            if (data is GameSummaryItem) return BuildGameMenu(data);
-            if (data is AchievementDisplayItem || data is RecentAchievementItem) return BuildAchievementMenu(data);
+            if (data is GameSummaryItem) return BuildGameMenu(data, menuSource);
+            if (data is AchievementDisplayItem || data is RecentAchievementItem) return BuildAchievementMenu(data, menuSource);
             return null;
         }
 
-        private ContextMenu BuildGameMenu(object data)
+        private ContextMenu BuildGameMenu(object data, DependencyObject menuSource = null)
         {
             return GameRowContextMenuBuilder.BuildGameMenu(
                 data,
@@ -1747,10 +1747,11 @@ namespace PlayniteAchievements.Views
                 _achievementOverridesService,
                 _cacheManager,
                 _logger,
-                includeViewCaptures: true);
+                includeViewCaptures: true,
+                menuSource: menuSource);
         }
 
-        private ContextMenu BuildAchievementMenu(object data)
+        private ContextMenu BuildAchievementMenu(object data, DependencyObject menuSource = null)
         {
             var menu = new ContextMenu();
             if (data is RecentAchievementItem)
@@ -1777,7 +1778,8 @@ namespace PlayniteAchievements.Views
                 RefreshView,
                 includeViewCaptures: true,
                 onGoalChanged: () => _viewModel?.ReapplyGoalOrder() == true,
-                onCapstoneChanged: apiName => _viewModel?.ApplyCapstone(apiName) == true);
+                onCapstoneChanged: apiName => _viewModel?.ApplyCapstone(apiName) == true,
+                menuSource: menuSource);
             return menu;
         }
 

@@ -1610,6 +1610,8 @@ namespace PlayniteAchievements.Views.Settings.General
                     Height = 200
                 });
 
+            Views.Helpers.WindowPlacementPersistenceService.Attach(window, "PresetName");
+
             try
             {
                 if (window.Owner == null)

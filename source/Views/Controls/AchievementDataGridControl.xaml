@@ -124,7 +124,7 @@
               helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
               helpers:DataGridAlignmentBehavior.IsEnabled="True"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
-              PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
+              PreviewMouseRightButtonUp="DataGrid_PreviewMouseRightButtonUp">
 
         <DataGrid.RowHeaderStyle>
             <Style TargetType="DataGridRowHeader">

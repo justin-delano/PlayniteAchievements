@@ -801,6 +801,48 @@ namespace PlayniteAchievements.Models.Settings
             };
         }
 
+        /// <summary>
+        /// Like <see cref="ResolveAchievementId"/> but reports whether the key was actually
+        /// recognised instead of falling back.
+        ///
+        /// The fallback surface is <see cref="GridOptionKeys.Achievement.Default"/>, which is not a
+        /// neutral default: it is the legacy theme DataGrid record reached by the ModernDataGrid
+        /// aliases, and it carries only a max height. Callers that would show that record to the
+        /// user -- rather than render from it -- must not present it for an unrecognised grid.
+        /// </summary>
+        public static bool TryResolveAchievementId(string columnSettingsKey, out string id)
+        {
+            if (ShowcaseGridSurfaces.IsAchievementSurface(columnSettingsKey))
+            {
+                id = columnSettingsKey;
+                return true;
+            }
+
+            return AchievementIdsByColumnKey.TryGetValue(columnSettingsKey ?? string.Empty, out id);
+        }
+
+        /// <summary>
+        /// Like <see cref="ResolveGameSummariesId"/> but reports whether the key was recognised.
+        /// </summary>
+        public static bool TryResolveGameSummariesId(string columnSettingsKey, out string id)
+        {
+            if (ShowcaseGridSurfaces.IsGameSurface(columnSettingsKey))
+            {
+                id = columnSettingsKey;
+                return true;
+            }
+
+            return GameSummaryIdsByColumnKey.TryGetValue(columnSettingsKey ?? string.Empty, out id);
+        }
+
+        /// <summary>
+        /// Like <see cref="ResolveFriendSummariesId"/> but reports whether the key was recognised.
+        /// </summary>
+        public static bool TryResolveFriendSummariesId(string columnSettingsKey, out string id)
+        {
+            return FriendSummaryIdsByColumnKey.TryGetValue(columnSettingsKey ?? string.Empty, out id);
+        }
+
         public static string ResolveAchievementId(string columnSettingsKey)
         {
             // Showcase grid widgets persist under dedicated (per-instance for multi-instance
@@ -810,51 +852,47 @@ namespace PlayniteAchievements.Models.Settings
                 return columnSettingsKey;
             }
 
-            switch (columnSettingsKey)
-            {
-                case "DesktopTheme":
-                    return GridOptionKeys.Achievement.DesktopTheme;
-                case "SingleGame":
-                    return GridOptionKeys.Achievement.SingleGame;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    return GridOptionKeys.Achievement.OverviewRecent;
-                case "FriendsOverviewRecentAchievements":
-                    return GridOptionKeys.Achievement.FriendsOverviewRecent;
-                case "FriendsOverviewSelectedFriendAchievements":
-                    return GridOptionKeys.Achievement.FriendsOverviewSelectedFriend;
-                case "FriendsOverviewSelectedGameAchievements":
-                    return GridOptionKeys.Achievement.FriendsOverviewSelectedGame;
-                case "FriendsOverviewSelectedFriendGameAchievements":
-                    return GridOptionKeys.Achievement.FriendsOverviewSelectedFriendGame;
-                case "ViewFriendsAchievements":
-                case "ViewFriendsAchievementsAchievements":
-                    return GridOptionKeys.Achievement.ViewFriendsAchievements;
-                case "ViewFriendsAchievementsSelectedFriendAchievements":
-                    return GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    return GridOptionKeys.Achievement.OverviewSelectedGame;
-                case "StartPageAchievements":
-                    return GridOptionKeys.Achievement.StartPageRecent;
-                case "StartPageFriendAchievements":
-                    return GridOptionKeys.Achievement.StartPageFriendAchievements;
-                default:
-                    return GridOptionKeys.Achievement.Default;
-            }
+            return AchievementIdsByColumnKey.TryGetValue(columnSettingsKey ?? string.Empty, out var id)
+                ? id
+                : GridOptionKeys.Achievement.Default;
         }
+
+        // A table rather than a switch so recognising a key and resolving it cannot disagree: the
+        // Try* overloads above are a lookup against this, not a guess from the resolved value.
+        private static readonly Dictionary<string, string> AchievementIdsByColumnKey =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["DesktopTheme"] = GridOptionKeys.Achievement.DesktopTheme,
+                ["Default"] = GridOptionKeys.Achievement.Default,
+                ["SingleGame"] = GridOptionKeys.Achievement.SingleGame,
+                ["OverviewRecentAchievements"] = GridOptionKeys.Achievement.OverviewRecent,
+                ["Overview"] = GridOptionKeys.Achievement.OverviewRecent,
+                ["FriendsOverviewRecentAchievements"] = GridOptionKeys.Achievement.FriendsOverviewRecent,
+                ["FriendsOverviewSelectedFriendAchievements"] = GridOptionKeys.Achievement.FriendsOverviewSelectedFriend,
+                ["FriendsOverviewSelectedGameAchievements"] = GridOptionKeys.Achievement.FriendsOverviewSelectedGame,
+                ["FriendsOverviewSelectedFriendGameAchievements"] = GridOptionKeys.Achievement.FriendsOverviewSelectedFriendGame,
+                ["ViewFriendsAchievements"] = GridOptionKeys.Achievement.ViewFriendsAchievements,
+                ["ViewFriendsAchievementsAchievements"] = GridOptionKeys.Achievement.ViewFriendsAchievements,
+                ["ViewFriendsAchievementsSelectedFriendAchievements"] = GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend,
+                ["OverviewSelectedGameAchievements"] = GridOptionKeys.Achievement.OverviewSelectedGame,
+                ["OverviewGame"] = GridOptionKeys.Achievement.OverviewSelectedGame,
+                ["StartPageAchievements"] = GridOptionKeys.Achievement.StartPageRecent,
+                ["StartPageFriendAchievements"] = GridOptionKeys.Achievement.StartPageFriendAchievements
+            };
 
         public static string ResolveFriendSummariesId(string columnSettingsKey)
         {
-            switch (columnSettingsKey)
-            {
-                case "ViewFriendsAchievementsFriends":
-                    return GridOptionKeys.FriendSummaries.ViewFriendsAchievements;
-                case "FriendsOverviewFriendSummaries":
-                default:
-                    return GridOptionKeys.FriendSummaries.FriendsOverview;
-            }
+            return FriendSummaryIdsByColumnKey.TryGetValue(columnSettingsKey ?? string.Empty, out var id)
+                ? id
+                : GridOptionKeys.FriendSummaries.FriendsOverview;
         }
+
+        private static readonly Dictionary<string, string> FriendSummaryIdsByColumnKey =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ViewFriendsAchievementsFriends"] = GridOptionKeys.FriendSummaries.ViewFriendsAchievements,
+                ["FriendsOverviewFriendSummaries"] = GridOptionKeys.FriendSummaries.FriendsOverview
+            };
 
         public static string ResolveGameSummariesId(string columnSettingsKey)
         {
@@ -863,27 +901,24 @@ namespace PlayniteAchievements.Models.Settings
                 return columnSettingsKey;
             }
 
-            switch (columnSettingsKey)
-            {
-                case "StartPageGameSummaries":
-                case "StartPageOverview":
-                    return GridOptionKeys.GameSummaries.StartPage;
-                case "ViewAchievementsGameSummaries":
-                    return GridOptionKeys.GameSummaries.ViewAchievements;
-                case "FriendsOverviewGameSummaries":
-                    return GridOptionKeys.GameSummaries.FriendsOverview;
-                case "FriendsOverviewSelectedFriendGameSummaries":
-                    return GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend;
-                case "ViewFriendsAchievementsGameSummaries":
-                    return GridOptionKeys.GameSummaries.ViewFriendsAchievements;
-                case "ViewFriendsAchievementsSelectedFriendGameSummaries":
-                    return GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend;
-                case "DesktopThemeGameSummaries":
-                    return GridOptionKeys.GameSummaries.DesktopTheme;
-                default:
-                    return GridOptionKeys.GameSummaries.Overview;
-            }
+            return GameSummaryIdsByColumnKey.TryGetValue(columnSettingsKey ?? string.Empty, out var id)
+                ? id
+                : GridOptionKeys.GameSummaries.Overview;
         }
+
+        private static readonly Dictionary<string, string> GameSummaryIdsByColumnKey =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["StartPageGameSummaries"] = GridOptionKeys.GameSummaries.StartPage,
+                ["StartPageOverview"] = GridOptionKeys.GameSummaries.StartPage,
+                ["ViewAchievementsGameSummaries"] = GridOptionKeys.GameSummaries.ViewAchievements,
+                ["OverviewGameSummaries"] = GridOptionKeys.GameSummaries.Overview,
+                ["FriendsOverviewGameSummaries"] = GridOptionKeys.GameSummaries.FriendsOverview,
+                ["FriendsOverviewSelectedFriendGameSummaries"] = GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend,
+                ["ViewFriendsAchievementsGameSummaries"] = GridOptionKeys.GameSummaries.ViewFriendsAchievements,
+                ["ViewFriendsAchievementsSelectedFriendGameSummaries"] = GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend,
+                ["DesktopThemeGameSummaries"] = GridOptionKeys.GameSummaries.DesktopTheme
+            };
 
         public static string ResolveCategorySummariesId(string columnSettingsKey)
         {

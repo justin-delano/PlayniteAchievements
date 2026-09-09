@@ -36,6 +36,7 @@ namespace PlayniteAchievements.Views.Helpers
             object data,
             FrameworkElement resourceOwner,
             Action onChanged,
+            DependencyObject menuSource,
             bool includeViewCaptures = false,
             Func<bool> onGoalChanged = null,
             Func<string, bool> onCapstoneChanged = null)
@@ -80,6 +81,10 @@ namespace PlayniteAchievements.Views.Helpers
             menu.Items.Add(CreateCategoriesMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateFiltersMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateNotesMenu(context, resourceOwner, onChanged));
+
+            // Required rather than optional: a call site that forgets the row would lose the
+            // display settings entry silently, so the compiler asks for it.
+            GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
             return true;
         }
 
@@ -437,6 +442,7 @@ namespace PlayniteAchievements.Views.Helpers
                     Height = 200
                 });
 
+            WindowPlacementPersistenceService.Attach(window, "CategoryPicker");
             inputDialog.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 
@@ -552,6 +558,9 @@ namespace PlayniteAchievements.Views.Helpers
                     Height = isEditMode ? 560 : 420
                 });
 
+            WindowPlacementPersistenceService.Attach(
+                window,
+                isEditMode ? "AchievementNoteEdit" : "AchievementNoteView");
             dialog.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 

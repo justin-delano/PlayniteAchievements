@@ -34,6 +34,7 @@ namespace PlayniteAchievements.Views.Helpers
             AchievementOverridesService overridesService,
             ICacheManager cacheManager,
             ILogger logger,
+            DependencyObject menuSource,
             bool includeViewCaptures = false)
         {
             var menu = new ContextMenu();
@@ -114,6 +115,9 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Add(maintenance);
             }
 
+            // Required rather than optional: a call site that forgets the row would lose the
+            // display settings entry silently, so the compiler asks for it.
+            GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
             return menu;
         }
 

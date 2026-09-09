@@ -24,10 +24,13 @@ namespace PlayniteAchievements.Views.Settings.Controls
     /// (ShowColumnHeadersRow, ShowControlBarRow, ShowRowHeightRow, ShowMaxRowsRow, ShowSortRow,
     /// ShowCoverImagesRow, ShowRarityGlowRow, ShowColorNamesRow, ShowDateModeRow,
     /// ShowMetadataRows, ShowCompletionGlowRow); rows only a few surfaces show default to
-    /// false (ShowMaxHeightRow, ShowCategoryModeRow). Chosen so the Overview display section
-    /// needs few overrides: GameSummaries.Overview needs none, Achievement.OverviewRecent only
-    /// disables the sort row, Achievement.OverviewSelectedGame disables cover images and enables
-    /// the category mode row.
+    /// false (ShowMaxHeightRow, ShowCategoryModeRow).
+    ///
+    /// Hosts normally set <see cref="SurfaceKind"/> and <see cref="SurfaceKey"/> rather than the
+    /// individual flags, which applies the surface's row set from
+    /// <see cref="GridDisplaySurfaces"/> — the single source of truth shared with the per-grid
+    /// display settings popup. Setting a flag directly still works, but a later
+    /// SurfaceKind/SurfaceKey change overwrites it.
     /// </summary>
     public partial class GridOptionsEditor : UserControl
     {
@@ -133,6 +136,57 @@ namespace PlayniteAchievements.Views.Settings.Controls
         {
             get => (string)GetValue(HeaderProperty);
             set => SetValue(HeaderProperty, value);
+        }
+
+        public static readonly DependencyProperty SurfaceKindProperty = DependencyProperty.Register(
+            nameof(SurfaceKind),
+            typeof(GridOptionKind?),
+            typeof(GridOptionsEditor),
+            new PropertyMetadata(null, OnSurfaceChanged));
+
+        public GridOptionKind? SurfaceKind
+        {
+            get => (GridOptionKind?)GetValue(SurfaceKindProperty);
+            set => SetValue(SurfaceKindProperty, value);
+        }
+
+        public static readonly DependencyProperty SurfaceKeyProperty = DependencyProperty.Register(
+            nameof(SurfaceKey),
+            typeof(string),
+            typeof(GridOptionsEditor),
+            new PropertyMetadata(null, OnSurfaceChanged));
+
+        public string SurfaceKey
+        {
+            get => (string)GetValue(SurfaceKeyProperty);
+            set => SetValue(SurfaceKeyProperty, value);
+        }
+
+        private static void OnSurfaceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var editor = (GridOptionsEditor)d;
+            var kind = editor.SurfaceKind;
+            var key = editor.SurfaceKey;
+            if (kind == null || string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+
+            var rows = GridDisplaySurfaces.Resolve(kind.Value, key);
+            editor.ShowColumnHeadersRow = rows.ShowColumnHeadersRow;
+            editor.ShowControlBarRow = rows.ShowControlBarRow;
+            editor.ShowRowHeightRow = rows.ShowRowHeightRow;
+            editor.ShowMaxRowsRow = rows.ShowMaxRowsRow;
+            editor.ShowSortRow = rows.ShowSortRow;
+            editor.ShowMaxHeightRow = rows.ShowMaxHeightRow;
+            editor.ShowCoverImagesRow = rows.ShowCoverImagesRow;
+            editor.ShowRarityGlowRow = rows.ShowRarityGlowRow;
+            editor.ShowColorNamesRow = rows.ShowColorNamesRow;
+            editor.ShowCategoryModeRow = rows.ShowCategoryModeRow;
+            editor.ShowDateModeRow = rows.ShowDateModeRow;
+            editor.ShowMetadataRows = rows.ShowMetadataRows;
+            editor.ShowCompletionGlowRow = rows.ShowCompletionGlowRow;
+            editor.ShowGameSortPinOrderChoice = rows.ShowGameSortPinOrderChoice;
         }
 
         private static DependencyProperty RegisterFlag(string name, bool defaultValue)

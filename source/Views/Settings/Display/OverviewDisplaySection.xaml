@@ -4,7 +4,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Settings.Controls"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -100,57 +99,6 @@
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="0"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource SectionBorderStyle}">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GameSummariesGridSort}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[Overview]}"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource SectionBorderStyle}">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OverviewRecentAchievementsGrid}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[OverviewRecent]}"
-                                                    ShowSortRow="False"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource SectionBorderStyle}">
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SelectedGameGridSort}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[OverviewSelectedGame]}"
-                                                    ShowCoverImagesRow="False"
-                                                    ShowCategoryModeRow="True"/>
-                    </Border>
-
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
-                               Style="{StaticResource SubSectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <StackPanel>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
-                                      IsChecked="{Binding Persisted.GridOptions.Achievement[OverviewSelectedGame].HideCategorySummaryRow}"
-                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                            <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.CategorySummaries[OverviewSelectedGame]}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

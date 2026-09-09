@@ -119,14 +119,16 @@ namespace PlayniteAchievements
         internal ContextMenu BuildStartPageRowContextMenu(
             object data,
             FrameworkElement resourceOwner,
-            Action onChanged)
+            Action onChanged,
+            DependencyObject menuSource)
         {
             var menu = BuildStartPageBaseRowContextMenu(data, resourceOwner);
             AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
                 menu,
                 data,
                 resourceOwner,
-                onChanged);
+                onChanged,
+                menuSource);
 
             return menu.Items.Count > 0 ? menu : null;
         }

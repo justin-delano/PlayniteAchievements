@@ -217,6 +217,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?&#10;&#10;This deletes their cached achievements, icons, and any manual links and unlock times.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear data for &quot;{0}&quot;?&#10;&#10;This deletes its cached achievements, icons, and any manual link and unlock times.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_DisplaySettings">Display Settings…</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">Exclude {0} selected games and clear their data?&#10;&#10;This hides them from the achievements view and deletes their cached data and manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">Exclude &quot;{0}&quot; and clear its data?&#10;&#10;This hides the game from the achievements view and deletes its cached data and manual link.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshes">Exclude from Refreshes</sys:String>
@@ -1046,7 +1047,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Color Rarity Text by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">Show Name Above Progress Bar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityBadgesBelowProgress">Show Rarity Badges Below Progress Bar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">View Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Icons are hidden on slices under 5% to avoid overlap.</sys:String>

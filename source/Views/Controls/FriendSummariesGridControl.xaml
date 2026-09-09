@@ -84,7 +84,7 @@
               Tag="ControllerCellFocus"
               helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
               helpers:DataGridAlignmentBehavior.IsEnabled="True"
-              PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
+              PreviewMouseRightButtonUp="DataGrid_PreviewMouseRightButtonUp">
         <DataGrid.CellStyle>
             <Style TargetType="DataGridCell"
                    BasedOn="{StaticResource GameSummariesGridCellStyle}"/>
