@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Settings;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Views.Settings.Controls;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
@@ -20,8 +21,7 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly ShowcaseWidgetInstanceSettings _settings;
         private readonly Action _persist;
         private readonly bool _publishChanges;
-        private System.ComponentModel.INotifyPropertyChanged _gridOptionsRecord;
-        private System.Windows.Threading.DispatcherTimer _gridOptionsPersistTimer;
+        private DebouncedSettingsPersist _gridOptionsPersist;
 
         public ShowcaseWidgetOptionsControl(
             ShowcaseWidgetInstanceSettings settings,
@@ -469,63 +469,30 @@ namespace PlayniteAchievements.Views.Showcase
                 // The sort combo's Default (None) keeps the projection order: pin order for
                 // pinned grids, unlock recency for recent grids.
                 options = catalog.GetAchievement(surfaceKey);
+                editor.SurfaceKind = GridOptionKind.Achievement;
             }
             else
             {
                 options = catalog.GetGameSummaries(surfaceKey);
-                // The game grid can draw from pins, so it offers the order-preserving PinOrder
-                // choice for that source's user-controlled pin order.
-                editor.ShowGameSortPinOrderChoice = true;
+                editor.SurfaceKind = GridOptionKind.GameSummaries;
             }
 
+            // Naming the surface rather than setting flags is what keeps this editor and the grid's
+            // own display settings popup showing the same rows: both read GridDisplaySurfaces.
+            editor.SurfaceKey = surfaceKey;
             editor.Options = options;
-            _gridOptionsRecord = options as System.ComponentModel.INotifyPropertyChanged;
-            if (_gridOptionsRecord != null)
-            {
-                Loaded += OnLoadedAttachGridOptions;
-                Unloaded += OnUnloadedDetachGridOptions;
-            }
+            AttachGridOptionsPersist(options);
 
             panel.Children.Add(editor);
         }
 
-        private void OnLoadedAttachGridOptions(object sender, RoutedEventArgs e)
+        private void AttachGridOptionsPersist(object record)
         {
-            _gridOptionsRecord.PropertyChanged -= OnGridOptionsRecordChanged;
-            _gridOptionsRecord.PropertyChanged += OnGridOptionsRecordChanged;
-        }
-
-        private void OnUnloadedDetachGridOptions(object sender, RoutedEventArgs e)
-        {
-            _gridOptionsRecord.PropertyChanged -= OnGridOptionsRecordChanged;
-            FlushPendingGridOptionsPersist();
-        }
-
-        private void OnGridOptionsRecordChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (_gridOptionsPersistTimer == null)
-            {
-                _gridOptionsPersistTimer = new System.Windows.Threading.DispatcherTimer
-                {
-                    Interval = TimeSpan.FromMilliseconds(600)
-                };
-                _gridOptionsPersistTimer.Tick += (_, __) => FlushPendingGridOptionsPersist();
-            }
-
-            // Restart the window on every edit so a burst of toggles produces one write.
-            _gridOptionsPersistTimer.Stop();
-            _gridOptionsPersistTimer.Start();
-        }
-
-        private void FlushPendingGridOptionsPersist()
-        {
-            if (_gridOptionsPersistTimer == null || !_gridOptionsPersistTimer.IsEnabled)
-            {
-                return;
-            }
-
-            _gridOptionsPersistTimer.Stop();
-            PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
+            _gridOptionsPersist = new DebouncedSettingsPersist(
+                this,
+                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
+                () => PlayniteAchievementsPlugin.Instance?.IsSettingsEditSessionActive == true);
+            _gridOptionsPersist.Watch(record);
         }
 
         private static readonly TimelineRange[] RangeChoices =

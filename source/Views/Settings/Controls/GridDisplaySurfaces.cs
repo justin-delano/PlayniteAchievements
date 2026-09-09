@@ -125,9 +125,15 @@ namespace PlayniteAchievements.Views.Settings.Controls
                     showCategoryModeRow: true),
                 [GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend] = AllRows,
 
-                // Start page surfaces are edited through the start page widget settings control.
+                // Migration donors for the pre-showcase start page widgets. Live start page grids
+                // resolve to per-instance showcase surfaces below.
                 [GridOptionKeys.Achievement.StartPageRecent] = AllRows,
                 [GridOptionKeys.Achievement.StartPageFriendAchievements] = AllRows,
+
+                // Showcase and start page widget grids, matched on their base key because the live
+                // surfaces carry a per-instance suffix. The sort combo's default keeps the
+                // projection order (unlock recency), so sorting stays offered.
+                [ShowcaseGridSurfaces.RecentAchievements] = AllRows,
                 [GridOptionKeys.Achievement.DesktopTheme] = new GridDisplayRowCapabilities(
                     showSortRow: false,
                     showCoverImagesRow: false,
@@ -154,7 +160,13 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 [GridOptionKeys.GameSummaries.DesktopTheme] = new GridDisplayRowCapabilities(
                     showControlBarRow: false,
                     showMaxRowsRow: false,
-                    showSortRow: false)
+                    showSortRow: false),
+
+                // Showcase and start page widget game grids, matched on their base key. This is the
+                // one surface whose source order is user-controlled (a pinned-games grid), so it
+                // offers the order-preserving PinOrder sort choice.
+                [ShowcaseGridSurfaces.GameSummaries] = new GridDisplayRowCapabilities(
+                    showGameSortPinOrderChoice: true)
             };
 
         private static readonly Dictionary<string, GridDisplayRowCapabilities> FriendSummarySurfaces =
@@ -197,12 +209,25 @@ namespace PlayniteAchievements.Views.Settings.Controls
         /// </summary>
         public static GridDisplayRowCapabilities Resolve(GridOptionKind kind, string surfaceKey)
         {
+            if (string.IsNullOrEmpty(surfaceKey))
+            {
+                return AllRows;
+            }
+
             var table = GetTable(kind);
-            if (!string.IsNullOrEmpty(surfaceKey)
-                && table.TryGetValue(surfaceKey, out var capabilities)
-                && capabilities != null)
+            if (table.TryGetValue(surfaceKey, out var capabilities) && capabilities != null)
             {
                 return capabilities;
+            }
+
+            // Showcase and start page widget surfaces carry a per-instance suffix, so every
+            // instance of a widget kind shares its base key's row set.
+            var baseKey = ShowcaseGridSurfaces.GetBaseKey(surfaceKey);
+            if (!string.Equals(baseKey, surfaceKey, StringComparison.OrdinalIgnoreCase)
+                && table.TryGetValue(baseKey, out var baseCapabilities)
+                && baseCapabilities != null)
+            {
+                return baseCapabilities;
             }
 
             return AllRows;
@@ -226,22 +251,6 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 default:
                     return "LOCPlayAch_Achievements";
             }
-        }
-
-        /// <summary>
-        /// True for surfaces owned by the showcase and start page, whose grid options are edited
-        /// through the widget settings control. Those grids must not also offer the per-grid
-        /// display settings popup, or a widget would have two competing editors.
-        /// </summary>
-        public static bool IsExternallyOwnedSurface(string columnSettingsKey)
-        {
-            if (string.IsNullOrEmpty(columnSettingsKey))
-            {
-                return false;
-            }
-
-            return ShowcaseGridSurfaces.IsAchievementSurface(columnSettingsKey)
-                || ShowcaseGridSurfaces.IsGameSurface(columnSettingsKey);
         }
 
         internal static IReadOnlyDictionary<string, GridDisplayRowCapabilities> GetTable(GridOptionKind kind)

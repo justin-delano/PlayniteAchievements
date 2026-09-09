@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Views.Helpers
         /// <summary>
         /// Appends the display settings item to an existing row menu, preceded by a separator when
         /// the menu already has entries. Returns false and appends nothing when the grid cannot be
-        /// resolved or owns its options elsewhere.
+        /// resolved.
         /// </summary>
         public static bool Append(ContextMenu menu, FrameworkElement resourceOwner, DependencyObject source)
         {
@@ -162,10 +162,6 @@ namespace PlayniteAchievements.Views.Helpers
                 }
 
                 var rawKey = achievementHost.ColumnSettingsKey;
-                if (GridDisplaySurfaces.IsExternallyOwnedSurface(rawKey))
-                {
-                    return false;
-                }
 
                 kind = GridOptionKind.Achievement;
                 surfaceKey = GridOptionsCatalog.ResolveAchievementId(rawKey);
@@ -183,10 +179,6 @@ namespace PlayniteAchievements.Views.Helpers
                 }
 
                 var rawKey = gameHost.ColumnSettingsKey;
-                if (GridDisplaySurfaces.IsExternallyOwnedSurface(rawKey))
-                {
-                    return false;
-                }
 
                 kind = GridOptionKind.GameSummaries;
                 surfaceKey = GridOptionsCatalog.ResolveGameSummariesId(rawKey);
