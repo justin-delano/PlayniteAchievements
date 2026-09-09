@@ -7,6 +7,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
@@ -66,6 +67,7 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Add(captureItem);
             }
 
+            AppendShowcasePinItem(menu, data, resourceOwner);
             // A friend's row describes their progress, not the user's, so its goal/capstone state
             // would drive the toggle in the wrong direction. Theme grids can be pointed at friend
             // collections, so gate here rather than relying on the caller.
@@ -79,6 +81,32 @@ namespace PlayniteAchievements.Views.Helpers
             menu.Items.Add(CreateFiltersMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateNotesMenu(context, resourceOwner, onChanged));
             return true;
+        }
+
+        private static void AppendShowcasePinItem(
+            ContextMenu menu,
+            object data,
+            FrameworkElement resourceOwner)
+        {
+            if (!ShowcasePinService.TryGetAchievementIdentity(
+                    data,
+                    out var gameId,
+                    out var apiName,
+                    out var gameName,
+                    out var achievementName,
+                    out var friendOwned) ||
+                friendOwned)
+            {
+                return;
+            }
+
+            ShowcasePinMenuBuilder.AppendAchievementMenu(
+                menu,
+                resourceOwner,
+                gameId,
+                apiName,
+                gameName,
+                achievementName);
         }
 
         private static MenuItem CreateSetGoalItem(

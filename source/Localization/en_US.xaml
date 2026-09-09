@@ -92,7 +92,6 @@
     <sys:String x:Key="LOCPlayAch_Presets_Save">Save preset</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_StartPage_FriendsRecentAchievements">Friends' Recent Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
@@ -575,7 +574,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ResultCanceled">Canceled after compressing {0} images.&#10;&#10;Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Title">Compress Cached Images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">Start Page</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
@@ -788,9 +786,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Sign in to Epic in your default browser when it opens&#10;2. After signing in, find the &quot;authorizationCode&quot; value on the page&#10;3. Copy and paste that value in the next dialog</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Sign-In</sys:String>
 
-    <!-- Provider: Exophase -->
+    <!-- Provider: Game Jolt -->
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">Log in to Game Jolt in the browser window to read your unlocked trophies. Game Jolt achievements are only tracked for games added by the Game Jolt Library extension, or for games given a manual Game Jolt game ID in Manage Achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">Note: Only your own unlocked trophies are read; Game Jolt does not expose achievements without signing in.</sys:String>
+
+    <!-- Provider: Exophase -->
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
@@ -856,7 +856,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateAndTime">Date and time</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateOnly">Date only</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_Relative">Relative</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">Date format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Last played format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Unlock date format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Playtime format</sys:String>
@@ -978,8 +977,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe.</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophy folder not found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation (missing dev_hdd0home)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
 
     <!-- Provider: ShadPS4 -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Root Folder</sys:String>
@@ -1012,6 +1009,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortBy">Sort By</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameSummariesSort_PinOrder">Pin order</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the sorted column header again to return to this default.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionGlow">Show Completion Glow</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Show Friend Spoilers</sys:String>
@@ -1019,8 +1017,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completed Games Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPiePercentages">Show Pie Percentages</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Show Platform Pie Chart</sys:String>
@@ -1150,7 +1146,6 @@
     <sys:String x:Key="LOCPlayAch_FriendsOverview_AllProviders">All Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearSelection">Clear Selection</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendAchievements">{0} Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievements">{0} Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendGameAchievements">{0} - {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievementCount">({0}/{1} {2})</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
@@ -1249,7 +1244,6 @@
     <sys:String x:Key="LOCPlayAch_TimeRange_7D">7D</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_HoursMinutes">{0}h{1}m</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_Hours">{0}h</sys:String>
-    <sys:String x:Key="LOCPlayAch_Playtime_Minutes">{0}m</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_LessThanOneHour">&lt;1h</sys:String>
 
     <!-- ================================================================= -->
@@ -1309,6 +1303,158 @@
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Teamwork">Teamwork &amp; Strategy</sys:String>
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Veterancy">Veterancy</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Right Click to Show/Hide</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- Showcase dashboards -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Showcase_Title">Showcase</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PreviousPage">Previous Showcase page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NextPage">Next Showcase page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PageActions">Showcase page actions</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget">Widget</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettings">Widget settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettingsTitle">{0} settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DeleteWidget">Delete widget</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SplitAtFormat">Split {0} / {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MergeLeftLabel">Merge left</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MergeRightLabel">Merge right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MergeUpLabel">Merge up</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MergeDownLabel">Merge down</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MergeDeleteConfirm">Merge these blocks and delete the other widgets?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DragMoving">Moving {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DropMoveHere">Move {0} here</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DropSwap">Swap {0} with {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DropSame">{0} is already here</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DropUnavailable">This widget cannot be placed here</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AddPage">Add page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DuplicatePage">Duplicate page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_CopySuffix">Copy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RenamePage">Rename page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RenamePrompt">Enter a page name:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MovePageLeft">Move page left</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MovePageRight">Move page right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ResetTrackSizes">Reset row and column sizes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ResetPage">Reset page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ResetPageConfirm">Reset this page? Its current widgets and layout will be deleted.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DeletePage">Delete page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DeletePageConfirm">Delete this page and all widgets on it?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Template_Blank">Blank</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Template_Analytics">Analytics</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Template_Collection">Collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Profile_DefaultName">Achievement Showcase</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileName">Display name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileSubtitle">Subtitle</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileAvatar">Avatar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileBackground">Background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileProviderHint">Leave blank to use your provider profile</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ImageFiles">Image files</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AllFiles">All files</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PinToShowcase">Pin to Showcase</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PinCollection">Pin collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NewCollection">New Collection…</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NewCollectionPrompt">Enter a collection name:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RenameCollection">Rename collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RenameCollectionPrompt">Enter a new collection name:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DeleteCollection">Delete collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ClearCollection">Clear collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_DeleteCollectionConfirm">Delete the collection &quot;{0}&quot; and all of its pins?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_CollectionNameInvalid">Enter a unique, non-empty collection name.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RemoveFromCollection">Remove from collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NoPinnedAchievements">Pin achievements to see them here.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NoFavoriteGames">Pin games or use Playnite favorites.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NoData">No data yet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Other">Other</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_UnknownProvider">Unknown provider</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_UnavailableAchievement">Unavailable achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_UnavailableGame">Unavailable game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MoveEarlier">Move earlier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MoveLater">Move later</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Range">Range</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Mode">Mode</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GroupBy">Group by</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_TopN">Top entries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Source">Source</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ItemCount">Item count</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Variant">Show</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Interval">Interval</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_FitMode">Fit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Shuffle">Shuffle</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_HideCompleted">Hide completed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ShowLegend">Show legend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_CustomTitle">Title</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Day">{0} day</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Days">{0} days</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Seconds">{0} seconds</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Hours">{0:N0} h</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ThousandsHours">{0:N1}k h</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PerDay">{0:N1}/day</sys:String>
+
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Cards</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">Both</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Collection">Collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Prestige">Prestige</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PieMode_CompletedGames">Completed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Provider">Provider distribution</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Rarity">Rarity distribution</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Trophy">Trophy distribution</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PointsGrouping_Provider">Provider or service</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PointsGrouping_Game">Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Recent">Recent achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Rarest">Rarest achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Pinned">Pinned achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Completed">Completed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_All">All games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Pinned">Pinned games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_PlayniteFavorites">Playnite favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_All">All</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Clean">Clean</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Notification">Notification</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScreenshotVariant_Framed">Framed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_All">All captures</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_GameCollection">Game collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_AchievementCollection">Achievement collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fit">Fit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ImageFit_Fill">Fill</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityTooltipFormat">{0} — {1} unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_Less">Less</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_More">More</sys:String>
+
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_Completion">Completion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_TrackedGames">Tracked games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_PlayedGames">Played games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">Completed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">Unlocks / active day</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">30-day rate</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Average global unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CurrentStreak">Current streak</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_LongestStreak">Longest streak</sys:String>
+
+
+    <sys:String x:Key="LOCPlayAch_Showcase_NoScreenshots">No achievement screenshots found</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_LoadingScreenshots">Loading screenshots…</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PreviousScreenshot">Previous screenshot</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NextScreenshot">Next screenshot</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PauseSlideshow">Pause slideshow</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ResumeSlideshow">Resume slideshow</sys:String>
+
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Profile">Profile</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">Scores</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Pie">Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Timeline">Timeline</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics">Overall Statistics</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_NativePoints">Native Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic">Mosaic</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow">Screenshot Slideshow</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_RecentAchievements">Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Game Summaries Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicContent_Achievements">Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_MosaicContent_Games">Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_All">All achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_Pinned">Pinned collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameGridSource_Library">All games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameGridSource_Pinned">Pinned collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameGridSource_PlayniteFavorites">Playnite favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">Activity Calendar</sys:String>
 
     <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->

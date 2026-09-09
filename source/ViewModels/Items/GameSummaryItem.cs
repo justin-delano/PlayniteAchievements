@@ -81,6 +81,9 @@ namespace PlayniteAchievements.ViewModels.Items
         private string _gameCoverPath;
         public string GameCoverPath { get => _gameCoverPath; set => SetValue(ref _gameCoverPath, value); }
 
+        private bool _isFavorite;
+        public bool IsFavorite { get => _isFavorite; set => SetValue(ref _isFavorite, value); }
+
         private string _platformText;
         public string PlatformText
         {

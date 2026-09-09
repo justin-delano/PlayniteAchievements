@@ -292,6 +292,7 @@
     <Compile Include="..\..\source\Common\CollectionHelper.cs" Link="Source\Common\CollectionHelper.cs" />
     <Compile Include="..\..\source\Common\DateTimeUtilities.cs" Link="Source\Common\DateTimeUtilities.cs" />
     <Compile Include="..\..\source\Common\DispatcherExtensions.cs" Link="Source\Common\DispatcherExtensions.cs" />
+    <Compile Include="..\..\source\Common\LeakWatch.cs" Link="Source\Common\LeakWatch.cs" />
     <Compile Include="..\..\source\Common\MemoryDiagnostics.cs" Link="Source\Common\MemoryDiagnostics.cs" />
     <Compile Include="..\..\source\Common\MemoryMaintenance.cs" Link="Source\Common\MemoryMaintenance.cs" />
     <Compile Include="..\..\source\Common\OffscreenViewLeaseSource.cs" Link="Source\Common\OffscreenViewLeaseSource.cs" />
@@ -382,6 +383,13 @@
     <Compile Include="..\..\source\Models\Settings\UnlockSoundSettingsMigration.cs" Link="Source\Models\Settings\UnlockSoundSettingsMigration.cs" />
     <Compile Include="..\..\source\Models\Settings\StartPageWidgetKind.cs" Link="Source\Models\Settings\StartPageWidgetKind.cs" />
     <Compile Include="..\..\source\Models\Settings\StartPageWidgetSettings.cs" Link="Source\Models\Settings\StartPageWidgetSettings.cs" />
+    <Compile Include="..\..\source\Models\Settings\ShowcaseSettings.cs" Link="Source\Models\Settings\ShowcaseSettings.cs" />
+    <Compile Include="..\..\source\Models\ShowcaseWidgetFramework.cs" Link="Source\Models\ShowcaseWidgetFramework.cs" />
+    <Compile Include="..\..\source\Services\Showcase\ShowcaseGeometry.cs" Link="Source\Services\Showcase\ShowcaseGeometry.cs" />
+    <Compile Include="..\..\source\Services\Showcase\ShowcaseLayoutService.cs" Link="Source\Services\Showcase\ShowcaseLayoutService.cs" />
+    <Compile Include="..\..\source\Services\Showcase\ShowcasePinService.cs" Link="Source\Services\Showcase\ShowcasePinService.cs" />
+    <Compile Include="..\..\source\Services\Showcase\ShowcaseWidgetProjectionService.cs" Link="Source\Services\Showcase\ShowcaseWidgetProjectionService.cs" />
+    <Compile Include="..\..\source\Services\Showcase\ShowcaseProfileResolver.cs" Link="Source\Services\Showcase\ShowcaseProfileResolver.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataFile.cs" Link="Source\Models\Settings\GameCustomDataFile.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataPortableFile.cs" Link="Source\Models\Settings\GameCustomDataPortableFile.cs" />
     <Compile Include="..\..\source\Models\Settings\CustomAchievementDefinition.cs" Link="Source\Models\Settings\CustomAchievementDefinition.cs" />
@@ -395,8 +403,8 @@
     <Compile Include="..\..\source\Models\TimelineRange.cs" Link="Source\Models\TimelineRange.cs" />
     <Compile Include="..\..\source\Services\Overview\OverviewDataSnapshot.cs" Link="Source\Services\Overview\OverviewDataSnapshot.cs" />
     <Compile Include="..\..\source\Services\StartPage\StartPageDataCoordinator.cs" Link="Source\Services\StartPage\StartPageDataCoordinator.cs" />
+    <Compile Include="..\..\source\Services\Widgets\WidgetDataCoordinator.cs" Link="Source\Services\Widgets\WidgetDataCoordinator.cs" />
     <Compile Include="..\..\source\Services\StartPage\StartPageViewCatalog.cs" Link="Source\Services\StartPage\StartPageViewCatalog.cs" />
-    <Compile Include="..\..\source\Services\StartPage\StartPageWidgetProjection.cs" Link="Source\Services\StartPage\StartPageWidgetProjection.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementIconResolver.cs" Link="Source\Models\Achievements\AchievementIconResolver.cs" />
     <Compile Include="..\..\source\Models\Tagging\TaggingSettings.cs" Link="Source\Models\Tagging\TaggingSettings.cs" />
     <Compile Include="..\..\source\Models\Tagging\TagType.cs" Link="Source\Models\Tagging\TagType.cs" />

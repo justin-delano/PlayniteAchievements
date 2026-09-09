@@ -27,7 +27,6 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         private DisplayGeneralSection _generalSection;
         private AppearanceSection _appearanceSection;
-        private StartPageDisplaySection _startPageSection;
         private ThemeControlPreviewState _previewState;
         private ThemeMigrationController _themeMigrationController;
 
@@ -90,12 +89,6 @@ namespace PlayniteAchievements.Views.Settings.Display
                     ResourceProvider.GetString("LOCPlayAch_Settings_ViewAchievementsWindow"),
                     iconGlyph: "",
                     viewFactory: () => new AchievementsWindowDisplaySection()),
-                new SettingsNavigationItem(
-                    "StartPage",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Display_StartPageSection"),
-                    iconGlyph: "",
-                    viewFactory: () => _startPageSection =
-                        new StartPageDisplaySection(settings)),
                 new SettingsNavigationItem(
                     "DataGrid",
                     ResourceProvider.GetString("LOCPlayAch_Settings_AchievementDataGridPreview"),
@@ -261,7 +254,6 @@ namespace PlayniteAchievements.Views.Settings.Display
             _persistedSubscription = null;
             _generalSection?.Dispose();
             _appearanceSection?.Dispose();
-            _startPageSection?.Dispose();
             _previewState?.Dispose();
         }
     }

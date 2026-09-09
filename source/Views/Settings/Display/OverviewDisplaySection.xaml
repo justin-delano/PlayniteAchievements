@@ -37,16 +37,6 @@
 
                     <Border Style="{StaticResource SettingGroupCardStyle}">
                         <StackPanel>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewCollectionScoreCard}"
-                                      IsChecked="{Binding Persisted.ShowOverviewCollectionScoreCard}"
-                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard}"
-                                      IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_OverviewCharts}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
                                        Margin="0,0,0,10"/>

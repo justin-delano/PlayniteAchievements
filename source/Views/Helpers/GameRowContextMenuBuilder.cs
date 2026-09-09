@@ -6,6 +6,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -69,6 +70,15 @@ namespace PlayniteAchievements.Views.Helpers
                     captureItem.IsEnabled = PlayniteAchievementsPlugin.Instance?.CaptureLibraryService?
                         .GameHasCaptures(gameSummary.GameName) == true;
                     menu.Items.Add(captureItem);
+                }
+
+                if (!(data is FriendGameSummaryItem) &&
+                    TryGetGameId(data, out var showcaseGameId))
+                {
+                    ShowcasePinMenuBuilder.AppendGameMenu(
+                        menu,
+                        resourceOwner,
+                        showcaseGameId);
                 }
 
                 menu.Items.Add(new Separator());

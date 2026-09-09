@@ -120,6 +120,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string DisplayName { get; set; }
 
+        public string IconPath { get; set; }
+
         public string Description { get; set; }
 
         public string UnlockedIconPath { get; set; }
@@ -344,6 +346,10 @@ namespace PlayniteAchievements.ViewModels
         public PlayniteAchievements.Models.Achievements.AchievementDetail Source { get; set; }
 
         public string DisplayName { get; set; }
+
+        public string IconPath { get; set; }
+
+        public string DisplayIcon => IconPath;
 
         public string Name => DisplayName;
 

@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Services.Summaries
             public IReadOnlyList<string> Platforms { get; set; }
             public string RegionText { get; set; }
             public ulong PlaytimeSeconds { get; set; }
+            public bool IsFavorite { get; set; }
             public Playnite.SDK.Models.Game Game { get; set; }
         }
 
@@ -90,6 +91,7 @@ namespace PlayniteAchievements.Services.Summaries
                 SortingName = presentation.SortingName ?? presentation.DisplayName ?? gameData.GameName ?? "Unknown",
                 GameLogo = summaryArt ?? presentation.IconPath,
                 GameCoverPath = summaryArt ?? presentation.CoverPath,
+                IsFavorite = presentation.IsFavorite,
                 PlatformText = presentation.PlatformText,
                 Platforms = presentation.Platforms,
                 RegionText = presentation.RegionText,
@@ -180,7 +182,8 @@ namespace PlayniteAchievements.Services.Summaries
                 PlatformText = PlayniteGameMetadataFormatter.GetPlatformText(playniteGame),
                 Platforms = PlayniteGameMetadataFormatter.GetPlatformNames(playniteGame),
                 RegionText = PlayniteGameMetadataFormatter.GetRegionText(playniteGame),
-                PlaytimeSeconds = playniteGame?.Playtime ?? 0
+                PlaytimeSeconds = playniteGame?.Playtime ?? 0,
+                IsFavorite = playniteGame?.Favorite == true
             };
         }
 

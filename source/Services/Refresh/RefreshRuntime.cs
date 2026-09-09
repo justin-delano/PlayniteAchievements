@@ -1056,6 +1056,9 @@ namespace PlayniteAchievements.Services.Refresh
             }
 
             var timer = Stopwatch.StartNew();
+            // Memory is sampled per provider so a residual after the run can be attributed to
+            // the provider that produced it instead of to the run as a whole.
+            var providerMemBaseline = MemoryDiagnostics.Capture();
             try
             {
                 return await plan.Provider.RefreshAsync(
@@ -1075,7 +1078,8 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 timer.Stop();
                 _logger?.Debug(
-                    $"[RefreshPerf] phase=current.provider provider={plan.Provider.ProviderKey} ms={timer.ElapsedMilliseconds} games={plan.Games.Count}");
+                    $"[RefreshPerf] phase=current.provider provider={plan.Provider.ProviderKey} ms={timer.ElapsedMilliseconds} games={plan.Games.Count}" +
+                    MemoryDiagnostics.FormatInlineSuffix(providerMemBaseline));
             }
         }
 
@@ -1641,6 +1645,11 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 // Persist provider payload as-is. Runtime overlays (capstone/category/order/game reference)
                 // are applied on read and are not written back to cache.
+
+                // Canary on the provider payload: once saved, only the bounded in-memory game
+                // cache should hold it. A live count that climbs with each run means the
+                // refresh pipeline (or a provider) is retaining per-game payloads.
+                Common.LeakWatch.Track("ProviderPayload", data);
 
                 var writeResult = _cacheService.SaveGameData(key, data);
                 if (writeResult == null || !writeResult.Success)

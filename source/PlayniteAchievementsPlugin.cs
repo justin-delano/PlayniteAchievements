@@ -79,7 +79,6 @@ namespace PlayniteAchievements
         private readonly IFriendCacheManager _friendCacheManager;
         private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
-        private readonly FriendsRecentUnlocksDataCoordinator _friendsRecentUnlocksDataCoordinator;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly RayTrackService _rayTrackService;
@@ -547,11 +546,6 @@ namespace PlayniteAchievements
                         _friendCacheManager,
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
-                    _friendsRecentUnlocksDataCoordinator = new FriendsRecentUnlocksDataCoordinator(
-                        _friendCacheManager,
-                        _friendsOverviewDataCoordinator,
-                        () => _settingsViewModel?.Settings?.Persisted,
-                        _logger);
                     if (_friendCacheManager != null)
                     {
                         _friendCacheManager.FriendCacheInvalidated += FriendCacheManager_FriendCacheInvalidated;
@@ -562,6 +556,7 @@ namespace PlayniteAchievements
                     {
                         InvalidateStartPageData();
                         InvalidateFriendDataCoordinators();
+                        ScheduleRetentionDiagnostics();
                     };
                     // Bitmap eviction is scoped instead of wholesale: normal refreshes never
                     // rewrite icon files in place (in-place overwrites are handled by the
@@ -605,7 +600,9 @@ namespace PlayniteAchievements
                         _cacheManager,
                         _gameCustomDataStore,
                         _logger,
-                        isRefreshActive: () => _refreshService?.IsRebuilding == true);
+                        isRefreshActive: () => _refreshService?.IsRebuilding == true,
+                        currentUserIdentityLoader: () => _friendCacheManager?.LoadCurrentUserIdentities(),
+                        hasActiveSnapshotPublisher: () => _startPageDataCoordinator?.HasActivePublisher == true);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
 
                     // Reconcile the cache DB's AchievementFilters mirror against custom data
@@ -720,7 +717,12 @@ namespace PlayniteAchievements
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
                         _fullscreenControllerNavigationService,
                         _friendsOverviewDataCoordinator,
-                        _friendGameAchievementsDataCoordinator);
+                        _friendGameAchievementsDataCoordinator,
+                        // Deliberately the field, not GetStartPageDataCoordinator(): publishing
+                        // is an optimization for widget hosts that already exist. Creating the
+                        // coordinator here would stand up a process-lifetime service holding a
+                        // full-library snapshot for a user who has no start page at all.
+                        () => _startPageDataCoordinator);
 
                     _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);
                     _achievementHotkeyService = new AchievementHotkeyService(
@@ -851,7 +853,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator, () => _startPageDataCoordinator),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -1311,7 +1313,6 @@ namespace PlayniteAchievements
         private void FriendsOverviewDataCoordinator_SnapshotReleased(object sender, EventArgs e)
         {
             _friendGameAchievementsDataCoordinator?.Invalidate();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         // Settings-driven callers pass no args (projection-affecting settings need a full
@@ -1321,7 +1322,6 @@ namespace PlayniteAchievements
         {
             _friendsOverviewDataCoordinator?.Invalidate(args);
             _friendGameAchievementsDataCoordinator?.Invalidate();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         private static bool ShouldInvalidateFriendDataForSetting(string propertyName)
@@ -1407,6 +1407,7 @@ namespace PlayniteAchievements
             // After the recordings: a session in flight still reads the host's pid until then.
             SettingsSaved -= OnSettingsSavedForUnlockSounds;
             try { _unlockSounds?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockSounds"); }
+            try { _captureLibraryService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose captureLibraryService"); }
             try { _windowTracker?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowTracker"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
@@ -1419,7 +1420,6 @@ namespace PlayniteAchievements
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
-            try { _friendsRecentUnlocksDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsRecentUnlocksDataCoordinator"); }
             try { _friendGameAchievementsDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendGameAchievementsDataCoordinator"); }
             try { _friendsOverviewDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsOverviewDataCoordinator"); }
             DisposeStartPageViews();
@@ -1785,7 +1785,11 @@ namespace PlayniteAchievements
                 QueueTagSync(gameId);
             }
 
-            InvalidateStartPageData();
+            // Fires per saved game during a bulk refresh (and per in-game unlock via the
+            // monitor). Coalesced: the end-of-run scoped CacheInvalidated invalidates once
+            // regardless, and mid-run start-page freshness comes from the overview's
+            // published snapshots when one is open.
+            ScheduleStartPageInvalidate();
         }
 
         private void HandleRefreshAuthNotifications(RebuildPayload payload)
@@ -1820,6 +1824,7 @@ namespace PlayniteAchievements
             // Games added/removed change what the overview and start page project; drop the cached
             // library projection so the next open rebuilds against the current library.
             _libraryProjectionService?.Invalidate();
+            ScheduleStartPageInvalidate();
 
             if (e == null)
             {
@@ -1865,8 +1870,11 @@ namespace PlayniteAchievements
         {
             // A game's Playnite-owned fields (playtime, last played, cover, icon, metadata) changed;
             // invalidate so the cached overview/start-page projection is rebuilt with fresh values.
-            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce.
+            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce; the
+            // start-page invalidation is coalesced too (playtime ticks fire this continuously
+            // while a game runs).
             _libraryProjectionService?.Invalidate();
+            ScheduleStartPageInvalidate();
         }
 
         private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)

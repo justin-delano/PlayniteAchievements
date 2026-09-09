@@ -140,7 +140,9 @@ namespace PlayniteAchievements.Views.Controls
                     game: true,
                     friendAvatar: true,
                     friend: true,
-                    unlockDate: true)
+                    unlockDate: true),
+                ["ShowcasePinnedAchievements"] = CreateAchievementVisibility(status: false, game: true),
+                ["ShowcaseRecentAchievements"] = CreateAchievementVisibility(status: false, game: true)
             };
 
         private static IReadOnlyDictionary<string, bool> CreateAchievementVisibility(
@@ -3006,6 +3008,15 @@ namespace PlayniteAchievements.Views.Controls
                 DefaultVisibilityByColumnSettingsKey.TryGetValue(columnSettingsKey, out var defaults))
             {
                 return defaults;
+            }
+
+            // Per-instance showcase keys ("<BaseKey>:<instanceId>") share their base key's defaults.
+            var baseKey = ShowcaseGridSurfaces.GetBaseKey(columnSettingsKey);
+            if (!string.IsNullOrWhiteSpace(baseKey) &&
+                !string.Equals(baseKey, columnSettingsKey, StringComparison.Ordinal) &&
+                DefaultVisibilityByColumnSettingsKey.TryGetValue(baseKey, out var baseDefaults))
+            {
+                return baseDefaults;
             }
 
             return DefaultVisibilityByColumnSettingsKey.TryGetValue("Default", out var fallback)

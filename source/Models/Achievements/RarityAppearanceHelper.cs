@@ -22,6 +22,14 @@ namespace PlayniteAchievements.Models.Achievements
 
         public static event EventHandler AppearanceChanged;
 
+        /// <summary>
+        /// Handlers currently attached to <see cref="AppearanceChanged"/>. This event lives for
+        /// the process, so a count that climbs run over run means subscribers are being stranded
+        /// (and rooted) instead of detaching. Diagnostics only.
+        /// </summary>
+        internal static int AppearanceChangedSubscriberCount =>
+            AppearanceChanged?.GetInvocationList()?.Length ?? 0;
+
         private static PersistedSettings _activeSettings;
 
         public static Color GetBaseColor(RarityTier tier, PersistedSettings settings = null)
@@ -138,6 +146,31 @@ namespace PlayniteAchievements.Models.Achievements
             resources["PlayAch.Effect.CompletedGlowStart"] = GetCompletedGlow(useEndColor: false, settings);
             resources["PlayAch.Effect.CompletedGlowEnd"] = GetCompletedGlow(useEndColor: true, settings);
             resources["PlayAch.Effect.CompletedGlowEdge"] = GetCompletedEdge(settings);
+            resources["PlayAch.Brush.CompletedGlowBloom"] = CreateCompletedGlowBloomBrush(settings);
+        }
+
+        /// <summary>
+        /// Diagonal CompletedStart -> CompletedEnd sweep for surfaces whose art is too small for
+        /// the two glow shadows to read and that draw the bloom as a blurred underlay instead.
+        /// The direction mirrors those shadows' offsets (start toward 135, end toward 315), so
+        /// the underlay carries the same up-left start / down-right end color bias.
+        /// </summary>
+        private static Brush CreateCompletedGlowBloomBrush(PersistedSettings settings)
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 1)
+            };
+
+            brush.GradientStops.Add(new GradientStop(GetCompletedStartColor(settings), 0.0));
+            brush.GradientStops.Add(new GradientStop(GetCompletedEndColor(settings), 1.0));
+            if (brush.CanFreeze)
+            {
+                brush.Freeze();
+            }
+
+            return brush;
         }
 
         /// <summary>

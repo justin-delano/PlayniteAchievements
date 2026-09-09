@@ -578,6 +578,9 @@ namespace PlayniteAchievements.Models.Settings
         internal const string FriendSummariesKindName = "FriendSummaries";
         internal const string CategorySummariesKindName = "CategorySummaries";
 
+        public const int DefaultShowcaseRecentMaxRows = 15;
+        public const int DefaultShowcaseGameSummariesMaxRows = 50;
+
         private Dictionary<string, AchievementGridOptions> _achievement =
             new Dictionary<string, AchievementGridOptions>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GameSummaryGridOptions> _gameSummaries =
@@ -719,6 +722,74 @@ namespace PlayniteAchievements.Models.Settings
             return options;
         }
 
+        public bool RemoveAchievement(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !_achievement.TryGetValue(id, out var options))
+            {
+                return false;
+            }
+
+            DetachOptions(options);
+            return _achievement.Remove(id);
+        }
+
+        public bool RemoveGameSummaries(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !_gameSummaries.TryGetValue(id, out var options))
+            {
+                return false;
+            }
+
+            DetachOptions(options);
+            return _gameSummaries.Remove(id);
+        }
+
+        /// <summary>
+        /// Creates the surface by cloning the donor's record (display options and column layout)
+        /// when the surface does not exist yet; no-op when it does. Used to migrate a user's
+        /// configured look onto a new per-instance surface.
+        /// </summary>
+        public void SeedAchievementFrom(string id, string donorId)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            EnsureDefaults();
+            if (_achievement.TryGetValue(id, out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var options = GetAchievement(donorId).Clone();
+            _achievement[id] = options;
+            AttachOptions(AchievementKindName, id, options);
+        }
+
+        /// <summary>
+        /// Creates the surface by cloning the donor's record (display options and column layout)
+        /// when the surface does not exist yet; no-op when it does. Used to migrate a user's
+        /// configured look onto a new per-instance surface.
+        /// </summary>
+        public void SeedGameSummariesFrom(string id, string donorId)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            EnsureDefaults();
+            if (_gameSummaries.TryGetValue(id, out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var options = GetGameSummaries(donorId).Clone();
+            _gameSummaries[id] = options;
+            AttachOptions(GameSummariesKindName, id, options);
+        }
+
         public GridOptionsCatalog Clone()
         {
             return new GridOptionsCatalog
@@ -732,6 +803,13 @@ namespace PlayniteAchievements.Models.Settings
 
         public static string ResolveAchievementId(string columnSettingsKey)
         {
+            // Showcase grid widgets persist under dedicated (per-instance for multi-instance
+            // kinds) surfaces keyed by the raw column settings key.
+            if (ShowcaseGridSurfaces.IsAchievementSurface(columnSettingsKey))
+            {
+                return columnSettingsKey;
+            }
+
             switch (columnSettingsKey)
             {
                 case "DesktopTheme":
@@ -780,6 +858,11 @@ namespace PlayniteAchievements.Models.Settings
 
         public static string ResolveGameSummariesId(string columnSettingsKey)
         {
+            if (ShowcaseGridSurfaces.IsGameSurface(columnSettingsKey))
+            {
+                return columnSettingsKey;
+            }
+
             switch (columnSettingsKey)
             {
                 case "StartPageGameSummaries":
@@ -949,6 +1032,15 @@ namespace PlayniteAchievements.Models.Settings
                 options.ShowControlBar = false;
             }
 
+            if (ShowcaseGridSurfaces.IsAchievementSurface(key))
+            {
+                options.ShowControlBar = false;
+                // The projection's source order (recency, or pin order for the pinned source)
+                // holds until the user picks a sort.
+                options.SortMode = CompactListSortMode.None;
+                options.MaxRows = DefaultShowcaseRecentMaxRows;
+            }
+
             return options;
         }
 
@@ -970,6 +1062,12 @@ namespace PlayniteAchievements.Models.Settings
                      string.Equals(key, GridOptionKeys.GameSummaries.DesktopTheme, StringComparison.OrdinalIgnoreCase))
             {
                 options.UseCoverImages = false;
+            }
+
+            if (ShowcaseGridSurfaces.IsGameSurface(key))
+            {
+                options.ShowControlBar = false;
+                options.MaxRows = DefaultShowcaseGameSummariesMaxRows;
             }
 
             return options;

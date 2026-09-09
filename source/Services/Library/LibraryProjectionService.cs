@@ -32,7 +32,9 @@ namespace PlayniteAchievements.Services.Library
         private readonly PlayniteAchievementsSettings _settings;
         private PersistedSettingsSubscription _persistedSubscription;
         private readonly Func<bool> _isRefreshActive;
+        private readonly Func<bool> _hasActiveSnapshotPublisher;
         private readonly ILogger _logger;
+        private readonly Func<List<Models.Friends.FriendIdentity>> _currentUserIdentityLoader;
         private readonly Dictionary<string, LibraryProjectionSnapshot> _cache =
             new Dictionary<string, LibraryProjectionSnapshot>(StringComparer.Ordinal);
         private readonly Dictionary<string, InFlightBuild> _inFlight =
@@ -51,7 +53,9 @@ namespace PlayniteAchievements.Services.Library
             ICacheManager cacheManager,
             GameCustomDataStore customDataStore,
             ILogger logger,
-            Func<bool> isRefreshActive = null)
+            Func<bool> isRefreshActive = null,
+            Func<List<Models.Friends.FriendIdentity>> currentUserIdentityLoader = null,
+            Func<bool> hasActiveSnapshotPublisher = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _providers = providers ?? new List<IDataProvider>();
@@ -60,7 +64,9 @@ namespace PlayniteAchievements.Services.Library
             _customDataStore = customDataStore;
             _settings = settings;
             _isRefreshActive = isRefreshActive;
+            _hasActiveSnapshotPublisher = hasActiveSnapshotPublisher;
             _logger = logger;
+            _currentUserIdentityLoader = currentUserIdentityLoader;
 
             if (_cacheManager != null)
             {
@@ -135,6 +141,15 @@ namespace PlayniteAchievements.Services.Library
             }
 
             ScheduleWarm();
+        }
+
+        /// <summary>Cached projection keys retained right now, for memory diagnostics.</summary>
+        public string DescribeCachedProjections()
+        {
+            lock (_sync)
+            {
+                return _cache.Count == 0 ? "none" : string.Join("+", _cache.Keys);
+            }
         }
 
         // Triggers the first background warm. Called once Playnite has finished starting so the
@@ -285,7 +300,8 @@ namespace PlayniteAchievements.Services.Library
                 _achievementDataService,
                 _providers,
                 _api,
-                _logger);
+                _logger,
+                _currentUserIdentityLoader);
 
             return new LibraryProjectionSnapshot
             {
@@ -384,6 +400,15 @@ namespace PlayniteAchievements.Services.Library
             // invalidation schedules the one post-refresh warm. Invoked outside _sync because
             // the predicate takes the refresh state manager's own lock.
             if (_isRefreshActive?.Invoke() == true)
+            {
+                return;
+            }
+
+            // While an overview is open it publishes its own snapshots to the widget
+            // coordinator, so the warmed "overview" cache entry would never be consumed;
+            // the warm would just build and retain a second full-library snapshot.
+            // Invalidate() has already cleared the cache, so on-demand consumers stay fresh.
+            if (_hasActiveSnapshotPublisher?.Invoke() == true)
             {
                 return;
             }

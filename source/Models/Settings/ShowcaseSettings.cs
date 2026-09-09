@@ -1,0 +1,427 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
+
+namespace PlayniteAchievements.Models.Settings
+{
+    public enum ShowcaseWidgetKind
+    {
+        Profile = 0,
+        Scores = 1,
+        Pie = 2,
+        Timeline = 3,
+        Statistics = 4,
+        NativePoints = 5,
+        // 6 (PinnedAchievements), 7 (FavoriteGames), and 12 (GameMosaic) are retired; they
+        // collapsed into RecentAchievements, GameSummaries, and IconMosaic via source options.
+        // Do not reuse the numbers.
+        IconMosaic = 8,
+        ScreenshotSlideshow = 9,
+        RecentAchievements = 10,
+        GameSummaries = 11,
+        ActivityCalendar = 13
+    }
+
+    public enum ShowcasePageTemplate
+    {
+        Blank = 0,
+        Showcase = 1,
+        Analytics = 2,
+        Collection = 3
+    }
+
+    public enum ShowcaseScoreMode
+    {
+        Dual = 0,
+        Collection = 1,
+        Prestige = 2
+    }
+
+    public enum ShowcasePieMode
+    {
+        CompletedGames = 0,
+        Provider = 1,
+        Rarity = 2,
+        Trophy = 3
+    }
+
+    public enum ShowcasePointsGrouping
+    {
+        Provider = 0,
+        Game = 1
+    }
+
+    public enum ShowcaseMosaicSource
+    {
+        Recent = 0,
+        Rarest = 1,
+        Pinned = 2
+    }
+
+    public enum ShowcaseScreenshotVariant
+    {
+        All = 0,
+        Clean = 1,
+        Notification = 2,
+        Framed = 3
+    }
+
+    public enum ShowcaseSlideshowSource
+    {
+        All = 0,
+        GameCollection = 1,
+        AchievementCollection = 2
+    }
+
+    /// <summary>What the collapsed Mosaic widget renders: achievement icons or game covers.</summary>
+    public enum ShowcaseMosaicContent
+    {
+        Achievements = 0,
+        Games = 1
+    }
+
+    /// <summary>Row source for the collapsed Achievements Grid widget.</summary>
+    public enum ShowcaseAchievementGridSource
+    {
+        All = 0,
+        Pinned = 1
+    }
+
+    /// <summary>Row source for the collapsed Game Summaries Grid widget.</summary>
+    public enum ShowcaseGameGridSource
+    {
+        Library = 0,
+        Pinned = 1,
+        PlayniteFavorites = 2
+    }
+
+    public enum ShowcaseImageFitMode
+    {
+        Fit = 0,
+        Fill = 1
+    }
+
+    public enum ShowcaseGameMosaicSource
+    {
+        Completed = 0,
+        All = 1,
+        Pinned = 2,
+        PlayniteFavorites = 3
+    }
+
+    public sealed class ShowcaseProfileSettings
+    {
+        public string DisplayName { get; set; }
+
+        public string Subtitle { get; set; }
+
+        public string AvatarPath { get; set; }
+
+        public string BackgroundPath { get; set; }
+
+        public ShowcaseProfileSettings Clone()
+        {
+            return new ShowcaseProfileSettings
+            {
+                DisplayName = DisplayName,
+                Subtitle = Subtitle,
+                AvatarPath = AvatarPath,
+                BackgroundPath = BackgroundPath
+            };
+        }
+    }
+
+    public sealed class PinnedAchievementReference
+    {
+        public Guid GameId { get; set; }
+
+        public string ApiName { get; set; }
+
+        public string LastKnownGameName { get; set; }
+
+        public string LastKnownAchievementName { get; set; }
+
+        public DateTime AddedUtc { get; set; } = DateTime.UtcNow;
+
+        public string Key => $"{GameId:D}:{(ApiName ?? string.Empty).Trim()}";
+
+        public PinnedAchievementReference Clone()
+        {
+            return new PinnedAchievementReference
+            {
+                GameId = GameId,
+                ApiName = ApiName,
+                LastKnownGameName = LastKnownGameName,
+                LastKnownAchievementName = LastKnownAchievementName,
+                AddedUtc = AddedUtc
+            };
+        }
+    }
+
+    public sealed class PinnedAchievementCollection
+    {
+        public string CollectionId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public string Name { get; set; } = "Default";
+
+        public List<PinnedAchievementReference> Pins { get; set; } =
+            new List<PinnedAchievementReference>();
+
+        public PinnedAchievementCollection Clone()
+        {
+            return new PinnedAchievementCollection
+            {
+                CollectionId = CollectionId,
+                Name = Name,
+                Pins = (Pins ?? new List<PinnedAchievementReference>())
+                    .Where(pin => pin != null)
+                    .Select(pin => pin.Clone())
+                    .ToList()
+            };
+        }
+    }
+
+    public sealed class PinnedGameCollection
+    {
+        public string CollectionId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public string Name { get; set; } = "Default";
+
+        public List<Guid> GameIds { get; set; } = new List<Guid>();
+
+        public PinnedGameCollection Clone()
+        {
+            return new PinnedGameCollection
+            {
+                CollectionId = CollectionId,
+                Name = Name,
+                GameIds = (GameIds ?? new List<Guid>()).ToList()
+            };
+        }
+    }
+
+    public sealed class ShowcaseWidgetInstanceSettings
+    {
+        public string InstanceId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public ShowcaseWidgetKind Kind { get; set; }
+
+        public string CustomTitle { get; set; }
+
+        public Dictionary<string, string> Options { get; set; } =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public ShowcaseWidgetInstanceSettings Clone()
+        {
+            return new ShowcaseWidgetInstanceSettings
+            {
+                InstanceId = InstanceId,
+                Kind = Kind,
+                CustomTitle = CustomTitle,
+                Options = Options != null
+                    ? new Dictionary<string, string>(Options, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            };
+        }
+
+        public T GetOption<T>(string key, T fallback)
+            where T : struct
+        {
+            if (Options == null ||
+                string.IsNullOrWhiteSpace(key) ||
+                !Options.TryGetValue(key, out var raw) ||
+                string.IsNullOrWhiteSpace(raw))
+            {
+                return fallback;
+            }
+
+            if (typeof(T).IsEnum && Enum.TryParse(raw, true, out T enumValue))
+            {
+                return enumValue;
+            }
+
+            try
+            {
+                return (T)Convert.ChangeType(raw, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        public void SetOption<T>(string key, T value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            if (Options == null)
+            {
+                Options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            Options[key] = Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    public sealed class ShowcaseBlockSettings
+    {
+        public string BlockId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public int Row { get; set; }
+
+        public int Column { get; set; }
+
+        public int RowSpan { get; set; } = 1;
+
+        public int ColumnSpan { get; set; } = 1;
+
+        public string WidgetInstanceId { get; set; }
+
+        public ShowcaseBlockSettings Clone()
+        {
+            return new ShowcaseBlockSettings
+            {
+                BlockId = BlockId,
+                Row = Row,
+                Column = Column,
+                RowSpan = RowSpan,
+                ColumnSpan = ColumnSpan,
+                WidgetInstanceId = WidgetInstanceId
+            };
+        }
+    }
+
+    public sealed class ShowcasePageSettings
+    {
+        public string PageId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public string Name { get; set; } = "Showcase";
+
+        public List<ShowcaseBlockSettings> Blocks { get; set; } =
+            new List<ShowcaseBlockSettings>();
+
+        /// <summary>
+        /// The page's grid dimension (3..5, normalized by ShowcaseLayoutService). Every page
+        /// is created on the 5x5 lattice; templates are authored directly in its coordinates.
+        /// </summary>
+        public int GridSize { get; set; } = 5;
+
+        /// <summary>Star weights for the grid's rows; null means equal shares.</summary>
+        public List<double> RowWeights { get; set; }
+
+        /// <summary>Star weights for the grid's columns; null means equal thirds.</summary>
+        public List<double> ColumnWeights { get; set; }
+
+        public ShowcasePageSettings Clone()
+        {
+            return new ShowcasePageSettings
+            {
+                PageId = PageId,
+                Name = Name,
+                GridSize = GridSize,
+                Blocks = (Blocks ?? new List<ShowcaseBlockSettings>())
+                    .Where(block => block != null)
+                    .Select(block => block.Clone())
+                    .ToList(),
+                RowWeights = RowWeights?.ToList(),
+                ColumnWeights = ColumnWeights?.ToList()
+            };
+        }
+    }
+
+    public sealed class ShowcaseSettings
+    {
+        public const int CurrentLayoutVersion = 1;
+
+        public const string BuiltInAchievementCollectionId = "default-achievements";
+
+        public const string BuiltInGameCollectionId = "default-games";
+
+        public int LayoutVersion { get; set; } = CurrentLayoutVersion;
+
+        public string LastSelectedPageId { get; set; }
+
+        public List<ShowcasePageSettings> Pages { get; set; } =
+            new List<ShowcasePageSettings>();
+
+        public List<ShowcaseWidgetInstanceSettings> WidgetInstances { get; set; } =
+            new List<ShowcaseWidgetInstanceSettings>();
+
+        public string DefaultAchievementPinCollectionId { get; set; } =
+            BuiltInAchievementCollectionId;
+
+        public string DefaultGamePinCollectionId { get; set; } =
+            BuiltInGameCollectionId;
+
+        // Replace on deserialize: these lists are seeded with the built-in Default, and
+        // Newtonsoft's default in-place population would append the persisted entries after the
+        // seed, duplicating the Default collection on every load.
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<PinnedAchievementCollection> AchievementPinCollections { get; set; } =
+            new List<PinnedAchievementCollection>
+            {
+                new PinnedAchievementCollection
+                {
+                    CollectionId = BuiltInAchievementCollectionId,
+                    Name = "Default"
+                }
+            };
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<PinnedGameCollection> GamePinCollections { get; set; } =
+            new List<PinnedGameCollection>
+            {
+                new PinnedGameCollection
+                {
+                    CollectionId = BuiltInGameCollectionId,
+                    Name = "Default"
+                }
+            };
+
+        public ShowcaseProfileSettings Profile { get; set; } =
+            new ShowcaseProfileSettings();
+
+        public Dictionary<string, ShowcaseWidgetInstanceSettings> StartPageInstances { get; set; } =
+            new Dictionary<string, ShowcaseWidgetInstanceSettings>(StringComparer.OrdinalIgnoreCase);
+
+        public ShowcaseSettings Clone()
+        {
+            return new ShowcaseSettings
+            {
+                LayoutVersion = LayoutVersion,
+                LastSelectedPageId = LastSelectedPageId,
+                Pages = (Pages ?? new List<ShowcasePageSettings>())
+                    .Where(page => page != null)
+                    .Select(page => page.Clone())
+                    .ToList(),
+                WidgetInstances = (WidgetInstances ?? new List<ShowcaseWidgetInstanceSettings>())
+                    .Where(widget => widget != null)
+                    .Select(widget => widget.Clone())
+                    .ToList(),
+                DefaultAchievementPinCollectionId = DefaultAchievementPinCollectionId,
+                DefaultGamePinCollectionId = DefaultGamePinCollectionId,
+                AchievementPinCollections = (AchievementPinCollections ??
+                    new List<PinnedAchievementCollection>())
+                    .Where(collection => collection != null)
+                    .Select(collection => collection.Clone())
+                    .ToList(),
+                GamePinCollections = (GamePinCollections ?? new List<PinnedGameCollection>())
+                    .Where(collection => collection != null)
+                    .Select(collection => collection.Clone())
+                    .ToList(),
+                Profile = Profile?.Clone() ?? new ShowcaseProfileSettings(),
+                StartPageInstances = (StartPageInstances ??
+                    new Dictionary<string, ShowcaseWidgetInstanceSettings>(StringComparer.OrdinalIgnoreCase))
+                    .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && pair.Value != null)
+                    .ToDictionary(
+                        pair => pair.Key,
+                        pair => pair.Value.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+            };
+        }
+    }
+}

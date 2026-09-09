@@ -10,6 +10,11 @@ namespace PlayniteAchievements.Services.Cache
 
         public List<CachedRecentUnlockData> RecentUnlocks { get; set; } = new List<CachedRecentUnlockData>();
 
+        // Full visible detail rows are populated by unbounded overview/widget reads.
+        // Bounded theme reads keep this empty and materialize only RecentUnlocks.
+        public List<CachedRecentUnlockData> Achievements { get; set; } =
+            new List<CachedRecentUnlockData>();
+
         public Dictionary<DateTime, int> GlobalUnlockCountsByDate { get; set; } =
             new Dictionary<DateTime, int>();
 
@@ -135,6 +140,8 @@ namespace PlayniteAchievements.Services.Cache
         public double? GlobalPercentUnlocked { get; set; }
 
         public RarityTier Rarity { get; set; }
+
+        public bool Unlocked { get; set; } = true;
 
         public DateTime? UnlockTimeUtc { get; set; }
 

@@ -66,5 +66,20 @@ namespace PlayniteAchievements.Models.Tests
             var migrated = JObject.Parse(GridOptionsSettingsMigration.MigrateFromJson(json));
             return (JObject)migrated["Persisted"]["GridOptions"]["Achievement"]["SingleGame"];
         }
+
+        [TestMethod]
+        public void ShowcaseSurfaceDefaults_PreserveSourceOrder()
+        {
+            var catalog = new GridOptionsCatalog();
+
+            // None keeps the projection's source order (recency, or pin order for the pinned
+            // source); game grids default to the recent-unlock sort with PinOrder available.
+            Assert.AreEqual(
+                CompactListSortMode.None,
+                catalog.GetAchievement("ShowcaseRecentAchievements:abc").SortMode);
+            Assert.AreEqual(
+                GameSummariesSortMode.RecentUnlock,
+                catalog.GetGameSummaries("ShowcaseGameSummaries:abc").SortMode);
+        }
     }
 }

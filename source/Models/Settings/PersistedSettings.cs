@@ -13,6 +13,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Tagging;
 using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Showcase;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -205,6 +206,7 @@ namespace PlayniteAchievements.Models.Settings
         private StartPageFriendsRecentUnlocksGridSettings _startPageFriendsRecentUnlocksGrid;
         private StartPagePieWidgetSettings _startPagePieCharts =
             new StartPagePieWidgetSettings();
+        private ShowcaseSettings _showcase;
         private GridOptionsCatalog _gridOptions = new GridOptionsCatalog();
         private GameActivityScope _startPageActivityScope = DefaultStartPageActivityScope;
         private GameProgressScope _startPageProgressScope = DefaultStartPageProgressScope;
@@ -2319,6 +2321,36 @@ namespace PlayniteAchievements.Models.Settings
             set => SetStartPagePieSettings(ref _startPagePieCharts, value, nameof(StartPagePieCharts));
         }
 
+        /// <summary>
+        /// Replace (not populate) on load: the getter lazily seeds a default dashboard, and the
+        /// default object-creation handling would populate that seeded instance - appending the
+        /// saved pages and widgets to the seeded ones, so the dashboard grew a page on every load.
+        /// </summary>
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public ShowcaseSettings Showcase
+        {
+            get
+            {
+                if (_showcase == null)
+                {
+                    _showcase = ShowcaseLayoutService.CreateDefault(
+                        ShowOverviewCollectionScoreCard,
+                        ShowOverviewPrestigeScoreCard);
+                    ShowcaseLayoutService.Normalize(_showcase);
+                }
+
+                return _showcase;
+            }
+            set
+            {
+                var normalized = value?.Clone() ?? ShowcaseLayoutService.CreateDefault(
+                    ShowOverviewCollectionScoreCard,
+                    ShowOverviewPrestigeScoreCard);
+                ShowcaseLayoutService.Normalize(normalized);
+                SetValue(ref _showcase, normalized);
+            }
+        }
+
         public GridOptionsCatalog GridOptions
         {
             get => AttachGridOptionsBridge(_gridOptions ?? (_gridOptions = new GridOptionsCatalog()));
@@ -2952,6 +2984,9 @@ namespace PlayniteAchievements.Models.Settings
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
                 StartPagePieCharts = this.StartPagePieCharts?.Clone() ??
                     new StartPagePieWidgetSettings(),
+                Showcase = this.Showcase?.Clone() ?? ShowcaseLayoutService.CreateDefault(
+                    this.ShowOverviewCollectionScoreCard,
+                    this.ShowOverviewPrestigeScoreCard),
                 GridOptions = this.GridOptions?.Clone() ?? new GridOptionsCatalog(),
                 StartPageActivityScope = this.StartPageActivityScope,
                 StartPageProgressScope = this.StartPageProgressScope,
@@ -3109,6 +3144,9 @@ namespace PlayniteAchievements.Models.Settings
 
 
             StartPagePieCharts = new StartPagePieWidgetSettings();
+            Showcase = ShowcaseLayoutService.CreateDefault(
+                defaults.ShowOverviewCollectionScoreCard,
+                defaults.ShowOverviewPrestigeScoreCard);
             GridOptions = new GridOptionsCatalog();
             StartPageActivityScope = defaults.StartPageActivityScope;
             StartPageProgressScope = defaults.StartPageProgressScope;
