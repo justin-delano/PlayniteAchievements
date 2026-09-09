@@ -88,7 +88,7 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
-            _summaryBuilder = new GameSummaryItemBuilder(_refreshService.Providers, _playniteApi, _logger);
+            _summaryBuilder = new GameSummaryItemBuilder(_playniteApi, _logger);
             FriendCompare = new FriendCompareController(friendCache, settings, logger);
             _controlBar.AttachFriendCompare(FriendCompare);
             FriendCompare.SetGame(gameId, null);

@@ -46,12 +46,16 @@ namespace PlayniteAchievements.Services.Overview
         }
 
         private readonly AchievementDataService _achievementDataService;
-        private readonly IReadOnlyList<IDataProvider> _providers;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly GameSummaryItemBuilder _summaryBuilder;
         private readonly Func<List<Models.Friends.FriendIdentity>> _currentUserIdentityLoader;
 
+        /// <param name="providers">
+        /// Registered providers, accepted for call-site symmetry with the other library services.
+        /// Provider visuals resolve by display provider key through <see cref="ProviderRegistry"/>,
+        /// which also covers the custom keys no registered provider owns.
+        /// </param>
         public OverviewDataBuilder(
             AchievementDataService achievementDataService,
             IReadOnlyList<IDataProvider> providers,
@@ -60,10 +64,9 @@ namespace PlayniteAchievements.Services.Overview
             Func<List<Models.Friends.FriendIdentity>> currentUserIdentityLoader = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
-            _providers = providers ?? new List<IDataProvider>();
             _playniteApi = playniteApi;
             _logger = logger;
-            _summaryBuilder = new GameSummaryItemBuilder(_providers, _playniteApi, _logger);
+            _summaryBuilder = new GameSummaryItemBuilder(_playniteApi, _logger);
             _currentUserIdentityLoader = currentUserIdentityLoader;
         }
 
@@ -72,8 +75,6 @@ namespace PlayniteAchievements.Services.Overview
             CancellationToken cancel)
         {
             settings ??= new PlayniteAchievementsSettings();
-
-            var providerLookup = BuildProviderLookup();
 
             CachedSummaryData queryData;
             using (PerfScope.Start(_logger, "Overview.GetCachedSummaryData", thresholdMs: 25))
@@ -91,19 +92,22 @@ namespace PlayniteAchievements.Services.Overview
 
             using (PerfScope.Start(_logger, "Overview.BuildFromCachedSummaryData", thresholdMs: 25))
             {
-                return BuildFromCachedSummaryData(settings, queryData, providerLookup, cancel);
+                return BuildFromCachedSummaryData(settings, queryData, cancel);
             }
         }
 
         private OverviewDataSnapshot BuildFromCachedSummaryData(
             PlayniteAchievementsSettings settings,
             CachedSummaryData queryData,
-            IReadOnlyDictionary<string, (string iconKey, string colorHex)> providerLookup,
             CancellationToken cancel)
         {
             settings ??= new PlayniteAchievementsSettings();
             queryData ??= new CachedSummaryData();
-            providerLookup ??= BuildProviderLookup();
+
+            // Memo for this pass only: the registry resolves provider color overrides and custom
+            // provider definitions live, so a longer-lived cache would serve pre-edit visuals.
+            var providerVisuals = new Dictionary<string, (string iconKey, string colorHex)>(
+                StringComparer.OrdinalIgnoreCase);
 
             var snapshot = new OverviewDataSnapshot
             {
@@ -158,9 +162,10 @@ namespace PlayniteAchievements.Services.Overview
                     providerName = providerKey;
                 }
 
-                if (!providerLookup.TryGetValue(providerKey, out var providerMetadata))
+                if (!providerVisuals.TryGetValue(providerKey, out var providerMetadata))
                 {
-                    providerMetadata = ("ProviderIcon" + providerKey, "#888888");
+                    providerMetadata = ProviderRegistry.ResolveProviderVisualsOrFallback(providerKey);
+                    providerVisuals[providerKey] = providerMetadata;
                 }
 
                 var presentation = ResolveGamePresentation(game.PlayniteGameId, presentationByGameId);
@@ -310,7 +315,6 @@ namespace PlayniteAchievements.Services.Overview
             PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys,
             GameAchievementData gameData,
-            IReadOnlyDictionary<string, (string iconKey, string colorHex)> providerLookup = null,
             bool includeAchievementItems = true)
         {
             settings ??= new PlayniteAchievementsSettings();
@@ -726,31 +730,6 @@ namespace PlayniteAchievements.Services.Overview
             }
 
             return cache;
-        }
-
-        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
-        {
-            var lookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            if (_providers != null)
-            {
-                foreach (var provider in _providers)
-                {
-                    if (provider == null || string.IsNullOrWhiteSpace(provider.ProviderKey))
-                    {
-                        continue;
-                    }
-
-                    if (PlayniteAchievements.Providers.ProviderRegistry.TryResolveProviderVisuals(
-                        provider.ProviderKey,
-                        out var iconKey,
-                        out var colorHex))
-                    {
-                        lookup[provider.ProviderKey] = (iconKey, colorHex);
-                    }
-                }
-            }
-
-            return lookup;
         }
 
         private GamePresentation ResolveGamePresentation(

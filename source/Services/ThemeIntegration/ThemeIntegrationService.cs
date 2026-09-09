@@ -68,7 +68,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private GameSummaryItemBuilder GameSummaryItemBuilder =>
             _gameSummaryItemBuilder ??
-            (_gameSummaryItemBuilder = new GameSummaryItemBuilder(_refreshService.Providers, _api, _logger));
+            (_gameSummaryItemBuilder = new GameSummaryItemBuilder(_api, _logger));
 
         private readonly object _refreshLock = new object();
         private CancellationTokenSource _refreshCts;

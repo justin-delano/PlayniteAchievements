@@ -351,7 +351,24 @@ namespace PlayniteAchievements.Providers
             return true;
         }
 
-        public static string GetProviderColorHex(string providerKey, string fallback = "#888888")
+        public const string FallbackProviderColorHex = "#888888";
+
+        /// <summary>
+        /// Icon key and color for a display provider key with the last-resort values filled in: an
+        /// unresolved key keeps the by-convention <c>ProviderIcon&lt;key&gt;</c> resource name and the
+        /// neutral gray. Custom keys resolve through <see cref="TryResolveProviderVisuals"/>, so a
+        /// custom provider with a color and no stored icon data gets <see cref="CustomProviderKeys.BaseIconKey"/>
+        /// instead of an icon key with no geometry behind it.
+        /// </summary>
+        public static (string iconKey, string colorHex) ResolveProviderVisualsOrFallback(string providerKey)
+        {
+            TryResolveProviderVisuals(providerKey, out var iconKey, out var colorHex);
+            return (
+                string.IsNullOrWhiteSpace(iconKey) ? "ProviderIcon" + providerKey : iconKey,
+                string.IsNullOrWhiteSpace(colorHex) ? FallbackProviderColorHex : colorHex);
+        }
+
+        public static string GetProviderColorHex(string providerKey, string fallback = FallbackProviderColorHex)
         {
             return TryResolveProviderVisuals(providerKey, out _, out var colorHex) &&
                    !string.IsNullOrWhiteSpace(colorHex)

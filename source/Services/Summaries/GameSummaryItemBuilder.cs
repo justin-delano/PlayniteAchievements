@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Services.Summaries
 {
     /// <summary>
     /// Builds a single <see cref="GameSummaryItem"/> from one game's achievement data.
-    /// Depends only on the providers list and Playnite presentation, so any surface
+    /// Depends only on the provider registry and Playnite presentation, so any surface
     /// (Overview, Start Page, View Achievements) can produce a summary row without
     /// coupling to the Overview aggregation pipeline.
     /// </summary>
@@ -33,17 +33,13 @@ namespace PlayniteAchievements.Services.Summaries
             public Playnite.SDK.Models.Game Game { get; set; }
         }
 
-        private readonly IReadOnlyList<IDataProvider> _providers;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
-        private Dictionary<string, (string iconKey, string colorHex)> _providerLookup;
 
         public GameSummaryItemBuilder(
-            IReadOnlyList<IDataProvider> providers,
             IPlayniteAPI playniteApi,
             ILogger logger)
         {
-            _providers = providers ?? new List<IDataProvider>();
             _playniteApi = playniteApi;
             _logger = logger;
         }
@@ -131,38 +127,9 @@ namespace PlayniteAchievements.Services.Summaries
                 providerName = providerKey;
             }
 
-            var lookup = _providerLookup ?? (_providerLookup = BuildProviderLookup());
-            if (!lookup.TryGetValue(providerKey, out var metadata))
-            {
-                metadata = ("ProviderIcon" + providerKey, "#888888");
-            }
+            var metadata = ProviderRegistry.ResolveProviderVisualsOrFallback(providerKey);
 
             return (providerName, providerKey, metadata);
-        }
-
-        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
-        {
-            var lookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            if (_providers != null)
-            {
-                foreach (var provider in _providers)
-                {
-                    if (provider == null || string.IsNullOrWhiteSpace(provider.ProviderKey))
-                    {
-                        continue;
-                    }
-
-                    if (PlayniteAchievements.Providers.ProviderRegistry.TryResolveProviderVisuals(
-                        provider.ProviderKey,
-                        out var iconKey,
-                        out var colorHex))
-                    {
-                        lookup[provider.ProviderKey] = (iconKey, colorHex);
-                    }
-                }
-            }
-
-            return lookup;
         }
 
         private GamePresentation CreateGamePresentation(Playnite.SDK.Models.Game playniteGame)
