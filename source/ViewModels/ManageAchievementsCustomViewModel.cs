@@ -42,6 +42,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly Func<string, string> _pickColor;
         private readonly Func<CustomProviderEditorViewModel, CustomProviderEditorResult> _showEditor;
         private bool _isRefreshingAssignments;
+        private bool _isCommittingRows;
         private bool _isSyncingTypeOptions;
         private bool _isSyncingCustomProvider;
         private bool _isCustomOnlyGame;
@@ -957,20 +958,30 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         private void CommitRowsInPlace(IReadOnlyList<CustomAchievementDefinition> definitions)
         {
-            var next = 0;
-            foreach (var row in AchievementRows)
+            // Committing writes back into the rows, so suppress the per-row change handler for the
+            // walk: the caller refreshes the computed state once afterwards.
+            _isCommittingRows = true;
+            try
             {
-                if (row == null || row.IsBlank)
+                var next = 0;
+                foreach (var row in AchievementRows)
                 {
-                    continue;
-                }
+                    if (row == null || row.IsBlank)
+                    {
+                        continue;
+                    }
 
-                if (definitions == null || next >= definitions.Count)
-                {
-                    break;
-                }
+                    if (definitions == null || next >= definitions.Count)
+                    {
+                        break;
+                    }
 
-                row.CommitSaved(definitions[next++]);
+                    row.CommitSaved(definitions[next++]);
+                }
+            }
+            finally
+            {
+                _isCommittingRows = false;
             }
 
             CaptureCollectionBaseline();
@@ -1292,6 +1303,16 @@ namespace PlayniteAchievements.ViewModels
         private void Row_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e == null)
+            {
+                return;
+            }
+
+            // CommitRowsInPlace writes Id and both icon paths back into every row and re-baselines
+            // it, so each row raises several changes that would otherwise land here and run a whole
+            // RefreshComputedState (a validation pass plus two collection-wide signature builds)
+            // per row. That made one edit cost O(rows squared). The commit runs its own
+            // RefreshComputedState once it has walked every row.
+            if (_isCommittingRows)
             {
                 return;
             }
