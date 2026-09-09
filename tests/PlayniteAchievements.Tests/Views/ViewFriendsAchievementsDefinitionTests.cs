@@ -141,18 +141,34 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         /// <summary>
-        /// Showcase and start page grids are configured from their widget's settings, so they must
-        /// not also offer the per-grid popup.
+        /// Showcase and start page grids reach their options two ways -- the widget gear and the
+        /// grid's own popup -- so both must describe the same rows. The live surfaces carry a
+        /// per-instance suffix, so every instance has to resolve through its base key.
         /// </summary>
         [TestMethod]
-        public void DisplaySurfaces_TreatShowcaseGridsAsExternallyOwned()
+        public void DisplaySurfaces_ResolveShowcaseInstancesThroughTheirBaseKey()
         {
-            Assert.IsTrue(GridDisplaySurfaces.IsExternallyOwnedSurface(
-                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.RecentAchievements, "abc")));
-            Assert.IsTrue(GridDisplaySurfaces.IsExternallyOwnedSurface(
-                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.GameSummaries, "abc")));
-            Assert.IsFalse(GridDisplaySurfaces.IsExternallyOwnedSurface("OverviewGameSummaries"));
-            Assert.IsFalse(GridDisplaySurfaces.IsExternallyOwnedSurface(null));
+            var gameBase = GridDisplaySurfaces.Resolve(
+                GridOptionKind.GameSummaries,
+                ShowcaseGridSurfaces.GameSummaries);
+            var gameInstance = GridDisplaySurfaces.Resolve(
+                GridOptionKind.GameSummaries,
+                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.GameSummaries, "abc"));
+            Assert.AreSame(gameBase, gameInstance);
+
+            // The pinned-games grid is the one surface whose order the user controls, so it is the
+            // only one offering the order-preserving sort choice.
+            Assert.IsTrue(gameInstance.ShowGameSortPinOrderChoice);
+            Assert.IsFalse(GridDisplaySurfaces
+                .Resolve(GridOptionKind.GameSummaries, GridOptionKeys.GameSummaries.Overview)
+                .ShowGameSortPinOrderChoice);
+
+            var achievementInstance = GridDisplaySurfaces.Resolve(
+                GridOptionKind.Achievement,
+                ShowcaseGridSurfaces.ForInstance(ShowcaseGridSurfaces.RecentAchievements, "abc"));
+            Assert.AreSame(
+                GridDisplaySurfaces.Resolve(GridOptionKind.Achievement, ShowcaseGridSurfaces.RecentAchievements),
+                achievementInstance);
         }
 
         private static void AssertEveryKeyMapped(Type keyHolder, GridOptionKind kind, List<string> missing)
