@@ -713,7 +713,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 var allowManualOverride = ManualAchievementsProvider.IsTrackingOverrideEnabled();
                 var isExcluded = _plugin?.IsGameExcluded(_gameId) ?? false;
                 var hasNonManualProviderData = ShouldWarnAboutManualTrackingOverride(out _);
-                ShowManualTrackingTab = allowManualOverride ||
+                ManualAchievementLink manualLink;
+                var hasManualLink = ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
+                ShowManualTrackingTab = hasManualLink || allowManualOverride ||
                     (!isExcluded && (!_cachedHasAchievements || !hasNonManualProviderData));
                 ProviderName = ResolveProviderDisplayName(gameData);
                 LibrarySourceName = ResolveLibrarySourceDisplayName(game, gameData?.LibrarySourceName);
@@ -754,8 +756,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 ReloadProviderOverrideState(currentCustomData);
                 ReloadExophaseEnrichmentSlugState(currentCustomData, game, gameData?.ProviderGameKey);
 
-                ManualAchievementLink manualLink;
-                var hasManualLink = ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
                 HasManualTrackingLink = hasManualLink;
                 ManualTrackingSummary = ManualAchievementsProvider.GetManageAchievementsLinkSummary(manualLink);
                 HasAchievementPageLink = HasGame && _achievementPageLinkResolver.CanResolve(
