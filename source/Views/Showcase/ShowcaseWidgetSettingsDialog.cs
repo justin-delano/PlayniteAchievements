@@ -17,6 +17,10 @@ namespace PlayniteAchievements.Views.Showcase
     public sealed class ShowcaseWidgetSettingsDialog : UserControl
     {
         private const string ImagePatterns = "*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp";
+        private const double DialogWidth = 460;
+        private const double MinimumDialogHeight = 200;
+        private const double FallbackDialogHeight = 520;
+        private const string WindowPlacementKey = "ShowcaseWidgetSettings";
 
         private readonly ShowcaseWidgetInstanceSettings _sourceWidget;
         private readonly ShowcaseWidgetInstanceSettings _workingWidget;
@@ -64,19 +68,32 @@ namespace PlayniteAchievements.Views.Showcase
                 FormattingCulture.Current,
                 Localize("LOCPlayAch_Showcase_WidgetSettingsTitle"),
                 GetWidgetName(widget.Kind));
-            var height = GetEditorHeight(widget.Kind);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 title,
                 editor,
                 new WindowOptions
                 {
-                    Width = 460,
-                    Height = height + 25,
+                    Width = DialogWidth,
+                    Height = SettingsDialogSizing.MeasureHeight(
+                        editor,
+                        DialogWidth - 28,
+                        MinimumDialogHeight,
+                        FallbackDialogHeight),
                     CanBeResizable = true,
                     ShowCloseButton = true,
                     ShowMinimizeButton = false,
                     ShowMaximizeButton = false
                 });
+
+            window.MinWidth = 360;
+            window.MinHeight = MinimumDialogHeight;
+            // The measured height is the first-open default; a saved placement wins.
+            WindowPlacementPersistenceService.Attach(
+                window,
+                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted,
+                () => PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi(),
+                WindowPlacementKey);
+
             window.ShowDialog();
             return editor.Saved;
         }
@@ -317,30 +334,6 @@ namespace PlayniteAchievements.Views.Showcase
             };
             block.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             return block;
-        }
-
-        private static double GetEditorHeight(ShowcaseWidgetKind kind)
-        {
-            switch (kind)
-            {
-                case ShowcaseWidgetKind.GameSummaries:
-                    return 650;
-                case ShowcaseWidgetKind.RecentAchievements:
-                    return 520;
-                case ShowcaseWidgetKind.IconMosaic:
-                    return 400;
-                case ShowcaseWidgetKind.ScreenshotSlideshow:
-                    return 330;
-                case ShowcaseWidgetKind.Profile:
-                    return 380;
-                case ShowcaseWidgetKind.Pie:
-                    return 250;
-                case ShowcaseWidgetKind.NativePoints:
-                case ShowcaseWidgetKind.Scores:
-                    return 210;
-                default:
-                    return 175;
-            }
         }
 
     }
