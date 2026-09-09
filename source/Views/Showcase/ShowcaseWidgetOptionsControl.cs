@@ -182,7 +182,13 @@ namespace PlayniteAchievements.Views.Showcase
                     AddChoice(
                         achievementMosaicPanel,
                         Localize("LOCPlayAch_Showcase_Source"),
-                        new[] { ShowcaseMosaicSource.Recent, ShowcaseMosaicSource.Rarest, ShowcaseMosaicSource.Pinned },
+                        new[]
+                        {
+                            ShowcaseMosaicSource.Recent,
+                            ShowcaseMosaicSource.Rarest,
+                            ShowcaseMosaicSource.Capstones,
+                            ShowcaseMosaicSource.Pinned
+                        },
                         ShowcaseWidgetOptions.GetMosaicSource(_settings),
                         value =>
                         {
@@ -207,6 +213,19 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetMosaicShowRarityGlow(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicShowRarityGlow(_settings, value),
                         OnOffLabel);
+                    AddChoice(
+                        achievementMosaicPanel,
+                        Localize("LOCPlayAch_Settings_SortBy"),
+                        new[]
+                        {
+                            CompactListSortMode.None,
+                            CompactListSortMode.UnlockTime,
+                            CompactListSortMode.Rarity
+                        },
+                        ShowcaseWidgetOptions.GetMosaicSort(_settings),
+                        value => ShowcaseWidgetOptions.SetMosaicSort(_settings, value),
+                        MosaicSortName);
+                    AddSortDirectionChoice(achievementMosaicPanel);
 
                     FrameworkElement mosaicGameCollectionRow = null;
                     AddChoice(
@@ -250,6 +269,22 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetGameMosaicShowCompletionGlow(_settings),
                         value => ShowcaseWidgetOptions.SetGameMosaicShowCompletionGlow(_settings, value),
                         OnOffLabel);
+                    AddChoice(
+                        gameMosaicPanel,
+                        Localize("LOCPlayAch_Settings_SortBy"),
+                        new[]
+                        {
+                            GameSummariesSortMode.PinOrder,
+                            GameSummariesSortMode.RecentUnlock,
+                            GameSummariesSortMode.LastPlayed,
+                            GameSummariesSortMode.TotalAchievements,
+                            GameSummariesSortMode.Progress,
+                            GameSummariesSortMode.Alphabetical
+                        },
+                        ShowcaseWidgetOptions.GetGameMosaicSort(_settings),
+                        value => ShowcaseWidgetOptions.SetGameMosaicSort(_settings, value),
+                        GameMosaicSortName);
+                    AddSortDirectionChoice(gameMosaicPanel);
 
                     AddNumberRow(
                         panel,
@@ -720,11 +755,59 @@ namespace PlayniteAchievements.Views.Showcase
             return row;
         }
 
+        // Both mosaic contents share the sort-direction option, so both panels get the same row.
+        private void AddSortDirectionChoice(Panel panel) =>
+            AddChoice(
+                panel,
+                Localize("LOCPlayAch_Settings_SortDirection"),
+                new[] { true, false },
+                ShowcaseWidgetOptions.GetMosaicSortDescending(_settings),
+                value => ShowcaseWidgetOptions.SetMosaicSortDescending(_settings, value),
+                SortDirectionLabel);
+
         private static string CountLabel(int value) => value.ToString("N0", FormattingCulture.Current);
 
         private static string OnOffLabel(bool value) => value
             ? Localize("LOCPlayAch_Settings_Override_On")
             : Localize("LOCPlayAch_Settings_Override_Off");
+
+        private static string SortDirectionLabel(bool descending) => descending
+            ? Localize("LOCPlayAch_Common_Descending")
+            : Localize("LOCPlayAch_Common_Ascending");
+
+        // Both mosaic sort pickers name the mode that keeps the Source's own order "Default",
+        // matching how the grid options editor labels CompactListSortMode.None.
+        private static string MosaicSortName(CompactListSortMode value)
+        {
+            switch (value)
+            {
+                case CompactListSortMode.UnlockTime:
+                    return Localize("LOCPlayAch_Common_UnlockTime");
+                case CompactListSortMode.Rarity:
+                    return Localize("LOCPlayAch_Column_Rarity");
+                default:
+                    return Localize("LOCPlayAch_Common_Default");
+            }
+        }
+
+        private static string GameMosaicSortName(GameSummariesSortMode value)
+        {
+            switch (value)
+            {
+                case GameSummariesSortMode.RecentUnlock:
+                    return Localize("LOCPlayAch_Common_LastUnlock");
+                case GameSummariesSortMode.LastPlayed:
+                    return Localize("LOCPlayAch_Column_LastPlayed");
+                case GameSummariesSortMode.TotalAchievements:
+                    return Localize("LOCPlayAch_Column_Total");
+                case GameSummariesSortMode.Progress:
+                    return Localize("LOCPlayAch_Progress");
+                case GameSummariesSortMode.Alphabetical:
+                    return Localize("LOCPlayAch_Column_Name");
+                default:
+                    return Localize("LOCPlayAch_Common_Default");
+            }
+        }
 
         private static string ActivityScopeName(GameActivityScope value)
         {

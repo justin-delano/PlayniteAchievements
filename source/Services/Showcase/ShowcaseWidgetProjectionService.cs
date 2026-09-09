@@ -996,6 +996,13 @@ namespace PlayniteAchievements.Services.Showcase
                         .OrderBy(item => item.RaritySortValue)
                         .ThenByDescending(item => item.UnlockTimeUtc);
                     break;
+                case ShowcaseMosaicSource.Capstones:
+                    // Hydration folds a game's manual capstone override into IsCapstone, so the
+                    // flag on the display item is already the effective capstone.
+                    achievements = (snapshot?.Achievements ?? new List<AchievementDisplayItem>())
+                        .Where(item => item?.Unlocked == true && item.IsCapstone)
+                        .OrderByDescending(item => item.UnlockTimeUtc);
+                    break;
                 case ShowcaseMosaicSource.Pinned:
                     achievements = ResolvePinnedAchievements(
                             snapshot,

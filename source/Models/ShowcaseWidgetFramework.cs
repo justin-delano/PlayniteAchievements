@@ -316,6 +316,8 @@ namespace PlayniteAchievements.Models
         private const string PinCollectionId = "PinCollectionId";
         private const string Content = "Content";
         private const string ProfileStats = "ProfileStats";
+        private const string Sort = "Sort";
+        private const string SortDescending = "SortDescending";
 
         /// <summary>Stat keys the profile stat slots show when the option is unset.</summary>
         public static readonly IReadOnlyList<string> DefaultProfileStatKeys = new[]
@@ -472,6 +474,29 @@ namespace PlayniteAchievements.Models
         public static void SetMosaicShowRarityGlow(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowRarityGlow, value);
 
+        // Mosaic sort is stored alongside Source and Count, so the achievement and game contents
+        // share the option keys. Enum options round-trip by name, so a mode belonging to the
+        // other content fails to parse and falls back to that content's source order.
+        public static CompactListSortMode GetMosaicSort(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Sort, CompactListSortMode.None);
+
+        public static void SetMosaicSort(
+            ShowcaseWidgetInstanceSettings settings,
+            CompactListSortMode value) => settings?.SetOption(Sort, value);
+
+        public static GameSummariesSortMode GetGameMosaicSort(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, Sort, GameSummariesSortMode.PinOrder);
+
+        public static void SetGameMosaicSort(
+            ShowcaseWidgetInstanceSettings settings,
+            GameSummariesSortMode value) => settings?.SetOption(Sort, value);
+
+        public static bool GetMosaicSortDescending(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(SortDescending, true) ?? true;
+
+        public static void SetMosaicSortDescending(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(SortDescending, value);
+
         public static ShowcaseMosaicContent GetMosaicContent(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Content, ShowcaseMosaicContent.Achievements);
 
@@ -612,6 +637,8 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetMosaicSource(settings, ShowcaseMosaicSource.Recent);
                     ShowcaseWidgetOptions.SetMosaicCount(settings, 24);
                     ShowcaseWidgetOptions.SetMosaicShowRarityGlow(settings, true);
+                    ShowcaseWidgetOptions.SetMosaicSort(settings, CompactListSortMode.None);
+                    ShowcaseWidgetOptions.SetMosaicSortDescending(settings, true);
                     break;
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
                     ShowcaseWidgetOptions.SetSlideshowSource(settings, ShowcaseSlideshowSource.All);

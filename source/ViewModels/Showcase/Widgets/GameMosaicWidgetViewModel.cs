@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
@@ -30,7 +33,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var decodePixel = Math.Max(64, (int)Math.Ceiling(coverHeight * 2));
             var pinnable = ShowcaseWidgetOptions.GetGameMosaicSource(Projection?.Instance) ==
                 ShowcaseGameMosaicSource.Pinned;
-            Tiles.ReplaceAll(games
+            Tiles.ReplaceAll(OrderGames(games)
                 .Select(game => new GameTileViewModel(
                     game,
                     pinnable,
@@ -40,6 +43,22 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     decodePixel,
                     useCovers,
                     showCompletionGlow)));
+        }
+
+        /// <summary>
+        /// Applies the widget's configured sort over the projected tiles. PinOrder carries no
+        /// sort member path, so it leaves the order the mosaic's Source produced in place.
+        /// </summary>
+        private IEnumerable<GameSummaryItem> OrderGames(IEnumerable<GameSummaryItem> games)
+        {
+            var list = games.Where(game => game != null).ToList();
+            GameSummariesSortHelper.Sort(
+                list,
+                ShowcaseWidgetOptions.GetGameMosaicSort(Projection?.Instance),
+                ShowcaseWidgetOptions.GetMosaicSortDescending(Projection?.Instance)
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending);
+            return list;
         }
     }
 }

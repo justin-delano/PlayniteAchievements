@@ -56,7 +56,8 @@ namespace PlayniteAchievements.Models.Settings
     {
         Recent = 0,
         Rarest = 1,
-        Pinned = 2
+        Pinned = 2,
+        Capstones = 3
     }
 
     public enum ShowcaseScreenshotVariant

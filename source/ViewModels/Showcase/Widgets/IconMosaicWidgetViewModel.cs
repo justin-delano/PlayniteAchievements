@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
@@ -38,7 +41,41 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             AnimateRarityGlows =
                 PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.AnimateRarityGlows ?? true;
 
-            Items.ReplaceAll(achievements);
+            Items.ReplaceAll(OrderAchievements(achievements));
+        }
+
+        /// <summary>
+        /// Applies the widget's configured sort over the projected tiles. None preserves the
+        /// source order the mosaic's Source produced, so sorting stays an opt-in re-arrangement
+        /// of one widget rather than a re-projection of the dashboard.
+        /// </summary>
+        private IEnumerable<AchievementDisplayItem> OrderAchievements(
+            IEnumerable<AchievementDisplayItem> achievements)
+        {
+            var spec = new AchievementSortSpec(
+                ShowcaseWidgetOptions.GetMosaicSort(Projection?.Instance),
+                ShowcaseWidgetOptions.GetMosaicSortDescending(Projection?.Instance)
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending);
+            if (spec.PreservesSourceOrder)
+            {
+                return achievements;
+            }
+
+            var list = achievements.Where(item => item != null).ToList();
+            var comparison = AchievementSortHelper.GetComparison(
+                spec.SortMemberPath,
+                spec.Direction,
+                AchievementSortScope.RecentAchievements);
+            if (comparison == null)
+            {
+                return list;
+            }
+
+            list.Sort(AchievementSortHelper.WithStableOrder(
+                comparison,
+                AchievementSortHelper.CreateStableOrderMap(list)));
+            return list;
         }
     }
 }
