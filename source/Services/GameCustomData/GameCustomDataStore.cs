@@ -356,8 +356,8 @@ namespace PlayniteAchievements.Services.GameCustomData
             using (PerfScope.Start(_logger, "GameCustomData.Save", thresholdMs: 50))
             {
                 var normalized = GameCustomDataNormalizer.NormalizeInternal(data, playniteGameId);
-                _repository.Save(playniteGameId, normalized);
-                RefreshCachedEntry(playniteGameId);
+                var persisted = _repository.Save(playniteGameId, normalized);
+                SetCachedEntry(playniteGameId, persisted);
                 if (ShouldSyncManagedCustomIconCache(previousData, normalized))
                 {
                     SyncManagedCustomIconCache(playniteGameId, normalized);
@@ -1961,20 +1961,25 @@ namespace PlayniteAchievements.Services.GameCustomData
             return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
 
-        private void RefreshCachedEntry(Guid playniteGameId)
+        /// <summary>
+        /// Seeds the cache with the instance the repository just persisted, so a write does not
+        /// pay a second SELECT and full-blob deserialize to read back what it wrote. A null
+        /// <paramref name="persisted"/> means the data normalized to nothing and the row was
+        /// deleted, which is the same outcome a failed read-back produced.
+        /// </summary>
+        private void SetCachedEntry(Guid playniteGameId, GameCustomDataFile persisted)
         {
             if (playniteGameId == Guid.Empty)
             {
                 return;
             }
 
-            var found = _repository.TryLoad(playniteGameId, out var loaded);
             lock (_cacheSync)
             {
                 EnsureCacheCollections();
-                if (found && loaded != null)
+                if (persisted != null)
                 {
-                    _cacheByGameId[playniteGameId] = loaded.Clone();
+                    _cacheByGameId[playniteGameId] = persisted.Clone();
                     _missingGameIds.Remove(playniteGameId);
                     return;
                 }
