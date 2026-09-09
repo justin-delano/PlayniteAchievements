@@ -424,7 +424,8 @@ namespace PlayniteAchievements.Services.UI
                 progressWindow.WindowTitle,
                 progressWindow,
                 windowOptions,
-                isFullscreen);
+                isFullscreen,
+                "RefreshProgress");
 
             progressWindow.RequestClose += (s, ev) => window.Close();
 
