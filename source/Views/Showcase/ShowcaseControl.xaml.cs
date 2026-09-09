@@ -1890,7 +1890,7 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            RefreshWidgetData();
+            RefreshWidgetData(includeCachedHosts: true);
             _snapshotRefreshTimer.Start();
         }
 
@@ -1906,7 +1906,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 // Keep the timer running so the next burst stays windowed.
                 _snapshotRefreshPending = false;
-                RefreshWidgetData();
+                RefreshWidgetData(includeCachedHosts: true);
             }
             else
             {
@@ -1918,7 +1918,10 @@ namespace PlayniteAchievements.Views.Showcase
         // projection in place rather than tearing down and rebuilding every block container (which
         // would re-run the drag wiring and recreate every control). The per-kind view models update
         // their bindings without discarding their visual tree.
-        private void RefreshWidgetData()
+        //
+        // includeCachedHosts re-projects the off-page hosts as well; see the comment on that loop
+        // for why only a snapshot change needs it.
+        private void RefreshWidgetData(bool includeCachedHosts)
         {
             if (_disposed)
             {
@@ -1947,12 +1950,24 @@ namespace PlayniteAchievements.Views.Showcase
                 }
             }
 
-            // Re-project the cached hosts for the other pages too. Their projections carry
-            // the snapshot they last saw, so leaving them would pin one whole snapshot
-            // generation per visited page (the process is 32-bit); re-projecting from the
-            // current snapshot keeps every host on the single live generation while their
-            // visuals stay warm for instant page switches. The per-snapshot derived cache
-            // makes the extra projections cheap.
+            // Re-project the cached hosts for the other pages too, but only when the snapshot
+            // itself moved. Their projections carry the snapshot they last saw, so leaving them
+            // would pin one whole snapshot generation per visited page (the process is 32-bit);
+            // re-projecting from the current snapshot keeps every host on the single live
+            // generation while their visuals stay warm for instant page switches. The
+            // per-snapshot derived cache makes the extra projections cheap.
+            //
+            // A configuration change leaves the snapshot alone, so the cached hosts already hold
+            // the live generation and there is nothing to unpin. Re-projecting them there buys
+            // nothing and costs a full uncached library rescan plus a body rebuild per off-page
+            // widget, so the per-edit cost would grow with the number of pages visited this
+            // session. Whichever page is shown next rebuilds through CreateWidgetHost, which
+            // always applies a freshly built projection.
+            if (!includeCachedHosts)
+            {
+                return;
+            }
+
             var widgetsById = Layout.WidgetInstances
                 .Where(widget => !string.IsNullOrWhiteSpace(widget?.InstanceId))
                 .ToDictionary(widget => widget.InstanceId, StringComparer.OrdinalIgnoreCase);
@@ -1997,7 +2012,7 @@ namespace PlayniteAchievements.Views.Showcase
             EnsureLayout();
             if (string.Equals(ComputeLayoutSignature(), _layoutSignature, StringComparison.Ordinal))
             {
-                RefreshWidgetData();
+                RefreshWidgetData(includeCachedHosts: false);
                 return;
             }
 
