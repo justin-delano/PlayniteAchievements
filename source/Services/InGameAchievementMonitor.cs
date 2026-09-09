@@ -28,6 +28,18 @@ namespace PlayniteAchievements.Services
         private static readonly TimeSpan SchedulerResolution = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan FileDebounce = TimeSpan.FromMilliseconds(150);
         private static readonly int[] StableReadRetryMilliseconds = { 100, 250, 500, 1000 };
+        /// <summary>
+        /// A quiet fast prong re-reads on the registration's safety cadence, so logging every
+        /// applied read buries a session in identical lines and rotates its own start out of the
+        /// file. Unchanged reads are logged no more often than this, purely so a healthy prong
+        /// stays visibly alive.
+        /// </summary>
+        private static readonly TimeSpan ProgressLogHeartbeat = TimeSpan.FromSeconds(30);
+        /// <summary>
+        /// Cap on api names listed per key group, so a heavily-completed game cannot turn one
+        /// changed read into a multi-kilobyte line.
+        /// </summary>
+        private const int ProgressLogKeyLimit = 12;
 
         private sealed class FriendPollTarget
         {
@@ -68,6 +80,12 @@ namespace PlayniteAchievements.Services
             public InGameProgressRegistration Registration;
             public GameAchievementData CachedSchema;
             public bool QueryInFlight;
+            /// <summary>
+            /// Counters plus the observed unlock set as of the last logged read, so an unchanged
+            /// read can be recognised and dropped. See <see cref="ProgressLogHeartbeat"/>.
+            /// </summary>
+            public string LastProgressLogSignature;
+            public DateTime LastProgressLogUtc;
             public bool FriendInFlight;
             public int Generation;
             public int FriendCursor;
@@ -724,11 +742,119 @@ namespace PlayniteAchievements.Services
             var progressed = EmitProgressAdvances(state, before, after, primed, observedUtc);
 
             var totalLatencyMs = Math.Max(0, (long)(CaptureTimelineClock.UtcNow - observedUtc).TotalMilliseconds);
-            _logger?.Debug(
+            LogProgressApplied(
+                state,
+                query,
+                write,
+                emittableKeys,
+                progressed,
+                totalLatencyMs);
+        }
+
+        /// <summary>
+        /// Logs an applied read, naming the achievements behind the counts. Only reads that changed
+        /// something are logged, plus a <see cref="ProgressLogHeartbeat"/> tick for an unchanged
+        /// prong; the counts alone cannot say which achievements a source reported, and at the fast
+        /// prong's cadence the unchanged lines dominate the file.
+        /// </summary>
+        private void LogProgressApplied(
+            GamePollState state,
+            InGameProgressQueryResult query,
+            InGameProgressWriteResult write,
+            IReadOnlyList<string> emittableKeys,
+            int progressed,
+            long totalLatencyMs)
+        {
+            if (_logger == null)
+            {
+                return;
+            }
+
+            var achievements = query.Achievements ?? Array.Empty<AchievementProgressObservation>();
+            var unlockedKeys = achievements
+                .Where(observation => observation?.Unlocked == true &&
+                    !string.IsNullOrWhiteSpace(observation.ApiName))
+                .Select(observation => observation.ApiName)
+                .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var signature = string.Join(
+                "|",
+                achievements.Count,
+                write.NewlyUnlockedKeys.Count,
+                emittableKeys.Count,
+                progressed,
+                write.UnmatchedKeys.Count,
+                string.Join(",", unlockedKeys));
+
+            var now = CaptureTimelineClock.UtcNow;
+            bool changed;
+            lock (_stateLock)
+            {
+                if (!_games.TryGetValue(state.Game.Id, out var tracked) ||
+                    !ReferenceEquals(state, tracked))
+                {
+                    return;
+                }
+
+                changed = !string.Equals(state.LastProgressLogSignature, signature, StringComparison.Ordinal);
+                if (!changed &&
+                    state.LastProgressLogUtc != default &&
+                    now - state.LastProgressLogUtc < ProgressLogHeartbeat)
+                {
+                    return;
+                }
+
+                state.LastProgressLogSignature = signature;
+                state.LastProgressLogUtc = now;
+            }
+
+            var detail = string.Empty;
+            if (write.NewlyUnlockedKeys.Count > 0)
+            {
+                detail += $", newKeys=[{DescribeKeys(write.NewlyUnlockedKeys)}]";
+            }
+
+            if (emittableKeys.Count > 0)
+            {
+                detail += $", emittedKeys=[{DescribeKeys(emittableKeys)}]";
+            }
+
+            if (write.UnmatchedKeys.Count > 0)
+            {
+                detail += $", unmatchedKeys=[{DescribeKeys(write.UnmatchedKeys)}]";
+            }
+
+            if (changed)
+            {
+                detail += $", unlockedKeys=[{DescribeKeys(unlockedKeys)}]";
+            }
+            else
+            {
+                detail += " (unchanged)";
+            }
+
+            _logger.Debug(
                 $"[InGameMonitor] Progress applied: game={state.Game.Name}, provider={state.Provider?.ProviderKey}, " +
-                $"observed={query.Achievements.Count}, new={write.NewlyUnlockedKeys.Count}, " +
+                $"observed={achievements.Count}, new={write.NewlyUnlockedKeys.Count}, " +
                 $"emitted={emittableKeys.Count}, progressed={progressed}, unmatched={write.UnmatchedKeys.Count}, " +
-                $"latencyMs={totalLatencyMs}.");
+                $"latencyMs={totalLatencyMs}{detail}.");
+        }
+
+        private static string DescribeKeys(IReadOnlyList<string> keys)
+        {
+            if (keys == null || keys.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            if (keys.Count <= ProgressLogKeyLimit)
+            {
+                return string.Join(", ", keys);
+            }
+
+            return string.Join(", ", keys.Take(ProgressLogKeyLimit)) +
+                $", +{keys.Count - ProgressLogKeyLimit} more";
         }
 
         /// <summary>
