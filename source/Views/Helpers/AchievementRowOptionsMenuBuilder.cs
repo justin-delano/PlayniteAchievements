@@ -36,10 +36,10 @@ namespace PlayniteAchievements.Views.Helpers
             object data,
             FrameworkElement resourceOwner,
             Action onChanged,
+            DependencyObject menuSource,
             bool includeViewCaptures = false,
             Func<bool> onGoalChanged = null,
-            Func<string, bool> onCapstoneChanged = null,
-            DependencyObject menuSource = null)
+            Func<string, bool> onCapstoneChanged = null)
         {
             if (menu == null || !AchievementRowContext.TryCreate(data, out var context))
             {
@@ -82,8 +82,8 @@ namespace PlayniteAchievements.Views.Helpers
             menu.Items.Add(CreateFiltersMenu(context, resourceOwner, onChanged));
             menu.Items.Add(CreateNotesMenu(context, resourceOwner, onChanged));
 
-            // The clicked row identifies which grid to configure. Callers that pass no source
-            // keep their previous menu.
+            // Required rather than optional: a call site that forgets the row would lose the
+            // display settings entry silently, so the compiler asks for it.
             GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
             return true;
         }

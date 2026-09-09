@@ -200,7 +200,8 @@ namespace PlayniteAchievements.Views.Showcase
             var menu = PlayniteAchievementsPlugin.Instance?.BuildStartPageRowContextMenu(
                 row.DataContext,
                 this,
-                RefreshAfterRowOptionsChanged);
+                RefreshAfterRowOptionsChanged,
+                row);
             if (menu == null)
             {
                 return;
