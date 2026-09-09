@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 var bootInfo = await FindBootExecutableAsync(iso, bootKey: "BOOT2", cdromPrefix: "cdrom0:", cancel).ConfigureAwait(false);
                 if (bootInfo == null)
                 {
-                    Logger?.Warn($"[RA] {Name}: Could not locate primary executable via SYSTEM.CNF: {filePath}");
+                    WarnOnce($"[RA] {Name}: Could not locate primary executable via SYSTEM.CNF: {filePath}");
                     return Array.Empty<string>();
                 }
 
@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
 
                 if (exeStream == null)
                 {
-                    Logger?.Warn($"[RA] {Name}: Could not locate primary executable '{bootInfo.CanonicalPath}': {filePath}");
+                    WarnOnce($"[RA] {Name}: Could not locate primary executable '{bootInfo.CanonicalPath}': {filePath}");
                     return Array.Empty<string>();
                 }
 
@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                     var read = await HashUtils.ReadExactlyAsync(exeStream, executableBytes, 0, bytesToHash, cancel).ConfigureAwait(false);
                     if (read <= 0)
                     {
-                        Logger?.Warn($"[RA] {Name}: Executable '{openedExecutablePath}' is empty: {filePath}");
+                        WarnOnce($"[RA] {Name}: Executable '{openedExecutablePath}' is empty: {filePath}");
                         return Array.Empty<string>();
                     }
 

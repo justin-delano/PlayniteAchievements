@@ -32,7 +32,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
             {
                 if (meta[i] != marker[i])
                 {
-                    Logger?.Warn($"[RA] {Name}: Missing SEGA SEGAKATANA marker: {filePath}");
+                    WarnOnce($"[RA] {Name}: Missing SEGA SEGAKATANA marker: {filePath}");
                     return Array.Empty<string>();
                 }
             }
@@ -40,7 +40,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
             var exeName = ExtractBootFileName(meta);
             if (string.IsNullOrWhiteSpace(exeName))
             {
-                Logger?.Warn($"[RA] {Name}: Boot executable not specified on IP.BIN: {filePath}");
+                WarnOnce($"[RA] {Name}: Boot executable not specified on IP.BIN: {filePath}");
                 return Array.Empty<string>();
             }
 
@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                     {
                         if (exeStream == null)
                         {
-                            Logger?.Warn($"[RA] {Name}: Could not locate boot executable '{exeName}': {filePath}");
+                            WarnOnce($"[RA] {Name}: Could not locate boot executable '{exeName}': {filePath}");
                             return Array.Empty<string>();
                         }
 
@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 }
                 catch (Exception ex)
                 {
-                    Logger?.Warn(ex, $"[RA] {Name}: Failed to read ISO filesystem: {filePath}");
+                    WarnOnce($"[RA] {Name}: Failed to read ISO filesystem: {filePath}", ex);
                     return Array.Empty<string>();
                 }
 

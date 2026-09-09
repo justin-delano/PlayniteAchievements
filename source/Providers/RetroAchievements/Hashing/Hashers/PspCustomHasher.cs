@@ -33,7 +33,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 {
                     if (paramStream == null)
                     {
-                        Logger?.Warn($"[RA] {Name}: Not a PSP game disc or missing PARAM.SFO: {filePath}");
+                        WarnOnce($"[RA] {Name}: Not a PSP game disc or missing PARAM.SFO: {filePath}");
                         return Array.Empty<string>();
                     }
                     await HashUtils.AppendStreamAsync(md5, paramStream, paramStream.Length, cancel).ConfigureAwait(false);
@@ -43,7 +43,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 {
                     if (ebootStream == null)
                     {
-                        Logger?.Warn($"[RA] {Name}: Could not find primary executable EBOOT.BIN: {filePath}");
+                        WarnOnce($"[RA] {Name}: Could not find primary executable EBOOT.BIN: {filePath}");
                         return Array.Empty<string>();
                     }
                     await HashUtils.AppendStreamAsync(md5, ebootStream, ebootStream.Length, cancel).ConfigureAwait(false);
