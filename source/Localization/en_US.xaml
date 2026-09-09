@@ -1009,7 +1009,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortBy">Sort By</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SortDirection">Sort Direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameSummariesSort_PinOrder">Pin order</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the sorted column header again to return to this default.</sys:String>

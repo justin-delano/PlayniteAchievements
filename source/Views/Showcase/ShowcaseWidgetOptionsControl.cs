@@ -759,7 +759,7 @@ namespace PlayniteAchievements.Views.Showcase
         private void AddSortDirectionChoice(Panel panel) =>
             AddChoice(
                 panel,
-                Localize("LOCPlayAch_Settings_SortDirection"),
+                Localize("LOCMenuSortByDirection"),
                 new[] { true, false },
                 ShowcaseWidgetOptions.GetMosaicSortDescending(_settings),
                 value => ShowcaseWidgetOptions.SetMosaicSortDescending(_settings, value),
