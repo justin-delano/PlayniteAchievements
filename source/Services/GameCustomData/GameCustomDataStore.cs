@@ -182,9 +182,17 @@ namespace PlayniteAchievements.Services.GameCustomData
             }
         }
 
+        /// <summary>
+        /// Reads through the same cache TryLoad uses, rather than going straight to the
+        /// repository: every write path either seeds the cache (Save), removes the entry (Delete)
+        /// or invalidates it wholesale (the legacy migration's SaveMany), so the cache is
+        /// authoritative and the extra SELECT plus full-blob deserialize bought nothing.
+        /// </summary>
         public GameCustomDataFile LoadOrDefault(Guid playniteGameId)
         {
-            return _repository.LoadOrDefault(playniteGameId);
+            return TryLoad(playniteGameId, out var data)
+                ? data
+                : GameCustomDataNormalizer.CreateDefault(playniteGameId);
         }
 
         /// <param name="affectsSummaryData">
@@ -206,7 +214,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 throw new ArgumentNullException(nameof(mutate));
             }
 
-            var data = _repository.LoadOrDefault(playniteGameId);
+            var data = LoadOrDefault(playniteGameId);
             var previous = GameCustomDataNormalizer.NormalizeInternal(data, playniteGameId);
             mutate(data);
             Save(playniteGameId, data, previous, affectsSummaryData);
@@ -565,7 +573,7 @@ namespace PlayniteAchievements.Services.GameCustomData
 
         public bool HasPortableData(Guid playniteGameId)
         {
-            return GameCustomDataNormalizer.HasPortableData(_repository.LoadOrDefault(playniteGameId));
+            return GameCustomDataNormalizer.HasPortableData(LoadOrDefault(playniteGameId));
         }
 
         public void SyncRuntimeCaches()
@@ -580,7 +588,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 throw new ArgumentException("Game ID is required.", nameof(playniteGameId));
             }
 
-            var internalData = _repository.LoadOrDefault(playniteGameId);
+            var internalData = LoadOrDefault(playniteGameId);
             var normalized = GameCustomDataNormalizer.NormalizeInternal(internalData, playniteGameId);
             if (!GameCustomDataNormalizer.HasPortableData(normalized))
             {
@@ -1428,7 +1436,7 @@ namespace PlayniteAchievements.Services.GameCustomData
 
             normalizedPortable.CustomProviderId = ResolveImportedCustomProviderId(normalizedPortable);
 
-            var current = _repository.LoadOrDefault(playniteGameId);
+            var current = LoadOrDefault(playniteGameId);
             var merged = GameCustomDataFile.FromPortable(
                 normalizedPortable,
                 playniteGameId,
