@@ -10,7 +10,7 @@
     <!-- ================================================================= -->
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements">実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Actions">Actions</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclude from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Include in Summaries</sys:String>
@@ -65,12 +65,12 @@
     <sys:String x:Key="LOCPlayAch_Common_Unknown">Unknown</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Unlocked Count</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_Today">Today</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_Yesterday">Yesterday</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">This Week</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_LastWeek">Last Week</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">This Month</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_LastMonth">Last Month</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_Today">今日</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_Yesterday">昨日</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">今週</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_LastWeek">先週</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">今月</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_LastMonth">先月</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisYear">This Year</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 year ago</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">{0} years ago</sys:String>
@@ -106,10 +106,10 @@
     <sys:String x:Key="LOCPlayAch_Score_Tier_Master">Master</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Gold">Gold</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Platinum">Platinum</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Silver">Silver</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Bronze">ブロンズ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Gold">ゴールド</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Platinum">プラチナ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Silver">シルバー</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockTime">Unlock Time</sys:String>
 
     <!-- ================================================================= -->
@@ -175,7 +175,7 @@
     <sys:String x:Key="LOCPlayAch_Button_ResetAll">Reset All</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Run">Run</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Save">Save</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Search">Search</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Search">検索</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Test">Test</sys:String>
 
     <!-- ================================================================= -->
