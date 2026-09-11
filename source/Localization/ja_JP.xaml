@@ -4,8 +4,8 @@
     <!-- ================================================================= -->
     <!-- 01 Plugin Titles -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Title_Refresh">Playnite Achievements Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite 実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_Refresh">Playnite 実績の更新</sys:String>
 
     <!-- ================================================================= -->
     <!-- 02 Core and Common Text -->
@@ -24,7 +24,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Back">戻る</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">デフォルト</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">すべて解除</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Descending">Descending</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Descending">降順</sys:String>
     <!-- Common_Desktop / Common_Fullscreen: bare names of Playnite's two modes (and their themes) -->
     <sys:String x:Key="LOCPlayAch_Common_Desktop">デスクトップ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Duplicate">複製</sys:String>
@@ -59,7 +59,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Status_Disabled">無効</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">Linked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_None">None</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Both">Both</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Both">両方</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">No override set</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Not linked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unknown">Unknown</sys:String>
@@ -121,7 +121,7 @@
     <sys:String x:Key="LOCPlayAch_Column_PrimaryHint">The account whose avatar and name represent this merged friend.</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Accounts">アカウント</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Cover">カバー</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">コレクションレベル</sys:String>
@@ -330,10 +330,10 @@ Manual tracking can replace this game's cached achievement data from {0}.</sys:S
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_Unlink">Unlink Manual Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Header">カスタム実績順序</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Hint">Drag rows to set the default order. Changes save immediately.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveUp">Move Up</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveDown">Move Down</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveToTop">Move to Top</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveToBottom">Move to Bottom</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveUp">上に移動</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveDown">下に移動</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveToTop">一番上に移動</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveToBottom">一番下に移動</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Reset">Reset Custom Order</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_Customize">Customize notifications for this game</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_SnapshotHint">This game uses an independent notification appearance snapshot. Later platform style changes will not affect it.</sys:String>
@@ -378,7 +378,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xbox">Xbox Title ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_EA">EA Offer ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Hoyoverse">HoYoverse ゲーム</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net ゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Enter a value for this override.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Select a valid game for this override.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Summary Exclusion</sys:String>
@@ -400,13 +400,13 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Status_IncludedFromSummaries">Included in Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_AchievementOrder">並べ替え</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Capstones">Capstones</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Category">Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Category">カテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_FilterPlaceholder">カテゴリーをフィルター...</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ToggleToolTip">Group achievements by category</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ExpandAll">すべて展開</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_CollapseAll">すべて折り畳む</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ExpandAllToolTip">すべてのカテゴリーを展開</sys:String>
-    <sys:String x:Key="LOCPlayAch_CategorySummaries_CollapseAllToolTip">Collapse all categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_CategorySummaries_CollapseAllToolTip">すべてのカテゴリーを折り畳む</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StartInCategoryMode">Start in Category Mode</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HideCategorySummaryRow">Hide Category Grid After Selection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryGrid">Category Grid</sys:String>
@@ -770,7 +770,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRealm">Realm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowCharacter">Character</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientId">クライアント ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">Client Secret</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">クライアントシークレット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_RedirectUri">Redirect URI</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_AggregateAccountCharacters">Combine achievements from every character on the account</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">Reading WoW achievements uses Blizzard's official API, which needs a free API client tied to your Battle.net account. You only have to set this up once:</sys:String>
@@ -819,7 +819,7 @@ Reclaimed {1}.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV をエクスポート</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">Cover Images</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">カバー画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">These images cover a locked or hidden icon until it is revealed, so the locked cover only appears while Reveal Locked Icon is off. Drag in an image link or file, or browse for one; Clear restores the built-in image.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Rebuild File Scan Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">File Scan Cache Max Age (days)</sys:String>
@@ -847,8 +847,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Row Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Max Rows</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Column Header Alignment</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Cell Alignment</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Cell Vertical Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">セルの水平揃え</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">セルの垂直揃え</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">左</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">中央</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Right">右</sys:String>
@@ -1012,7 +1012,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Scanning &amp; Hashing</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SortBy">Sort By</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SortBy">並べ替え</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the sorted column header again to return to this default.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionGlow">Show Completion Glow</sys:String>
@@ -1082,8 +1082,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColors">プラットフォームの色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColorsDescription">Customize the color used for each platform across icons, charts, and other platform visuals.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">Completed game badge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientStart">Gradient start</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientEnd">Gradient end</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientStart">グラデーション開始</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientEnd">グラデーション終了</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">Advanced theme resources</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceLabel">Playnite:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">Follow Playnite</sys:String>
@@ -1094,7 +1094,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Panel">Panel background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_WindowSurface">Window background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_GridSurface">Grid background</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Border">Border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Border">外枠</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlBorder">Input border</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Glyph">アイコン</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Accent">Accent</sys:String>
@@ -1217,7 +1217,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">プラグイン設定を開く</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">Platform Status</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">Checking</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">確認中</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">Setup</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_Checking">確認中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
