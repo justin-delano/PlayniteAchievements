@@ -89,7 +89,7 @@
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_StartPage_FriendsRecentAchievements">Friends' Recent Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Collection">コレクションスコア</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">レベル {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} ポイント</sys:String>
@@ -124,7 +124,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Cover">カバー</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">コレクションレベル</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Collection Level</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Friend">フレンド</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">ゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_SharedGames">ゲーム</sys:String>
@@ -1307,7 +1307,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
     <!-- Riot_ChallengeCategory_*: the five top-level League of Legends challenge categories, which
          Riot's game data exposes only as untranslated codes -->
-    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Collection">コレクション</sys:String>
+    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Collection">Collection</sys:String>
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Expertise">Expertise</sys:String>
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Imagination">Imagination</sys:String>
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Teamwork">Teamwork &amp; Strategy</sys:String>
