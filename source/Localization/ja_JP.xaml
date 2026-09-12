@@ -51,7 +51,7 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Refresh button to check for achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">No Achievements Found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Not authenticated</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">未認証</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Reset Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">すべて選択</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectedCountFormat">{0:N0} selected</sys:String>
@@ -81,10 +81,10 @@
     <sys:String x:Key="LOCPlayAch_Presets_DeleteConfirm">プリセット &quot;{0} を削除しますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_Header">プリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_MaxReached">You can save up to {0} presets.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Presets_NameDialogHint">Enter a preset name (1-64 characters).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Presets_NameDialogHint">プリセット名を入力してください (1-64 文字)。</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_NameDialogTitle">プリセットを保存</sys:String>
-    <sys:String x:Key="LOCPlayAch_Presets_NameInvalid">Preset name must be between 1 and {0} characters.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Presets_OverwriteConfirm">Overwrite preset &quot;{0}&quot;?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Presets_NameInvalid">プリセット名は 1 から {0} 文字の間である必要があります。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Presets_OverwriteConfirm">プリセット &quot;{0}&quot; を上書きしますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_Save">プリセットを保存</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">最近の実績</sys:String>
@@ -94,7 +94,7 @@
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">レベル {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} ポイント</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Prestige">名声スコア</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Max level reached</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">最高レベル到達</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{1} まで {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">スコアシステム</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">収集と名声スコア</sys:String>
@@ -535,7 +535,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <!-- 10 Settings -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Achievement Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">実績グリッド</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk. Changes apply on the next refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">実績アイコンキャッシュ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Advanced">高度</sys:String>
