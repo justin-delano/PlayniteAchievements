@@ -29,10 +29,10 @@
     <sys:String x:Key="LOCPlayAch_Common_Desktop">Desktop</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Duplicate">Duplicate</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Edit">Edit</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Enabled">Enabled</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_FilterAchievementsPlaceholder">Filter achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Fullscreen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_General">General</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Enabled">Kích hoạt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_FilterAchievementsPlaceholder">Bộ lọc thành tựu...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Toàn màn hình</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_General">Chung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Hide</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">Category</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Platform">Platform</sys:String>
@@ -60,9 +60,9 @@
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">Linked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_None">None</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Both">Both</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">No override set</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">Chưa thiết lập ghi đè</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Not linked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Unknown">Unknown</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Unknown">Chưa rõ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Unlocked Count</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_Today">Today</sys:String>
