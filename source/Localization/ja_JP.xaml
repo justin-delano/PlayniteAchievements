@@ -86,7 +86,7 @@
     <sys:String x:Key="LOCPlayAch_Presets_NameInvalid">プリセット名は 1 から {0} 文字の間である必要があります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_OverwriteConfirm">プリセット &quot;{0}&quot; を上書きしますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_Save">プリセットを保存</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress">進捗状況</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">最近の実績</sys:String>
     <sys:String x:Key="LOCPlayAch_StartPage_FriendsRecentAchievements">Friends' Recent Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Collection">収集スコア</sys:String>
@@ -145,7 +145,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Trophy">トロフィー</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UnlockToasts">解除通知</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_FriendToasts">フレンド通知</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_ProgressToasts">Progress Notifications</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_ProgressToasts">進捗状況通知</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Owned">Owned</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">スクリーンショット</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">録画</sys:String>
@@ -706,7 +706,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Friend unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100% Completion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">Friend completed the game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderProgress">Achievement progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderProgress">実績の進捗状況</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFormatInvalid">The friend header must include {0} for the friend's name.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImage">背景画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImageHint">Image shown behind the notification; animated formats play. Frames have no background.</sys:String>
@@ -871,7 +871,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">進捗状況バー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Game Summaries Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Selected Game Grid</sys:String>
 
@@ -1269,7 +1269,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">実績を解除しました</sys:String>
     <!-- Toast_AchievementProgress: heading of the incremental-progress toast for a locked achievement -->
-    <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">Achievement progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">実績の進捗状況</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
     <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
@@ -1337,7 +1337,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayniteAchievementslvGamesProgression">Progression</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsManualAchievements">Your Achievements</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsNoCommon">アンコモン</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsProgress">Progress</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsProgress">進捗状況</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsRare">レア</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsRarety">レア度</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsRetroAchievements">RetroAchievements</sys:String>
