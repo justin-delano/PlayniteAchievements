@@ -919,7 +919,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_DataForAzerothSignInHint">Sign in to Data for Azeroth to read WoW rarity percentages. Until you do, achievements still sync without them.</sys:String>
 
     <!-- Provider: PlayStation -->
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">Sign in at PlayStation.com</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">PlayStation.com でサインイン</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1Note">(check &quot;Trust this browser&quot;)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2">Open Sony SSO cookie page</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2Note">and copy the npsso value</sys:String>
@@ -1003,7 +1003,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Remove All Tags</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next overview open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">Reset Display Settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">表示設定をリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Revert Display tab options, grid visibility, column layouts, row sizing, and overview layout to defaults.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Reveal Hidden Description</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Reveal Hidden Icon</sys:String>
@@ -1163,7 +1163,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared unowned friend data for {0:N0} games.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">No friend achievement data yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Failed to load friend achievement data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Friend refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">フレンドの更新に失敗しました。</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NotAvailable">Friends Overview is not available.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectTargetForRefresh">Select a friend or game before refreshing selected friend data.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_WindowTitle">{0} - フレンドの実績</sys:String>
@@ -1210,7 +1210,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">有効</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Found your existing achievement data</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">We found your existing achievement data. Continue to the achievements view to start tracking.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Welcome Back</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">おかえりなさい</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Language">実績の言語</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Your credentials are configured. Begin your first refresh to track achievements across your library.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your platforms.</sys:String>
@@ -1221,7 +1221,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">Setup</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_Checking">確認中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">Ready to Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">更新準備完了</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Title">Playnite 実績へようこそ!</sys:String>
 
     <!-- ================================================================= -->
@@ -1262,8 +1262,8 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No platforms are authenticated. Set up at least one platform in settings before refreshing.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Periodic refresh check failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodic refresh failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Refresh failed</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Refresh failed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">更新失敗</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">更新失敗: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">Could not read {0} Steam unlock time(s). Set the plugin language to match your Steam language, then refresh. See the log for details.</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0} authentication has expired or is invalid. Click to open settings.</sys:String>
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
