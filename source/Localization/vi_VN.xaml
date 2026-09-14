@@ -241,10 +241,10 @@ Dữ liệu thành tựu trong bộ nhớ đệm của họ sẽ bị xoá và h
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Làm sạch dữ liệu thành tựu trong bộ nhớ đệm của {0}?
 
 Dữ liệu sẽ được nạp lại vào lần làm mới bạn bè tiếp theo.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Enter a valid numeric Game Jolt game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Enter a valid numeric game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Enter a valid 8-character hexadecimal Xenia Title ID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CloseView">Đóng cửa sổ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Nhập một ID trò chơi Game Jolt bằng số hợp lệ.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Nhập một ID trò chơi bằng số hợp lệ.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Nhập một ID tiêu đề Xenia có 8 kí tự hệ thập lục phân hợp lệ.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Enter a valid RPCS3 trophy NP Communication ID such as NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Enter a valid numeric Steam App ID.</sys:String>
