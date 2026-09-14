@@ -302,7 +302,7 @@ Hành động này sẽ xoá liên kết thủ công đồng thời xoá thời 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Update">Cập nhật</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel">Loại danh mục</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Header">Tuỳ chỉnh biểu tượng thành tựu</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">Set optional unlocked and locked icon overrides for this game's achievements. Drag in image links or files, or browse for a file.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_Hint">Đặt ghi đè biểu tượng đã mở khoá và bị khoá tuỳ chọn cho trò chơi này. Kéo các liên kết hình ảnh hoặc tệp vào đây, hoặc duyệt tìm tệp.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">The selected image file no longer exists.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">Mở thư mục biểu tượng</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">The extension data path is unavailable.</sys:String>
@@ -356,9 +356,9 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ImportIgnoredPackageImages">Ignored {0} image file(s) whose names did not match any achievement in this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusOverride">Bật qua ghi đè</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings">Bật qua cài đặt</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox">Always use separate locked icons for this game</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader">Separate Locked Icons</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Tải xuống biểu tượng đã khoá riêng cho trò chơi này khi mà nền tảng hỗ trợ. Bỏ chọn, cài đặt toàn cục sẽ được áp dụng. Có hiệu lực vào lần làm mới sau.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox">Luôn sử dụng biểu tượng bị khoá riêng biệt cho trò chơi này</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader">Biểu tượng bị khoá riêng biệt</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Tải xuống biểu tượng bị khoá riêng cho trò chơi này khi mà nền tảng hỗ trợ. Bỏ chọn, cài đặt toàn cục sẽ được áp dụng. Có hiệu lực vào lần làm mới sau.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHeader">Ghi đè nền tảng</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHint">Force this game to use one supported achievement platform, or clear the override to use automatic matching.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto">Override set: {0} (auto-detect)</sys:String>
@@ -550,8 +550,8 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Achievement data cached from your platforms. Clearing it does not touch icon files.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Cached Achievement Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Compact Locked List</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Danh sách bị khoá thu gọn</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Danh sách đã mở khoá thu gọn</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">Compress cached achievement icons. This is normally the largest group.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Compress provider-supplied default category art.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">{0} of {1} cached images are larger than {2} px.
@@ -702,8 +702,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontThemeDefault">Theme default</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">Header text</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">Leave blank to use the localized default. {0} is the friend's name.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderUnlock">Achievement unlocked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Friend unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderUnlock">Thành tựu đã mở khoá</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Bạn bè đã mở khoá</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100% Completion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">Friend completed the game</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderProgress">Achievement progress</sys:String>
@@ -821,51 +821,51 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Export CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">Cover Images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">These images cover a locked or hidden icon until it is revealed, so the locked cover only appears while Reveal Locked Icon is off. Drag in an image link or file, or browse for one; Clear restores the built-in image.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Rebuild File Scan Cache</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">File Scan Cache Max Age (days)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Achievement Visibility</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control how locked and hidden achievement details are displayed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Hours Between Refreshes:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Clear every cached icon file.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Clear only separate locked icons. The next refresh restores them.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">Clear cached icon files. Missing icons are downloaded again on the next refresh.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_All">icon</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_Locked">locked icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Xây dựng lại bộ nhớ đệm quét tệp</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Thời gian lưu tối đa bộ nhớ đệm quét tệp (ngày)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Khả năng hiển thị thành tựu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Kiểm soát cách chi tiết thành tựu bị khoá và ẩn được hiển thị.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Làm mới mỗi bao nhiêu giờ:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Làm sạch mọi tệp biểu tượng trong bộ nhớ đệm.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Chỉ làm sạch các biểu tượng bị khoá riêng biệt. Lần làm mới tiếp theo sẽ phục hồi chúng.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">Làm sạch các tệp biểu tượng trong bộ nhớ đệm. Các biểu tượng còn thiếu sẽ được tải lại vào lần làm mới tiếp theo.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_All">biểu tượng</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_Locked">biểu tượng bị khoá</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressDeletingCount">Đang xoá {0} tệp trong bộ nhớ đệm... ({1}/{2})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoFiles">No cached {0} files were found.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoLockedReferences">No cached locked icon references were found.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanning">Scanning cached {0} files...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanningLockedReferences">Scanning cached locked icon references... ({0}/{1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Language">Language</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_LanguageHint">Language for achievement text. Platforms will use this language when available, falling back to English if not supported.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Tools for clearing cached plugin data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Maintenance</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Open extension data folder (contains logs and cache)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Open Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">Pie Chart</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Row Height</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Max Rows</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Column Header Alignment</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Cell Alignment</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Cell Vertical Alignment</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">Left</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">Center</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Right">Right</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Top">Top</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Center">Center</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Bottom</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateAndTime">Date and time</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateOnly">Date only</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoFiles">Không tìm thấy {0} tệp trong bộ nhớ đệm.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoLockedReferences">Không tìm thấy các tham chiếu biểu tượng bị khoá trong bộ nhớ đệm.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanning">Đang quét {0} tệp trong bộ nhớ đệm...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanningLockedReferences">Đang quét các tham chiếu biểu tượng bị khoá trong bộ nhớ đệm... ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Language">Ngôn ngữ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_LanguageHint">Ngôn ngữ của văn bản thành tựu. Nền tảng sẽ sử dụng ngôn ngữ này khi khả dụng, trả về Tiếng Anh nếu không được hỗ trợ.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Công cụ dùng để làm sạch dữ liệu phần bổ trợ trong bộ nhớ đệm.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Bảo trì</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Mở thư mục dữ liệu tiện ích mở rộng (chứa nhật kí và bộ nhớ đệm)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Mở thư mục</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">Biểu đồ tròn</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">điểm ảnh (rỗng = không giới hạn)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Chiều cao hàng</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Số hàng tối đa</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Căn chỉnh tiêu đề cột</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Căn chỉnh ô</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Căn chỉnh dọc ô</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">Trái</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">Giữa</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Right">Phải</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Top">Trên</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Center">Giữa</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Dưới</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateAndTime">Ngày và giờ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateOnly">Chỉ ngày</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_Relative">Thời gian tương đối</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">Date format</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Last played format</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Unlock date format</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Playtime format</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">Hours and minutes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">Định dạng ngày</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Định dạng chơi lần cuối</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Định dạng ngày mở khoá</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Định dạng thời gian chơi</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">Giờ và phút</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly">Chỉ giờ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">Category completion badge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadgeMode_First">First</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">Huy hiệu hoàn thành danh mục</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadgeMode_First">Đầu tiên</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">Which category rows show the completed badge under their progress bar in category mode. First uses the first category in your configured category order, so it stays with that category when you sort the grid by a column.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
@@ -1267,11 +1267,11 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">Không thể đọc thời gian mở khoá Steam của {0}. Hãy đặt ngôn ngữ phần bổ trợ khớp với ngôn ngữ Steam của bạ, sau đó làm mới. Xem chi tiết trong nhật ký.</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0} xác thực đã hết hạn hoặc không hợp lệ. Nhấp để mở cài đặt.</sys:String>
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
-    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Achievement unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Thành tựu đã mở khoá</sys:String>
     <!-- Toast_AchievementProgress: heading of the incremental-progress toast for a locked achievement -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">Achievement progress</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
-    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} đã mở khoá</sys:String>
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
     <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Congratulations!</sys:String>
     <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
@@ -1303,8 +1303,8 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_ColorPicker_HexLabel">Hệ thập lục phân</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Chọn màu</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Nhóm theo đã mở khoá</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoLockedAchievements">Không có thành tựu bị khoá</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">Không có thành tựu đã mở khoá</sys:String>
     <!-- Riot_ChallengeCategory_*: the five top-level League of Legends challenge categories, which
          Riot's game data exposes only as untranslated codes -->
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Collection">Collection</sys:String>
