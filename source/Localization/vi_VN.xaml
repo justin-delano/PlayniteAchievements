@@ -352,7 +352,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExophaseEnrichmentInvalid">Enter a valid Exophase game slug or exophase.com game URL.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExophaseEnrichmentStatusValue">Override set: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExportButton">Xuất</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ImportButton">Import</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ImportButton">Nhập</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ImportIgnoredPackageImages">Ignored {0} image file(s) whose names did not match any achievement in this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusOverride">Bật qua ghi đè</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings">Bật qua cài đặt</sys:String>
@@ -1058,21 +1058,21 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Icons are hidden on slices under 5% to avoid overlap.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Hides slices under 5% from the overview pie.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">The center percentage always uses exact counts, so it can differ from the pie when slices are hidden or rounded.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Round</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Làm tròn</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description">Rounds slices under 5% up to 5%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Stats</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Display</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Hiển thị</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatically tags games by achievement status so you can filter your library.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Tag Sync</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Tag Configuration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Use Separate Locked Icons When Available</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Downloads platform-supplied locked icons when they differ from the unlocked icon. Otherwise the unlocked icon is shown in grayscale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Description">Debugging and support tools.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Utilities</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Tiện ích</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use Cover Images Instead of Icons in Games List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
     <!-- Context_Preview / Context_Settings: uppercase panel labels above theme preview and settings columns -->
-    <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">PREVIEW</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">Xem trước</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Context_Settings">SETTINGS</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Appearance presets</sys:String>
