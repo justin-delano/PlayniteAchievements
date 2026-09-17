@@ -135,7 +135,7 @@ Der erste Rang ist Bronze V, gefolgt von Bronze IV, weiter über die Ränge Silb
     <sys:String x:Key="LOCPlayAch_Column_Unlocks">Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Ignore">Ignorieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Favorite">Favorit</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_SkipFullScans">Skip Full Scans</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_SkipFullScans">Vollständige Scan überspringen</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_SkipFullScansHint">Scans stop discovering new unowned games for this friend. Games in your library always refresh, and unowned games already tracked still update in Recent scans. Refreshing this friend directly still runs a Full scan.</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Gespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
@@ -246,7 +246,7 @@ Die zwischengespeicherten Erfolgsdaten des Freundes werden gelöscht. Zudem wird
 
 Diese werden bei der nächsten Freundesaktualisierung erneut  geladen.</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Ansicht schließen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Enter a valid numeric Game Jolt game ID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Gültige numerische Game Jolt Game ID eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Gültige Game ID eingeben (numerisch).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Gültige Xenia Title ID eingeben (8-stellig, hexadezimal).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Gültige ShadPS4 Match ID eingeben (Muster: CUSA00432 oder NPWR12345_00).</sys:String>
@@ -283,7 +283,7 @@ Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeichert
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Hint">Erfolgskategorien für dieses Spiel festlegen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">Kategoriebezeichnung für ausgewählte Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Indent">Make subcategory of the category above</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Outdent">Move out one level</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Outdent">Eine Ebene nach oben bewegen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">Category names cannot contain &quot;::&quot;. Use the arrow buttons or the right-click menu to make a category a subcategory of another.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">Rename categories, choose category images, and drag categories to reorder them. Drop a category onto the middle of another to make it a subcategory, and right-click a row for more actions.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Zielkategorie</sys:String>
@@ -596,14 +596,14 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">Wenn deaktiviert: Plattformen werden sequenziell in vorgegebener Reihenfolge aktualisiert.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Hintergrundaktualisierung aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsPeriodicUpdates">Hintergrundaktualisierung von Freunden aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">Monitor Achievements While a Game Is Running</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">Uses local file events or provider feeds for fast unlock detection, with lightweight scoped refreshes as a fallback.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">Erfolge aktiver Spiele beobachten</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">Nutzt lokale Dateiereignisse oder Anbieter-Feeds zur schnellen Erkennung von Freischaltungen, mit schlanken bereichsspezifischen Aktualisierungen als Fallback.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsFeatures">Freundefunktionen aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsFeatures_Description">Freundesbezogene Einstellungen, Übersichten und Menüpunkte anzeigen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockToasts">Benachrichtigung bei Erfolgsfreischaltungen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendUnlockToasts">Benachrichtigung bei Freundesfreischaltungen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableProgressToasts">Benachrichtigung bei Erfolgsfortschritt anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Fallback Interval (seconds):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Fallback-Intervall (in Sekunden):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollRefreshFriends">Freundesdaten zum laufenden Spiel abfragen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendRefreshMultiplier">Freundesdaten bei jeder N. Abfrage abrufen:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendBatchSize">Freunde pro Aktualisierung (0 = alle):</sys:String>
@@ -618,9 +618,9 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockSounds">Audioeffekt bei Freischaltung wiedergeben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundVolume">Prozentuale Lautstärke:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundFilesHint">A blank tier is never silent: it plays your theme's sound when theme sounds are on, otherwise the built-in default named on the row. Game completion uses the Capstone sound.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseThemeUnlockSounds">Use unlock sounds provided by the active theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseThemeUnlockSounds">Freischaltaudioeffekte des aktiven Designs verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockSoundTheme_Tooltip">Play the unlock sound the active desktop or fullscreen theme provides for this tier.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseHiddenUnlockSound">Use the hidden achievement sound instead of the rarity sound</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseHiddenUnlockSound">Audioeffekt für verborgene Erfolge statt Seltenheit verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomRight">Unten rechts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomLeft">Unten links</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopRight">Oben rechts</sys:String>
@@ -634,18 +634,18 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TabNotifications">Benachrichtigungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastBehavior">Verhalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">Screenshots</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">Save a screenshot on each unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">Screenshot bei jeder Freischaltung aufnehmen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectory">Ordner für Screenshots</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantClean">Unbearbeitet</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantWithToast">Benachrichtigung enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantFramed">Gerahmt</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotSuffixes">Dateinamen-Suffix</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CaptureMinimumRarity">Rarities to capture</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AlwaysCaptureCompletion">Always capture completion unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CaptureMinimumRarity">Seltenheiten zur Aufnahme</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AlwaysCaptureCompletion">Vervollständigungen immer aufnehmen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FrameHeader">Screenshot-Umrahmung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ToastTab">Benachrichtigung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_CustomizeForPlatform">Für diese Plattform anpassen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_FollowDefaultHint">This platform follows the default appearance until customized.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_FollowDefaultHint">Diese Plattform verwendet das Standardesign, solange es nicht angepasst wird.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_RevertConfirm">Revert this platform to the default notification appearance? Its custom images will be deleted.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportButton">Stil exportieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportBothButton">Export Both</sys:String>
@@ -672,7 +672,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Rarity_PercentUnderIcon">Unter Symbol</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Rarity_PercentWithBadge">Unterhalb Abzeichen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Rarity_InlineBadge">Innerhalb Abzeichen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ShowAccentStrip">Left rarity accent</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ShowAccentStrip">Linker Seltenheitsakzent</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShowCountdownBar">Timer-Leiste</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_CountdownBarColor">Timer-Leistenfarbe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_CardWidth">Breite</sys:String>
@@ -720,7 +720,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImages">Abzeichengrafiken</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImagesHint">Replace the rarity and completion badges.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">Video-Clip-Aufnahmen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockRecordings">Save a clip on each unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockRecordings">Clip bei jeder Freischaltung aufnehmen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectory">Ordner für Aufnahmen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectoryHint">Leer = Screenshot-Ordner verwenden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingClipSeconds">Sekunden vor Freischaltung</sys:String>
@@ -743,7 +743,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Override_Off">Aus</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewButton">Vorschau des Rahmens auf dem Bildschirm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewHint">Der Rahmen erscheint nur in Screenshots und nicht während des Spielens. Escape drücken oder 10 Sekunden auf Schließen der Vorschau warten.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewCapstone">Capstone Completion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewCapstone">Erreichen von Vollendungserfolgen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewComplete">100 % Vervollständigung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewFriend">Freundesfreischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleGame">Beispielhaftes Spiel</sys:String>
@@ -871,7 +871,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Spielzeitformat</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">Stunden und Minuten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly">Stunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">Category completion badge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">Abzeichen für Kategorievervollständigung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadgeMode_First">First</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">Which category rows show the completed badge under their progress bar in category mode. First uses the first category in your configured category order, so it stays with that category when you sort the grid by a column.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">Pixel (leer = automatisch)</sys:String>
@@ -1045,10 +1045,10 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Ganzzahlige Prozentwerte anzeigen. Werte unter 1 % werden als &quot;&lt; 1 %&quot; dargestellt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletedProgressColoring">Vervollständigte Fortschrittsleisten einfärben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletedProgressColoring_Help">Verwendet die Farbe vervollständigter Spiele zur Färbung der Fortschrittsleisten.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SoftGlowTiers">Soft Glow Tiers</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RayGlowTiers">Rotating Ray Tiers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SoftGlowTiers">Weiches Leuchten der Stufen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RayGlowTiers">Rotierende Strahlen der Stufen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GlowTiers_Help">Pick what gets each effect. The soft glow is a halo around the icon; rotating rays are a sunburst behind it, with a bright edge, and show up best on dark themes. The two are independent, so anything can have either, both, or neither. Completed covers the glow on completed game and category art.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowHardcoreBorder">Hardcore Border on RetroAchievements Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowHardcoreBorder">Hardcore-Umrandung bei RetroAchievements-Freischaltungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHardcoreBorder_Help">Give Hardcore RetroAchievements unlocks a crisp metallic border instead of a glow. Turn this off to glow them like any other unlock, following their rarity tier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AnimateRarityGlows">Seltenheitsleuchten animieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AnimateRarityGlows_Help">Gently fade rarity glows in and out on unlocked achievement icons and in unlock notifications, and slowly turn the rays.</sys:String>
