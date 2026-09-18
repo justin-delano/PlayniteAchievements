@@ -127,9 +127,9 @@
     <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">収集レベル</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Friend">フレンド</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">ゲーム</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_SharedGames">ゲーム</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Unlocks">Unlocks</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Ignore">Ignore</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_SharedGames">ゲーム数</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Unlocks">解除数</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Ignore">無視</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Favorite">お気に入り</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_SkipFullScans">Skip Full Scans</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_SkipFullScansHint">Scans stop discovering new unowned games for this friend. Games in your library always refresh, and unowned games already tracked still update in Recent scans. Refreshing this friend directly still runs a Full scan.</sys:String>
@@ -371,7 +371,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4">ShadPS4 Match ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP Communication ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia">Xenia Title ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase">Exophase Game ID or Slug</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase">Exophase Game ID または Slug</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic">Epic Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_GOG">GOG Product ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_PSN">PSN NP Communication ID</sys:String>
@@ -417,7 +417,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_ManualTracking">Manual Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Notes">メモ</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Overrides">Overrides</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Overview">Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Overview">概要</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Value_NotAvailable">N/A</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_WindowTitle">実績の管理 - {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Bold">太字</sys:String>
@@ -528,7 +528,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_Status_Starting">開始中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">Succeeded</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">キャッシュを更新中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">実績を更新中 {1}: {0}</sys:String>
 
     <!-- ================================================================= -->
@@ -550,8 +550,8 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Achievement data cached from your platforms. Clearing it does not touch icon files.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Cached Achievement Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">コンパクトリスト</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Compact Locked List</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">コンパクト未解除リスト</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">コンパクト解除済リスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">Compress cached achievement icons. This is normally the largest group.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Compress provider-supplied default category art.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">{0} of {1} cached images are larger than {2} px.
@@ -1018,7 +1018,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionGlow">Show Completion Glow</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Show Friend Spoilers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) Suffix</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">解除済みアイコンにレア度発光を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">棒グラフを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">収集スコアカードを表示する</sys:String>
@@ -1143,9 +1143,9 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">No game selected in the overview.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Achievements by Platform</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Achievements by Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Achievements by Trophy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">プラットフォームごとの実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">レア度ごとの実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">トロフィーごとの実績</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Friend Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">フレンドを検索</sys:String>
@@ -1271,7 +1271,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <!-- Toast_AchievementProgress: heading of the incremental-progress toast for a locked achievement -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">実績の進捗状況</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
-    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} 解除済み</sys:String>
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
     <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Congratulations!</sys:String>
     <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
@@ -1302,9 +1302,9 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_ColorPicker_InvalidColor">Use #AARRGGBB, #RRGGBB, or a WPF color name.</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_HexLabel">Hex</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Select Color</sys:String>
-    <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_GroupByUnlocked">解除済みでグループ化</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">未解除の実績がありません</sys:String>
     <!-- Riot_ChallengeCategory_*: the five top-level League of Legends challenge categories, which
          Riot's game data exposes only as untranslated codes -->
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Collection">収集</sys:String>
@@ -1322,7 +1322,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayniteAchievementsAchStats">Achievements statistics</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsBaseGame">Base game</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsCommon">コモン</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsDateUnlocked">Date unlocked</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsDateUnlocked">解除日</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsEarned">獲得済み</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsFirstUnlock">最初の解除</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">Global achievements progression</sys:String>
