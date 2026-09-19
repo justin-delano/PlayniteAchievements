@@ -250,10 +250,10 @@ It is fetched again on the next friend refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Enter a valid numeric Steam App ID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Enter a valid PSN NP Communication ID such as NPWR12345_00. For a collection, join each game's ID with &quot;+&quot;, such as NPWR12345_00+NPWR67890_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">ゲームを更新</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">フレンドを更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">選択したゲームを更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetGoal">Set as Goal</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?
@@ -284,7 +284,7 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">Rename categories, choose category images, and drag categories to reorder them. Drop a category onto the middle of another to make it a subcategory, and right-click a row for more actions.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Merge into</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Merge this category into another, moving its achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">New Category</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新しいカテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game summary grids. Click again to clear.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Tab_Assign">Assign Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Base">Base</sys:String>
@@ -296,7 +296,7 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Missable">Missable</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Multiplayer">マルチプレイヤー</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Singleplayer">シングルプレイヤー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Softcore">Softcore</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Softcore">ソフトコア</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Stackable">Stackable</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Subset">Subset</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Update">更新</sys:String>
@@ -442,8 +442,8 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Import manual links from SuccessStory (Legacy). Import is add-only and never overwrites existing manual links or cached platform data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">Legacy Manual Import</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">Import Legacy Manual Links</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathHint">Default: Playnite ExtensionsData\cebe6d32-8c46-4459-b993-5a5189d60788\SuccessStory</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathLabel">Legacy folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathHint">デフォルト: Playnite ExtensionsData\cebe6d32-8c46-4459-b993-5a5189d60788\SuccessStory</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathLabel">レガシーフォルダ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryHeader">Legacy import complete.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryImported">インポート済み: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryParseFailed">Parse failures: {0}</sys:String>
@@ -504,7 +504,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsFull">完全</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsCustom">カスタム</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsInstalled">インストール済み</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Recent</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">最近</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsSelectedGame">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsShared">Shared</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">インストール済み</sys:String>
@@ -627,7 +627,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TabNotifications">通知</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastBehavior">動作</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">解除スクリーンショット</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">各解除時にスクリーンショットを保存する</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">解除時にスクリーンショットを保存する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectory">スクリーンショットフォルダ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantClean">Clean</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantWithToast">With notification</sys:String>
@@ -715,7 +715,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">解除録画</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockRecordings">Save a clip on each unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectory">録画フォルダ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectoryHint">Blank = use the screenshot folder.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectoryHint">空欄 = スクリーンショットフォルダを使用します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingClipSeconds">Seconds before unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingFps">フレームレート (FPS)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingResolution">解像度</sys:String>
@@ -878,7 +878,7 @@ Reclaimed {1}.</sys:String>
     <!-- Provider: Shared -->
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} 認証</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} 接続</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This platform is disabled. Enable it to track achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">このプラットフォームを有効にする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_StoresLaunchers">ストアとランチャー</sys:String>
@@ -934,7 +934,7 @@ Reclaimed {1}.</sys:String>
     <!-- FFXIV_CollectNote: {0} is a link whose text is the site name "FFXIV Collect". "Add" is that
          site's English-only button label; leave it, "FFXIV Collect", and "Lodestone" untranslated. -->
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CollectNote">Unlock data comes from {0}, which indexes characters on demand. Search for your character there and select Add if it is not listed yet.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">Checking character...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">キャラクターを確認中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterNotFound">No matching character found for the name, world, and region.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Character found, but achievements are private on the Lodestone.</sys:String>
     <!-- FFXIV_NotOnCollect: "Add" is the English-only button label on ffxivcollect.com; leave it,
@@ -954,7 +954,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Fetch RetroAchievements subsets</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableAutomaticCapstoneAssignment">Automatically assign capstone from win condition</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Rarity stats</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Casual</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">カジュアル</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Sets which rarity (hardcore or softcore) is shown for locked achievements. Unlocked achievements always use their own unlock mode. Takes effect after a refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEmulatorLogTracking">Instant unlocks (emulator log)</sys:String>
@@ -1067,7 +1067,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Tag Configuration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Use Separate Locked Icons When Available</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Downloads platform-supplied locked icons when they differ from the unlocked icon. Otherwise the unlocked icon is shown in grayscale.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Utilities_Description">Debugging and support tools.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Utilities_Description">デバッグとサポートツール。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">ユーティリティ</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use Cover Images Instead of Icons in Games List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
@@ -1124,7 +1124,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">実績を検索</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Complete</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_InProgress">In Progress</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">Activity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">アクティビティ</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_OwnershipSelectorPlaceholder">Ownership</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">ゲームを検索</sys:String>
     <!-- Filter_Hidden: filter label for hidden (secret) achievements, not hidden games -->
@@ -1155,7 +1155,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievements">{0} 実績</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendGameAchievements">{0} - {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievementCount">({0}/{1} {2})</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">フレンドを更新中...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_None">No unowned friend game data is cached.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?
 
@@ -1176,16 +1176,16 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Leave unselected to include all. Selections narrow the chosen scope.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">フレンドを読み込み中 {1}/{2}: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Refreshing friend libraries {0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Refreshing friend libraries {0}/{1}: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Refreshing friend games {0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Refreshing friend games {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">フレンドのライブラリを更新中 {0}/{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">フレンドのライブラリを更新中 {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">フレンドのゲームを更新中 {0}/{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">フレンドのゲームを更新中 {0}/{1}: {2}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AllLegacy">All Legacy</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AllModern">All Modern</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AllLegacy">すべてのレガシー</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AllModern">すべてのモダン</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} has been automatically updated for PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">変更を適用にするには Playnite を再起動してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">テーマ自動移行</sys:String>
@@ -1194,7 +1194,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationCustom">カスタム移行</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">完全移行</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">限定移行</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">Legacy</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">レガシー</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Modern</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
@@ -1326,11 +1326,11 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayniteAchievementsEarned">獲得済み</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsFirstUnlock">最初の解除</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">Global achievements progression</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">Achievements unlocked by month</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">All achievements unlocked by month</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">All achievements unlocked by day</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleDay">Achievements unlocked by day</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleSources">Achievements unlocked by source</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">実績解除 (月別)</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">すべての実績解除 (月別)</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">すべての実績解除 (日別)</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleDay">実績解除 (日別)</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleSources">実績解除 (ソース別)</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsHiddenAchievement">隠し実績</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsHiddenTrophy">隠しトロフィー</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsLastUnlock">最後の解除</sys:String>
