@@ -231,7 +231,7 @@ This hides the game from the achievements view and deletes its cached data and m
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">更新に含める</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">実績の概要</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Open Game in Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">概要でゲームを開く</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Ignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Unignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}?
@@ -243,11 +243,11 @@ Their cached achievement data is deleted and they are skipped during friend refr
 It is fetched again on the next friend refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Enter a valid numeric Game Jolt game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Enter a valid numeric game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Enter a valid 8-character hexadecimal Xenia Title ID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">有効な数値のゲームIDを入力してください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">有効な8桁の16進数 Xenia Title ID を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Enter a valid RPCS3 trophy NP Communication ID such as NPWR12345_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Enter a valid numeric Steam App ID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">有効な数値の Steam App ID を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Enter a valid PSN NP Communication ID such as NPWR12345_00. For a collection, join each game's ID with &quot;+&quot;, such as NPWR12345_00+NPWR67890_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">ゲームを更新</sys:String>
@@ -334,7 +334,7 @@ Manual tracking can replace this game's cached achievement data from {0}.</sys:S
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveDown">下に移動</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveToTop">一番上に移動</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_MoveToBottom">一番下に移動</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Reset">Reset Custom Order</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Reset">カスタム順序をリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_Customize">このゲームの通知をカスタマイズする</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_SnapshotHint">This game uses an independent notification appearance snapshot. Later platform style changes will not affect it.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_InheritHint">Following the {0} notification appearance. Enable customization to create an independent snapshot.</sys:String>
@@ -451,7 +451,7 @@ This deletes this game's manual links, capstones, custom icons, notification app
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummarySkipped">スキップ済み: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Override_Description">Allow manual tracking for games which already have official achievement support.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Override_Enable">Enable Manual Tracking Override</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_RequireExophaseAuth">Require Exophase Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_RequireExophaseAuth">Exphase 認証が必要</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_RequireExophaseAuth_Description">When enabled, manual linking uses your Exophase sign-in and can fetch localized achievement text. When disabled, no sign-in is needed but text may be English only.</sys:String>
 
     <!-- ================================================================= -->
@@ -795,8 +795,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">Note: Only your own unlocked trophies are read; Game Jolt does not expose achievements without signing in.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on these platforms will use Exophase instead of native platform support. Check platforms you want Exophase to manage.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">管理対象のプラットフォーム</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">選択したプラットフォームのゲームでは、ネイティブサポートの代わりに Exophase が使用されます。Exophase で管理したいプラットフォームにチェックを入れてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Manage Achievements to include individually.</sys:String>
     <sys:String x:Key="LOCPlayAch_Exophase_SelectPlatforms">Select platforms</sys:String>
 
@@ -886,7 +886,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">エミュレータとレトロ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manual &amp; Aggregators</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">その他</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">{0} を使用</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">フレンド</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list. Steam is supported in this version.</sys:String>
@@ -944,8 +944,8 @@ Reclaimed {1}.</sys:String>
 
     <!-- Provider: RetroAchievements -->
     <sys:String x:Key="LOCPlayAch_Settings_RaUsername">ユーザー名</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Web API Key</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Find your key in your RetroAchievements control panel:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Web API キー</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">RetroAchievements のコントロールパネルでキーを見つけてください:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Points Display</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio weights points by rarity, so harder achievements are worth more.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Standard Points</sys:String>
@@ -956,7 +956,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Rarity stats</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">カジュアル</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Sets which rarity (hardcore or softcore) is shown for locked achievements. Unlocked achievements always use their own unlock mode. Takes effect after a refresh.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">ハードコア</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEmulatorLogTracking">Instant unlocks (emulator log)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEmulatorLogTracking_Help">Detects unlocks instantly from your emulator's log file instead of polling the RetroAchievements website. Turn on log-to-file in the emulator; set a path override below only if the log isn't found automatically.</sys:String>
 
@@ -974,17 +974,17 @@ Reclaimed {1}.</sys:String>
     <!-- Provider: Steam -->
     <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories">Use SteamHunters for Categories</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">Fills achievement categories and Base/DLC types from SteamHunters during Steam refreshes. Category art defaults to Steam store banners (changeable per game in Manage Achievements).</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamInstallPathOverride">Steam Install Path Override</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamInstallPathOverride">Steam インストールパスのオーバーライド</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamInstallPathOverride_Help">Optional. Leave empty to detect Steam from the current-user registry. Used for instant in-game monitoring and local offline refreshes.</sys:String>
     <!-- Provider: RPCS3 -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">実行ファイルパス</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophy folder not found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation (missing dev_hdd0home)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">rpcs3.exe へのパス。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">トロフィーフォルダが見つかりません</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">有効な RPCS3 のインストール先ではありません (dev_hdd0home が見つかりません)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">dev_hdd0\home にユーザープロファイルが見つかりません</sys:String>
 
     <!-- Provider: ShadPS4 -->
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Root Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">ルートフォルダ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Your ShadPS4 root folder; both legacy and newer layouts are detected. Default: %AppData%\shadPS4.</sys:String>
 
     <!-- Provider: Xbox -->
@@ -994,7 +994,7 @@ Reclaimed {1}.</sys:String>
     <!-- Provider: Xenia -->
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPath">アカウントパス</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">Your Xenia account folder: &lt;Xenia Path&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
-    <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Not a valid Xenia account path (missing Account file)</sys:String>
+    <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">有効な Xenia アカウントパスではありません (アカウントファイルが見つかりません)</sys:String>
 
     <!-- General Settings (continued): display, maintenance, hotkeys, notifications -->
     <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Rebuild Now</sys:String>
@@ -1009,7 +1009,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">隠し実績アイコンを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">隠し実績タイトルを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealLockedIcon">未解除実績アイコンを表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Scanning &amp; Hashing</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">スキャンとハッシュ照合</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">レア度バーを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortBy">並べ替え</sys:String>
