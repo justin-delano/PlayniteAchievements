@@ -50,7 +50,7 @@
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">No cached achievements are available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Refresh button to check for achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">No Achievements Found</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">実績が見つかりません</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">未認証</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Reset Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">すべて選択</sys:String>
@@ -110,7 +110,7 @@
     <sys:String x:Key="LOCPlayAch_Trophy_Gold">ゴールド</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Platinum">プラチナ</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Silver">シルバー</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_UnlockTime">Unlock Time</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_UnlockTime">解除時間</sys:String>
 
     <!-- ================================================================= -->
     <!-- 03 Columns -->
@@ -133,7 +133,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Favorite">お気に入り</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_SkipFullScans">Skip Full Scans</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_SkipFullScansHint">Scans stop discovering new unowned games for this friend. Games in your library always refresh, and unowned games already tracked still update in Recent scans. Refreshing this friend directly still runs a Full scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_LastPlayed">最終プレイ日時</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">名前</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">ポイント</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeLevel">名声レベル</sys:String>
@@ -242,14 +242,14 @@ Their cached achievement data is deleted and they are skipped during friend refr
 
 It is fetched again on the next friend refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Enter a valid numeric Game Jolt game ID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">有効な数値の Game Jolt game ID を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">有効な数値のゲームIDを入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">有効な8桁の16進数 Xenia Title ID を入力してください。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Enter a valid RPCS3 trophy NP Communication ID such as NPWR12345_00.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">有効な ShadPS4 の照合ID (例: CUSA00432 や NPWRR12345_00) を入力してください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">有効な RPCS3 トロフィー NP Communication ID (例: NPWR12345_00) を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">有効な数値の Steam App ID を入力してください。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Enter a valid PSN NP Communication ID such as NPWR12345_00. For a collection, join each game's ID with &quot;+&quot;, such as NPWR12345_00+NPWR67890_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">有効な PSN NP Communication ID (例: NPWR12345_00) を入力してください。コレクション作品の場合は、それぞれのゲームIDを「NPWR12345_00+NPWR67890_00」のように「+」で連結してください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">有効な Xbox Title ID (8桁の16進数または10進数) を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">ゲームを更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">フレンドを更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
@@ -270,7 +270,7 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_MakeSubcategoryOf">Make subcategory of</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_MakeTopLevel">Make top level</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_ManageCategories">カテゴリーの管理</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint">Enter a category label for the selected achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint">選択した実績に設定するカテゴリーラベルを入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle">カテゴリーラベルを設定</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSelected">Delete {0} categories? {1} achievement(s) will move back to the Default category.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSingle">Delete &quot;{0}&quot;? {1} achievement(s) will move back to the Default category.</sys:String>
@@ -761,7 +761,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Select one game or start a game before using achievement hotkeys.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Title">ホットキー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">タグ同期を有効にする</sys:String>
-    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">未プレイのゲームを含める</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_InvalidPath">フォルダが存在しません</sys:String>
 
@@ -824,7 +824,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Rebuild File Scan Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">File Scan Cache Max Age (days)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">実績の表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control how locked and hidden achievement details are displayed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">未解除および隠し実績の詳細表示を制御します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">更新間隔 (時間):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Clear every cached icon file.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Clear only separate locked icons. The next refresh restores them.</sys:String>
@@ -859,10 +859,10 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateOnly">日付のみ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_Relative">相対時間</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">日付の書式</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Last played format</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Unlock date format</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">最終プレイ日時の書式</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">解除日の書式</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">プレイ時間の書式</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">Hours and minutes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">時間と分</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly">時間のみ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">Category completion badge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadgeMode_First">First</sys:String>
@@ -1325,7 +1325,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayniteAchievementsDateUnlocked">解除日</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsEarned">獲得済み</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsFirstUnlock">最初の解除</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">Global achievements progression</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">グローバル実績進捗状況</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">実績解除 (月別)</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">すべての実績解除 (月別)</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">すべての実績解除 (日別)</sys:String>
@@ -1334,7 +1334,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayniteAchievementsHiddenAchievement">隠し実績</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsHiddenTrophy">隠しトロフィー</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsLastUnlock">最後の解除</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementslvGamesProgression">Progression</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementslvGamesProgression">進捗状況</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsManualAchievements">あなたの実績</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsNoCommon">アンコモン</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsProgress">進捗状況</sys:String>
