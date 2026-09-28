@@ -5,6 +5,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Captures;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels.Items;
@@ -55,11 +56,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             var game = data.Game;
+            var captureSet = AchievementCapturePathResolver.ResolveGameSet(data);
+            var categoryArtMemo = new CategoryArtChainMemo();
             for (int i = 0; i < achievements.Count; i++)
             {
                 if (achievements[i] != null)
                 {
-                    ApplyAchievementPresentation(achievements[i], data);
+                    ApplyAchievementPresentation(achievements[i], data, captureSet, categoryArtMemo);
                 }
             }
 
@@ -67,31 +70,39 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var locked = stats.LockedAchievements;
             var percent = stats.ProgressPercent;
             var hasCustomOrder = data.AchievementOrder != null && data.AchievementOrder.Count > 0;
-            var defaultOrder = hasCustomOrder
-                ? AchievementOrderHelper.ApplyOrder(
-                    achievements,
-                    achievement => achievement?.ApiName,
-                    data.AchievementOrder)
-                : achievements.ToList();
+            // Every precomputed theme list leads with the user's goals; the partition is applied
+            // after each sort so a re-sort cannot displace it.
+            var defaultOrder = AchievementSortHelper.CreateGoalsFirstDetailList(
+                hasCustomOrder
+                    ? AchievementOrderHelper.ApplyOrder(
+                        achievements,
+                        achievement => achievement?.ApiName,
+                        data.AchievementOrder)
+                    : achievements.ToList());
             var all = hasCustomOrder
                 ? defaultOrder
-                : AchievementSortHelper.CreateDefaultSortedDetailList(achievements);
-            var oldestFirst = AchievementSortHelper.CreateSortedDetailList(
-                all,
-                nameof(AchievementDisplayItem.UnlockTime),
-                ListSortDirection.Ascending);
-            var newestFirst = AchievementSortHelper.CreateSortedDetailList(
-                all,
-                nameof(AchievementDisplayItem.UnlockTime),
-                ListSortDirection.Descending);
-            var rarityAsc = AchievementSortHelper.CreateSortedDetailList(
-                all,
-                nameof(AchievementDisplayItem.RaritySortValue),
-                ListSortDirection.Ascending);
-            var rarityDesc = AchievementSortHelper.CreateSortedDetailList(
-                all,
-                nameof(AchievementDisplayItem.RaritySortValue),
-                ListSortDirection.Descending);
+                : AchievementSortHelper.CreateGoalsFirstDetailList(
+                    AchievementSortHelper.CreateDefaultSortedDetailList(achievements));
+            var oldestFirst = AchievementSortHelper.CreateGoalsFirstDetailList(
+                AchievementSortHelper.CreateSortedDetailList(
+                    all,
+                    nameof(AchievementDisplayItem.UnlockTime),
+                    ListSortDirection.Ascending));
+            var newestFirst = AchievementSortHelper.CreateGoalsFirstDetailList(
+                AchievementSortHelper.CreateSortedDetailList(
+                    all,
+                    nameof(AchievementDisplayItem.UnlockTime),
+                    ListSortDirection.Descending));
+            var rarityAsc = AchievementSortHelper.CreateGoalsFirstDetailList(
+                AchievementSortHelper.CreateSortedDetailList(
+                    all,
+                    nameof(AchievementDisplayItem.RaritySortValue),
+                    ListSortDirection.Ascending));
+            var rarityDesc = AchievementSortHelper.CreateGoalsFirstDetailList(
+                AchievementSortHelper.CreateSortedDetailList(
+                    all,
+                    nameof(AchievementDisplayItem.RaritySortValue),
+                    ListSortDirection.Descending));
 
             var common = stats.CommonStats;
             var uncommon = stats.UncommonStats;
@@ -126,7 +137,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private static void ApplyAchievementPresentation(
             AchievementDetail achievement,
-            GameAchievementData data)
+            GameAchievementData data,
+            GameCaptureSet captureSet,
+            CategoryArtChainMemo categoryArtMemo = null)
         {
             if (achievement == null)
             {
@@ -137,40 +150,37 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             // Ensure selected-game snapshots always carry this context.
             achievement.Game = data?.Game;
             achievement.ProviderKey = data?.EffectiveProviderKey;
-            ApplyCategoryImagePresentation(achievement, data);
+            ApplyCategoryImagePresentation(achievement, data, categoryArtMemo);
+            AchievementCapturePathResolver.Apply(achievement, captureSet);
         }
 
         private static void ApplyCategoryImagePresentation(
             AchievementDetail achievement,
-            GameAchievementData data)
+            GameAchievementData data,
+            CategoryArtChainMemo categoryArtMemo = null)
         {
             if (achievement == null)
             {
                 return;
             }
 
-            CategoryImageOverrideData imageOverride = null;
-            var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
+            var category = CategoryPathHelper.NormalizePath(achievement.Category);
             achievement.CategoryOrderIndex =
                 AchievementCategoryFilterOrderHelper.ResolveCategoryOrderIndex(category, data?.AchievementCategoryOrder);
-            if (!string.IsNullOrWhiteSpace(category) &&
-                data?.AchievementCategoryImageOverrides != null)
-            {
-                data.AchievementCategoryImageOverrides.TryGetValue(category, out imageOverride);
-            }
 
-            // Default images are keyed by the provider label; renames only change Category.
-            var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
+            // One shared chain with the achievement grid: the effective label is probed before
+            // the provider label so a merged category resolves the target's art, and a nested
+            // label inherits its ancestors' art when nothing at its own level resolves. Emits a
+            // plain path - the theme surface must not carry the cache-bust encoding.
+            var providerCategory = CategoryPathHelper.NormalizePath(
                 achievement.ProviderCategory ?? achievement.Category);
-            achievement.CategoryArtPath =
-                NormalizeImageOverridePath(imageOverride?.Art) ??
-                CategoryDefaultImageResolver.Resolve(data?.PlayniteGameId, providerCategory);
-        }
-
-        private static string NormalizeImageOverridePath(string value)
-        {
-            var normalized = (value ?? string.Empty).Trim();
-            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+            achievement.CategoryArtPath = CategoryArtChainResolver.Resolve(
+                data?.PlayniteGameId,
+                category,
+                providerCategory,
+                data?.AchievementCategoryImageOverrides,
+                CategoryArtDisplayMode.FilePath,
+                categoryArtMemo);
         }
 
     }

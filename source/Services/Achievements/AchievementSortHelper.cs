@@ -259,17 +259,20 @@ namespace PlayniteAchievements.Services.Achievements
                 ? ListSortDirection.Ascending
                 : ListSortDirection.Descending;
 
+            // Goals lead every dynamic view the same way they lead the desktop grids, including
+            // the default view, whose source order is otherwise passed straight through.
             var source = GetDefaultSelectedGameAchievements(state);
             switch (sortKey)
             {
                 case DynamicThemeViewKeys.Default:
                 case null:
-                    return source;
+                    return CreateGoalsFirstDetailList(source);
                 default:
-                    return CreateSortedDetailList(
-                        source,
-                        GetDynamicAchievementSortMemberPath(sortKey),
-                        direction);
+                    return CreateGoalsFirstDetailList(
+                        CreateSortedDetailList(
+                            source,
+                            GetDynamicAchievementSortMemberPath(sortKey),
+                            direction));
             }
         }
 
@@ -295,11 +298,12 @@ namespace PlayniteAchievements.Services.Achievements
             var effectiveSortKey = string.IsNullOrWhiteSpace(sortKey)
                 ? DynamicThemeViewKeys.UnlockTime
                 : sortKey;
-            return CreateSortedDetailList(
-                source,
-                GetDynamicAchievementSortMemberPath(effectiveSortKey),
-                direction,
-                includeGameNameTieBreak: true);
+            return CreateGoalsFirstDetailList(
+                CreateSortedDetailList(
+                    source,
+                    GetDynamicAchievementSortMemberPath(effectiveSortKey),
+                    direction,
+                    includeGameNameTieBreak: true));
         }
 
         public static bool IsSelectedGameAchievementsPropertyName(string propertyName)
@@ -336,6 +340,84 @@ namespace PlayniteAchievements.Services.Achievements
             {
                 items.Sort(WithStableOrder(comparison, stableOrder));
             }
+        }
+
+        /// <summary>
+        /// Stable-partitions goal achievements to the front of an already-sorted list, ordered by
+        /// the user's goal order. Applied after sorting rather than folded into the comparators so
+        /// it survives the <see cref="TrySortItems{TItem}"/> reverse fast path and cannot disturb
+        /// the relative order of everything else.
+        /// </summary>
+        public static void ApplyGoalsFirst<TItem>(List<TItem> items)
+            where TItem : AchievementDisplayItem
+        {
+            if (items == null || items.Count < 2)
+            {
+                return;
+            }
+
+            var goals = new List<TItem>();
+            var rest = new List<TItem>(items.Count);
+            foreach (var item in items)
+            {
+                if (item?.IsGoal == true)
+                {
+                    goals.Add(item);
+                }
+                else
+                {
+                    rest.Add(item);
+                }
+            }
+
+            if (goals.Count == 0 || rest.Count == 0)
+            {
+                return;
+            }
+
+            // OrderBy is a stable sort, so goals sharing an index keep their incoming order.
+            var orderedGoals = goals.OrderBy(item => item.GoalOrderIndex).ToList();
+
+            items.Clear();
+            items.AddRange(orderedGoals);
+            items.AddRange(rest);
+        }
+
+        /// <summary>
+        /// <see cref="ApplyGoalsFirst{TItem}"/> for the theme-facing detail lists.
+        /// </summary>
+        public static List<AchievementDetail> CreateGoalsFirstDetailList(
+            IEnumerable<AchievementDetail> items)
+        {
+            var list = items?.ToList() ?? new List<AchievementDetail>();
+            if (list.Count < 2)
+            {
+                return list;
+            }
+
+            var goals = new List<AchievementDetail>();
+            var rest = new List<AchievementDetail>(list.Count);
+            foreach (var item in list)
+            {
+                if (item?.IsGoal == true)
+                {
+                    goals.Add(item);
+                }
+                else
+                {
+                    rest.Add(item);
+                }
+            }
+
+            if (goals.Count == 0 || rest.Count == 0)
+            {
+                return list;
+            }
+
+            var result = new List<AchievementDetail>(list.Count);
+            result.AddRange(goals.OrderBy(item => item.GoalOrderIndex));
+            result.AddRange(rest);
+            return result;
         }
 
         public static Dictionary<AchievementDisplayItem, int> CreateStableOrderMap(
@@ -991,8 +1073,9 @@ namespace PlayniteAchievements.Services.Achievements
             AchievementSortScope scope)
         {
             // Within a single game, unlock-time ties (the locked tail) group by category in the
-            // per-game category order before the progress/rarity chain. Recent-achievement lists
-            // span games whose category labels are unrelated, so they never group.
+            // per-game category order before the progress/default-order/rarity chain.
+            // Recent-achievement lists span games whose category labels are unrelated, so they
+            // never group.
             if (scope == AchievementSortScope.GameAchievements)
             {
                 var categoryComparison = CompareByCategoryOrder(a, b);
@@ -1010,6 +1093,16 @@ namespace PlayniteAchievements.Services.Achievements
             if (progressComparison != 0)
             {
                 return progressComparison;
+            }
+
+            // Default order (custom order when the game has one, provider order otherwise) breaks
+            // unlock-time ties ahead of rarity. Items never stamped with an index (friend rows,
+            // recent-unlock projections, mock data) sit at int.MaxValue and keep the rarity chain.
+            var orderComparison = (a?.DefaultOrderIndex ?? int.MaxValue)
+                .CompareTo(b?.DefaultOrderIndex ?? int.MaxValue);
+            if (orderComparison != 0)
+            {
+                return orderComparison;
             }
 
             var rarityComparison = a.RaritySortValue.CompareTo(b.RaritySortValue);
@@ -1115,7 +1208,8 @@ namespace PlayniteAchievements.Services.Achievements
                 TrophyType = detail?.TrophyType,
                 PointsValue = detail?.Points,
                 ProgressNum = detail?.ProgressNum,
-                ProgressDenom = detail?.ProgressDenom
+                ProgressDenom = detail?.ProgressDenom,
+                DefaultOrderIndex = detail?.DefaultOrderIndex ?? int.MaxValue
             };
         }
 
@@ -1160,6 +1254,7 @@ namespace PlayniteAchievements.Services.Achievements
             ordered = ordered
                 .ThenByDescending(a => HasProgress(a?.ProgressNum, a?.ProgressDenom))
                 .ThenByDescending(a => GetProgressFraction(a?.ProgressNum, a?.ProgressDenom) ?? 0)
+                .ThenBy(a => a?.DefaultOrderIndex ?? int.MaxValue)
                 .ThenBy(a => a?.RaritySortValue ?? double.MaxValue)
                 .ThenByDescending(a => GetTrophyRank(a?.TrophyType))
                 .ThenByDescending(a => a?.Points ?? 0);

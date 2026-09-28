@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Services.Recording
     internal static class RecordingPaths
     {
         /// <summary>
-        /// Video segment filenames: seg_yyyyMMdd-HHmmssfffZ_WxH.mp4 (H.264 written by WGC + Media
+        /// Video segment filenames: seg_yyyyMMdd-HHmmssfffffffZ_WxH.mp4 (H.264 written by WGC + Media
         /// Foundation). The encoded dimensions are part of the name so the timeline can group
         /// segments by size without opening any of them: a clip is stream-copied against one
         /// declared media type, so all of its segments must share dimensions.
@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Services.Recording
         public const char DimensionSeparator = '_';
 
         /// <summary>
-        /// Wall-clock stamp every buffer file name carries. Milliseconds matter: the exporter trims
+        /// Legacy local wall-clock stamp. Milliseconds matter: the exporter trims
         /// each stream by the offset from its file's stamp to the window start, while the samples
         /// inside are timed from the file's true beginning. A stamp rounded to the second therefore
         /// shifts that stream by up to a second, and because video segments and audio chunks roll
@@ -35,10 +35,19 @@ namespace PlayniteAchievements.Services.Recording
         /// </summary>
         public const string StampFormat = "yyyyMMdd-HHmmssfff";
 
-        /// <summary>UTC form written by current recorders; the Z also distinguishes it from legacy local stamps.</summary>
-        public const string UtcStampFormat = "yyyyMMdd-HHmmssfff'Z'";
+        /// <summary>
+        /// UTC form written by current recorders. Seven fractional digits preserve every DateTime
+        /// tick (100 ns), so a filename round-trip cannot move an audio chunk by even one sample.
+        /// The Z also distinguishes it from legacy local stamps.
+        /// </summary>
+        public const string UtcStampFormat = "yyyyMMdd-HHmmssfffffff'Z'";
 
-        public const int UtcStampLength = 19;
+        public const int UtcStampLength = 23;
+
+        /// <summary>UTC millisecond form written before tick-precise names were introduced.</summary>
+        public const string LegacyUtcStampFormat = "yyyyMMdd-HHmmssfff'Z'";
+
+        public const int LegacyUtcStampLength = 19;
 
         /// <summary>Length of <see cref="StampFormat"/>, and of the second-resolution stamp before it.</summary>
         public const int StampLength = 18;
@@ -64,6 +73,46 @@ namespace PlayniteAchievements.Services.Recording
                 AudioChunkFileExtension;
         }
 
+        /// <summary>
+        /// Converts one position on an audio timeline to its nearest sample frame. All independently
+        /// captured tracks use this same conversion before writing a timestamped packet.
+        /// </summary>
+        public static long AudioFrameAt(DateTime originUtc, DateTime sampleUtc, int sampleRate)
+        {
+            if (sampleRate <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sampleRate));
+            }
+
+            var ticks = (sampleUtc - originUtc).Ticks;
+            var wholeSeconds = ticks / TimeSpan.TicksPerSecond;
+            var remainder = ticks % TimeSpan.TicksPerSecond;
+            var remainderFrames = remainder >= 0
+                ? (remainder * sampleRate + TimeSpan.TicksPerSecond / 2) / TimeSpan.TicksPerSecond
+                : -((-remainder * sampleRate + TimeSpan.TicksPerSecond / 2) / TimeSpan.TicksPerSecond);
+            return checked(wholeSeconds * sampleRate + remainderFrames);
+        }
+
+        /// <summary>
+        /// Converts a sample-frame position back to the nearest representable UTC tick. Combined
+        /// with <see cref="AudioFrameAt"/>, this keeps chunk names and PCM offsets on one grid.
+        /// </summary>
+        public static DateTime AudioFrameUtc(DateTime originUtc, long frame, int sampleRate)
+        {
+            if (sampleRate <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sampleRate));
+            }
+
+            var wholeSeconds = frame / sampleRate;
+            var remainder = frame % sampleRate;
+            var remainderTicks = remainder >= 0
+                ? (remainder * TimeSpan.TicksPerSecond + sampleRate / 2) / sampleRate
+                : -((-remainder * TimeSpan.TicksPerSecond + sampleRate / 2) / sampleRate);
+            return originUtc.AddTicks(checked(
+                wholeSeconds * TimeSpan.TicksPerSecond + remainderTicks));
+        }
+
         private static DateTime AsUtc(DateTime value)
         {
             if (value.Kind == DateTimeKind.Utc)
@@ -76,16 +125,16 @@ namespace PlayniteAchievements.Services.Recording
                 : DateTime.SpecifyKind(value, DateTimeKind.Utc);
         }
 
-        /// <summary>Audio chunk filenames: aud_yyyyMMdd-HHmmssfffZ.wav (WASAPI loopback PCM).</summary>
+        /// <summary>Audio chunk filenames: aud_yyyyMMdd-HHmmssfffffffZ.wav (WASAPI loopback PCM).</summary>
         public const string AudioChunkFilePrefix = "aud_";
 
         /// <summary>
-        /// Chime chunk filenames: chm_yyyyMMdd-HHmmss.wav — the Playnite-only sidecar audio
-        /// track. The main track excludes Playnite's process tree, so unlock chimes live only
-        /// here; the clip re-encode mixes this wave's chime back in aligned with the composited
-        /// toast.
+        /// Fallback chunk filenames: alt_yyyyMMdd-HHmmssfffffffZ.wav. Game Only records the game's
+        /// process tree as its clip track and this exclude-sound-host track beside it; a clip whose
+        /// game-tree window is silent (the game renders outside its tracked tree) is exported from
+        /// this track instead, so it carries the game rather than nothing.
         /// </summary>
-        public const string ChimeChunkFilePrefix = "chm_";
+        public const string FallbackChunkFilePrefix = "alt_";
 
         public const string AudioChunkFileExtension = ".wav";
     }

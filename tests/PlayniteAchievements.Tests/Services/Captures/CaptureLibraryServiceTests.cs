@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Captures;
@@ -16,50 +17,23 @@ namespace PlayniteAchievements.Services.Tests.Captures
     [TestClass]
     public class CaptureLibraryServiceTests
     {
+        private CaptureTestDirectory _captures;
         private string _root;
-        private PersistedSettings _settings;
 
         [TestInitialize]
         public void Setup()
         {
-            _root = Path.Combine(
-                Path.GetTempPath(),
-                "PlayAchCaptureTests",
-                Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(_root);
-            _settings = new PersistedSettings
-            {
-                UnlockScreenshotDirectory = _root,
-                UnlockRecordingDirectory = _root
-            };
+            _captures = new CaptureTestDirectory();
+            _root = _captures.Root;
         }
 
         [TestCleanup]
-        public void Cleanup()
-        {
-            try
-            {
-                if (Directory.Exists(_root))
-                {
-                    Directory.Delete(_root, recursive: true);
-                }
-            }
-            catch (IOException)
-            {
-                // A leftover temp folder must never fail a test run.
-            }
-        }
+        public void Cleanup() => _captures.Dispose();
 
-        private CaptureLibraryService CreateService() =>
-            new CaptureLibraryService(() => _settings, null);
+        private CaptureLibraryService CreateService() => _captures.CreateService();
 
-        /// <summary>Drops a capture file into the game's folder, as the writers do.</summary>
-        private void WriteCapture(string gameName, string fileName)
-        {
-            var folder = Path.Combine(_root, UnlockScreenshotService.SanitizeCaptureGameName(gameName));
-            Directory.CreateDirectory(folder);
-            File.WriteAllText(Path.Combine(folder, fileName), "x");
-        }
+        private void WriteCapture(string gameName, string fileName) =>
+            _captures.WriteCapture(gameName, fileName);
 
         [TestMethod]
         public void Invalidate_RaisesCapturesChanged_WithTheSanitizedFolder()
@@ -87,6 +61,10 @@ namespace PlayniteAchievements.Services.Tests.Captures
 
             service.Invalidate();
 
+            // The library-wide signal is debounced, so the raise lands off the calling thread.
+            Assert.IsTrue(
+                SpinWait.SpinUntil(() => raised > 0, TimeSpan.FromSeconds(5)),
+                "Writers rely on the debounced signal reaching open grids.");
             Assert.AreEqual(1, raised);
             Assert.IsNull(seen.GameName);
             Assert.IsNull(seen.FolderName);
@@ -131,6 +109,9 @@ namespace PlayniteAchievements.Services.Tests.Captures
 
             // Delete Braid's captures behind the service's back. A targeted invalidate of Portal
             // must not re-enumerate (and therefore must not notice) the untouched game.
+            // Only observable because the test service does not watch the directory: with a
+            // watcher running this races it, and the deletion is noticed under load but not when
+            // the test runs alone.
             Directory.Delete(
                 Path.Combine(_root, UnlockScreenshotService.SanitizeCaptureGameName("Braid")),
                 recursive: true);

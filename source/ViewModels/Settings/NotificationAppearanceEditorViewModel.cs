@@ -51,9 +51,11 @@ namespace PlayniteAchievements.ViewModels.Settings
         private string _friendUnlockHeaderText;
         private string _completionHeaderText;
         private string _friendCompletionHeaderText;
+        private string _progressHeaderText;
         private bool _hasHeaderFormatError;
         private string _textShadowText;
         private string _textShadowOffsetText;
+        private string _frameVignetteStrengthText;
         private string _imageShadowText;
         private string _imageShadowOffsetText;
         private string _cardWidthText = string.Empty;
@@ -80,8 +82,12 @@ namespace PlayniteAchievements.ViewModels.Settings
             _persistDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _persistDebounceTimer.Tick += OnPersistDebounceTimerTick;
 
+            // The frame never renders progress notifications, so its editor has no progress row;
+            // the token still lives in the frame's stored order (one canonical order).
             LineRows = new ObservableCollection<NotificationLineRowItem>(
-                NotificationSurfaceStyle.DefaultLineOrder.Select(kind =>
+                NotificationSurfaceStyle.DefaultLineOrder
+                    .Where(kind => !isFrameSurface || kind != NotificationSurfaceStyle.LineProgress)
+                    .Select(kind =>
                     new NotificationLineRowItem(
                         kind,
                         BuildLineDisplayName(kind),
@@ -579,6 +585,39 @@ namespace PlayniteAchievements.ViewModels.Settings
             }
         }
 
+        /// <summary>
+        /// Vignette strength text mirror (0-100; 50 matches the built-in vignette, higher
+        /// stacks darker, 0 removes the darkening). Blank clears the override back to the
+        /// default. Zero is meaningful here, so this commits through its own parser instead
+        /// of <see cref="CommitSize"/>.
+        /// </summary>
+        public string FrameVignetteStrengthText
+        {
+            get => _frameVignetteStrengthText;
+            set
+            {
+                if (!SetValueAndReturn(ref _frameVignetteStrengthText, value))
+                {
+                    return;
+                }
+
+                var surface = Surface;
+                if (surface != null && _isEditable)
+                {
+                    surface.FrameVignetteStrength = ParseShadowStrength(value);
+                }
+
+                RefreshCardDimensions();
+            }
+        }
+
+        public double FrameVignetteStrengthSlider
+        {
+            get => Surface?.FrameVignetteStrength ?? AchievementToastViewModel.DefaultFrameVignetteStrength;
+            set => FrameVignetteStrengthText = Math.Round(Math.Max(0, Math.Min(100, value)))
+                .ToString(CultureInfo.CurrentCulture);
+        }
+
         #endregion
 
         #region Card dimensions (toast surface only; blank = template default)
@@ -814,6 +853,9 @@ namespace PlayniteAchievements.ViewModels.Settings
             SetValue(ref _imageShadowOffsetText,
                 surface?.ImageShadowOffset?.ToString(CultureInfo.CurrentCulture) ?? string.Empty,
                 nameof(ImageShadowOffsetText));
+            SetValue(ref _frameVignetteStrengthText,
+                surface?.FrameVignetteStrength?.ToString(CultureInfo.CurrentCulture) ?? string.Empty,
+                nameof(FrameVignetteStrengthText));
 
             // The slider companions are computed straight from the surface; refresh them
             // together with their text mirrors.
@@ -830,6 +872,7 @@ namespace PlayniteAchievements.ViewModels.Settings
             OnPropertyChanged(nameof(TextShadowOffsetSlider));
             OnPropertyChanged(nameof(ImageShadowSlider));
             OnPropertyChanged(nameof(ImageShadowOffsetSlider));
+            OnPropertyChanged(nameof(FrameVignetteStrengthSlider));
 
             // The rarity percent's font controls read straight from the surface too.
             OnPropertyChanged(nameof(SelectedRarityFontFamilyOption));
@@ -1272,6 +1315,12 @@ namespace PlayniteAchievements.ViewModels.Settings
             set => SetValue(ref _friendCompletionHeaderText, value);
         }
 
+        public string ProgressHeaderText
+        {
+            get => _progressHeaderText;
+            set => SetValue(ref _progressHeaderText, value);
+        }
+
         public bool HasHeaderFormatError
         {
             get => _hasHeaderFormatError;
@@ -1297,6 +1346,8 @@ namespace PlayniteAchievements.ViewModels.Settings
                 UnlockHeaderText, NotificationHeaderTextService.GetDefaultUnlockHeader());
             texts.CompletionHeader = NotificationHeaderTextService.NormalizeForStore(
                 CompletionHeaderText, NotificationHeaderTextService.GetDefaultCompletionHeader());
+            texts.ProgressHeader = NotificationHeaderTextService.NormalizeForStore(
+                ProgressHeaderText, NotificationHeaderTextService.GetDefaultProgressHeader());
 
             if (string.IsNullOrWhiteSpace(FriendUnlockHeaderText) ||
                 NotificationHeaderTextService.IsValidHeaderFormat(FriendUnlockHeaderText))
@@ -1331,6 +1382,8 @@ namespace PlayniteAchievements.ViewModels.Settings
                 ?? NotificationHeaderTextService.GetDefaultUnlockHeader();
             CompletionHeaderText = texts?.CompletionHeader
                 ?? NotificationHeaderTextService.GetDefaultCompletionHeader();
+            ProgressHeaderText = texts?.ProgressHeader
+                ?? NotificationHeaderTextService.GetDefaultProgressHeader();
 
             if (!keepInvalidPending || !HasHeaderFormatError)
             {
@@ -1584,6 +1637,9 @@ namespace PlayniteAchievements.ViewModels.Settings
                 case NotificationSurfaceStyle.LineDescription:
                     surface.BodyFontFamily = familyName;
                     break;
+                case NotificationSurfaceStyle.LineProgress:
+                    surface.ProgressFontFamily = familyName;
+                    break;
             }
         }
 
@@ -1599,6 +1655,8 @@ namespace PlayniteAchievements.ViewModels.Settings
                     return surface?.TitleFontFamily;
                 case NotificationSurfaceStyle.LineDescription:
                     return surface?.BodyFontFamily;
+                case NotificationSurfaceStyle.LineProgress:
+                    return surface?.ProgressFontFamily;
                 default:
                     return null;
             }
@@ -1621,6 +1679,9 @@ namespace PlayniteAchievements.ViewModels.Settings
                 case NotificationSurfaceStyle.LineDescription:
                     surface.BodyEmphasis = emphasis;
                     break;
+                case NotificationSurfaceStyle.LineProgress:
+                    surface.ProgressEmphasis = emphasis;
+                    break;
             }
         }
 
@@ -1636,6 +1697,8 @@ namespace PlayniteAchievements.ViewModels.Settings
                     return surface?.TitleEmphasis ?? NotificationLineEmphasis.None;
                 case NotificationSurfaceStyle.LineDescription:
                     return surface?.BodyEmphasis ?? NotificationLineEmphasis.None;
+                case NotificationSurfaceStyle.LineProgress:
+                    return surface?.ProgressEmphasis ?? NotificationLineEmphasis.None;
                 default:
                     return NotificationLineEmphasis.None;
             }
@@ -1657,6 +1720,9 @@ namespace PlayniteAchievements.ViewModels.Settings
                 case NotificationSurfaceStyle.LineDescription:
                     surface.BodyFontSize = size;
                     break;
+                case NotificationSurfaceStyle.LineProgress:
+                    surface.ProgressFontSize = size;
+                    break;
             }
         }
 
@@ -1672,6 +1738,8 @@ namespace PlayniteAchievements.ViewModels.Settings
                     return surface?.TitleFontSize;
                 case NotificationSurfaceStyle.LineDescription:
                     return surface?.BodyFontSize;
+                case NotificationSurfaceStyle.LineProgress:
+                    return surface?.ProgressFontSize;
                 default:
                     return null;
             }
@@ -1683,7 +1751,11 @@ namespace PlayniteAchievements.ViewModels.Settings
         /// </summary>
         private void SyncLineRows()
         {
-            var order = NotificationSurfaceStyle.CanonicalizeLineOrder(Surface?.LineOrder);
+            // Only the kinds this surface's editor shows take part, so a token the frame editor
+            // omits (the progress row) cannot shift the rows after it out of alignment.
+            var order = NotificationSurfaceStyle.CanonicalizeLineOrder(Surface?.LineOrder)
+                .Where(kind => LineRows.Any(row => string.Equals(row.Kind, kind, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
             for (var target = 0; target < order.Count && target < LineRows.Count; target++)
             {
                 var current = -1;
@@ -1730,6 +1802,8 @@ namespace PlayniteAchievements.ViewModels.Settings
                     return L("LOCPlayAch_Settings_ToastShowDescription");
                 case NotificationSurfaceStyle.LineGameCategory:
                     return L("LOCPlayAch_Settings_ToastShowGameName") + " / " + L("LOCPlayAch_Common_Label_Category");
+                case NotificationSurfaceStyle.LineProgress:
+                    return L("LOCPlayAch_Progress");
                 default:
                     return kind;
             }

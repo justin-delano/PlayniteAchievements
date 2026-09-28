@@ -37,6 +37,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         public AchievementPieChartControl()
         {
             InitializeComponent();
+
+            // The view model subscribes to the process-lifetime appearance event, so a control
+            // the theme discards would stay rooted through it. Detach while unloaded and
+            // re-attach on reload (themes re-template, so both fire more than once); the
+            // attach/detach pair is idempotent.
+            Loaded += (_, __) => _viewModel.AttachAppearance();
+            Unloaded += (_, __) => _viewModel.Dispose();
         }
 
         /// <summary>

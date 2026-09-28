@@ -303,7 +303,8 @@ namespace PlayniteAchievements.Views
                 _achievementOverridesService,
                 _cacheManager,
                 _logger,
-                includeViewCaptures: true);
+                includeViewCaptures: true,
+                menuSource: row);
             if (menu == null || menu.Items.Count == 0)
             {
                 return;
@@ -376,7 +377,10 @@ namespace PlayniteAchievements.Views
                 row.DataContext,
                 this,
                 RefreshAfterRowOptionsChanged,
-                includeViewCaptures: true);
+                includeViewCaptures: true,
+                onGoalChanged: ReapplyGoalOrderAfterRowOptionsChanged,
+                onCapstoneChanged: ApplyCapstoneAfterRowOptionsChanged,
+                menuSource: row);
             if (menu.Items.Count == 0)
             {
                 return false;
@@ -399,6 +403,28 @@ namespace PlayniteAchievements.Views
             RefreshView();
             AchievementsDataGridControl?.Refresh();
             UpdateDefaultSortIndicator();
+        }
+
+        private bool ApplyCapstoneAfterRowOptionsChanged(string capstoneApiName)
+        {
+            if (ViewModel?.ApplyCapstone(capstoneApiName) != true)
+            {
+                return false;
+            }
+
+            AchievementsDataGridControl?.Refresh();
+            return true;
+        }
+
+        private bool ReapplyGoalOrderAfterRowOptionsChanged()
+        {
+            if (ViewModel?.ReapplyGoalOrder() != true)
+            {
+                return false;
+            }
+
+            AchievementsDataGridControl?.Refresh();
+            return true;
         }
 
         private bool TryOpenFocusedSelectorContextMenu()

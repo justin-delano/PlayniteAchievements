@@ -51,10 +51,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 #endif
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly IFriendCacheManager _friendCache;
+        private readonly Captures.CaptureLibraryService _captureLibrary;
         private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly bool _ownsFriendsOverviewDataCoordinator;
         private readonly Func<RefreshRequest, string, bool, Action<bool>, Task> _runRefreshWithGlobalProgressAsync;
         private readonly Action<Guid> _openManageAchievementsView;
+        // Injected rather than resolved here so this service stays free of the overrides service
+        // and the custom-data store, which the theme test build does not compile.
+        private readonly Action<AchievementMarkerTarget> _toggleAchievementCapstone;
+        private readonly Action<AchievementMarkerTarget> _toggleAchievementGoal;
         private readonly Func<AchievementHotkeyTargetResolution> _resolveRunningGameTarget;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
@@ -63,7 +68,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private GameSummaryItemBuilder GameSummaryItemBuilder =>
             _gameSummaryItemBuilder ??
-            (_gameSummaryItemBuilder = new GameSummaryItemBuilder(_refreshService.Providers, _api, _logger));
+            (_gameSummaryItemBuilder = new GameSummaryItemBuilder(_api, _logger));
 
         private readonly object _refreshLock = new object();
         private CancellationTokenSource _refreshCts;
@@ -127,7 +132,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             Action<Guid> openManageAchievementsView = null,
             IFriendCacheManager friendCache = null,
             FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
-            Func<AchievementHotkeyTargetResolution> resolveRunningGameTarget = null)
+            Func<AchievementHotkeyTargetResolution> resolveRunningGameTarget = null,
+            Action<AchievementMarkerTarget> toggleAchievementCapstone = null,
+            Action<AchievementMarkerTarget> toggleAchievementGoal = null,
+            Captures.CaptureLibraryService captureLibrary = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
@@ -144,6 +152,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     : null);
             _runRefreshWithGlobalProgressAsync = runRefreshWithGlobalProgressAsync ?? RunRefreshWithoutGlobalProgressAsync;
             _openManageAchievementsView = openManageAchievementsView;
+            _toggleAchievementCapstone = toggleAchievementCapstone;
+            _toggleAchievementGoal = toggleAchievementGoal;
             _resolveRunningGameTarget = resolveRunningGameTarget ?? ResolveRunningGameTargetFromApi;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
@@ -161,6 +171,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.OpenGameAchievementWindow = openSelectedGameCommand;
             _settings.OpenViewAchievementsWindow = openViewAchievementsCommand;
             _settings.OpenManageAchievementsWindow = openManageAchievementsCommand;
+            _settings.ToggleAchievementCapstoneCommand = new RelayCommand(ToggleAchievementCapstoneCommand);
+            _settings.ToggleAchievementGoalCommand = new RelayCommand(ToggleAchievementGoalCommand);
             _settings.SetDynamicAchievementsGameCommand = new RelayCommand(SetDynamicAchievementsGame);
             _settings.FilterDynamicAchievementsByRunningGameCommand = new RelayCommand(_ => FilterDynamicAchievementsByRunningGame());
             _settings.SingleGameRefreshCommand = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Single));
@@ -473,6 +485,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ApplyDynamicOptionBindings();
 
             _refreshService.CacheInvalidated += RefreshService_CacheInvalidated;
+            _captureLibrary = captureLibrary;
+            if (_captureLibrary != null)
+            {
+                _captureLibrary.CapturesChanged += CaptureLibrary_CapturesChanged;
+            }
+
             if (_friendCache != null)
             {
                 _friendCache.FriendCacheInvalidated += FriendCache_FriendCacheInvalidated;
@@ -494,6 +512,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             try { _settings.ModernTheme.FriendDataRequested = null; } catch { }
             try { _settings.DynamicThemeDefaultsChanged -= Settings_DynamicThemeDefaultsChanged; } catch { }
             try { _refreshService.CacheInvalidated -= RefreshService_CacheInvalidated; } catch { }
+            try
+            {
+                if (_captureLibrary != null)
+                {
+                    _captureLibrary.CapturesChanged -= CaptureLibrary_CapturesChanged;
+                }
+            }
+            catch { }
             try
             {
                 if (_friendsOverviewDataCoordinator != null)
@@ -608,7 +634,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             RequestFriendStateRefresh();
         }
 
-        public void NotifyCustomDataChanged(Guid? gameId)
+        /// <param name="refreshLibraryState">
+        /// False when the change cannot move anything the library-wide lists read. The selected-game
+        /// surface still rebuilds, so a per-game edit (a category move, a goal reorder) is visible
+        /// where the user made it without paying for a whole-library theme rebuild per edit.
+        /// </param>
+        public void NotifyCustomDataChanged(Guid? gameId, bool refreshLibraryState = true)
         {
             try
             {
@@ -620,11 +651,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                      (_requestedGameId.HasValue && _requestedGameId.Value == resolvedGameId.Value) ||
                      (_settings?.SelectedGame?.Id == resolvedGameId.Value));
 
+                // Only rebuild the selected-game surface when it is actually showing the game
+                // that changed. RequestUpdate repoints that surface at whatever game it is given,
+                // so running it for some other game — which any library-scope edit would do —
+                // would swap the selected game out from under the user. Library-scope lists are
+                // covered by the library refresh below.
                 if (shouldRefreshSelectedGame)
-                {
-                    RequestUpdate(resolvedGameId.Value, forceRefresh: true);
-                }
-                else if (resolvedGameId.HasValue)
                 {
                     RequestUpdate(resolvedGameId.Value, forceRefresh: true);
                 }
@@ -632,6 +664,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "Failed to refresh selected-game theme state after custom-data change.");
+            }
+
+            if (!refreshLibraryState)
+            {
+                return;
             }
 
             try
@@ -648,6 +685,42 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "Failed to refresh library theme state after custom-data change.");
+            }
+        }
+
+        /// <summary>
+        /// Force-refreshes the selected-game theme surface after a game's captures on disk changed,
+        /// so capture-path bindings update without reselecting the game. Only fires when the changed
+        /// capture folder belongs to the game the surface is showing (a null folder means every game
+        /// changed). The library-wide lists deliberately wait for their next natural rebuild — a
+        /// full-library rebuild per saved capture is too heavy.
+        /// </summary>
+        private void CaptureLibrary_CapturesChanged(object sender, Captures.CapturesChangedEventArgs e)
+        {
+            try
+            {
+                var resolvedGameId = _appliedGameId ?? _requestedGameId ?? ResolveSelectedGameIdForThemeUpdate();
+                if (!resolvedGameId.HasValue || resolvedGameId.Value == Guid.Empty)
+                {
+                    return;
+                }
+
+                var captureFolderName = e?.FolderName;
+                if (captureFolderName != null)
+                {
+                    var gameName = _api?.Database?.Games?.Get(resolvedGameId.Value)?.Name;
+                    var selectedFolder = UnlockScreenshotService.SanitizeCaptureGameName(gameName);
+                    if (!string.Equals(selectedFolder, captureFolderName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
+                }
+
+                RequestUpdate(resolvedGameId.Value, forceRefresh: true);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to refresh selected-game theme state after captures change.");
             }
         }
 
@@ -1113,6 +1186,83 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             OpenViewAchievementsWindow(gameId);
+        }
+
+        private void ToggleAchievementCapstoneCommand(object parameter)
+        {
+            if (!TryResolveThemeCommandAchievement(
+                parameter,
+                nameof(PlayniteAchievementsSettings.ToggleAchievementCapstoneCommand),
+                out var target))
+            {
+                return;
+            }
+
+            _toggleAchievementCapstone?.Invoke(target);
+        }
+
+        private void ToggleAchievementGoalCommand(object parameter)
+        {
+            if (!TryResolveThemeCommandAchievement(
+                parameter,
+                nameof(PlayniteAchievementsSettings.ToggleAchievementGoalCommand),
+                out var target))
+            {
+                return;
+            }
+
+            _toggleAchievementGoal?.Invoke(target);
+        }
+
+        /// <summary>
+        /// Resolves the achievement a marker toggle acts on. Unlike
+        /// <see cref="TryResolveThemeCommandGameId"/> this never falls back to the selected game:
+        /// without an achievement there is no meaningful target, and a library-scope row must act
+        /// on its own game rather than whatever is selected.
+        /// </summary>
+        private bool TryResolveThemeCommandAchievement(
+            object parameter,
+            string commandName,
+            out AchievementMarkerTarget target)
+        {
+            target = default(AchievementMarkerTarget);
+
+            if (parameter == DependencyProperty.UnsetValue)
+            {
+                parameter = null;
+            }
+
+            switch (parameter)
+            {
+                case AchievementDetail achievement when achievement.Game != null:
+                    target = new AchievementMarkerTarget(
+                        achievement.Game.Id,
+                        achievement.ApiName,
+                        achievement.IsCapstone,
+                        achievement.IsGoal,
+                        achievement.Unlocked);
+                    break;
+                // A friend's row describes their progress, not the user's, so it can never be the
+                // target of a marker the user owns.
+                case FriendAchievementDisplayItem _:
+                    break;
+                case AchievementDisplayItem item when item.PlayniteGameId.HasValue:
+                    target = new AchievementMarkerTarget(
+                        item.PlayniteGameId.Value,
+                        item.ApiName,
+                        item.IsCapstone,
+                        item.IsGoal,
+                        item.Unlocked);
+                    break;
+            }
+
+            if (!target.IsValid)
+            {
+                LogInvalidCommandParameter(commandName, parameter);
+                return false;
+            }
+
+            return true;
         }
 
         private bool TryResolveThemeCommandGameId(object parameter, out Guid gameId)
@@ -1620,6 +1770,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ApplyLibraryState(LibraryRuntimeState state)
         {
             _runtimeState.Library = state ?? new LibraryRuntimeState();
+            Common.LeakWatch.Track("ThemeLibraryState", _runtimeState.Library);
             var library = _runtimeState.Library;
             PruneGameCommandCaches(library.AllGamesWithAchievements);
 
@@ -1657,6 +1808,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.XeniaGames = ProjectGameSummaries(library.XeniaGames);
             _settings.ModernTheme.ShadPS4Games = ProjectGameSummaries(library.ShadPS4Games);
             _settings.ModernTheme.GameJoltGames = ProjectGameSummaries(library.GameJoltGames);
+            _settings.ModernTheme.RiotGames = ProjectGameSummaries(library.RiotGames);
             _settings.ModernTheme.FFXIVGames = ProjectGameSummaries(library.FFXIVGames);
             _settings.ModernTheme.ManualGames = ProjectGameSummaries(library.ManualGames);
             _settings.ModernTheme.MostRecentUnlocksTop3 = library.MostRecentUnlocksTop3;
@@ -2739,7 +2891,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 (_settings.SetDynamicAchievementsGameCommand, (item, command) => item.SetDynamicAchievementsGameCommand = command),
                 (_settings.FilterDynamicLibraryAchievementsByProviderCommand, (item, command) => item.FilterDynamicLibraryAchievementsByProviderCommand = command),
                 (_settings.OpenViewAchievementsWindow, (item, command) => item.OpenViewAchievementsWindow = command),
-                (_settings.OpenManageAchievementsWindow, (item, command) => item.OpenManageAchievementsWindow = command));
+                (_settings.OpenManageAchievementsWindow, (item, command) => item.OpenManageAchievementsWindow = command),
+                (_settings.ToggleAchievementCapstoneCommand, (item, command) => item.ToggleAchievementCapstoneCommand = command),
+                (_settings.ToggleAchievementGoalCommand, (item, command) => item.ToggleAchievementGoalCommand = command));
         }
 
         private void AttachGameSummaryCommands(IEnumerable<GameAchievementSummary> items)
@@ -3386,7 +3540,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicAchievementsCategoryLabelFilterLabel =
                 string.Equals(categoryKey, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase)
                     ? DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All)
-                    : AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(categoryKey);
+                    // Leaf, matching the options list this label summarizes.
+                    : AchievementCategoryTypeHelper.ToCategoryLeafDisplayText(categoryKey);
             _settings.ModernTheme.DynamicAchievementCategoryLabelFilterOptions =
                 DynamicThemeOptionFactory.CreateCategoryLabelOptions(
                     state?.AllAchievements,

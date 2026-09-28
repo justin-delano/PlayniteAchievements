@@ -77,12 +77,14 @@ namespace PlayniteAchievements.Models.Settings
         public const string LineTitle = "Title";
         public const string LineDescription = "Description";
         public const string LineGameCategory = "GameCategory";
+        public const string LineProgress = "Progress";
 
         /// <summary>
-        /// The built-in text line order, top to bottom.
+        /// The built-in text line order, top to bottom. The progress line renders only on
+        /// incremental-progress notifications (toast surface); it collapses everywhere else.
         /// </summary>
         public static IReadOnlyList<string> DefaultLineOrder { get; } =
-            new[] { LineHeader, LineTitle, LineDescription, LineGameCategory };
+            new[] { LineHeader, LineTitle, LineDescription, LineGameCategory, LineProgress };
 
         private bool _showHeader = true;
         private bool _showName = true;
@@ -103,6 +105,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showCountdownBar = true;
         private string _countdownBarColor;
         private FrameVignetteStyle _frameVignette = FrameVignetteStyle.Full;
+        private double? _frameVignetteStrength;
         private List<string> _lineOrder;
         private string _fontFamily;
         private string _headerFontFamily;
@@ -110,16 +113,19 @@ namespace PlayniteAchievements.Models.Settings
         private string _bodyFontFamily;
         private string _gameCategoryFontFamily;
         private string _rarityFontFamily;
+        private string _progressFontFamily;
         private double? _headerFontSize;
         private double? _titleFontSize;
         private double? _bodyFontSize;
         private double? _gameCategoryFontSize;
         private double? _rarityFontSize;
+        private double? _progressFontSize;
         private NotificationLineEmphasis _headerEmphasis;
         private NotificationLineEmphasis _titleEmphasis;
         private NotificationLineEmphasis _bodyEmphasis;
         private NotificationLineEmphasis _gameCategoryEmphasis;
         private NotificationLineEmphasis _rarityEmphasis;
+        private NotificationLineEmphasis _progressEmphasis;
         private double? _cardWidth;
         private double? _cardHeight;
         private double? _iconSize;
@@ -312,6 +318,18 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Vignette strength (0-100; 50 matches the built-in vignette, higher darkens toward
+        /// solid, 0 removes the darkening), or null for the default (50). Scales both the radial
+        /// vignette and the bottom wash selected by <see cref="FrameVignette"/>. Frame surface
+        /// only; the toast has its own card chrome and ignores this.
+        /// </summary>
+        public double? FrameVignetteStrength
+        {
+            get => _frameVignetteStrength;
+            set => SetValue(ref _frameVignetteStrength, value);
+        }
+
+        /// <summary>
         /// Toast card width in DIPs, or null for the default (410). Toast surface only; the
         /// frame is composited at the screenshot's size and ignores this.
         /// </summary>
@@ -474,6 +492,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Font family override for the progress line's count text, or null/blank to follow
+        /// <see cref="FontFamily"/>.
+        /// </summary>
+        public string ProgressFontFamily
+        {
+            get => _progressFontFamily;
+            set => SetValue(ref _progressFontFamily, value);
+        }
+
+        /// <summary>
         /// Font size for the header/caption line (the header row), or null for the theme-derived
         /// size. The rarity percent text has its own <see cref="RarityFontSize"/>.
         /// </summary>
@@ -520,6 +548,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _rarityFontSize;
             set => SetValue(ref _rarityFontSize, value);
+        }
+
+        /// <summary>
+        /// Font size for the progress line's count text (incremental-progress notifications),
+        /// or null for the theme-derived caption size. The bar height follows this size.
+        /// </summary>
+        public double? ProgressFontSize
+        {
+            get => _progressFontSize;
+            set => SetValue(ref _progressFontSize, value);
         }
 
         /// <summary>
@@ -571,6 +609,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _rarityEmphasis;
             set => SetValue(ref _rarityEmphasis, value);
+        }
+
+        /// <summary>
+        /// Whole-line emphasis for the progress line's count text.
+        /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+        public NotificationLineEmphasis ProgressEmphasis
+        {
+            get => _progressEmphasis;
+            set => SetValue(ref _progressEmphasis, value);
         }
 
         /// <summary>
@@ -689,6 +737,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowCountdownBar = ShowCountdownBar,
                 CountdownBarColor = CountdownBarColor,
                 FrameVignette = FrameVignette,
+                FrameVignetteStrength = FrameVignetteStrength,
                 LineOrder = LineOrder != null ? new List<string>(LineOrder) : null,
                 FontFamily = FontFamily,
                 HeaderFontFamily = HeaderFontFamily,
@@ -696,16 +745,19 @@ namespace PlayniteAchievements.Models.Settings
                 BodyFontFamily = BodyFontFamily,
                 GameCategoryFontFamily = GameCategoryFontFamily,
                 RarityFontFamily = RarityFontFamily,
+                ProgressFontFamily = ProgressFontFamily,
                 HeaderFontSize = HeaderFontSize,
                 TitleFontSize = TitleFontSize,
                 BodyFontSize = BodyFontSize,
                 GameCategoryFontSize = GameCategoryFontSize,
                 RarityFontSize = RarityFontSize,
+                ProgressFontSize = ProgressFontSize,
                 HeaderEmphasis = HeaderEmphasis,
                 TitleEmphasis = TitleEmphasis,
                 BodyEmphasis = BodyEmphasis,
                 GameCategoryEmphasis = GameCategoryEmphasis,
                 RarityEmphasis = RarityEmphasis,
+                ProgressEmphasis = ProgressEmphasis,
                 CardWidth = CardWidth,
                 CardHeight = CardHeight,
                 IconSize = IconSize,
@@ -803,6 +855,7 @@ namespace PlayniteAchievements.Models.Settings
         private string _friendUnlockHeaderFormat;
         private string _completionHeader;
         private string _friendCompletionHeaderFormat;
+        private string _progressHeader;
 
         public string UnlockHeader
         {
@@ -828,6 +881,15 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _friendCompletionHeaderFormat, value);
         }
 
+        /// <summary>
+        /// Header of an incremental-progress notification ("Achievement progress" by default).
+        /// </summary>
+        public string ProgressHeader
+        {
+            get => _progressHeader;
+            set => SetValue(ref _progressHeader, value);
+        }
+
         public NotificationHeaderTextSettings Clone()
         {
             return new NotificationHeaderTextSettings
@@ -835,7 +897,8 @@ namespace PlayniteAchievements.Models.Settings
                 UnlockHeader = UnlockHeader,
                 FriendUnlockHeaderFormat = FriendUnlockHeaderFormat,
                 CompletionHeader = CompletionHeader,
-                FriendCompletionHeaderFormat = FriendCompletionHeaderFormat
+                FriendCompletionHeaderFormat = FriendCompletionHeaderFormat,
+                ProgressHeader = ProgressHeader
             };
         }
     }

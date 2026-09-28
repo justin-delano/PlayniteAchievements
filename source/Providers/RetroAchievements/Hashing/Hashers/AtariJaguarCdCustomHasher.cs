@@ -62,7 +62,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
 
                 if (size == 0)
                 {
-                    Logger?.Warn($"[RA] {Name}: Not a Jaguar CD image: {filePath}");
+                    WarnOnce($"[RA] {Name}: Not a Jaguar CD image: {filePath}");
                     return Array.Empty<string>();
                 }
 
@@ -112,7 +112,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
 
                 if (string.Equals(hash, HomebrewHash, StringComparison.OrdinalIgnoreCase))
                 {
-                    Logger?.Warn($"[RA] {Name}: Potential homebrew Jaguar CD detected; multi-track handling not implemented (returning base hash).");
+                    WarnOnce($"[RA] {Name}: Potential homebrew Jaguar CD detected; multi-track handling not implemented (returning base hash): {filePath}");
                 }
 
                 return new[] { hash };

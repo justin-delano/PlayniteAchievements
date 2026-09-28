@@ -73,6 +73,9 @@ namespace PlayniteAchievements.Services.UI
         private static readonly Dictionary<string, ResourceDictionary> PluginDefaultTemplateCache =
             new Dictionary<string, ResourceDictionary>(StringComparer.Ordinal);
 
+        // Parsed bundled notification resources; see LoadNotificationResourcesDictionary.
+        private static ResourceDictionary NotificationResourcesCache;
+
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly Func<DataTemplate> _loadDefaultTemplate;
@@ -350,6 +353,50 @@ namespace PlayniteAchievements.Services.UI
             return overridePaths
                 .OrderByDescending(File.Exists)
                 .ToList();
+        }
+
+        /// <summary>
+        /// The active theme's candidate directories for the current mode, most specific first
+        /// (memoized like every template lookup). Shared with <see cref="UnlockSoundResolver"/> so
+        /// theme-supplied sounds and theme-supplied templates agree on which theme is active.
+        /// </summary>
+        public IReadOnlyList<string> ResolveActiveThemeDirectories(ResourceDictionary applicationResources)
+        {
+            var modeName = GetThemeModeName();
+            return ResolveThemeDirectoriesCached(
+                applicationResources,
+                GetThemesRootPaths(),
+                modeName,
+                GetActiveThemeId(modeName));
+        }
+
+        /// <summary>
+        /// Which mode Playnite is running, as the name its Themes subfolder uses. Exposed so
+        /// callers that resolve both modes can say which one is live without repeating the mapping.
+        /// </summary>
+        public string ActiveThemeModeName => GetThemeModeName();
+
+        /// <summary>
+        /// The candidate directories of the theme configured for an explicitly named mode
+        /// ("Desktop" or "Fullscreen"), whichever mode Playnite is actually running. Playnite
+        /// reports both configured themes at all times, and the directory lookup is a disk probe,
+        /// so the mode that is not running resolves as readily as the one that is. The loaded
+        /// resource dictionaries only ever contribute the running mode's directories, which is why
+        /// the non-running mode resolves from <c>Themes\{mode}\{themeId}</c> alone.
+        /// </summary>
+        public IReadOnlyList<string> ResolveThemeDirectoriesForMode(
+            ResourceDictionary applicationResources,
+            string modeName)
+        {
+            var mode = string.Equals(modeName, "Fullscreen", StringComparison.OrdinalIgnoreCase)
+                ? "Fullscreen"
+                : "Desktop";
+
+            return ResolveThemeDirectoriesCached(
+                applicationResources,
+                GetThemesRootPaths(),
+                mode,
+                GetActiveThemeId(mode));
         }
 
         public void LogActiveThemeOverrideDiagnostics(string context = null)
@@ -661,10 +708,7 @@ namespace PlayniteAchievements.Services.UI
                 }
                 else
                 {
-                    dictionary = new ResourceDictionary
-                    {
-                        Source = new Uri(NotificationResourcesUri, UriKind.Absolute)
-                    };
+                    dictionary = LoadNotificationResourcesDictionary();
                 }
 
                 return dictionary != null && TryGetDirectResource(dictionary, key, out T resource)
@@ -676,6 +720,31 @@ namespace PlayniteAchievements.Services.UI
                 _logger?.Debug(ex, $"Failed to load default achievement toast resource '{key}'.");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Loads (and caches process-wide) the bundled notification resources: the slide and countdown
+        /// storyboards, the content shadow, and the shared line templates. The embedded XAML is
+        /// immutable, so it is instantiated once. Instantiating it per resolve meant every slide built
+        /// this file plus its four merged dictionaries on the UI thread to read one Duration, on the
+        /// same frame the slide subscribed to the render loop.
+        ///
+        /// Callers must treat what they take out of it as read-only. <c>ResolveAnimation</c> clones the
+        /// storyboard's animation before patching it, which is what keeps a shared instance safe; a
+        /// resolved storyboard must never be <c>Begin()</c>-ed directly. A failed load throws to the
+        /// caller's handler rather than caching null, so a transient failure is retried.
+        /// </summary>
+        private ResourceDictionary LoadNotificationResourcesDictionary()
+        {
+            if (NotificationResourcesCache == null)
+            {
+                NotificationResourcesCache = new ResourceDictionary
+                {
+                    Source = new Uri(NotificationResourcesUri, UriKind.Absolute)
+                };
+            }
+
+            return NotificationResourcesCache;
         }
 
         /// <summary>

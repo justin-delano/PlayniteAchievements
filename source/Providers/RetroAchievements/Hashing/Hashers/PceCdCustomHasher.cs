@@ -62,13 +62,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 {
                     if (boot == null)
                     {
-                        Logger?.Warn($"[RA] {Name}: Not a PC Engine CD image (no header signature, no BOOT.BIN): {filePath}");
+                        WarnOnce($"[RA] {Name}: Not a PC Engine CD image (no header signature, no BOOT.BIN): {filePath}");
                         return Array.Empty<string>();
                     }
 
                     if (boot.Length >= HashUtils.MaxHashBytes)
                     {
-                        Logger?.Warn($"[RA] {Name}: BOOT.BIN too large to hash: {filePath}");
+                        WarnOnce($"[RA] {Name}: BOOT.BIN too large to hash: {filePath}");
                         return Array.Empty<string>();
                     }
 

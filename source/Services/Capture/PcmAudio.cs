@@ -1,24 +1,95 @@
 using System;
+using System.IO;
 
 namespace PlayniteAchievements.Services.Capture
 {
     /// <summary>
-    /// Pure 16-bit PCM helpers for the clip export: mixing the recorded chime into a clip's
-    /// audio. Kept free of Media Foundation so it unit-tests directly.
+    /// Pure 16-bit PCM helpers for the clip export: mixing the composited chime into a clip's
+    /// audio, fading a cut tail, writing a processed window back as a WAV chunk, and telling a
+    /// silent window from one that carries signal. Kept free of Media Foundation so it unit-tests
+    /// directly.
     /// </summary>
     internal static class PcmAudio
     {
+        /// <summary>Sample rate of the export PCM format.</summary>
+        public const int SampleRate = 48000;
+
+        /// <summary>Channel count of the export PCM format.</summary>
+        public const int Channels = 2;
+
+        /// <summary>Sample depth of the export PCM format.</summary>
+        public const int BitsPerSample = 16;
+
         /// <summary>Bytes per second of the export PCM format (48 kHz, stereo, 16-bit).</summary>
-        public const int BytesPerSecond = 48000 * 2 * 2;
+        public const int BytesPerSecond = SampleRate * Channels * BitsPerSample / 8;
 
         /// <summary>Sample-frame alignment in bytes (stereo 16-bit).</summary>
         public const int BlockAlign = 4;
 
+        /// <summary>
+        /// Writes a buffer of this format's PCM as a RIFF/WAVE file, so a processed audio window can
+        /// be handed back to the export pipeline as an ordinary chunk. Keeping the exporter on files
+        /// is what leaves its planning and A/V alignment untouched.
+        /// </summary>
+        public static void WriteWav(string path, byte[] pcm)
+        {
+            if (string.IsNullOrEmpty(path) || pcm == null)
+            {
+                throw new ArgumentNullException(pcm == null ? nameof(pcm) : nameof(path));
+            }
+
+            using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write))
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.Write(Tag("RIFF"));
+                writer.Write(36 + pcm.Length);
+                writer.Write(Tag("WAVE"));
+
+                writer.Write(Tag("fmt "));
+                writer.Write(16);                                   // PCM fmt chunk size
+                writer.Write((short)1);                             // WAVE_FORMAT_PCM
+                writer.Write((short)Channels);
+                writer.Write(SampleRate);
+                writer.Write(BytesPerSecond);
+                writer.Write((short)BlockAlign);
+                writer.Write((short)BitsPerSample);
+
+                writer.Write(Tag("data"));
+                writer.Write(pcm.Length);
+                writer.Write(pcm);
+            }
+        }
+
+        /// <summary>A RIFF four-character chunk id. Written as bytes, never through an encoding.</summary>
+        private static byte[] Tag(string fourCc)
+        {
+            var bytes = new byte[4];
+            for (var i = 0; i < 4; i++)
+            {
+                bytes[i] = (byte)fourCc[i];
+            }
+
+            return bytes;
+        }
+
         /// <summary>Converts a 100-ns tick offset to a block-aligned byte offset.</summary>
         public static long TicksToAlignedBytes(long ticks)
         {
-            var bytes = (long)(ticks / 10_000_000.0 * BytesPerSecond);
-            return bytes & ~(long)(BlockAlign - 1);
+            if (ticks <= 0)
+            {
+                return 0;
+            }
+
+            // Convert to the nearest sample frame, not first to a truncated byte count. One 48 kHz
+            // frame is 208.333 DateTime ticks; truncating 208 ticks to three bytes and aligning down
+            // moved a timestamp that represents frame 1 back onto frame 0.
+            var wholeSeconds = ticks / TimeSpan.TicksPerSecond;
+            var remainder = ticks % TimeSpan.TicksPerSecond;
+            var frames = checked(
+                wholeSeconds * SampleRate +
+                (remainder * SampleRate + TimeSpan.TicksPerSecond / 2) /
+                    TimeSpan.TicksPerSecond);
+            return checked(frames * BlockAlign);
         }
 
         /// <summary>
@@ -86,5 +157,6 @@ namespace PlayniteAchievements.Services.Capture
                 dest[destOffset + i + 1] = (byte)((mixed >> 8) & 0xff);
             }
         }
+
     }
 }

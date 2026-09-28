@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
 
                 if (magic[0] != 0xC2 || magic[1] != 0x33 || magic[2] != 0x9F || magic[3] != 0x3D)
                 {
-                    Logger?.Warn($"[RA] {Name}: Not a GameCube image: {filePath}");
+                    WarnOnce($"[RA] {Name}: Not a GameCube image: {filePath}");
                     return Array.Empty<string>();
                 }
 

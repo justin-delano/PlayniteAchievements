@@ -220,15 +220,32 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         continue;
                     }
 
-                    unlockedOverrides.TryGetValue(apiName, out var unlockedOverride);
-                    lockedOverrides.TryGetValue(apiName, out var lockedOverride);
                     rawByApiName.TryGetValue(apiName, out var rawAchievement);
-                    var unlockedSource = ExcludeManagedCustomSource(rawAchievement?.UnlockedIconPath);
-                    var lockedSource = ExcludeManagedCustomSource(rawAchievement?.LockedIconPath);
-                    var originalUnlockedPreview = ResolveDefaultCachedPreviewPath(fileStem, AchievementIconVariant.Unlocked) ??
-                                                 AchievementIconResolver.GetUnlockedDisplayIcon(unlockedSource);
-                    var originalLockedPreview = ResolveDefaultCachedPreviewPath(fileStem, AchievementIconVariant.Locked) ??
-                                               AchievementIconResolver.GetLockedDisplayIcon(originalUnlockedPreview, lockedSource);
+                    string unlockedOverride;
+                    string lockedOverride;
+                    string originalUnlockedPreview;
+                    string originalLockedPreview;
+                    if (IsCustomAchievement(rawAchievement, apiName))
+                    {
+                        // A custom achievement's icons live on its definition, so the row edits
+                        // those directly and has no provider original to fall back to.
+                        unlockedOverride = rawAchievement?.UnlockedIconPath;
+                        lockedOverride = rawAchievement?.LockedIconPath;
+                        originalUnlockedPreview = null;
+                        originalLockedPreview = null;
+                    }
+                    else
+                    {
+                        unlockedOverrides.TryGetValue(apiName, out unlockedOverride);
+                        lockedOverrides.TryGetValue(apiName, out lockedOverride);
+                        var unlockedSource = ExcludeManagedCustomSource(rawAchievement?.UnlockedIconPath);
+                        var lockedSource = ExcludeManagedCustomSource(rawAchievement?.LockedIconPath);
+                        originalUnlockedPreview = ResolveDefaultCachedPreviewPath(fileStem, AchievementIconVariant.Unlocked) ??
+                                                  AchievementIconResolver.GetUnlockedDisplayIcon(unlockedSource);
+                        originalLockedPreview = ResolveDefaultCachedPreviewPath(fileStem, AchievementIconVariant.Locked) ??
+                                                AchievementIconResolver.GetLockedDisplayIcon(originalUnlockedPreview, lockedSource);
+                    }
+
                     rows.Add(AchievementIconOverrideItem.Create(
                         projected,
                         unlockedOverride,
@@ -269,6 +286,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var lockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var customIcons = new Dictionary<string, (string Unlocked, string Locked)>(StringComparer.OrdinalIgnoreCase);
                 var changedApiNames = new List<string>();
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
@@ -288,6 +306,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     // the invalid text stays in the row with its inline error.
                     var unlockedOverride = row.GetPersistableUnlockedOverrideValue();
                     var lockedOverride = row.GetPersistableLockedOverrideValue();
+                    if (CustomAchievementProjectionService.IsCustomApiName(apiName))
+                    {
+                        // Custom rows write through to their definitions and stay out of the
+                        // override maps, so the Custom tab and this tab edit the same value.
+                        customIcons[apiName] = (unlockedOverride, lockedOverride);
+                        continue;
+                    }
+
                     if (!string.IsNullOrWhiteSpace(unlockedOverride))
                     {
                         unlockedOverrides[apiName] = unlockedOverride;
@@ -299,7 +325,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     }
                 }
 
-                _achievementOverridesService.SetAchievementIconOverrides(_gameId, unlockedOverrides, lockedOverrides);
+                _achievementOverridesService.SetIconOverridesAndCustomAchievementIcons(
+                    _gameId,
+                    unlockedOverrides,
+                    lockedOverrides,
+                    customIcons);
 
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
@@ -545,6 +575,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         {
             var normalized = (value ?? string.Empty).Trim();
             return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+
+        private static bool IsCustomAchievement(AchievementDetail achievement, string apiName)
+        {
+            return achievement?.IsCustom == true || CustomAchievementProjectionService.IsCustomApiName(apiName);
         }
 
         private string ExcludeManagedCustomSource(string source)
@@ -1083,9 +1118,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private string ResolveUnlockedPreviewSource()
         {
+            // A masked row shows the same cover here as it does in every grid, so the editor
+            // reflects what the user actually sees. Clicking the card reveals the real preview.
             if (IsIconHidden)
             {
-                return AchievementIconResolver.GetDefaultIcon();
+                return AchievementIconResolver.GetHiddenFallbackIcon();
             }
 
             var previewOverride = ResolvePreviewOverrideValue(
@@ -1101,9 +1138,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private string ResolveLockedPreviewSource()
         {
-            if (IsIconHidden || IsLockedIconHidden)
+            // Hidden is tested first so the more spoiler-sensitive cover wins when a row is both
+            // hidden and locked-masked, matching the grid ordering.
+            if (IsIconHidden)
             {
-                return AchievementIconResolver.GetDefaultIcon();
+                return AchievementIconResolver.GetHiddenFallbackIcon();
+            }
+
+            if (IsLockedIconHidden)
+            {
+                return AchievementIconResolver.GetLockedFallbackIcon();
             }
 
             var previewOverride = ResolvePreviewOverrideValue(

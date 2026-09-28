@@ -14,7 +14,6 @@ using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -316,8 +315,10 @@ namespace PlayniteAchievements.Providers.Xenia
                             if (gpdFilePath.EndsWith("FFFE07D1.gpd"))
                                 continue;
 
-                            var gpdfile = new GPDResolver().LoadGPD(gpdFilePath);
-                            var gameName = gpdfile.StringData.Replace("\0", "");
+                            if (!GPDResolver.TryReadTitleString(gpdFilePath, out var stringData))
+                                continue;
+
+                            var gameName = stringData.Replace("\0", "");
                             gameName = gameName.Replace("\"", "");
 
                             if (gameName == ROMTitle)

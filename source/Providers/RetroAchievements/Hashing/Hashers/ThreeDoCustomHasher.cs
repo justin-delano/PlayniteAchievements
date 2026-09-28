@@ -33,7 +33,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 {
                     if (sector0[i] != operafsIdentifier[i])
                     {
-                        Logger?.Warn($"[RA] {Name}: Not an OperaFS disc: {filePath}");
+                        WarnOnce($"[RA] {Name}: Not an OperaFS disc: {filePath}");
                         return Array.Empty<string>();
                     }
                 }
@@ -109,7 +109,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
 
                 if (launchMeSize == 0)
                 {
-                    Logger?.Warn($"[RA] {Name}: Could not find LaunchMe: {filePath}");
+                    WarnOnce($"[RA] {Name}: Could not find LaunchMe: {filePath}");
                     return Array.Empty<string>();
                 }
 

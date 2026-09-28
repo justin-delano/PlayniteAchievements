@@ -45,7 +45,15 @@ namespace PlayniteAchievements.Views.Helpers
         /// and does not need every frame. Deliberately not Timeline.DesiredFrameRate, which does not
         /// throttle this and can cost the whole composition tick.
         /// </summary>
-        private const double TargetFramesPerSecond = 30.0;
+        private const double DefaultFramesPerSecond = 30.0;
+
+        /// <summary>
+        /// The overlay-track sampling rate while a toast wave is being recorded, 0 otherwise. Sampling
+        /// above the invalidation rate would store duplicate ray frames with beat-dependent phase —
+        /// judder in the exported clip — so the driver ticks at whichever rate is higher for the span
+        /// of the recording. UI thread only, like the subscriber list.
+        /// </summary>
+        private static double _samplingFps;
 
         private const double DueToleranceMs = 1.0;
 
@@ -61,6 +69,13 @@ namespace PlayniteAchievements.Views.Helpers
         private static Dispatcher _owner;
         private static TimeSpan _lastRenderingTime = TimeSpan.MinValue;
         private static double _nextDueMs;
+
+        /// <summary>
+        /// Targets currently on the render tick. This list holds strong references, and a WPF
+        /// child references its parent, so a target stranded here roots its whole ancestor
+        /// chain (grid row, grid, hosting control). Diagnostics only.
+        /// </summary>
+        internal static int SubscriberCount => Subscribers.Count;
 
         public static void Subscribe(IRayAnimationTarget target)
         {
@@ -88,6 +103,17 @@ namespace PlayniteAchievements.Views.Helpers
             _lastRenderingTime = TimeSpan.MinValue;
             _nextDueMs = GlowAnimationClock.ElapsedMilliseconds;
             CompositionTarget.Rendering += OnRendering;
+        }
+
+        /// <summary>Raises the tick rate to the given track sampling rate for a recording's span.</summary>
+        public static void SetSamplingFps(double fps)
+        {
+            _samplingFps = fps > 0 && !double.IsNaN(fps) && !double.IsInfinity(fps) ? fps : 0;
+        }
+
+        public static void ClearSamplingFps()
+        {
+            _samplingFps = 0;
         }
 
         public static void Unsubscribe(IRayAnimationTarget target)
@@ -134,6 +160,15 @@ namespace PlayniteAchievements.Views.Helpers
                 _lastRenderingTime = renderingTime.Value;
             }
 
+            // Stand down for a notification slide's span: every invalidation here costs a burst
+            // re-render on the frame the slide needs. Skipping before the due-time math means the
+            // catch-up loop below treats the quiet span exactly like a stall and resumes on
+            // cadence; phase comes from GlowAnimationClock per tick, so no drift accumulates.
+            if (RenderQuietGate.IsEngaged)
+            {
+                return;
+            }
+
             var nowMs = GlowAnimationClock.ElapsedMilliseconds;
             if (nowMs < _nextDueMs - DueToleranceMs)
             {
@@ -142,12 +177,16 @@ namespace PlayniteAchievements.Views.Helpers
 
             // Step the due time forward in whole intervals rather than from now, so a stall resumes on
             // cadence instead of bunching the frames it missed.
-            var intervalMs = 1000.0 / TargetFramesPerSecond;
+            var intervalMs = 1000.0 / Math.Max(DefaultFramesPerSecond, _samplingFps);
             do
             {
                 _nextDueMs += intervalMs;
             }
             while (_nextDueMs <= nowMs);
+
+            // Bursts that share a shape build their arrow geometry once for the whole frame; this
+            // releases the previous frame's copies before they start.
+            Controls.RarityRayBurst.BeginFrame();
 
             // A target may unsubscribe itself while being served, so walk a copy.
             Dispatch.Clear();

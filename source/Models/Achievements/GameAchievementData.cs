@@ -68,6 +68,14 @@ namespace PlayniteAchievements.Models.Achievements
             (Achievements?.Count > 0 && Achievements.All(a => a?.Unlocked == true)) ||
             IsCapstoneUnlocked();
 
+        /// <summary>
+        /// True only when every achievement is unlocked — IsCompleted without the capstone
+        /// shortcut. Drives the standalone 100%-completion notification, which is reserved
+        /// for true 100% while a capstone unlock still marks the game IsCompleted.
+        /// </summary>
+        public bool IsFullyUnlocked =>
+            Achievements?.Count > 0 && Achievements.All(a => a?.Unlocked == true);
+
         private bool IsCapstoneUnlocked()
         {
             if (Achievements == null || Achievements.Count == 0)
@@ -103,6 +111,12 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         [IgnoreDataMember]
         public List<string> AchievementOrder { get; set; }
+
+        /// <summary>
+        /// Runtime-only goal achievement list, most-wanted first. Not persisted in cache/database.
+        /// </summary>
+        [IgnoreDataMember]
+        public List<string> GoalAchievements { get; set; }
 
         [IgnoreDataMember]
         public List<string> AchievementCategoryOrder { get; set; }

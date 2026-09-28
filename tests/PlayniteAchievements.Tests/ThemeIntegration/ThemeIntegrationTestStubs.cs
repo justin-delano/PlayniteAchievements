@@ -23,6 +23,9 @@ namespace PlayniteAchievements
 
         public Services.Achievements.AchievementDataService AchievementDataService { get; set; }
 
+        // Mirrors the real plugin property RefreshRuntime reads for the category path repoint.
+        public Services.Achievements.AchievementOverridesService AchievementOverridesService { get; set; }
+
         public Services.GameCustomData.GameCustomDataStore GameCustomDataStore { get; set; }
 
         public Services.ThemeIntegration.ThemeIntegrationService ThemeIntegrationService { get; set; }
@@ -30,6 +33,10 @@ namespace PlayniteAchievements
         // Mirrors the real plugin property that AnimatedImageHelper reads when mapping an http
         // animation URL to its disk-cache path.
         public Services.Images.DiskImageService DiskImageService { get; set; }
+
+        // Mirrors the real plugin property ToastImageResolver reads when decoding notification
+        // artwork. Left null in tests, which is the "no image service yet" path.
+        public Services.Images.MemoryImageService ImageService { get; set; }
 
         public IPlayniteAPI PlayniteApi { get; set; }
 
@@ -48,6 +55,23 @@ namespace PlayniteAchievements
     }
 }
 
+namespace PlayniteAchievements.Services.Achievements
+{
+    // Mirrors the members RefreshRuntime touches on the real overrides service, so the linked
+    // category-path repoint compiles against the plugin stub.
+    public class AchievementOverridesService
+    {
+        public void SetAchievementCategoryMetadata(
+            System.Guid gameId,
+            System.Collections.Generic.IReadOnlyList<string> categoryOrder,
+            System.Collections.Generic.IReadOnlyDictionary<string, Models.Settings.CategoryImageOverrideData> categoryImageOverrides,
+            Models.Settings.GameSummaryCategoryData gameSummaryCategory,
+            bool affectsSummaryData = true)
+        {
+        }
+    }
+}
+
 namespace PlayniteAchievements.Models.Achievements
 {
     public enum RarityTier
@@ -56,6 +80,20 @@ namespace PlayniteAchievements.Models.Achievements
         Uncommon,
         Rare,
         UltraRare
+    }
+
+    public static class RarityTierExtensions
+    {
+        public static bool TryParse(string value, out RarityTier tier)
+        {
+            if (Enum.TryParse(value, true, out tier))
+            {
+                return true;
+            }
+
+            tier = RarityTier.Common;
+            return false;
+        }
     }
 
     public static class PercentRarityHelper
@@ -86,6 +124,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string DisplayName { get; set; }
 
+        public string IconPath { get; set; }
+
         public string Description { get; set; }
 
         public string UnlockedIconPath { get; set; }
@@ -97,6 +137,10 @@ namespace PlayniteAchievements.Models.Achievements
         public bool Unlocked { get; set; }
 
         public bool IsCapstone { get; set; }
+
+        public bool IsGoal { get; set; }
+
+        public int GoalOrderIndex { get; set; } = int.MaxValue;
 
         public bool IsFiltered { get; set; }
 
@@ -126,11 +170,27 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string ProviderKey { get; set; }
 
+        public bool IsCustom { get; set; }
+
         public Game Game { get; set; }
 
         public string CategoryArtPath { get; set; }
 
         public int CategoryOrderIndex { get; set; } = int.MaxValue;
+
+        public int DefaultOrderIndex { get; set; } = int.MaxValue;
+
+        public string CleanCapturePath { get; set; }
+
+        public string NotificationCapturePath { get; set; }
+
+        public string FramedCapturePath { get; set; }
+
+        public string VideoCapturePath { get; set; }
+
+        public bool HasAnyCapture =>
+            CleanCapturePath != null || NotificationCapturePath != null ||
+            FramedCapturePath != null || VideoCapturePath != null;
 
         public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
 
@@ -139,6 +199,10 @@ namespace PlayniteAchievements.Models.Achievements
         public System.Windows.Input.ICommand OpenViewAchievementsWindow { get; set; }
 
         public System.Windows.Input.ICommand OpenManageAchievementsWindow { get; set; }
+
+        public System.Windows.Input.ICommand ToggleAchievementCapstoneCommand { get; set; }
+
+        public System.Windows.Input.ICommand ToggleAchievementGoalCommand { get; set; }
 
         public bool HasRarityPercent => GlobalPercentUnlocked.HasValue;
 
@@ -223,6 +287,14 @@ namespace PlayniteAchievements.Services
             return providerKey ?? string.Empty;
         }
 
+        // Mirrors the real registry's last-resort visuals for a provider key, which the linked
+        // summary and overview builders call. The stub has no provider metadata, so it always
+        // takes the by-convention icon key and the neutral gray.
+        public static (string iconKey, string colorHex) ResolveProviderVisualsOrFallback(string providerKey)
+        {
+            return ("ProviderIcon" + providerKey, "#808080");
+        }
+
         public virtual Task PrimeEnabledProvidersAsync()
         {
             return Task.CompletedTask;
@@ -287,6 +359,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string DisplayName { get; set; }
 
+        public string IconPath { get; set; }
+
+        public string DisplayIcon => IconPath;
+
         public string Name => DisplayName;
 
         public string Description { get; set; }
@@ -327,6 +403,20 @@ namespace PlayniteAchievements.ViewModels
 
         public string CategoryArtPath { get; set; }
 
+        public System.Collections.Generic.IReadOnlyList<string> CategoryAncestorArtPaths { get; set; }
+
+        public string CleanCapturePath { get; set; }
+
+        public string NotificationCapturePath { get; set; }
+
+        public string FramedCapturePath { get; set; }
+
+        public string VideoCapturePath { get; set; }
+
+        public bool HasCaptures =>
+            CleanCapturePath != null || NotificationCapturePath != null ||
+            FramedCapturePath != null || VideoCapturePath != null;
+
         public string GameIconPath { get; set; }
 
         public string GameCoverPath { get; set; }
@@ -336,6 +426,12 @@ namespace PlayniteAchievements.ViewModels
         public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
 
         public bool IsCapstone { get; set; }
+
+        public bool IsGoal { get; set; }
+
+        public int GoalOrderIndex { get; set; } = int.MaxValue;
+
+        public int DefaultOrderIndex { get; set; } = int.MaxValue;
 
         public bool Hidden { get; set; }
 
@@ -531,10 +627,18 @@ namespace PlayniteAchievements.ViewModels
                 CategoryLabel = CategoryLabel,
                 CategoryOrderIndex = CategoryOrderIndex,
                 CategoryArtPath = CategoryArtPath,
+                CategoryAncestorArtPaths = CategoryAncestorArtPaths,
+                CleanCapturePath = CleanCapturePath,
+                NotificationCapturePath = NotificationCapturePath,
+                FramedCapturePath = FramedCapturePath,
+                VideoCapturePath = VideoCapturePath,
                 GameIconPath = GameIconPath,
                 GameCoverPath = GameCoverPath,
                 Hidden = Hidden,
                 IsCapstone = IsCapstone,
+                IsGoal = IsGoal,
+                GoalOrderIndex = GoalOrderIndex,
+                DefaultOrderIndex = DefaultOrderIndex,
                 Unlocked = Unlocked,
                 UnlockTimeUtc = UnlockTimeUtc,
                 GlobalPercentUnlocked = GlobalPercentUnlocked,
@@ -588,6 +692,9 @@ namespace PlayniteAchievements.ViewModels
             CategoryLabel = source?.Category;
             Hidden = source?.Hidden == true;
             IsCapstone = source?.IsCapstone == true;
+            IsGoal = source?.IsGoal == true;
+            GoalOrderIndex = source?.GoalOrderIndex ?? int.MaxValue;
+            DefaultOrderIndex = source?.DefaultOrderIndex ?? int.MaxValue;
             Unlocked = source?.Unlocked == true;
             UnlockTimeUtc = source?.UnlockTimeUtc;
             GlobalPercentUnlocked = source?.GlobalPercentUnlocked;
@@ -611,6 +718,10 @@ namespace PlayniteAchievements.ViewModels
             CategoryOrderIndex = categoryOrderIndex;
             // Mirrors the real display item: no game-asset fallback baked into the art path.
             CategoryArtPath = categoryArtPath ?? source?.CategoryArtPath;
+            CleanCapturePath = source?.CleanCapturePath;
+            NotificationCapturePath = source?.NotificationCapturePath;
+            FramedCapturePath = source?.FramedCapturePath;
+            VideoCapturePath = source?.VideoCapturePath;
         }
     }
 }

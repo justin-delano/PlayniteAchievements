@@ -28,6 +28,18 @@ namespace PlayniteAchievements.Services
         private static readonly TimeSpan SchedulerResolution = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan FileDebounce = TimeSpan.FromMilliseconds(150);
         private static readonly int[] StableReadRetryMilliseconds = { 100, 250, 500, 1000 };
+        /// <summary>
+        /// A quiet fast prong re-reads on the registration's safety cadence, so logging every
+        /// applied read buries a session in identical lines and rotates its own start out of the
+        /// file. Unchanged reads are logged no more often than this, purely so a healthy prong
+        /// stays visibly alive.
+        /// </summary>
+        private static readonly TimeSpan ProgressLogHeartbeat = TimeSpan.FromSeconds(30);
+        /// <summary>
+        /// Cap on api names listed per key group, so a heavily-completed game cannot turn one
+        /// changed read into a multi-kilobyte line.
+        /// </summary>
+        private const int ProgressLogKeyLimit = 12;
 
         private sealed class FriendPollTarget
         {
@@ -55,7 +67,12 @@ namespace PlayniteAchievements.Services
 
             public Game Game;
             public DateTime SessionStartUtc;
-            public DateTime FirstPollUtc;
+            /// <summary>
+            /// Deadline for the universal provider-refresh prong, which every tracked game runs
+            /// regardless of whether it also has a fast source. Kept here rather than in
+            /// <see cref="Schedule"/> so the two prongs cannot move each other's deadline.
+            /// </summary>
+            public DateTime NextFallbackDueUtc;
             public DateTime NextFriendDueUtc;
             public DateTime RecoveryCooldownUtc;
             public IDataProvider Provider;
@@ -63,8 +80,13 @@ namespace PlayniteAchievements.Services
             public InGameProgressRegistration Registration;
             public GameAchievementData CachedSchema;
             public bool QueryInFlight;
+            /// <summary>
+            /// Counters plus the observed unlock set as of the last logged read, so an unchanged
+            /// read can be recognised and dropped. See <see cref="ProgressLogHeartbeat"/>.
+            /// </summary>
+            public string LastProgressLogSignature;
+            public DateTime LastProgressLogUtc;
             public bool FriendInFlight;
-            public bool ForceFallback;
             public int Generation;
             public int FriendCursor;
             public readonly CancellationTokenSource SessionCancellation = new CancellationTokenSource();
@@ -73,6 +95,13 @@ namespace PlayniteAchievements.Services
             public readonly List<IDisposable> WatchSubscriptions = new List<IDisposable>();
             public readonly HashSet<string> ToastedUserKeys =
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            /// <summary>
+            /// Progress twin of <see cref="ToastedUserKeys"/>: the highest progress numerator
+            /// announced per achievement this session, so the two prongs never announce the same
+            /// advance twice and progress never announces backwards.
+            /// </summary>
+            public readonly Dictionary<string, int> NotifiedProgressByKey =
+                new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             public readonly Dictionary<string, HashSet<string>> ToastedFriendKeys =
                 new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             public readonly Dictionary<string, List<FriendAchievementRow>> FriendBaselines =
@@ -155,23 +184,56 @@ namespace PlayniteAchievements.Services
                 {
                     Game = game,
                     SessionStartUtc = now,
-                    FirstPollUtc = now.AddSeconds(StartupDelaySeconds),
+                    // The startup grace matters more now the refresh prong is universal: it keeps a
+                    // full refresh off the launch path while the fast source covers the first seconds.
+                    NextFallbackDueUtc = now.AddSeconds(StartupDelaySeconds),
                     NextFriendDueUtc = now.AddSeconds(StartupDelaySeconds).Add(GetFriendInterval())
                 };
                 _games[game.Id] = state;
 
             }
 
-            if (!ConfigureState(state, preservePrimeWhenEquivalent: false))
+            if (TryActivate(state))
+            {
+                return;
+            }
+
+            if (_refreshRuntime == null)
             {
                 Stop(game);
-                _logger?.Debug($"[InGameMonitor] Skipped: no effective provider for {game.Name}.");
+                _logger?.Info($"[InGameMonitor] Skipped: no authenticated provider for '{game.Name}'.");
                 return;
+            }
+
+            // Synchronous resolution consults each provider's IsAuthenticated snapshot, which can
+            // lag the truth: an expired token that persisted credentials would renew reads as
+            // signed out. Keep the game tracked but idle (nothing is due while the deadlines sit at
+            // MaxValue), probe the capable providers without a dialog, then try once more.
+            lock (_stateLock)
+            {
+                state.NextFallbackDueUtc = DateTime.MaxValue;
+                state.NextFriendDueUtc = DateTime.MaxValue;
+            }
+
+            _logger?.Info($"[InGameMonitor] No authenticated provider for '{game.Name}' at start; probing.");
+            _ = ActivateAfterProbeAsync(state);
+        }
+
+        /// <summary>
+        /// Resolves the provider and fast source for a tracked state and, on success, makes sure
+        /// the scheduler is running. Returns false when no provider currently resolves; the caller
+        /// decides whether to probe or stop.
+        /// </summary>
+        private bool TryActivate(GamePollState state)
+        {
+            if (!ConfigureState(state, preservePrimeWhenEquivalent: false))
+            {
+                return false;
             }
 
             lock (_stateLock)
             {
-                if (_games.TryGetValue(game.Id, out var tracked) &&
+                if (_games.TryGetValue(state.Game.Id, out var tracked) &&
                     ReferenceEquals(state, tracked) &&
                     _cts == null)
                 {
@@ -182,8 +244,53 @@ namespace PlayniteAchievements.Services
             }
 
             _logger?.Info(
-                $"[InGameMonitor] Started for {game.Name}; provider={state.Provider?.ProviderKey ?? "none"}, " +
-                $"mode={(state.ProgressSource == null ? "fallback" : state.Registration?.IsRemote == true ? "feed" : "file")}.");
+                $"[InGameMonitor] Started for {state.Game.Name}; provider={state.Provider?.ProviderKey ?? "none"}, " +
+                $"prongs={DescribeProngs(state)}.");
+            return true;
+        }
+
+        private async Task ActivateAfterProbeAsync(GamePollState state)
+        {
+            var game = state.Game;
+            try
+            {
+                await _refreshRuntime
+                    .ResolveInGameProviderWithProbeAsync(game, state.SessionToken)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (state.SessionToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[InGameMonitor] Auth probe at game start failed for {game.Name}.");
+            }
+
+            lock (_stateLock)
+            {
+                if (!_games.TryGetValue(game.Id, out var tracked) ||
+                    !ReferenceEquals(state, tracked))
+                {
+                    // Stopped (or replaced) while the probe was in flight.
+                    return;
+                }
+            }
+
+            if (TryActivate(state))
+            {
+                lock (_stateLock)
+                {
+                    var now = CaptureTimelineClock.UtcNow;
+                    state.NextFallbackDueUtc = now.AddSeconds(StartupDelaySeconds);
+                    state.NextFriendDueUtc = now.AddSeconds(StartupDelaySeconds).Add(GetFriendInterval());
+                }
+
+                return;
+            }
+
+            Stop(game);
+            _logger?.Info($"[InGameMonitor] Skipped: no authenticated provider for '{game.Name}'.");
         }
 
         public void Stop(Game game)
@@ -346,7 +453,6 @@ namespace PlayniteAchievements.Services
                 var dueSources = _games.Values
                     .Where(state =>
                         state.ProgressSource != null &&
-                        !state.ForceFallback &&
                         !_sourcesInFlight.Contains(state.ProgressSource) &&
                         !state.QueryInFlight &&
                         state.Schedule.NextDueUtc <= now)
@@ -365,19 +471,22 @@ namespace PlayniteAchievements.Services
                     _sourcesInFlight.Add(group.Key);
                 }
 
+                // Every tracked game runs the provider-refresh prong, whether or not it also has a
+                // fast source. It is the guaranteed floor: a stalled watcher, an unparseable file
+                // and a provider with no fast source all converge on the same cadence.
                 fallbackStates = _games.Values
                     .Where(state =>
-                        (state.ProgressSource == null || state.ForceFallback) &&
-                        state.FirstPollUtc <= now &&
-                        state.Schedule.NextDueUtc <= now)
+                        state.Provider != null &&
+                        state.NextFallbackDueUtc <= now)
                     .ToList();
                 foreach (var state in fallbackStates)
                 {
-                    state.Schedule.DueAt(now.Add(GetPollInterval()));
+                    state.NextFallbackDueUtc = now.Add(GetPollInterval());
                 }
 
                 friendStates = _games.Values
                     .Where(state =>
+                        state.Provider != null &&
                         !state.FriendInFlight &&
                         state.NextFriendDueUtc <= now &&
                         ShouldRunFriendRefresh())
@@ -411,7 +520,7 @@ namespace PlayniteAchievements.Services
                         if (_games.TryGetValue(state.Game.Id, out var tracked) &&
                             ReferenceEquals(state, tracked))
                         {
-                            state.Schedule.DueAt(CaptureTimelineClock.UtcNow.AddMilliseconds(250));
+                            state.NextFallbackDueUtc = CaptureTimelineClock.UtcNow.AddMilliseconds(250);
                         }
                     }
                 }
@@ -467,6 +576,13 @@ namespace PlayniteAchievements.Services
             {
                 timer.Stop();
             }
+
+            // Applying results fans out to UI-thread subscribers (theme state, start page,
+            // Playnite DB updates), whose 3-6 ms bodies land as dropped frames in a running
+            // notification slide. Deferring here, before any observation is applied, covers
+            // every marshaled subscriber at once; the bound keeps a leaked gate from ever
+            // holding progress back for more than one slide's worth of time.
+            await RenderQuietGate.WhenClearAsync(maxDeferMs: 800).ConfigureAwait(false);
 
             try
             {
@@ -552,9 +668,11 @@ namespace PlayniteAchievements.Services
             }
 
             var after = _cacheManager?.LoadGameData(state.Game.Id.ToString()) ?? before;
-            bool emitUnlocks;
+            bool primed;
+            DateTime sessionStartUtc;
             DateTime observedUtc;
             InGameUnlockAnchorPolicy anchorPolicy;
+            TimeSpan anchorBias;
             lock (_stateLock)
             {
                 if (!_games.TryGetValue(state.Game.Id, out var tracked) ||
@@ -563,7 +681,10 @@ namespace PlayniteAchievements.Services
                     return;
                 }
 
-                emitUnlocks = state.Schedule.ShouldEmitUnlocks();
+                // Captured before Succeeded below sets the baseline flag and clears the
+                // in-flight read's observation time.
+                primed = state.Schedule.ShouldEmitUnlocks();
+                sessionStartUtc = state.SessionStartUtc;
                 observedUtc = state.Schedule.ActiveReadObservedUtc;
                 if (observedUtc == default)
                 {
@@ -572,6 +693,7 @@ namespace PlayniteAchievements.Services
 
                 anchorPolicy = state.Registration?.UnlockAnchorPolicy ??
                     InGameUnlockAnchorPolicy.ProviderReported;
+                anchorBias = state.Registration?.UnlockAnchorBias ?? TimeSpan.Zero;
                 state.Schedule.Succeeded(
                     CaptureTimelineClock.UtcNow,
                     state.Registration?.PollInterval ?? TimeSpan.FromSeconds(60));
@@ -580,11 +702,11 @@ namespace PlayniteAchievements.Services
                 if (write.UnmatchedKeys.Count > 0 &&
                     CaptureTimelineClock.UtcNow >= state.RecoveryCooldownUtc)
                 {
-                    state.ForceFallback = true;
+                    // Keys the cached schema does not know about mean the schema is stale. Pull the
+                    // universal refresh prong forward to rebuild it; the fast prong keeps running
+                    // rather than being suspended, and the cooldown stops repeats from hammering.
                     state.RecoveryCooldownUtc = CaptureTimelineClock.UtcNow.AddMinutes(2);
-                    state.Schedule.DueAt(state.FirstPollUtc > CaptureTimelineClock.UtcNow
-                        ? state.FirstPollUtc
-                        : CaptureTimelineClock.UtcNow);
+                    state.NextFallbackDueUtc = CaptureTimelineClock.UtcNow;
                 }
             }
 
@@ -593,17 +715,23 @@ namespace PlayniteAchievements.Services
                 ProgressApplied?.Invoke(state.Game.Id);
             }
 
+            var emittableKeys = SelectEmittableKeys(
+                primed,
+                sessionStartUtc,
+                after,
+                write.NewlyUnlockedKeys);
             AchievementUnlockedEventArgs completion = null;
-            if (emitUnlocks && write.NewlyUnlockedKeys.Count > 0)
+            if (emittableKeys.Count > 0)
             {
                 completion = EmitUserUnlocks(
                     state,
                     before,
                     after,
-                    write.NewlyUnlockedKeys,
+                    emittableKeys,
                     elapsedMilliseconds,
                     observedUtc,
-                    anchorPolicy);
+                    anchorPolicy,
+                    anchorBias);
             }
 
             if (completion != null)
@@ -611,11 +739,159 @@ namespace PlayniteAchievements.Services
                 _notifyUnlocked?.Invoke(completion);
             }
 
+            var progressed = EmitProgressAdvances(state, before, after, primed, observedUtc);
+
             var totalLatencyMs = Math.Max(0, (long)(CaptureTimelineClock.UtcNow - observedUtc).TotalMilliseconds);
-            _logger?.Debug(
+            LogProgressApplied(
+                state,
+                query,
+                write,
+                emittableKeys,
+                progressed,
+                totalLatencyMs);
+        }
+
+        /// <summary>
+        /// Logs an applied read, naming the achievements behind the counts. Only reads that changed
+        /// something are logged, plus a <see cref="ProgressLogHeartbeat"/> tick for an unchanged
+        /// prong; the counts alone cannot say which achievements a source reported, and at the fast
+        /// prong's cadence the unchanged lines dominate the file.
+        /// </summary>
+        private void LogProgressApplied(
+            GamePollState state,
+            InGameProgressQueryResult query,
+            InGameProgressWriteResult write,
+            IReadOnlyList<string> emittableKeys,
+            int progressed,
+            long totalLatencyMs)
+        {
+            if (_logger == null)
+            {
+                return;
+            }
+
+            var achievements = query.Achievements ?? Array.Empty<AchievementProgressObservation>();
+            var unlockedKeys = achievements
+                .Where(observation => observation?.Unlocked == true &&
+                    !string.IsNullOrWhiteSpace(observation.ApiName))
+                .Select(observation => observation.ApiName)
+                .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var signature = string.Join(
+                "|",
+                achievements.Count,
+                write.NewlyUnlockedKeys.Count,
+                emittableKeys.Count,
+                progressed,
+                write.UnmatchedKeys.Count,
+                string.Join(",", unlockedKeys));
+
+            var now = CaptureTimelineClock.UtcNow;
+            bool changed;
+            lock (_stateLock)
+            {
+                if (!_games.TryGetValue(state.Game.Id, out var tracked) ||
+                    !ReferenceEquals(state, tracked))
+                {
+                    return;
+                }
+
+                changed = !string.Equals(state.LastProgressLogSignature, signature, StringComparison.Ordinal);
+                if (!changed &&
+                    state.LastProgressLogUtc != default &&
+                    now - state.LastProgressLogUtc < ProgressLogHeartbeat)
+                {
+                    return;
+                }
+
+                state.LastProgressLogSignature = signature;
+                state.LastProgressLogUtc = now;
+            }
+
+            var detail = string.Empty;
+            if (write.NewlyUnlockedKeys.Count > 0)
+            {
+                detail += $", newKeys=[{DescribeKeys(write.NewlyUnlockedKeys)}]";
+            }
+
+            if (emittableKeys.Count > 0)
+            {
+                detail += $", emittedKeys=[{DescribeKeys(emittableKeys)}]";
+            }
+
+            if (write.UnmatchedKeys.Count > 0)
+            {
+                detail += $", unmatchedKeys=[{DescribeKeys(write.UnmatchedKeys)}]";
+            }
+
+            if (changed)
+            {
+                detail += $", unlockedKeys=[{DescribeKeys(unlockedKeys)}]";
+            }
+            else
+            {
+                detail += " (unchanged)";
+            }
+
+            _logger.Debug(
                 $"[InGameMonitor] Progress applied: game={state.Game.Name}, provider={state.Provider?.ProviderKey}, " +
-                $"observed={query.Achievements.Count}, new={write.NewlyUnlockedKeys.Count}, " +
-                $"unmatched={write.UnmatchedKeys.Count}, latencyMs={totalLatencyMs}.");
+                $"observed={achievements.Count}, new={write.NewlyUnlockedKeys.Count}, " +
+                $"emitted={emittableKeys.Count}, progressed={progressed}, unmatched={write.UnmatchedKeys.Count}, " +
+                $"latencyMs={totalLatencyMs}{detail}.");
+        }
+
+        private static string DescribeKeys(IReadOnlyList<string> keys)
+        {
+            if (keys == null || keys.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            if (keys.Count <= ProgressLogKeyLimit)
+            {
+                return string.Join(", ", keys);
+            }
+
+            return string.Join(", ", keys.Take(ProgressLogKeyLimit)) +
+                $", +{keys.Count - ProgressLogKeyLimit} more";
+        }
+
+        /// <summary>
+        /// Applies <see cref="InGameUnlockEmissionPolicy"/> to each newly-unlocked key. A primed read
+        /// short-circuits, so the file-watch safety cadence never pays for the unlock-time lookup.
+        /// </summary>
+        private static IReadOnlyList<string> SelectEmittableKeys(
+            bool primed,
+            DateTime sessionStartUtc,
+            GameAchievementData after,
+            IReadOnlyList<string> newlyUnlockedKeys)
+        {
+            if (newlyUnlockedKeys == null || newlyUnlockedKeys.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            if (primed)
+            {
+                return newlyUnlockedKeys;
+            }
+
+            var unlockTimeByKey = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var achievement in after?.Achievements ?? new List<AchievementDetail>())
+            {
+                if (!string.IsNullOrWhiteSpace(achievement?.ApiName))
+                {
+                    unlockTimeByKey[achievement.ApiName] = achievement.UnlockTimeUtc;
+                }
+            }
+
+            return newlyUnlockedKeys
+                .Where(key =>
+                    !string.IsNullOrWhiteSpace(key) &&
+                    unlockTimeByKey.TryGetValue(key, out var unlockTimeUtc) &&
+                    InGameUnlockEmissionPolicy.ShouldEmit(false, sessionStartUtc, unlockTimeUtc))
+                .ToList();
         }
 
         private void ScheduleSourceFailure(GamePollState state, string reason)
@@ -693,7 +969,8 @@ namespace PlayniteAchievements.Services
                 ReferenceEquals(state.ProgressSource, progressSource) &&
                 previousTargets.SequenceEqual(nextTargets, StringComparer.OrdinalIgnoreCase) &&
                 state.Registration?.IsRemote == registration?.IsRemote &&
-                state.Registration?.UnlockAnchorPolicy == registration?.UnlockAnchorPolicy;
+                state.Registration?.UnlockAnchorPolicy == registration?.UnlockAnchorPolicy &&
+                state.Registration?.UnlockAnchorBias == registration?.UnlockAnchorBias;
 
             List<IDisposable> oldSubscriptions = null;
             int generation;
@@ -714,7 +991,6 @@ namespace PlayniteAchievements.Services
                 state.ProgressSource = progressSource;
                 state.Registration = registration;
                 state.CachedSchema = cached;
-                state.ForceFallback = false;
                 if (!equivalent)
                 {
                     oldSubscriptions = state.WatchSubscriptions.ToList();
@@ -724,7 +1000,6 @@ namespace PlayniteAchievements.Services
                 var now = CaptureTimelineClock.UtcNow;
                 state.Schedule.Configure(
                     now,
-                    state.FirstPollUtc,
                     progressSource != null,
                     registration?.IsRemote == true,
                     equivalent);
@@ -771,9 +1046,22 @@ namespace PlayniteAchievements.Services
 
             _logger?.Debug(
                 $"[InGameMonitor] Configured game={state.Game.Name}, provider={provider.ProviderKey}, " +
-                $"source={(progressSource == null ? "fallback" : registration.IsRemote ? "feed" : "file")}, " +
-                $"targets={nextTargets.Count}.");
+                $"prongs={DescribeProngs(state)}, targets={nextTargets.Count}.");
             return true;
+        }
+
+        /// <summary>
+        /// The prong set servicing a game. The refresh prong is always present; a fast source, when
+        /// one registered, is layered on top of it.
+        /// </summary>
+        private static string DescribeProngs(GamePollState state)
+        {
+            if (state.ProgressSource == null)
+            {
+                return "refresh";
+            }
+
+            return state.Registration?.IsRemote == true ? "feed+refresh" : "file+refresh";
         }
 
         private void OnFileSignal(Guid gameId, int generation, string path, bool watcherError)
@@ -807,7 +1095,7 @@ namespace PlayniteAchievements.Services
                     {
                         foreach (var state in states)
                         {
-                            state.Schedule.DueAt(CaptureTimelineClock.UtcNow.AddSeconds(1));
+                            state.NextFallbackDueUtc = CaptureTimelineClock.UtcNow.AddSeconds(1);
                         }
                     }
                     return;
@@ -857,21 +1145,23 @@ namespace PlayniteAchievements.Services
 
                         var before = beforeByGame[state.Game.Id];
                         var after = _cacheManager?.LoadGameData(state.Game.Id.ToString());
+                        // Read the baseline flag before MarkPrimed below sets it.
+                        var primed = state.Schedule.ShouldEmitUnlocks();
                         var keys = _differ.DiffUserUnlocks(before, after)
                             .Where(achievement =>
                                 achievement != null &&
                                 !string.IsNullOrWhiteSpace(achievement.ApiName) &&
-                                (state.Schedule.Primed ||
-                                 (achievement.UnlockTimeUtc.HasValue &&
-                                  achievement.UnlockTimeUtc.Value.ToUniversalTime() >= state.SessionStartUtc)))
+                                InGameUnlockEmissionPolicy.ShouldEmit(
+                                    primed,
+                                    state.SessionStartUtc,
+                                    achievement.UnlockTimeUtc))
                             .Select(achievement => achievement.ApiName)
                             .ToList();
 
                         lock (_stateLock)
                         {
-                            state.ForceFallback = false;
                             state.CachedSchema = after;
-                            state.Schedule.MarkFallbackSuccess(CaptureTimelineClock.UtcNow, GetPollInterval());
+                            state.Schedule.MarkPrimed();
                         }
 
                         var observedUtc = CaptureTimelineClock.UtcNow;
@@ -884,11 +1174,16 @@ namespace PlayniteAchievements.Services
                                 keys,
                                 timer.ElapsedMilliseconds,
                                 observedUtc,
-                                InGameUnlockAnchorPolicy.ProviderReported);
+                                InGameUnlockAnchorPolicy.ProviderReported,
+                                // Refresh-prong unlocks carry the same provider stamps the fast
+                                // source reports, so a registered bias applies here too.
+                                state.Registration?.UnlockAnchorBias ?? TimeSpan.Zero);
                         if (completion != null)
                         {
                             _notifyUnlocked?.Invoke(completion);
                         }
+
+                        EmitProgressAdvances(state, before, after, primed, observedUtc);
 
                         if (state.ProgressSource == null && after?.Achievements?.Count > 0)
                         {
@@ -976,38 +1271,59 @@ namespace PlayniteAchievements.Services
             IReadOnlyList<string> allowedKeys,
             long elapsedMs,
             DateTime observedUtc,
-            InGameUnlockAnchorPolicy anchorPolicy)
+            InGameUnlockAnchorPolicy anchorPolicy,
+            TimeSpan anchorBias)
         {
             var game = state.Game;
             // Both snapshots take the custom-data overlay. A manual capstone lives in the custom
-            // data store rather than the cache row, so an unhydrated "before" reads as incomplete
-            // and every unlock landing after the capstone looks like it completed the game.
+            // data store rather than the cache row, so an unhydrated snapshot would drop the
+            // IsCapstone flag from the toast args; hydration also stamps DefaultOrderIndex for
+            // the emission sort below.
             HydrateForToast(before);
             HydrateForToast(after);
             var allowed = new HashSet<string>(
                 allowedKeys ?? Array.Empty<string>(),
                 StringComparer.OrdinalIgnoreCase);
-            var unlocks = (after?.Achievements ?? new List<AchievementDetail>())
+            var candidates = (after?.Achievements ?? new List<AchievementDetail>())
                 .Where(achievement =>
                     achievement?.Unlocked == true &&
                     !string.IsNullOrWhiteSpace(achievement.ApiName) &&
-                    allowed.Contains(achievement.ApiName) &&
-                    state.ToastedUserKeys.Add(achievement.ApiName))
-                .Where(a => a?.IsFiltered != true)
+                    allowed.Contains(achievement.ApiName))
                 .ToList();
+
+            // ToastedUserKeys is what keeps the two prongs from both notifying the same unlock: the
+            // fast source and the universal refresh prong run concurrently on the same game and can
+            // observe one unlock independently, so this per-session set is load-bearing, not
+            // incidental. Claiming happens under the state lock because those two prongs can reach
+            // this method at the same time for the same game; whichever claims a key notifies it.
+            List<AchievementDetail> claimed;
+            lock (_stateLock)
+            {
+                claimed = candidates
+                    .Where(achievement => state.ToastedUserKeys.Add(achievement.ApiName))
+                    .ToList();
+            }
+
+            // Filtered achievements still consume their claim, so a rarity/category filter cannot be
+            // toggled mid-session into replaying an unlock the player already passed.
+            // HydrateForToast(after) above stamped DefaultOrderIndex on these instances, so the
+            // emission sort sees the game's custom/provider order.
+            var unlocks = InGameUnlockEmissionOrder.Sort(claimed.Where(a => a?.IsFiltered != true));
             _logger?.Debug(
                 $"[InGameMonitor] User progress complete: game={game.Name}, elapsedMs={elapsedMs}, unlocks={unlocks.Count}.");
 
-            // This batch completes the game when the data crossed from incomplete to complete
-            // (all unlocked, or the capstone unlocked) with at least one new unlock in hand. Both
-            // snapshots are hydrated above, so the two sides of the comparison agree on capstones.
-            var completesGame = unlocks.Count > 0 && before?.IsCompleted != true && after?.IsCompleted == true;
+            // This batch reaches 100% when the data crossed from not-all-unlocked to all-unlocked
+            // with at least one new unlock in hand. Deliberately not IsCompleted: a capstone
+            // unlock marks the game completed library-wide, but the standalone completion
+            // notification is reserved for true 100% (the capstone's own toast, flagged
+            // IsCapstone, is the capstone notification).
+            var reaches100Percent = unlocks.Count > 0 && before?.IsFullyUnlocked != true && after?.IsFullyUnlocked == true;
 
-            // The single unlock that finished the game: the newly-unlocked capstone (a capstone
-            // unlock alone marks completion), otherwise the last achievement to unlock (100%
-            // reached). Null when this batch does not complete the game — so a regular unlock
-            // landing after the game was already complete is never flagged as the completion.
-            var completingApiName = completesGame ? ResolveCompletingApiName(unlocks) : null;
+            // The single unlock that finished the game: the capstone when it lands in the
+            // 100%-reaching batch, otherwise the last achievement to unlock. Null when this batch
+            // does not reach 100% — so a regular unlock landing after the game was already
+            // complete is never flagged as the completion.
+            var completingApiName = reaches100Percent ? ResolveCompletingApiName(unlocks) : null;
 
             var numberByApiName = BuildAchievementNumberMap(after);
             foreach (var achievement in unlocks)
@@ -1021,15 +1337,16 @@ namespace PlayniteAchievements.Services
                     ResolveAchievementNumber(numberByApiName, achievement),
                     isCompletionAchievement,
                     observedUtc,
-                    anchorPolicy));
+                    anchorPolicy,
+                    anchorBias));
             }
 
             // The completion time is the triggering achievement's unlock time — the latest in the
             // completing batch. Null when the provider supplies no timestamps, so the completion
             // toast shows no datetime exactly when its unlocks don't.
             var completionTimeUtc = unlocks.Select(a => a?.UnlockTimeUtc).Max();
-            return completesGame
-                ? CreateUserCompletionEventArgs(game, after, completionTimeUtc, observedUtc, anchorPolicy)
+            return reaches100Percent
+                ? CreateUserCompletionEventArgs(game, after, completionTimeUtc, observedUtc, anchorPolicy, anchorBias)
                 : null;
         }
 
@@ -1254,26 +1571,20 @@ namespace PlayniteAchievements.Services
                 return (0, null);
             }
 
-            // This batch completes the friend's game when the rows are complete now (all
-            // unlocked, or an unlocked capstone) and were not complete before these fresh
-            // unlocks landed.
-            var freshKeys = new HashSet<string>(
-                fresh.Where(row => row != null).Select(row => row.ApiName ?? string.Empty),
-                StringComparer.OrdinalIgnoreCase);
+            // This batch reaches 100% for the friend when the rows are all unlocked now and were
+            // not before these fresh unlocks landed. A friend's capstone unlock is a regular
+            // friend unlock notification, not a completion — mirroring the own-unlock rule that
+            // reserves the standalone completion notification for true 100%.
             var unlockedNow = rows.Count(row => row?.Unlocked == true);
-            var completeNow =
-                (rows.Count > 0 && unlockedNow >= rows.Count) ||
-                rows.Any(row => row?.IsCapstone == true && row.Unlocked);
-            var completeBefore =
-                (rows.Count > 0 && unlockedNow - fresh.Count >= rows.Count) ||
-                rows.Any(row => row?.IsCapstone == true && row.Unlocked && !freshKeys.Contains(row.ApiName ?? string.Empty));
-            var completesGame = completeNow && !completeBefore;
+            var completeNow = rows.Count > 0 && unlockedNow >= rows.Count;
+            var completeBefore = rows.Count > 0 && unlockedNow - fresh.Count >= rows.Count;
+            var reaches100Percent = completeNow && !completeBefore;
 
-            // The single fresh unlock that finished the friend's game: the newly-unlocked capstone,
-            // otherwise the last to unlock by timestamp (falling back to the last item). Null unless
-            // this batch completes the game, so a fresh unlock landing after the friend's game was
-            // already complete is never flagged as the completion.
-            var completingFriendApiName = completesGame
+            // The single fresh unlock that finished the friend's game: the capstone when it lands
+            // in the 100%-reaching batch, otherwise the last to unlock by timestamp (falling back
+            // to the last item). Null unless this batch reaches 100%, so a fresh unlock landing
+            // after the friend's game was already complete is never flagged as the completion.
+            var completingFriendApiName = reaches100Percent
                 ? (fresh.LastOrDefault(row => row?.IsCapstone == true)
                     ?? fresh
                         .OrderBy(row => row?.UnlockTimeUtc ?? DateTime.MinValue)
@@ -1290,7 +1601,7 @@ namespace PlayniteAchievements.Services
             // The completion time is the triggering achievement's unlock time — the latest in the
             // completing batch — and null when the provider supplies no timestamps.
             var completionTimeUtc = fresh.Select(row => row?.UnlockTimeUtc).Max();
-            return (fresh.Count, completesGame ? CreateFriendCompletionEventArgs(state.Game, target, rows, completionTimeUtc) : null);
+            return (fresh.Count, reaches100Percent ? CreateFriendCompletionEventArgs(state.Game, target, rows, completionTimeUtc) : null);
         }
 
         private HashSet<string> GetToastedFriendSet(GamePollState state, FriendPollTarget target)
@@ -1364,8 +1675,7 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var persisted = _settings?.Persisted;
-            if (persisted == null)
+            if (_settings?.Persisted == null)
             {
                 return;
             }
@@ -1374,7 +1684,7 @@ namespace PlayniteAchievements.Services
             {
                 var hydrator = new GameDataHydrator(
                     _api,
-                    persisted,
+                    _settings,
                     PlayniteAchievementsPlugin.Instance?.GameCustomDataStore);
                 hydrator.Hydrate(data);
             }
@@ -1441,7 +1751,8 @@ namespace PlayniteAchievements.Services
                     ResolveAchievementNumber(numberByApiName, achievement),
                     isCompletionAchievement: false,
                     observedUtc,
-                    InGameUnlockAnchorPolicy.SourceObservation);
+                    InGameUnlockAnchorPolicy.SourceObservation,
+                    TimeSpan.Zero);
                 args.IsTestFire = true;
 
                 _logger?.Debug(
@@ -1501,6 +1812,39 @@ namespace PlayniteAchievements.Services
         }
 
         /// <summary>
+        /// The first friend-achievement icon candidate that is already a cached local file.
+        /// Friend rows loaded from the store carry absolute paths to the images the refresh
+        /// downloaded (the "...IconUrl" field names are historical), but a row whose art has not
+        /// been cached yet still holds the remote URL. Notifications never fetch over the network
+        /// -- they fire during gameplay -- so an uncached icon yields null here and the toast
+        /// falls back to the built-in placeholder until a refresh caches the real art.
+        /// </summary>
+        private static string ResolveCachedFriendIcon(params string[] candidates)
+        {
+            foreach (var candidate in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    continue;
+                }
+
+                var trimmed = candidate.Trim();
+                try
+                {
+                    if (System.IO.Path.IsPathRooted(trimmed) && System.IO.File.Exists(trimmed))
+                    {
+                        return trimmed;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Resolves a Playnite database art reference (game icon/cover) to an absolute local
         /// file path for template bindings; null when the game has no art.
         /// </summary>
@@ -1523,10 +1867,11 @@ namespace PlayniteAchievements.Services
         }
 
         /// <summary>
-        /// The ApiName of the achievement that finished the game within a completing batch: the
-        /// newly-unlocked capstone (an unlocked capstone alone marks completion), otherwise the
-        /// last achievement to unlock by timestamp (falling back to the last item when the
-        /// provider supplies no unlock times). Callers pass only batches that complete the game.
+        /// The ApiName of the achievement that finished the game within a 100%-reaching batch:
+        /// the capstone when it is part of the batch (e.g. a platinum landing with the final
+        /// trophies), otherwise the last achievement to unlock by timestamp (falling back to the
+        /// last item when the provider supplies no unlock times). Callers pass only batches that
+        /// reach 100%.
         /// </summary>
         private static string ResolveCompletingApiName(IReadOnlyList<AchievementDetail> unlocks)
         {
@@ -1549,10 +1894,11 @@ namespace PlayniteAchievements.Services
             int achievementNumber,
             bool isCompletionAchievement,
             DateTime observedUtc,
-            InGameUnlockAnchorPolicy anchorPolicy)
+            InGameUnlockAnchorPolicy anchorPolicy,
+            TimeSpan anchorBias)
         {
             var reportedUtc = achievement?.UnlockTimeUtc;
-            var videoAnchor = InGameUnlockAnchorSelector.Select(anchorPolicy, reportedUtc, observedUtc);
+            var videoAnchor = InGameUnlockAnchorSelector.Select(anchorPolicy, reportedUtc, observedUtc, anchorBias);
             return new AchievementUnlockedEventArgs
             {
                 PlayniteGameId = game?.Id ?? data?.PlayniteGameId ?? Guid.Empty,
@@ -1584,17 +1930,135 @@ namespace PlayniteAchievements.Services
             };
         }
 
+        /// <summary>
+        /// Announces still-locked achievements whose progress advanced between the snapshots as
+        /// silent progress notifications, and returns how many were announced. Only a primed read
+        /// may announce: the session's baseline read carries progress earned while the game was
+        /// not monitored, and progress has no timestamp to tell that apart, so the baseline flag is
+        /// the whole gate. Shared by both prongs, which is why the claim below is load-bearing.
+        /// </summary>
+        private int EmitProgressAdvances(
+            GamePollState state,
+            GameAchievementData before,
+            GameAchievementData after,
+            bool primed,
+            DateTime observedUtc)
+        {
+            if (!primed || _settings?.Persisted?.EnableProgressToasts != true)
+            {
+                return 0;
+            }
+
+            var advances = _differ.DiffProgressAdvances(before, after);
+            if (advances.Count == 0)
+            {
+                return 0;
+            }
+
+            // Same custom-data overlay as the unlock path, for IsFiltered and DefaultOrderIndex.
+            HydrateForToast(after);
+
+            // Both prongs can observe one advance independently, so a key is claimed under the
+            // state lock and only for a higher numerator than the one already announced. An
+            // achievement whose unlock this session already claimed is never announced as progress.
+            var claimed = new List<AchievementProgressAdvance>();
+            lock (_stateLock)
+            {
+                foreach (var advance in advances)
+                {
+                    var key = advance.ApiName;
+                    if (string.IsNullOrWhiteSpace(key) ||
+                        advance.Achievement?.IsFiltered == true ||
+                        state.ToastedUserKeys.Contains(key))
+                    {
+                        continue;
+                    }
+
+                    if (state.NotifiedProgressByKey.TryGetValue(key, out var announced) &&
+                        announced >= advance.Current)
+                    {
+                        continue;
+                    }
+
+                    state.NotifiedProgressByKey[key] = advance.Current;
+                    claimed.Add(advance);
+                }
+            }
+
+            if (claimed.Count == 0)
+            {
+                return 0;
+            }
+
+            var numberByApiName = BuildAchievementNumberMap(after);
+            foreach (var advance in claimed)
+            {
+                _notifyUnlocked?.Invoke(CreateUserProgressEventArgs(
+                    state.Game,
+                    after,
+                    advance,
+                    ResolveAchievementNumber(numberByApiName, advance.Achievement),
+                    observedUtc));
+            }
+
+            return claimed.Count;
+        }
+
+        private AchievementUnlockedEventArgs CreateUserProgressEventArgs(
+            Game game,
+            GameAchievementData data,
+            AchievementProgressAdvance advance,
+            int achievementNumber,
+            DateTime observedUtc)
+        {
+            var achievement = advance.Achievement;
+            return new AchievementUnlockedEventArgs
+            {
+                PlayniteGameId = game?.Id ?? data?.PlayniteGameId ?? Guid.Empty,
+                GameName = data?.GameName ?? game?.Name,
+                GameIconPath = ResolveGameArtPath(game?.Icon),
+                GameCoverPath = ResolveGameArtPath(game?.CoverImage),
+                ProviderKey = achievement?.ProviderKey ?? data?.ProviderKey,
+                ApiName = achievement?.ApiName,
+                DisplayName = achievement?.DisplayName,
+                Description = achievement?.Description,
+                Category = achievement?.Category,
+                // Still locked, so both halves travel: the view model picks the locked art when
+                // the provider ships a distinct one, grays the unlocked art when it does not, and
+                // covers either when the visibility settings say the achievement is a spoiler.
+                IconPath = achievement?.UnlockedIconPath,
+                LockedIconPath = achievement?.LockedIconPath,
+                GlobalPercent = achievement?.GlobalPercentUnlocked,
+                RarityTier = achievement?.Rarity.ToString(),
+                TrophyType = achievement?.TrophyType,
+                IsHidden = achievement?.Hidden == true,
+                IsHardcore = IsHardcoreCategory(achievement?.CategoryType),
+                Points = achievement?.Points,
+                ScaledPoints = achievement?.ScaledPoints,
+                ObservedUtc = observedUtc,
+                UnlockedCount = data?.UnlockedCount ?? 0,
+                TotalCount = data?.AchievementCount ?? 0,
+                AchievementNumber = achievementNumber,
+                IsProgressUpdate = true,
+                ProgressNum = advance.Current,
+                ProgressDenom = advance.Denominator,
+                PreviousProgressNum = advance.Previous
+            };
+        }
+
         private AchievementUnlockedEventArgs CreateUserCompletionEventArgs(
             Game game,
             GameAchievementData data,
             DateTime? completionTimeUtc,
             DateTime observedUtc,
-            InGameUnlockAnchorPolicy anchorPolicy)
+            InGameUnlockAnchorPolicy anchorPolicy,
+            TimeSpan anchorBias)
         {
             var videoAnchor = InGameUnlockAnchorSelector.Select(
                 anchorPolicy,
                 completionTimeUtc,
-                observedUtc);
+                observedUtc,
+                anchorBias);
             return new AchievementUnlockedEventArgs
             {
                 PlayniteGameId = game?.Id ?? data?.PlayniteGameId ?? Guid.Empty,
@@ -1630,7 +2094,7 @@ namespace PlayniteAchievements.Services
                 DisplayName = row?.DisplayName,
                 Description = row?.Description,
                 Category = row?.Category,
-                IconPath = row?.UnlockedIconUrl ?? row?.IconUrl,
+                IconPath = ResolveCachedFriendIcon(row?.UnlockedIconUrl, row?.IconUrl),
                 GlobalPercent = row?.GlobalPercentUnlocked,
                 RarityTier = row?.Rarity?.ToString(),
                 TrophyType = row?.TrophyType,

@@ -32,13 +32,26 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <!-- No symbols in the packed .pext: the .pdb was 3.58 MB of a 10.36 MB package, and logged
+         exceptions are overwhelmingly environmental (HTTP/socket/IO/JSON), where the exception type
+         and the method name in the trace are the whole diagnosis. Traces still carry exception type,
+         message, inner exceptions, and namespace-qualified method names; only the trailing
+         "in [file]:line N" is lost. DebugType=portable is NOT an alternative: .NET Framework cannot
+         read portable PDBs, so it drops line numbers anyway at a fifth of the size. Build Debug to
+         get symbols while developing. -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>preview</LangVersion>
+    <!-- Release output is what Toolbox packs into the .pext. Suppress the .pdb and IntelliSense .xml
+         files MSBuild otherwise copies next to each referenced assembly: neither is loaded at runtime,
+         and together they accounted for 1.59 MB of the 10.36 MB 3.1.2 package. This also cleared an
+         orphaned protobuf-net.pdb, whose DLL Toolbox already strips because Playnite provides it. -->
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
   </PropertyGroup>
   <ItemGroup>
     <!-- Plugin dependencies -->
@@ -135,6 +148,10 @@
       <HintPath>packages\VirtualizingWrapPanel.1.5.4\lib\net45\VirtualizingWrapPanel.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="XamlAnimatedGif">
+      <HintPath>packages\XamlAnimatedGif.2.3.2\lib\net45\XamlAnimatedGif.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Playnite.SDK, Version=6.14.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\PlayniteSDK.6.14.0\lib\net462\Playnite.SDK.dll</HintPath>
       <Private>False</Private>
@@ -166,7 +183,24 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="**\*.cs" Exclude="bin\**;obj\**;**\*.g.cs;**\*.g.i.cs" />
+    <!-- Helper is its own exe project (see below); its sources must not compile into the plugin. -->
+    <Compile Include="**\*.cs" Exclude="bin\**;obj\**;Helper\**;**\*.g.cs;**\*.g.i.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Builds the unlock-sound host before this project (ReferenceOutputAssembly=false: the plugin
+         never references the exe) and ships only its exe as loose content beside the plugin dll, so
+         Toolbox packs it. No second NAudio.dll and no .pdb come along; the copy is tracked by
+         FileWrites so Clean removes it. -->
+    <ProjectReference Include="Helper\PlayniteAchievements.Helper.csproj">
+      <Project>{7A2E4C51-9B3D-4F6E-8C1A-2D5F7E9B0C43}</Project>
+      <Name>PlayniteAchievements.Helper</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <Content Include="Helper\bin\$(Configuration)\PlayniteAchievementsHelper.exe">
+      <Link>PlayniteAchievementsHelper.exe</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Include="**\*.xaml" Exclude="bin\**;obj\**;Localization\**\*.xaml;Resources\DefaultTemplates\**\*.xaml">
@@ -192,13 +226,17 @@
     <Resource Include="Resources\BrandingIcon.png" />
     <Resource Include="Resources\HiddenAchIcon.png" />
     <Resource Include="Resources\UnlockedAchIcon.png" />
-    <Content Include="Resources\HiddenAchIcon.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <!-- UnlockedAchIcon is needed as a loose file too: HoyoverseDefinitionClient resolves it by path
+         as the icon fallback. HiddenAchIcon is only ever loaded through its pack:// URI, so it ships
+         as a Resource alone. -->
     <Content Include="Resources\UnlockedAchIcon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Hoyoverse\**\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- Bundled unlock sounds ship as loose files: the sound host process opens them by path. -->
+    <Content Include="Resources\Sounds\*.mp3;Resources\Sounds\notices.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

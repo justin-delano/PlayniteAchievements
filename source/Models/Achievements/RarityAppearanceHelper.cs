@@ -22,6 +22,14 @@ namespace PlayniteAchievements.Models.Achievements
 
         public static event EventHandler AppearanceChanged;
 
+        /// <summary>
+        /// Handlers currently attached to <see cref="AppearanceChanged"/>. This event lives for
+        /// the process, so a count that climbs run over run means subscribers are being stranded
+        /// (and rooted) instead of detaching. Diagnostics only.
+        /// </summary>
+        internal static int AppearanceChangedSubscriberCount =>
+            AppearanceChanged?.GetInvocationList()?.Length ?? 0;
+
         private static PersistedSettings _activeSettings;
 
         public static Color GetBaseColor(RarityTier tier, PersistedSettings settings = null)
@@ -138,6 +146,31 @@ namespace PlayniteAchievements.Models.Achievements
             resources["PlayAch.Effect.CompletedGlowStart"] = GetCompletedGlow(useEndColor: false, settings);
             resources["PlayAch.Effect.CompletedGlowEnd"] = GetCompletedGlow(useEndColor: true, settings);
             resources["PlayAch.Effect.CompletedGlowEdge"] = GetCompletedEdge(settings);
+            resources["PlayAch.Brush.CompletedGlowBloom"] = CreateCompletedGlowBloomBrush(settings);
+        }
+
+        /// <summary>
+        /// Diagonal CompletedStart -> CompletedEnd sweep for surfaces whose art is too small for
+        /// the two glow shadows to read and that draw the bloom as a blurred underlay instead.
+        /// The direction mirrors those shadows' offsets (start toward 135, end toward 315), so
+        /// the underlay carries the same up-left start / down-right end color bias.
+        /// </summary>
+        private static Brush CreateCompletedGlowBloomBrush(PersistedSettings settings)
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 1)
+            };
+
+            brush.GradientStops.Add(new GradientStop(GetCompletedStartColor(settings), 0.0));
+            brush.GradientStops.Add(new GradientStop(GetCompletedEndColor(settings), 1.0));
+            if (brush.CanFreeze)
+            {
+                brush.Freeze();
+            }
+
+            return brush;
         }
 
         /// <summary>
@@ -241,9 +274,10 @@ namespace PlayniteAchievements.Models.Achievements
         /// <summary>
         /// Binds a control's AnimateRarityGlows dependency property to the single global setting so
         /// the rarity-glow pulse toggle reaches every glow surface without per-usage-site plumbing.
-        /// The live PersistedSettings instance is mutated in place on save (and raises
-        /// PropertyChanged), so this one-way binding tracks the toggle. No-op when the plugin
-        /// instance is unavailable (design time, tests), leaving the DP at its default (true).
+        /// The setting raises PropertyChanged on save, and the binding path goes through the
+        /// settings wrapper so it survives the instance being replaced on cancel, so this one-way
+        /// binding tracks the toggle. No-op when the plugin instance is unavailable (design time,
+        /// tests), leaving the DP at its default (true).
         /// </summary>
         public static void BindAnimateRarityGlows(FrameworkElement element, DependencyProperty property)
         {
@@ -275,22 +309,28 @@ namespace PlayniteAchievements.Models.Achievements
             BindPersistedSetting(element, property, nameof(PersistedSettings.ShowHardcoreBorder));
         }
 
+        // Binds through the settings wrapper with a "Persisted.<name>" path rather than
+        // straight at the PersistedSettings instance: CancelEdit replaces that instance,
+        // and a binding sourced at it would stop tracking the setting from then on. WPF
+        // re-resolves the path when the wrapper raises PropertyChanged("Persisted").
         private static void BindPersistedSetting(
             FrameworkElement element,
             DependencyProperty property,
             string settingName)
         {
-            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
-            if (element == null || property == null || persisted == null)
+            var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+            if (element == null || property == null || settings?.Persisted == null)
             {
                 return;
             }
 
-            element.SetBinding(property, new Binding(settingName)
-            {
-                Source = persisted,
-                Mode = BindingMode.OneWay
-            });
+            element.SetBinding(
+                property,
+                new Binding($"{nameof(PlayniteAchievementsSettings.Persisted)}.{settingName}")
+                {
+                    Source = settings,
+                    Mode = BindingMode.OneWay
+                });
         }
 
         public static DropShadowEffect GetGlow(RarityTier tier, double blurRadius, PersistedSettings settings = null)

@@ -1,6 +1,68 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 3.2.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-09-10
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.2.1/PlayniteAchievements_3_2_1.pext
+    Changelog:
+    - "[Fixed] Icons in progress notifications and friend unlock notifications now show correctly."
+    - "[Adjusted] Progress notifications keep descriptions to a single line, so the progress bar has room."
+    - "[Adjusted] Progress notifications follow the Reveal Locked/Hidden achievement settings."
+    - "[New] Hidden achievements now show progress notifications too. Respecting spoiler settings."
+
+  - Version: 3.2.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-09-08
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.2.0/PlayniteAchievements_3_2_0.pext
+    Changelog:
+    - "[New] Subcategories! Categories can now contain other categories. Platforms that group their achievements (Steam DLC, PlayStation collections, World of Warcraft, StarCraft II, Final Fantasy XIV, and more) show their real structure, and category lists draw the tree."
+    - "[New] Improved category management in Manage Achievements: create, rename, duplicate, merge, and delete categories and subcategories."
+    - "[New] Progress notifications! See a quiet notification when you make progress toward an achievement while in game. Can be turned off overall or per platform."
+    - "[New] Riot Games support: track your League of Legends Challenges."
+    - "[New] Choose your own cover images for locked and hidden achievements."
+    - "[New] Notifications and captures can each be delayed after an unlock."
+    - "[New] Display option to show rarity badges below the progress bar in game grids."
+    - "[New] Test notification hotkey has been renamed to Retrigger notification, and allows you to re-capture your latest notification while in game."
+    - "[New] Removed dependency on UniPlaySong, enabling more flexible audio processing. New sound settings are available in Settings > Notifications > Behavior. Please continue to support the dev!"
+    - "[Adjusted] Improved in-game unlock detection for GOG Galaxy and Epic games."
+    - "[Adjusted] Capstone unlock and 100% completion unlock notifications are now more distinct."
+    - "[Adjusted] The compare dropdown in friends views now includes yourself."
+    - "[Fixed] PlayStation collections now include every trophy set, not just the first."
+    - "[Fixed] Tag sync better respects which tags you have enabled."
+    - "[Fixed] Final Fantasy XIV explains what to do when FFXIV Collect or the Lodestone is down, or when your achievements are private."
+    - "[Fixed] Steam games where every achievement is hidden now refresh correctly."
+    - "[Fixed] Fixed clips that recorded without any sound on some setups, and the notification chime in clips is quieter and better timed."
+    - "[Fixed] Recordings now follow the game itself, not its launcher window."
+    - "[Fixed] Clips export faster after an unlock."
+    - "[Fixed] Achievements unlocked at the same moment keep the game's own order in lists and notifications."
+    - "[Fixed] Smoother notification slide-in, especially while a refresh is running."
+    - "[Fixed] HoYoverse achievements now display in Chinese for Chinese languages."
+    - "[Fixed] MSX2 games now match the right RetroAchievements console."
+    - "[Fixed] Games with no achievements no longer show an empty progress bar."
+    - "[Fixed] Plugin windows now respond to clicks after switching to a display with a different scale."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+  - Version: 3.1.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-08-23
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v3.1.3/PlayniteAchievements_3_1_3.pext
+    Changelog:
+    - "[New] Achievement Goals! Right-click any achievement to set it as a goal. Goals are pinned to the top of your achievement lists (including in themes), marked with a pin in the status column, and managed from a new Goals tab in Manage Achievements. A goal retires itself automatically when you unlock it."
+    - "[New] RPCS3 trophies can now be read directly from PS3 disc images, without extracting the ISO first."
+    - "[New] Themes can now offer capstone and goal toggles on achievement rows."
+    - "[New] Display option to hide completion badges from category mode grids."
+    - "[Adjusted] Recent friend refreshes now also pick up friends' games you don't own, when unowned games are enabled. A new Skip Full Scans checkbox in Friends settings stops this discovery for chosen friends, while their already-tracked games keep updating."
+    - "[Fixed] RPCS3 and ShadPS4 trophies now show names and descriptions in your language when the game includes translations."
+    - "[Fixed] RPCS3, ShadPS4, and Xenia have improved rarity fetching from Exophase."
+    - "[Fixed] Notifications slide in more smoothly, and animated images in notifications play more efficiently."
+    - "[Fixed] Smoother rarity glow animations when many achievements are on screen."
+    - "[Fixed] Some cases where RetroAchievements video captures would have duplicate audio."
+    - "[Fixed] The View Achievements window now correctly uses its own settings for rarity glow, achievement name color, and column headers."
+    - "[Fixed] World of Warcraft rarity fetching from DataForAzeroth was fixed by adding a new authentication flow in settings."
+    - "[Adjusted] Smaller download: the plugin no longer ships debug files it does not use."
+    - "As always, many additional improvements and fixes behind the scenes."
+
   - Version: 3.1.2
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-08-12

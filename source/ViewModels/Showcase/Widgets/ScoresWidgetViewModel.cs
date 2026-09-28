@@ -1,0 +1,271 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Media;
+using LiveCharts;
+using LiveCharts.Wpf;
+using Playnite.SDK;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Overview;
+using PlayniteAchievements.Services.Showcase;
+using PlayniteAchievements.ViewModels;
+
+namespace PlayniteAchievements.ViewModels.Showcase.Widgets
+{
+    /// <summary>
+    /// One score card plus its cumulative score-over-time series for the mini line chart
+    /// rendered under the card.
+    /// </summary>
+    public sealed class ScoreCardWithHistoryViewModel
+    {
+        /// <summary>Kept modest so an early-game window crossing dozens of levels does not
+        /// turn the chart into solid stripes.</summary>
+        private const int MaxReachedTierLines = 10;
+
+        private static readonly Func<double, string> AxisLabelFormatter =
+            value => value.ToString("N0", FormattingCulture.Current);
+
+        public ScoreCardWithHistoryViewModel(
+            ScoreCardViewModel card,
+            int currentScore,
+            ChartValues<int> historyValues,
+            IList<string> historyLabels,
+            bool showChart,
+            string historyCaption,
+            string historyStartText,
+            string historyEndText)
+        {
+            Card = card;
+            HistoryValues = historyValues;
+            HistoryLabels = historyLabels;
+            ShowChart = showChart;
+            HistoryCaption = historyCaption;
+            HistoryStartText = historyStartText;
+            HistoryEndText = historyEndText;
+            HistoryMinValue = historyValues != null && historyValues.Count > 0
+                ? historyValues.Min()
+                : 0;
+            // The last history point should equal the live score, but tier math tolerates the
+            // two disagreeing by anchoring on whichever is higher so the line never clips.
+            var effectiveScore = historyValues != null && historyValues.Count > 0
+                ? Math.Max(currentScore, historyValues.Max())
+                : currentScore;
+            BuildTierMarkers(effectiveScore, (int)HistoryMinValue, card?.AccentBrush);
+        }
+
+        public ScoreCardViewModel Card { get; }
+
+        public ChartValues<int> HistoryValues { get; }
+
+        /// <summary>
+        /// Bottom of the mini chart's Y axis. The series is cumulative, so the window's first
+        /// value is its minimum; pinning the axis there spends the chart height on score gained
+        /// inside the window instead of on padding below the already-earned total.
+        /// </summary>
+        public double HistoryMinValue { get; }
+
+        /// <summary>
+        /// Top of the mini chart's Y axis: the score that starts the next level, so the gap
+        /// between the line's end and the chart top reads as progress toward the next tier.
+        /// NaN (auto) once the maximum level is reached.
+        /// </summary>
+        public double HistoryAxisMax { get; private set; } = double.NaN;
+
+        /// <summary>
+        /// Dotted horizontal markers at the level boundaries crossed inside the window plus the
+        /// upcoming one at the chart top.
+        /// </summary>
+        public SectionsCollection TierSections { get; private set; }
+
+        public Func<double, string> YLabelFormatter => AxisLabelFormatter;
+
+        private void BuildTierMarkers(int currentScore, int windowMinScore, Brush accent)
+        {
+            var sections = new SectionsCollection();
+            var current = AchievementLevelCalculator.CalculateModern(currentScore);
+            var axisMax = current.IsMaxLevel || current.CurrentLevelEndScore >= int.MaxValue - 1
+                ? double.NaN
+                : current.CurrentLevelEndScore + 1d;
+
+            var reached = new List<double>();
+            var walker = AchievementLevelCalculator.CalculateModern(Math.Max(0, windowMinScore));
+            while (!walker.IsMaxLevel &&
+                walker.CurrentLevelEndScore < currentScore &&
+                walker.CurrentLevelEndScore < int.MaxValue - 1)
+            {
+                var boundary = walker.CurrentLevelEndScore + 1;
+                reached.Add(boundary);
+                walker = AchievementLevelCalculator.CalculateModern(boundary);
+            }
+
+            foreach (var value in reached.Skip(Math.Max(0, reached.Count - MaxReachedTierLines)))
+            {
+                sections.Add(CreateTierSection(value, accent));
+            }
+
+            if (!double.IsNaN(axisMax))
+            {
+                sections.Add(CreateTierSection(axisMax, accent));
+            }
+
+            HistoryAxisMax = axisMax;
+            TierSections = sections;
+        }
+
+        private static AxisSection CreateTierSection(double value, Brush accent)
+        {
+            return new AxisSection
+            {
+                Value = value,
+                SectionWidth = 0,
+                Stroke = accent ?? Brushes.Gray,
+                StrokeThickness = 1,
+                StrokeDashArray = new DoubleCollection { 4, 4 },
+                DisableAnimations = true
+            };
+        }
+
+        /// <summary>Per-point date labels; hidden on the axis, surfaced by the hover tooltip.</summary>
+        public IList<string> HistoryLabels { get; }
+
+        public bool ShowChart { get; }
+
+        public string HistoryCaption { get; }
+
+        public string HistoryStartText { get; }
+
+        public string HistoryEndText { get; }
+    }
+
+    /// <summary>
+    /// Backs the Scores widget by reusing the existing <see cref="ScoreCardViewModel"/> /
+    /// ScoreCardControl. Shows the collection and/or prestige card per the score mode, laid out in
+    /// a UniformGrid whose orientation follows the viewport. Each card carries a cumulative score
+    /// history line derived from the projection; density only scales the card and chart sizes.
+    /// </summary>
+    public sealed class ScoresWidgetViewModel : ShowcaseWidgetViewModelBase
+    {
+        private int _rows = 1;
+        private int _columns = 1;
+        private bool _isFeatured = true;
+        private double _maxCardWidth = 360;
+        private double _chartHeight = 60;
+
+        // What the cards were last built from. Rebuilding the collection makes LiveCharts throw
+        // away and re-plot every series, so an unrelated refresh (a pin toggle, another widget's
+        // option, a resize that keeps the same density) must not touch it. The snapshot is held
+        // weakly: it is change-detection state only, and a strong field here would pin a whole
+        // full-library snapshot generation per Scores widget.
+        private IReadOnlyList<ShowcaseScorePoint> _builtHistory;
+        private WeakReference<OverviewDataSnapshot> _builtSnapshot;
+        private ShowcaseScoreMode _builtMode;
+        private bool _builtShowChart;
+
+        public BulkObservableCollection<ScoreCardWithHistoryViewModel> Cards { get; } =
+            new BulkObservableCollection<ScoreCardWithHistoryViewModel>();
+
+        public int Rows { get => _rows; private set => SetValue(ref _rows, value); }
+
+        public int Columns { get => _columns; private set => SetValue(ref _columns, value); }
+
+        public bool IsFeatured { get => _isFeatured; private set => SetValue(ref _isFeatured, value); }
+
+        public double MaxCardWidth { get => _maxCardWidth; private set => SetValue(ref _maxCardWidth, value); }
+
+        public double ChartHeight { get => _chartHeight; private set => SetValue(ref _chartHeight, value); }
+
+        protected override void Refresh()
+        {
+            var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
+            var mode = ShowcaseWidgetOptions.GetScoreMode(Projection?.Instance);
+            var includeCollection = mode != ShowcaseScoreMode.Prestige;
+            var includePrestige = mode != ShowcaseScoreMode.Collection;
+            var count = (includeCollection ? 1 : 0) + (includePrestige ? 1 : 0);
+            var tall = Orientation == WidgetViewportOrientation.Tall;
+
+            Rows = count > 1 && tall ? 2 : 1;
+            Columns = count > 1 && !tall ? 2 : 1;
+            IsFeatured = true;
+            MaxCardWidth = Density == WidgetViewportDensity.Expanded ? 440 : 360;
+            ChartHeight = Density == WidgetViewportDensity.Expanded ? 90 : 60;
+
+            var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
+            var showChart = history.Count >= 2;
+            OverviewDataSnapshot builtSnapshot = null;
+            _builtSnapshot?.TryGetTarget(out builtSnapshot);
+            if (Cards.Count > 0 &&
+                ReferenceEquals(_builtHistory, history) &&
+                ReferenceEquals(builtSnapshot, Projection?.Snapshot) &&
+                _builtMode == mode &&
+                _builtShowChart == showChart)
+            {
+                return;
+            }
+
+            _builtHistory = history;
+            _builtSnapshot = Projection?.Snapshot == null
+                ? null
+                : new WeakReference<OverviewDataSnapshot>(Projection.Snapshot);
+            _builtMode = mode;
+            _builtShowChart = showChart;
+
+            var rangeCaption = TimelineRangeText.Describe(
+                ShowcaseTimelineOptions.GetRange(Projection?.Instance));
+            var culture = FormattingCulture.Current;
+            var historyLabels = history
+                .Select(point => point.Date.ToString("d", culture))
+                .ToList();
+            var historyStart = history.Count > 0 ? historyLabels[0] : string.Empty;
+            var historyEnd = history.Count > 0 ? historyLabels[historyLabels.Count - 1] : string.Empty;
+
+            var uniformBadges = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?
+                .UseUniformRarityBadges ?? false;
+            var cards = new List<ScoreCardWithHistoryViewModel>();
+            if (includeCollection)
+            {
+                var card = new ScoreCardViewModel(ScoreCardType.Collection);
+                card.Apply(
+                    snapshot.CollectorScore,
+                    snapshot.CollectorLevel,
+                    snapshot.CollectorLevelProgress,
+                    snapshot.CollectorRank,
+                    uniformBadges);
+                cards.Add(new ScoreCardWithHistoryViewModel(
+                    card,
+                    snapshot.CollectorScore,
+                    new ChartValues<int>(history.Select(point => point.CollectionScore)),
+                    historyLabels,
+                    showChart,
+                    rangeCaption,
+                    historyStart,
+                    historyEnd));
+            }
+
+            if (includePrestige)
+            {
+                var card = new ScoreCardViewModel(ScoreCardType.Prestige);
+                card.Apply(
+                    snapshot.PrestigeScore,
+                    snapshot.PrestigeLevel,
+                    snapshot.PrestigeLevelProgress,
+                    snapshot.PrestigeRank,
+                    uniformBadges);
+                cards.Add(new ScoreCardWithHistoryViewModel(
+                    card,
+                    snapshot.PrestigeScore,
+                    new ChartValues<int>(history.Select(point => point.PrestigeScore)),
+                    historyLabels,
+                    showChart,
+                    rangeCaption,
+                    historyStart,
+                    historyEnd));
+            }
+
+            Cards.ReplaceAll(cards);
+        }
+
+    }
+}

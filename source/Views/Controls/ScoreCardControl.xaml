@@ -12,6 +12,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
             <Style x:Key="ScoreInfoButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
@@ -21,13 +22,13 @@
                 <Setter Property="Height" Value="18"/>
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
-                <Setter Property="Opacity" Value="0.72"/>
+                <Setter Property="Opacity" Value="0.68"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Score_Info_ButtonTooltip}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="border"
+                            <Border x:Name="Chrome"
                                     Width="{TemplateBinding Width}"
                                     Height="{TemplateBinding Height}"
                                     CornerRadius="9"
@@ -41,11 +42,11 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.22}"/>
+                                    <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.22}"/>
                                     <Setter Property="Opacity" Value="1"/>
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.22}"/>
+                                    <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.22}"/>
                                     <Setter Property="Opacity" Value="1"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
@@ -54,40 +55,97 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="ScoreCardPanelStyle" TargetType="Border">
+                <Setter Property="CornerRadius" Value="7"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="9,7"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!-- Background and border live in the style (not local values) so the Flat
+                     trigger below can strip them for hosts that provide their own chrome. -->
+                <Setter Property="Background" Value="{Binding AccentBackgroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{Binding AccentBrush}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
+                        <Setter Property="CornerRadius" Value="10"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="Padding" Value="15,13"/>
+                        <Setter Property="MinHeight" Value="112"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Flat, ElementName=Root}" Value="True">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="MinHeight" Value="0"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ScoreCardBadgeStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                <Setter Property="Width" Value="32"/>
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="Margin" Value="0,0,10,0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
+                        <Setter Property="Width" Value="54"/>
+                        <Setter Property="Height" Value="62"/>
+                        <Setter Property="Margin" Value="0,0,16,0"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
             <Style x:Key="ScoreCardLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
-                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-                <Setter Property="Opacity" Value="0.86"/>
+                <Setter Property="Opacity" Value="0.78"/>
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
+                        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
+                        <Setter Property="Opacity" Value="0.86"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ScoreCardPointsTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="ExtraBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Setter Property="Margin" Value="0,1,0,2"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
+                        <Setter Property="FontSize" Value="24"/>
+                        <Setter Property="Margin" Value="0,2,0,5"/>
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="ScoreCardTierTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
-                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
-                <Setter Property="FontWeight" Value="ExtraBold"/>
-                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-            </Style>
-
-            <Style x:Key="ScoreCardMetricTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
                 <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
-            </Style>
-
-            <Style x:Key="ScoreCardPanelStyle" TargetType="Border">
-                <Setter Property="CornerRadius" Value="6"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="8,5"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
+                        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="ScoreCardProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
-                <Setter Property="Height" Value="6"/>
+                <Setter Property="Height" Value="5"/>
                 <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Margin" Value="0,1,0,4"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFeatured, ElementName=Root}" Value="True">
+                        <Setter Property="Height" Value="7"/>
+                        <Setter Property="Margin" Value="0,1,0,7"/>
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="ScoreCardTooltipBorderStyle" TargetType="Border">
@@ -120,9 +178,7 @@
     </UserControl.Resources>
 
     <Grid DataContext="{Binding ScoreCard, ElementName=Root}">
-        <Border Style="{StaticResource ScoreCardPanelStyle}"
-                Background="{Binding AccentBackgroundBrush}"
-                BorderBrush="{Binding AccentBrush}">
+        <Border Style="{StaticResource ScoreCardPanelStyle}">
             <Border.ToolTip>
                 <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
                          Placement="Bottom"
@@ -154,83 +210,76 @@
                     </Border>
                 </ToolTip>
             </Border.ToolTip>
+
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="18"/>
-                    <RowDefinition Height="8"/>
-                    <RowDefinition Height="18"/>
-                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="44"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Image Grid.Row="0"
-                       Grid.RowSpan="3"
-                       Grid.Column="0"
-                       Width="30"
-                       Height="{StaticResource PlayAch.Size.Control.Height}"
-                       Margin="0,0,10,0"
-                       VerticalAlignment="Center"
+                <Image Grid.Column="0"
                        Source="{Binding BadgeIconKey, Converter={StaticResource ResourceKeyToImage}}"
-                       Effect="{StaticResource BadgeShadow}"
-                       Style="{StaticResource RarityIcon}"/>
-                <Grid Grid.Row="0"
-                      Grid.Column="1"
-                      Margin="0,-3,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Label}"
-                               Style="{StaticResource ScoreCardLabelTextStyle}"
-                               TextAlignment="Left"
-                               TextTrimming="CharacterEllipsis"
-                               MaxWidth="132"
-                               VerticalAlignment="Center"/>
-                    <Button Grid.Column="1"
-                            Content="&#xE946;"
-                            Style="{StaticResource ScoreInfoButtonStyle}"
-                            Click="ScoreInfoButton_Click"
-                            Margin="5,0,0,0"
-                            VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="3"
+                       Style="{StaticResource ScoreCardBadgeStyle}"/>
+
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding Label}"
+                                   Style="{StaticResource ScoreCardLabelTextStyle}"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1"
+                                Content="&#xE946;"
+                                Style="{StaticResource ScoreInfoButtonStyle}"
+                                Click="ScoreInfoButton_Click"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1"
                                Text="{Binding PointsText}"
-                               Style="{StaticResource ScoreCardMetricTextStyle}"
-                               TextAlignment="Right"
-                               HorizontalAlignment="Right"/>
-                </Grid>
-                <ProgressBar Grid.Row="1"
-                             Grid.Column="1"
-                             Value="{Binding LevelProgress, Mode=OneWay}"
-                             Style="{StaticResource ScoreCardProgressBarStyle}"
-                             BorderBrush="{Binding AccentBrush}"
-                             Foreground="{Binding AccentBrush}"
-                             VerticalAlignment="Center"
-                             Margin="0"/>
-                <Grid Grid.Row="2"
-                      Grid.Column="1"
-                      Margin="0"
-                      ClipToBounds="True">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding TierText}"
-                               Style="{StaticResource ScoreCardTierTextStyle}"
-                               Foreground="{Binding AccentBrush}"
-                               TextAlignment="Left"
-                               HorizontalAlignment="Stretch"/>
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding LevelText}"
-                               Style="{StaticResource ScoreCardTierTextStyle}"
-                               Foreground="{Binding AccentBrush}"
-                               TextAlignment="Left"
-                               MaxWidth="150"
-                               Margin="10,0,0,0"/>
+                               Style="{StaticResource ScoreCardPointsTextStyle}"/>
+
+                    <ProgressBar Grid.Row="2"
+                                 Value="{Binding LevelProgress, Mode=OneWay}"
+                                 Style="{StaticResource ScoreCardProgressBarStyle}"
+                                 BorderBrush="{Binding AccentBrush}"
+                                 Foreground="{Binding AccentBrush}"/>
+
+                    <TextBlock Grid.Row="3"
+                               Text="{Binding PointsUntilNextLevelText}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="0.62"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="0,0,0,3"
+                               Visibility="{Binding ShowNextLevelText, ElementName=Root, Converter={StaticResource BoolToVis}}"/>
+
+                    <Grid Grid.Row="4" ClipToBounds="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding TierText}"
+                                   Style="{StaticResource ScoreCardTierTextStyle}"
+                                   Foreground="{Binding AccentBrush}"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding LevelText}"
+                                   Style="{StaticResource ScoreCardTierTextStyle}"
+                                   Foreground="{Binding AccentBrush}"
+                                   Margin="10,0,0,0"/>
+                    </Grid>
                 </Grid>
             </Grid>
         </Border>

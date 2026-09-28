@@ -64,6 +64,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
+        private readonly Func<Widgets.WidgetDataCoordinator> _widgetCoordinatorAccessor;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
@@ -89,7 +90,8 @@ namespace PlayniteAchievements.Services.UI
             Action ensureAchievementResourcesLoaded,
             FullscreenControllerNavigationService fullscreenControllerNavigationService,
             FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
-            FriendGameAchievementsDataCoordinator friendGameAchievementsDataCoordinator = null)
+            FriendGameAchievementsDataCoordinator friendGameAchievementsDataCoordinator = null,
+            Func<Widgets.WidgetDataCoordinator> widgetCoordinatorAccessor = null)
         {
             _api = api;
             _logger = logger;
@@ -103,6 +105,7 @@ namespace PlayniteAchievements.Services.UI
             _gameCustomDataStore = gameCustomDataStore;
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _friendGameAchievementsDataCoordinator = friendGameAchievementsDataCoordinator;
+            _widgetCoordinatorAccessor = widgetCoordinatorAccessor;
             _settings = settings;
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
@@ -120,6 +123,17 @@ namespace PlayniteAchievements.Services.UI
             {
                 _logger?.Debug(ex, "Failed to dispose plugin window soft-close coordinator.");
             }
+        }
+
+        /// <summary>
+        /// True when any plugin-owned popout window (view achievements, manage, overview)
+        /// is currently open. Lets hotkey guards distinguish the plugin's own desktop
+        /// modals from foreign ones (e.g. Playnite's add-ons dialog), which keep blocking.
+        /// </summary>
+        public bool HasOpenPluginWindow()
+        {
+            return _achievementWindows.Values.Any(window => window?.IsVisible == true) ||
+                   _overviewWindow?.IsVisible == true;
         }
 
         private bool DetectFullscreenMode()
@@ -268,7 +282,10 @@ namespace PlayniteAchievements.Services.UI
 
             configureWindow?.Invoke(window);
             AttachWindowPlacement(window, placementKey, isFullscreen);
-            ApplyPopoutDpiAwareness(window, EnsureOwner(window), isFullscreen);
+            if (!isFullscreen)
+            {
+                PerMonitorWindowRealizer.Apply(window, EnsureOwner(window), _logger, "Popout");
+            }
 
             if (closed != null)
             {
@@ -296,65 +313,6 @@ namespace PlayniteAchievements.Services.UI
             }
 
             return window;
-        }
-
-        // Matches ToastNotificationService.DpiSettleTolerance: below this the two scales are the
-        // same scale read through two different APIs, not a real mismatch.
-        private const double PopoutDpiTolerance = 0.01;
-
-        /// <summary>
-        /// Realizes a popout's HWND under Per-Monitor-V2 when its monitor's true scale differs from
-        /// the scale WPF renders at, so Windows presents it natively instead of bitmap-stretching
-        /// (and thereby blurring) it. A window's DPI awareness is fixed at HWND creation, so this has
-        /// to happen before the window is shown.
-        ///
-        /// The mismatch guard is deliberate and mirrors ToastNotificationService: when the scales
-        /// already agree Windows never virtualizes the window, and forcing a per-monitor HWND anyway
-        /// routes WM_DPICHANGED through WPF's shared DPI state in this system-aware host process,
-        /// which has been observed to rescale sibling windows and hard-crash the process on
-        /// single-monitor high-DPI setups.
-        ///
-        /// The monitor is probed from the owner rather than the popout, which has no HWND yet. That
-        /// is exact for the CenterOwner default and an approximation when a persisted placement puts
-        /// the popout on another monitor; in the case this targets — a process whose latched system
-        /// DPI is stale, so every monitor mismatches it — the probe agrees either way.
-        /// </summary>
-        private void ApplyPopoutDpiAwareness(Window window, Window owner, bool isFullscreen)
-        {
-            if (window == null || isFullscreen)
-            {
-                return;
-            }
-
-            try
-            {
-                var ownerHandle = owner != null ? new WindowInteropHelper(owner).Handle : IntPtr.Zero;
-                var monitorScale = ToastWindowPlacer.ResolveMonitorScale(ownerHandle);
-                var systemScale = ToastWindowPlacer.SystemScale();
-                var needsPerMonitorWindow = systemScale > 0 &&
-                    Math.Abs(monitorScale - systemScale) >= PopoutDpiTolerance;
-
-                // Logged unconditionally, once per window open: the no-mismatch case is what
-                // distinguishes a DPI-virtualization report from an image-resampling one.
-                _logger?.Info(
-                    $"[Dpi] Popout '{window.Title}': monitorScale={monitorScale:0.###}, " +
-                    $"systemScale={systemScale:0.###}, perMonitorWindow={needsPerMonitorWindow}, " +
-                    $"threadContext={DpiAwarenessScope.DescribeThreadContext()}");
-
-                if (!needsPerMonitorWindow)
-                {
-                    return;
-                }
-
-                using (DpiAwarenessScope.PerMonitorV2())
-                {
-                    new WindowInteropHelper(window).EnsureHandle();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Failed to apply per-monitor DPI awareness to a plugin popout window.");
-            }
         }
 
         private Window EnsureOwner(Window window)
@@ -466,7 +424,8 @@ namespace PlayniteAchievements.Services.UI
                 progressWindow.WindowTitle,
                 progressWindow,
                 windowOptions,
-                isFullscreen);
+                isFullscreen,
+                "RefreshProgress");
 
             progressWindow.RequestClose += (s, ev) => window.Close();
 
@@ -1325,7 +1284,8 @@ namespace PlayniteAchievements.Services.UI
                     _refreshCoordinator,
                     _settings,
                     OverviewLaunchContext.Popout,
-                    _friendsOverviewDataCoordinator);
+                    _friendsOverviewDataCoordinator,
+                    _widgetCoordinatorAccessor);
 
                 var windowOptions = new WindowOptions
                 {
@@ -1557,6 +1517,8 @@ namespace PlayniteAchievements.Services.UI
                     windowOptions
                 );
 
+                AttachWindowPlacement(window, "ModernThemeControlsTest", isFullscreen: false);
+
                 try
                 {
                     if (window.Owner == null)
@@ -1617,6 +1579,7 @@ namespace PlayniteAchievements.Services.UI
 
                 window.MinWidth = 900;
                 window.MinHeight = 640;
+                AttachWindowPlacement(window, "DynamicThemeCommandTest", isFullscreen: false);
 
                 try
                 {
@@ -1786,6 +1749,7 @@ namespace PlayniteAchievements.Services.UI
                 var window = PlayniteUiProvider.CreateExtensionWindow(title, view, windowOptions);
                 window.MinWidth = 700;
                 window.MinHeight = 500;
+                AttachWindowPlacement(window, "ParityTest", isFullscreen: false);
                 window.ShowDialog();
             }
             catch (Exception ex)

@@ -30,7 +30,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                 {
                     if (exeStream == null)
                     {
-                        Logger?.Warn($"[RA] {Name}: Could not locate primary executable '{exeName}': {filePath}");
+                        WarnOnce($"[RA] {Name}: Could not locate primary executable '{exeName}': {filePath}");
                         return Array.Empty<string>();
                     }
 

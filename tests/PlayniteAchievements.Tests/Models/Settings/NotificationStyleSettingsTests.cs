@@ -66,9 +66,48 @@ namespace PlayniteAchievements.Tests.Models.Settings
                     NotificationSurfaceStyle.LineGameCategory,
                     NotificationSurfaceStyle.LineTitle,
                     NotificationSurfaceStyle.LineHeader,
-                    NotificationSurfaceStyle.LineDescription
+                    NotificationSurfaceStyle.LineDescription,
+                    NotificationSurfaceStyle.LineProgress
                 },
                 result);
+        }
+
+        [TestMethod]
+        public void CanonicalizeLineOrder_AppendsTheProgressLineToStoredFourLineOrders()
+        {
+            // Orders stored before the progress line existed gain it at the end, so existing
+            // users see their lines unchanged and the new row below them.
+            var result = NotificationSurfaceStyle.CanonicalizeLineOrder(new[]
+            {
+                NotificationSurfaceStyle.LineTitle,
+                NotificationSurfaceStyle.LineHeader,
+                NotificationSurfaceStyle.LineDescription,
+                NotificationSurfaceStyle.LineGameCategory
+            });
+
+            Assert.AreEqual(5, result.Count);
+            Assert.AreEqual(NotificationSurfaceStyle.LineProgress, result[4]);
+            Assert.AreEqual(NotificationSurfaceStyle.LineProgress, NotificationSurfaceStyle.DefaultLineOrder[4]);
+        }
+
+        [TestMethod]
+        public void Clone_CarriesProgressLineOptionsAndProgressHeader()
+        {
+            var surface = new NotificationSurfaceStyle
+            {
+                ProgressFontFamily = "Consolas",
+                ProgressFontSize = 13,
+                ProgressEmphasis = NotificationLineEmphasis.Bold
+            };
+            surface.HeaderTexts.ProgressHeader = "Getting there";
+
+            var clone = surface.Clone();
+
+            Assert.AreEqual("Consolas", clone.ProgressFontFamily);
+            Assert.AreEqual(13, clone.ProgressFontSize);
+            Assert.AreEqual(NotificationLineEmphasis.Bold, clone.ProgressEmphasis);
+            Assert.AreEqual("Getting there", clone.HeaderTexts.ProgressHeader);
+            Assert.AreNotSame(surface.HeaderTexts, clone.HeaderTexts);
         }
 
         [TestMethod]
@@ -153,6 +192,7 @@ namespace PlayniteAchievements.Tests.Models.Settings
             source.NotificationStyle.Toast.RarityFontFamily = "Georgia";
             source.NotificationStyle.Toast.RarityEmphasis =
                 NotificationLineEmphasis.Italic | NotificationLineEmphasis.Strikethrough;
+            source.NotificationStyle.Frame.FrameVignetteStrength = 75;
             var providerStyle = NotificationStyleSettings.CreateDefault();
             providerStyle.Toast.FontFamily = "Consolas";
             source.SetProviderNotificationStyle("Steam", providerStyle);
@@ -174,6 +214,7 @@ namespace PlayniteAchievements.Tests.Models.Settings
                 Assert.AreEqual(
                     NotificationLineEmphasis.Italic | NotificationLineEmphasis.Strikethrough,
                     copy.NotificationStyle.Toast.RarityEmphasis);
+                Assert.AreEqual(75, copy.NotificationStyle.Frame.FrameVignetteStrength);
                 CollectionAssert.AreEqual(
                     source.NotificationStyle.Toast.LineOrder,
                     copy.NotificationStyle.Toast.LineOrder);

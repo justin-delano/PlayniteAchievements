@@ -22,38 +22,19 @@ namespace PlayniteAchievements.Providers.Steam
 {
     internal sealed class SteamDataProvider : DataProviderBase<SteamSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IInGameProgressSource, IOfflineRefreshFallbackProvider, IDisposable
     {
+        /// <summary>
+        /// Resolved once at game start so the fast prong never repeats path discovery. Steam's remote
+        /// coverage is the monitor's universal provider-refresh prong, which runs for every tracked
+        /// game on the user's in-game interval — this state is local-file only. A private remote read
+        /// here would scrape the rate-limited community page twice per interval.
+        /// </summary>
         private sealed class SteamInGameState
         {
             public string StatsPath { get; set; }
             public string SchemaPath { get; set; }
             public int AppId { get; set; }
             public string GameName { get; set; }
-
-            /// <summary>When the next remote read falls due; default runs one on the first tick.</summary>
-            public DateTime NextRemoteReadUtc { get; set; }
-
-            public bool HasLocalStats => !string.IsNullOrWhiteSpace(StatsPath);
         }
-
-        /// <summary>
-        /// The remote backstop cadence: the in-game poll interval the user configured. A remote read
-        /// runs alongside the local stats file on this cadence, so a file that stops updating —
-        /// Steam in offline mode, a sync engine holding the handle, cloud-save lag — cannot silently
-        /// stall detection for a whole session. It is also the sole cadence for a game whose local
-        /// stats are unreadable.
-        ///
-        /// Unlike RetroAchievements, which can afford a 5s feed because its backstop is one
-        /// user-level call covering every game, Steam's only per-game unlock source is a rendered
-        /// community page (<see cref="SteamScanner.ScrapeAchievementsAsync"/>) that is expensive and
-        /// rate-limited — so it rides the user's interval rather than a tighter fixed one. The local
-        /// file stays the fast path at <see cref="InGameProgressRegistration.FileWatchSafetyPollInterval"/>.
-        /// </summary>
-        private TimeSpan RemoteBackstopInterval =>
-            TimeSpan.FromSeconds(Math.Max(10, _settings?.Persisted?.InGamePollIntervalSeconds ?? 15));
-
-        /// <summary>Backoff after a transient scrape failure or a 429, so a backstop never hammers.</summary>
-        private TimeSpan RemoteBackstopFailureBackoff =>
-            TimeSpan.FromTicks(RemoteBackstopInterval.Ticks * 4);
 
         internal static readonly Guid SteamPluginId = SteamGameIdentity.SteamPluginId;
 
@@ -77,8 +58,13 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
         private readonly IFriendsProvider _friendsProvider;
         private readonly SteamLocalStatsReader _localStatsReader = new SteamLocalStatsReader();
-        private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+
+        // Per-game signature of the last local progress read, so a change in the local stat file's
+        // progress values is logged exactly once when it happens. This is the definitive probe for
+        // whether Steam is writing incremental progress to the local file live during play.
+        private readonly Dictionary<Guid, string> _lastProgressSignature =
+            new Dictionary<Guid, string>();
 
         public SteamDataProvider(
             ILogger logger,
@@ -90,7 +76,6 @@ namespace PlayniteAchievements.Providers.Steam
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (api == null) throw new ArgumentNullException(nameof(api));
 
-            _settings = settings;
             _logger = logger;
             _sessionManager = new SteamSessionManager(api, logger);
 
@@ -270,35 +255,20 @@ namespace PlayniteAchievements.Providers.Steam
                 Directory.Exists(statsDirectory) &&
                 File.Exists(schemaPath);
 
-            var state = new SteamInGameState
-            {
-                AppId = appId,
-                GameName = game.Name,
-                StatsPath = localUsable ? statsPath : null,
-                SchemaPath = localUsable ? schemaPath : null
-            };
-
             if (!localUsable)
             {
                 // No readable local stats (Steam installed elsewhere, the game has never written
-                // them, a non-default userdata layout). Register remote rather than declining:
-                // declining drops the game to the monitor's generic fallback, which runs a full
-                // refresh — auth preflight and all — on every tick.
+                // them, a non-default userdata layout). Decline: with no fast prong to offer, the
+                // monitor's universal provider-refresh prong is this game's sole coverage, which is
+                // exactly the remote read a registration here would have duplicated.
                 _logger?.Info(
-                    $"[SteamAch] In-game tracking for '{game.Name}' is remote-only " +
-                    $"(no local stats at '{statsPath}' / schema at '{schemaPath}').");
-                return new InGameProgressRegistration
-                {
-                    ProviderKey = ProviderKey,
-                    IsRemote = true,
-                    PollInterval = RemoteBackstopInterval,
-                    State = state
-                };
+                    $"[SteamAch] No in-game fast source for '{game.Name}'; the provider refresh prong " +
+                    $"covers it (no local stats at '{statsPath}' / schema at '{schemaPath}').");
+                return null;
             }
 
             _logger?.Info(
-                $"[SteamAch] In-game tracking for '{game.Name}' via local stats: {statsPath} " +
-                $"(remote backstop every {RemoteBackstopInterval.TotalSeconds:0}s).");
+                $"[SteamAch] In-game tracking for '{game.Name}' via local stats: {statsPath}.");
             return new InGameProgressRegistration
             {
                 ProviderKey = ProviderKey,
@@ -308,18 +278,24 @@ namespace PlayniteAchievements.Providers.Steam
                 // the Windows clock used by video segments. The local file change is the StoreStats
                 // correlation point on that same Windows clock, so it is the capture-grade anchor.
                 UnlockAnchorPolicy = InGameUnlockAnchorPolicy.SourceObservation,
-                State = state
+                State = new SteamInGameState
+                {
+                    AppId = appId,
+                    GameName = game.Name,
+                    StatsPath = statsPath,
+                    SchemaPath = schemaPath
+                }
             };
         }
 
         /// <summary>
-        /// Reads the local stats file (the fast path, re-read on the file-watch safety cadence) and
-        /// merges a remote read on the user's in-game poll interval. Observations only ever assert
-        /// an unlock — the progress writer is monotonic — so a failed or partial remote read can
-        /// never retract what the local file already reported, and a stalled local file is covered
-        /// by the remote one.
+        /// Reads the local stats file, re-read on the file-watch safety cadence. Observations only
+        /// ever assert an unlock — the progress writer is monotonic — so a locked or mid-write file
+        /// can never retract what an earlier read reported, and a file that stops updating entirely
+        /// (Steam offline, a sync engine holding the handle, cloud-save lag) is covered by the
+        /// monitor's universal provider-refresh prong rather than by a remote read here.
         /// </summary>
-        async Task<IReadOnlyList<InGameProgressQueryResult>> IInGameProgressSource.QueryAsync(
+        Task<IReadOnlyList<InGameProgressQueryResult>> IInGameProgressSource.QueryAsync(
             IReadOnlyList<InGameTrackingContext> games,
             CancellationToken cancellationToken)
         {
@@ -335,131 +311,87 @@ namespace PlayniteAchievements.Providers.Steam
                     continue;
                 }
 
-                var observations = new Dictionary<string, AchievementProgressObservation>(
-                    StringComparer.OrdinalIgnoreCase);
-                var localFailed = false;
-                if (state.HasLocalStats)
+                var read = _localStatsReader.TryRead(state.StatsPath, state.SchemaPath);
+                if (!read.Success)
                 {
-                    var read = _localStatsReader.TryRead(state.StatsPath, state.SchemaPath);
-                    if (read.Success)
-                    {
-                        foreach (var pair in read.UnlockByApiName)
-                        {
-                            observations[pair.Key] = new AchievementProgressObservation
-                            {
-                                ApiName = pair.Key,
-                                Unlocked = true,
-                                UnlockTimeUtc = pair.Value
-                            };
-                        }
-                    }
-                    else
-                    {
-                        // Do not fail the tick outright: a locked or mid-write file is exactly the
-                        // case the remote backstop exists for. Only report failure if it also
-                        // yields nothing.
-                        localFailed = true;
-                    }
-                }
-
-                var remoteDue = DateTime.UtcNow >= state.NextRemoteReadUtc;
-                var remoteFailed = false;
-                if (remoteDue)
-                {
-                    var remote = await TryReadRemoteAsync(state, cancellationToken).ConfigureAwait(false);
-                    if (remote != null)
-                    {
-                        foreach (var observation in remote)
-                        {
-                            // The local file wins on unlock time: it is written at the moment of the
-                            // unlock, while the scraped page carries a coarser, timezone-rendered one.
-                            if (!observations.ContainsKey(observation.ApiName))
-                            {
-                                observations[observation.ApiName] = observation;
-                            }
-                        }
-
-                        state.NextRemoteReadUtc = DateTime.UtcNow.Add(RemoteBackstopInterval);
-                    }
-                    else
-                    {
-                        remoteFailed = true;
-                        state.NextRemoteReadUtc = DateTime.UtcNow.Add(RemoteBackstopFailureBackoff);
-                    }
-                }
-
-                if (observations.Count == 0 && (localFailed || (remoteFailed && !state.HasLocalStats)))
-                {
-                    results.Add(InGameProgressQueryResult.Failed(
-                        gameId, localFailed ? "file_unstable" : "remote_unavailable"));
+                    results.Add(InGameProgressQueryResult.Failed(gameId, "file_unstable"));
                     continue;
                 }
 
-                results.Add(InGameProgressQueryResult.Succeeded(gameId, observations.Values.ToList()));
+                var observations = read.UnlockByApiName
+                    .Select(pair => new AchievementProgressObservation
+                    {
+                        ApiName = pair.Key,
+                        Unlocked = true,
+                        UnlockTimeUtc = pair.Value
+                    })
+                    .ToList();
+
+                // Diagnostic: log the local progress values the moment they change, so the log
+                // shows whether Steam updates the local stats file live during play (versus only
+                // committing on its own cadence / at exit). A steady stream of unchanged reads
+                // logs nothing; a real in-file advance logs one line.
+                LogProgressChange(gameId, context?.Game?.Name, read.ProgressByApiName);
+
+                // Locked achievements with a progress bar: report the current numerator/target so
+                // the monitor can surface an in-game progress notification without waiting for the
+                // provider-refresh prong to scrape the (often lagging) community page. The local
+                // reader excludes unlocked achievements, so these never conflict with an unlock.
+                foreach (var pair in read.ProgressByApiName)
+                {
+                    observations.Add(new AchievementProgressObservation
+                    {
+                        ApiName = pair.Key,
+                        Unlocked = false,
+                        ProgressNum = pair.Value.Num,
+                        ProgressDenom = pair.Value.Denom
+                    });
+                }
+
+                results.Add(InGameProgressQueryResult.Succeeded(gameId, observations));
             }
 
-            return results;
+            return Task.FromResult<IReadOnlyList<InGameProgressQueryResult>>(results);
         }
 
         /// <summary>
-        /// One remote unlock read for the backstop, through the same scrape the scanner uses. Null
-        /// on any failure (no session, transient, rate-limited), which the caller turns into a
-        /// backoff rather than a retry storm.
+        /// Logs the local progress values whenever they change for a game, once per change. A quiet
+        /// log during active play means Steam is not writing incremental progress to the local stats
+        /// file live for that title (it commits on its own cadence, often only at focus-loss/exit),
+        /// which no local reader can work around.
         /// </summary>
-        private async Task<IReadOnlyList<AchievementProgressObservation>> TryReadRemoteAsync(
-            SteamInGameState state,
-            CancellationToken cancellationToken)
+        private void LogProgressChange(
+            Guid gameId,
+            string gameName,
+            IReadOnlyDictionary<string, Local.SteamLocalProgress> progress)
         {
-            if (state.AppId <= 0)
+            if (_logger == null || gameId == Guid.Empty)
             {
-                return null;
+                return;
             }
 
-            try
+            var signature = progress == null || progress.Count == 0
+                ? string.Empty
+                : string.Join(
+                    ", ",
+                    progress
+                        .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(pair => $"{pair.Key}={pair.Value.Num}/{pair.Value.Denom}"));
+
+            lock (_lastProgressSignature)
             {
-                var token = await _tokenResolver.ResolveAsync(cancellationToken).ConfigureAwait(false);
-                var steamUserId = ProviderSettings?.SteamUserId;
-                if (string.IsNullOrWhiteSpace(token?.Token) || string.IsNullOrWhiteSpace(steamUserId))
+                if (_lastProgressSignature.TryGetValue(gameId, out var previous) &&
+                    string.Equals(previous, signature, StringComparison.Ordinal))
                 {
-                    return null;
+                    return;
                 }
 
-                // The scrape renders a community page through the offscreen view, so it needs the
-                // same lease the scan takes.
-                using (_sessionManager.BeginOffscreenViewLease())
-                {
-                    var scraped = await _scanner.ScrapeAchievementsAsync(
-                        steamUserId,
-                        state.AppId,
-                        token.Token,
-                        cancellationToken,
-                        includeLocked: false,
-                        gameName: state.GameName).ConfigureAwait(false);
-                    if (scraped == null || scraped.TransientFailure || scraped.Rows == null)
-                    {
-                        return null;
-                    }
+                _lastProgressSignature[gameId] = signature;
+            }
 
-                    return scraped.Rows
-                        .Where(row => row != null && row.IsUnlocked && !string.IsNullOrWhiteSpace(row.Key))
-                        .Select(row => new AchievementProgressObservation
-                        {
-                            ApiName = row.Key,
-                            Unlocked = true,
-                            UnlockTimeUtc = row.UnlockTimeUtc
-                        })
-                        .ToList();
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[SteamAch] In-game remote backstop failed for appId={state.AppId}.");
-                return null;
-            }
+            _logger.Debug(
+                $"[SteamLocal] Local progress changed for '{gameName}': " +
+                (signature.Length == 0 ? "(no locked progress bars)" : signature));
         }
 
         /// <inheritdoc />

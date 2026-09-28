@@ -1,5 +1,7 @@
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Services.CustomProviders;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services.Achievements;
@@ -44,6 +46,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.ForceUseExophase = normalized.ForceUseExophase == true ? true : (bool?)null;
             normalized.ManualCapstoneApiName = NormalizeString(normalized.ManualCapstoneApiName);
             normalized.ExophaseSlugOverride = NormalizeString(normalized.ExophaseSlugOverride);
+            normalized.ExophaseEnrichmentSlugOverride = NormalizeString(normalized.ExophaseEnrichmentSlugOverride);
             normalized.XeniaTitleIdOverride = XeniaTitleIdHelper.Normalize(normalized.XeniaTitleIdOverride);
             normalized.ShadPS4MatchIdOverride = ShadPS4MatchIdHelper.Normalize(normalized.ShadPS4MatchIdOverride);
             normalized.RetroAchievementsGameIdOverride =
@@ -67,12 +70,15 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.SummaryFilteredAchievementApiNames = MergeApiNameLists(
                 normalized.SummaryFilteredAchievementApiNames,
                 extractedFilters.SummaryFilteredAchievementApiNames);
+            normalized.GoalAchievementApiNames = NormalizeAchievementOrder(normalized.GoalAchievementApiNames);
             normalized.AchievementUnlockedIconOverrides = NormalizeIconOverrides(normalized.AchievementUnlockedIconOverrides);
             normalized.AchievementLockedIconOverrides = NormalizeIconOverrides(normalized.AchievementLockedIconOverrides);
             normalized.AchievementNotes = AchievementNoteHelper.NormalizeNoteMap(normalized.AchievementNotes);
             normalized.NotificationAppearanceOverride =
                 NormalizeNotificationAppearanceOverride(normalized.NotificationAppearanceOverride);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
+            normalized.CustomAchievements = NormalizeCustomAchievements(normalized.CustomAchievements);
+            normalized.CustomProviderId = NormalizeCustomProviderId(normalized.CustomProviderId, normalized.CustomAchievements);
             return normalized;
         }
 
@@ -85,6 +91,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.ForceUseExophase = normalized.ForceUseExophase == true ? true : (bool?)null;
             normalized.ManualCapstoneApiName = NormalizeString(normalized.ManualCapstoneApiName);
             normalized.ExophaseSlugOverride = NormalizeString(normalized.ExophaseSlugOverride);
+            normalized.ExophaseEnrichmentSlugOverride = NormalizeString(normalized.ExophaseEnrichmentSlugOverride);
             normalized.XeniaTitleIdOverride = XeniaTitleIdHelper.Normalize(normalized.XeniaTitleIdOverride);
             normalized.ShadPS4MatchIdOverride = ShadPS4MatchIdHelper.Normalize(normalized.ShadPS4MatchIdOverride);
             normalized.RetroAchievementsGameIdOverride =
@@ -103,12 +110,16 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.AchievementCategoryTypeOverrides = NormalizeCategoryTypeOverrides(normalized.AchievementCategoryTypeOverrides);
             normalized.FilteredAchievementApiNames = NormalizeAchievementApiNameList(normalized.FilteredAchievementApiNames);
             normalized.SummaryFilteredAchievementApiNames = NormalizeAchievementApiNameList(normalized.SummaryFilteredAchievementApiNames);
+            normalized.GoalAchievementApiNames = NormalizeAchievementOrder(normalized.GoalAchievementApiNames);
             normalized.AchievementUnlockedIconOverrides = NormalizeIconOverrides(normalized.AchievementUnlockedIconOverrides);
             normalized.AchievementLockedIconOverrides = NormalizeIconOverrides(normalized.AchievementLockedIconOverrides);
             normalized.AchievementNotes = AchievementNoteHelper.NormalizeNoteMap(normalized.AchievementNotes);
             normalized.NotificationAppearanceOverride =
                 NormalizeNotificationAppearanceOverride(normalized.NotificationAppearanceOverride);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
+            normalized.CustomAchievements = NormalizeCustomAchievements(normalized.CustomAchievements);
+            normalized.CustomProviderId = NormalizeCustomProviderId(normalized.CustomProviderId, normalized.CustomAchievements);
+            normalized.CustomProvider = NormalizeCustomProviderSnapshot(normalized.CustomProvider, normalized.CustomProviderId);
             return normalized;
         }
 
@@ -131,17 +142,21 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.GameSummaryCategory != null ||
                    (data.FilteredAchievementApiNames != null && data.FilteredAchievementApiNames.Count > 0) ||
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
+                   (data.GoalAchievementApiNames != null && data.GoalAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
                    (data.AchievementNotes != null && data.AchievementNotes.Count > 0) ||
                    data.ProviderOverride != null ||
+                   !string.IsNullOrWhiteSpace(data.ExophaseEnrichmentSlugOverride) ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
                    !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
                    !string.IsNullOrWhiteSpace(data.ShadPS4MatchIdOverride) ||
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
-                    data.ManualLink != null;
+                   data.ManualLink != null ||
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static bool HasPortableData(GameCustomDataFile data)
@@ -166,17 +181,21 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.GameSummaryCategory != null ||
                    (data.FilteredAchievementApiNames != null && data.FilteredAchievementApiNames.Count > 0) ||
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
+                   (data.GoalAchievementApiNames != null && data.GoalAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
                    (data.AchievementNotes != null && data.AchievementNotes.Count > 0) ||
                    data.ProviderOverride != null ||
+                   !string.IsNullOrWhiteSpace(data.ExophaseEnrichmentSlugOverride) ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
                    !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
                    !string.IsNullOrWhiteSpace(data.ShadPS4MatchIdOverride) ||
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
-                    data.ManualLink != null;
+                   data.ManualLink != null ||
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static bool HasVisibleCustomization(GameCustomDataFile data)
@@ -196,17 +215,21 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.GameSummaryCategory != null ||
                    (data.FilteredAchievementApiNames != null && data.FilteredAchievementApiNames.Count > 0) ||
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
+                   (data.GoalAchievementApiNames != null && data.GoalAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
                    (data.AchievementNotes != null && data.AchievementNotes.Count > 0) ||
                    data.ProviderOverride != null ||
+                   !string.IsNullOrWhiteSpace(data.ExophaseEnrichmentSlugOverride) ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
                    !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
                    !string.IsNullOrWhiteSpace(data.ShadPS4MatchIdOverride) ||
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
-                    data.ManualLink != null;
+                   data.ManualLink != null ||
+                   (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
+                   !string.IsNullOrWhiteSpace(data.CustomProviderId);
         }
 
         public static GameCustomDataFile MergePreferExisting(GameCustomDataFile existing, GameCustomDataFile legacy)
@@ -267,6 +290,11 @@ namespace PlayniteAchievements.Services.GameCustomData
                     : legacy.SummaryFilteredAchievementApiNames != null && legacy.SummaryFilteredAchievementApiNames.Count > 0
                         ? new List<string>(legacy.SummaryFilteredAchievementApiNames)
                         : null,
+                GoalAchievementApiNames = existing.GoalAchievementApiNames != null && existing.GoalAchievementApiNames.Count > 0
+                    ? new List<string>(existing.GoalAchievementApiNames)
+                    : legacy.GoalAchievementApiNames != null && legacy.GoalAchievementApiNames.Count > 0
+                        ? new List<string>(legacy.GoalAchievementApiNames)
+                        : null,
                 AchievementUnlockedIconOverrides = existing.AchievementUnlockedIconOverrides != null && existing.AchievementUnlockedIconOverrides.Count > 0
                     ? new Dictionary<string, string>(existing.AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : legacy.AchievementUnlockedIconOverrides != null && legacy.AchievementUnlockedIconOverrides.Count > 0
@@ -287,7 +315,19 @@ namespace PlayniteAchievements.Services.GameCustomData
                     NormalizeNotificationAppearanceOverride(legacy.NotificationAppearanceOverride),
                 ProviderOverride = ResolveEffectiveProviderOverride(existing) ??
                     ResolveEffectiveProviderOverride(legacy),
-                ManualLink = existing.ManualLink?.Clone() ?? legacy.ManualLink?.Clone()
+                ExophaseEnrichmentSlugOverride = !string.IsNullOrWhiteSpace(existing.ExophaseEnrichmentSlugOverride)
+                    ? existing.ExophaseEnrichmentSlugOverride
+                    : legacy.ExophaseEnrichmentSlugOverride,
+                ManualLink = existing.ManualLink?.Clone() ?? legacy.ManualLink?.Clone(),
+                CustomAchievements = existing.CustomAchievements != null && existing.CustomAchievements.Count > 0
+                    ? existing.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : legacy.CustomAchievements != null && legacy.CustomAchievements.Count > 0
+                        ? legacy.CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                        : null,
+                // Follows whichever side supplied the custom achievements it belongs to.
+                CustomProviderId = existing.CustomAchievements != null && existing.CustomAchievements.Count > 0
+                    ? existing.CustomProviderId
+                    : legacy.CustomProviderId
             };
         }
 
@@ -362,6 +402,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     };
 
                 case "FFXIV":
+                case "Riot":
                     return new ProviderOverrideData
                     {
                         ProviderKey = providerKey,
@@ -558,6 +599,11 @@ namespace PlayniteAchievements.Services.GameCustomData
                 return "GameJolt";
             }
 
+            if (string.Equals(normalized, "Riot", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Riot";
+            }
+
             return null;
         }
 
@@ -600,7 +646,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var categoryLabel in categoryLabels)
             {
-                var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
+                var label = CategoryPathHelper.NormalizePath(categoryLabel);
                 if (string.IsNullOrWhiteSpace(label) || !seen.Add(label))
                 {
                     continue;
@@ -658,7 +704,9 @@ namespace PlayniteAchievements.Services.GameCustomData
                     continue;
                 }
 
-                normalized[apiName] = category;
+                // Blank stays dropped rather than becoming an explicit Default assignment; a real
+                // value is canonicalized so nothing downstream has to re-normalize the path.
+                normalized[apiName] = CategoryPathHelper.NormalizePath(category);
             }
 
             return normalized.Count > 0 ? normalized : null;
@@ -836,7 +884,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             var normalized = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
             foreach (var pair in values)
             {
-                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                var category = CategoryPathHelper.NormalizePath(pair.Key);
                 var art = NormalizeString(pair.Value?.Art);
                 if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(art))
                 {
@@ -860,11 +908,14 @@ namespace PlayniteAchievements.Services.GameCustomData
                 return null;
             }
 
+            var normalizedLabel = CategoryPathHelper.NormalizePath(label);
             var providerLabel = AchievementCategoryTypeHelper.NormalizeCategory(value?.ProviderLabel);
             return new GameSummaryCategoryData
             {
-                Label = label,
-                ProviderLabel = string.IsNullOrWhiteSpace(providerLabel) ? label : providerLabel
+                Label = normalizedLabel,
+                ProviderLabel = string.IsNullOrWhiteSpace(providerLabel)
+                    ? normalizedLabel
+                    : CategoryPathHelper.NormalizePath(providerLabel)
             };
         }
 
@@ -926,6 +977,175 @@ namespace PlayniteAchievements.Services.GameCustomData
                 CreatedUtc = createdUtc,
                 LastModifiedUtc = lastModifiedUtc
             };
+        }
+
+        /// <summary>
+        /// A custom provider assignment only has meaning while the game has custom achievements, so
+        /// the id is dropped otherwise and never keeps an empty row alive.
+        /// </summary>
+        private static string NormalizeCustomProviderId(
+            string customProviderId,
+            IReadOnlyCollection<CustomAchievementDefinition> customAchievements)
+        {
+            var normalized = CustomProviderKeys.NormalizeId(customProviderId);
+            return normalized != null && customAchievements != null && customAchievements.Count > 0
+                ? normalized
+                : null;
+        }
+
+        private static CustomProviderDefinition NormalizeCustomProviderSnapshot(
+            CustomProviderDefinition snapshot,
+            string customProviderId)
+        {
+            var name = NormalizeString(snapshot?.Name);
+            if (snapshot == null || customProviderId == null || name == null)
+            {
+                return null;
+            }
+
+            return new CustomProviderDefinition
+            {
+                Id = customProviderId,
+                Name = name,
+                ColorHex = NormalizeString(snapshot.ColorHex),
+                IconPathData = NormalizeString(snapshot.IconPathData),
+                IconSource = NormalizeString(snapshot.IconSource)
+            };
+        }
+
+        private static List<CustomAchievementDefinition> NormalizeCustomAchievements(
+            IEnumerable<CustomAchievementDefinition> definitions)
+        {
+            if (definitions == null)
+            {
+                return null;
+            }
+
+            var normalized = new List<CustomAchievementDefinition>();
+            var usedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var definition in definitions)
+            {
+                var displayName = NormalizeString(definition?.DisplayName);
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    continue;
+                }
+
+                var id = CustomAchievementProjectionService.NormalizeId(definition.Id);
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    id = CustomAchievementProjectionService.GenerateId(displayName, usedIds);
+                }
+
+                if (!usedIds.Add(id))
+                {
+                    continue;
+                }
+
+                var unlocked = definition.Unlocked;
+                normalized.Add(new CustomAchievementDefinition
+                {
+                    Id = id,
+                    DisplayName = displayName,
+                    Description = NormalizeString(definition.Description),
+                    Unlocked = unlocked,
+                    UnlockTimeUtc = unlocked ? NormalizeUtc(definition.UnlockTimeUtc) : null,
+                    UnlockedIconPath = NormalizeString(definition.UnlockedIconPath),
+                    LockedIconPath = NormalizeString(definition.LockedIconPath),
+                    Points = NormalizeNonNegativeInt(definition.Points),
+                    ScaledPoints = NormalizeNonNegativeInt(definition.ScaledPoints),
+                    Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(definition.Category),
+                    CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(definition.CategoryType),
+                    TrophyType = NormalizeTrophyType(definition.TrophyType),
+                    Hidden = definition.Hidden,
+                    IsCapstone = definition.IsCapstone,
+                    Rarity = NormalizeRarity(definition.Rarity),
+                    GlobalPercentUnlocked = NormalizePercent(definition.GlobalPercentUnlocked),
+                    ProgressNum = NormalizeProgressNum(definition.ProgressNum, definition.ProgressDenom),
+                    ProgressDenom = NormalizeProgressDenom(definition.ProgressNum, definition.ProgressDenom)
+                });
+            }
+
+            return normalized.Count > 0 ? normalized : null;
+        }
+
+        private static DateTime? NormalizeUtc(DateTime? value)
+        {
+            if (!value.HasValue || value.Value == DateTime.MinValue)
+            {
+                return null;
+            }
+
+            var date = value.Value;
+            if (date.Kind == DateTimeKind.Unspecified)
+            {
+                return DateTime.SpecifyKind(date, DateTimeKind.Utc);
+            }
+
+            return date.ToUniversalTime();
+        }
+
+        private static int? NormalizeNonNegativeInt(int? value)
+        {
+            return value.HasValue && value.Value >= 0 ? value : null;
+        }
+
+        private static double? NormalizePercent(double? value)
+        {
+            return value.HasValue && value.Value >= 0 && value.Value <= 100 ? value : null;
+        }
+
+        private static int? NormalizeProgressDenom(int? num, int? denom)
+        {
+            return denom.HasValue &&
+                   denom.Value > 0 &&
+                   (!num.HasValue || (num.Value >= 0 && num.Value <= denom.Value))
+                ? denom
+                : null;
+        }
+
+        private static int? NormalizeProgressNum(int? num, int? denom)
+        {
+            return denom.HasValue &&
+                   denom.Value > 0 &&
+                   num.HasValue &&
+                   num.Value >= 0 &&
+                   num.Value <= denom.Value
+                ? num
+                : null;
+        }
+
+        private static string NormalizeRarity(string value)
+        {
+            var normalized = NormalizeString(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            return RarityTierExtensions.TryParse(normalized, out var tier)
+                ? tier.ToString()
+                : null;
+        }
+
+        private static string NormalizeTrophyType(string value)
+        {
+            var normalized = NormalizeString(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            switch (normalized.ToLowerInvariant())
+            {
+                case "bronze":
+                case "silver":
+                case "gold":
+                case "platinum":
+                    return normalized.ToLowerInvariant();
+                default:
+                    return null;
+            }
         }
     }
 }

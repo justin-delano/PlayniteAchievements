@@ -434,6 +434,24 @@ namespace PlayniteAchievements.Services.Cache
             }
         }
 
+        /// <summary>
+        /// In-memory game cache occupancy, for memory diagnostics: entries plus the achievement
+        /// rows they hold (the cache is capped by game count, so the row total is what actually
+        /// tracks its footprint).
+        /// </summary>
+        public void GetMemoryCacheStats(out int games, out int achievements)
+        {
+            lock (_sync)
+            {
+                games = _userAchievements.Count;
+                achievements = 0;
+                foreach (var entry in _userAchievements.Values)
+                {
+                    achievements += entry?.Data?.Achievements?.Count ?? 0;
+                }
+            }
+        }
+
         private void RemoveMemoryGameData_Locked(string key)
         {
             if (string.IsNullOrWhiteSpace(key))

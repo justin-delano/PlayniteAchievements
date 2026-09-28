@@ -1,0 +1,59 @@
+<UserControl x:Class="PlayniteAchievements.Views.Showcase.ShowcaseWidgetControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             SizeChanged="OnSizeChanged">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Views/Showcase/ShowcaseWidgetTemplates.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Border x:Name="RootBorder"
+            Background="{DynamicResource PlayAch.Brush.Surface}"
+            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+            CornerRadius="{StaticResource PlayAch.Radius.Section}"
+            ClipToBounds="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border x:Name="HeaderBorder"
+                    Grid.Row="0"
+                    Background="{StaticResource PlayAch.Brush.Overlay.Tint.08}"
+                    Padding="9,5"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="GlyphText"
+                               Width="18"
+                               Margin="0,0,6,0"
+                               FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                               Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="11"/>
+                    <TextBlock x:Name="TitleText"
+                               Grid.Column="1"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               FontWeight="SemiBold"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                </Grid>
+            </Border>
+            <ContentControl x:Name="BodyHost"
+                            Grid.Row="1"
+                            Margin="8"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"/>
+        </Grid>
+    </Border>
+</UserControl>

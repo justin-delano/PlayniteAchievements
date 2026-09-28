@@ -61,40 +61,43 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderDisplayOrder =
         {
-            "Steam", "Epic", "GOG", "BattleNet", "EA", "Ubisoft", "GameJolt", "PSN", "Xbox", "GooglePlay", "Apple", "FFXIV", "RetroAchievements", "RPCS3", "ShadPS4", "Xenia", "Manual", "Exophase", "Hoyoverse"
+            "Steam", "Epic", "GOG", "BattleNet", "EA", "Ubisoft", "GameJolt", "Riot", "PSN", "Xbox", "GooglePlay", "Apple", "FFXIV", "RetroAchievements", "RPCS3", "ShadPS4", "Xenia", "Manual", "Exophase", "Hoyoverse"
         };
 
         private static readonly string[] ProviderRefreshOrder =
         {
-            "Manual", "FFXIV", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "EA", "GameJolt", "Hoyoverse", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
+            "Manual", "FFXIV", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "EA", "GameJolt", "Riot", "Hoyoverse", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly AchievementMarkerToggle _achievementMarkerToggle;
         private readonly AchievementDataService _achievementDataService;
         private readonly LibraryProjectionService _libraryProjectionService;
         private readonly ICacheManager _cacheManager;
         private readonly IFriendCacheManager _friendCacheManager;
         private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
-        private readonly FriendsRecentUnlocksDataCoordinator _friendsRecentUnlocksDataCoordinator;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly RayTrackService _rayTrackService;
         private readonly ManagedCustomIconService _managedCustomIconService;
         private readonly NotificationImageStore _notificationImageStore;
+        private readonly FallbackIconStore _fallbackIconStore;
         private NotificationStylePortableStore _notificationStylePortableStore;
         private NotificationStylePresetStore _notificationStylePresetStore;
         private readonly NotificationPublisher _notifications;
         private readonly ProviderRegistry _providerRegistry;
         private readonly GameCustomDataStore _gameCustomDataStore;
+        private readonly Services.CustomProviders.CustomProviderStore _customProviderStore;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly SubscriptionCollection _eventSubscriptions = new SubscriptionCollection();
 
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly InGameAchievementMonitor _inGameMonitor;
         private readonly ActiveGameWindowTracker _windowTracker;
+        private readonly Services.Sound.UnlockSoundService _unlockSounds;
         private readonly ToastNotificationService _toastNotifications;
         private readonly Services.Recording.UnlockRecordingService _unlockRecordings;
         private readonly Services.Captures.CaptureLibraryService _captureLibraryService;
@@ -135,10 +138,22 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
         public ProviderRegistry ProviderRegistry => _providerRegistry;
+
+        /// <summary>
+        /// True while a settings window holds a pending edit snapshot. Editors that write straight
+        /// to the live persisted tree suppress their own save while this is true, leaving the
+        /// settings window's OK/Cancel to decide.
+        /// </summary>
+        public bool IsSettingsEditSessionActive => _settingsViewModel?.IsEditSessionActive ?? false;
+
+        /// <summary>The unlock sound service, for the settings page's per-tier table and Test buttons.</summary>
+        internal Services.Sound.UnlockSoundService UnlockSounds => _unlockSounds;
         public GameCustomDataStore GameCustomDataStore => _gameCustomDataStore;
+        public Services.CustomProviders.CustomProviderStore CustomProviderStore => _customProviderStore;
         public IReadOnlyList<IDataProvider> Providers => _refreshService?.Providers;
         public RefreshRuntime RefreshRuntime => _refreshService;
         public AchievementOverridesService AchievementOverridesService => _achievementOverridesService;
+        public AchievementMarkerToggle AchievementMarkerToggle => _achievementMarkerToggle;
         public AchievementDataService AchievementDataService => _achievementDataService;
         public MemoryImageService ImageService => _imageService;
         public DiskImageService DiskImageService => _diskImageService;
@@ -147,6 +162,7 @@ namespace PlayniteAchievements
         public ManagedCustomIconService ManagedCustomIconService => _managedCustomIconService;
         public ICacheManager CacheManager => _cacheManager;
         public NotificationImageStore NotificationImageStore => _notificationImageStore;
+        public FallbackIconStore FallbackIconStore => _fallbackIconStore;
         public NotificationStylePortableStore NotificationStylePortableStore =>
             _notificationStylePortableStore ?? (_notificationStylePortableStore =
                 new NotificationStylePortableStore(_notificationImageStore, _logger));
@@ -198,6 +214,10 @@ namespace PlayniteAchievements
                 return;
             }
 
+            // Runs before the dispatcher marshal so the store write stays off the UI thread, and
+            // before the subscriber check so it happens whether or not anything is listening.
+            ClearGoalForUnlock(args);
+
             var handler = AchievementUnlocked;
             if (handler == null)
             {
@@ -212,6 +232,35 @@ namespace PlayniteAchievements
             }
 
             handler.Invoke(null, args);
+        }
+
+        /// <summary>
+        /// A goal is something still to be earned, so unlocking it retires the goal. Skips the
+        /// synthetic notifications (previews, test fires, the game-complete banner) and friend
+        /// unlocks, none of which represent the user earning that achievement.
+        /// </summary>
+        private static void ClearGoalForUnlock(AchievementUnlockedEventArgs args)
+        {
+            if (args.IsPreview ||
+                args.IsTestFire ||
+                args.IsFriendUnlock ||
+                args.IsGameCompleted ||
+                args.PlayniteGameId == Guid.Empty ||
+                string.IsNullOrWhiteSpace(args.ApiName))
+            {
+                return;
+            }
+
+            try
+            {
+                Instance?.AchievementOverridesService?.PruneUnlockedGoals(
+                    args.PlayniteGameId,
+                    new[] { args.ApiName });
+            }
+            catch (Exception ex)
+            {
+                Instance?._logger?.Error(ex, $"Failed clearing goal for unlocked achievement '{args.ApiName}'.");
+            }
         }
 
         private void TryWarmCustomDataCache()
@@ -241,17 +290,39 @@ namespace PlayniteAchievements
         /// </summary>
         private string GetPluginLocalizationDirectory()
         {
+            var installDirectory = GetPluginInstallDirectory();
+            return string.IsNullOrEmpty(installDirectory)
+                ? null
+                : Path.Combine(installDirectory, "Localization");
+        }
+
+        /// <summary>
+        /// The extension's install directory (where the plugin dll, the bundled sounds and the sound
+        /// host exe live), resolved from the assembly location. Null when it cannot be resolved.
+        /// </summary>
+        private string GetPluginInstallDirectory()
+        {
             try
             {
                 var installDirectory = Path.GetDirectoryName(typeof(PlayniteAchievementsPlugin).Assembly.Location);
-                return string.IsNullOrEmpty(installDirectory)
-                    ? null
-                    : Path.Combine(installDirectory, "Localization");
+                return string.IsNullOrEmpty(installDirectory) ? null : installDirectory;
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed to resolve plugin localization directory.");
+                _logger?.Debug(ex, "Failed to resolve plugin install directory.");
                 return null;
+            }
+        }
+
+        private void OnSettingsSavedForUnlockSounds(object sender, EventArgs e)
+        {
+            try
+            {
+                _unlockSounds?.ApplySettings();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Applying unlock sound settings failed.");
             }
         }
 
@@ -424,12 +495,22 @@ namespace PlayniteAchievements
                 var pluginUserDataPath = GetPluginUserDataPath();
                 _manualSourceRegistry = new ManualSourceRegistry(_logger, settings, PlayniteApi, pluginUserDataPath);
 
+                // User-defined custom providers resolve through static hooks so the registry and
+                // the icon converter stay free of the store type (both are linked into the tests).
+                _customProviderStore = new Services.CustomProviders.CustomProviderStore(pluginUserDataPath, _logger);
+                ProviderRegistry.CustomProviderResolver = ResolveCustomProviderVisuals;
+                Views.Converters.ProviderIconConverter.CustomGeometryResolver = id => _customProviderStore?.GetGeometry(id);
+                Views.Converters.ProviderIconConverter.CustomGeometryVersionResolver = id => _customProviderStore?.GetVersion(id) ?? 0;
+
                 // Create provider registry
                 _providerRegistry = new ProviderRegistry(settings, ProviderDisplayOrder, _logger, _manualSourceRegistry);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
                 settings.Persisted?.MigrateLegacyProviderFriends();
                 _gameCustomDataStore = _settingsViewModel.GameCustomDataStore;
                 _gameCustomDataStore.AttachRuntimeSettings(settings);
+                _gameCustomDataStore.AttachCustomProviderCatalog(
+                    id => _customProviderStore.TryGet(id, out var definition) ? definition : null,
+                    definition => _customProviderStore.ImportIfMissing(definition));
                 TryWarmCustomDataCache();
 
                 List<IDataProvider> providers;
@@ -445,7 +526,17 @@ namespace PlayniteAchievements
                     CategoryDefaultImageResolver.DiskImageServiceAccessor = () => _diskImageService;
                     _managedCustomIconService = new ManagedCustomIconService(_diskImageService, _logger);
                     GameSummaryArtResolver.ManagedCustomIconServiceAccessor = () => _managedCustomIconService;
+                    CategoryArtChainResolver.OverrideDisplayPathResolver =
+                        (storedValue, gameId, displayMode) => _managedCustomIconService
+                            .ResolveCategoryArtDisplayPath(storedValue, gameId, displayMode);
                     _notificationImageStore = new NotificationImageStore(_diskImageService, _logger);
+                    _fallbackIconStore = new FallbackIconStore(_diskImageService, _logger);
+                    // Read through Settings.Persisted on every call: the settings dialog mutates the
+                    // live instance and CancelEdit replaces it wholesale.
+                    AchievementIconResolver.LockedFallbackPathAccessor =
+                        () => Settings?.Persisted?.LockedFallbackIconPath;
+                    AchievementIconResolver.HiddenFallbackPathAccessor =
+                        () => Settings?.Persisted?.HiddenFallbackIconPath;
                     _imageService = new MemoryImageService(_logger, _diskImageService);
                     _rayTrackService = new RayTrackService(_logger, _imageService);
                     _gameCustomDataStore.AttachManagedCustomIconService(_managedCustomIconService);
@@ -462,11 +553,6 @@ namespace PlayniteAchievements
                         _friendCacheManager,
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
-                    _friendsRecentUnlocksDataCoordinator = new FriendsRecentUnlocksDataCoordinator(
-                        _friendCacheManager,
-                        _friendsOverviewDataCoordinator,
-                        () => _settingsViewModel?.Settings?.Persisted,
-                        _logger);
                     if (_friendCacheManager != null)
                     {
                         _friendCacheManager.FriendCacheInvalidated += FriendCacheManager_FriendCacheInvalidated;
@@ -477,6 +563,7 @@ namespace PlayniteAchievements
                     {
                         InvalidateStartPageData();
                         InvalidateFriendDataCoordinators();
+                        ScheduleRetentionDiagnostics();
                     };
                     // Bitmap eviction is scoped instead of wholesale: normal refreshes never
                     // rewrite icon files in place (in-place overwrites are handled by the
@@ -502,6 +589,10 @@ namespace PlayniteAchievements
                         _gameCustomDataStore,
                         _cacheManager,
                         _logger);
+                    _achievementMarkerToggle = new AchievementMarkerToggle(
+                        _achievementOverridesService,
+                        () => _settingsViewModel?.Settings?.Persisted,
+                        () => _gameCustomDataStore);
                     _achievementDataService = new AchievementDataService(
                         _cacheManager,
                         PlayniteApi,
@@ -516,7 +607,9 @@ namespace PlayniteAchievements
                         _cacheManager,
                         _gameCustomDataStore,
                         _logger,
-                        isRefreshActive: () => _refreshService?.IsRebuilding == true);
+                        isRefreshActive: () => _refreshService?.IsRebuilding == true,
+                        currentUserIdentityLoader: () => _friendCacheManager?.LoadCurrentUserIdentities(),
+                        hasActiveSnapshotPublisher: () => _startPageDataCoordinator?.HasActivePublisher == true);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
 
                     // Reconcile the cache DB's AchievementFilters mirror against custom data
@@ -534,6 +627,28 @@ namespace PlayniteAchievements
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
                     _windowTracker = new ActiveGameWindowTracker(_logger);
+                    var soundThemeResolver = new AchievementToastTemplateResolver(PlayniteApi, _logger);
+                    var pluginInstallDirectory = GetPluginInstallDirectory();
+                    _unlockSounds = new Services.Sound.UnlockSoundService(
+                        settings,
+                        new UnlockSoundResolver(
+                            () => settings?.Persisted?.UnlockSounds,
+                            () => soundThemeResolver.ResolveActiveThemeDirectories(Application.Current?.Resources),
+                            UnlockSoundResolver.GetBundledSoundsDirectory(pluginInstallDirectory),
+                            _logger,
+                            () => settings?.Persisted?.AllowThemeUnlockSounds ?? true,
+                            mode => soundThemeResolver.ResolveThemeDirectoriesForMode(
+                                Application.Current?.Resources,
+                                mode),
+                            () => soundThemeResolver.ActiveThemeModeName),
+                        pluginInstallDirectory,
+                        _logger);
+                    SettingsSaved += OnSettingsSavedForUnlockSounds;
+                    // Bound a sound by the card it belongs to. Read through a delegate because the
+                    // toast service is constructed below this one, and because the effective
+                    // duration can come from a theme override rather than the setting.
+                    _unlockSounds.MaxPlaybackSeconds =
+                        () => _toastNotifications?.GetEffectiveToastDurationSecondsSafe();
                     _toastNotifications = new ToastNotificationService(
                         PlayniteApi,
                         settings,
@@ -543,9 +658,11 @@ namespace PlayniteAchievements
                         _windowTracker,
                         _gameCustomDataStore,
                         // Late-bound: the recording service is constructed just below, but the
-                        // toast service only ever invokes this from an unlock handler, long after
+                        // toast service only ever invokes these from an unlock handler, long after
                         // the field is assigned.
-                        e => _unlockRecordings?.WouldRequestClip(e) ?? false);
+                        e => _unlockRecordings?.WouldRequestClip(e) ?? false,
+                        (e, capHeight) => _unlockRecordings?.TryCaptureAnchorFrame(e, capHeight),
+                        _unlockSounds);
                     _unlockRecordings = new Services.Recording.UnlockRecordingService(
                         PlayniteApi,
                         settings,
@@ -554,10 +671,21 @@ namespace PlayniteAchievements
                         GetProcessIdForGame,
                         _toastNotifications,
                         key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings,
-                        _windowTracker);
+                        _windowTracker,
+                        // Fails open while the provider registry is still being built: refusing to
+                        // refresh a game we cannot classify is free, but refusing to capture one
+                        // costs a clip that cannot be recovered afterwards.
+                        game => Providers == null || AnyProviderCapable(game),
+                        // The sound host's pid, so the recorder excludes its process from clip
+                        // captures, and its measured onsets, so composited chimes land where the
+                        // live ones were heard.
+                        () => _unlockSounds?.HostProcessId,
+                        id => _unlockSounds?.TryGetAudibleOnsetUtc(id));
                     _captureLibraryService = new Services.Captures.CaptureLibraryService(
                         () => _settingsViewModel?.Settings?.Persisted,
                         _logger);
+                    Services.Captures.AchievementCapturePathResolver.CaptureLibraryAccessor =
+                        () => _captureLibraryService;
                     _inGameMonitor = new InGameAchievementMonitor(
                         PlayniteApi,
                         settings,
@@ -572,7 +700,7 @@ namespace PlayniteAchievements
                     _tagSyncService = new TagSyncService(
                         PlayniteApi,
                         _logger,
-                        settings.Persisted,
+                        settings,
                         GetPluginLocalizationDirectory());
                     _tagSyncService.InitializeAndSubscribeTaggingSettings();
 
@@ -596,7 +724,12 @@ namespace PlayniteAchievements
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
                         _fullscreenControllerNavigationService,
                         _friendsOverviewDataCoordinator,
-                        _friendGameAchievementsDataCoordinator);
+                        _friendGameAchievementsDataCoordinator,
+                        // Deliberately the field, not GetStartPageDataCoordinator(): publishing
+                        // is an optimization for widget hosts that already exist. Creating the
+                        // coordinator here would stand up a process-lifetime service holding a
+                        // full-library snapshot for a user who has no start page at all.
+                        () => _startPageDataCoordinator);
 
                     _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);
                     _achievementHotkeyService = new AchievementHotkeyService(
@@ -645,7 +778,10 @@ namespace PlayniteAchievements
                         gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview),
                         _cacheManager as Services.Friends.IFriendCacheManager,
                         _friendsOverviewDataCoordinator,
-                        _achievementHotkeyTargetResolver.ResolveRunningGame);
+                        _achievementHotkeyTargetResolver.ResolveRunningGame,
+                        ToggleAchievementCapstoneFromTheme,
+                        target => _achievementMarkerToggle.ToggleGoal(target),
+                        _captureLibraryService);
 
                     // A friend-consuming theme is a plugin-lifetime consumer: it keeps the
                     // friends snapshot alive when the last friends view closes.
@@ -724,7 +860,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator, () => _startPageDataCoordinator),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -987,11 +1123,69 @@ namespace PlayniteAchievements
 
         // === Lifecycle ===
 
+        /// <summary>
+        /// Logs the plugin build and host context once at startup, so a user-submitted log can be
+        /// tied to a specific release without having to ask.
+        /// </summary>
+        private void LogStartupBanner()
+        {
+            try
+            {
+                _logger.Info(
+                    $"[Startup] Playnite Achievements {ReadManifestVersion() ?? "<unknown>"}; " +
+                    $"playnite={PlayniteApi?.ApplicationInfo?.ApplicationVersion?.ToString() ?? "<unknown>"}, " +
+                    $"mode={PlayniteApi?.ApplicationInfo?.Mode.ToString() ?? "<unknown>"}, " +
+                    $"portable={PlayniteApi?.ApplicationInfo?.IsPortable.ToString() ?? "<unknown>"}.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "[Startup] Could not log the startup banner.");
+            }
+        }
+
+        /// <summary>
+        /// Reads <c>Version</c> from the manifest shipped next to the plugin assembly. The assembly
+        /// itself carries no meaningful version, so extension.yaml is the only source that matches
+        /// the number users see in Playnite's add-on list.
+        /// </summary>
+        private static string ReadManifestVersion()
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (string.IsNullOrWhiteSpace(assemblyDirectory))
+            {
+                return null;
+            }
+
+            var manifestPath = Path.Combine(assemblyDirectory, "extension.yaml");
+            if (!File.Exists(manifestPath))
+            {
+                return null;
+            }
+
+            foreach (var line in File.ReadAllLines(manifestPath))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("Version:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = trimmed.Substring("Version:".Length).Trim().Trim('"', '\'');
+                    return string.IsNullOrWhiteSpace(value) ? null : value;
+                }
+            }
+
+            return null;
+        }
+
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             using (PerfScope.StartStartup(_logger, "OnApplicationStarted", thresholdMs: 50))
             {
                 _applicationStarted = true;
+
+                LogStartupBanner();
+
+                // Launch and preload the sound host off the UI thread so the first unlock plays with
+                // no device-open or decode cost; a settings save re-applies the same step.
+                System.Threading.Tasks.Task.Run(() => OnSettingsSavedForUnlockSounds(this, EventArgs.Empty));
 
                 // Warm the overview/start-page projection now that the game library is loaded, so
                 // resolved game presentation (cover, icon, playtime, last played, metadata) reflects
@@ -1081,6 +1275,8 @@ namespace PlayniteAchievements
                     _settingsViewModel?.Settings?.Persisted,
                     _gameCustomDataStore?.LoadAll());
 
+                _fallbackIconStore?.PruneOrphans(_settingsViewModel?.Settings?.Persisted);
+
                 // Auto-migrate themes that have been updated since the last migration.
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
@@ -1149,6 +1345,24 @@ namespace PlayniteAchievements
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
         }
 
+        // Runs when CancelEdit replaces the whole PersistedSettings instance. Every
+        // per-property side effect above may have been reverted in one step without a
+        // property change firing, so re-derive all of them against the new instance.
+        private void OnPersistedSettingsInstanceChanged()
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+
+            RestartBackgroundUpdater();
+            ReconfigureInGameMonitor();
+            RarityAppearanceHelper.ApplyBadgeApplicationResources(persisted);
+            AchievementRarityResolver.RoundDisplayPercentages = persisted?.RoundRarityPercentages ?? false;
+            FormattingCulture.Refresh();
+            _achievementHotkeyService?.RefreshConfiguration();
+            InvalidateFriendDataCoordinators();
+            InvalidateStartPageData();
+            _tagSyncService?.InitializeAndSubscribeTaggingSettings();
+        }
+
         private void FriendCacheManager_FriendCacheInvalidated(object sender, FriendCacheInvalidatedEventArgs e)
         {
             InvalidateFriendDataCoordinators(e);
@@ -1160,7 +1374,6 @@ namespace PlayniteAchievements
         private void FriendsOverviewDataCoordinator_SnapshotReleased(object sender, EventArgs e)
         {
             _friendGameAchievementsDataCoordinator?.Invalidate();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         // Settings-driven callers pass no args (projection-affecting settings need a full
@@ -1170,7 +1383,6 @@ namespace PlayniteAchievements
         {
             _friendsOverviewDataCoordinator?.Invalidate(args);
             _friendGameAchievementsDataCoordinator?.Invalidate();
-            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         private static bool ShouldInvalidateFriendDataForSetting(string propertyName)
@@ -1185,7 +1397,9 @@ namespace PlayniteAchievements
                    propertyName == nameof(PersistedSettings.ShowHiddenSuffix) ||
                    propertyName == nameof(PersistedSettings.ShowLockedIcon) ||
                    propertyName == nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable) ||
-                   propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds);
+                   propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds) ||
+                   propertyName == nameof(PersistedSettings.LockedFallbackIconPath) ||
+                   propertyName == nameof(PersistedSettings.HiddenFallbackIconPath);
         }
 
         private void RestartBackgroundUpdater()
@@ -1251,6 +1465,10 @@ namespace PlayniteAchievements
             try { _inGameMonitor?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGameMonitor"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
             try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
+            // After the recordings: a session in flight still reads the host's pid until then.
+            SettingsSaved -= OnSettingsSavedForUnlockSounds;
+            try { _unlockSounds?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockSounds"); }
+            try { _captureLibraryService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose captureLibraryService"); }
             try { _windowTracker?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowTracker"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
@@ -1263,7 +1481,6 @@ namespace PlayniteAchievements
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
-            try { _friendsRecentUnlocksDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsRecentUnlocksDataCoordinator"); }
             try { _friendGameAchievementsDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendGameAchievementsDataCoordinator"); }
             try { _friendsOverviewDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsOverviewDataCoordinator"); }
             DisposeStartPageViews();
@@ -1353,6 +1570,11 @@ namespace PlayniteAchievements
         {
             _refreshService.GameRefreshed += OnAchievementGameRefreshed;
             _eventSubscriptions.Add(() => _refreshService.GameRefreshed -= OnAchievementGameRefreshed);
+            if (_customProviderStore != null)
+            {
+                _customProviderStore.Changed += CustomProviderStore_Changed;
+                _eventSubscriptions.Add(() => _customProviderStore.Changed -= CustomProviderStore_Changed);
+            }
             _inGameMonitor.ProgressApplied += OnAchievementGameRefreshed;
             _eventSubscriptions.Add(() => _inGameMonitor.ProgressApplied -= OnAchievementGameRefreshed);
 
@@ -1373,11 +1595,18 @@ namespace PlayniteAchievements
                     });
                 }
 
-                var persisted = _settingsViewModel?.Settings?.Persisted;
-                if (persisted != null)
+                // Subscribes through the settings wrapper: CancelEdit replaces the whole
+                // PersistedSettings instance, and a direct subscription would be left on
+                // the orphan, silently stopping every settings-driven side effect below
+                // for the rest of the session.
+                var settings = _settingsViewModel?.Settings;
+                if (settings != null)
                 {
-                    persisted.PropertyChanged += PersistedSettings_PropertyChanged;
-                    _eventSubscriptions.Add(() => persisted.PropertyChanged -= PersistedSettings_PropertyChanged);
+                    var subscription = new PersistedSettingsSubscription(
+                        settings,
+                        PersistedSettings_PropertyChanged,
+                        OnPersistedSettingsInstanceChanged);
+                    _eventSubscriptions.Add(() => subscription.Dispose());
                 }
 
                 _eventSubscriptions.Add(() => _tagSyncService?.DetachTaggingSettingsSubscription());
@@ -1395,7 +1624,12 @@ namespace PlayniteAchievements
         // deferred.
         private static readonly TimeSpan CustomDataChangeCoalesceDelay = TimeSpan.FromMilliseconds(400);
         private readonly object _customDataChangeSync = new object();
-        private readonly HashSet<Guid> _pendingCustomDataChangeIds = new HashSet<Guid>();
+
+        // Value is whether any change coalesced into this burst could move a library rollup. A
+        // burst that cannot - category order, art and membership, goal reordering - still has to
+        // repaint the game's own theme surface, but nothing library-wide reads it, so the tag
+        // sync, the start page and the whole-library theme lists are left alone.
+        private readonly Dictionary<Guid, bool> _pendingCustomDataChangeIds = new Dictionary<Guid, bool>();
         private Timer _customDataChangeTimer;
 
         private void GameCustomDataStore_CustomDataChanged(object sender, GameCustomDataChangedEventArgs e)
@@ -1407,7 +1641,8 @@ namespace PlayniteAchievements
 
             lock (_customDataChangeSync)
             {
-                _pendingCustomDataChangeIds.Add(e.PlayniteGameId);
+                _pendingCustomDataChangeIds.TryGetValue(e.PlayniteGameId, out var pendingAffectsSummaryData);
+                _pendingCustomDataChangeIds[e.PlayniteGameId] = pendingAffectsSummaryData || e.AffectsSummaryData;
                 if (_customDataChangeTimer == null)
                 {
                     _customDataChangeTimer = new Timer(
@@ -1425,37 +1660,120 @@ namespace PlayniteAchievements
 
         private void FlushPendingCustomDataChanges()
         {
-            List<Guid> gameIds;
+            List<KeyValuePair<Guid, bool>> pending;
             lock (_customDataChangeSync)
             {
-                gameIds = _pendingCustomDataChangeIds.ToList();
+                pending = _pendingCustomDataChangeIds.ToList();
                 _pendingCustomDataChangeIds.Clear();
             }
 
-            foreach (var gameId in gameIds)
+            foreach (var change in pending)
             {
-                HandleCustomDataChanged(gameId);
+                HandleCustomDataChanged(change.Key, change.Value);
             }
         }
 
-        private void HandleCustomDataChanged(Guid gameId)
+        private CustomProviderVisuals ResolveCustomProviderVisuals(string customProviderId)
+        {
+            return _customProviderStore != null && _customProviderStore.TryGet(customProviderId, out var definition)
+                ? new CustomProviderVisuals(
+                    definition.Name,
+                    definition.ColorHex,
+                    hasIcon: !string.IsNullOrWhiteSpace(definition.IconPathData))
+                : null;
+        }
+
+        // A definition edit changes how every assigned game resolves its provider name, icon and
+        // color. The converter's tinted-icon cache is cleared first, then each assigned game
+        // re-projects through the same CustomDataChanged path an assignment change uses. A
+        // deletion clears the assignments instead, which raises the same event through the write.
+        private void CustomProviderStore_Changed(object sender, Services.CustomProviders.CustomProviderChangedEventArgs e)
+        {
+            if (e == null || string.IsNullOrWhiteSpace(e.Id) || _gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Views.Converters.ProviderIconConverter.Invalidate("GeoCustom:" + e.Id + "|");
+
+                var affectedGameIds = _gameCustomDataStore.LoadAll()
+                    .Where(data => data != null &&
+                                   data.PlayniteGameId != Guid.Empty &&
+                                   string.Equals(data.CustomProviderId, e.Id, StringComparison.OrdinalIgnoreCase))
+                    .Select(data => data.PlayniteGameId)
+                    .ToList();
+
+                foreach (var gameId in affectedGameIds)
+                {
+                    if (e.Deleted)
+                    {
+                        _gameCustomDataStore.Update(gameId, data => data.CustomProviderId = null);
+                    }
+                    else
+                    {
+                        _gameCustomDataStore.NotifyChanged(gameId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed propagating custom provider change for id={e.Id}.");
+            }
+        }
+
+        private void HandleCustomDataChanged(Guid gameId, bool affectsSummaryData)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
-            if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
+            if (affectsSummaryData &&
+                _tagSyncService != null &&
+                persisted?.TaggingSettings?.EnableTagging == true)
             {
+                // Tags carry completion status, which only a summary-affecting change can move.
                 QueueTagSync(gameId);
             }
 
             try
             {
-                _themeIntegrationService?.NotifyCustomDataChanged(gameId);
+                // The game's own theme surface still repaints - a category edit is visible there -
+                // but the whole-library theme lists are rebuilt only when something they read moved.
+                _themeIntegrationService?.NotifyCustomDataChanged(gameId, refreshLibraryState: affectsSummaryData);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={gameId}.");
             }
 
-            InvalidateStartPageData();
+            if (affectsSummaryData)
+            {
+                InvalidateStartPageData();
+            }
+        }
+
+        // A capstone write is a SQLite save, and a theme button click arrives on the UI thread, so
+        // this hands off rather than blocking. The write raises CustomDataChanged, which is what
+        // rebuilds the theme's achievement lists and repaints the toggled row.
+        private void ToggleAchievementCapstoneFromTheme(AchievementMarkerTarget target)
+        {
+            _ = ToggleAchievementCapstoneFromThemeAsync(target);
+        }
+
+        private async Task ToggleAchievementCapstoneFromThemeAsync(AchievementMarkerTarget target)
+        {
+            try
+            {
+                var result = await _achievementMarkerToggle.ToggleCapstoneAsync(target);
+                if (result.Attempted && !result.Success)
+                {
+                    _logger?.Error(
+                        $"Theme capstone toggle failed for gameId={target.GameId}, apiName='{target.ApiName}': {result.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Theme capstone toggle failed for gameId={target.GameId}.");
+            }
         }
 
         private void QueueTagSync(Guid gameId)
@@ -1528,7 +1846,11 @@ namespace PlayniteAchievements
                 QueueTagSync(gameId);
             }
 
-            InvalidateStartPageData();
+            // Fires per saved game during a bulk refresh (and per in-game unlock via the
+            // monitor). Coalesced: the end-of-run scoped CacheInvalidated invalidates once
+            // regardless, and mid-run start-page freshness comes from the overview's
+            // published snapshots when one is open.
+            ScheduleStartPageInvalidate();
         }
 
         private void HandleRefreshAuthNotifications(RebuildPayload payload)
@@ -1563,6 +1885,7 @@ namespace PlayniteAchievements
             // Games added/removed change what the overview and start page project; drop the cached
             // library projection so the next open rebuilds against the current library.
             _libraryProjectionService?.Invalidate();
+            ScheduleStartPageInvalidate();
 
             if (e == null)
             {
@@ -1608,8 +1931,11 @@ namespace PlayniteAchievements
         {
             // A game's Playnite-owned fields (playtime, last played, cover, icon, metadata) changed;
             // invalidate so the cached overview/start-page projection is rebuilt with fresh values.
-            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce.
+            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce; the
+            // start-page invalidation is coalesced too (playtime ticks fire this continuously
+            // while a game runs).
             _libraryProjectionService?.Invalidate();
+            ScheduleStartPageInvalidate();
         }
 
         private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)

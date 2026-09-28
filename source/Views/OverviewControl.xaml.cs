@@ -24,6 +24,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.Showcase;
 
 namespace PlayniteAchievements.Views
 {
@@ -55,6 +56,7 @@ namespace PlayniteAchievements.Views
         private readonly OverviewViewModel _viewModel;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private PersistedSettingsSubscription _persistedSubscription;
         private readonly RefreshRuntime _refreshService;
         private readonly ICacheManager _cacheManager;
         private readonly IFriendCacheManager _friendCache;
@@ -72,6 +74,10 @@ namespace PlayniteAchievements.Views
         private DataGridRow _pendingRightClickRow;
         private bool _committingOverviewSelection;
         private FriendsOverviewControl _friendsOverview;
+        private ShowcaseControl _showcase;
+        private readonly DispatcherTimer _showcaseDatabaseRefreshTimer;
+        private bool _showcaseDatabaseRefreshPending;
+        private volatile bool _isDisposed;
         private DataGrid GameSummariesGrid => GameSummariesGridControl?.InternalDataGrid;
 
         public OverviewControl()
@@ -92,7 +98,8 @@ namespace PlayniteAchievements.Views
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
-            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null)
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
+            Func<Services.Widgets.WidgetDataCoordinator> widgetCoordinatorAccessor = null)
         {
             InitializeComponent();
 
@@ -109,6 +116,15 @@ namespace PlayniteAchievements.Views
             _refreshEntryPoint = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _launchContext = launchContext;
+            // Playnite raises ItemUpdated for every game property change - playtime ticks while a
+            // game runs, install state, metadata edits - and a library sync fires them in bursts.
+            // Each refresh rebuilds the whole projection, so the window is long enough that a
+            // burst collapses into one rebuild rather than one every few hundred milliseconds.
+            _showcaseDatabaseRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(2000)
+            };
+            _showcaseDatabaseRefreshTimer.Tick += ShowcaseDatabaseRefreshTimer_Tick;
 
             _viewModel = new OverviewViewModel(
                 refreshRuntime,
@@ -121,21 +137,42 @@ namespace PlayniteAchievements.Views
                 logger,
                 settings,
                 launchContext,
-                _friendCache);
+                _friendCache,
+                widgetCoordinatorAccessor);
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
             ActiveRefreshHeader = _viewModel;
             // Never restore the Friends subview when the feature is disabled; the subview
             // switch is hidden in that state, which would trap the user in the friends view.
-            ActiveSubView = _settings?.Persisted?.EnableFriendsFeatures == false
-                ? OverviewSubView.Overview
-                : _lastSelectedSubView;
+            ActiveSubView =
+                _settings?.Persisted?.EnableFriendsFeatures == false &&
+                _lastSelectedSubView == OverviewSubView.Friends
+                    ? OverviewSubView.Overview
+                    : _lastSelectedSubView;
             ApplyActiveSubView();
+            // Open/close is its own memory question, separate from refresh churn: if either of
+            // these stays live after Dispose, the window's whole visual tree, view model, and
+            // row set are still rooted and closing the overview cannot return memory.
+            Common.LeakWatch.Track("OverviewControl", this);
+            Common.LeakWatch.Track("OverviewViewModel", _viewModel);
+            Common.MemoryDiagnostics.Log(_logger, "overview.opened", $"context={launchContext}");
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
-            if (_settings?.Persisted != null)
+            if (_settings != null)
             {
-                _settings.Persisted.PropertyChanged += Persisted_PropertyChanged;
+                // Tracks the current Persisted instance: CancelEdit replaces it, and a
+                // direct subscription would be left on the orphan.
+                _persistedSubscription = new PersistedSettingsSubscription(
+                    _settings,
+                    Persisted_PropertyChanged,
+                    LeaveFriendsSubViewIfDisabled);
+            }
+
+            if (_playniteApi?.Database?.Games != null)
+            {
+                _playniteApi.Database.Games.ItemUpdated += ShowcaseGames_ItemUpdated;
+                _playniteApi.Database.Games.ItemCollectionChanged += ShowcaseGames_ItemCollectionChanged;
+                IsVisibleChanged += Showcase_IsVisibleChanged;
             }
         }
 
@@ -174,12 +211,37 @@ namespace PlayniteAchievements.Views
                 EnsureFriendsOverviewCreated();
                 ActiveRefreshHeader = _friendsOverview?.RefreshHeader ?? _viewModel;
             }
+            else if (ActiveSubView == OverviewSubView.Showcase)
+            {
+                EnsureShowcaseCreated();
+                ActiveRefreshHeader = _viewModel;
+                if (_showcaseDatabaseRefreshPending)
+                {
+                    QueueShowcaseDatabaseRefresh();
+                }
+            }
             else
             {
                 ActiveRefreshHeader = _viewModel;
             }
 
             UpdateFriendsClearSelectionState();
+        }
+
+        private void EnsureShowcaseCreated()
+        {
+            if (_showcase != null)
+            {
+                return;
+            }
+
+            _showcase = new ShowcaseControl(
+                _viewModel,
+                _settings,
+                _persistSettingsForUi,
+                _playniteApi);
+            ShowcaseHeaderHost.Content = _showcase.DetachHeaderBar();
+            ShowcaseContentHost.Content = _showcase;
         }
 
         private void EnsureFriendsOverviewCreated()
@@ -232,9 +294,18 @@ namespace PlayniteAchievements.Views
 
         private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e?.PropertyName == nameof(PersistedSettings.EnableFriendsFeatures)
-                && !_settings.Persisted.EnableFriendsFeatures
-                && ActiveSubView == OverviewSubView.Friends)
+            if (e?.PropertyName == nameof(PersistedSettings.EnableFriendsFeatures))
+            {
+                LeaveFriendsSubViewIfDisabled();
+            }
+        }
+
+        // The subview switch is hidden when friends features are off, so staying on the
+        // friends subview would trap the user there.
+        private void LeaveFriendsSubViewIfDisabled()
+        {
+            if (_settings?.Persisted?.EnableFriendsFeatures == false &&
+                ActiveSubView == OverviewSubView.Friends)
             {
                 ActiveSubView = OverviewSubView.Overview;
             }
@@ -287,6 +358,12 @@ namespace PlayniteAchievements.Views
                         return;
                     }
 
+                    if (ActiveSubView == OverviewSubView.Showcase)
+                    {
+                        _showcase?.FocusInitialTarget();
+                        return;
+                    }
+
                     if (!FocusLeftFilterArea())
                     {
                         FocusOverviewGrid();
@@ -313,6 +390,7 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+            _isDisposed = true;
             try
             {
                 Deactivate();
@@ -321,10 +399,8 @@ namespace PlayniteAchievements.Views
                     _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 }
                 PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
-                if (_settings?.Persisted != null)
-                {
-                    _settings.Persisted.PropertyChanged -= Persisted_PropertyChanged;
-                }
+                _persistedSubscription?.Dispose();
+                _persistedSubscription = null;
                 if (_friendsOverview?.ViewModel != null)
                 {
                     _friendsOverview.ViewModel.PropertyChanged -= FriendsViewModel_PropertyChanged;
@@ -333,7 +409,23 @@ namespace PlayniteAchievements.Views
                 RecentAchievementsDataGrid?.Dispose();
                 GameAchievementsGrid?.Dispose();
                 _friendsOverview?.Dispose();
+                _showcase?.Dispose();
+                _showcaseDatabaseRefreshTimer?.Stop();
+                if (_playniteApi?.Database?.Games != null)
+                {
+                    _playniteApi.Database.Games.ItemUpdated -= ShowcaseGames_ItemUpdated;
+                    _playniteApi.Database.Games.ItemCollectionChanged -= ShowcaseGames_ItemCollectionChanged;
+                }
+
+                IsVisibleChanged -= Showcase_IsVisibleChanged;
                 _viewModel?.Dispose();
+
+                // Reported after a delay and a forced collection: the OverviewControl /
+                // OverviewViewModel live counts in this line are the direct answer to whether
+                // closing the overview actually releases it.
+                PlayniteAchievementsPlugin.Instance?.ScheduleRetentionDiagnostics(
+                    "overview.closed",
+                    delaySeconds: 8);
             }
             catch (Exception ex)
             {
@@ -356,14 +448,9 @@ namespace PlayniteAchievements.Views
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
 
-            // The Persisted_PropertyChanged subscription targets the Persisted instance from
-            // construction time, which settings edits can replace (CopyPersistedFrom); this
-            // save-time check leaves the friends view even when that subscription went stale.
-            if (_settings?.Persisted?.EnableFriendsFeatures == false &&
-                ActiveSubView == OverviewSubView.Friends)
-            {
-                ActiveSubView = OverviewSubView.Overview;
-            }
+            // Belt and braces alongside the persisted-settings subscription, which already
+            // covers both a property change and the instance being replaced.
+            LeaveFriendsSubViewIfDisabled();
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -421,6 +508,89 @@ namespace PlayniteAchievements.Views
         private void FriendsSubViewButton_Click(object sender, RoutedEventArgs e)
         {
             ActiveSubView = OverviewSubView.Friends;
+        }
+
+        private void ShowcaseSubViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveSubView = OverviewSubView.Showcase;
+        }
+
+        private void ShowcaseGames_ItemUpdated(
+            object sender,
+            ItemUpdatedEventArgs<Playnite.SDK.Models.Game> e) =>
+            QueueShowcaseDatabaseRefresh();
+
+        private void ShowcaseGames_ItemCollectionChanged(
+            object sender,
+            ItemCollectionChangedEventArgs<Playnite.SDK.Models.Game> e) =>
+            QueueShowcaseDatabaseRefresh();
+
+        // Picks up work deferred while the dashboard was hidden.
+        private void Showcase_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible && _showcaseDatabaseRefreshPending)
+            {
+                QueueShowcaseDatabaseRefresh();
+            }
+        }
+
+        private void QueueShowcaseDatabaseRefresh()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            // Playnite may raise database collection events from a library-update worker.
+            // Marshal before touching dependency properties or the DispatcherTimer, both of
+            // which belong to this control's UI dispatcher.
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(
+                    new Action(QueueShowcaseDatabaseRefresh),
+                    DispatcherPriority.Background);
+                return;
+            }
+
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _showcaseDatabaseRefreshPending = true;
+
+            // Only rebuild for a dashboard the user is actually looking at. A hidden control
+            // (another Playnite view, a minimized window) keeps the pending flag and refreshes
+            // when it comes back, so background library activity costs nothing until then.
+            if (ActiveSubView != OverviewSubView.Showcase || !IsVisible)
+            {
+                return;
+            }
+
+            _showcaseDatabaseRefreshTimer.Stop();
+            _showcaseDatabaseRefreshTimer.Start();
+        }
+
+        private void ShowcaseDatabaseRefreshTimer_Tick(object sender, EventArgs e)
+        {
+            _showcaseDatabaseRefreshTimer.Stop();
+            if (!_showcaseDatabaseRefreshPending || ActiveSubView != OverviewSubView.Showcase || !IsVisible)
+            {
+                return;
+            }
+
+            // A running refresh already reconciles the view model through its own delta
+            // path, and its tag-sync writes raise ItemUpdated per game - a full rebuild per
+            // burst would stack whole-library projection builds on top of the run. Keep the
+            // pending flag and re-arm so one rebuild lands after the run ends.
+            if (_refreshService?.IsRebuilding == true)
+            {
+                _showcaseDatabaseRefreshTimer.Start();
+                return;
+            }
+
+            _showcaseDatabaseRefreshPending = false;
+            _ = _viewModel?.RefreshViewAsync();
         }
 
         private void FriendsClearSelectionButton_Click(object sender, RoutedEventArgs e)
@@ -548,6 +718,31 @@ namespace PlayniteAchievements.Views
             if (ActiveSubView == OverviewSubView.Friends)
             {
                 return HandleFriendsControllerInput(input);
+            }
+
+            if (ActiveSubView == OverviewSubView.Showcase)
+            {
+                if (FullscreenControllerNavigationService.IsLeftShoulderInput(input))
+                {
+                    return _showcase?.MovePage(-1) == true;
+                }
+
+                if (FullscreenControllerNavigationService.IsRightShoulderInput(input))
+                {
+                    return _showcase?.MovePage(1) == true;
+                }
+
+                if (FullscreenControllerNavigationService.IsBackInput(input))
+                {
+                    return TryHandleControllerBack();
+                }
+
+                if (FullscreenControllerNavigationService.IsAcceptInput(input))
+                {
+                    return FullscreenControllerNavigationService.ActivateFocusedElement();
+                }
+
+                return false;
             }
 
             if (FullscreenControllerNavigationService.IsBackInput(input))
@@ -1008,6 +1203,7 @@ namespace PlayniteAchievements.Views
             return CloseViewButton?.IsKeyboardFocusWithin == true ||
                    OverviewSubViewButton?.IsKeyboardFocusWithin == true ||
                    FriendsSubViewButton?.IsKeyboardFocusWithin == true ||
+                   ShowcaseSubViewButton?.IsKeyboardFocusWithin == true ||
                    RefreshModeSelectionButton?.IsKeyboardFocusWithin == true ||
                    RefreshActionButton?.IsKeyboardFocusWithin == true ||
                    FriendsClearSelectionButton?.IsKeyboardFocusWithin == true;
@@ -1517,7 +1713,7 @@ namespace PlayniteAchievements.Views
         {
             if (row == null || !row.IsLoaded || row.DataContext == null) return false;
 
-            var menu = BuildRowContextMenu(row.DataContext);
+            var menu = BuildRowContextMenu(row.DataContext, row);
             if (menu == null || menu.Items.Count == 0) return false;
 
             ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
@@ -1532,14 +1728,14 @@ namespace PlayniteAchievements.Views
             return true;
         }
 
-        private ContextMenu BuildRowContextMenu(object data)
+        private ContextMenu BuildRowContextMenu(object data, DependencyObject menuSource = null)
         {
-            if (data is GameSummaryItem) return BuildGameMenu(data);
-            if (data is AchievementDisplayItem || data is RecentAchievementItem) return BuildAchievementMenu(data);
+            if (data is GameSummaryItem) return BuildGameMenu(data, menuSource);
+            if (data is AchievementDisplayItem || data is RecentAchievementItem) return BuildAchievementMenu(data, menuSource);
             return null;
         }
 
-        private ContextMenu BuildGameMenu(object data)
+        private ContextMenu BuildGameMenu(object data, DependencyObject menuSource = null)
         {
             return GameRowContextMenuBuilder.BuildGameMenu(
                 data,
@@ -1551,10 +1747,11 @@ namespace PlayniteAchievements.Views
                 _achievementOverridesService,
                 _cacheManager,
                 _logger,
-                includeViewCaptures: true);
+                includeViewCaptures: true,
+                menuSource: menuSource);
         }
 
-        private ContextMenu BuildAchievementMenu(object data)
+        private ContextMenu BuildAchievementMenu(object data, DependencyObject menuSource = null)
         {
             var menu = new ContextMenu();
             if (data is RecentAchievementItem)
@@ -1579,7 +1776,10 @@ namespace PlayniteAchievements.Views
                 data,
                 this,
                 RefreshView,
-                includeViewCaptures: true);
+                includeViewCaptures: true,
+                onGoalChanged: () => _viewModel?.ReapplyGoalOrder() == true,
+                onCapstoneChanged: apiName => _viewModel?.ApplyCapstone(apiName) == true,
+                menuSource: menuSource);
             return menu;
         }
 

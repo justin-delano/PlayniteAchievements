@@ -6,6 +6,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -33,6 +34,7 @@ namespace PlayniteAchievements.Views.Helpers
             AchievementOverridesService overridesService,
             ICacheManager cacheManager,
             ILogger logger,
+            DependencyObject menuSource,
             bool includeViewCaptures = false)
         {
             var menu = new ContextMenu();
@@ -71,6 +73,15 @@ namespace PlayniteAchievements.Views.Helpers
                     menu.Items.Add(captureItem);
                 }
 
+                if (!(data is FriendGameSummaryItem) &&
+                    TryGetGameId(data, out var showcaseGameId))
+                {
+                    ShowcasePinMenuBuilder.AppendGameMenu(
+                        menu,
+                        resourceOwner,
+                        showcaseGameId);
+                }
+
                 menu.Items.Add(new Separator());
 
                 var excludedFromSummaries = overridesService?.IsExcludedFromSummaries(menuGameId) == true;
@@ -104,6 +115,9 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Add(maintenance);
             }
 
+            // Required rather than optional: a call site that forgets the row would lose the
+            // display settings entry silently, so the compiler asks for it.
+            GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
             return menu;
         }
 

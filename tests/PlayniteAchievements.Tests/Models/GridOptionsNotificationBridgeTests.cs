@@ -23,6 +23,34 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void SingleGameAppearanceEdit_RaisesFlatPropertyChangedOnPersistedSettings()
+        {
+            var settings = new PersistedSettings();
+            var raised = new List<string>();
+            settings.PropertyChanged += (sender, e) => raised.Add(e.PropertyName);
+
+            var options = settings.GridOptions.GetAchievement(GridOptionKeys.Achievement.SingleGame);
+            options.ShowRarityGlow = !options.ShowRarityGlow;
+            options.ColorNamesByRarity = !options.ColorNamesByRarity;
+            options.ShowColumnHeaders = !options.ShowColumnHeaders;
+
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.ViewAchievementsAchievementGridShowRarityGlow));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.ViewAchievementsAchievementGridColorNamesByRarity));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.ShowViewAchievementsAchievementGridColumnHeaders));
+        }
+
+        [TestMethod]
+        public void SingleGameAppearance_IsIndependentOfOverviewSelectedGame()
+        {
+            var settings = new PersistedSettings();
+
+            settings.GridOptions.GetAchievement(GridOptionKeys.Achievement.OverviewSelectedGame).ShowRarityGlow = false;
+
+            Assert.IsFalse(settings.OverviewSelectedGameShowRarityGlow);
+            Assert.IsTrue(settings.ViewAchievementsAchievementGridShowRarityGlow);
+        }
+
+        [TestMethod]
         public void GameSummariesOptionEdit_RaisesFlatPropertyChangedOnPersistedSettings()
         {
             var settings = new PersistedSettings();
@@ -32,9 +60,11 @@ namespace PlayniteAchievements.Models.Tests
             var options = settings.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.Overview);
             options.SortDescending = !options.SortDescending;
             options.ShowNameAboveProgress = !options.ShowNameAboveProgress;
+            options.ShowRarityBadgesBelowProgress = !options.ShowRarityBadgesBelowProgress;
 
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesGridSortDescending));
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesShowNameAboveProgress));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesShowRarityBadgesBelowProgress));
         }
 
         [TestMethod]
@@ -77,9 +107,11 @@ namespace PlayniteAchievements.Models.Tests
             var options = settings.GridOptions.CategorySummaries[GridOptionKeys.CategorySummaries.FriendsOverview];
             options.UseCoverImages = !options.UseCoverImages;
             options.ShowNameAboveProgress = !options.ShowNameAboveProgress;
+            options.ShowRarityBadgesBelowProgress = !options.ShowRarityBadgesBelowProgress;
 
             CollectionAssert.Contains(raised, nameof(PersistedSettings.FriendsOverviewCategorySummariesUseCoverImages));
             CollectionAssert.Contains(raised, nameof(PersistedSettings.FriendsOverviewCategorySummariesShowNameAboveProgress));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.FriendsOverviewCategorySummariesShowRarityBadgesBelowProgress));
         }
 
         [TestMethod]

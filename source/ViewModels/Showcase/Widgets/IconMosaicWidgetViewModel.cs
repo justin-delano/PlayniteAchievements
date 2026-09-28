@@ -1,0 +1,81 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.ViewModels.Items;
+
+namespace PlayniteAchievements.ViewModels.Showcase.Widgets
+{
+    /// <summary>
+    /// Backs the IconMosaic widget by reusing AchievementCompactItemControl for each achievement.
+    /// Icon size follows density (compact 32 / standard 42 / expanded 54); every size shows the
+    /// same icons. Rarity-glow appearance comes from the widget's own per-instance options.
+    /// </summary>
+    public sealed class IconMosaicWidgetViewModel : ShowcaseWidgetViewModelBase
+    {
+        private double _iconSize = 42;
+        private bool _showRarityGlow = true;
+        private bool _animateRarityGlows = true;
+
+        public BulkObservableCollection<AchievementDisplayItem> Items { get; } =
+            new BulkObservableCollection<AchievementDisplayItem>();
+
+        public double IconSize { get => _iconSize; private set => SetValue(ref _iconSize, value); }
+
+        public bool ShowRarityGlow { get => _showRarityGlow; private set => SetValue(ref _showRarityGlow, value); }
+
+        public bool AnimateRarityGlows { get => _animateRarityGlows; private set => SetValue(ref _animateRarityGlows, value); }
+
+        protected override void Refresh()
+        {
+            var achievements = Projection?.MosaicAchievements ?? Array.Empty<AchievementDisplayItem>();
+            IconSize = Density == WidgetViewportDensity.Compact
+                ? 32
+                : Density == WidgetViewportDensity.Expanded ? 54 : 42;
+
+            // Glow on/off is a per-widget option; the glow ANIMATION stays a global setting.
+            ShowRarityGlow = ShowcaseWidgetOptions.GetMosaicShowRarityGlow(Projection?.Instance);
+            AnimateRarityGlows =
+                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.AnimateRarityGlows ?? true;
+
+            Items.ReplaceAll(OrderAchievements(achievements));
+        }
+
+        /// <summary>
+        /// Applies the widget's configured sort over the projected tiles. None preserves the
+        /// source order the mosaic's Source produced, so sorting stays an opt-in re-arrangement
+        /// of one widget rather than a re-projection of the dashboard.
+        /// </summary>
+        private IEnumerable<AchievementDisplayItem> OrderAchievements(
+            IEnumerable<AchievementDisplayItem> achievements)
+        {
+            var spec = new AchievementSortSpec(
+                ShowcaseWidgetOptions.GetMosaicSort(Projection?.Instance),
+                ShowcaseWidgetOptions.GetMosaicSortDescending(Projection?.Instance)
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending);
+            if (spec.PreservesSourceOrder)
+            {
+                return achievements;
+            }
+
+            var list = achievements.Where(item => item != null).ToList();
+            var comparison = AchievementSortHelper.GetComparison(
+                spec.SortMemberPath,
+                spec.Direction,
+                AchievementSortScope.RecentAchievements);
+            if (comparison == null)
+            {
+                return list;
+            }
+
+            list.Sort(AchievementSortHelper.WithStableOrder(
+                comparison,
+                AchievementSortHelper.CreateStableOrderMap(list)));
+            return list;
+        }
+    }
+}

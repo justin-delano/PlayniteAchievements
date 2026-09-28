@@ -44,6 +44,12 @@ namespace PlayniteAchievements.Providers.Exophase
         // from a bad historical match, not because the mapping can expire.
         private readonly Dictionary<Guid, string> _slugMemo = new Dictionary<Guid, string>();
         private readonly object _slugMemoLock = new object();
+        // IsCapable is re-asked for every game on every refresh tick, and the in-game refresh prong
+        // ticks every 15 seconds, so logging each verdict floods the log. Only a changed verdict is
+        // logged; the reason string is part of the comparison so a verdict that stays false for a
+        // new reason still surfaces.
+        private readonly Dictionary<Guid, string> _loggedCapability = new Dictionary<Guid, string>();
+        private readonly object _loggedCapabilityLock = new object();
         private static readonly string[] KnownExophasePlatformTokens =
         {
             "steam", "gog", "epic", "blizzard", "origin", "psn", "ps3", "ps4", "ps5", "vita",
@@ -220,7 +226,7 @@ namespace PlayniteAchievements.Providers.Exophase
             // Check explicit game inclusion first
             if (GameCustomDataLookup.IsExophaseIncluded(game.Id, ProviderSettings))
             {
-                _logger.Debug($"Exophase IsCapable for '{game.Name}': true (explicitly included)");
+                LogCapability(game, "true (explicitly included)");
                 return true;
             }
 
@@ -229,16 +235,37 @@ namespace PlayniteAchievements.Providers.Exophase
             if (!string.IsNullOrWhiteSpace(platformToken) &&
                 ProviderSettings.ManagedProviders.Contains(platformToken))
             {
-                _logger.Debug($"Exophase IsCapable for '{game.Name}': true (token '{platformToken}' is managed)");
+                LogCapability(game, $"true (token '{platformToken}' is managed)");
                 return true;
             }
 
             // Log why it wasn't capable for debugging
-            _logger.Debug($"Exophase IsCapable for '{game.Name}': false " +
-                $"(Token={platformToken ?? "null"}, " +
+            LogCapability(
+                game,
+                $"false (Token={platformToken ?? "null"}, " +
                 $"Source={game.Source?.Name ?? "null"}, " +
                 $"Platforms={string.Join(", ", game.Platforms?.Select(p => p.Name) ?? Array.Empty<string>())})");
             return false;
+        }
+
+        /// <summary>
+        /// Logs a capability verdict once per game, and again only when the verdict or its reason
+        /// changes. See <see cref="_loggedCapability"/> for why this is not logged per call.
+        /// </summary>
+        private void LogCapability(Game game, string verdict)
+        {
+            lock (_loggedCapabilityLock)
+            {
+                if (_loggedCapability.TryGetValue(game.Id, out var previous) &&
+                    string.Equals(previous, verdict, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _loggedCapability[game.Id] = verdict;
+            }
+
+            _logger.Debug($"Exophase IsCapable for '{game.Name}': {verdict}");
         }
 
         /// <summary>

@@ -23,7 +23,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
             {
                 if (iplStream == null)
                 {
-                    Logger?.Warn($"[RA] {Name}: Not a Neo Geo CD image (missing IPL.TXT): {filePath}");
+                    WarnOnce($"[RA] {Name}: Not a Neo Geo CD image (missing IPL.TXT): {filePath}");
                     return Array.Empty<string>();
                 }
 
@@ -59,7 +59,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                         {
                             if (prgStream == null)
                             {
-                                Logger?.Warn($"[RA] {Name}: Missing PRG '{prgName}': {filePath}");
+                                WarnOnce($"[RA] {Name}: Missing PRG '{prgName}': {filePath}");
                                 return Array.Empty<string>();
                             }
 

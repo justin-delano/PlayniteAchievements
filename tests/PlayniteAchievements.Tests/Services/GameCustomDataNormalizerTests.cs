@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
@@ -454,6 +455,94 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void NormalizeInternal_ExophaseEnrichmentSlugOverride_TrimsAndKeepsField()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ExophaseEnrichmentSlugOverride = "  guitar-hero-hits-xbox-360  "
+                },
+                gameId);
+
+            Assert.AreEqual("guitar-hero-hits-xbox-360", normalized.ExophaseEnrichmentSlugOverride);
+            Assert.IsNull(normalized.ProviderOverride);
+            Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+            Assert.IsTrue(GameCustomDataNormalizer.HasInternalData(normalized));
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_WhitespaceExophaseEnrichmentSlugOverride_BecomesNull()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ExophaseEnrichmentSlugOverride = "   "
+                },
+                gameId);
+
+            Assert.IsNull(normalized.ExophaseEnrichmentSlugOverride);
+            Assert.IsFalse(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_LegacyExophaseMigration_LeavesEnrichmentSlugAlone()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ExophaseSlugOverride = "legacy-slug",
+                    ExophaseEnrichmentSlugOverride = "enrichment-slug"
+                },
+                gameId);
+
+            Assert.IsNotNull(normalized.ProviderOverride);
+            Assert.AreEqual("Exophase", normalized.ProviderOverride.ProviderKey);
+            Assert.AreEqual("legacy-slug", normalized.ProviderOverride.Value);
+            Assert.IsNull(normalized.ExophaseSlugOverride);
+            Assert.AreEqual("enrichment-slug", normalized.ExophaseEnrichmentSlugOverride);
+        }
+
+        [TestMethod]
+        public void MergePreferExisting_ExophaseEnrichmentSlugOverride_PrefersExistingThenLegacy()
+        {
+            var existing = new GameCustomDataFile { ExophaseEnrichmentSlugOverride = "existing-slug" };
+            var legacy = new GameCustomDataFile { ExophaseEnrichmentSlugOverride = "legacy-slug" };
+
+            var merged = GameCustomDataNormalizer.MergePreferExisting(existing, legacy);
+            Assert.AreEqual("existing-slug", merged.ExophaseEnrichmentSlugOverride);
+
+            var mergedFromLegacy = GameCustomDataNormalizer.MergePreferExisting(new GameCustomDataFile(), legacy);
+            Assert.AreEqual("legacy-slug", mergedFromLegacy.ExophaseEnrichmentSlugOverride);
+        }
+
+        [TestMethod]
+        public void GameCustomDataFiles_ExophaseEnrichmentSlugOverride_SurvivesCloneAndPortableRoundTrip()
+        {
+            var gameId = Guid.NewGuid();
+            var internalData = new GameCustomDataFile
+            {
+                PlayniteGameId = gameId,
+                ExophaseEnrichmentSlugOverride = "guitar-hero-hits-xbox-360"
+            };
+
+            Assert.AreEqual("guitar-hero-hits-xbox-360", internalData.Clone().ExophaseEnrichmentSlugOverride);
+
+            var portable = internalData.ToPortable();
+            Assert.AreEqual("guitar-hero-hits-xbox-360", portable.ExophaseEnrichmentSlugOverride);
+            Assert.AreEqual("guitar-hero-hits-xbox-360", portable.Clone().ExophaseEnrichmentSlugOverride);
+            Assert.IsTrue(GameCustomDataNormalizer.HasPortableData(portable));
+
+            var roundTripped = GameCustomDataFile.FromPortable(portable, gameId, null, null);
+            Assert.AreEqual("guitar-hero-hits-xbox-360", roundTripped.ExophaseEnrichmentSlugOverride);
+        }
+
+        [TestMethod]
         public void GameCustomDataFiles_CloneAndPortableRoundTrip_DeepCopyGameSummaryCategory()
         {
             var internalData = new GameCustomDataFile
@@ -574,7 +663,7 @@ namespace PlayniteAchievements.Services.Tests
                 }
             };
 
-            var hydrator = new AchievementDetailHydrator(new PersistedSettings());
+            var hydrator = new AchievementDetailHydrator(new PlayniteAchievementsSettings());
             hydrator.HydrateAllWithCapstoneOverride(details, gameId, "Steam", customData);
 
             Assert.AreEqual("route note", details[0].AchievementNote);
@@ -601,7 +690,7 @@ namespace PlayniteAchievements.Services.Tests
                 }
             };
 
-            var hydrator = new AchievementDetailHydrator(new PersistedSettings());
+            var hydrator = new AchievementDetailHydrator(new PlayniteAchievementsSettings());
             hydrator.HydrateAllWithCapstoneOverride(details, gameId, "Steam", renamed);
 
             Assert.AreEqual("My Renamed DLC", details[0].Category);
@@ -730,6 +819,27 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void NormalizeInternal_RiotProviderOverride_PreservesKeyWithNullValue()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = "riot",
+                        Value = null
+                    }
+                },
+                gameId);
+
+            // Riot challenges belong to the account in settings rather than to a game, so the
+            // override is presence-only. An unregistered key here would silently drop it on save.
+            AssertProviderOverride(normalized, "Riot", null);
+        }
+
+        [TestMethod]
         public void NormalizeInternal_Rpcs3ProviderOverride_NormalizesCanonicalValue()
         {
             var gameId = Guid.NewGuid();
@@ -779,6 +889,87 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsNull(data.ShadPS4MatchIdOverride);
             Assert.IsNull(data.ForceUseExophase);
             Assert.IsNull(data.ExophaseSlugOverride);
+        }
+
+        [TestMethod]
+        public void CustomProviderId_RoundTripsAndIsClearedWithoutCustomAchievements()
+        {
+            var gameId = Guid.NewGuid();
+            var data = new GameCustomDataFile
+            {
+                PlayniteGameId = gameId,
+                CustomProviderId = " abc ",
+                CustomAchievements = new List<CustomAchievementDefinition>
+                {
+                    new CustomAchievementDefinition { DisplayName = "Solo" }
+                }
+            };
+
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(data, gameId);
+            Assert.AreEqual("abc", normalized.CustomProviderId);
+            Assert.AreEqual("abc", normalized.Clone().CustomProviderId);
+
+            var portable = normalized.ToPortable();
+            Assert.AreEqual("abc", portable.CustomProviderId);
+            Assert.AreEqual("abc", portable.Clone().CustomProviderId);
+            Assert.AreEqual("abc", GameCustomDataFile.FromPortable(portable, gameId, null, null).CustomProviderId);
+            Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(new GameCustomDataFile { CustomProviderId = "abc" }));
+
+            var orphan = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile { PlayniteGameId = gameId, CustomProviderId = "abc" },
+                gameId);
+            Assert.IsNull(orphan.CustomProviderId, "an assignment without custom achievements is dropped");
+            Assert.IsFalse(GameCustomDataNormalizer.HasInternalData(orphan));
+        }
+
+        [TestMethod]
+        public void NormalizePortable_CustomProviderSnapshot_FollowsTheAssignedId()
+        {
+            var gameId = Guid.NewGuid();
+            var achievements = new List<CustomAchievementDefinition>
+            {
+                new CustomAchievementDefinition { DisplayName = "Solo" }
+            };
+
+            var normalized = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    CustomProviderId = "abc",
+                    CustomProvider = new CustomProviderDefinition
+                    {
+                        Id = "other",
+                        Name = " Shelf ",
+                        ColorHex = "#123456",
+                        IconPathData = " M0 0h1v1z "
+                    },
+                    CustomAchievements = achievements
+                },
+                gameId);
+
+            Assert.AreEqual("abc", normalized.CustomProvider.Id);
+            Assert.AreEqual("Shelf", normalized.CustomProvider.Name);
+            Assert.AreEqual("#123456", normalized.CustomProvider.ColorHex);
+            Assert.AreEqual("M0 0h1v1z", normalized.CustomProvider.IconPathData);
+
+            var nameless = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    CustomProviderId = "abc",
+                    CustomProvider = new CustomProviderDefinition { Id = "abc" },
+                    CustomAchievements = achievements
+                },
+                gameId);
+            Assert.IsNull(nameless.CustomProvider);
+            Assert.AreEqual("abc", nameless.CustomProviderId);
+
+            var unassigned = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    CustomProvider = new CustomProviderDefinition { Id = "abc", Name = "Shelf" },
+                    CustomAchievements = achievements
+                },
+                gameId);
+            Assert.IsNull(unassigned.CustomProvider);
         }
     }
 }

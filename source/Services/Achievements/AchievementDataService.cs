@@ -49,8 +49,13 @@ namespace PlayniteAchievements.Services.Achievements
         private readonly IAchievementFilterMirror _filterMirror;
         private readonly GameDataHydrator _hydrator;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _api;
         private readonly GameCustomDataStore _gameCustomDataStore;
-        private readonly PersistedSettings _persistedSettings;
+        // The settings wrapper, not its PersistedSettings: CancelEdit replaces the
+        // Persisted instance, so a captured instance would keep serving the values the
+        // user reverted.
+        private readonly PlayniteAchievementsSettings _settings;
+        private PersistedSettingsSubscription _persistedSubscription;
         private readonly object _overviewProjectionCacheSync = new object();
         private readonly Dictionary<int, CachedSummaryData> _overviewSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
@@ -58,6 +63,8 @@ namespace PlayniteAchievements.Services.Achievements
         // Bumped on every invalidation; a summary loaded before an invalidation must not be
         // memoized after it (it may have been built against since-replaced filter mirror rows).
         private int _overviewProjectionGeneration;
+
+        private PersistedSettings Persisted => _settings.Persisted;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -71,11 +78,12 @@ namespace PlayniteAchievements.Services.Achievements
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             _logger = logger;
+            _api = api;
             _gameCustomDataStore = gameCustomDataStore;
-            _persistedSettings = settings.Persisted;
+            _settings = settings;
             _cacheReadOptimizations = cacheService as ICacheReadOptimizations;
             _filterMirror = cacheService as IAchievementFilterMirror;
-            _hydrator = new GameDataHydrator(api, settings.Persisted, _gameCustomDataStore);
+            _hydrator = new GameDataHydrator(api, settings, _gameCustomDataStore);
             SubscribeOverviewProjectionInvalidation();
         }
 
@@ -135,6 +143,37 @@ namespace PlayniteAchievements.Services.Achievements
             try
             {
                 return _cacheService.LoadGameData(playniteGameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, string.Format(
+                    "Failed to get achievement data for gameId={0}",
+                    playniteGameId));
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Raw cached data plus the game's custom achievement projections, with no overlays
+        /// applied. A game with only custom achievements yields the synthetic custom data.
+        /// </summary>
+        public GameAchievementData GetRawGameAchievementDataWithCustomAchievements(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return null;
+            }
+
+            try
+            {
+                var data = _cacheService.LoadGameData(playniteGameId.ToString());
+                if (data == null)
+                {
+                    return CreateSyntheticCustomGameData(playniteGameId, LoadCustomData(playniteGameId));
+                }
+
+                _hydrator.AppendCustomAchievements(data);
+                return data;
             }
             catch (Exception ex)
             {
@@ -275,7 +314,7 @@ namespace PlayniteAchievements.Services.Achievements
             CachedSummaryData hydratedSummary;
             try
             {
-                hydratedSummary = ApplyOverviewSummaryHydration(summaryData);
+                hydratedSummary = ApplyOverviewSummaryHydration(summaryData, normalizedLimit);
             }
             catch (Exception ex)
             {
@@ -302,11 +341,12 @@ namespace PlayniteAchievements.Services.Achievements
             return GetCachedSummaryDataForOverview(recentAchievementDetailLimit);
         }
 
-        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData)
+        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData, int recentAchievementDetailLimit)
         {
             summaryData ??= new CachedSummaryData();
             summaryData.Games ??= new List<CachedGameSummaryData>();
             summaryData.RecentUnlocks ??= new List<CachedRecentUnlockData>();
+            summaryData.Achievements ??= new List<CachedRecentUnlockData>();
             summaryData.GlobalUnlockCountsByDate ??= new Dictionary<DateTime, int>();
             summaryData.UnlockCountsByDateByGame ??= new Dictionary<Guid, Dictionary<DateTime, int>>();
 
@@ -321,11 +361,26 @@ namespace PlayniteAchievements.Services.Achievements
                     .Where(recent => recent?.PlayniteGameId.HasValue != true || !excludedSummaryIds.Contains(recent.PlayniteGameId.Value))
                     .ToList();
 
+                summaryData.Achievements = summaryData.Achievements
+                    .Where(item => item?.PlayniteGameId.HasValue != true ||
+                                   !excludedSummaryIds.Contains(item.PlayniteGameId.Value))
+                    .ToList();
+
                 RemoveExcludedTimelineCounts(
                     summaryData.GlobalUnlockCountsByDate,
                     summaryData.UnlockCountsByDateByGame,
                     excludedSummaryIds);
             }
+
+            // SQL summaries never see custom achievements, which live only in custom data.
+            CustomAchievementSummaryMerger.Merge(
+                summaryData,
+                customDataByGameId,
+                excludedSummaryIds,
+                recentAchievementDetailLimit,
+                gameId => GetGame(gameId)?.Name,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                ResolveCustomProviderPlatformKey);
 
             var gameIdsNeedingCompletionOverrides = new HashSet<Guid>(
                 summaryData.Games
@@ -333,19 +388,22 @@ namespace PlayniteAchievements.Services.Achievements
                     .Select(game => game.PlayniteGameId.Value)
                     .Where(gameId => gameId != Guid.Empty));
 
-            var recentGameIds = new HashSet<Guid>(
-                summaryData.RecentUnlocks
-                    .Where(recent => recent?.PlayniteGameId.HasValue == true)
-                    .Select(recent => recent.PlayniteGameId.Value)
+            var achievementDetails = summaryData.Achievements.Count > 0
+                ? summaryData.Achievements
+                : summaryData.RecentUnlocks;
+            var achievementGameIds = new HashSet<Guid>(
+                achievementDetails
+                    .Where(item => item?.PlayniteGameId.HasValue == true)
+                    .Select(item => item.PlayniteGameId.Value)
                     .Where(gameId => gameId != Guid.Empty));
-            gameIdsNeedingCompletionOverrides.UnionWith(recentGameIds);
+            gameIdsNeedingCompletionOverrides.UnionWith(achievementGameIds);
 
             var customizationByGameId = BuildSummaryCustomizationByGameId(
                 gameIdsNeedingCompletionOverrides,
-                recentGameIds,
+                achievementGameIds,
                 customDataByGameId);
             ApplyGameSummaryCustomization(summaryData.Games, customizationByGameId);
-            ApplyRecentSummaryCustomization(summaryData.RecentUnlocks, customizationByGameId);
+            ApplyAchievementSummaryCustomization(achievementDetails, customizationByGameId);
 
             return summaryData;
         }
@@ -426,7 +484,7 @@ namespace PlayniteAchievements.Services.Achievements
         {
             try
             {
-                return GameCustomDataLookup.GetExcludedSummaryGameIds(_persistedSettings, _gameCustomDataStore);
+                return GameCustomDataLookup.GetExcludedSummaryGameIds(Persisted, _gameCustomDataStore);
             }
             catch (Exception ex)
             {
@@ -437,8 +495,8 @@ namespace PlayniteAchievements.Services.Achievements
 
         private HashSet<Guid> BuildExcludedSummaryGameIdsFallback(IReadOnlyDictionary<Guid, GameCustomDataFile> customDataByGameId)
         {
-            var result = _persistedSettings?.ExcludedFromSummariesGameIds != null
-                ? new HashSet<Guid>(_persistedSettings.ExcludedFromSummariesGameIds)
+            var result = Persisted?.ExcludedFromSummariesGameIds != null
+                ? new HashSet<Guid>(Persisted.ExcludedFromSummariesGameIds)
                 : new HashSet<Guid>();
 
             if (customDataByGameId == null || customDataByGameId.Count == 0)
@@ -469,28 +527,28 @@ namespace PlayniteAchievements.Services.Achievements
             }
 
             var hasCustomData = customData != null;
-            var useSeparateLockedIconsDefault = _persistedSettings?.UseSeparateLockedIconsWhenAvailable == true;
+            var useSeparateLockedIconsDefault = Persisted?.UseSeparateLockedIconsWhenAvailable == true;
             return new ResolvedGameCustomData
             {
                 ExcludedFromRefreshes = hasCustomData
                     ? customData.ExcludedFromRefreshes == true
-                    : _persistedSettings?.ExcludedGameIds?.Contains(gameId) == true,
+                    : Persisted?.ExcludedGameIds?.Contains(gameId) == true,
                 ExcludedFromSummaries = hasCustomData
                     ? customData.ExcludedFromSummaries == true
-                    : _persistedSettings?.ExcludedFromSummariesGameIds?.Contains(gameId) == true,
+                    : Persisted?.ExcludedFromSummariesGameIds?.Contains(gameId) == true,
                 UseSeparateLockedIcons = useSeparateLockedIconsDefault ||
                     (hasCustomData
                         ? customData.UseSeparateLockedIconsOverride == true
-                        : _persistedSettings?.SeparateLockedIconEnabledGameIds?.Contains(gameId) == true),
+                        : Persisted?.SeparateLockedIconEnabledGameIds?.Contains(gameId) == true),
                 ManualCapstoneApiName = hasCustomData
                     ? NormalizeText(customData.ManualCapstoneApiName)
                     : ResolveFallbackManualCapstone(gameId),
                 AchievementCategoryOverrides = hasCustomData
                     ? CloneStringMap(customData.AchievementCategoryOverrides)
-                    : ResolveFallbackOverrides(_persistedSettings?.AchievementCategoryOverrides, gameId),
+                    : ResolveFallbackOverrides(Persisted?.AchievementCategoryOverrides, gameId),
                 AchievementCategoryTypeOverrides = hasCustomData
                     ? CloneStringMap(customData.AchievementCategoryTypeOverrides)
-                    : ResolveFallbackOverrides(_persistedSettings?.AchievementCategoryTypeOverrides, gameId),
+                    : ResolveFallbackOverrides(Persisted?.AchievementCategoryTypeOverrides, gameId),
                 AchievementCategoryOrder = hasCustomData
                     ? CloneCategoryOrder(customData.AchievementCategoryOrder)
                     : new List<string>(),
@@ -505,8 +563,8 @@ namespace PlayniteAchievements.Services.Achievements
 
         private string ResolveFallbackManualCapstone(Guid gameId)
         {
-            if (_persistedSettings?.ManualCapstones == null ||
-                !_persistedSettings.ManualCapstones.TryGetValue(gameId, out var manualCapstoneApiName))
+            if (Persisted?.ManualCapstones == null ||
+                !Persisted.ManualCapstones.TryGetValue(gameId, out var manualCapstoneApiName))
             {
                 return null;
             }
@@ -755,36 +813,36 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
-        private void ApplyRecentSummaryCustomization(
-            IList<CachedRecentUnlockData> recentUnlocks,
+        private void ApplyAchievementSummaryCustomization(
+            IList<CachedRecentUnlockData> achievements,
             IReadOnlyDictionary<Guid, SummaryCustomizationData> customizationByGameId)
         {
-            if (recentUnlocks == null || recentUnlocks.Count == 0)
+            if (achievements == null || achievements.Count == 0)
             {
                 return;
             }
 
-            var defaultUseSeparateLockedIcons = _persistedSettings?.UseSeparateLockedIconsWhenAvailable == true;
-            foreach (var recent in recentUnlocks)
+            var defaultUseSeparateLockedIcons = Persisted?.UseSeparateLockedIconsWhenAvailable == true;
+            foreach (var achievement in achievements)
             {
-                if (recent == null)
+                if (achievement == null)
                 {
                     continue;
                 }
 
-                recent.UseSeparateLockedIconsWhenAvailable = defaultUseSeparateLockedIcons;
+                achievement.UseSeparateLockedIconsWhenAvailable = defaultUseSeparateLockedIcons;
 
-                if (!recent.PlayniteGameId.HasValue ||
-                    !customizationByGameId.TryGetValue(recent.PlayniteGameId.Value, out var customization) ||
+                if (!achievement.PlayniteGameId.HasValue ||
+                    !customizationByGameId.TryGetValue(achievement.PlayniteGameId.Value, out var customization) ||
                     customization == null)
                 {
                     continue;
                 }
 
                 var resolved = customization.Resolved ?? ResolvedGameCustomData.Empty;
-                recent.UseSeparateLockedIconsWhenAvailable = resolved.UseSeparateLockedIcons;
+                achievement.UseSeparateLockedIconsWhenAvailable = resolved.UseSeparateLockedIcons;
 
-                var apiName = NormalizeText(recent.ApiName);
+                var apiName = NormalizeText(achievement.ApiName);
                 if (string.IsNullOrWhiteSpace(apiName))
                 {
                     continue;
@@ -793,24 +851,24 @@ namespace PlayniteAchievements.Services.Achievements
                 var manualCapstoneApiName = NormalizeText(resolved.ManualCapstoneApiName);
                 if (!string.IsNullOrWhiteSpace(manualCapstoneApiName))
                 {
-                    recent.IsCapstone = string.Equals(apiName, manualCapstoneApiName, StringComparison.OrdinalIgnoreCase);
+                    achievement.IsCapstone = string.Equals(apiName, manualCapstoneApiName, StringComparison.OrdinalIgnoreCase);
                 }
 
                 if (resolved.AchievementCategoryOverrides != null &&
                     resolved.AchievementCategoryOverrides.TryGetValue(apiName, out var categoryOverride) &&
                     !string.IsNullOrWhiteSpace(categoryOverride))
                 {
-                    recent.Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOverride);
+                    achievement.Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOverride);
                 }
 
                 if (resolved.AchievementCategoryTypeOverrides != null &&
                     resolved.AchievementCategoryTypeOverrides.TryGetValue(apiName, out var categoryTypeOverride) &&
                     !string.IsNullOrWhiteSpace(categoryTypeOverride))
                 {
-                    recent.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride);
+                    achievement.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride);
                 }
 
-                recent.AchievementNote = resolved.AchievementNotes != null &&
+                achievement.AchievementNote = resolved.AchievementNotes != null &&
                                          resolved.AchievementNotes.TryGetValue(apiName, out var note)
                     ? note
                     : null;
@@ -818,13 +876,17 @@ namespace PlayniteAchievements.Services.Achievements
                 var unlockedOverride = AchievementIconOverrideHelper.GetOverrideValue(customization.UnlockedIconOverrides, apiName);
                 if (!string.IsNullOrWhiteSpace(unlockedOverride))
                 {
-                    recent.UnlockedIconPath = ResolveCustomIconOverridePath(unlockedOverride, recent.PlayniteGameId.Value);
+                    achievement.UnlockedIconPath = ResolveCustomIconOverridePath(
+                        unlockedOverride,
+                        achievement.PlayniteGameId.Value);
                 }
 
                 var lockedOverride = AchievementIconOverrideHelper.GetOverrideValue(customization.LockedIconOverrides, apiName);
                 if (!string.IsNullOrWhiteSpace(lockedOverride))
                 {
-                    recent.LockedIconPath = ResolveCustomIconOverridePath(lockedOverride, recent.PlayniteGameId.Value);
+                    achievement.LockedIconPath = ResolveCustomIconOverridePath(
+                        lockedOverride,
+                        achievement.PlayniteGameId.Value);
                 }
             }
         }
@@ -912,10 +974,13 @@ namespace PlayniteAchievements.Services.Achievements
                 _gameCustomDataStore.CustomDataChanged += OnCustomDataChangedForOverview;
             }
 
-            if (_persistedSettings != null)
-            {
-                _persistedSettings.PropertyChanged += OnPersistedSettingsChanged;
-            }
+            // Tracks the current Persisted instance so the invalidation keeps working
+            // after a settings cancel replaces it. The swap itself invalidates, since it
+            // can revert any of the projection-affecting settings in one step.
+            _persistedSubscription = new PersistedSettingsSubscription(
+                _settings,
+                OnPersistedSettingsChanged,
+                InvalidateOverviewProjectionCaches);
         }
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
@@ -939,6 +1004,13 @@ namespace PlayniteAchievements.Services.Achievements
         // subscription order).
         private void OnCustomDataChangedForOverview(object sender, GameCustomDataChangedEventArgs e)
         {
+            // A reorder-only change (goals) cannot move the filter mirror or any summary, and
+            // resyncing costs a store load plus a mirror write on every toggle.
+            if (e != null && !e.AffectsSummaryData)
+            {
+                return;
+            }
+
             SyncAchievementFiltersForGame(e?.PlayniteGameId ?? Guid.Empty);
             InvalidateOverviewProjectionCaches();
         }
@@ -1027,6 +1099,24 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
+        /// <summary>
+        /// Memoized overview summaries retained right now (one per requested limit) and the
+        /// achievement rows they hold, for memory diagnostics.
+        /// </summary>
+        internal void GetOverviewMemoStats(out int entries, out int achievementRows)
+        {
+            lock (_overviewProjectionCacheSync)
+            {
+                entries = _overviewSummaryCacheByLimit.Count;
+                achievementRows = 0;
+                foreach (var cached in _overviewSummaryCacheByLimit.Values)
+                {
+                    achievementRows += cached?.Achievements?.Count ?? 0;
+                    achievementRows += cached?.RecentUnlocks?.Count ?? 0;
+                }
+            }
+        }
+
         private static bool ShouldInvalidateOverviewProjectionCaches(string propertyName)
         {
             return string.IsNullOrWhiteSpace(propertyName) ||
@@ -1035,13 +1125,16 @@ namespace PlayniteAchievements.Services.Achievements
 
         private List<GameAchievementData> LoadAllCachedGameData()
         {
+            List<GameAchievementData> result;
             if (_cacheReadOptimizations != null)
             {
-                return _cacheReadOptimizations.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                result = _cacheReadOptimizations.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                AppendSyntheticCustomOnlyGameData(result);
+                return result;
             }
 
             var gameIds = _cacheService.GetCachedGameIds();
-            var result = new List<GameAchievementData>();
+            result = new List<GameAchievementData>();
             foreach (var gameId in gameIds)
             {
                 var gameData = _cacheService.LoadGameData(gameId);
@@ -1051,6 +1144,7 @@ namespace PlayniteAchievements.Services.Achievements
                 }
             }
 
+            AppendSyntheticCustomOnlyGameData(result);
             return result;
         }
 
@@ -1059,6 +1153,11 @@ namespace PlayniteAchievements.Services.Achievements
             bool includeAchievementOverlays)
         {
             var data = _cacheService.LoadGameData(playniteGameId);
+            if (data == null && Guid.TryParse(playniteGameId, out var parsedGameId))
+            {
+                data = CreateSyntheticCustomGameData(parsedGameId, LoadCustomData(parsedGameId));
+            }
+
             if (includeAchievementOverlays)
             {
                 _hydrator.Hydrate(data);
@@ -1069,6 +1168,94 @@ namespace PlayniteAchievements.Services.Achievements
             }
 
             return data;
+        }
+
+        private void AppendSyntheticCustomOnlyGameData(ICollection<GameAchievementData> result)
+        {
+            if (result == null || _gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            var existingIds = new HashSet<Guid>(
+                result
+                    .Where(data => data?.PlayniteGameId.HasValue == true && data.PlayniteGameId.Value != Guid.Empty)
+                    .Select(data => data.PlayniteGameId.Value));
+
+            foreach (var customData in LoadCustomDataByGameId().Values)
+            {
+                if (customData == null ||
+                    customData.PlayniteGameId == Guid.Empty ||
+                    existingIds.Contains(customData.PlayniteGameId) ||
+                    !CustomAchievementProjectionService.HasCustomAchievements(customData))
+                {
+                    continue;
+                }
+
+                var synthetic = CreateSyntheticCustomGameData(customData.PlayniteGameId, customData);
+                if (synthetic == null)
+                {
+                    continue;
+                }
+
+                result.Add(synthetic);
+                existingIds.Add(customData.PlayniteGameId);
+            }
+        }
+
+        private GameCustomDataFile LoadCustomData(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty || _gameCustomDataStore == null)
+            {
+                return null;
+            }
+
+            return _gameCustomDataStore.TryLoad(playniteGameId, out var data)
+                ? data
+                : null;
+        }
+
+        private GameAchievementData CreateSyntheticCustomGameData(
+            Guid playniteGameId,
+            GameCustomDataFile customData)
+        {
+            if (!CustomAchievementProjectionService.HasCustomAchievements(customData))
+            {
+                return null;
+            }
+
+            return CustomAchievementProjectionService.CreateSyntheticGameData(
+                playniteGameId,
+                GetGame(playniteGameId),
+                customData.CustomAchievements,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                ResolveCustomProviderPlatformKey(customData.CustomProviderId));
+        }
+
+        /// <summary>
+        /// The display key for an assigned custom provider, or null when the id is blank or no
+        /// longer names a stored provider (the game then displays as plain Custom).
+        /// </summary>
+        private static string ResolveCustomProviderPlatformKey(string customProviderId)
+        {
+            if (string.IsNullOrWhiteSpace(customProviderId))
+            {
+                return null;
+            }
+
+            return PlayniteAchievementsPlugin.Instance?.CustomProviderStore?.ResolveDisplayKey(customProviderId);
+        }
+
+        private Playnite.SDK.Models.Game GetGame(Guid playniteGameId)
+        {
+            try
+            {
+                return _api?.Database?.Games?.Get(playniteGameId);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void HydrateAll(IEnumerable<GameAchievementData> games, bool includeAchievementOverlays)

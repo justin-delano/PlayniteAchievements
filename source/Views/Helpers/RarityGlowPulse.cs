@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
@@ -71,12 +72,30 @@ namespace PlayniteAchievements.Views.Helpers
         public static bool GetPhaseLock(DependencyObject element) =>
             (bool)element.GetValue(PhaseLockProperty);
 
-        // Stores the per-element settings-changed handler so it can be detached (kept only while
-        // the element is loaded and active, so it never outlives the element on the app-lifetime
-        // PersistedSettings instance).
+        // Stores the per-element settings-changed handler so it can be detached. The subscription
+        // goes through PropertyChangedEventManager (weak): recycled item containers do not
+        // reliably raise Unloaded (see RayAnimationDriver), so a strong PropertyChanged handler
+        // would let the app-lifetime PersistedSettings instance root every dead tile. The element
+        // keeps the delegate alive via this slot; the settings object holds it weakly.
         private static readonly DependencyProperty SettingsHandlerProperty =
             DependencyProperty.RegisterAttached(
-                "SettingsHandler", typeof(PropertyChangedEventHandler), typeof(RarityGlowPulse),
+                "SettingsHandler", typeof(EventHandler<PropertyChangedEventArgs>), typeof(RarityGlowPulse),
+                new PropertyMetadata(null));
+
+        // The PersistedSettings instance SettingsHandler was added on. Settings edits can replace
+        // Settings.Persisted, so removal must target the instance that was subscribed, not a
+        // re-resolved current one.
+        private static readonly DependencyProperty SettingsSourceProperty =
+            DependencyProperty.RegisterAttached(
+                "SettingsSource", typeof(PersistedSettings), typeof(RarityGlowPulse),
+                new PropertyMetadata(null));
+
+        // Stores the Effect-target pulse's root clock so PauseUnder/ResumeUnder can find it on a
+        // visual-tree walk. BeginAnimation would create a clock with no reachable controller;
+        // pausing the notification card's glow for the slide's span requires the clock handle.
+        private static readonly DependencyProperty EffectClockProperty =
+            DependencyProperty.RegisterAttached(
+                "EffectClock", typeof(AnimationClock), typeof(RarityGlowPulse),
                 new PropertyMetadata(null));
 
         private static void OnIsActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -139,37 +158,58 @@ namespace PlayniteAchievements.Views.Helpers
             var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
             ApplyAnimation(element, persisted);
 
-            if (persisted != null && element.GetValue(SettingsHandlerProperty) == null)
+            if (persisted == null)
             {
-                PropertyChangedEventHandler handler = (s, args) =>
-                {
-                    if (args.PropertyName == nameof(PersistedSettings.RarityGlowPulseMinOpacity) ||
-                        args.PropertyName == nameof(PersistedSettings.RarityGlowPulseMaxOpacity) ||
-                        args.PropertyName == nameof(PersistedSettings.RarityGlowPulseSpeed))
-                    {
-                        ApplyAnimation(element, persisted);
-                    }
-                };
-
-                persisted.PropertyChanged += handler;
-                element.SetValue(SettingsHandlerProperty, handler);
+                return;
             }
+
+            if (element.GetValue(SettingsSourceProperty) is PersistedSettings previous)
+            {
+                if (ReferenceEquals(previous, persisted) &&
+                    element.GetValue(SettingsHandlerProperty) != null)
+                {
+                    // Loaded re-fired without an Unloaded (recycled/re-parented container);
+                    // the existing subscription already targets the current instance.
+                    return;
+                }
+
+                // The Persisted instance was swapped since this element subscribed.
+                DetachSettingsHandler(element);
+            }
+
+            EventHandler<PropertyChangedEventArgs> handler = (s, args) =>
+            {
+                if (args.PropertyName == nameof(PersistedSettings.RarityGlowPulseMinOpacity) ||
+                    args.PropertyName == nameof(PersistedSettings.RarityGlowPulseMaxOpacity) ||
+                    args.PropertyName == nameof(PersistedSettings.RarityGlowPulseSpeed))
+                {
+                    // Retune the shared clock once; every element then re-attaches to it.
+                    InvalidateSharedClock();
+                    ApplyAnimation(element, persisted);
+                }
+            };
+
+            PropertyChangedEventManager.AddHandler(persisted, handler, string.Empty);
+            element.SetValue(SettingsHandlerProperty, handler);
+            element.SetValue(SettingsSourceProperty, persisted);
         }
 
         private static void Deactivate(FrameworkElement element)
         {
-            if (element.GetValue(SettingsHandlerProperty) is PropertyChangedEventHandler handler)
-            {
-                var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
-                if (persisted != null)
-                {
-                    persisted.PropertyChanged -= handler;
-                }
+            DetachSettingsHandler(element);
+            StopAnimation(element);
+        }
 
-                element.SetValue(SettingsHandlerProperty, null);
+        private static void DetachSettingsHandler(FrameworkElement element)
+        {
+            if (element.GetValue(SettingsHandlerProperty) is EventHandler<PropertyChangedEventArgs> handler &&
+                element.GetValue(SettingsSourceProperty) is PersistedSettings source)
+            {
+                PropertyChangedEventManager.RemoveHandler(source, handler, string.Empty);
             }
 
-            StopAnimation(element);
+            element.SetValue(SettingsHandlerProperty, null);
+            element.SetValue(SettingsSourceProperty, null);
         }
 
         private static (double Min, double Max, double Seconds) ResolvePulseParams(PersistedSettings persisted)
@@ -209,6 +249,38 @@ namespace PlayniteAchievements.Views.Helpers
             return min + ((max - min) * eased);
         }
 
+        // One clock drives every phase-locked pulse. Each BeginAnimation would otherwise create an
+        // independent clock that the timing manager ticks separately every frame, so a dense
+        // surface (the showcase icon mosaic shows up to 64 glowing icons at once) paid for dozens
+        // of redundant clocks. Phase-locked pulses all want the identical curve at the identical
+        // phase, so they can share one. Opt-outs (toasts, which must start at the cycle peak) keep
+        // their own clock.
+        private static AnimationClock _sharedElementClock;
+        private static string _sharedClockKey;
+
+        private static AnimationClock GetSharedClock(DoubleAnimation animation, double cycleMilliseconds)
+        {
+            var key = animation.From.ToString() + "|" + animation.To.ToString() + "|" +
+                animation.Duration.ToString();
+            if (_sharedElementClock == null || !string.Equals(_sharedClockKey, key, StringComparison.Ordinal))
+            {
+                animation.BeginTime = GlowAnimationClock.PhaseLockBeginTime(cycleMilliseconds);
+                _sharedElementClock = animation.CreateClock();
+                _sharedClockKey = key;
+            }
+
+            return _sharedElementClock;
+        }
+
+        /// <summary>
+        /// Drops the shared clock so the next activation rebuilds it from current settings.
+        /// </summary>
+        private static void InvalidateSharedClock()
+        {
+            _sharedElementClock = null;
+            _sharedClockKey = null;
+        }
+
         private static void ApplyAnimation(FrameworkElement element, PersistedSettings persisted)
         {
             var (min, max, seconds) = ResolvePulseParams(persisted);
@@ -228,6 +300,14 @@ namespace PlayniteAchievements.Views.Helpers
                 EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
             };
 
+            if (GetTarget(element) == RarityGlowPulseTarget.Element && GetPhaseLock(element))
+            {
+                element.ApplyAnimationClock(
+                    UIElement.OpacityProperty,
+                    GetSharedClock(animation, cycleMilliseconds));
+                return;
+            }
+
             if (GetTarget(element) == RarityGlowPulseTarget.Effect)
             {
                 // Defer to after the current trigger pass: the element's default Effect is itself
@@ -242,7 +322,12 @@ namespace PlayniteAchievements.Views.Helpers
                             animation.BeginTime = GetPhaseLock(element)
                                 ? GlowAnimationClock.PhaseLockBeginTime(cycleMilliseconds)
                                 : GlowAnimationClock.PeakStartBeginTime(cycleMilliseconds);
-                            effect.BeginAnimation(DropShadowEffect.OpacityProperty, animation);
+
+                            // A root clock rather than BeginAnimation: the controller is what
+                            // lets PauseUnder/ResumeUnder freeze the pulse for the slide's span.
+                            var clock = animation.CreateClock();
+                            effect.ApplyAnimationClock(DropShadowEffect.OpacityProperty, clock);
+                            element.SetValue(EffectClockProperty, clock);
                         }
                     }),
                     DispatcherPriority.Loaded);
@@ -262,16 +347,69 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 if (element.Effect is DropShadowEffect effect)
                 {
-                    effect.BeginAnimation(DropShadowEffect.OpacityProperty, null);
+                    effect.ApplyAnimationClock(DropShadowEffect.OpacityProperty, null);
                 }
+
+                element.SetValue(EffectClockProperty, null);
             }
             else
             {
-                element.BeginAnimation(UIElement.OpacityProperty, null);
+                // Detaches whether the element was driven by the shared clock or its own.
+                element.ApplyAnimationClock(UIElement.OpacityProperty, null);
 
                 // Drop the phase pre-set local value (see OnIsActiveChanged) so the element
                 // returns to its style/default opacity when the pulse is off.
                 element.ClearValue(UIElement.OpacityProperty);
+            }
+        }
+
+        /// <summary>
+        /// Pauses every Effect-target pulse clock in <paramref name="root"/>'s visual tree, for
+        /// the notification slide's span: the pulse invalidates a software-blurred
+        /// DropShadowEffect subtree every frame, which competes with the slide for the frame
+        /// budget. Scoped to a subtree rather than global on purpose — pausing a phase-locked
+        /// clock would desynchronize it from the shared epoch, so only the notification card
+        /// (whose templates opt out of phase lock) should ever be paused. UI thread only.
+        /// </summary>
+        public static void PauseUnder(DependencyObject root)
+        {
+            ForEachEffectClock(root, clock =>
+            {
+                if (!clock.IsPaused)
+                {
+                    clock.Controller?.Pause();
+                }
+            });
+        }
+
+        /// <summary>Resumes the clocks <see cref="PauseUnder"/> paused. UI thread only.</summary>
+        public static void ResumeUnder(DependencyObject root)
+        {
+            ForEachEffectClock(root, clock =>
+            {
+                if (clock.IsPaused)
+                {
+                    clock.Controller?.Resume();
+                }
+            });
+        }
+
+        private static void ForEachEffectClock(DependencyObject root, Action<AnimationClock> action)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            if (root.GetValue(EffectClockProperty) is AnimationClock clock)
+            {
+                action(clock);
+            }
+
+            var count = VisualTreeHelper.GetChildrenCount(root);
+            for (var i = 0; i < count; i++)
+            {
+                ForEachEffectClock(VisualTreeHelper.GetChild(root, i), action);
             }
         }
 

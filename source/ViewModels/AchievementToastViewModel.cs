@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
@@ -11,10 +13,11 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public sealed class AchievementToastViewModel
+    public sealed class AchievementToastViewModel : INotifyPropertyChanged
     {
         private const string DefaultIcon =
             "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
@@ -37,7 +40,12 @@ namespace PlayniteAchievements.ViewModels
         private const double FrameBodyFontFallback = 19;
         private const double FrameGameCategoryFontFallback = 19;
 
-        // Built-in size fallbacks used when the style stores null.
+        // Built-in size fallbacks used when the style stores null. The two font sizes are
+        // deliberately independent of theme font sizes, like the frame fallbacks above: the
+        // notification card is a fixed-geometry overlay, and Playnite defines much larger font
+        // constants in fullscreen mode than on the desktop, so deriving from the theme sized the
+        // same card differently per mode. Shared with the settings editor so its sliders rest on
+        // the values the renderer applies.
         public const double DefaultToastIconSize = 55;
         public const double DefaultFrameIconSize = 84;
         public const double DefaultToastProviderIconSize = 24;
@@ -49,11 +57,18 @@ namespace PlayniteAchievements.ViewModels
         private readonly AchievementUnlockedEventArgs _args;
         private readonly PersistedSettings _settings;
         private readonly NotificationStyleSettings _style;
+        private ImageSource _toastBackgroundRenderSourceOverride;
+        private readonly bool _useToastBackgroundRenderSourceOverride;
         private readonly RarityTier _rarity;
+        private string _iconDisplaySource;
+        private ImageSource _iconImage;
+        private Task _iconLoad;
         private IReadOnlyList<ToastLineDescriptor> _toastLines;
         private IReadOnlyList<ToastLineDescriptor> _frameLines;
         private ToastRarityTextLine _toastRarityText;
         private ToastRarityTextLine _frameRarityText;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public AchievementToastViewModel(
             AchievementUnlockedEventArgs args,
@@ -61,7 +76,9 @@ namespace PlayniteAchievements.ViewModels
             NotificationStyleSettings styleOverride = null,
             GameCustomDataStore gameCustomDataStore = null,
             bool? toastUseThemeStylingOverride = null,
-            bool? frameUseThemeStylingOverride = null)
+            bool? frameUseThemeStylingOverride = null,
+            ImageSource toastBackgroundRenderSourceOverride = null,
+            bool useToastBackgroundRenderSourceOverride = false)
         {
             _args = args ?? new AchievementUnlockedEventArgs();
             _settings = settings ?? new PersistedSettings();
@@ -75,6 +92,8 @@ namespace PlayniteAchievements.ViewModels
                 toastUseThemeStylingOverride ?? resolved.ToastUseThemeStyling;
             FrameUseThemeStyling =
                 frameUseThemeStylingOverride ?? resolved.FrameUseThemeStyling;
+            _toastBackgroundRenderSourceOverride = toastBackgroundRenderSourceOverride;
+            _useToastBackgroundRenderSourceOverride = useToastBackgroundRenderSourceOverride;
             _rarity = ParseRarity(_args.RarityTier);
         }
 
@@ -83,6 +102,16 @@ namespace PlayniteAchievements.ViewModels
         public bool FrameUseThemeStyling { get; }
 
         public bool IsFriendUnlock => _args.IsFriendUnlock;
+
+        /// <summary>
+        /// True for an incremental-progress notification: a still-locked achievement whose
+        /// provider-reported progress advanced (e.g. 3/10 to 4/10) without unlocking. The kind is
+        /// silent and capture-free; the rarity badge, percent, and glows report hidden for it, the
+        /// header resolves to the progress header, and <see cref="ToastLines"/> carries a visible
+        /// <see cref="ToastProgressLine"/>. Templates trigger on this the way they do on
+        /// <see cref="IsGameCompleted"/>.
+        /// </summary>
+        public bool IsProgressUpdate => _args.IsProgressUpdate;
 
         // Provider identity, bindable so a single toast/frame template can restyle per provider
         // with DataTriggers (e.g. trigger on ProviderKey, tint with ProviderColorHex).
@@ -111,7 +140,47 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         internal bool NeedsOverlayTrack { get; set; }
 
+        /// <summary>
+        /// The earliest instant this notification may show (the notification-delay gate). Stamped
+        /// at enqueue from the notification-delay setting so a mid-queue settings change never
+        /// retroactively moves an already-queued item. default(DateTime) means no delay applies.
+        /// Anchored on the unlock observation, so pipeline latency counts toward the delay.
+        /// </summary>
+        internal DateTime NotifyReadyAtUtc { get; set; }
+
+        /// <summary>
+        /// Computes <see cref="NotifyReadyAtUtc"/>: the unlock observation (or the enqueue instant
+        /// when no observation stamp exists, e.g. friend unlocks) plus the configured notification
+        /// delay. Previews and test fires are exempt and always ready, matching the capture-delay
+        /// exemptions.
+        /// </summary>
+        internal static DateTime ComputeNotifyReadyUtc(
+            AchievementUnlockedEventArgs args,
+            PersistedSettings settings,
+            DateTime enqueuedUtc)
+        {
+            var delaySeconds = settings?.NotificationDelaySeconds ?? 0;
+            if (args == null || args.IsPreview || args.IsTestFire || delaySeconds <= 0)
+            {
+                return default(DateTime);
+            }
+
+            var anchor = args.ObservedUtc == default(DateTime)
+                ? enqueuedUtc
+                : (args.ObservedUtc.Kind == DateTimeKind.Utc
+                    ? args.ObservedUtc
+                    : args.ObservedUtc.ToUniversalTime());
+            return anchor.AddSeconds(delaySeconds);
+        }
+
         internal Guid CaptureCorrelationId => _args.CaptureCorrelationId;
+
+        /// <summary>
+        /// The raw unlock event, for capture-side callers that need fields the VM does not
+        /// re-expose (the recording service's buffered-frame lookup reads the video anchor and
+        /// observation stamps from it). Never mutated by the VM.
+        /// </summary>
+        internal AchievementUnlockedEventArgs CaptureArgs => _args;
 
         /// <summary>
         /// The unlock's name for screenshot/clip filenames and clip-to-wave matching: the
@@ -134,6 +203,38 @@ namespace PlayniteAchievements.ViewModels
         public int? Points => _args.Points;
         public int? ScaledPoints => _args.ScaledPoints;
 
+        // Per-achievement incremental progress, set only on progress notifications (null and
+        // empty elsewhere). Fractions are clamped to 0..1 for direct use as a bar's ScaleX.
+        public int? ProgressNum => _args.ProgressNum;
+        public int? ProgressDenom => _args.ProgressDenom;
+        public int? PreviousProgressNum => _args.PreviousProgressNum;
+        public bool HasProgress => _args.ProgressNum.HasValue && _args.ProgressDenom > 0;
+        public double ProgressFraction => ProgressFractionOf(_args.ProgressNum);
+        public double PreviousProgressFraction => ProgressFractionOf(_args.PreviousProgressNum);
+
+        /// <summary>"4/10": the current numerator over the target, culture-formatted like the grid's progress cell.</summary>
+        public string ProgressText => HasProgress
+            ? _args.ProgressNum.Value.ToString("N0", Common.FormattingCulture.Current) + "/" +
+              _args.ProgressDenom.Value.ToString("N0", Common.FormattingCulture.Current)
+            : string.Empty;
+
+        /// <summary>The current progress as a whole percent ("40%"), empty without progress.</summary>
+        public string ProgressPercentText => HasProgress
+            ? Common.PercentFormatter.FormatWhole(
+                Models.Achievements.AchievementCompletionPercentCalculator.RoundPercentForDisplay(ProgressFraction * 100d))
+            : string.Empty;
+
+        private double ProgressFractionOf(int? numerator)
+        {
+            if (!HasProgress || !numerator.HasValue)
+            {
+                return 0;
+            }
+
+            var fraction = (double)numerator.Value / _args.ProgressDenom.Value;
+            return fraction < 0 ? 0 : (fraction > 1 ? 1 : fraction);
+        }
+
         // The header identifies who unlocked the achievement, so it is mandatory for friend
         // unlocks; for your own unlocks it honors the user's toggle. Completion notifications are
         // restyled entirely by the templates (triggers on IsGameCompleted force the header/title/
@@ -144,7 +245,7 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowCategory => _style.Toast.ShowCategory && HasDistinctCategory;
         // Footer percent (under the achievement icon). Suppressed when the percent is set to
         // travel under the right-side badge instead.
-        public bool ShowPercent => _style.Toast.ShowRarityPercent && _args.GlobalPercent.HasValue && !ShowRightPercent;
+        public bool ShowPercent => _style.Toast.ShowRarityPercent && _args.GlobalPercent.HasValue && !ShowRightPercent && !IsProgressUpdate;
         public bool IsCapstone => _args.IsCapstone;
 
         /// <summary>
@@ -205,7 +306,9 @@ namespace PlayniteAchievements.ViewModels
             }
         }
         private bool HasRarityData => _args.GlobalPercent.HasValue || !string.IsNullOrWhiteSpace(_args.RarityTier);
-        private bool HasBadgeData => IsCapstone || HasTrophy || HasRarityData;
+        // A progress notification is about a still-locked achievement: rarity is beside the
+        // point, so every badge placement reports hidden for it.
+        private bool HasBadgeData => !IsProgressUpdate && (IsCapstone || HasTrophy || HasRarityData);
         public bool ShowBadge => _style.Toast.ShowRarityBadge && !_style.Toast.RightRarityBadge && HasBadgeData;
 
         // Whether the icon-column footer (badge and/or percent under the icon) shows anything.
@@ -226,7 +329,7 @@ namespace PlayniteAchievements.ViewModels
         // Percent rendered under the right-side badge: only when the badge is on the right and the
         // percent is set to travel with the badge. Otherwise the percent stays in the footer.
         public bool ShowRightPercent => _style.Toast.ShowRarityPercent && _style.Toast.RarityPercentUnderBadge
-            && _style.Toast.RightRarityBadge && _args.GlobalPercent.HasValue;
+            && _style.Toast.RightRarityBadge && _args.GlobalPercent.HasValue && !IsProgressUpdate;
         public bool FrameShowRightPercent => _style.Frame.ShowRarityPercent && _style.Frame.RarityPercentUnderBadge
             && _style.Frame.RightRarityBadge && _args.GlobalPercent.HasValue;
         public bool ShowGameName => _style.Toast.ShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);
@@ -282,14 +385,129 @@ namespace PlayniteAchievements.ViewModels
         public bool FrameShowRadialVignette => _style.Frame.FrameVignette == FrameVignetteStyle.Full;
         public bool FrameShowBottomWash => _style.Frame.FrameVignette != FrameVignetteStyle.None;
 
+        // Original stop alphas of the built-in frame vignette gradients (what strength 50
+        // reproduces); scaled per-stop by the surface's vignette strength setting.
+        private const double RadialVignetteMidAlpha = 0x73 / 255.0;
+        private const double RadialVignetteEdgeAlpha = 0xF2 / 255.0;
+        private const double BottomWashAlpha = 0xD0 / 255.0;
+
+        // Transparent BLACK: gradient interpolation blends color channels independently of
+        // alpha, so fading from Colors.Transparent (#00FFFFFF, transparent white) into the
+        // dark stops would tint the whole vignette whitish.
+        private static readonly Color TransparentBlack = Color.FromArgb(0, 0, 0, 0);
+
+        // Original stop offsets of the radial vignette (where the clear center ends and the
+        // mid darkening sits), and how far each is pulled toward the center at full strength:
+        // alpha stacking alone saturates near-opaque stops, so the upper half of the range
+        // also grows the vignette's coverage inward to keep every step visibly stronger.
+        private const double RadialVignetteInnerOffset = 0.38;
+        private const double RadialVignetteMidOffset = 0.72;
+        private const double RadialVignetteInnerOffsetAtFull = 0.15;
+        private const double RadialVignetteMidOffsetAtFull = 0.50;
+
+        /// <summary>
+        /// Fill of the frame's circular edge vignette, shaped by the vignette strength setting.
+        /// Relative radial gradients stretch to the bounds, so the radii undo the 16:9 aspect
+        /// (radius = half-diagonal: 0.57 of width, 1.02 of height) and the fade stays a circle
+        /// through the corners instead of an edge-hugging ellipse.
+        /// </summary>
+        public Brush FrameRadialVignetteBrush
+        {
+            get
+            {
+                var strength = _style.Frame.FrameVignetteStrength;
+                var reach = VignetteUpperProgress(strength);
+                var innerOffset = Lerp(RadialVignetteInnerOffset, RadialVignetteInnerOffsetAtFull, reach);
+                var midOffset = Lerp(RadialVignetteMidOffset, RadialVignetteMidOffsetAtFull, reach);
+                var brush = new RadialGradientBrush
+                {
+                    Center = new Point(0.5, 0.5),
+                    GradientOrigin = new Point(0.5, 0.5),
+                    RadiusX = 0.57,
+                    RadiusY = 1.02
+                };
+                brush.GradientStops.Add(new GradientStop(TransparentBlack, 0));
+                brush.GradientStops.Add(new GradientStop(TransparentBlack, innerOffset));
+                brush.GradientStops.Add(new GradientStop(VignetteStopColor(RadialVignetteMidAlpha, strength), midOffset));
+                brush.GradientStops.Add(new GradientStop(VignetteStopColor(RadialVignetteEdgeAlpha, strength), 1));
+                brush.Freeze();
+                return brush;
+            }
+        }
+
+        /// <summary>
+        /// Fill of the frame's bottom contrast wash, shaped by the vignette strength setting.
+        /// The intermediate stops follow the end alpha's stacking exponent, so at the built-in
+        /// strength they sit exactly on the original linear ramp (adding nothing), and above it
+        /// they bow the ramp upward, pulling the darkness higher into the fixed-height band.
+        /// </summary>
+        public Brush FrameBottomWashBrush
+        {
+            get
+            {
+                var strength = _style.Frame.FrameVignetteStrength;
+                var endAlpha = ScaleVignetteStopAlpha(BottomWashAlpha, strength);
+                var gamma = 1.0 / VignetteExponent(strength);
+                var brush = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(0, 1)
+                };
+                brush.GradientStops.Add(new GradientStop(TransparentBlack, 0));
+                foreach (var offset in new[] { 0.25, 0.5, 0.75 })
+                {
+                    brush.GradientStops.Add(new GradientStop(
+                        VignetteAlphaColor(endAlpha * Math.Pow(offset, gamma)), offset));
+                }
+
+                brush.GradientStops.Add(new GradientStop(VignetteAlphaColor(endAlpha), 1));
+                brush.Freeze();
+                return brush;
+            }
+        }
+
+        private static double Lerp(double from, double to, double t) => from + (to - from) * t;
+
+        private static Color VignetteStopColor(double baseAlpha, double? strengthPercent) =>
+            VignetteAlphaColor(ScaleVignetteStopAlpha(baseAlpha, strengthPercent));
+
+        private static Color VignetteAlphaColor(double alpha) =>
+            Color.FromArgb((byte)Math.Round(alpha * 255.0), 0, 0, 0);
+
+        // How far the strength sits into the upper half of its range: 0 at or below the
+        // built-in 50, 1 at full strength.
+        private static double VignetteUpperProgress(double? strengthPercent) =>
+            Math.Max(0.0, NormalizePercent(strengthPercent, DefaultFrameVignetteStrength) * 2.0 - 1.0);
+
+        // Screen-stacking exponent for the upper half: 1 at or below the built-in strength
+        // (the original single layer), ramping to 3 at full strength (two extra layers).
+        private static double VignetteExponent(double? strengthPercent) =>
+            1.0 + VignetteUpperProgress(strengthPercent) * 2.0;
+
+        /// <summary>
+        /// Maps the 0-100 vignette strength onto a gradient stop's alpha. 50 returns the
+        /// original alpha exactly; below it the vignette fades linearly to nothing; above it
+        /// the original layer is screen-stacked over itself (100 = applied three times),
+        /// darkening asymptotically toward solid without clipping the gradient's shape.
+        /// </summary>
+        internal static double ScaleVignetteStopAlpha(double baseAlpha, double? strengthPercent)
+        {
+            var factor = NormalizePercent(strengthPercent, DefaultFrameVignetteStrength) * 2.0;
+            return factor <= 1.0
+                ? baseAlpha * factor
+                : 1.0 - Math.Pow(1.0 - baseAlpha, VignetteExponent(strengthPercent));
+        }
+
         // Mirrors TitleBrush but honors the frame's own rarity-colored-name toggle.
         public Brush FrameTitleBrush => _style.Frame.RarityColoredName
             ? AccentBrush
             : Application.Current?.TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.White;
 
-        public Effect FrameRarityGlowEffect => _style.Frame.ShowRarityGlow && !HardcoreTakesBorder
-            ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
-            : null;
+        /// <summary>Screenshot-frame counterpart to <see cref="RarityGlowEffect"/>.</summary>
+        public Effect FrameRarityGlowEffect =>
+            _style.Frame.ShowRarityGlow && !HardcoreTakesBorder
+                ? SoftGlowForKind
+                : null;
 
         // Header texts honor the surface's user edits with the localized strings as fallback.
         // Stored friend formats that lost their {0} placeholder fall back to the localized
@@ -311,8 +529,25 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         public string FriendCompletionHeaderText => ResolveFriendCompletionHeaderText(_style.Toast.HeaderTexts);
 
+        /// <summary>
+        /// Header text of an incremental-progress notification ("Achievement progress" by
+        /// default), honoring the toast surface's user edit. <see cref="HeaderText"/> already
+        /// resolves to this for progress notifications; this is for templates that compose it.
+        /// </summary>
+        public string ProgressHeaderText => ResolveProgressHeaderText(_style.Toast.HeaderTexts);
+
+        private static string ResolveProgressHeaderText(NotificationHeaderTextSettings texts) =>
+            !string.IsNullOrWhiteSpace(texts.ProgressHeader)
+                ? texts.ProgressHeader
+                : ResourceProvider.GetString("LOCPlayAch_Toast_AchievementProgress");
+
         private string ResolveHeaderText(NotificationHeaderTextSettings texts)
         {
+            if (IsProgressUpdate)
+            {
+                return ResolveProgressHeaderText(texts);
+            }
+
             if (IsFriendUnlock)
             {
                 var format = NotificationHeaderTextService.IsValidHeaderFormat(texts.FriendUnlockHeaderFormat)
@@ -339,9 +574,43 @@ namespace PlayniteAchievements.ViewModels
             return string.Format(format, FriendDisplayName);
         }
 
-        public string TitleText => string.IsNullOrWhiteSpace(_args.DisplayName)
-            ? ResourceProvider.GetString("LOCPlayAch_Text_UnknownAchievement")
-            : _args.DisplayName;
+        public string TitleText
+        {
+            get
+            {
+                if (IsTitleMasked)
+                {
+                    return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
+                }
+
+                var name = string.IsNullOrWhiteSpace(_args.DisplayName)
+                    ? ResourceProvider.GetString("LOCPlayAch_Text_UnknownAchievement")
+                    : _args.DisplayName;
+
+                return IsSpoilerSensitive && _settings.ShowHiddenSuffix
+                    ? name + ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens")
+                    : name;
+            }
+        }
+
+        /// <summary>
+        /// The achievement this notification describes is still locked and flagged hidden, so the
+        /// achievement visibility settings apply to it. Only a progress notification can be in
+        /// that state: every other kind reports something already unlocked, which is no longer a
+        /// spoiler.
+        /// </summary>
+        private bool IsSpoilerSensitive => IsProgressUpdate && _args.IsHidden;
+
+        private bool IsTitleMasked => IsSpoilerSensitive && !_settings.ShowHiddenTitle;
+
+        internal bool IsDescriptionMasked => IsSpoilerSensitive && !_settings.ShowHiddenDescription;
+
+        // A masked description renders as a blank line rather than nothing, so a hidden
+        // achievement's card keeps the spacing of an ordinary one. The text is a non-breaking
+        // space because an empty TextBlock measures no height at all: this gives the row its
+        // full line box in every template, including a theme's own, without the template
+        // needing to reserve the space itself.
+        private const string MaskedDescription = " ";
 
         // Raw friend identity for template composition (e.g. the friend completion header). The
         // completion texts themselves live in the templates as LOC resources, not here.
@@ -349,7 +618,10 @@ namespace PlayniteAchievements.ViewModels
             ? "Friend"
             : _args.FriendDisplayName;
 
-        public string Description => _args.Description;
+        // Blank when masked rather than the grid's "Click to reveal": a notification cannot be
+        // clicked. The line is kept (see MaskedDescription) so the card's rows sit where they
+        // would for any other achievement.
+        public string Description => IsDescriptionMasked ? MaskedDescription : _args.Description;
         public string Category => _args.Category;
         public string GameName => _args.GameName;
 
@@ -357,10 +629,47 @@ namespace PlayniteAchievements.ViewModels
         // none (e.g. previews). Local files, so frame templates may bind Image.Source directly.
         public string GameIconPath => _args.GameIconPath;
         public string GameCoverPath => _args.GameCoverPath;
-        public string IconPath => string.IsNullOrWhiteSpace(_args.IconPath) ? DefaultIcon : _args.IconPath;
-        public string FriendAvatar => !string.IsNullOrWhiteSpace(_args.FriendAvatarPath)
-            ? _args.FriendAvatarPath
-            : _args.FriendAvatarUrl;
+
+        /// <summary>
+        /// The decoded achievement icon: the artwork this notification actually shows, with the
+        /// locked/hidden decision and the grayscale already applied. Templates bind
+        /// <c>Image.Source</c> to this and need to know nothing about how it was sourced.
+        /// Null until <see cref="PrepareImagesAsync"/> has run (or its background load lands, at
+        /// which point this raises a change notification).
+        /// </summary>
+        public ImageSource IconImage
+        {
+            get
+            {
+                EnsureIconLoadStarted();
+                return _iconImage;
+            }
+        }
+
+        /// <summary>
+        /// The same artwork as a plain path or pack URI -- no grayscale or cache-bust decoration,
+        /// so it is safe to bind directly or hand to a component that wants a string key (the
+        /// rarity ray burst traces its silhouette from this). A template binding this instead of
+        /// <see cref="IconImage"/> gets the color artwork, since grayscale cannot be expressed in
+        /// a path.
+        /// </summary>
+        public string IconPath => AnimatedImageHelper.NormalizeSourceUri(IconDisplaySource) ?? DefaultIcon;
+
+        /// <summary>
+        /// The decorated form the image cache decodes: the same artwork carrying its grayscale
+        /// marker and cache-bust token. Internal, and the single key for this notification's icon
+        /// -- the wave prime requests it too, so both warm one cache entry.
+        /// </summary>
+        internal string IconDisplaySource =>
+            _iconDisplaySource ?? (_iconDisplaySource =
+                ToastImageResolver.ResolveIconDisplaySource(_args, _settings));
+
+        /// <summary>
+        /// The friend's cached avatar. Path only: notifications fire during gameplay and never
+        /// fetch over the network, so an avatar the refresh has not downloaded yet simply does
+        /// not render.
+        /// </summary>
+        public string FriendAvatar => _args.FriendAvatarPath;
 
         public string PercentText => _args.GlobalPercent.HasValue
             ? AchievementRarityResolver.FormatPercent(_args.GlobalPercent.Value)
@@ -406,6 +715,13 @@ namespace PlayniteAchievements.ViewModels
         public Brush AccentBrush => IsCapstone
             ? RarityAppearanceHelper.GetCompletedBrush(_settings)
             : RarityAppearanceHelper.GetBrush(_rarity, _settings);
+
+        /// <summary>
+        /// True for the completion-grade kinds — the standalone 100% notification and a capstone
+        /// unlock — whose glows, edges, and rays take the completion colors instead of the rarity
+        /// tier's, matching <see cref="AccentBrush"/>'s capstone precedence.
+        /// </summary>
+        public bool UsesCompletionColors => IsGameCompleted || IsCapstone;
 
         // Completion palette, always available regardless of this notification's kind so the
         // bundled templates (and themes) apply completion styling with triggers on
@@ -479,16 +795,26 @@ namespace PlayniteAchievements.ViewModels
         /// Hardcore RetroAchievements unlocks get a crisp rarity-colored border in place of the
         /// soft glow, mirroring the datagrids. Both are gated on the rarity-glow toggle.
         /// </summary>
-        public bool ShowShineBorder => _style.Toast.ShowRarityGlow && HardcoreTakesBorder;
+        public bool ShowShineBorder => _style.Toast.ShowRarityGlow && HardcoreTakesBorder && !IsProgressUpdate;
 
         // Glossy metallic rarity border (matches RarityToShineBrush used by the datagrids).
         public Brush IconBorderBrush => RarityAppearanceHelper.GetShineBrush(_rarity, _settings);
 
         // Soft rarity glow for non-hardcore unlocks whose tier is selected for it (matches the
-        // datagrids' glow, BlurRadius 20).
-        public Effect RarityGlowEffect => _style.Toast.ShowRarityGlow && !HardcoreTakesBorder && HasSoftGlowTier
-            ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
+        // datagrids' glow, BlurRadius 20). Completion-grade kinds take the completion glow,
+        // gated on the selection's Completed entry like CompletedGlowEffect.
+        // A progress notification's icon is locked art, so it carries no rarity glow, rays, or edge.
+        public Effect RarityGlowEffect => _style.Toast.ShowRarityGlow && !HardcoreTakesBorder && !IsProgressUpdate
+            ? SoftGlowForKind
             : null;
+
+        /// <summary>
+        /// The soft halo for this notification's kind: the completion glow for completion-grade
+        /// kinds, the rarity tier's glow otherwise. Each side honors its own tier selection.
+        /// </summary>
+        private Effect SoftGlowForKind => UsesCompletionColors
+            ? (HasSoftCompletionGlow ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings) : null)
+            : (HasSoftGlowTier ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings) : null);
 
         /// <summary>
         /// True when the notification icon carries the rotating sunburst behind its soft halo: this
@@ -500,21 +826,26 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowRayBurst =>
             HasRaySelection &&
             _style.Toast.ShowRarityGlow &&
-            !HardcoreTakesBorder;
+            !HardcoreTakesBorder &&
+            !IsProgressUpdate;
 
         /// <summary>
         /// Edge that comes with the rays: the same drop shadow as the soft halo, at a blur small enough
         /// to read as a line along the artwork rather than a glow around it. It follows the alpha
         /// because it is a blur of the picture itself, which is the only way to hug cut-out art.
         /// </summary>
-        public Effect RarityEdgeEffect => ShowRayBurst
-            ? RarityAppearanceHelper.GetGlow(_rarity, RayEdgeBlurRadius, _settings)
-            : null;
+        public Effect RarityEdgeEffect => ShowRayBurst ? EdgeForKind : null;
 
         /// <summary>Screenshot-frame counterpart to <see cref="RarityEdgeEffect"/>.</summary>
-        public Effect FrameRarityEdgeEffect => FrameShowRayBurst
-            ? RarityAppearanceHelper.GetGlow(_rarity, RayEdgeBlurRadius, _settings)
-            : null;
+        public Effect FrameRarityEdgeEffect => FrameShowRayBurst ? EdgeForKind : null;
+
+        /// <summary>
+        /// The ray edge for this notification's kind: completion-colored for completion-grade
+        /// kinds, the rarity tier's color otherwise.
+        /// </summary>
+        private Effect EdgeForKind => UsesCompletionColors
+            ? RarityAppearanceHelper.GetCompletedEdge(_settings)
+            : RarityAppearanceHelper.GetGlow(_rarity, RayEdgeBlurRadius, _settings);
 
         /// <summary>Matches the ConverterParameter the grid templates pass for the same edge.</summary>
         private const double RayEdgeBlurRadius = 4;
@@ -530,13 +861,22 @@ namespace PlayniteAchievements.ViewModels
         /// notification is matched against the selection's completion entry rather than a rarity tier,
         /// since it carries no rarity of its own.
         /// </summary>
-        private bool HasRaySelection => IsGameCompleted
+        private bool HasRaySelection => UsesCompletionColors
             ? _settings.RarityGlowRayTiers.IncludesCompleted()
             : _settings.RarityGlowRayTiers.Contains(_rarity);
 
         // Rarity-colored glow on the toast card border (replaces the default drop shadow when
         // the border-glow option is on). Toast surface only. Completion uses the completed glow.
-        public bool HasBorderGlow => _style.Toast.NotificationBorderGlow;
+        public bool HasBorderGlow => _style.Toast.NotificationBorderGlow && !IsProgressUpdate;
+
+        /// <summary>
+        /// True when the card itself carries the rotating sunburst behind its border glow: this
+        /// unlock's tier is selected for rays and the surface draws the notification-level glow.
+        /// Gated on the border-glow flag rather than the icon's, so the card's halo and its rays
+        /// appear together. Hardcore is not excluded here as it is for the icon: the crisp border
+        /// substitution is an icon-level treatment, which the card glow likewise ignores.
+        /// </summary>
+        public bool ShowCardRayBurst => HasRaySelection && HasBorderGlow;
 
         // The card border glow is larger than the icon glow (blur 20) so it reads as a halo
         // around the whole card.
@@ -562,7 +902,7 @@ namespace PlayniteAchievements.ViewModels
             get
             {
                 var glow = HasBorderGlow ? BorderGlowBlurRadius + 6 : 16;
-                if (!ShowRayBurst)
+                if (!ShowCardRayBurst)
                 {
                     return new Thickness(glow);
                 }
@@ -590,7 +930,7 @@ namespace PlayniteAchievements.ViewModels
                     return null;
                 }
 
-                var glow = IsGameCompleted
+                var glow = UsesCompletionColors
                     ? RarityAppearanceHelper.GetCompletedGlow(useEndColor: true, _settings)?.Clone()
                     : RarityAppearanceHelper.GetGlow(_rarity, BorderGlowBlurRadius, _settings)?.Clone();
                 if (glow is DropShadowEffect dropShadow)
@@ -723,6 +1063,87 @@ namespace PlayniteAchievements.ViewModels
         // size token) so overwriting the image at the same managed path shows the new one rather
         // than a stale cached bitmap; AsyncImage strips the token before decoding.
         public string ToastBackgroundImagePath => AchievementIconResolver.ApplyCacheBust(_style.ToastBackgroundImagePath);
+
+        /// <summary>
+        /// Preferred toast-template background binding. Live toasts receive the ordinary path so
+        /// their source-host Image owns a new animation; the appearance editor can inject the
+        /// stable ImageSource owned by its persistent host so rebuilding the preview does not
+        /// restart the GIF. ToastBackgroundImagePath remains available to existing templates.
+        /// </summary>
+        public object ToastBackgroundRenderSource => _useToastBackgroundRenderSourceOverride
+            ? (object)_toastBackgroundRenderSourceOverride
+            : ToastBackgroundImagePath;
+
+        /// <summary>
+        /// Completes this notification's image loads. Surfaces that render synchronously have to
+        /// await this first: the screenshot frame is measured and drawn straight into a
+        /// RenderTargetBitmap, so an image still in flight is simply absent from the saved file.
+        /// The toast path awaits it too, before its template is built, so the card is laid out
+        /// once at its final size instead of resizing under the slide animation.
+        /// </summary>
+        public Task PrepareImagesAsync()
+        {
+            EnsureIconLoadStarted();
+            return _iconLoad;
+        }
+
+        private void EnsureIconLoadStarted()
+        {
+            if (_iconLoad != null)
+            {
+                return;
+            }
+
+            _iconLoad = LoadIconAsync();
+        }
+
+        private async Task LoadIconAsync()
+        {
+            var image = await ToastImageResolver.LoadAsync(IconDisplaySource);
+            if (image == null || ReferenceEquals(_iconImage, image))
+            {
+                return;
+            }
+
+            _iconImage = image;
+            OnPropertyChanged(nameof(IconImage));
+        }
+
+        // The bitmaps are frozen, so a load can complete off the UI thread; bindings still have
+        // to hear about it there.
+        private void OnPropertyChanged(string propertyName)
+        {
+            var handler = PropertyChanged;
+            if (handler == null)
+            {
+                return;
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+                return;
+            }
+
+            dispatcher.BeginInvoke(
+                new Action(() => handler(this, new PropertyChangedEventArgs(propertyName))));
+        }
+
+        internal void SetToastBackgroundRenderSourceOverride(ImageSource source)
+        {
+            if (!_useToastBackgroundRenderSourceOverride ||
+                ReferenceEquals(_toastBackgroundRenderSourceOverride, source))
+            {
+                return;
+            }
+
+            _toastBackgroundRenderSourceOverride = source;
+            PropertyChanged?.Invoke(
+                this,
+                new PropertyChangedEventArgs(nameof(ToastBackgroundRenderSource)));
+        }
+
         public bool HasToastBackground
         {
             get
@@ -738,21 +1159,18 @@ namespace PlayniteAchievements.ViewModels
         public FontFamily FrameFontFamily => ResolveFontFamily(_style.Frame.FontFamily);
 
         // Effective caption/header size per surface.
-        public double ToastHeaderFontSize => _style.Toast.HeaderFontSize
-            ?? ResolveFontSizeResource("PlayAch.FontSize.Caption", DefaultToastCaptionFontSize);
+        public double ToastHeaderFontSize => _style.Toast.HeaderFontSize ?? DefaultToastCaptionFontSize;
         public double FrameHeaderFontSize => _style.Frame.HeaderFontSize ?? FrameHeaderFontFallback;
 
         // Effective rarity percent text size per surface. Decoupled from the header size; when
         // unset it falls back to the same caption/header default so the out-of-the-box look is
         // unchanged.
-        public double ToastRarityFontSize => _style.Toast.RarityFontSize
-            ?? ResolveFontSizeResource("PlayAch.FontSize.Caption", DefaultToastCaptionFontSize);
+        public double ToastRarityFontSize => _style.Toast.RarityFontSize ?? DefaultToastCaptionFontSize;
         public double FrameRarityFontSize => _style.Frame.RarityFontSize ?? FrameHeaderFontFallback;
 
         // Effective title size per surface: the single source of truth for both the title line
         // and the badge size, so the inline and footer badges always match.
-        public double ToastTitleFontSize => _style.Toast.TitleFontSize
-            ?? ResolveFontSizeResource("PlayAch.FontSize.Title", DefaultToastTitleFontSize);
+        public double ToastTitleFontSize => _style.Toast.TitleFontSize ?? DefaultToastTitleFontSize;
         public double FrameTitleFontSize => _style.Frame.TitleFontSize ?? FrameTitleFontFallback;
 
         // Rarity badge render size per surface, identical across every rarity display mode
@@ -788,6 +1206,9 @@ namespace PlayniteAchievements.ViewModels
         // The percent values that map to the built-in shadow; shared with the settings editor.
         public const double DefaultTextShadowOpacity = 50;
         public const double DefaultTextShadowOffset = 25;
+
+        // The percent value that maps to the built-in frame vignette; shared with the editor.
+        public const double DefaultFrameVignetteStrength = 50;
 
         // Image shadows are single-layer (artwork has no thin glyph edges to solidify), so
         // 100 is both the default and the darkest the layer can go.
@@ -908,6 +1329,39 @@ namespace PlayniteAchievements.ViewModels
         public IReadOnlyList<ToastLineDescriptor> FrameLines =>
             _frameLines ?? (_frameLines = BuildLines(isFrame: true));
 
+        // The same descriptors as ToastLines / FrameLines, one named property per line, so a
+        // template can lay each line out as an explicit block (Grid.Row bound to RowIndex) with
+        // every binding visible instead of an ItemsControl picking implicit templates. The
+        // bundled defaults do this; ToastLines / FrameLines remain for templates that iterate.
+        public ToastHeaderLine HeaderLine => FindLine<ToastHeaderLine>(ToastLines);
+        public ToastTitleLine TitleLine => FindLine<ToastTitleLine>(ToastLines);
+        public ToastDescriptionLine DescriptionLine => FindLine<ToastDescriptionLine>(ToastLines);
+        public ToastGameCategoryLine GameCategoryLine => FindLine<ToastGameCategoryLine>(ToastLines);
+
+        /// <summary>
+        /// The toast's progress row; visible only on progress notifications. The frame has no
+        /// counterpart because progress notifications are never screenshotted.
+        /// </summary>
+        public ToastProgressLine ProgressLine => FindLine<ToastProgressLine>(ToastLines);
+
+        public ToastHeaderLine FrameHeaderLine => FindLine<ToastHeaderLine>(FrameLines);
+        public ToastTitleLine FrameTitleLine => FindLine<ToastTitleLine>(FrameLines);
+        public ToastDescriptionLine FrameDescriptionLine => FindLine<ToastDescriptionLine>(FrameLines);
+        public ToastGameCategoryLine FrameGameCategoryLine => FindLine<ToastGameCategoryLine>(FrameLines);
+
+        private static T FindLine<T>(IReadOnlyList<ToastLineDescriptor> lines) where T : ToastLineDescriptor
+        {
+            foreach (var line in lines)
+            {
+                if (line is T match)
+                {
+                    return match;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// The toast's rarity percent font values (family, size, weight, style, decorations).
         /// </summary>
@@ -928,21 +1382,25 @@ namespace PlayniteAchievements.ViewModels
             var headerSize = isFrame ? FrameHeaderFontSize : ToastHeaderFontSize;
             var titleSize = isFrame ? FrameTitleFontSize : ToastTitleFontSize;
             var bodySize = surface.BodyFontSize ??
-                (isFrame ? FrameBodyFontFallback : ResolveFontSizeResource("PlayAch.FontSize.Caption", DefaultToastCaptionFontSize));
+                (isFrame ? FrameBodyFontFallback : DefaultToastCaptionFontSize);
             var gameCategorySize = surface.GameCategoryFontSize ??
-                (isFrame ? FrameGameCategoryFontFallback : ResolveFontSizeResource("PlayAch.FontSize.Caption", DefaultToastCaptionFontSize));
+                (isFrame ? FrameGameCategoryFontFallback : DefaultToastCaptionFontSize);
 
             var showGameName = isFrame ? FrameShowGameName : ShowGameName;
             var showCategory = isFrame ? FrameShowCategory : ShowCategory;
-            // The description gives up its second line when a game/category line follows it, so the
-            // two rows together stay within the card instead of overflowing.
-            var descriptionMaxLines = (showGameName || showCategory) ? 1 : 2;
+            // The description gives up its second line when another row follows it, so the rows
+            // together stay within the card instead of overflowing. The progress bar counts as
+            // such a row; the frame never draws one (see the LineProgress case below), so its
+            // description keeps both lines.
+            var descriptionMaxLines =
+                (showGameName || showCategory || (!isFrame && IsProgressUpdate)) ? 1 : 2;
 
             // Name-line offset: a positive value indents the title line to the right; a negative
             // value indents every other line instead, so the title line (with its inline badge)
             // never slides left under the icon column. The standalone completion notification has
-            // no inline badge (its title is "Game Complete!"), so the offset does not apply there.
-            var offset = IsGameCompleted ? 0 : surface.TitleLineOffset;
+            // no inline badge (its title is "Game Complete!"), and a progress notification hides
+            // every badge placement, so the offset does not apply to either.
+            var offset = IsGameCompleted || IsProgressUpdate ? 0 : surface.TitleLineOffset;
             var titleIndent = offset > 0 ? offset : 0;
             var otherIndent = offset < 0 ? -offset : 0;
 
@@ -1003,6 +1461,21 @@ namespace PlayniteAchievements.ViewModels
                             showCategory,
                             isFrame ? FrameShowGameCategorySeparator : ShowGameCategorySeparator));
                         break;
+                    case NotificationSurfaceStyle.LineProgress:
+                        // Toast only: progress notifications never produce a screenshot, so the
+                        // frame has no progress row (the token still sits in its stored order).
+                        if (!isFrame)
+                        {
+                            lines.Add(new ToastProgressLine(
+                                this,
+                                surface.ProgressFontSize ?? DefaultToastCaptionFontSize,
+                                LineFamily(surface.ProgressFontFamily),
+                                contentShadow,
+                                AccentBrush,
+                                ProgressTrackBrush));
+                        }
+
+                        break;
                 }
             }
 
@@ -1010,8 +1483,10 @@ namespace PlayniteAchievements.ViewModels
             var imageShadow = isFrame ? FrameImageShadow : ToastImageShadow;
             var textBrush = Application.Current?.TryFindResource("PlayAch.Brush.Text") as Brush
                 ?? Brushes.White;
-            foreach (var line in lines)
+            for (var i = 0; i < lines.Count; i++)
             {
+                var line = lines[i];
+                line.RowIndex = i;
                 line.LeftIndent = line is ToastTitleLine ? titleIndent : otherIndent;
                 line.VerticalPadding = linePadding;
                 line.ImageShadow = imageShadow;
@@ -1122,8 +1597,31 @@ namespace PlayniteAchievements.ViewModels
                     return surface.GameCategoryEmphasis;
                 case ToastRarityTextLine _:
                     return surface.RarityEmphasis;
+                case ToastProgressLine _:
+                    return surface.ProgressEmphasis;
                 default:
                     return NotificationLineEmphasis.None;
+            }
+        }
+
+        /// <summary>
+        /// The unfilled track behind the progress bar: the theme text brush at a fifth opacity, so
+        /// it reads on the popup surface and over a user background image alike. A frozen local
+        /// copy, never the theme's own brush instance.
+        /// </summary>
+        private static Brush ProgressTrackBrush
+        {
+            get
+            {
+                var track = (Application.Current?.TryFindResource("PlayAch.Brush.Text") as Brush)?.Clone()
+                    ?? new SolidColorBrush(Colors.White);
+                track.Opacity = 0.2;
+                if (track.CanFreeze)
+                {
+                    track.Freeze();
+                }
+
+                return track;
             }
         }
 
@@ -1182,13 +1680,6 @@ namespace PlayniteAchievements.ViewModels
             return decorations;
         }
 
-        private static double ResolveFontSizeResource(string key, double fallback)
-        {
-            return Application.Current?.TryFindResource(key) is double size && size > 0
-                ? size
-                : fallback;
-        }
-
         private static FontFamily ResolveFontFamily(string familyName)
         {
             if (!string.IsNullOrWhiteSpace(familyName))
@@ -1240,52 +1731,54 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        // UniPlaySong's URI segment for hidden achievements. Named because UniPlaySong may rename
-        // it; the four rarity segments and capstone are inline in SoundTierSegment below.
-        public const string HiddenSoundSegment = "hidden";
-
         /// <summary>
-        /// Whether this unlock plays UniPlaySong's hidden-achievement sound: the achievement is
-        /// hidden and the user opted into the hidden sound. Shared by
-        /// <see cref="SoundTierSegment"/> and <see cref="SoundTierRank"/> so the two cannot
-        /// disagree about which unlocks are hidden.
+        /// Whether this unlock plays the hidden-achievement sound: the achievement is hidden and
+        /// the user opted into the hidden sound. Shared by <see cref="SoundTier"/> and
+        /// <see cref="SoundTierRank"/> so the two cannot disagree about which unlocks are hidden.
         /// </summary>
         private bool UseHiddenSound => _settings.UseHiddenUnlockSound && _args.IsHidden;
 
         /// <summary>
-        /// UniPlaySong URI segment for this unlock's tier (e.g. "rareachievement"). The hidden
-        /// sound takes precedence over everything when enabled, then capstone and the completion
-        /// notification, and otherwise the rarity tier is used. Note this order is deliberately the
-        /// inverse of <see cref="SoundTierRank"/>'s, which keeps capstone at the top: a hidden
-        /// capstone plays the hidden sound while still ranking as a capstone in its wave.
+        /// The sound slot this unlock plays. The hidden sound takes precedence over everything
+        /// when enabled, then capstone and the completion notification, and otherwise the rarity
+        /// tier is used. Note this order is deliberately the inverse of
+        /// <see cref="SoundTierRank"/>'s, which keeps capstone at the top: a hidden capstone plays
+        /// the hidden sound while still ranking as a capstone in its wave. Null for a progress
+        /// notification, which is silent by design.
         /// </summary>
-        public string SoundTierSegment
+        public UnlockSoundTier? SoundTier
         {
             get
             {
+                if (IsProgressUpdate)
+                {
+                    return null;
+                }
+
                 if (UseHiddenSound)
                 {
-                    return HiddenSoundSegment;
+                    return UnlockSoundTier.Hidden;
                 }
 
                 if (IsCapstone || IsGameCompleted)
                 {
-                    return "capstoneachievement";
+                    return UnlockSoundTier.Capstone;
                 }
 
                 switch (_rarity)
                 {
                     case RarityTier.UltraRare:
-                        return "ultrarareachievement";
+                        return UnlockSoundTier.UltraRare;
                     case RarityTier.Rare:
-                        return "rareachievement";
+                        return UnlockSoundTier.Rare;
                     case RarityTier.Uncommon:
-                        return "uncommonachievement";
+                        return UnlockSoundTier.Uncommon;
                     default:
-                        return "commonachievement";
+                        return UnlockSoundTier.Common;
                 }
             }
         }
+
 
         /// <summary>
         /// Rarity ranking used to pick a single representative sound when several unlocks show at
@@ -1296,6 +1789,11 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
+                if (IsProgressUpdate)
+                {
+                    return 0;
+                }
+
                 if (IsCapstone || IsGameCompleted)
                 {
                     return 6;

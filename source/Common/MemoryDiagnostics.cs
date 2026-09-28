@@ -31,7 +31,16 @@ namespace PlayniteAchievements.Common
     {
         private const double BytesPerMb = 1024d * 1024d;
 
-        public static bool Enabled => PerfScope.PerfTracingEnabled;
+        /// <summary>
+        /// Independent switch for the memory lines, so residual-memory work can be traced
+        /// without the per-operation timing noise. Off by default: the retention report forces
+        /// a blocking collection after every refresh, which is too expensive to ship enabled.
+        /// Flip to true (with a rebuild) to re-arm the [MemPerf] lines, the per-cache occupancy
+        /// report, and the LeakWatch live counts.
+        /// </summary>
+        internal static readonly bool MemoryTracingEnabled = false;
+
+        public static bool Enabled => MemoryTracingEnabled || PerfScope.PerfTracingEnabled;
 
         /// <summary>
         /// Captures current process memory counters. Never throws; returns an invalid snapshot
@@ -64,6 +73,34 @@ namespace PlayniteAchievements.Common
         public static MemorySnapshot Log(ILogger logger, string point, string detail = null)
         {
             return Log(logger, point, default(MemorySnapshot), detail);
+        }
+
+        /// <summary>
+        /// Logs a [MemPerf] line after forcing a full blocking collection, so the managed number
+        /// reflects what is actually still rooted rather than uncollected garbage. Only for
+        /// once-per-refresh retention reporting - never in a hot path.
+        /// </summary>
+        public static void LogRetained(ILogger logger, string point, string detail = null)
+        {
+            if (!Enabled)
+            {
+                return;
+            }
+
+            try
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                // Blocking variant: a background gen2 collection may not have finished when
+                // the counters are read, which would report garbage as still-rooted memory.
+                GC.GetTotalMemory(forceFullCollection: true);
+            }
+            catch
+            {
+                return;
+            }
+
+            Log(logger, point, detail);
         }
 
         /// <summary>

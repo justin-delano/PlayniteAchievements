@@ -73,6 +73,20 @@ namespace PlayniteAchievements.Models.Achievements
         public string AchievementNote { get; set; }
 
         /// <summary>
+        /// Runtime-only flag marking an achievement the user is working toward. Goals sort ahead
+        /// of everything else and clear once unlocked, so this is only ever true while locked.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsGoal { get; set; }
+
+        /// <summary>
+        /// Runtime-only position within the game's goal list; <see cref="int.MaxValue"/> when not
+        /// a goal. Orders the pinned block.
+        /// </summary>
+        [IgnoreDataMember]
+        public int GoalOrderIndex { get; set; } = int.MaxValue;
+
+        /// <summary>
         /// Playnite Game reference for theme bindings.
         /// Populated during snapshot building for all-games views.
         /// Not persisted to cache.
@@ -86,6 +100,12 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         [IgnoreDataMember]
         public string ProviderKey { get; set; }
+
+        /// <summary>
+        /// Runtime-only flag for achievements projected from per-game custom data.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsCustom { get; set; }
 
         /// <summary>
         /// Runtime-only provider-assigned category label, captured by the hydrator before
@@ -111,6 +131,50 @@ namespace PlayniteAchievements.Models.Achievements
         [IgnoreDataMember]
         public int CategoryOrderIndex { get; set; } = int.MaxValue;
 
+        /// <summary>
+        /// Runtime-only index of this achievement in the game's default order: the user's custom
+        /// achievement order when one exists, otherwise provider/source order. Stamped by the
+        /// hydrator; <see cref="int.MaxValue"/> when never hydrated (friend rows, recent-unlock
+        /// projections, mock data), in which case unlock-time sorts fall back to rarity.
+        /// </summary>
+        [IgnoreDataMember]
+        public int DefaultOrderIndex { get; set; } = int.MaxValue;
+
+        /// <summary>
+        /// Runtime-only full path to this achievement's saved clean unlock screenshot (no toast,
+        /// no frame). Null when none exists on disk; when re-fires produced duplicates the
+        /// original file wins. Resolved from the capture library, never persisted.
+        /// </summary>
+        [IgnoreDataMember]
+        public string CleanCapturePath { get; set; }
+
+        /// <summary>
+        /// Runtime-only full path to the screenshot with this achievement's notification card
+        /// composited in. Null when none exists on disk; the original file wins on duplicates.
+        /// </summary>
+        [IgnoreDataMember]
+        public string NotificationCapturePath { get; set; }
+
+        /// <summary>
+        /// Runtime-only full path to the framed screenshot (theme frame rendered over the clean
+        /// capture). Null when none exists on disk; the original file wins on duplicates.
+        /// </summary>
+        [IgnoreDataMember]
+        public string FramedCapturePath { get; set; }
+
+        /// <summary>
+        /// Runtime-only full path to this achievement's unlock video clip (.mp4). Null when none
+        /// exists on disk; the original file wins on duplicates.
+        /// </summary>
+        [IgnoreDataMember]
+        public string VideoCapturePath { get; set; }
+
+        /// <summary>True when any of the four capture paths is set; theme visibility convenience.</summary>
+        [IgnoreDataMember]
+        public bool HasAnyCapture =>
+            CleanCapturePath != null || NotificationCapturePath != null ||
+            FramedCapturePath != null || VideoCapturePath != null;
+
         [IgnoreDataMember]
         public ICommand SetDynamicAchievementsGameCommand { get; set; }
 
@@ -122,6 +186,20 @@ namespace PlayniteAchievements.Models.Achievements
 
         [IgnoreDataMember]
         public ICommand OpenManageAchievementsWindow { get; set; }
+
+        /// <summary>
+        /// Toggles this achievement as its game's capstone. Item-scoped, so a theme binds it with
+        /// no CommandParameter.
+        /// </summary>
+        [IgnoreDataMember]
+        public ICommand ToggleAchievementCapstoneCommand { get; set; }
+
+        /// <summary>
+        /// Toggles this achievement's membership in its game's goal list. Item-scoped, so a theme
+        /// binds it with no CommandParameter.
+        /// </summary>
+        [IgnoreDataMember]
+        public ICommand ToggleAchievementGoalCommand { get; set; }
 
         [IgnoreDataMember]
         public string IconDisplay => AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath);

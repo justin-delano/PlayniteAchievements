@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Capture;
 
@@ -19,6 +22,34 @@ namespace PlayniteAchievements.Services.Tests.Capture
             var values = new short[bytes.Length / 2];
             Buffer.BlockCopy(bytes, 0, values, 0, values.Length * 2);
             return values;
+        }
+
+        /// <summary>Deterministic band-limited stereo noise (8-tap moving average of white noise).</summary>
+        private static short[] BandLimitedNoise(int frames, int seed, int amplitude)
+        {
+            var random = new Random(seed);
+            var raw = new double[frames + 16];
+            for (var i = 0; i < raw.Length; i++)
+            {
+                raw[i] = random.Next(-amplitude, amplitude + 1);
+            }
+
+            var samples = new short[frames * 2];
+            for (var frame = 0; frame < frames; frame++)
+            {
+                double left = 0;
+                double right = 0;
+                for (var k = 0; k < 8; k++)
+                {
+                    left += raw[frame + k];
+                    right += raw[frame + k + 4];
+                }
+
+                samples[frame * 2] = (short)(left / 8);
+                samples[frame * 2 + 1] = (short)(right / 8);
+            }
+
+            return samples;
         }
 
         [TestMethod]
@@ -106,9 +137,46 @@ namespace PlayniteAchievements.Services.Tests.Capture
         {
             // 1 second = 192000 bytes; already aligned.
             Assert.AreEqual(192000L, PcmAudio.TicksToAlignedBytes(10_000_000));
-            // A fraction that lands mid-frame rounds down to a 4-byte boundary.
+            // One frame is 208.333 ticks. The nearest representable tick must still map back to
+            // frame one rather than being truncated to three bytes and aligned onto frame zero.
+            Assert.AreEqual(PcmAudio.BlockAlign, PcmAudio.TicksToAlignedBytes(208));
+            Assert.AreEqual(PcmAudio.BlockAlign, PcmAudio.TicksToAlignedBytes(209));
+            Assert.AreEqual(0, PcmAudio.TicksToAlignedBytes(104));
+            // Every result is a whole stereo sample frame.
             var bytes = PcmAudio.TicksToAlignedBytes(12_345);
             Assert.AreEqual(0, bytes % PcmAudio.BlockAlign);
+        }
+
+        [TestMethod]
+        public void WriteWav_WritesAReadableHeaderForTheExportFormat()
+        {
+            // A fallback clip window goes back to the exporter as an ordinary chunk file, so the
+            // header has to describe exactly the format the rest of the pipeline assumes.
+            var path = Path.Combine(Path.GetTempPath(), $"pa_wav_{Guid.NewGuid():N}.wav");
+            var pcm = Samples(BandLimitedNoise(1200, 3, 4000));
+            try
+            {
+                PcmAudio.WriteWav(path, pcm);
+                var written = File.ReadAllBytes(path);
+
+                Assert.AreEqual(44 + pcm.Length, written.Length);
+                Assert.AreEqual("RIFF", Encoding.ASCII.GetString(written, 0, 4));
+                Assert.AreEqual("WAVE", Encoding.ASCII.GetString(written, 8, 4));
+                Assert.AreEqual("fmt ", Encoding.ASCII.GetString(written, 12, 4));
+                Assert.AreEqual(1, BitConverter.ToInt16(written, 20));                       // PCM
+                Assert.AreEqual(PcmAudio.Channels, BitConverter.ToInt16(written, 22));
+                Assert.AreEqual(PcmAudio.SampleRate, BitConverter.ToInt32(written, 24));
+                Assert.AreEqual(PcmAudio.BytesPerSecond, BitConverter.ToInt32(written, 28));
+                Assert.AreEqual(PcmAudio.BlockAlign, BitConverter.ToInt16(written, 32));
+                Assert.AreEqual(PcmAudio.BitsPerSample, BitConverter.ToInt16(written, 34));
+                Assert.AreEqual("data", Encoding.ASCII.GetString(written, 36, 4));
+                Assert.AreEqual(pcm.Length, BitConverter.ToInt32(written, 40));
+                CollectionAssert.AreEqual(pcm, written.Skip(44).ToArray());
+            }
+            finally
+            {
+                try { File.Delete(path); } catch { }
+            }
         }
     }
 }

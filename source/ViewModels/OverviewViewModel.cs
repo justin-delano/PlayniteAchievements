@@ -65,6 +65,23 @@ namespace PlayniteAchievements.ViewModels
 
         private readonly HashSet<string> _revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private OverviewDataSnapshot _latestSnapshot;
+
+        // Shared-snapshot publishing: while this view model is active it feeds every applied
+        // snapshot to the process-wide widget coordinator so start-page widgets share the
+        // instance retained here instead of building their own full-library copy.
+        private static readonly TimeSpan SharedPublishMinInterval = TimeSpan.FromSeconds(2);
+
+        // Single-game changes (an in-game unlock, a row edit) should surface promptly; a bulk
+        // refresh saving game after game must not drive a whole-library recompute per save.
+        private static readonly TimeSpan InteractiveDeltaBatchInterval = TimeSpan.FromMilliseconds(300);
+        private static readonly TimeSpan BulkDeltaBatchInterval = TimeSpan.FromMilliseconds(2500);
+        private readonly Func<Services.Widgets.WidgetDataCoordinator> _widgetCoordinatorAccessor;
+        private Services.Widgets.WidgetDataCoordinator _sharedSnapshotTarget;
+        private DateTime _lastSharedPublishUtc;
+
+        public OverviewDataSnapshot LatestSnapshot => _latestSnapshot;
+
+        public event EventHandler SnapshotChanged;
         private bool _hasAppliedSnapshot;
 
         private readonly RefreshHeaderProgressTracker _progressTracker;
@@ -122,8 +139,10 @@ namespace PlayniteAchievements.ViewModels
             ILogger logger,
             PlayniteAchievementsSettings settings,
             OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
-            IFriendCacheManager friendCache = null)
+            IFriendCacheManager friendCache = null,
+            Func<Services.Widgets.WidgetDataCoordinator> widgetCoordinatorAccessor = null)
         {
+            _widgetCoordinatorAccessor = widgetCoordinatorAccessor;
             FriendCompare = new FriendCompareController(friendCache, settings, logger);
             _selectedGameControlBar.AttachFriendCompare(FriendCompare);
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
@@ -140,7 +159,8 @@ namespace PlayniteAchievements.ViewModels
                 _achievementDataService,
                 _refreshService.Providers,
                 _playniteApi,
-                _logger);
+                _logger,
+                () => friendCache?.LoadCurrentUserIdentities());
             _selectedGamePipeline = new AchievementSelectionPipeline(_achievementDataService, _settings);
 
             // Initialize debounce timer
@@ -155,7 +175,7 @@ namespace PlayniteAchievements.ViewModels
 
             _deltaBatchTimer = new System.Windows.Threading.DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(300)
+                Interval = InteractiveDeltaBatchInterval
             };
             _deltaBatchTimer.Tick += OnDeltaBatchTimerTick;
 
@@ -1204,6 +1224,21 @@ namespace PlayniteAchievements.ViewModels
         // Drives the breadcrumb's "> CategoryName" segment and the clickable game-name affordance.
         public bool IsSelectedGameDrilledIntoCategory => !string.IsNullOrEmpty(SelectedGameDrilledCategory);
 
+        // Storage form of the same drill, for matching against achievement labels.
+        // SelectedGameDrilledCategory is the display form and will not compare equal to one.
+        private string _selectedGameDrilledCategoryPath;
+        public string SelectedGameDrilledCategoryPath
+        {
+            get => _selectedGameDrilledCategoryPath;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedGameDrilledCategoryPath, value))
+                {
+                    RefreshSelectedGameHeaderCounts();
+                }
+            }
+        }
+
         public ObservableCollection<ChartDataPoint> SelectedGameDailyUnlocks { get; } = new ObservableCollection<ChartDataPoint>();
 
         #endregion
@@ -1394,6 +1429,7 @@ namespace PlayniteAchievements.ViewModels
             _isActive = isActive;
             if (!isActive)
             {
+                DetachSharedSnapshotPublisher();
                 _deltaBatchTimer?.Stop();
                 lock (_deltaSync)
                 {
@@ -1405,10 +1441,52 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
+                AttachSharedSnapshotPublisher();
                 _progressTracker.SyncToCurrentState();
                 // Refresh data when overview becomes active to ensure cached changes are visible
                 _ = RefreshViewAsync();
             }
+        }
+
+        private void AttachSharedSnapshotPublisher()
+        {
+            if (_sharedSnapshotTarget != null)
+            {
+                return;
+            }
+
+            _sharedSnapshotTarget = _widgetCoordinatorAccessor?.Invoke();
+            _sharedSnapshotTarget?.AttachPublisher();
+        }
+
+        private void DetachSharedSnapshotPublisher()
+        {
+            var target = _sharedSnapshotTarget;
+            _sharedSnapshotTarget = null;
+            target?.DetachPublisher();
+        }
+
+        // Mid-run the delta pipeline applies a snapshot roughly per refreshed game; publishing
+        // each would fan a full start-page widget re-projection out per game, so publishes are
+        // throttled while a refresh run is active. The trailing state still lands: the end-of-run
+        // scoped CacheInvalidated re-queues deltas whose batch tick runs after IsRebuilding is
+        // false, and full-view refreshes publish unconditionally.
+        private void PublishSharedSnapshot(OverviewDataSnapshot snapshot)
+        {
+            var target = _sharedSnapshotTarget;
+            if (target == null || snapshot == null)
+            {
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            if (_refreshService.IsRebuilding && now - _lastSharedPublishUtc < SharedPublishMinInterval)
+            {
+                return;
+            }
+
+            _lastSharedPublishUtc = now;
+            target.Publish(snapshot);
         }
 
         public async Task RefreshViewAsync()
@@ -1560,7 +1638,11 @@ namespace PlayniteAchievements.ViewModels
                         UseProgressWindow = false,
                         SwallowExceptions = false
                     });
-                await RefreshViewAsync();
+                // No explicit view refresh here: the pipeline's end-of-run CacheInvalidated
+                // already reconciles this view model - scoped runs re-queue a delta per
+                // refreshed game, larger/full runs collapse to a full invalidation that
+                // lands in OnRefreshDebounceTimerTick's RefreshViewAsync. A second full
+                // projection rebuild on top of that doubled the post-run allocation.
             }
             catch (Exception ex)
             {
@@ -1770,6 +1852,12 @@ namespace PlayniteAchievements.ViewModels
 
             _selectedGamePipeline.InvalidateAll();
 
+            // Canary on the OUTGOING full row set. A full rebuild replaces every row at once,
+            // unlike the per-game delta swap, so retention here is invisible to the delta
+            // canaries. A live count that grows per refresh means the previous library-wide
+            // set (and the grid containers and bindings attached to it) is still rooted.
+            Common.LeakWatch.Track("Row.replacedFullSet", _allAchievements?.FirstOrDefault());
+
             _latestSnapshot = snapshot;
             _allAchievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
             if (globalSearchEntries != null)
@@ -1872,9 +1960,9 @@ namespace PlayniteAchievements.ViewModels
                     return true;
                 }
 
-                _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
-                _allGameSummaries.RemoveAll(g => g?.PlayniteGameId == gameId);
-                _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+                RemoveGameRows(_allAchievements, gameId, _globalAchievementSearchIndex);
+                RemoveGameRows(_allGameSummaries, gameId, _gameSummarySearchIndex);
+                RemoveGameRows(_allRecentAchievements, gameId, _recentAchievementSearchIndex);
                 _selectedGamePipeline.Invalidate(gameId);
 
                 if (SelectedGame?.PlayniteGameId == gameId)
@@ -1885,9 +1973,19 @@ namespace PlayniteAchievements.ViewModels
                 return true;
             }
 
-            _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
-            _allGameSummaries.RemoveAll(g => g?.PlayniteGameId == gameId);
-            _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+            // Canaries on the rows this delta discards. Nothing should reference them once the
+            // swap completes, so a rising live count localizes retention to whoever still holds
+            // replaced rows (grid, chart, projection) rather than to a growing cache.
+            Common.LeakWatch.Track(
+                "Row.discardedAchievement",
+                _allAchievements.FirstOrDefault(a => a?.PlayniteGameId == gameId));
+            Common.LeakWatch.Track(
+                "Row.discardedGameSummary",
+                _allGameSummaries.FirstOrDefault(g => g?.PlayniteGameId == gameId));
+
+            RemoveGameRows(_allAchievements, gameId, _globalAchievementSearchIndex);
+            RemoveGameRows(_allGameSummaries, gameId, _gameSummarySearchIndex);
+            RemoveGameRows(_allRecentAchievements, gameId, _recentAchievementSearchIndex);
             _selectedGamePipeline.Invalidate(gameId);
 
             if (fragment.Achievements != null && fragment.Achievements.Count > 0)
@@ -1917,7 +2015,11 @@ namespace PlayniteAchievements.ViewModels
                 RecentAchievements = _allRecentAchievements ?? new List<AchievementDisplayItem>(),
                 GlobalUnlockCountsByDate = new Dictionary<DateTime, int>(),
                 UnlockCountsByDateByGame = new Dictionary<Guid, Dictionary<DateTime, int>>(),
-                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                // Deltas never touch identities; carry the last full build's forward so
+                // profile consumers of a delta-built snapshot keep the resolved user.
+                CurrentUserIdentities = _latestSnapshot?.CurrentUserIdentities
+                    ?? new List<Models.Friends.FriendIdentity>()
             };
 
             for (var i = 0; i < snapshot.RecentAchievements.Count; i++)
@@ -1963,6 +2065,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
+            Common.LeakWatch.Track("OverviewSnapshot.delta", snapshot);
             snapshot.TotalGames = snapshot.GameSummaries.Count;
             snapshot.TotalAchievements = snapshot.GameSummaries.Sum(g => g?.TotalAchievements ?? 0);
             snapshot.TotalUnlocked = snapshot.GameSummaries.Sum(g => g?.UnlockedAchievements ?? 0);
@@ -2117,6 +2220,8 @@ namespace PlayniteAchievements.ViewModels
 
             GlobalTimeline.SetCounts(timelineCountsToShow);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+            SnapshotChanged?.Invoke(this, EventArgs.Empty);
+            PublishSharedSnapshot(snapshot);
         }
 
         private void MarkSnapshotApplied()
@@ -2650,6 +2755,14 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            // A reorder-only change (goals) is already applied to the rows in place by
+            // ReapplyGoalOrder. Queuing a delta would rebuild the selected game and re-run the
+            // control bar, discarding the filters the user currently has applied.
+            if (!e.AffectsSummaryData)
+            {
+                return;
+            }
+
             QueueOverviewDelta(isFullReset: false, key: e.PlayniteGameId.ToString("D"));
         }
 
@@ -2670,6 +2783,15 @@ namespace PlayniteAchievements.ViewModels
                     }
                 }
 
+                // Each tick recomputes library-wide state (sorts, snapshot rollups, charts,
+                // filters), so its cost is independent of how many games changed. A bulk
+                // refresh saves games steadily, which at the interactive interval produces
+                // dozens of whole-library passes per run; widening the window while a run is
+                // active collapses those into a handful without changing the end state, since
+                // the run's final invalidation queues one last pass.
+                _deltaBatchTimer.Interval = _refreshService.IsRebuilding
+                    ? BulkDeltaBatchInterval
+                    : InteractiveDeltaBatchInterval;
                 _deltaBatchTimer.Stop();
                 _deltaBatchTimer.Start();
             });
@@ -2766,13 +2888,22 @@ namespace PlayniteAchievements.ViewModels
                     var gameData = Guid.TryParse(key, out var parsedGameId)
                         ? _achievementDataService.GetGameAchievementDataForOverview(parsedGameId)
                         : _achievementDataService.GetVisibleGameAchievementData(key);
+
+                    // The other big per-refresh allocation: one full per-game payload read from
+                    // the cache per delta key. Only the bounded in-memory game cache should keep
+                    // these alive after the fragment is built.
+                    Common.LeakWatch.Track("OverviewGameData", gameData);
+                    // Fragments carry the game's achievement rows (unlocked + pinned): the
+                    // delta swap removes the game's old rows from _allAchievements, so a
+                    // fragment without rows would silently drop the refreshed game from the
+                    // all-achievements surfaces until the next full rebuild.
                     dict[key] = gameData == null
                         ? null
                         : _dataBuilder.BuildGameFragment(
                             _settings,
                             revealedCopy,
                             gameData,
-                            includeAchievementItems: false);
+                            includeAchievementItems: true);
                 }
 
                 return dict;
@@ -2816,7 +2947,9 @@ namespace PlayniteAchievements.ViewModels
             // its first unlock. Re-stamp the replaced rows.
             RemarkCapturePresence();
 
-            RefreshOverviewSearchIndexes();
+            // No search-index rebuild here. ApplyFragmentDelta already dropped the entries for
+            // the rows it replaced, and the index fills lazily for the new ones, so rebuilding
+            // all three indexes would re-normalize the entire library on every delta batch.
 
             var snapshot = BuildSnapshotFromSourceLists();
             ApplyOverviewSummaryFromSnapshot(snapshot);
@@ -2853,11 +2986,53 @@ namespace PlayniteAchievements.ViewModels
             RemarkCapturePresence(e?.FolderName);
         }
 
-        private void RefreshOverviewSearchIndexes()
+        // Drops a game's rows and their search-index entries together. The index is keyed by row
+        // instance, so an entry left behind would both root a replaced row and answer for a row
+        // that is no longer in the list. Replacement rows are not indexed here: the index fills
+        // lazily on first lookup, which is what makes a per-delta whole-library rebuild
+        // unnecessary.
+        private static void RemoveGameRows(
+            List<AchievementDisplayItem> rows,
+            Guid gameId,
+            SearchTextIndex<AchievementDisplayItem> index)
         {
-            _globalAchievementSearchIndex.Rebuild(_allAchievements);
-            _gameSummarySearchIndex.Rebuild(_allGameSummaries);
-            _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
+            if (rows == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (row?.PlayniteGameId == gameId)
+                {
+                    index?.Invalidate(row);
+                }
+            }
+
+            rows.RemoveAll(row => row?.PlayniteGameId == gameId);
+        }
+
+        private static void RemoveGameRows(
+            List<GameSummaryItem> rows,
+            Guid gameId,
+            SearchTextIndex<GameSummaryItem> index)
+        {
+            if (rows == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (row?.PlayniteGameId == gameId)
+                {
+                    index?.Invalidate(row);
+                }
+            }
+
+            rows.RemoveAll(row => row?.PlayniteGameId == gameId);
         }
 
         private async void OnRefreshDebounceTimerTick(object sender, EventArgs e)
@@ -3009,6 +3184,115 @@ namespace PlayniteAchievements.ViewModels
             CollectionHelper.Replace(RecentAchievements, displayItems);
         }
 
+        /// <summary>
+        /// Re-stamps the capstone flag on the selected game's rows. Valid only when a capstone is
+        /// being set, where every other row becomes a non-capstone.
+        /// </summary>
+        public bool ApplyCapstone(string capstoneApiName)
+        {
+            if (_allSelectedGameAchievements == null ||
+                _allSelectedGameAchievements.Count == 0 ||
+                string.IsNullOrWhiteSpace(capstoneApiName))
+            {
+                return false;
+            }
+
+            foreach (var item in _allSelectedGameAchievements)
+            {
+                if (item != null)
+                {
+                    item.IsCapstone = string.Equals(
+                        (item.ApiName ?? string.Empty).Trim(),
+                        capstoneApiName.Trim(),
+                        StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Re-sorts the selected game's rows after a goal toggle. Goal state only affects
+        /// ordering, so this avoids the full selected-game rebuild.
+        /// </summary>
+        public bool ReapplyGoalOrder()
+        {
+            if (_allSelectedGameAchievements == null || _allSelectedGameAchievements.Count == 0)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(_selectedGameSortPath))
+            {
+                // Re-runs the active column sort and re-partitions goals, then syncs.
+                SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
+                return true;
+            }
+
+            // No column sort, so re-run exactly what the load path does: restore the natural order
+            // as the base (the configured sort may preserve source order), apply the configured
+            // default sort, then pin goals. Partitioning alone is stable, so without this a
+            // removed goal would stay stranded at the top.
+            RestoreSelectedGameNaturalOrder();
+            AchievementSortHelper.ApplyConfiguredDefaultSort(
+                _filteredSelectedGameAchievements,
+                _settings?.Persisted,
+                AchievementSortSurface.OverviewSelectedGame,
+                AchievementSortScope.GameAchievements,
+                stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
+            AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
+            AchievementSortHelper.ApplyGoalsFirst(_filteredSelectedGameAchievements);
+            SyncSelectedGameAchievementsDisplay();
+            return true;
+        }
+
+        /// <summary>
+        /// Re-orders the selected game's live lists to follow the natural-order snapshot taken
+        /// when the game loaded. Items missing from the snapshot keep their relative position at
+        /// the end.
+        /// </summary>
+        private void RestoreSelectedGameNaturalOrder()
+        {
+            var natural = _selectedGameDefaultOrderedAchievements;
+            if (natural == null || natural.Count == 0)
+            {
+                return;
+            }
+
+            var indexByItem = new Dictionary<AchievementDisplayItem, int>();
+            for (var i = 0; i < natural.Count; i++)
+            {
+                var item = natural[i];
+                if (item != null && !indexByItem.ContainsKey(item))
+                {
+                    indexByItem[item] = i;
+                }
+            }
+
+            SortByNaturalOrder(_allSelectedGameAchievements, indexByItem);
+            SortByNaturalOrder(_filteredSelectedGameAchievements, indexByItem);
+        }
+
+        private static void SortByNaturalOrder(
+            List<AchievementDisplayItem> items,
+            IReadOnlyDictionary<AchievementDisplayItem, int> indexByItem)
+        {
+            if (items == null || items.Count < 2)
+            {
+                return;
+            }
+
+            // OrderBy is stable, so anything absent from the snapshot keeps its relative order.
+            var ordered = items
+                .OrderBy(item => item != null && indexByItem.TryGetValue(item, out var index)
+                    ? index
+                    : int.MaxValue)
+                .ToList();
+
+            items.Clear();
+            items.AddRange(ordered);
+        }
+
         private void SyncSelectedGameAchievementsDisplay()
         {
             // Keep the unfiltered category-summary source current; the achievement filters do not
@@ -3148,7 +3432,7 @@ namespace PlayniteAchievements.ViewModels
 
             GamesPieChart?.SetGameData(gamesPieSnapshot.TotalGames, gamesPieSnapshot.CompletedGames, completedLabel, incompleteLabel);
 
-            var providerLookup = BuildProviderLookup();
+            var providerLookup = BuildProviderLookup(snapshot.UnlockedByProvider.Keys);
             var providerDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var providerKey in snapshot.UnlockedByProvider.Keys)
             {
@@ -3272,17 +3556,32 @@ namespace PlayniteAchievements.ViewModels
             };
         }
 
-        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
+        /// <param name="displayProviderKeys">
+        /// Provider keys present in the data being charted. Custom-only games display as keys no
+        /// registered provider owns (Custom and Custom:&lt;id&gt;), so they resolve here by key rather
+        /// than through the provider list.
+        /// </param>
+        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup(
+            IEnumerable<string> displayProviderKeys = null)
         {
             var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            foreach (var provider in _refreshService.Providers)
+            var keys = _refreshService.Providers
+                .Select(provider => provider?.ProviderKey)
+                .Concat(displayProviderKeys ?? Enumerable.Empty<string>())
+                .Where(key => !string.IsNullOrWhiteSpace(key));
+            foreach (var providerKey in keys)
             {
+                if (providerLookup.ContainsKey(providerKey))
+                {
+                    continue;
+                }
+
                 if (ProviderRegistry.TryResolveProviderVisuals(
-                    provider.ProviderKey,
+                    providerKey,
                     out var iconKey,
                     out var colorHex))
                 {
-                    providerLookup[provider.ProviderKey] = (iconKey, colorHex);
+                    providerLookup[providerKey] = (iconKey, colorHex);
                 }
             }
             return providerLookup;
@@ -3578,6 +3877,7 @@ namespace PlayniteAchievements.ViewModels
                         AchievementSortScope.GameAchievements,
                         stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
 
+                    AchievementSortHelper.ApplyGoalsFirst(_filteredSelectedGameAchievements);
                     SyncSelectedGameAchievementsDisplay();
                 }
                 else
@@ -3629,12 +3929,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (isDrilled)
                 {
-                    // Scope to the drilled category, respecting any active filter applied within it.
+                    // Scope to the drilled category itself, not its subtree: the header counts what
+                    // the grid below is showing, and that grid holds this node's own achievements
+                    // only. Matching is on the storage path - the display form spells its separators
+                    // out and never equals a stored label.
+                    var drilledPath = SelectedGameDrilledCategoryPath;
                     var scoped = (_filteredSelectedGameAchievements ?? new List<AchievementDisplayItem>())
-                        .Where(item => string.Equals(
-                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.CategoryLabel),
-                            drilledCategory,
-                            StringComparison.OrdinalIgnoreCase))
+                        .Where(item => CategoryPathHelper.IsSame(item?.CategoryLabel, drilledPath))
                         .ToList();
                     total = scoped.Count;
                     unlocked = scoped.Count(item => item?.Unlocked == true);
@@ -3795,9 +4096,14 @@ namespace PlayniteAchievements.ViewModels
 
                 var revealedCopy = GetRevealedKeysSnapshotIfNeeded();
 
-                var loadResult = await _selectedGamePipeline
-                    .LoadAsync(gameId, revealedCopy, cancellationToken)
-                    .ConfigureAwait(true);
+                (List<AchievementDisplayItem> Items, bool HasCustomOrder) loadResult;
+                using (PerfScope.Start(_logger, "Overview.SelectedGameLoad", thresholdMs: 25,
+                    context: $"game={gameId}"))
+                {
+                    loadResult = await _selectedGamePipeline
+                        .LoadAsync(gameId, revealedCopy, cancellationToken)
+                        .ConfigureAwait(true);
+                }
 
                 if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
@@ -3808,16 +4114,24 @@ namespace PlayniteAchievements.ViewModels
                 var hasCustomOrder = loadResult.HasCustomOrder;
                 SelectedGameHasCustomAchievementOrder = hasCustomOrder;
 
-                _allSelectedGameAchievements = items;
-                Services.Captures.CapturePresenceMarker.MarkAchievements(items, _captureLibrary);
-                _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>(items);
-                FriendCompare?.SetTargetItems(items);
-                UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
-                ApplyRightFilters();
+                using (PerfScope.Start(_logger, "Overview.SelectedGameApply", thresholdMs: 25,
+                    context: $"items={items.Count}"))
+                {
+                    _allSelectedGameAchievements = items;
+                    Services.Captures.CapturePresenceMarker.MarkAchievements(items, _captureLibrary);
+                    // Snapshot the natural order before goals are pinned, so removing a goal can put
+                    // the achievement back where it belongs instead of leaving it stranded on top.
+                    _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>(items);
+                    AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
+                    FriendCompare?.SetTargetItems(items);
+                    UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
+                    ApplyRightFilters();
 
-                var selectedTimelineCounts = GetSelectedGameTimelineCounts(gameId);
-                GlobalTimeline.SetCounts(selectedTimelineCounts);
-                SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+                    var selectedTimelineCounts = GetSelectedGameTimelineCounts(gameId);
+                    GlobalTimeline.SetCounts(selectedTimelineCounts);
+                    SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+                }
+
                 return true;
             }
             catch (OperationCanceledException)
@@ -4013,6 +4327,8 @@ namespace PlayniteAchievements.ViewModels
                 ref selectedSortDirection,
                 sortedAllOrder);
 
+            AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
+            AchievementSortHelper.ApplyGoalsFirst(_filteredSelectedGameAchievements);
             SyncSelectedGameAchievementsDisplay();
         }
 
@@ -4077,6 +4393,14 @@ namespace PlayniteAchievements.ViewModels
                 _deltaBatchTimer.Tick -= OnDeltaBatchTimerTick;
             }
 
+            // Each chart view model is subscribed to the process-lifetime appearance event, so
+            // without this every overview open strands four of them (and their series data)
+            // for the rest of the session.
+            GamesPieChart?.Dispose();
+            RarityPieChart?.Dispose();
+            ProviderPieChart?.Dispose();
+            TrophyPieChart?.Dispose();
+
             ReleaseRetainedData();
         }
 
@@ -4086,6 +4410,9 @@ namespace PlayniteAchievements.ViewModels
         // collection and exhaust the address space. Releasing here bounds the retained set to one
         // live overview. Runs after _disposed and CancelPendingRefresh, so no in-flight apply can
         // repopulate these (ApplySnapshot early-returns on _disposed).
+        // The _all* fields are REASSIGNED, not cleared in place: the list instances are embedded
+        // in snapshots published to the widget coordinator, which retains the last one after this
+        // view model dies. An in-place Clear() would gut that shared snapshot.
         private void ReleaseRetainedData()
         {
             AllAchievements.Clear();

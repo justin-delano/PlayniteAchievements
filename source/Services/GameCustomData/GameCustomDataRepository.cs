@@ -79,7 +79,12 @@ namespace PlayniteAchievements.Services.GameCustomData
                 : GameCustomDataNormalizer.CreateDefault(playniteGameId);
         }
 
-        public void Save(Guid playniteGameId, GameCustomDataFile data)
+        /// <summary>
+        /// Persists the game's custom data and returns the normalized instance that was written,
+        /// so the caller can seed its cache without reading the row back. Returns null when the
+        /// data normalized to nothing and the row was deleted instead.
+        /// </summary>
+        public GameCustomDataFile Save(Guid playniteGameId, GameCustomDataFile data)
         {
             if (playniteGameId == Guid.Empty)
             {
@@ -90,7 +95,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             if (!GameCustomDataNormalizer.HasInternalData(normalized))
             {
                 Delete(playniteGameId);
-                return;
+                return null;
             }
 
             var row = CreateRow(normalized);
@@ -102,6 +107,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     row.PayloadJson,
                     row.UpdatedUtc);
             });
+            return normalized;
         }
 
         public void SaveMany(IEnumerable<GameCustomDataFile> items)

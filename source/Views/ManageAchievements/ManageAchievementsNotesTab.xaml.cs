@@ -161,6 +161,9 @@ namespace PlayniteAchievements.Views.ManageAchievements
                     Height = isEditMode ? 560 : 420
                 });
 
+            WindowPlacementPersistenceService.Attach(
+                window,
+                isEditMode ? "AchievementNoteEdit" : "AchievementNoteView");
             dialog.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 

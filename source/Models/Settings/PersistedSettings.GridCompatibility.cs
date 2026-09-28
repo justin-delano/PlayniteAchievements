@@ -5,6 +5,25 @@ using Newtonsoft.Json;
 
 namespace PlayniteAchievements.Models.Settings
 {
+    /// <summary>
+    /// Flat per-surface accessors over <see cref="GridOptionsCatalog"/>. These look like duplication
+    /// of the catalog and are not: each one carries a job the catalog cannot do on its own.
+    ///
+    /// - They are how the window grids receive values. The grid controls do not read their own
+    ///   catalog record; their dependency properties are bound to these flat names in XAML, and
+    ///   PersistedSettings.GridCompatibility.Notifications.cs raises PropertyChanged for a flat name
+    ///   when the underlying record member changes. That bridge is what makes an edit in the grid
+    ///   display settings popup show up in the grid behind it.
+    /// - The settings migrations read old configs by these names
+    ///   (GridOptionsSettingsMigration, OverviewSettingsMigration), so a name that disappears takes
+    ///   an upgrade path with it.
+    /// - They are public on the settings object, so a user's theme can bind any of them through
+    ///   Playnite's PluginSettings markup. Nothing in this repository can prove a given name is
+    ///   unused out there.
+    ///
+    /// So do not "consolidate" these away. Replacing them means moving the window grids onto
+    /// record-reading bindings first, and even then the names have to stay for migration.
+    /// </summary>
     public partial class PersistedSettings
     {
         private AchievementGridOptions AchievementDefault => GridOptions.GetAchievement(GridOptionKeys.Achievement.Default);
@@ -48,9 +67,11 @@ namespace PlayniteAchievements.Models.Settings
 
         [JsonIgnore] public bool OverviewRecentAchievementsShowRarityGlow { get => AchievementOverviewRecent.ShowRarityGlow; set => SetGridValue(OverviewRecentAchievementsShowRarityGlow, v => AchievementOverviewRecent.ShowRarityGlow = v, value); }
         [JsonIgnore] public bool OverviewSelectedGameShowRarityGlow { get => AchievementOverviewSelectedGame.ShowRarityGlow; set => SetGridValue(OverviewSelectedGameShowRarityGlow, v => AchievementOverviewSelectedGame.ShowRarityGlow = v, value); }
+        [JsonIgnore] public bool ViewAchievementsAchievementGridShowRarityGlow { get => AchievementSingleGame.ShowRarityGlow; set => SetGridValue(ViewAchievementsAchievementGridShowRarityGlow, v => AchievementSingleGame.ShowRarityGlow = v, value); }
         [JsonIgnore] public bool ModernDataGridShowRarityGlow { get => AchievementDefault.ShowRarityGlow; set => SetGridValue(ModernDataGridShowRarityGlow, v => AchievementDefault.ShowRarityGlow = v, value); }
         [JsonIgnore] public bool OverviewRecentAchievementsColorNamesByRarity { get => AchievementOverviewRecent.ColorNamesByRarity; set => SetGridValue(OverviewRecentAchievementsColorNamesByRarity, v => AchievementOverviewRecent.ColorNamesByRarity = v, value); }
         [JsonIgnore] public bool OverviewSelectedGameColorNamesByRarity { get => AchievementOverviewSelectedGame.ColorNamesByRarity; set => SetGridValue(OverviewSelectedGameColorNamesByRarity, v => AchievementOverviewSelectedGame.ColorNamesByRarity = v, value); }
+        [JsonIgnore] public bool ViewAchievementsAchievementGridColorNamesByRarity { get => AchievementSingleGame.ColorNamesByRarity; set => SetGridValue(ViewAchievementsAchievementGridColorNamesByRarity, v => AchievementSingleGame.ColorNamesByRarity = v, value); }
         [JsonIgnore] public bool ModernDataGridColorNamesByRarity { get => AchievementDefault.ColorNamesByRarity; set => SetGridValue(ModernDataGridColorNamesByRarity, v => AchievementDefault.ColorNamesByRarity = v, value); }
         [JsonIgnore] public bool OverviewRecentAchievementsColorRarityColumnsByRarity { get => AchievementOverviewRecent.ColorRarityColumnsByRarity; set => SetGridValue(OverviewRecentAchievementsColorRarityColumnsByRarity, v => AchievementOverviewRecent.ColorRarityColumnsByRarity = v, value); }
         [JsonIgnore] public bool OverviewSelectedGameColorRarityColumnsByRarity { get => AchievementOverviewSelectedGame.ColorRarityColumnsByRarity; set => SetGridValue(OverviewSelectedGameColorRarityColumnsByRarity, v => AchievementOverviewSelectedGame.ColorRarityColumnsByRarity = v, value); }
@@ -83,6 +104,19 @@ namespace PlayniteAchievements.Models.Settings
         [JsonIgnore] public bool FriendsOverviewCategorySummariesShowNameAboveProgress { get => CategorySummariesFriendsOverview.ShowNameAboveProgress; set => SetGridValue(FriendsOverviewCategorySummariesShowNameAboveProgress, v => CategorySummariesFriendsOverview.ShowNameAboveProgress = v, value); }
         [JsonIgnore] public bool ViewFriendsAchievementsCategorySummariesShowNameAboveProgress { get => CategorySummariesViewFriendsAchievements.ShowNameAboveProgress; set => SetGridValue(ViewFriendsAchievementsCategorySummariesShowNameAboveProgress, v => CategorySummariesViewFriendsAchievements.ShowNameAboveProgress = v, value); }
         [JsonIgnore] public bool DesktopThemeCategorySummariesShowNameAboveProgress { get => CategorySummariesDesktopTheme.ShowNameAboveProgress; set => SetGridValue(DesktopThemeCategorySummariesShowNameAboveProgress, v => CategorySummariesDesktopTheme.ShowNameAboveProgress = v, value); }
+        [JsonIgnore] public bool OverviewGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesOverview.ShowRarityBadgesBelowProgress; set => SetGridValue(OverviewGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesOverview.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool StartPageGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesStartPage.ShowRarityBadgesBelowProgress; set => SetGridValue(StartPageGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesStartPage.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool ViewAchievementsGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesViewAchievements.ShowRarityBadgesBelowProgress; set => SetGridValue(ViewAchievementsGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesViewAchievements.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool FriendsOverviewGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesFriendsOverview.ShowRarityBadgesBelowProgress; set => SetGridValue(FriendsOverviewGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesFriendsOverview.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool FriendsOverviewSelectedFriendGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesFriendsOverviewSelectedFriend.ShowRarityBadgesBelowProgress; set => SetGridValue(FriendsOverviewSelectedFriendGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesFriendsOverviewSelectedFriend.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool ViewFriendsAchievementsGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesViewFriendsAchievements.ShowRarityBadgesBelowProgress; set => SetGridValue(ViewFriendsAchievementsGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesViewFriendsAchievements.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool ViewFriendsAchievementsSelectedFriendGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesViewFriendsAchievementsSelectedFriend.ShowRarityBadgesBelowProgress; set => SetGridValue(ViewFriendsAchievementsSelectedFriendGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesViewFriendsAchievementsSelectedFriend.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool DesktopThemeGameSummariesShowRarityBadgesBelowProgress { get => GameSummariesDesktopTheme.ShowRarityBadgesBelowProgress; set => SetGridValue(DesktopThemeGameSummariesShowRarityBadgesBelowProgress, v => GameSummariesDesktopTheme.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool ViewAchievementsCategorySummariesShowRarityBadgesBelowProgress { get => CategorySummariesViewAchievements.ShowRarityBadgesBelowProgress; set => SetGridValue(ViewAchievementsCategorySummariesShowRarityBadgesBelowProgress, v => CategorySummariesViewAchievements.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool OverviewSelectedGameCategorySummariesShowRarityBadgesBelowProgress { get => CategorySummariesOverviewSelectedGame.ShowRarityBadgesBelowProgress; set => SetGridValue(OverviewSelectedGameCategorySummariesShowRarityBadgesBelowProgress, v => CategorySummariesOverviewSelectedGame.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool FriendsOverviewCategorySummariesShowRarityBadgesBelowProgress { get => CategorySummariesFriendsOverview.ShowRarityBadgesBelowProgress; set => SetGridValue(FriendsOverviewCategorySummariesShowRarityBadgesBelowProgress, v => CategorySummariesFriendsOverview.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool ViewFriendsAchievementsCategorySummariesShowRarityBadgesBelowProgress { get => CategorySummariesViewFriendsAchievements.ShowRarityBadgesBelowProgress; set => SetGridValue(ViewFriendsAchievementsCategorySummariesShowRarityBadgesBelowProgress, v => CategorySummariesViewFriendsAchievements.ShowRarityBadgesBelowProgress = v, value); }
+        [JsonIgnore] public bool DesktopThemeCategorySummariesShowRarityBadgesBelowProgress { get => CategorySummariesDesktopTheme.ShowRarityBadgesBelowProgress; set => SetGridValue(DesktopThemeCategorySummariesShowRarityBadgesBelowProgress, v => CategorySummariesDesktopTheme.ShowRarityBadgesBelowProgress = v, value); }
         [JsonIgnore] public bool OverviewGameSummariesUseCoverImages { get => GameSummariesOverview.UseCoverImages; set => SetGridValue(OverviewGameSummariesUseCoverImages, v => GameSummariesOverview.UseCoverImages = v, value); }
         [JsonIgnore] public bool OverviewRecentAchievementsUseCoverImages { get => AchievementOverviewRecent.UseCoverImages; set => SetGridValue(OverviewRecentAchievementsUseCoverImages, v => AchievementOverviewRecent.UseCoverImages = v, value); }
         [JsonIgnore] public bool FriendsOverviewGameSummariesUseCoverImages { get => GameSummariesFriendsOverview.UseCoverImages; set => SetGridValue(FriendsOverviewGameSummariesUseCoverImages, v => GameSummariesFriendsOverview.UseCoverImages = v, value); }
@@ -125,6 +159,7 @@ namespace PlayniteAchievements.Models.Settings
         [JsonIgnore] public bool ShowStartPageFriendsRecentAchievementsGridControlBar { get => AchievementStartPageFriendRecent.ShowControlBar; set => SetGridValue(ShowStartPageFriendsRecentAchievementsGridControlBar, v => AchievementStartPageFriendRecent.ShowControlBar = v, value); }
         [JsonIgnore] public bool ShowOverviewRecentAchievementsGridColumnHeaders { get => AchievementOverviewRecent.ShowColumnHeaders; set => SetGridValue(ShowOverviewRecentAchievementsGridColumnHeaders, v => AchievementOverviewRecent.ShowColumnHeaders = v, value); }
         [JsonIgnore] public bool ShowOverviewSelectedGameGridColumnHeaders { get => AchievementOverviewSelectedGame.ShowColumnHeaders; set => SetGridValue(ShowOverviewSelectedGameGridColumnHeaders, v => AchievementOverviewSelectedGame.ShowColumnHeaders = v, value); }
+        [JsonIgnore] public bool ShowViewAchievementsAchievementGridColumnHeaders { get => AchievementSingleGame.ShowColumnHeaders; set => SetGridValue(ShowViewAchievementsAchievementGridColumnHeaders, v => AchievementSingleGame.ShowColumnHeaders = v, value); }
         [JsonIgnore] public bool ShowDesktopThemeAchievementGridColumnHeaders { get => AchievementDesktopTheme.ShowColumnHeaders; set => SetGridValue(ShowDesktopThemeAchievementGridColumnHeaders, v => AchievementDesktopTheme.ShowColumnHeaders = v, value); }
         [JsonIgnore] public bool ShowStartPageFriendsRecentAchievementsGridColumnHeaders { get => AchievementStartPageFriendRecent.ShowColumnHeaders; set => SetGridValue(ShowStartPageFriendsRecentAchievementsGridColumnHeaders, v => AchievementStartPageFriendRecent.ShowColumnHeaders = v, value); }
         [JsonIgnore] public DateDisplayMode OverviewGameSummariesLastPlayedDateMode { get => GameSummariesOverview.LastPlayedDateMode; set => SetGridValue(OverviewGameSummariesLastPlayedDateMode, v => GameSummariesOverview.LastPlayedDateMode = v, value); }

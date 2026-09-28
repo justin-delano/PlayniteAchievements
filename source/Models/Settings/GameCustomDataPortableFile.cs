@@ -33,6 +33,8 @@ namespace PlayniteAchievements.Models.Settings
 
         public List<string> SummaryFilteredAchievementApiNames { get; set; }
 
+        public List<string> GoalAchievementApiNames { get; set; }
+
         public Dictionary<string, string> AchievementUnlockedIconOverrides { get; set; }
 
         public Dictionary<string, string> AchievementLockedIconOverrides { get; set; }
@@ -53,7 +55,20 @@ namespace PlayniteAchievements.Models.Settings
 
         public ProviderOverrideData ProviderOverride { get; set; }
 
+        public string ExophaseEnrichmentSlugOverride { get; set; }
+
         public ManualAchievementLink ManualLink { get; set; }
+
+        public List<CustomAchievementDefinition> CustomAchievements { get; set; }
+
+        public string CustomProviderId { get; set; }
+
+        /// <summary>
+        /// Snapshot of the assigned custom provider (name, color, icon path data) so a package
+        /// imported on another machine can recreate it. A local definition with the same id wins
+        /// on import.
+        /// </summary>
+        public CustomProviderDefinition CustomProvider { get; set; }
 
         public GameCustomDataPortableFile Clone()
         {
@@ -83,6 +98,9 @@ namespace PlayniteAchievements.Models.Settings
                 SummaryFilteredAchievementApiNames = SummaryFilteredAchievementApiNames != null
                     ? new List<string>(SummaryFilteredAchievementApiNames)
                     : null,
+                GoalAchievementApiNames = GoalAchievementApiNames != null
+                    ? new List<string>(GoalAchievementApiNames)
+                    : null,
                 AchievementUnlockedIconOverrides = AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
@@ -99,7 +117,13 @@ namespace PlayniteAchievements.Models.Settings
                 ExophaseSlugOverride = ExophaseSlugOverride,
                 NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
-                ManualLink = ManualLink?.Clone()
+                ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
+                ManualLink = ManualLink?.Clone(),
+                CustomAchievements = CustomAchievements != null
+                    ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null,
+                CustomProviderId = CustomProviderId,
+                CustomProvider = CustomProvider?.Clone()
             };
         }
     }

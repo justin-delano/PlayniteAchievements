@@ -36,7 +36,7 @@
 Playnite Achievements features include:
 
 * PC storefronts, RetroAchievements & emulator support
-  * [Steam](https://github.com/justin-delano/PlayniteAchievements/wiki/Steam), [GOG](https://github.com/justin-delano/PlayniteAchievements/wiki/GOG), [Epic Games Store](https://github.com/justin-delano/PlayniteAchievements/wiki/Epic), [Battle.net](https://github.com/justin-delano/PlayniteAchievements/wiki/BattleNet), [EA app](https://github.com/justin-delano/PlayniteAchievements/wiki/EA), [Game Jolt](https://github.com/justin-delano/PlayniteAchievements/wiki/GameJolt)
+  * [Steam](https://github.com/justin-delano/PlayniteAchievements/wiki/Steam), [GOG](https://github.com/justin-delano/PlayniteAchievements/wiki/GOG), [Epic Games Store](https://github.com/justin-delano/PlayniteAchievements/wiki/Epic), [Battle.net](https://github.com/justin-delano/PlayniteAchievements/wiki/BattleNet), [EA app](https://github.com/justin-delano/PlayniteAchievements/wiki/EA), [Game Jolt](https://github.com/justin-delano/PlayniteAchievements/wiki/GameJolt), [Riot Games](https://github.com/justin-delano/PlayniteAchievements/wiki/Riot)
   * [PlayStation Network](https://github.com/justin-delano/PlayniteAchievements/wiki/PSN), [Xbox Live](https://github.com/justin-delano/PlayniteAchievements/wiki/Xbox)
   * [RetroAchievements](https://github.com/justin-delano/PlayniteAchievements/wiki/RetroAchievements), [RPCS3](https://github.com/justin-delano/PlayniteAchievements/wiki/RPCS3), [ShadPS4](https://github.com/justin-delano/PlayniteAchievements/wiki/ShadPS4), [Xenia](https://github.com/justin-delano/PlayniteAchievements/wiki/Xenia)
   * [Final Fantasy XIV](https://github.com/justin-delano/PlayniteAchievements/wiki/Ffxiv)
@@ -233,15 +233,27 @@ See [Theme Migration](https://github.com/justin-delano/PlayniteAchievements/wiki
 
 PlayniteAchievements supports additional features when used with the following extensions:
 
-## UniPlaySong
+## Unlock sounds
 
-When [UniPlaySong](https://github.com/aHuddini/UniPlaySong) is installed, achievement notifications are accompanied by custom musical jingles. Themes can also take advantage of this to have their own custom consistent jingles.
+Unlock sounds are built in: each notification plays a sound for its rarity tier (or for hidden and capstone unlocks), with a volume slider and a per-tier file picker under Settings > Notifications. Themes can ship their own sounds by dropping `common`/`uncommon`/`rare`/`ultrarare`/`hidden`/`capstone` files into `PlayniteAchievements/Sounds/` in the theme folder; the UniPlaySong-era `audio/Achievements/` layout is still read. UniPlaySong is no longer involved: this plugin no longer sends it the unlock signal, so its achievement sounds stay silent even if it is still installed, and the first launch copies its volume and custom files into these settings.
 
 ## StartPage
 
 PlayniteAchievements tables and visualizations can be added to [StartPage](https://github.com/felixkmh/StartPage-for-Playnite), with their own separate customization, so you can create stunning dashboards like the example below:
 
 ![StartPage dashboard](Images/startpage.png)
+
+## Showcase dashboards
+
+Showcase is the third tab in the achievement Overview window. It provides one or more named 3×3 dashboard pages. Use **Edit layout** to select a block, then use the compact **Widget** and **Layout** menus or drag a widget to a highlighted move/swap target. Layout actions split or merge in any direction. A merge includes the smallest rectangular set of neighboring blocks and keeps the selected block's widget; any other widgets are deleted after confirmation. Page actions create blank, analytics, or collection templates; pages can also be duplicated, renamed, reordered, reset, and deleted. Controller bumpers move between pages.
+
+The responsive widget catalog includes Profile, Collection and Prestige Scores, Pie Charts, an optional Timeline, Overall Statistics, provider-native points, Pinned Achievements, Favorite Games, Icon Mosaic, and Screenshot Slideshow. Timeline is available from the gallery but is not included in any seeded layout. The slideshow uses the shared capture library and configured filename suffixes, watches the configured capture directories, ignores unreadable captures, and supports capture-variant filters, shuffle, interval, fit, pause, and navigation.
+
+Achievement and game row context menus include a **Pin to Showcase** submenu. Achievement pins and game pins each have their own named collections, and an item can belong to more than one collection. Choose an existing collection to toggle membership, use its pencil or trash action to rename or clear/delete it, or choose **New Collection…** to create a collection and pin the selected item immediately. Each pin type always has a protected Default collection: it can be renamed or cleared, but not deleted. Achievement pins use the Playnite game ID and achievement API name, retaining their last-known labels if source data becomes unavailable. Playnite's native library-game context menu does not add a Showcase pin entry; game pinning is available from PlayniteAchievements game-summary rows. Favorite Games can instead follow Playnite favorites.
+
+Pinned Achievements and Favorite Games widgets can be placed multiple times on Showcase pages and StartPage. Every placement owns its display mode, column layout, and selected pin collection. Icon Mosaic and Game Mosaic also expose a collection selector when their source is Pinned; Playnite Favorites sources ignore collections. Missing or deleted selections fall back to Default, and pin, unpin, reorder, rename, clear, and delete changes refresh all open Showcase and StartPage views.
+
+The same responsive widgets are available as individual StartPage views. Multiple instances keep their settings under the StartPage instance ID and remove those settings when the view is deleted. See the [Showcase and Pin Collections guide](https://github.com/justin-delano/PlayniteAchievements/wiki/Showcase-And-Pin-Collections) for the full workflow.
 
 ## Docs
 

@@ -53,7 +53,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
 
             if (!ok)
             {
-                Logger?.Warn($"[RA] {Name}: Not a Sega CD / Saturn image: {filePath}");
+                WarnOnce($"[RA] {Name}: Not a Sega CD / Saturn image: {filePath}");
                 return Array.Empty<string>();
             }
 
