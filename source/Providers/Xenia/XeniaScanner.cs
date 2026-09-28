@@ -232,6 +232,40 @@ namespace PlayniteAchievements.Providers.Xenia
 
             var candidatePaths = GetCandidateRomPaths(game);
 
+            // Try to find TitleID in file
+            foreach (var path in candidatePaths)
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                if (path.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
+                {
+                    var executionInfo = XeniaTitleIDExtractor.GetFromIsoFile(path);
+                    if (!string.IsNullOrEmpty(executionInfo.TitleIdHex))
+                    {
+                        //_logger.Debug($"Found TitleID: {executionInfo.TitleIdHex}");
+                        titleID = executionInfo.TitleIdHex;
+                        return true;
+                    }
+                }
+                else if (path.EndsWith(".xex", StringComparison.OrdinalIgnoreCase))
+                {
+                    var executionInfo = XeniaTitleIDExtractor.GetFromXexFile(path);
+                    if (!string.IsNullOrEmpty(executionInfo.TitleIdHex))
+                    {
+                        //_logger.Debug($"Found TitleID: {executionInfo.TitleIdHex}");
+                        titleID = executionInfo.TitleIdHex;
+                        return true;
+                    }
+                }
+                else
+                {
+                    _logger.Error("[Xenia] Unsupported ROM only .xex or .iso files are supported!");
+                }
+            }
+
             // Try to find game in recent.toml
             foreach (var path in candidatePaths)
             {
@@ -299,77 +333,7 @@ namespace PlayniteAchievements.Providers.Xenia
 
             }
 
-            // Try to find TitleID in file
-            int exeAreaSize = 300;
-            foreach (var path in candidatePaths)
-            {
-                if (!File.Exists(path))
-                {
-                    continue;
-                }
-
-                if (path.EndsWith(".iso") || path.EndsWith(".xex") || string.IsNullOrEmpty(Path.GetExtension(path)))
-                {
-                    var chunksize = 8 * 1024; // 8 KB buffer
-                    var buffer = new byte[chunksize];
-                    // Carries the tail of the previous read so a marker straddling a read boundary is still found
-                    var previousbuffer = new byte[chunksize];
-                    byte[] combinedbuffer = new byte[chunksize * 2];
-                    byte[] exeChunk = new byte[exeAreaSize];
-                    byte[] exeMarker = Encoding.UTF8.GetBytes(".exe");
-                    byte[] peMarker = Encoding.UTF8.GetBytes(".pe");
-
-                    // Playnite is a 32-bit process; the file must be streamed, never memory-mapped,
-                    // because a large contiguous view reservation exhausts virtual address space
-                    using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, chunksize, FileOptions.SequentialScan);
-
-                    int bytesRead;
-                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
-                        Array.Copy(buffer, 0, combinedbuffer, chunksize, bytesRead);
-
-                        var combinedLength = previousbuffer.Length + bytesRead;
-                        var foundexe = IndexOf(combinedbuffer, combinedLength, exeMarker);
-                        var foundpe = IndexOf(combinedbuffer, combinedLength, peMarker);
-
-                        if (foundexe >= exeAreaSize)
-                        {
-                            // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
-                            Array.Copy(combinedbuffer, foundexe - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                            var temptitleID = CheckChunk(ref exeChunk);
-                            if (!string.IsNullOrEmpty(temptitleID))
-                            {
-                                titleID = temptitleID;
-                                CacheTitleId(game.Id, temptitleID);
-                                return true;
-
-                            }
-                        }
-                        if (foundpe >= exeAreaSize)
-                        {
-                            Array.Copy(combinedbuffer, foundpe - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                            var temptitleID = CheckChunk(ref exeChunk);
-                            if (!string.IsNullOrEmpty(temptitleID))
-                            {
-                                titleID = temptitleID;
-                                CacheTitleId(game.Id, temptitleID);
-                                return true;
-                            }
-                        }
-
-                        Array.Clear(previousbuffer, 0, previousbuffer.Length);
-                        var tailCount = Math.Min(previousbuffer.Length, bytesRead);
-                        Array.Copy(buffer, bytesRead - tailCount, previousbuffer, previousbuffer.Length - tailCount, tailCount);
-                    }
-                }
-                else
-                {
-                    _logger.Error("[Xenia] Unsupported ROM only .xex, .iso, or extensionless package files are supported!");
-                }
-            }
+            
 
             titleID = "";
             return false;
