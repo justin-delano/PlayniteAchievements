@@ -11,7 +11,7 @@
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">成就</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Add">Add</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Add">添加</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">从统计摘要中排除</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">包含在统计摘要中</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">应用于所选</sys:String>
@@ -22,31 +22,31 @@
     <sys:String x:Key="LOCPlayAch_Common_Custom">自定义</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Transparent">透明</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Back">返回</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Color">Color</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Color">颜色</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">默认</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Delete">Delete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Delete">删除</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">取消全选</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Descending">降序</sys:String>
     <!-- Common_Desktop / Common_Fullscreen: bare names of Playnite's two modes (and their themes) -->
-    <sys:String x:Key="LOCPlayAch_Common_Desktop">Desktop</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Duplicate">Duplicate</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Desktop">桌面</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Duplicate">复制</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Edit">编辑</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Enabled">已启用</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_FilterAchievementsPlaceholder">搜索成就...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Fullscreen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_FilterAchievementsPlaceholder">筛选成就……</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">全屏</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_General">常规</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">隐藏</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Import">Import</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">API Key</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Import">导入</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">API 密钥</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">分类</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart; the options follow the label -->
-    <sys:String x:Key="LOCPlayAch_Common_Label_Granularity">Granularity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Granularity_Day">Day</sys:String>
-    <sys:String x:Key="LOCPlayAch_Granularity_Week">Week</sys:String>
-    <sys:String x:Key="LOCPlayAch_Granularity_Month">Month</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_Level">Level</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Granularity">颗粒度</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Day">日</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Week">周</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Month">月</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Level">等级</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Platform">平台</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_Platforms">Platforms</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Platforms">平台</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">运行时间</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Region">区域</sys:String>
     <sys:String x:Key="LOCPlayAch_Region_NorthAmerica">北美</sys:String>
@@ -63,19 +63,19 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">此游戏可能不支持成就，或成就数据在此平台上不可用。</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">未发现成就</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">未认证</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Redo">Redo</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Reorder">Reorder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Redo">重做</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Reorder">重排</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">重置已选</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">全选</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectedCountFormat">{0:N0}已选择</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">设置标签...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">设置标签……</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Disabled">已禁用</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">已链接</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_None">无</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Both">Both</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">未设置覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">未链接</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Undo">Undo</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Undo">撤销</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unknown">未知</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">已解锁</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">已解锁数量</sys:String>
@@ -89,13 +89,13 @@
     <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 年前</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">{0} 年前</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_NonNegativeInteger">输入大于等于 0 的整数，或留空。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidDateTime">Enter a valid date, or leave blank.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Validation_DateRangeOrder">The start date must be on or before the end date.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidDateTime">输入有效的日期，或留空。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Validation_DateRangeOrder">起始日期必须早于或与结束日期相同。</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">查看</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">已完成</sys:String>
     <!-- DateRange: tooltips of the From/To date pickers -->
-    <sys:String x:Key="LOCPlayAch_DateRange_From">From</sys:String>
-    <sys:String x:Key="LOCPlayAch_DateRange_To">To</sys:String>
+    <sys:String x:Key="LOCPlayAch_DateRange_From">自</sys:String>
+    <sys:String x:Key="LOCPlayAch_DateRange_To">至</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Pair">{0} · {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_ApplyConfirm">Apply preset &quot;{0}&quot;? This replaces this tab's appearance for the current selection, including any custom template.</sys:String>
