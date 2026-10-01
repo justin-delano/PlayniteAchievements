@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Providers.BattleNet
     {
         private const string WowProfileScope = "wow.profile";
         private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
+        private static readonly TimeSpan SilentAuthTimeout = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan TokenExpiryBuffer = TimeSpan.FromMinutes(2);
 
         private readonly IPlayniteAPI _api;
@@ -55,12 +56,13 @@ namespace PlayniteAchievements.Providers.BattleNet
             try
             {
                 settings = ProviderRegistry.Settings<BattleNetSettings>();
-                if (HasFreshToken(settings))
+                if (HasFreshToken(settings) ||
+                    await TryRenewFromSessionAsync(settings, ct).ConfigureAwait(false))
                 {
                     return settings.BattleNetAccessToken;
                 }
 
-                ClearTokenState(settings, persistToDisk: true);
+                ClearTokenState(settings);
             }
             finally
             {
@@ -82,8 +84,21 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 if (!HasFreshToken(settings))
                 {
-                    ClearTokenState(settings, persistToDisk: true);
-                    return AuthProbeResult.NotAuthenticated();
+                    await _tokenSemaphore.WaitAsync(ct).ConfigureAwait(false);
+                    try
+                    {
+                        settings = ProviderRegistry.Settings<BattleNetSettings>();
+                        if (!HasFreshToken(settings) &&
+                            !await TryRenewFromSessionAsync(settings, ct).ConfigureAwait(false))
+                        {
+                            ClearTokenState(settings);
+                            return AuthProbeResult.NotAuthenticated();
+                        }
+                    }
+                    finally
+                    {
+                        _tokenSemaphore.Release();
+                    }
                 }
 
                 var userInfo = await _apiClient.GetUserInfoAsync(
@@ -139,7 +154,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
                 else
                 {
-                    ClearTokenState(settings, persistToDisk: true);
+                    ClearSignInState(settings);
                 }
 
                 progress?.Report(AuthProgressStep.OpeningLoginWindow);
@@ -170,21 +185,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
 
                 progress?.Report(AuthProgressStep.VerifyingSession);
-                var token = await _apiClient.ExchangeAuthorizationCodeAsync(
-                    GetApiRegion(settings),
-                    settings.BattleNetClientId,
-                    settings.BattleNetClientSecret,
-                    authorizationCode,
-                    settings.BattleNetRedirectUri,
-                    ct).ConfigureAwait(false);
-
-                PersistToken(settings, token);
-
-                var userInfo = await _apiClient.GetUserInfoAsync(
-                    GetApiRegion(settings),
-                    settings.BattleNetAccessToken,
-                    ct).ConfigureAwait(false);
-                PersistUserInfo(settings, userInfo);
+                var userInfo = await AuthenticateUsingAuthCodeAsync(settings, authorizationCode, ct).ConfigureAwait(false);
 
                 progress?.Report(AuthProgressStep.Completed);
                 return AuthProbeResult.Authenticated(userInfo?.Sub, settings.BattleNetTokenExpiryUtc, windowOpened);
@@ -205,7 +206,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         public void ClearSession()
         {
             var settings = ProviderRegistry.Settings<BattleNetSettings>();
-            ClearTokenState(settings, persistToDisk: true);
+            ClearSignInState(settings);
 
             _api.DeleteDomainCookies(
                 _logger,
@@ -214,6 +215,141 @@ namespace PlayniteAchievements.Providers.BattleNet
                 ".battle.net",
                 "blizzard.com",
                 ".blizzard.com");
+        }
+
+        /// <summary>
+        /// Renews an expired access token without a window. Battle.net issues no refresh token, but
+        /// its authorize endpoint redirects a signed-in user who already approved the client straight
+        /// to the redirect URI, so the browser session yields a new authorization code.
+        /// Callers hold <see cref="_tokenSemaphore"/>.
+        /// </summary>
+        private async Task<bool> TryRenewFromSessionAsync(BattleNetSettings settings, CancellationToken ct)
+        {
+            if (!HasOAuthSetup(settings) || string.IsNullOrWhiteSpace(settings.BattleNetAccountId))
+            {
+                return false;
+            }
+
+            try
+            {
+                var authorizationCode = await TryGetAuthorizationCodeFromSessionAsync(settings, ct).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(authorizationCode))
+                {
+                    _logger?.Info("[BattleNetAuth] Browser session ended; sign-in required.");
+                    return false;
+                }
+
+                await AuthenticateUsingAuthCodeAsync(settings, authorizationCode, ct).ConfigureAwait(false);
+                if (!HasFreshToken(settings))
+                {
+                    return false;
+                }
+
+                _logger?.Info("[BattleNetAuth] Access token renewed from the browser session.");
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "[BattleNetAuth] Access token renewal from the browser session failed.");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Loads the authorization URL in an offscreen view and returns the code from the redirect,
+        /// or null when the browser session does not redirect (for example, it shows a login page).
+        /// </summary>
+        private async Task<string> TryGetAuthorizationCodeFromSessionAsync(BattleNetSettings settings, CancellationToken ct)
+        {
+            var state = Guid.NewGuid().ToString("N");
+            var authorizationUrl = BattleNetApiClient.BuildAuthorizationUrl(
+                GetApiRegion(settings),
+                settings.BattleNetClientId,
+                settings.BattleNetRedirectUri,
+                state,
+                WowProfileScope);
+            var callbackTcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            string callback;
+            using (LoopbackCallbackListener.TryStart(
+                settings.BattleNetRedirectUri,
+                _logger,
+                ct,
+                address => callbackTcs.TrySetResult(address)))
+            {
+                callback = await _api.WithOffscreenViewAsync(async view =>
+                {
+                    EventHandler<WebViewLoadingChangedEventArgs> loadingChanged = (sender, args) =>
+                    {
+                        var address = SafeGetCurrentAddress(view);
+                        if (IsAuthorizationCallback(address, settings.BattleNetRedirectUri))
+                        {
+                            callbackTcs.TrySetResult(address);
+                        }
+                    };
+
+                    view.LoadingChanged += loadingChanged;
+                    try
+                    {
+                        view.Navigate(authorizationUrl);
+                        var completed = await Task.WhenAny(callbackTcs.Task, Task.Delay(SilentAuthTimeout, ct));
+                        return completed == callbackTcs.Task ? callbackTcs.Task.Result : null;
+                    }
+                    finally
+                    {
+                        view.LoadingChanged -= loadingChanged;
+                    }
+                }).ConfigureAwait(false);
+            }
+
+            ct.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(callback))
+            {
+                return null;
+            }
+
+            var callbackUri = new Uri(callback);
+            if (!string.Equals(state, GetQueryParam(callbackUri.Query, "state"), StringComparison.Ordinal))
+            {
+                _logger?.Warn("[BattleNetAuth] OAuth callback state did not match.");
+                return null;
+            }
+
+            var error = GetQueryParam(callbackUri.Query, "error");
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _logger?.Info($"[BattleNetAuth] OAuth callback returned error: {error}");
+                return null;
+            }
+
+            return GetQueryParam(callbackUri.Query, "code");
+        }
+
+        private async Task<BattleNetUserInfoResponse> AuthenticateUsingAuthCodeAsync(
+            BattleNetSettings settings,
+            string authorizationCode,
+            CancellationToken ct)
+        {
+            var token = await _apiClient.ExchangeAuthorizationCodeAsync(
+                GetApiRegion(settings),
+                settings.BattleNetClientId,
+                settings.BattleNetClientSecret,
+                authorizationCode,
+                settings.BattleNetRedirectUri,
+                ct).ConfigureAwait(false);
+
+            PersistToken(settings, token);
+
+            var userInfo = await _apiClient.GetUserInfoAsync(
+                GetApiRegion(settings),
+                settings.BattleNetAccessToken,
+                ct).ConfigureAwait(false);
+            PersistUserInfo(settings, userInfo);
+            return userInfo;
         }
 
         private Task<string> CaptureAuthorizationCallbackAsync(
@@ -631,24 +767,43 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
-        private static void ClearTokenState(BattleNetSettings settings, bool persistToDisk)
+        /// <summary>
+        /// Drops an expired access token but keeps the account, so a later probe can renew the
+        /// token from the browser session.
+        /// </summary>
+        private static void ClearTokenState(BattleNetSettings settings)
         {
             if (settings == null)
             {
                 return;
             }
 
+            ResetTokenFields(settings);
+            ProviderRegistry.Write(settings, persistToDisk: true);
+        }
+
+        /// <summary>
+        /// Signs out: drops the access token and the account.
+        /// </summary>
+        private static void ClearSignInState(BattleNetSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            ResetTokenFields(settings);
+            settings.BattleNetAccountId = null;
+            settings.BattleNetBattleTag = null;
+            ProviderRegistry.Write(settings, persistToDisk: true);
+        }
+
+        private static void ResetTokenFields(BattleNetSettings settings)
+        {
             settings.BattleNetAccessToken = null;
             settings.BattleNetRefreshToken = null;
             settings.BattleNetTokenType = null;
             settings.BattleNetTokenExpiryUtc = DateTime.MinValue;
-            settings.BattleNetAccountId = null;
-            settings.BattleNetBattleTag = null;
-
-            if (persistToDisk)
-            {
-                ProviderRegistry.Write(settings, persistToDisk: true);
-            }
         }
 
         private static bool HasFreshToken(BattleNetSettings settings)
