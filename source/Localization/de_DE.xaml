@@ -115,7 +115,7 @@
     <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestigewertung</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_LevelInTier">Level in tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Maximalstufe erreicht</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_MasteryFormat">Mastery {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_MasteryFormat">Meisterschaft {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} bis {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">Wertungssystem</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Sammel- und Prestigewertung</sys:String>
@@ -309,8 +309,8 @@ Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeichert
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">Rename categories, choose category images, and drag categories to reorder them. Drop a category onto the middle of another to make it a subcategory, and right-click a row for more actions.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Zielkategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Diese Kategorie mit einer anderen zusammenführen und Erfolge verschieben.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryEllipsis">New Category…</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryHint">Enter a name for the new category.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryEllipsis">Neue Kategorie...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryHint">Bezeichnung für Kategorie eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">Neue Kategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Diese Kategoriegrafik als Spielegrafik in Übersichtstabellen verwenden. Erneut klicken zum Entfernen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Tab_Assign">Erfolgszuweisung</sys:String>
@@ -351,11 +351,11 @@ Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeichert
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoSelection">Select a custom achievement row.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">Progress Total</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressNum">Fortschritt</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderEditorTitle">Custom Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderEditorTitle">Angepasste Plattform</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm">Delete &quot;{0}&quot;? {1} other game(s) use this platform and will show as Custom.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">Changes to this platform apply to every game assigned to it.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor">Enter a valid color such as #FF652C.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderNewName">New Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderNewName">Neue Plattform</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid">This file could not be read as an SVG image.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes">No drawable shapes were found in this SVG file.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ResetConfirm">Reset all achievement customization for this game?
@@ -746,7 +746,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_LinePadding">Zeilenabstand</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_CardPaddingLeft">Abstand links</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_CardPaddingRight">Abstand rechts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_FitCardToImage">Fit card to image</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_FitCardToImage">Karte an Bild anpassen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TitleLineOffset">Name line offset</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FrameVignette">Vignette</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_VignetteFull">Vollständig</sys:String>
