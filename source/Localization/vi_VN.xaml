@@ -11,7 +11,7 @@
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Thành tựu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Add">Add</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Add">Thêm</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Loại trừ khỏi thống kê</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Bao gồm trong thống kê</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Áp dụng cho các mục được chọn</sys:String>
@@ -22,9 +22,9 @@
     <sys:String x:Key="LOCPlayAch_Common_Custom">Tuỳ chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Transparent">Trong suốt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Back">Quay lại</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Color">Color</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Color">Màu sắc</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Mặc định</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Delete">Delete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Delete">Xoá</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Bỏ chọn tất cả</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Descending">Giảm dần</sys:String>
     <!-- Common_Desktop / Common_Fullscreen: bare names of Playnite's two modes (and their themes) -->
@@ -36,7 +36,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Toàn màn hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_General">Chung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Ẩn</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Import">Import</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Import">Nhập</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">API Key</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">Danh mục</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart; the options follow the label -->
