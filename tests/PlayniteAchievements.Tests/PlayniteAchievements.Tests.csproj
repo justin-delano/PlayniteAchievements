@@ -627,6 +627,13 @@
     <Compile Include="..\..\source\Services\UI\UnlockSoundResolver.cs" Link="Source\Services\UI\UnlockSoundResolver.cs" />
     <Compile Include="..\..\source\Services\Sound\UnlockSoundPortableStore.cs" Link="Source\Services\Sound\UnlockSoundPortableStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\ThemePackPortableStore.cs" Link="Source\Services\Workshop\ThemePackPortableStore.cs" />
+    <Compile Include="..\..\source\Common\HttpClientFactory.cs" Link="Source\Common\HttpClientFactory.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopModels.cs" Link="Source\Services\Workshop\WorkshopModels.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopClient.cs" Link="Source\Services\Workshop\WorkshopClient.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopInstalledRegistry.cs" Link="Source\Services\Workshop\WorkshopInstalledRegistry.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopGameMatcher.cs" Link="Source\Services\Workshop\WorkshopGameMatcher.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopSubmissionClient.cs" Link="Source\Services\Workshop\WorkshopSubmissionClient.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopUndoStore.cs" Link="Source\Services\Workshop\WorkshopUndoStore.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
