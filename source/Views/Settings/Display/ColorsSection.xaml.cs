@@ -20,6 +20,7 @@ using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Settings;
 using PlayniteAchievements.Views.Dialogs;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Display
 {
@@ -279,6 +280,14 @@ namespace PlayniteAchievements.Views.Settings.Display
         /// <summary>Writes the current colors (rarity, provider, resource overrides) to a .pacolors file.</summary>
         private void ExportColors_Click(object sender, RoutedEventArgs e)
         {
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => ExportColorsFile_Click(sender, e),
+                () => _plugin.OpenWorkshopShare(WorkshopItemKind.Colors, Window.GetWindow(this)));
+        }
+
+        private void ExportColorsFile_Click(object sender, RoutedEventArgs e)
+        {
             var persisted = _settings?.Persisted;
             var store = _plugin?.ColorPackPortableStore;
             if (persisted == null || store == null)
@@ -313,6 +322,14 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         /// <summary>Replaces the current colors with a .pacolors file's, then refreshes the live resources.</summary>
         private void ImportColors_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenImport(
+                sender as Button,
+                () => ImportColorsFile_Click(sender, e),
+                () => _plugin.OpenWorkshopWindow(focusKind: WorkshopItemKind.Colors));
+        }
+
+        private void ImportColorsFile_Click(object sender, RoutedEventArgs e)
         {
             var persisted = _settings?.Persisted;
             var store = _plugin?.ColorPackPortableStore;
@@ -352,6 +369,14 @@ namespace PlayniteAchievements.Views.Settings.Display
         /// notification parts carry the installed global custom templates when there are any.
         /// </summary>
         private void ExportTheme_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => ExportThemeFile_Click(sender, e),
+                () => _plugin.OpenWorkshopShare(WorkshopItemKind.Theme, Window.GetWindow(this)));
+        }
+
+        private void ExportThemeFile_Click(object sender, RoutedEventArgs e)
         {
             var persisted = _settings?.Persisted;
             var store = _plugin?.ThemePackPortableStore;
@@ -402,7 +427,15 @@ namespace PlayniteAchievements.Views.Settings.Display
         /// Applies a .patheme bundle's chosen parts to the global settings, then persists and
         /// refreshes the application resources so the new look shows at once.
         /// </summary>
-        private async void ImportTheme_Click(object sender, RoutedEventArgs e)
+        private void ImportTheme_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenImport(
+                sender as Button,
+                () => ImportThemeFile_Click(sender, e),
+                () => _plugin.OpenWorkshopWindow(focusKind: WorkshopItemKind.Theme));
+        }
+
+        private async void ImportThemeFile_Click(object sender, RoutedEventArgs e)
         {
             var persisted = _settings?.Persisted;
             var store = _plugin?.ThemePackPortableStore;
