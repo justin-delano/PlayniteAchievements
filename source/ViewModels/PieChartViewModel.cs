@@ -61,6 +61,7 @@ namespace PlayniteAchievements.ViewModels
         private OverviewPieSmallSliceMode _smallSliceMode = OverviewPieSmallSliceMode.Round;
         private bool _includeLocked = true;
         private bool _showCenterPercentageRequested = true;
+        private bool _showIcons = true;
         private int _exactUnlockedCount;
         private int _exactTotalCount;
         private bool _alwaysShowSmallSliceIcons;
@@ -110,6 +111,16 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool ShowCenterPercentage => _showCenterPercentageRequested && _includeLocked;
+
+        /// <summary>
+        /// Whether the radial icons are drawn around the slices. A render-only flag: the slices
+        /// and legend are unaffected.
+        /// </summary>
+        public bool ShowIcons
+        {
+            get => _showIcons;
+            set => SetValue(ref _showIcons, value);
+        }
 
         public int ExactUnlockedCount
         {
