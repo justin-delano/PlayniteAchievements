@@ -165,6 +165,7 @@ namespace PlayniteAchievements.Views.Workshop
 
             dialog.RequestClose += (s, args) => window.Close();
             window.ShowDialog();
+            dialog.Cleanup();
             ViewModel.OnShared();
         }
     }

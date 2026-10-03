@@ -3,6 +3,7 @@ using PlayniteAchievements.Services.Workshop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -31,6 +32,7 @@ namespace PlayniteAchievements.Views.Workshop
         private readonly WorkshopShareService _share;
         private readonly WorkshopInstalledRegistry _registry;
         private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
+        private string _previewScratch;
         private bool _busy;
 
         public WorkshopShareDialog()
@@ -55,6 +57,15 @@ namespace PlayniteAchievements.Views.Workshop
             CandidateLabel.Text = candidate.Label;
             NameBox.Text = candidate.DefaultName ?? string.Empty;
             AuthorBox.Text = registry.DisplayName ?? string.Empty;
+
+            // Where the plugin can draw the thing itself (toast, frame, theme), start with that
+            // render; the user can still browse for a different image.
+            _previewScratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopPreview", Guid.NewGuid().ToString("N"));
+            var rendered = new WorkshopPreviewRenderer(plugin, logger).TryRender(candidate.Kind, _previewScratch);
+            if (rendered != null)
+            {
+                PreviewBox.Text = rendered;
+            }
 
             // Earlier submissions of the same kind whose Workshop id is known can be updated.
             var options = registry.Submissions
@@ -199,6 +210,22 @@ namespace PlayniteAchievements.Views.Workshop
         {
             _cancel.Cancel();
             RequestClose?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>Removes the rendered preview scratch folder; called by the host when the window closes.</summary>
+        public void Cleanup()
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(_previewScratch) && Directory.Exists(_previewScratch))
+                {
+                    Directory.Delete(_previewScratch, recursive: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed cleaning the Workshop preview scratch folder.");
+            }
         }
     }
 }
