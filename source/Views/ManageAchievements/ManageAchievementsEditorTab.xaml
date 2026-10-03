@@ -46,7 +46,8 @@
             <!-- The row actions as glyphs, so the toolbar leaves room for the header beside it on a
                  narrow window. The label moves to the tooltip, which a disabled button still shows.
                  Codepoints are IcoFont glyph names read from Playnite's shipped icofont.ttf: undo,
-                 redo, plus, copy, history, trash, download, upload. -->
+                 redo, plus, copy, history, trash, download, upload-alt. (upload proper is a drive
+                 with indicator dots on one side, so it reads off-center beside download.) -->
             <Style x:Key="ToolbarIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
                 <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}" />
                 <Setter Property="FontSize" Value="16" />
@@ -315,18 +316,17 @@
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
                             Margin="12,0,0,0">
-                    <!-- Three groups: row edits, transfer, and the destructive reset kept apart on the right. -->
-                    <WrapPanel HorizontalAlignment="Right">
-                    <!-- The history, in a group of its own rather than at the head of the row of
-                         per-achievement actions. It applies to everything in this tab, not only
-                         to those, and the second row below centres under that row - counting
-                         these two would push it off the buttons it belongs under.
+                    <!-- Two rows, both right-aligned. The first is icons: the history, the actions
+                         on the selected achievements, and transfer, in groups. The second is the
+                         text buttons that rewrite the whole list, with the destructive reset kept
+                         apart at the end.
 
-                         Disabled rather than hidden when there is nothing to undo, like the other
-                         conditional buttons here: hiding them would reflow the row as the user
-                         works. The tooltip names the edit, since the label cannot. -->
+                         The history applies to everything in this tab, not only the selection, so
+                         it is its own group. Disabled rather than hidden when there is nothing to
+                         undo, like the other conditional buttons here: hiding them would reflow the
+                         row as the user works. The tooltip names the edit. -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal"
-                                VerticalAlignment="Top"
                                 Margin="0,0,16,0">
                         <Button x:Name="UndoButton"
                                 Content="&#xEE0B;"
@@ -340,8 +340,7 @@
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                     </StackPanel>
 
-                    <StackPanel Margin="0,0,16,0">
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
                         <Button x:Name="AddButton"
                                 Content="&#xEFC2;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Add}"
@@ -363,33 +362,14 @@
                                 Command="{Binding DeleteCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                     </StackPanel>
-                        <!-- Second row: the shortcuts that rewrite one facet of the list, kept
-                             off the row of per-achievement actions and centered under the group
-                             they sit beneath. -->
-                        <WrapPanel HorizontalAlignment="Center">
-                            <Button x:Name="AutoCapstoneButton"
-                                    Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_AutoCapstone}"
-                                    ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Custom_AutoCapstoneHint}"
-                                    Command="{Binding AutoCapstoneCommand}"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    Margin="0,0,0,8" />
-                            <Button x:Name="ResetOrderButton"
-                                    Content="{DynamicResource LOCPlayAch_ManageAchievements_Order_Reset}"
-                                    Command="{Binding ResetOrderCommand}"
-                                    Style="{StaticResource ToolbarButtonStyle}"
-                                    Margin="0,0,0,8" />
-                        </WrapPanel>
-                    </StackPanel>
-                    <!-- Top of the line, not stretched down it: the group beside these carries a
-                         second row, and a wrap panel would otherwise give every item that height. -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal">
                         <Button x:Name="ImportFileButton"
                                 Content="&#xEF08;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Import}"
                                 Command="{Binding ImportFileCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="ExportButton"
-                                Content="&#xF01D;"
+                                Content="&#xF01C;"
                                 ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                 Click="ContextMenuButton_Click"
                                 Style="{StaticResource ToolbarIconButtonStyle}">
@@ -406,14 +386,25 @@
                             </Button.ContextMenu>
                         </Button>
                     </StackPanel>
-                    <Button x:Name="ResetButton"
-                            VerticalAlignment="Top"
-                            Content="{DynamicResource LOCPlayAch_Button_ResetAll}"
-                            ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ResetHint}"
-                            Command="{Binding ResetCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"
-                            Margin="0,0,0,8" />
-                    </WrapPanel>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="AutoCapstoneButton"
+                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_AutoCapstone}"
+                                ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Custom_AutoCapstoneHint}"
+                                Command="{Binding AutoCapstoneCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}" />
+                        <Button x:Name="ResetOrderButton"
+                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Order_Reset}"
+                                Command="{Binding ResetOrderCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}"
+                                Margin="0,0,24,8" />
+                        <Button x:Name="ResetButton"
+                                Content="{DynamicResource LOCPlayAch_Button_ResetAll}"
+                                ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ResetHint}"
+                                Command="{Binding ResetCommand}"
+                                Style="{StaticResource ToolbarButtonStyle}" />
+                    </StackPanel>
 
                 </StackPanel>
             </Grid>
