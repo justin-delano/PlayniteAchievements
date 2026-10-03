@@ -1703,6 +1703,21 @@ namespace PlayniteAchievements.Services.Achievements
         }
 
         /// <summary>
+        /// A Playnite-owned field that decides summary membership (Hidden) changed for these
+        /// games. Nothing in the achievement cache moved, so no store event reaches the memo;
+        /// marking the games dirty makes the next read re-run the exclusion for them.
+        /// </summary>
+        public void InvalidateSummariesForPlayniteGames(IReadOnlyList<Guid> gameIds)
+        {
+            if (gameIds == null || gameIds.Count == 0)
+            {
+                return;
+            }
+
+            InvalidateOverviewProjectionCaches(gameIds);
+        }
+
+        /// <summary>
         /// Drops the memoized overview summaries. With <paramref name="changedGameIds"/> the
         /// unbounded entry is instead marked dirty for those games, so the next read patches
         /// their contribution rather than re-running five whole-library queries. Passing null --
