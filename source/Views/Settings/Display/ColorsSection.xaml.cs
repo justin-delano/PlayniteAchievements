@@ -276,6 +276,77 @@ namespace PlayniteAchievements.Views.Settings.Display
             ApplyRarityPalette(new RarityPalettePreset("Default", RarityColorSettings.CreateDefault(), null));
         }
 
+        /// <summary>Writes the current colors (rarity, provider, resource overrides) to a .pacolors file.</summary>
+        private void ExportColors_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ColorPackPortableStore;
+            if (persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = ColorPackPortableStore.BuildFileDialogFilter(),
+                    AddExtension = true,
+                    DefaultExt = ColorPackPortableStore.PackageFileExtension,
+                    FileName = "colors" + ColorPackPortableStore.PackageFileExtension
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                store.Export(persisted, ColorPackPortableStore.NormalizeExportPath(dialog.FileName));
+                ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed exporting colors.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>Replaces the current colors with a .pacolors file's, then refreshes the live resources.</summary>
+        private void ImportColors_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ColorPackPortableStore;
+            if (persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = ColorPackPortableStore.BuildFileDialogFilter(),
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                store.Import(dialog.FileName, persisted);
+                _plugin.PersistSettingsForUi();
+                RefreshAppearanceEditorFromPersisted();
+                ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed importing colors.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
         /// <summary>
         /// Writes the global look as a .patheme bundle. The user picks which parts travel; the
         /// notification parts carry the installed global custom templates when there are any.

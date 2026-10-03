@@ -85,10 +85,27 @@
                                         MinWidth="78"
                                         Click="ResetAllRarityColors_Click"/>
 
-                                <!-- The whole global look as one .patheme bundle: colors, unlock
-                                     sounds, notification and frame styles, any subset. -->
+                                <!-- The colors alone (rarity, provider, resource overrides) as a
+                                     .pacolors file. -->
                                 <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                         Margin="16,0,0,0"
+                                        MinWidth="58"
+                                        Click="ExportColors_Click"/>
+
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
+                                        Margin="8,0,0,0"
+                                        MinWidth="58"
+                                        Click="ImportColors_Click"/>
+                              </StackPanel>
+                            </controls:SettingRow>
+
+                            <!-- The whole global look as one .patheme bundle: colors, unlock
+                                 sounds, notification and frame styles, any subset, each a
+                                 checkbox on export and on import. -->
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Workshop_Share_Theme}"
+                                                 Margin="0">
+                              <StackPanel Orientation="Horizontal">
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                         MinWidth="58"
                                         Click="ExportTheme_Click"/>
 
