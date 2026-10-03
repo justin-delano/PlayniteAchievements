@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace PlayniteAchievements.Services.Notifications
 {
     /// <summary>
-    /// A named notification appearance preset on disk. The file is a standard
-    /// <c>.pastyle</c> package; the surface it captures is encoded by the folder it lives
-    /// in and the display name is the file name minus the package extension.
+    /// A named notification appearance preset on disk. The file is a standard surface package
+    /// (<c>.panotif</c> or <c>.paframe</c>); the surface it captures is encoded by the folder it
+    /// lives in and the display name is the file name minus the package extension.
     /// </summary>
     public sealed class NotificationStylePresetInfo
     {
@@ -33,12 +33,14 @@ namespace PlayniteAchievements.Services.Notifications
     }
 
     /// <summary>
-    /// Stores named per-surface appearance presets as self-contained <c>.pastyle</c>
-    /// packages under <c>notification_style_presets\toast</c> and <c>...\frame</c> in the
-    /// plugin's user data folder. Each preset carries one surface's style plus its bundled
-    /// images and optional custom template; packaging and image re-materialization are
-    /// delegated to <see cref="NotificationStylePortableStore"/>, so a preset file is also a
-    /// valid style package for the regular import/export flow.
+    /// Stores named per-surface appearance presets as self-contained surface packages
+    /// (<c>.panotif</c> under <c>notification_style_presets\toast</c>, <c>.paframe</c> under
+    /// <c>...\frame</c>) in the plugin's user data folder. Each preset carries one surface's
+    /// style plus its bundled images and optional custom template; packaging and image
+    /// re-materialization are delegated to <see cref="NotificationStylePortableStore"/>, so a
+    /// preset file is also a valid style package for the regular import/export flow. Presets
+    /// saved by earlier versions as <c>.pastyle</c> are renamed to the surface extension the
+    /// first time they are listed.
     /// </summary>
     public sealed class NotificationStylePresetStore
     {
@@ -73,6 +75,7 @@ namespace PlayniteAchievements.Services.Notifications
                 return Array.Empty<NotificationStylePresetInfo>();
             }
 
+            MigrateLegacyExtensions(directory, isFrame);
             return Directory.EnumerateFiles(directory)
                 .Where(NotificationStylePortableStore.IsPackagePath)
                 .Select(path => new NotificationStylePresetInfo(GetPresetName(path), path, isFrame))
@@ -198,7 +201,46 @@ namespace PlayniteAchievements.Services.Notifications
         {
             return Path.Combine(
                 GetSurfaceDirectory(isFrame),
-                sanitizedName + NotificationStylePortableStore.PackageFileExtension);
+                sanitizedName + NotificationStylePortableStore.SurfaceExtension(isFrame));
+        }
+
+        /// <summary>
+        /// Renames presets written with the retired <c>.pastyle</c> (or <c>.pastyle.zip</c>)
+        /// extension to the surface's own extension. The folder already says which surface a
+        /// preset is, so the rename changes nothing about how it is read; it only makes the
+        /// surface extension the one spelling on disk. A name clash leaves the old file alone.
+        /// </summary>
+        private static void MigrateLegacyExtensions(string directory, bool isFrame)
+        {
+            var target = NotificationStylePortableStore.SurfaceExtension(isFrame);
+            foreach (var path in Directory.EnumerateFiles(directory).ToList())
+            {
+                var fileName = Path.GetFileName(path);
+                if (fileName == null ||
+                    (!fileName.EndsWith(NotificationStylePortableStore.LegacyPackageFileExtension, StringComparison.OrdinalIgnoreCase) &&
+                     !fileName.EndsWith(NotificationStylePortableStore.LegacyPackageFileExtension + ".zip", StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var renamed = Path.Combine(directory, NotificationStylePortableStore.StripRecognizedSuffix(fileName) + target);
+                if (File.Exists(renamed))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    File.Move(path, renamed);
+                }
+                catch (IOException)
+                {
+                    // Locked or otherwise unmovable: listed under its old name, still importable.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
         }
 
         private static string GetPresetName(string filePath)
