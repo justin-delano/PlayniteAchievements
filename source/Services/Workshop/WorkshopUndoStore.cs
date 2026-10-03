@@ -49,6 +49,8 @@ namespace PlayniteAchievements.Services.Workshop
     {
         public const int MaxEntries = 10;
 
+        private static int _sequence;
+
         private readonly string _directory;
         private readonly ILogger _logger;
         private readonly object _sync = new object();
@@ -93,7 +95,10 @@ namespace PlayniteAchievements.Services.Workshop
                     }
                 }
 
-                return entries.OrderByDescending(entry => entry.CreatedUtc).ToList();
+                return entries
+                    .OrderByDescending(entry => entry.CreatedUtc)
+                    .ThenByDescending(entry => entry.Id, StringComparer.Ordinal)
+                    .ToList();
             }
         }
 
@@ -108,9 +113,12 @@ namespace PlayniteAchievements.Services.Workshop
                 return null;
             }
 
+            // The id sorts chronologically as text: a timestamp plus a per-process sequence, so
+            // snapshots taken within the same millisecond still order and trim correctly.
             var entry = new WorkshopUndoEntry
             {
-                Id = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N").Substring(0, 6),
+                Id = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" +
+                     System.Threading.Interlocked.Increment(ref _sequence).ToString("D6"),
                 ItemId = itemId,
                 ItemName = itemName,
                 CreatedUtc = DateTime.UtcNow,
@@ -255,8 +263,9 @@ namespace PlayniteAchievements.Services.Workshop
 
         private void Trim()
         {
+            // Ids sort chronologically as text (see Snapshot), which file times cannot promise.
             var files = new DirectoryInfo(_directory).GetFiles("*.json")
-                .OrderByDescending(file => file.LastWriteTimeUtc)
+                .OrderByDescending(file => file.Name, StringComparer.Ordinal)
                 .Skip(MaxEntries);
             foreach (var file in files)
             {
