@@ -3435,12 +3435,20 @@ namespace PlayniteAchievements.Views.Showcase
                 Localize("LOCPlayAch_Showcase_RenamePage"),
                 RenameCurrentPage));
             menu.Items.Add(new Separator());
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ExportPage"),
-                ExportCurrentPage));
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ImportPage"),
-                ImportPageFromFile));
+            var exportPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ExportPage") };
+            foreach (var item in Helpers.WorkshopMenus.ExportItems(ExportCurrentPage, SharePageToWorkshop))
+            {
+                exportPage.Items.Add(item);
+            }
+
+            menu.Items.Add(exportPage);
+            var importPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ImportPage") };
+            foreach (var item in Helpers.WorkshopMenus.ImportItems(ImportPageFromFile, ImportPageFromWorkshop))
+            {
+                importPage.Items.Add(item);
+            }
+
+            menu.Items.Add(importPage);
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_MovePageLeft"),
@@ -3612,6 +3620,26 @@ namespace PlayniteAchievements.Views.Showcase
 
         // Writes the current page to a .pashowcase package: layout and appearance only, no pin
         // collections or control-bar filter state, and of a profile card only its background.
+        private void SharePageToWorkshop()
+        {
+            var page = CurrentPage;
+            if (page == null)
+            {
+                return;
+            }
+
+            PlayniteAchievementsPlugin.Instance?.OpenWorkshopShare(
+                Services.Workshop.WorkshopItemKind.ShowcasePage,
+                Window.GetWindow(this),
+                pageId: page.PageId);
+        }
+
+        private void ImportPageFromWorkshop()
+        {
+            PlayniteAchievementsPlugin.Instance?.OpenWorkshopWindow(
+                focusKind: Services.Workshop.WorkshopItemKind.ShowcasePage);
+        }
+
         private void ExportCurrentPage()
         {
             var page = CurrentPage;
