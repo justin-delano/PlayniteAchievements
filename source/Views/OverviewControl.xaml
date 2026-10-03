@@ -995,6 +995,7 @@
                                                                       ExactUnlockedCount="{Binding GamesPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding GamesPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding GamesPieChart.ShowCenterPercentage}"
+                                                                      ShowIcons="{Binding GamesPieChart.ShowIcons}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnGamesPieChartSliceClick"/>
                                 </Grid>
@@ -1023,6 +1024,7 @@
                                                                       ExactUnlockedCount="{Binding ProviderPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding ProviderPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding ProviderPieChart.ShowCenterPercentage}"
+                                                                      ShowIcons="{Binding ProviderPieChart.ShowIcons}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnProviderPieChartSliceClick"/>
                                 </Grid>
@@ -1050,6 +1052,7 @@
                                                                       ExactUnlockedCount="{Binding RarityPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding RarityPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding RarityPieChart.ShowCenterPercentage}"
+                                                                      ShowIcons="{Binding RarityPieChart.ShowIcons}"
                                                                       IconOffset="12"/>
                                 </Grid>
 
@@ -1076,6 +1079,7 @@
                                                                       ExactUnlockedCount="{Binding TrophyPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding TrophyPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding TrophyPieChart.ShowCenterPercentage}"
+                                                                      ShowIcons="{Binding TrophyPieChart.ShowIcons}"
                                                                       IconOffset="12"/>
                                 </Grid>
                                 </Grid>
