@@ -618,9 +618,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 ReloadLocalState();
                 ItemsView.Refresh();
 
-                StatusMessage = result.Warnings.Count > 0
-                    ? string.Join("\n", result.Warnings)
-                    : null;
+                var notes = new List<string>();
+                if (result.PresetNames.Count > 0)
+                {
+                    notes.Add(string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"),
+                        string.Join(", ", result.PresetNames.Distinct())));
+                }
+
+                notes.AddRange(result.Warnings);
+                StatusMessage = notes.Count > 0 ? string.Join("\n", notes) : null;
             }
             catch (OperationCanceledException)
             {
