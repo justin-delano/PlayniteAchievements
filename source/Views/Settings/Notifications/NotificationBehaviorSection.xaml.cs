@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -14,7 +15,9 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Notifications
 {
@@ -100,6 +103,19 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private void UnlockSoundPackExport_Click(object sender, RoutedEventArgs e)
         {
+            // Only the user's own and theme files travel, so all-default tiers have nothing to share.
+            var resolved = _plugin?.UnlockSounds?.Resolver?.ResolveAll();
+            var hasOwnSounds = resolved != null
+                && resolved.Any(s => s.Source == UnlockSoundSource.Custom || s.Source == UnlockSoundSource.Theme);
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => UnlockSoundPackExportFile_Click(sender, e),
+                () => _plugin?.OpenWorkshopShare(WorkshopItemKind.UnlockSounds, Window.GetWindow(this)),
+                workshopEnabled: hasOwnSounds);
+        }
+
+        private void UnlockSoundPackExportFile_Click(object sender, RoutedEventArgs e)
+        {
             Keyboard.ClearFocus();
             var store = _plugin?.UnlockSoundPortableStore;
             var resolver = _plugin?.UnlockSounds?.Resolver;
@@ -138,6 +154,14 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// the pack does not carry keep their current sound.
         /// </summary>
         private void UnlockSoundPackImport_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenImport(
+                sender as Button,
+                () => UnlockSoundPackImportFile_Click(sender, e),
+                () => _plugin?.OpenWorkshopWindow(focusKind: WorkshopItemKind.UnlockSounds));
+        }
+
+        private void UnlockSoundPackImportFile_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
             var store = _plugin?.UnlockSoundPortableStore;
