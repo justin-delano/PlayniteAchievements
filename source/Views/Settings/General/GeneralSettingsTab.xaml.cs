@@ -43,37 +43,37 @@ namespace PlayniteAchievements.Views.Settings.General
                 new SettingsNavigationItem(
                     "General",
                     ResourceProvider.GetString("LOCPlayAch_Common_General"),
-                    iconGlyph: "\uE80F",
+                    iconGlyph: "\uEF47",
                     viewFactory: () => _overviewSection =
                         new GeneralOverviewSection(jumpToTab)),
                 new SettingsNavigationItem(
                     "SyncUpdates",
                     ResourceProvider.GetString("LOCPlayAch_Section_SyncUpdates"),
-                    iconGlyph: "\uE895",
+                    iconGlyph: "\uEFD1",
                     viewFactory: () => _syncUpdatesSection =
                         new SyncUpdatesSection()),
                 new SettingsNavigationItem(
                     "Hotkeys",
                     ResourceProvider.GetString("LOCPlayAch_Hotkeys_Title"),
-                    iconGlyph: "\uE765",
+                    iconGlyph: "\uEA40",
                     viewFactory: () => _hotkeySection =
                         new HotkeySettingsSection(settings)),
                 new SettingsNavigationItem(
                     "Editor",
                     ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Tab_Editor"),
-                    iconGlyph: "",
+                    iconGlyph: "\uEF10",
                     viewFactory: () => _editorSection =
                         new EditorSettingsSection(settings, plugin)),
                 new SettingsNavigationItem(
                     "Tagging",
                     ResourceProvider.GetString("LOCPlayAch_Settings_TaggingHeader"),
-                    iconGlyph: "\uE8EC",
+                    iconGlyph: "\uF004",
                     viewFactory: () => _taggingSection =
                         new TaggingSettingsSection(plugin, logger)),
                 new SettingsNavigationItem(
                     "Maintenance",
                     ResourceProvider.GetString("LOCPlayAch_Settings_Maintenance_Title"),
-                    iconGlyph: "\uE90F",
+                    iconGlyph: "\uF013",
                     viewFactory: () => _maintenanceSection =
                         new MaintenanceSettingsSection(settings, plugin, logger))
             };
