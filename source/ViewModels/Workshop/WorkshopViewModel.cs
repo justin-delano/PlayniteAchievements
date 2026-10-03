@@ -166,6 +166,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 new WorkshopSortOption(WorkshopSort.Newest, ResourceProvider.GetString("LOCPlayAch_Workshop_SortNewest")),
                 new WorkshopSortOption(WorkshopSort.Name, ResourceProvider.GetString("LOCPlayAch_Column_Name"))
             };
+            // Opened from the window that owns one kind (or from a game): that kind alone is
+            // offered, themes carrying the part still list under it, and the selector hides.
+            var focusedKind = focusGameId.HasValue ? WorkshopItemKind.GameCustomData : focusKind;
+            if (focusedKind is WorkshopItemKind only)
+            {
+                KindOptions = KindOptions.Where(option => option.Kind == only).ToList();
+            }
+
             _selectedKind = focusGameId.HasValue
                 ? KindOptions.Last()
                 : KindOptions.FirstOrDefault(option => option.Kind == focusKind) ?? KindOptions[0];
@@ -191,6 +199,12 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public ObservableCollection<WorkshopUndoViewModel> UndoEntries { get; } = new ObservableCollection<WorkshopUndoViewModel>();
         public ObservableCollection<WorkshopSubmissionViewModel> Submissions { get; } = new ObservableCollection<WorkshopSubmissionViewModel>();
         public IReadOnlyList<WorkshopKindOption> KindOptions { get; }
+
+        /// <summary>False when the window was opened for one kind, so the kind selector is hidden.</summary>
+        public bool ShowKindFilter => KindOptions.Count > 1;
+
+        /// <summary>The one kind this window is scoped to, or null when it browses everything.</summary>
+        private WorkshopItemKind? FocusedKind => KindOptions.Count == 1 ? KindOptions[0].Kind : null;
         public IReadOnlyList<WorkshopSortOption> SortOptions { get; }
 
         public AsyncCommand RefreshCommand { get; }
@@ -435,10 +449,28 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private void RebuildInstalledList()
         {
             InstalledItems.Clear();
-            foreach (var row in Items.Where(row => row.IsInstalled).OrderBy(row => row.Name, StringComparer.OrdinalIgnoreCase))
+            foreach (var row in Items
+                .Where(row => row.IsInstalled && MatchesKind(row, FocusedKind))
+                .OrderBy(row => row.Name, StringComparer.OrdinalIgnoreCase))
             {
                 InstalledItems.Add(row);
             }
+        }
+
+        /// <summary>
+        /// Whether a row belongs under a kind filter: its own kind, or a theme carrying that
+        /// kind as a part ("also in themes"). Null matches everything.
+        /// </summary>
+        private static bool MatchesKind(WorkshopItemViewModel row, WorkshopItemKind? kind)
+        {
+            if (!(kind is WorkshopItemKind wanted) || row.Kind == wanted)
+            {
+                return true;
+            }
+
+            return row.Kind == WorkshopItemKind.Theme
+                && ThemePartFor(wanted) is ThemePackParts part
+                && WorkshopInstaller.ThemePartsOf(row.Item).HasFlag(part);
         }
 
         private async Task LoadDetailsAsync(WorkshopItemViewModel row)
@@ -480,9 +512,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
             // A kind tab also lists the themes that carry that part ("also in themes"), so a user
             // looking for sounds sees sound packs first and bundles containing sounds after them.
-            if (_selectedKind?.Kind is WorkshopItemKind kind && row.Kind != kind &&
-                !(row.Kind == WorkshopItemKind.Theme && ThemePartFor(kind) is ThemePackParts part &&
-                  WorkshopInstaller.ThemePartsOf(row.Item).HasFlag(part)))
+            if (!MatchesKind(row, _selectedKind?.Kind))
             {
                 return false;
             }
