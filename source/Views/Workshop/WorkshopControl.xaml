@@ -52,6 +52,10 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}"
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding HasGame, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="{Binding ContentsSummary}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}"
+                                   TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding IsBundle, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,0,0">
                         <TextBlock Text="{Binding Downloads}"

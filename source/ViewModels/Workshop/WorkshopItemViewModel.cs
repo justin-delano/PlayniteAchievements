@@ -45,6 +45,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public bool HasGame => Item.Game != null;
         public string FolderUrl => Item.Urls?.Folder;
         public string KindLabel => KindLabelFor(Kind);
+        public bool IsBundle => Kind == WorkshopItemKind.Theme;
         public string SearchText { get; }
 
         /// <summary>Sortable date; the index writes yyyy-MM-dd.</summary>
@@ -107,6 +108,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         {
             switch (kind)
             {
+                case WorkshopItemKind.Colors: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Colors");
                 case WorkshopItemKind.NotificationStyle: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_NotificationStyle");
                 case WorkshopItemKind.ScreenshotFrame: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_ScreenshotFrame");
                 case WorkshopItemKind.ShowcasePage: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_ShowcasePage");
@@ -170,6 +172,11 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 case WorkshopItemKind.ShowcasePage:
                     Count("widgets", "widgets");
                     Count("images", "images");
+                    break;
+                case WorkshopItemKind.Colors:
+                    Count("rarityColors", "rarity colors");
+                    Count("providerColors", "provider colors");
+                    Count("resourceOverrides", "resource overrides");
                     break;
                 default:
                     Count("toastTemplate", "custom template");

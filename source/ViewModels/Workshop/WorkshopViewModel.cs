@@ -152,6 +152,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             KindOptions = new List<WorkshopKindOption>
             {
                 new WorkshopKindOption(null, ResourceProvider.GetString("LOCPlayAch_Common_All")),
+                new WorkshopKindOption(WorkshopItemKind.Colors, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.Colors)),
                 new WorkshopKindOption(WorkshopItemKind.NotificationStyle, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.NotificationStyle)),
                 new WorkshopKindOption(WorkshopItemKind.ScreenshotFrame, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.ScreenshotFrame)),
                 new WorkshopKindOption(WorkshopItemKind.ShowcasePage, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.ShowcasePage)),
@@ -222,6 +223,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 if (SetValueAndReturn(ref _selectedKind, value, nameof(SelectedKind)))
                 {
                     OnPropertyChanged(nameof(ShowOnlyMyGames));
+                    ApplySort();
                     ItemsView.Refresh();
                 }
             }
@@ -489,7 +491,11 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 return false;
             }
 
-            if (_selectedKind?.Kind is WorkshopItemKind kind && row.Kind != kind)
+            // A kind tab also lists the themes that carry that part ("also in themes"), so a user
+            // looking for sounds sees sound packs first and bundles containing sounds after them.
+            if (_selectedKind?.Kind is WorkshopItemKind kind && row.Kind != kind &&
+                !(row.Kind == WorkshopItemKind.Theme && ThemePartFor(kind) is ThemePackParts part &&
+                  WorkshopInstaller.ThemePartsOf(row.Item).HasFlag(part)))
             {
                 return false;
             }
@@ -503,9 +509,37 @@ namespace PlayniteAchievements.ViewModels.Workshop
             return query.Length == 0 || row.SearchText.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        /// <summary>The theme part a kind tab corresponds to, or null for kinds themes never carry.</summary>
+        public static ThemePackParts? ThemePartFor(WorkshopItemKind kind)
+        {
+            switch (kind)
+            {
+                case WorkshopItemKind.Colors: return ThemePackParts.Colors;
+                case WorkshopItemKind.UnlockSounds: return ThemePackParts.Sounds;
+                case WorkshopItemKind.NotificationStyle: return ThemePackParts.Toast;
+                case WorkshopItemKind.ScreenshotFrame: return ThemePackParts.Frame;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// When a theme is installed from a part's tab, the part picker starts with just that
+        /// part ticked; from the Themes or All tab every available part is ticked.
+        /// </summary>
+        public ThemePackParts PreferredThemeParts =>
+            _selectedKind?.Kind is WorkshopItemKind kind && ThemePartFor(kind) is ThemePackParts part
+                ? part
+                : ThemePackParts.All;
+
         private void ApplySort()
         {
             ItemsView.SortDescriptions.Clear();
+            // Within a part tab, standalone items of that kind come before the bundles.
+            if (_selectedKind?.Kind is WorkshopItemKind kind && kind != WorkshopItemKind.Theme)
+            {
+                ItemsView.SortDescriptions.Add(new SortDescription(nameof(WorkshopItemViewModel.IsBundle), ListSortDirection.Ascending));
+            }
+
             switch (_selectedSort?.Sort ?? WorkshopSort.MostDownloaded)
             {
                 case WorkshopSort.Newest:

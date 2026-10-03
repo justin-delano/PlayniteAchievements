@@ -86,12 +86,17 @@ namespace PlayniteAchievements.Views.Workshop
 
         private ThemePackParts? PickThemeParts(WorkshopItemViewModel item, ThemePackParts available)
         {
+            // From a part's tab only that part starts ticked; from Themes or All, everything does.
+            var preferred = ViewModel?.PreferredThemeParts ?? ThemePackParts.All;
+            PartPickerItem Part(ThemePackParts part, string key) =>
+                new PartPickerItem(part, ResourceProvider.GetString(key), isChecked: preferred.HasFlag(part), isEnabled: available.HasFlag(part));
+
             var items = new[]
             {
-                new PartPickerItem(ThemePackParts.Colors, ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"), isEnabled: available.HasFlag(ThemePackParts.Colors)),
-                new PartPickerItem(ThemePackParts.Sounds, ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Sounds"), isEnabled: available.HasFlag(ThemePackParts.Sounds)),
-                new PartPickerItem(ThemePackParts.Toast, ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab"), isEnabled: available.HasFlag(ThemePackParts.Toast)),
-                new PartPickerItem(ThemePackParts.Frame, ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader"), isEnabled: available.HasFlag(ThemePackParts.Frame))
+                Part(ThemePackParts.Colors, "LOCPlayAch_Settings_Display_Colors"),
+                Part(ThemePackParts.Sounds, "LOCPlayAch_Workshop_Share_Sounds"),
+                Part(ThemePackParts.Toast, "LOCPlayAch_Settings_Style_ToastTab"),
+                Part(ThemePackParts.Frame, "LOCPlayAch_Settings_FrameHeader")
             };
 
             var selected = PartPickerDialog.Show(item.Name, item.Description, items, Window.GetWindow(this));
