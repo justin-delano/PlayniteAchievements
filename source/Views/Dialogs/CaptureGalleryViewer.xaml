@@ -121,7 +121,7 @@
                 <Button Grid.Column="2"
                         Margin="14,0,0,0"
                         VerticalAlignment="Center"
-                        Content="&#xE740;"
+                        Content="&#xEFD5;"
                         ToolTip="{DynamicResource LOCPlayAch_Captures_Fullscreen}"
                         IsEnabled="{Binding HasCurrent}"
                         Style="{StaticResource PlayAch.Capture.GlyphButtonStyle}"
@@ -138,7 +138,7 @@
 
                 <Button Grid.Column="0"
                         Margin="0,0,10,0"
-                        Content="&#xE76B;"
+                        Content="&#xEAB5;"
                         Style="{StaticResource PlayAch.Capture.NavButtonStyle}"
                         Visibility="{Binding CanNavigate, Converter={StaticResource BoolToVis}}"
                         Command="{Binding PreviousCommand}"/>
@@ -218,7 +218,7 @@
 
                 <Button Grid.Column="2"
                         Margin="10,0,0,0"
-                        Content="&#xE76C;"
+                        Content="&#xEAB8;"
                         Style="{StaticResource PlayAch.Capture.NavButtonStyle}"
                         Visibility="{Binding CanNavigate, Converter={StaticResource BoolToVis}}"
                         Command="{Binding NextCommand}"/>
