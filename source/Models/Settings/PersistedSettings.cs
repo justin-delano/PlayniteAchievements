@@ -194,6 +194,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRarityPieChart = true;
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
+        private bool _showOverviewPieIcons = true;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
@@ -2226,6 +2227,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, shows the radial icons around the slices of overview pie charts.
+        /// </summary>
+        public bool ShowOverviewPieIcons
+        {
+            get => _showOverviewPieIcons;
+            set => SetValue(ref _showOverviewPieIcons, value);
+        }
+
+        /// <summary>
         /// Determines how overview pie charts handle slices below five percent.
         /// </summary>
         public OverviewPieSmallSliceMode OverviewPieSmallSliceMode
@@ -3255,6 +3265,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewRarityPieChart = this.ShowOverviewRarityPieChart,
                 ShowOverviewTrophyPieChart = this.ShowOverviewTrophyPieChart,
                 ShowOverviewPiePercentages = this.ShowOverviewPiePercentages,
+                ShowOverviewPieIcons = this.ShowOverviewPieIcons,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 OverviewPieIncludeLocked = this.OverviewPieIncludeLocked,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
@@ -3426,6 +3437,7 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewRarityPieChart = defaults.ShowOverviewRarityPieChart;
             ShowOverviewTrophyPieChart = defaults.ShowOverviewTrophyPieChart;
             ShowOverviewPiePercentages = defaults.ShowOverviewPiePercentages;
+            ShowOverviewPieIcons = defaults.ShowOverviewPieIcons;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             OverviewPieIncludeLocked = defaults.OverviewPieIncludeLocked;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
