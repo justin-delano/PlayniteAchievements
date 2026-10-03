@@ -232,6 +232,41 @@ namespace PlayniteAchievements.Services.Workshop
         /// persists the settings and refreshes application resources afterwards. Returns the
         /// parts that were applied.
         /// </summary>
+        /// <summary>
+        /// Writes the selected parts that the bundle carries into <paramref name="directory"/>
+        /// as their standalone packages (colors.pacolors, sounds.pasounds, toast.panotif,
+        /// frame.paframe) and returns the path of each. Callers that save presets rather than
+        /// apply the theme use this; <see cref="ImportAsync"/> builds on it.
+        /// </summary>
+        public IReadOnlyDictionary<ThemePackParts, string> ExtractParts(string sourcePath, ThemePackParts selected, string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                throw new ArgumentException("Directory is required.", nameof(directory));
+            }
+
+            var extracted = new Dictionary<ThemePackParts, string>();
+            using (var archive = PortablePackage.OpenRead(sourcePath, NotPackageMessage))
+            {
+                var entries = PortablePackage.IndexEntries(archive);
+                var manifest = ReadManifestOrThrow(entries);
+                var available = ResolveParts(manifest, entries);
+
+                foreach (var part in new[] { ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
+                {
+                    if (selected.HasFlag(part) && available.HasFlag(part))
+                    {
+                        var entryName = EntryNameFor(part);
+                        var target = Path.Combine(directory, entryName.Substring(PartsFolderName.Length + 1));
+                        PortablePackage.ExtractToFile(entries[entryName], target);
+                        extracted[part] = target;
+                    }
+                }
+            }
+
+            return extracted;
+        }
+
         public async Task<ThemePackParts> ImportAsync(
             string sourcePath,
             ThemePackParts selected,
@@ -247,24 +282,7 @@ namespace PlayniteAchievements.Services.Workshop
             var scratch = PortablePackage.CreateScratchDirectory("ThemeImport");
             try
             {
-                var extracted = new Dictionary<ThemePackParts, string>();
-                using (var archive = PortablePackage.OpenRead(sourcePath, NotPackageMessage))
-                {
-                    var entries = PortablePackage.IndexEntries(archive);
-                    var manifest = ReadManifestOrThrow(entries);
-                    var available = ResolveParts(manifest, entries);
-
-                    foreach (var part in new[] { ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
-                    {
-                        if (selected.HasFlag(part) && available.HasFlag(part))
-                        {
-                            var entryName = EntryNameFor(part);
-                            var target = Path.Combine(scratch, entryName.Substring(PartsFolderName.Length + 1));
-                            PortablePackage.ExtractToFile(entries[entryName], target);
-                            extracted[part] = target;
-                        }
-                    }
-                }
+                var extracted = ExtractParts(sourcePath, selected, scratch);
 
                 var applied = ThemePackParts.None;
 
