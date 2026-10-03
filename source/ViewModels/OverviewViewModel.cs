@@ -222,6 +222,7 @@ namespace PlayniteAchievements.ViewModels
             };
             ApplyOverviewPieSmallSliceMode();
             ApplyOverviewPieIncludeLocked();
+            ApplyOverviewPieIcons();
 
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
@@ -2700,6 +2701,7 @@ namespace PlayniteAchievements.ViewModels
                 RaiseOverviewScoreCardVisibilityChanged();
                 ApplyOverviewPieSmallSliceMode();
                 ApplyOverviewPieIncludeLocked();
+                ApplyOverviewPieIcons();
                 RaiseOverviewPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowOverviewPiePercentages));
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
@@ -2901,6 +2903,10 @@ namespace PlayniteAchievements.ViewModels
             {
                 ApplyOverviewPieIncludeLocked();
                 UpdateAggregatePieCharts();
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewPieIcons))
+            {
+                ApplyOverviewPieIcons();
             }
             else if (propertyName == nameof(PersistedSettings.OverviewTimeWindow) ||
                 propertyName == nameof(PersistedSettings.OverviewTimelineGranularity))
@@ -3865,6 +3871,15 @@ namespace PlayniteAchievements.ViewModels
             ProviderPieChart.IncludeLocked = includeLocked;
             RarityPieChart.IncludeLocked = includeLocked;
             TrophyPieChart.IncludeLocked = includeLocked;
+        }
+
+        private void ApplyOverviewPieIcons()
+        {
+            var showIcons = _settings?.Persisted?.ShowOverviewPieIcons ?? true;
+            GamesPieChart.ShowIcons = showIcons;
+            ProviderPieChart.ShowIcons = showIcons;
+            RarityPieChart.ShowIcons = showIcons;
+            TrophyPieChart.ShowIcons = showIcons;
         }
 
         private void UpdateAggregatePieCharts()
