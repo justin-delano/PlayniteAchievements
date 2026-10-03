@@ -93,7 +93,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 // the data.
                 SmallSliceMode = ShowcaseWidgetOptions.GetPieSmallSliceMode(Projection?.Instance),
                 IncludeLocked = ShowcaseWidgetOptions.GetPieIncludeLocked(Projection?.Instance),
-                ShowCenterPercentageRequested = ShowCenterPercentage
+                ShowCenterPercentageRequested = ShowCenterPercentage,
+                ShowIcons = ShowcaseWidgetOptions.GetPieShowIcons(Projection?.Instance)
             };
             switch (mode)
             {
