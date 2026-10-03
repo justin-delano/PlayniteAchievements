@@ -362,7 +362,7 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             try
             {
-                var parts = PickThemeParts(ThemePackParts.All);
+                var parts = PickThemeParts(ThemePackParts.All, ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Overrides_ExportButton"));
                 if (parts == ThemePackParts.None)
                 {
                     return;
@@ -426,7 +426,7 @@ namespace PlayniteAchievements.Views.Settings.Display
                 }
 
                 var available = store.Inspect(dialog.FileName);
-                var parts = PickThemeParts(available);
+                var parts = PickThemeParts(available, System.IO.Path.GetFileName(dialog.FileName));
                 if (parts == ThemePackParts.None)
                 {
                     return;
@@ -483,16 +483,17 @@ namespace PlayniteAchievements.Views.Settings.Display
         }
 
         /// <summary>
-        /// Offers the four theme parts as a checklist, with parts outside
-        /// <paramref name="available"/> shown disabled, and returns the chosen set.
+        /// Offers the four theme parts as a checklist titled as the theme row, with
+        /// <paramref name="hint"/> above the list and parts outside <paramref name="available"/>
+        /// shown disabled, and returns the chosen set.
         /// </summary>
-        private ThemePackParts PickThemeParts(ThemePackParts available)
+        private ThemePackParts PickThemeParts(ThemePackParts available, string hint)
         {
             var items = new[]
             {
                 new PartPickerItem(ThemePackParts.Colors, ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"),
                     isEnabled: available.HasFlag(ThemePackParts.Colors)),
-                new PartPickerItem(ThemePackParts.Sounds, ResourceProvider.GetString("LOCPlayAch_Settings_EnableUnlockSounds"),
+                new PartPickerItem(ThemePackParts.Sounds, ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Sounds"),
                     isEnabled: available.HasFlag(ThemePackParts.Sounds)),
                 new PartPickerItem(ThemePackParts.Toast, ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab"),
                     isEnabled: available.HasFlag(ThemePackParts.Toast)),
@@ -501,8 +502,8 @@ namespace PlayniteAchievements.Views.Settings.Display
             };
 
             var selected = PartPickerDialog.Show(
-                ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_Presets"),
-                ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_Preset"),
+                ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Theme"),
+                hint,
                 items,
                 _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow());
 
