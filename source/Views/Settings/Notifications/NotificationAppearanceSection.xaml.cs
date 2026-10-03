@@ -449,6 +449,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             _toastEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist);
             _frameEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist);
             UpdateMockups();
+            RefreshPresetButtons();
         }
 
         private void ApplyThemeStylingControls(bool editable)
@@ -1435,7 +1436,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             // A game's own style is not a Workshop item; only the global look is shared there.
             if (IsGameMode)
             {
-                ImportStyleFile_Click(sender, e);
+                ImportStyleIntoGame_Click(sender, e);
                 return;
             }
 
@@ -1447,6 +1448,200 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 () => ImportStyleFile_Click(sender, e),
                 () => _plugin.OpenWorkshopWindow(focusKind: kind));
         }
+
+        /// <summary>
+        /// The per-game tab imports a file straight onto this game: the carried surfaces merge
+        /// into the game override and bundled templates install for the game scope, each
+        /// after a confirmation. Presets are the global page and Workshop path, not this one.
+        /// </summary>
+        private async void ImportStyleIntoGame_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.NotificationStylePortableStore;
+            if (persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    // The retired .pastyle spelling stays accepted in the first filter so files
+                    // exported before 4.1 still import, without advertising it as a format.
+                    Filter =
+                        "Playnite Achievements Style Files (*.panotif;*.paframe)|*.panotif;*.paframe;*.panotif.zip;*.paframe.zip;*.pastyle;*.pastyle.zip|" +
+                        "Playnite Achievements Notification Style (*.panotif)|*.panotif;*.panotif.zip|" +
+                        "Playnite Achievements Frame Style (*.paframe)|*.paframe;*.paframe.zip",
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var contents = store.InspectPackage(dialog.FileName);
+
+                // Importing is allowed from either tab, but a file that does not cover the
+                // active tab's surface is easy to pick by accident, so it warns first. The
+                // mismatch prompt doubles as the import confirmation.
+                var activeIsFrame = FrameTabItem?.IsSelected == true;
+                var coversActiveSurface = activeIsFrame ? contents.HasFrameStyle : contents.HasToastStyle;
+                var mismatchConfirmed = false;
+                if (contents.HasStyle && !coversActiveSurface)
+                {
+                    var carried = L(contents.HasFrameStyle
+                        ? "LOCPlayAch_Settings_FrameHeader"
+                        : "LOCPlayAch_Settings_Style_ToastTab");
+                    var active = L(activeIsFrame
+                        ? "LOCPlayAch_Settings_FrameHeader"
+                        : "LOCPlayAch_Settings_Style_ToastTab");
+                    if (!Confirm(string.Format(
+                            L("LOCPlayAch_Settings_Style_ImportSurfaceMismatch"), carried, active)))
+                    {
+                        return;
+                    }
+
+                    mismatchConfirmed = true;
+                }
+
+                var resolver = _toastTemplateResolver;
+                var offerTemplates = resolver != null &&
+                    (contents.HasToastTemplate || contents.HasFrameTemplate);
+
+                bool applyStyle;
+                var installToast = false;
+                var installFrame = false;
+
+                if (!offerTemplates)
+                {
+                    // Style-only file: single confirmation, apply the style (unchanged behavior).
+                    if (!mismatchConfirmed && !Confirm(L("LOCPlayAch_Settings_Style_ImportConfirm")))
+                    {
+                        return;
+                    }
+
+                    applyStyle = true;
+                }
+                else
+                {
+                    // The package carries one or both templates: let the user pick any combination
+                    // of the available parts to apply.
+                    applyStyle = contents.HasStyle &&
+                        Confirm(L("LOCPlayAch_Settings_Style_ImportApplyStyle"));
+                    installToast = contents.HasToastTemplate &&
+                        Confirm(L("LOCPlayAch_Settings_Style_ImportInstallToastTemplate"));
+                    installFrame = contents.HasFrameTemplate &&
+                        Confirm(L("LOCPlayAch_Settings_Style_ImportInstallFrameTemplate"));
+                    if (!applyStyle && !installToast && !installFrame)
+                    {
+                        return;
+                    }
+                }
+
+                _toastEditorViewModel?.FlushPendingPersist();
+                _frameEditorViewModel?.FlushPendingPersist();
+
+                if (applyStyle)
+                {
+                    var providerKey = _selectedProviderKey;
+                    var owner = IsGameMode
+                        ? NotificationImageOwner.ForGame(_gameId)
+                        : NotificationImageOwner.ForProvider(providerKey);
+                    var imported = await store.ImportAsync(
+                        dialog.FileName,
+                        owner,
+                        CancellationToken.None);
+                    if (imported == null)
+                    {
+                        throw new InvalidOperationException("Imported notification style was empty.");
+                    }
+
+                    // Merge only the surfaces the file carries onto the current scope's style.
+                    // When the target scope still follows an inherited style, snapshot the
+                    // inherited images into the scope first so an untouched surface never
+                    // references another owner's slot files.
+                    var merged = (_currentScopeStyle ?? NotificationStyleSettings.CreateDefault()).Clone();
+                    var mergeTarget = ResolveMergeTarget(merged);
+                    if (!IsGameMode && providerKey != null &&
+                        persisted.GetProviderNotificationStyle(providerKey) == null)
+                    {
+                        await _plugin.NotificationImageStore.CopyImagesForProviderAsync(
+                            merged, providerKey, CancellationToken.None);
+                    }
+                    else if (IsGameMode && CustomizeGameCheckBox?.IsChecked != true)
+                    {
+                        await _plugin.NotificationImageStore.CopyImagesForGameAsync(
+                            merged, _gameId, CancellationToken.None);
+                    }
+
+                    if (contents.HasToastStyle)
+                    {
+                        ApplyPackSurfaces(mergeTarget, imported, isFrame: false);
+                    }
+
+                    if (contents.HasFrameStyle)
+                    {
+                        ApplyPackSurfaces(mergeTarget, imported, isFrame: true);
+                    }
+
+                    ApplyImportedStyle(persisted, providerKey, merged);
+
+                    if (!IsGameMode)
+                    {
+                        _plugin.PersistSettingsForUi();
+                    }
+
+                    // Drop slot files the replaced style no longer references.
+                    _plugin.NotificationImageStore.PruneOrphans(
+                        persisted,
+                        _plugin.GameCustomDataStore?.LoadAll());
+                }
+
+                var templateErrors = new List<string>();
+                if (installToast)
+                {
+                    InstallImportedTemplate(store, resolver, dialog.FileName, isFrame: false, templateErrors);
+                }
+
+                if (installFrame)
+                {
+                    InstallImportedTemplate(store, resolver, dialog.FileName, isFrame: true, templateErrors);
+                }
+
+                ApplySelection();
+                UpdateMockups();
+
+                if (templateErrors.Count > 0)
+                {
+                    _plugin.PlayniteApi?.Dialogs?.ShowMessage(
+                        string.Format(L("LOCPlayAch_Status_Failed"), string.Join("\n", templateErrors)),
+                        L("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+                else
+                {
+                    _plugin.PlayniteApi?.Dialogs?.ShowMessage(
+                        L("LOCPlayAch_Status_Succeeded"),
+                        L("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed importing notification style.");
+                _plugin.PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
 
         /// <summary>
         /// Adds a .panotif or .paframe file to the presets of the surface it carries, named
@@ -1643,7 +1838,30 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 return;
             }
 
-            ApplyPresetButton.IsEnabled = DeletePresetButton.IsEnabled = SelectedPreset != null;
+            // On a game tab everything that would write a style is idle until the game is styled
+            // separately; an inherited look has nowhere to put an import or a preset.
+            var writable = !IsGameMode || CustomizeGameCheckBox?.IsChecked == true;
+            if (PresetSelector != null)
+            {
+                PresetSelector.IsEnabled = writable;
+            }
+
+            if (SavePresetButton != null)
+            {
+                SavePresetButton.IsEnabled = writable;
+            }
+
+            if (ImportStyleButton != null)
+            {
+                ImportStyleButton.IsEnabled = writable;
+            }
+
+            if (ExportStyleButton != null)
+            {
+                ExportStyleButton.IsEnabled = writable;
+            }
+
+            ApplyPresetButton.IsEnabled = DeletePresetButton.IsEnabled = writable && SelectedPreset != null;
         }
 
         private void SurfaceTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
