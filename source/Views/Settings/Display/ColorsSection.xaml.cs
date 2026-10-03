@@ -12,6 +12,7 @@ using DialogResult = System.Windows.Forms.DialogResult;
 using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
 using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -47,6 +48,7 @@ namespace PlayniteAchievements.Views.Settings.Display
         public ColorsSection()
         {
             InitializeComponent();
+            RefreshColorSetPresetOptions();
         }
 
         internal ColorsSection(
@@ -329,11 +331,14 @@ namespace PlayniteAchievements.Views.Settings.Display
                 () => _plugin.OpenWorkshopWindow(focusKind: WorkshopItemKind.Colors));
         }
 
+        /// <summary>
+        /// Adds a .pacolors file to the saved color sets, named after the file. Applying it is
+        /// the job of the set list, so the current colors do not change here.
+        /// </summary>
         private void ImportColorsFile_Click(object sender, RoutedEventArgs e)
         {
-            var persisted = _settings?.Persisted;
-            var store = _plugin?.ColorPackPortableStore;
-            if (persisted == null || store == null)
+            var presets = _plugin?.ColorPresetStore;
+            if (presets == null)
             {
                 return;
             }
@@ -352,16 +357,175 @@ namespace PlayniteAchievements.Views.Settings.Display
                     return;
                 }
 
-                store.Import(dialog.FileName, persisted);
-                _plugin.PersistSettingsForUi();
-                RefreshAppearanceEditorFromPersisted();
-                ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+                var saved = presets.SaveFrom(presets.UniqueName(PackageStem(dialog.FileName)), dialog.FileName);
+                RefreshColorSetPresetOptions(saved.Name);
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"), saved.Name), MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed importing colors.");
                 ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>The file name without its package extension, including a trailing .zip.</summary>
+        private static string PackageStem(string path)
+        {
+            var name = System.IO.Path.GetFileName(path) ?? string.Empty;
+            foreach (var suffix in new[] { ".zip", ColorPackPortableStore.PackageFileExtension, ThemePackPortableStore.PackageFileExtension })
+            {
+                if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    name = name.Substring(0, name.Length - suffix.Length);
+                }
+            }
+
+            return name;
+        }
+
+        // ---- saved color sets ----------------------------------------------------------------
+
+        private PackagePresetInfo SelectedColorSetPreset => ColorSetPresetSelector?.SelectedItem as PackagePresetInfo;
+
+        private void RefreshColorSetPresetOptions(string selectName = null)
+        {
+            var store = _plugin?.ColorPresetStore;
+            if (ColorSetPresetSelector == null || store == null)
+            {
+                return;
+            }
+
+            var items = new List<object> { ResourceProvider.GetString("LOCPlayAch_Common_None") };
+            try
+            {
+                items.AddRange(store.List());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed listing color set presets.");
+            }
+
+            ColorSetPresetSelector.ItemsSource = items;
+            ColorSetPresetSelector.SelectedItem = string.IsNullOrWhiteSpace(selectName)
+                ? items[0]
+                : items.OfType<PackagePresetInfo>().FirstOrDefault(preset =>
+                      string.Equals(preset.Name, selectName, StringComparison.OrdinalIgnoreCase)) ?? items[0];
+            RefreshColorSetPresetButtons();
+        }
+
+        private void RefreshColorSetPresetButtons()
+        {
+            if (ApplyColorSetPresetButton == null || DeleteColorSetPresetButton == null)
+            {
+                return;
+            }
+
+            ApplyColorSetPresetButton.IsEnabled = DeleteColorSetPresetButton.IsEnabled = SelectedColorSetPreset != null;
+        }
+
+        private void ColorSetPresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshColorSetPresetButtons();
+        }
+
+        /// <summary>Copies the selected set onto the current colors (rarity, platform, resources).</summary>
+        private void ApplyColorSetPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var preset = SelectedColorSetPreset;
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ColorPackPortableStore;
+            if (preset == null || persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                store.Import(preset.FilePath, persisted);
+                _plugin.PersistSettingsForUi();
+                RefreshAppearanceEditorFromPersisted();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed applying color set preset.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>Saves the current colors as a named set, replacing one of the same name after confirmation.</summary>
+        private void SaveColorSetPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var presets = _plugin?.ColorPresetStore;
+            var store = _plugin?.ColorPackPortableStore;
+            if (persisted == null || presets == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!PresetNamePrompt.TryAsk(_plugin, SelectedColorSetPreset?.Name, PackagePresetStore.SanitizeName, PackagePresetStore.MaxNameLength, out var name))
+                {
+                    return;
+                }
+
+                var exists = presets.Exists(name);
+                if (!exists && presets.Count() >= PackagePresetStore.MaxPresetCount)
+                {
+                    ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_MaxReached"), PackagePresetStore.MaxPresetCount), MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (exists && !Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_OverwriteConfirm"), name)))
+                {
+                    return;
+                }
+
+                var saved = presets.Save(name, path => store.Export(persisted, path));
+                RefreshColorSetPresetOptions(saved.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed saving color set preset.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        private void DeleteColorSetPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var preset = SelectedColorSetPreset;
+            var presets = _plugin?.ColorPresetStore;
+            if (preset == null || presets == null)
+            {
+                return;
+            }
+
+            if (!Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_DeleteConfirm"), preset.Name)))
+            {
+                return;
+            }
+
+            try
+            {
+                presets.Delete(preset);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed deleting color set preset.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+
+            RefreshColorSetPresetOptions();
+        }
+
+        private bool Confirm(string message)
+        {
+            return _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                       message,
+                       ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                       MessageBoxButton.YesNo,
+                       MessageBoxImage.Question) == MessageBoxResult.Yes;
         }
 
         /// <summary>
@@ -435,11 +599,15 @@ namespace PlayniteAchievements.Views.Settings.Display
                 () => _plugin.OpenWorkshopWindow(focusKind: WorkshopItemKind.Theme));
         }
 
-        private async void ImportThemeFile_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Adds the chosen parts of a .patheme bundle to their preset lists under the file name:
+        /// the color set here, the sound pack on the notifications page, the notification and
+        /// frame styles in the appearance presets. Nothing is applied until picked there.
+        /// </summary>
+        private void ImportThemeFile_Click(object sender, RoutedEventArgs e)
         {
-            var persisted = _settings?.Persisted;
             var store = _plugin?.ThemePackPortableStore;
-            if (persisted == null || store == null)
+            if (store == null)
             {
                 return;
             }
@@ -465,48 +633,44 @@ namespace PlayniteAchievements.Views.Settings.Display
                     return;
                 }
 
-                var resolver = CreateTemplateResolver();
-                var templateErrors = new List<string>();
-                var applied = await store.ImportAsync(
-                    dialog.FileName,
-                    parts,
-                    persisted,
-                    (isFrame, xaml) =>
+                var stem = PackageStem(dialog.FileName);
+                var names = new List<string>();
+                var scratch = PortablePackage.CreateScratchDirectory("ThemeImport");
+                try
+                {
+                    var extracted = store.ExtractParts(dialog.FileName, parts, scratch);
+                    if (extracted.TryGetValue(ThemePackParts.Colors, out var colorsPath))
                     {
-                        try
-                        {
-                            resolver.SaveCustomTemplate(isFrame, xaml, providerKey: null, gameId: Guid.Empty);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger?.Error(ex, $"Failed installing theme {(isFrame ? "frame" : "toast")} template.");
-                            templateErrors.Add(ex.Message);
-                        }
-                    },
-                    CancellationToken.None);
+                        var colors = _plugin.ColorPresetStore;
+                        names.Add(colors.SaveFrom(colors.UniqueName(stem), colorsPath).Name);
+                    }
 
-                _plugin.PersistSettingsForUi();
-                RefreshAppearanceEditorFromPersisted();
-                if (applied.HasFlag(ThemePackParts.Sounds))
+                    if (extracted.TryGetValue(ThemePackParts.Sounds, out var soundsPath))
+                    {
+                        var sounds = _plugin.UnlockSoundPresetStore;
+                        names.Add(sounds.SaveFrom(sounds.UniqueName(stem), soundsPath).Name);
+                    }
+
+                    var styles = _plugin.NotificationStylePresetStore;
+                    if (extracted.TryGetValue(ThemePackParts.Toast, out var toastPath))
+                    {
+                        names.Add(styles.SavePresetFromPackage(false, styles.UniqueName(false, stem), toastPath).Name);
+                    }
+
+                    if (extracted.TryGetValue(ThemePackParts.Frame, out var framePath))
+                    {
+                        names.Add(styles.SavePresetFromPackage(true, styles.UniqueName(true, stem), framePath).Name);
+                    }
+                }
+                finally
                 {
-                    _plugin.UnlockSounds?.ApplySettings();
+                    PortablePackage.TryDeleteDirectory(scratch);
                 }
 
-                if (applied.HasFlag(ThemePackParts.Toast) || applied.HasFlag(ThemePackParts.Frame))
-                {
-                    _plugin.NotificationImageStore?.PruneOrphans(persisted, _plugin.GameCustomDataStore?.LoadAll());
-                }
-
-                if (templateErrors.Count > 0)
-                {
-                    ShowMessage(
-                        string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), string.Join("\n", templateErrors)),
-                        MessageBoxImage.Warning);
-                }
-                else
-                {
-                    ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
-                }
+                RefreshColorSetPresetOptions(parts.HasFlag(ThemePackParts.Colors) ? names.FirstOrDefault() : null);
+                ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"), string.Join(", ", names.Distinct())),
+                    MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
