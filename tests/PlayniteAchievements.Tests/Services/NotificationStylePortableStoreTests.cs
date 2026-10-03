@@ -47,7 +47,7 @@ namespace PlayniteAchievements.Services.Tests
                 style.Toast.BadgeImages.CommonPath = commonSource;
 
                 var packagePath = Path.Combine(tempDir, "share.pastyle.zip");
-                store.ExportPackage(style, packagePath);
+                store.ExportLegacyBothSurfacesPackage(style, packagePath);
 
                 using (var archive = ZipFile.OpenRead(packagePath))
                 {
@@ -259,7 +259,7 @@ namespace PlayniteAchievements.Services.Tests
                 const string frameXaml = "<ResourceDictionary xmlns=\"frame\"><!--frame--></ResourceDictionary>";
 
                 var withBoth = Path.Combine(tempDir, "both.pastyle.zip");
-                store.ExportPackage(style, withBoth, toastXaml, frameXaml);
+                store.ExportLegacyBothSurfacesPackage(style, withBoth, toastXaml, frameXaml);
 
                 using (var archive = ZipFile.OpenRead(withBoth))
                 {
@@ -277,7 +277,7 @@ namespace PlayniteAchievements.Services.Tests
 
                 // Toast-only package: the frame template is absent.
                 var toastOnly = Path.Combine(tempDir, "toast.pastyle.zip");
-                store.ExportPackage(style, toastOnly, toastTemplateXaml: toastXaml, frameTemplateXaml: null);
+                store.ExportLegacyBothSurfacesPackage(style, toastOnly, toastTemplateXaml: toastXaml, frameTemplateXaml: null);
                 var toastOnlyContents = store.InspectPackage(toastOnly);
                 Assert.IsTrue(toastOnlyContents.HasToastTemplate);
                 Assert.IsFalse(toastOnlyContents.HasFrameTemplate);
@@ -285,7 +285,7 @@ namespace PlayniteAchievements.Services.Tests
 
                 // No templates (existing overload path): both absent.
                 var styleOnly = Path.Combine(tempDir, "styleonly.pastyle.zip");
-                store.ExportPackage(style, styleOnly);
+                store.ExportLegacyBothSurfacesPackage(style, styleOnly);
                 var styleOnlyContents = store.InspectPackage(styleOnly);
                 Assert.IsFalse(styleOnlyContents.HasToastTemplate);
                 Assert.IsFalse(styleOnlyContents.HasFrameTemplate);
@@ -310,7 +310,7 @@ namespace PlayniteAchievements.Services.Tests
                 style.Toast.HeaderTexts.CompletionHeader = "Done!";
 
                 var filePath = Path.Combine(tempDir, "share.pastyle");
-                store.ExportPackage(style, filePath);
+                store.ExportLegacyBothSurfacesPackage(style, filePath);
 
                 var imported = await store.ImportAsync(filePath, targetProviderKeyOrNull: null, CancellationToken.None);
 
@@ -339,7 +339,7 @@ namespace PlayniteAchievements.Services.Tests
                 var style = NotificationStyleSettings.CreateDefault();
                 style.ToastBackgroundImagePath = source;
                 var packagePath = Path.Combine(tempDir, "game-style.pastyle.zip");
-                store.ExportPackage(style, packagePath);
+                store.ExportLegacyBothSurfacesPackage(style, packagePath);
 
                 var gameId = Guid.NewGuid();
                 var imported = await store.ImportAsync(

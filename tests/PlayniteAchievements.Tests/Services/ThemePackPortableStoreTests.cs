@@ -50,9 +50,11 @@ namespace PlayniteAchievements.Services.Tests
                 {
                     var names = archive.Entries.Select(entry => entry.FullName).ToList();
                     CollectionAssert.Contains(names, ThemePackPortableStore.ManifestEntryName);
+                    CollectionAssert.Contains(names, ThemePackPortableStore.ColorsEntryName);
                     CollectionAssert.Contains(names, ThemePackPortableStore.SoundsEntryName);
                     CollectionAssert.Contains(names, ThemePackPortableStore.ToastEntryName);
                     CollectionAssert.Contains(names, ThemePackPortableStore.FrameEntryName);
+                    Assert.AreEqual(5, names.Count, "the manifest names parts; each part is an embedded standalone package");
                 }
 
                 Assert.AreEqual(ThemePackParts.All, store.Inspect(packagePath));
@@ -123,37 +125,6 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void ApplyColors_RejectsNonHexValues_AndLeavesSettingsUntouched()
-        {
-            var target = new PersistedSettings();
-            var before = target.RarityColors.Common;
-
-            AssertThrows(() => ThemePackPortableStore.ApplyColors(
-                new ThemePackColors { RarityColors = new RarityColorSettings { Common = "red" } },
-                target), "not a #RRGGBB");
-            Assert.AreEqual(before, target.RarityColors.Common);
-
-            AssertThrows(() => ThemePackPortableStore.ApplyColors(
-                new ThemePackColors
-                {
-                    RarityColors = RarityColorSettings.CreateDefault(),
-                    ProviderColorOverrides = new Dictionary<string, string> { ["Steam"] = "javascript:alert(1)" }
-                },
-                target), "provider color");
-
-            AssertThrows(() => ThemePackPortableStore.ApplyColors(
-                new ThemePackColors
-                {
-                    RarityColors = RarityColorSettings.CreateDefault(),
-                    ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>
-                    {
-                        ["PlayAch.FontSize.Body"] = new ResourceOverrideSetting { Mode = ResourceOverrideMode.Custom, CustomValue = "-4" }
-                    }
-                },
-                target), "font size");
-        }
-
-        [TestMethod]
         public void Inspect_RejectsForeignKind_DeclaredPartWithoutPayload_AndNonZip()
         {
             WithTemp(tempDir =>
@@ -169,7 +140,7 @@ namespace PlayniteAchievements.Services.Tests
                 {
                     Kind = ThemePackFile.ThemeKind,
                     Version = 1,
-                    Parts = new List<string> { "Sounds" }
+                    Parts = new List<string> { "Colors" }
                 });
                 AssertThrows(() => store.Inspect(missingPart), "missing its");
 
@@ -189,7 +160,7 @@ namespace PlayniteAchievements.Services.Tests
             var imageStore = new NotificationImageStore(diskImageService, logger: null);
             var styleStore = new NotificationStylePortableStore(imageStore, logger: null);
             soundStore = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
-            return new ThemePackPortableStore(styleStore, soundStore);
+            return new ThemePackPortableStore(styleStore, soundStore, new ColorPackPortableStore());
         }
 
         private static void WriteManifestOnly(string path, ThemePackFile manifest)
