@@ -280,49 +280,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                        </StackPanel>
-                    </Grid>
-                </TabItem>
-
-                <!-- Share -->
-                <TabItem Header="{DynamicResource LOCPlayAch_Workshop_Tab_Share}">
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Hint}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,10"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_What}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
-                            <ItemsControl ItemsSource="{Binding ShareCandidates}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type workshop:WorkshopShareCandidate}">
-                                        <Grid Margin="0,0,0,6">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Label}"
-                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                       VerticalAlignment="Center"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <Button Grid.Column="1"
-                                                    Content="{DynamicResource LOCPlayAch_Workshop_Share}"
-                                                    Margin="8,0,0,0"
-                                                    Click="Share_Click"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
-                            <Grid Margin="0,0,0,8">
+                            <Grid Margin="0,16,0,8">
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_MySubmissions}"
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            FontWeight="SemiBold"
@@ -361,6 +319,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+
                         </StackPanel>
                     </Grid>
                 </TabItem>
