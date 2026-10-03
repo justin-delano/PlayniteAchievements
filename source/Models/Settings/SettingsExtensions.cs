@@ -213,6 +213,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewRarityPieChart = source.ShowOverviewRarityPieChart;
             target.ShowOverviewTrophyPieChart = source.ShowOverviewTrophyPieChart;
             target.ShowOverviewPiePercentages = source.ShowOverviewPiePercentages;
+            target.ShowOverviewPieIcons = source.ShowOverviewPieIcons;
             target.OverviewPieSmallSliceMode = source.OverviewPieSmallSliceMode;
             target.OverviewPieIncludeLocked = source.OverviewPieIncludeLocked;
             target.ShowOverviewBarCharts = source.ShowOverviewBarCharts;
