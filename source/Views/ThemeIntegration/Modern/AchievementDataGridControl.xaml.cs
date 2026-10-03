@@ -32,7 +32,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         // Cache the source reference to avoid unnecessary cloning when data hasn't changed
         private List<AchievementDisplayItem> _lastSourceItems;
-        private List<AchievementDetail> _lastOrderedAchievements;
+        private List<AchievementDetail> _lastDefaultOrder;
+        private AchievementSortSpec? _lastConfiguredSort;
         private int? _lastMaxRows;
         private readonly AchievementGridControlBarAdapter _controlBarAdapter;
 
@@ -275,7 +276,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override void OnThemeDataOverrideChangedInternal()
         {
             _lastSourceItems = null;
-            _lastOrderedAchievements = null;
+            _lastDefaultOrder = null;
             _lastMaxRows = null;
             ResetSortState();
             UpdatePreviewBehavior();
@@ -357,12 +358,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             UpdateSummaryItem(theme?.SelectedGameSummary);
             var settings = EffectiveSettings?.Persisted;
             var maxRows = settings?.DesktopThemeAchievementGridMaxRows;
-            var orderedAchievements = useSourceOrder
-                ? theme?.AchievementDefaultOrder ?? new List<AchievementDetail>()
-                : AchievementSortHelper.ResolveSelectedGameAchievements(
-                    theme,
-                    settings,
-                    AchievementSortSurface.AchievementDataGrid);
+            var defaultOrder = theme?.AchievementDefaultOrder;
+            var configuredSort = AchievementSortHelper.GetConfiguredDefaultSort(
+                settings,
+                AchievementSortSurface.AchievementDataGrid);
             if (sourceItems == null)
             {
                 ClearDisplayItems(resetSortState: true);
@@ -372,7 +371,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             var needsReload =
                 forceReload ||
                 !ReferenceEquals(sourceItems, _lastSourceItems) ||
-                !ReferenceEquals(orderedAchievements, _lastOrderedAchievements) ||
+                !ReferenceEquals(defaultOrder, _lastDefaultOrder) ||
+                !Equals(configuredSort, _lastConfiguredSort) ||
                 _lastMaxRows != maxRows;
 
             if (!needsReload)
@@ -382,19 +382,15 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             _lastSourceItems = sourceItems;
-            _lastOrderedAchievements = orderedAchievements;
+            _lastDefaultOrder = defaultOrder;
+            _lastConfiguredSort = configuredSort;
             _lastMaxRows = maxRows;
 
-            var revealedKeys = GetRevealedKeys(DisplayItems);
-            var clonedItems = sourceItems.Select(item => item.Clone()).ToList();
-            RestoreRevealedState(clonedItems, revealedKeys);
+            var clonedItems = CreateSourceOrderedItems(sourceItems, theme);
 
             // Category rollups and dropdown options use the canonical definition order,
             // independent of the configured theme sort or a user-applied column sort.
             var categorySummaryItems = new List<AchievementDisplayItem>(clonedItems);
-            AchievementSortHelper.ApplyExplicitOrder(
-                categorySummaryItems,
-                AchievementSortHelper.CreateExplicitOrderKeys(theme?.AchievementDefaultOrder ?? new List<AchievementDetail>()));
             if (AchievementsGrid != null)
             {
                 AchievementsGrid.CategorySummarySource = categorySummaryItems;
@@ -402,24 +398,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
             _controlBarAdapter.UpdateOptions(categorySummaryItems);
 
-            if (!string.IsNullOrWhiteSpace(_currentSortPath) && _currentSortDirection.HasValue)
-            {
-                AchievementSortHelper.TrySortItems(
-                    clonedItems,
-                    _currentSortPath,
-                    _currentSortDirection.Value,
-                    AchievementSortScope.GameAchievements,
-                    ref _currentSortPath,
-                    ref _currentSortDirection);
-            }
-            else
-            {
-                AchievementSortHelper.ApplyExplicitOrder(
-                    clonedItems,
-                    AchievementSortHelper.CreateExplicitOrderKeys(orderedAchievements));
-            }
-
-            AchievementSortHelper.ApplyGoalsFirst(clonedItems);
+            AchievementSortHelper.OrderGameAchievementItems(
+                clonedItems,
+                _currentSortPath,
+                _currentSortDirection,
+                useSourceOrder,
+                settings,
+                AchievementSortSurface.AchievementDataGrid);
 
             var filteredItems = _controlBarAdapter.Apply(clonedItems);
             var displayItems = DisplayGridRowLimitHelper.Limit(filteredItems, maxRows);
@@ -656,7 +641,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private void RefreshAfterRowOptionsChanged()
         {
             _lastSourceItems = null;
-            _lastOrderedAchievements = null;
+            _lastDefaultOrder = null;
             LoadData();
         }
 
@@ -704,21 +689,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             if (DisplayItems == null || DisplayItems.Count == 0) return;
 
-            var sourceItems = EffectiveTheme?.AllAchievementDisplayItems;
-            var revealedKeys = GetRevealedKeys(DisplayItems);
+            var theme = EffectiveTheme;
+            var sourceItems = theme?.AllAchievementDisplayItems;
             var items = sourceItems != null
-                ? sourceItems.Select(item => item.Clone()).ToList()
+                ? CreateSourceOrderedItems(sourceItems, theme)
                 : DisplayItems.ToList();
-            RestoreRevealedState(items, revealedKeys);
-            AchievementSortHelper.TrySortItems(
+            _currentSortPath = sortMemberPath;
+            _currentSortDirection = direction;
+            AchievementSortHelper.OrderGameAchievementItems(
                 items,
-                sortMemberPath,
-                direction,
-                AchievementSortScope.GameAchievements,
-                ref _currentSortPath,
-                ref _currentSortDirection);
-
-            AchievementSortHelper.ApplyGoalsFirst(items);
+                _currentSortPath,
+                _currentSortDirection,
+                useSourceOrder: false,
+                EffectiveSettings?.Persisted,
+                AchievementSortSurface.AchievementDataGrid);
 
             // Keep dropdown options in canonical definition order rather than the new column sort.
             _controlBarAdapter.UpdateOptions(AchievementsGrid?.CategorySummarySource ?? items);
@@ -733,6 +717,23 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             ApplyCurrentSortIndicator(EffectiveTheme);
         }
 
+        /// <summary>
+        /// Clones the theme's rows in the game's default order (custom order when configured,
+        /// provider order otherwise), carrying over this grid's revealed rows.
+        /// </summary>
+        private List<AchievementDisplayItem> CreateSourceOrderedItems(
+            IEnumerable<AchievementDisplayItem> sourceItems,
+            ModernThemeBindings theme)
+        {
+            var revealedKeys = GetRevealedKeys(DisplayItems);
+            var items = sourceItems.Select(item => item.Clone()).ToList();
+            RestoreRevealedState(items, revealedKeys);
+            AchievementSortHelper.ApplyExplicitOrder(
+                items,
+                AchievementSortHelper.CreateExplicitOrderKeys(theme?.AchievementDefaultOrder ?? new List<AchievementDetail>()));
+            return items;
+        }
+
         private void ResetSortState()
         {
             _currentSortPath = null;
@@ -742,14 +743,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private void ResetToDefaultSort()
         {
             ResetSortState();
-            _lastOrderedAchievements = null;
+            _lastDefaultOrder = null;
             LoadData(useSourceOrder: true);
         }
 
         private void ClearDisplayItems(bool resetSortState)
         {
             _lastSourceItems = null;
-            _lastOrderedAchievements = null;
+            _lastDefaultOrder = null;
             _lastMaxRows = null;
             SetValue(GameNamePropertyKey, null);
             UpdateSummaryItem(null);
