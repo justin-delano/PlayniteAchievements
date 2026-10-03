@@ -78,6 +78,9 @@ namespace PlayniteAchievements.Services.Workshop
 
             switch (request.Item.Kind)
             {
+                case WorkshopItemKind.Colors:
+                    InstallColors(request, persisted, result);
+                    break;
                 case WorkshopItemKind.NotificationStyle:
                 case WorkshopItemKind.ScreenshotFrame:
                     await InstallNotificationStyleAsync(request, persisted, result, cancel).ConfigureAwait(true);
@@ -186,6 +189,16 @@ namespace PlayniteAchievements.Services.Workshop
 
             _plugin.PersistSettingsForUi();
             _plugin.NotificationImageStore?.PruneOrphans(persisted, _plugin.GameCustomDataStore?.LoadAll());
+        }
+
+        // ---- colors --------------------------------------------------------------------------
+
+        private void InstallColors(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
+        {
+            result.UndoSnapshotId = _undo.Snapshot(persisted, WorkshopSettingsSlices.Colors, request.Item.Id, request.Item.Name);
+            _plugin.ColorPackPortableStore.Import(request.PackagePath, persisted);
+            _plugin.PersistSettingsForUi();
+            AfterSettingsChanged(WorkshopSettingsSlices.Colors, persisted);
         }
 
         // ---- sounds --------------------------------------------------------------------------

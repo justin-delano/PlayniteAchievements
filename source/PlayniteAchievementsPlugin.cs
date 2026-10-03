@@ -91,6 +91,7 @@ namespace PlayniteAchievements
         private NotificationStylePresetStore _notificationStylePresetStore;
         private Services.Sound.UnlockSoundPortableStore _unlockSoundPortableStore;
         private Services.Workshop.ThemePackPortableStore _themePackPortableStore;
+        private Services.Workshop.ColorPackPortableStore _colorPackPortableStore;
         private Services.Workshop.WorkshopInstalledRegistry _workshopRegistry;
         private Services.Workshop.WorkshopUndoStore _workshopUndo;
         private Services.Workshop.WorkshopInstaller _workshopInstaller;
@@ -206,9 +207,11 @@ namespace PlayniteAchievements
         public Services.Sound.UnlockSoundPortableStore UnlockSoundPortableStore =>
             _unlockSoundPortableStore ?? (_unlockSoundPortableStore =
                 new Services.Sound.UnlockSoundPortableStore(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.ColorPackPortableStore ColorPackPortableStore =>
+            _colorPackPortableStore ?? (_colorPackPortableStore = new Services.Workshop.ColorPackPortableStore());
         public Services.Workshop.ThemePackPortableStore ThemePackPortableStore =>
             _themePackPortableStore ?? (_themePackPortableStore =
-                new Services.Workshop.ThemePackPortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, _logger));
+                new Services.Workshop.ThemePackPortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, ColorPackPortableStore, _logger));
         public Services.Workshop.WorkshopInstalledRegistry WorkshopRegistry =>
             _workshopRegistry ?? (_workshopRegistry =
                 new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));

@@ -195,6 +195,7 @@ namespace PlayniteAchievements.Services.Workshop
         {
             switch (kind)
             {
+                case WorkshopItemKind.Colors: return "Colors";
                 case WorkshopItemKind.NotificationStyle: return "Notification style";
                 case WorkshopItemKind.ScreenshotFrame: return "Screenshot frame";
                 case WorkshopItemKind.ShowcasePage: return "Showcase page";

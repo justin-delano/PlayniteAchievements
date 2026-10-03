@@ -9,6 +9,7 @@ namespace PlayniteAchievements.Services.Workshop
     /// <summary>The item kinds the Workshop lists; names match the repository manifests.</summary>
     public enum WorkshopItemKind
     {
+        Colors,
         NotificationStyle,
         ScreenshotFrame,
         ShowcasePage,

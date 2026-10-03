@@ -77,6 +77,12 @@ namespace PlayniteAchievements.Services.Workshop
 
             result.Add(new WorkshopShareCandidate
             {
+                Kind = WorkshopItemKind.Colors,
+                Label = ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"),
+                DefaultName = ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors")
+            });
+            result.Add(new WorkshopShareCandidate
+            {
                 Kind = WorkshopItemKind.NotificationStyle,
                 Label = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_GlobalStyle"),
                 DefaultName = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_GlobalStyle")
@@ -167,6 +173,13 @@ namespace PlayniteAchievements.Services.Workshop
 
             switch (candidate.Kind)
             {
+                case WorkshopItemKind.Colors:
+                {
+                    var path = Path.Combine(directory, stem + ColorPackPortableStore.PackageFileExtension);
+                    _plugin.ColorPackPortableStore.Export(persisted, path);
+                    return path;
+                }
+
                 case WorkshopItemKind.NotificationStyle:
                 {
                     var path = Path.Combine(directory, stem + Notifications.NotificationStylePortableStore.ToastPackageFileExtension);
