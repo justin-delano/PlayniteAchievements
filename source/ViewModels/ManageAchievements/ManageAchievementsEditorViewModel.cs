@@ -199,9 +199,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             DeleteCommand = new RelayCommand(
                 _ => DeleteSelected(),
                 _ => HasSelection && ResolveSelectionTargets().All(row => !row.IsProviderRow) && !IsSaving);
+            // Only a customized provider achievement has values to go back to. An authored one has
+            // no provider behind it, so reverting it would only clear the user's own data.
             RevertCommand = new RelayCommand(
                 _ => RevertSelected(),
-                _ => HasSelection && !IsSaving);
+                _ => HasSelection && !IsSaving && ResolveSelectionTargets().Any(IsRevertible));
             ManualLinkCommand = new RelayCommand(_ => OpenManualLinkDialog(), _ => CanLinkManualTracking && !IsSaving);
             UnlinkManualTrackingCommand = new RelayCommand(
                 _ => UnlinkManualTracking(),
@@ -2829,8 +2831,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         /// <summary>
-        /// Clears the user's customization for every selected achievement so it shows the
-        /// provider's own values again, then reloads so the rows display what was restored.
+        /// Clears the user's customization for every selected provider achievement that carries
+        /// any, so it shows the provider's own values again, then reloads so the rows display what
+        /// was restored. Authored achievements in the selection are left alone.
         /// </summary>
         /// <remarks>
         /// Each facet is cleared through the setter that owns it, so the stored shapes stay
@@ -2841,7 +2844,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void RevertSelected()
         {
             var targets = ResolveSelectionTargets()
-                .Where(row => !string.IsNullOrWhiteSpace(row.OriginalApiName))
+                .Where(row => IsRevertible(row) && !string.IsNullOrWhiteSpace(row.OriginalApiName))
                 .ToList();
             if (targets.Count == 0)
             {
@@ -2870,6 +2873,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 targets.Select(row => row.OriginalApiName));
             ResetCustomizations(targets, deleteAuthored: false);
         }
+
+        private static bool IsRevertible(AchievementEditorRow row) =>
+            row != null && row.IsProviderRow && row.IsCustomized;
 
         /// <summary>
         /// Drops every customization the game carries, authored achievements included, and reloads
