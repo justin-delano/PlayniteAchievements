@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -38,13 +39,17 @@ namespace PlayniteAchievements.Services.Workshop
         public Guid? GameId { get; set; }
 
         public List<string> Warnings { get; } = new List<string>();
+
+        /// <summary>The presets an install created, one per saved part; empty for kinds that apply directly.</summary>
+        public List<string> PresetNames { get; } = new List<string>();
     }
 
     /// <summary>
-    /// Applies a downloaded Workshop package through the same import code the settings pages
-    /// and the Manage Achievements window use, after snapshotting what it will replace so the
-    /// install can be reverted. Runs on the UI thread: template validation and the showcase
-    /// refresh need it.
+    /// Installs a downloaded Workshop package. Looks (color sets, notification styles, frames,
+    /// sound packs and themes) are saved as presets under the item's name and applied only when
+    /// the user picks them from a preset list, so installing never overwrites the current look.
+    /// Showcase pages and game data apply directly, after snapshotting what they replace so the
+    /// install can be reverted. Runs on the UI thread: the showcase refresh needs it.
     /// </summary>
     public sealed class WorkshopInstaller
     {
@@ -142,83 +147,54 @@ namespace PlayniteAchievements.Services.Workshop
 
         // ---- notification style / frame ------------------------------------------------------
 
-        private async Task InstallNotificationStyleAsync(
+        private Task InstallNotificationStyleAsync(
             WorkshopInstallRequest request,
             PersistedSettings persisted,
             WorkshopInstallResult result,
             CancellationToken cancel)
         {
-            var store = _plugin.NotificationStylePortableStore;
-            var contents = store.InspectPackage(request.PackagePath);
-
-            result.UndoSnapshotId = _undo.Snapshot(persisted, WorkshopSettingsSlices.NotificationStyle, request.Item.Id, request.Item.Name);
-
-            var imported = await store.ImportAsync(request.PackagePath, NotificationImageOwner.Global, cancel).ConfigureAwait(true);
-            var merged = (persisted.NotificationStyle ?? NotificationStyleSettings.CreateDefault()).Clone();
-            if (contents.HasToastStyle)
-            {
-                NotificationStylePortableStore.ApplyPackSurfaces(merged, imported, isFrame: false);
-            }
-
-            if (contents.HasFrameStyle)
-            {
-                NotificationStylePortableStore.ApplyPackSurfaces(merged, imported, isFrame: true);
-            }
-
-            persisted.NotificationStyle = merged;
-
-            var resolver = CreateTemplateResolver();
+            var contents = _plugin.NotificationStylePortableStore.InspectPackage(request.PackagePath);
+            var presets = _plugin.NotificationStylePresetStore;
+            var saved = false;
             foreach (var isFrame in new[] { false, true })
             {
-                var xaml = store.ReadTemplateXaml(request.PackagePath, isFrame);
-                if (string.IsNullOrWhiteSpace(xaml))
+                if (isFrame ? !contents.HasFrameStyle : !contents.HasToastStyle)
                 {
                     continue;
                 }
 
-                try
-                {
-                    resolver.SaveCustomTemplate(isFrame, xaml, providerKey: null, gameId: Guid.Empty);
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Warn(ex, $"Workshop item {request.Item.Id}: the {(isFrame ? "frame" : "toast")} template was rejected.");
-                    result.Warnings.Add(ex.Message);
-                }
+                var preset = presets.SavePresetFromPackage(isFrame, request.Item.Name, request.PackagePath);
+                result.PresetNames.Add(preset.Name);
+                saved = true;
             }
 
-            _plugin.PersistSettingsForUi();
-            _plugin.NotificationImageStore?.PruneOrphans(persisted, _plugin.GameCustomDataStore?.LoadAll());
+            if (!saved)
+            {
+                throw new InvalidOperationException("This package does not contain a notification or frame style.");
+            }
+
+            return Task.CompletedTask;
         }
 
         // ---- colors --------------------------------------------------------------------------
 
         private void InstallColors(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
         {
-            result.UndoSnapshotId = _undo.Snapshot(persisted, WorkshopSettingsSlices.Colors, request.Item.Id, request.Item.Name);
-            _plugin.ColorPackPortableStore.Import(request.PackagePath, persisted);
-            _plugin.PersistSettingsForUi();
-            AfterSettingsChanged(WorkshopSettingsSlices.Colors, persisted);
+            var preset = _plugin.ColorPresetStore.SaveFrom(request.Item.Name, request.PackagePath);
+            result.PresetNames.Add(preset.Name);
         }
 
         // ---- sounds --------------------------------------------------------------------------
 
         private void InstallSounds(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
         {
-            result.UndoSnapshotId = _undo.Snapshot(persisted, WorkshopSettingsSlices.Sounds, request.Item.Id, request.Item.Name);
-
-            var sounds = persisted.UnlockSounds ?? UnlockSoundSettings.CreateDefault();
-            _plugin.UnlockSoundPortableStore.Import(request.PackagePath, sounds);
-            persisted.UnlockSounds = sounds;
-            _plugin.UnlockSoundPortableStore.PruneUnreferenced(sounds);
-
-            _plugin.PersistSettingsForUi();
-            AfterSettingsChanged(WorkshopSettingsSlices.Sounds, persisted);
+            var preset = _plugin.UnlockSoundPresetStore.SaveFrom(request.Item.Name, request.PackagePath);
+            result.PresetNames.Add(preset.Name);
         }
 
         // ---- theme ---------------------------------------------------------------------------
 
-        private async Task InstallThemeAsync(
+        private Task InstallThemeAsync(
             WorkshopInstallRequest request,
             PersistedSettings persisted,
             WorkshopInstallResult result,
@@ -232,37 +208,38 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new InvalidOperationException("None of the selected theme parts is in this package.");
             }
 
-            var slices = WorkshopSettingsSlices.None;
-            if (parts.HasFlag(ThemePackParts.Colors)) slices |= WorkshopSettingsSlices.Colors;
-            if (parts.HasFlag(ThemePackParts.Sounds)) slices |= WorkshopSettingsSlices.Sounds;
-            if (parts.HasFlag(ThemePackParts.Toast) || parts.HasFlag(ThemePackParts.Frame)) slices |= WorkshopSettingsSlices.NotificationStyle;
-            result.UndoSnapshotId = _undo.Snapshot(persisted, slices, request.Item.Id, request.Item.Name);
-
-            var resolver = CreateTemplateResolver();
-            var applied = await store.ImportAsync(
-                request.PackagePath,
-                parts,
-                persisted,
-                (isFrame, xaml) =>
-                {
-                    try
-                    {
-                        resolver.SaveCustomTemplate(isFrame, xaml, providerKey: null, gameId: Guid.Empty);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Warn(ex, $"Workshop theme {request.Item.Id}: the {(isFrame ? "frame" : "toast")} template was rejected.");
-                        result.Warnings.Add(ex.Message);
-                    }
-                },
-                cancel).ConfigureAwait(true);
-
-            _plugin.PersistSettingsForUi();
-            AfterSettingsChanged(slices, persisted);
-            if (applied.HasFlag(ThemePackParts.Toast) || applied.HasFlag(ThemePackParts.Frame))
+            // Each part becomes a preset of its own kind under the theme's name, so a theme can
+            // be picked up piece by piece from the preset lists and never overwrites anything.
+            var scratch = PortablePackage.CreateScratchDirectory("WorkshopTheme");
+            try
             {
-                _plugin.NotificationImageStore?.PruneOrphans(persisted, _plugin.GameCustomDataStore?.LoadAll());
+                var extracted = store.ExtractParts(request.PackagePath, parts, scratch);
+                if (extracted.TryGetValue(ThemePackParts.Colors, out var colorsPath))
+                {
+                    result.PresetNames.Add(_plugin.ColorPresetStore.SaveFrom(request.Item.Name, colorsPath).Name);
+                }
+
+                if (extracted.TryGetValue(ThemePackParts.Sounds, out var soundsPath))
+                {
+                    result.PresetNames.Add(_plugin.UnlockSoundPresetStore.SaveFrom(request.Item.Name, soundsPath).Name);
+                }
+
+                if (extracted.TryGetValue(ThemePackParts.Toast, out var toastPath))
+                {
+                    result.PresetNames.Add(_plugin.NotificationStylePresetStore.SavePresetFromPackage(false, request.Item.Name, toastPath).Name);
+                }
+
+                if (extracted.TryGetValue(ThemePackParts.Frame, out var framePath))
+                {
+                    result.PresetNames.Add(_plugin.NotificationStylePresetStore.SavePresetFromPackage(true, request.Item.Name, framePath).Name);
+                }
             }
+            finally
+            {
+                PortablePackage.TryDeleteDirectory(scratch);
+            }
+
+            return Task.CompletedTask;
         }
 
         // ---- showcase page -------------------------------------------------------------------
