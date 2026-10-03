@@ -89,6 +89,8 @@ namespace PlayniteAchievements
         private readonly ShowcaseImageStore _showcaseImageStore;
         private NotificationStylePortableStore _notificationStylePortableStore;
         private NotificationStylePresetStore _notificationStylePresetStore;
+        private Services.Workshop.PackagePresetStore _colorPresetStore;
+        private Services.Workshop.PackagePresetStore _unlockSoundPresetStore;
         private Services.Sound.UnlockSoundPortableStore _unlockSoundPortableStore;
         private Services.Workshop.ThemePackPortableStore _themePackPortableStore;
         private Services.Workshop.ColorPackPortableStore _colorPackPortableStore;
@@ -209,6 +211,20 @@ namespace PlayniteAchievements
                 new Services.Sound.UnlockSoundPortableStore(GetPluginUserDataPath(), _logger));
         public Services.Workshop.ColorPackPortableStore ColorPackPortableStore =>
             _colorPackPortableStore ?? (_colorPackPortableStore = new Services.Workshop.ColorPackPortableStore());
+        /// <summary>Saved color sets (.pacolors files), the presets behind Display > Colors.</summary>
+        public Services.Workshop.PackagePresetStore ColorPresetStore =>
+            _colorPresetStore ?? (_colorPresetStore = new Services.Workshop.PackagePresetStore(
+                GetPluginUserDataPath(),
+                "color_presets",
+                Services.Workshop.ColorPackPortableStore.PackageFileExtension,
+                path => ColorPackPortableStore.Read(path)));
+        /// <summary>Saved sound packs (.pasounds files), the presets behind the unlock sounds card.</summary>
+        public Services.Workshop.PackagePresetStore UnlockSoundPresetStore =>
+            _unlockSoundPresetStore ?? (_unlockSoundPresetStore = new Services.Workshop.PackagePresetStore(
+                GetPluginUserDataPath(),
+                "unlock_sound_presets",
+                Services.Sound.UnlockSoundPortableStore.PackageFileExtension,
+                path => UnlockSoundPortableStore.Inspect(path)));
         public Services.Workshop.ThemePackPortableStore ThemePackPortableStore =>
             _themePackPortableStore ?? (_themePackPortableStore =
                 new Services.Workshop.ThemePackPortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, ColorPackPortableStore, _logger));
