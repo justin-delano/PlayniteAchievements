@@ -44,10 +44,11 @@
             </Style>
 
             <!-- The row actions as glyphs, so the toolbar leaves room for the header beside it on a
-                 narrow window. Segoe MDL2 is hinted for 16px; IcoFont blurs at this size. The label
-                 moves to the tooltip, which a disabled button still shows. -->
+                 narrow window. The label moves to the tooltip, which a disabled button still shows.
+                 Codepoints are IcoFont glyph names read from Playnite's shipped icofont.ttf: undo,
+                 redo, plus, copy, history, trash, download, upload. -->
             <Style x:Key="ToolbarIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}" />
                 <Setter Property="FontSize" Value="16" />
                 <Setter Property="Width" Value="34" />
                 <Setter Property="Padding" Value="0" />
@@ -328,12 +329,12 @@
                                 VerticalAlignment="Top"
                                 Margin="0,0,16,0">
                         <Button x:Name="UndoButton"
-                                Content="&#xE7A7;"
+                                Content="&#xEE0B;"
                                 ToolTip="{Binding UndoDescription}"
                                 Command="{Binding UndoCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="RedoButton"
-                                Content="&#xE7A6;"
+                                Content="&#xEDFE;"
                                 ToolTip="{Binding RedoDescription}"
                                 Command="{Binding RedoCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
@@ -342,22 +343,22 @@
                     <StackPanel Margin="0,0,16,0">
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="AddButton"
-                                Content="&#xE710;"
+                                Content="&#xEFC2;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Add}"
                                 Command="{Binding AddCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="DuplicateButton"
-                                Content="&#xE8C8;"
+                                Content="&#xEDEA;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Duplicate}"
                                 Command="{Binding DuplicateCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="RevertButton"
-                                Content="&#xE777;"
+                                Content="&#xEF46;"
                                 ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Editor_RevertHint}"
                                 Command="{Binding RevertCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="DeleteButton"
-                                Content="&#xE74D;"
+                                Content="&#xEE09;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Delete}"
                                 Command="{Binding DeleteCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
@@ -383,12 +384,12 @@
                          second row, and a wrap panel would otherwise give every item that height. -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Top">
                         <Button x:Name="ImportFileButton"
-                                Content="&#xE896;"
+                                Content="&#xEF08;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Import}"
                                 Command="{Binding ImportFileCommand}"
                                 Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="ExportButton"
-                                Content="&#xE898;"
+                                Content="&#xF01D;"
                                 ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                 Click="ContextMenuButton_Click"
                                 Style="{StaticResource ToolbarIconButtonStyle}">
