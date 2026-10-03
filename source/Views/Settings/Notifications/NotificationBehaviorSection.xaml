@@ -165,6 +165,16 @@
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                            <!-- The whole tier set as one .pasounds file: export bundles the user's
+                                 own and theme files, import copies a pack into managed storage. -->
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                <Button Click="UnlockSoundPackExport_Click"
+                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"/>
+                                <Button Click="UnlockSoundPackImport_Click"
+                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
+                                        Margin="6,0,0,0"/>
+                            </StackPanel>
                             <!-- DataContext island (see UnlockSoundSettingsViewModel); one row per tier.
                                  Button handlers read the row from the sender's DataContext. -->
                             <ItemsControl x:Name="UnlockSoundRows"

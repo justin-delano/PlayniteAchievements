@@ -7,10 +7,12 @@ using System.Windows.Input;
 // WinForms dialog: the WPF Microsoft.Win32 picker renders legacy-style on .NET Framework.
 using DialogResult = System.Windows.Forms.DialogResult;
 using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
+using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 
@@ -27,6 +29,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
     public partial class NotificationBehaviorSection : UserControl, IDisposable
     {
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PersistedSettingsSubscription _persistedSubscription;
         private readonly UnlockSoundSettingsViewModel _unlockSoundsViewModel;
         private readonly ILogger _logger;
@@ -43,7 +46,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             : this()
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            if (plugin == null) throw new ArgumentNullException(nameof(plugin));
+            _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
 
             _persistedSubscription = new PersistedSettingsSubscription(
@@ -90,6 +93,99 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             {
                 _unlockSoundsViewModel?.Test(row);
             }
+        }
+
+        /// <summary>
+        /// Writes what each tier currently plays, minus the bundled defaults, to a .pasounds file.
+        /// </summary>
+        private void UnlockSoundPackExport_Click(object sender, RoutedEventArgs e)
+        {
+            Keyboard.ClearFocus();
+            var store = _plugin?.UnlockSoundPortableStore;
+            var resolver = _plugin?.UnlockSounds?.Resolver;
+            if (store == null || resolver == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = UnlockSoundPortableStore.BuildFileDialogFilter(),
+                    AddExtension = true,
+                    DefaultExt = UnlockSoundPortableStore.PackageFileExtension,
+                    FileName = "unlock-sounds" + UnlockSoundPortableStore.PackageFileExtension
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                store.Export(resolver.ResolveAll(), UnlockSoundPortableStore.NormalizeExportPath(dialog.FileName));
+                ShowMessage(L("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed exporting unlock sound pack.");
+                ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Copies a .pasounds pack into managed storage and points the carried tiers at it; tiers
+        /// the pack does not carry keep their current sound.
+        /// </summary>
+        private void UnlockSoundPackImport_Click(object sender, RoutedEventArgs e)
+        {
+            Keyboard.ClearFocus();
+            var store = _plugin?.UnlockSoundPortableStore;
+            var sounds = _settings?.Persisted?.UnlockSounds;
+            if (store == null || sounds == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = UnlockSoundPortableStore.BuildFileDialogFilter(),
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                store.Import(dialog.FileName, sounds);
+                store.PruneUnreferenced(sounds);
+                _unlockSoundsViewModel?.Refresh();
+                _unlockSoundsViewModel?.ScheduleApply();
+                ShowMessage(L("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed importing unlock sound pack.");
+                ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        private void ShowMessage(string message, MessageBoxImage image)
+        {
+            _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                message,
+                L("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                image);
+        }
+
+        private static string L(string key)
+        {
+            return ResourceProvider.GetString(key);
         }
 
         /// <summary>
