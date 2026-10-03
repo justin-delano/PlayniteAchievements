@@ -343,7 +343,7 @@
                     <!-- Presets and sharing for the tab selected above: save the active surface's
                          appearance (including images and any custom template) under a name, apply a
                          saved preset to the current platform/game selection, or exchange styles as
-                         .pastyle(.zip) files. The dropdown lists only presets for the active surface. -->
+                         .panotif/.paframe files. The dropdown lists only presets for the active surface. -->
                     <Border Style="{StaticResource SectionBorderStyle}">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Presets_Header}"
@@ -376,16 +376,13 @@
                                        TextWrapping="Wrap"
                                        Margin="0,8,0,0"/>
 
-                            <!-- Share the selected style: export to a .pastyle(.zip) file or import
-                                 one onto the current platform selection. -->
+                            <!-- Share the selected surface's style as a .panotif/.paframe file or
+                                 import one onto the current platform selection. Both surfaces
+                                 together travel as a theme bundle (Display > Colors). -->
                             <WrapPanel Margin="0,14,0,0">
                                 <Button x:Name="ExportStyleButton"
                                         Click="ExportStyle_Click"
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_ExportButton}"
-                                        Margin="0,0,8,0"/>
-                                <Button x:Name="ExportBothStylesButton"
-                                        Click="ExportBothStyles_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportBothButton}"
                                         Margin="0,0,8,0"/>
                                 <Button x:Name="ImportStyleButton"
                                         Click="ImportStyle_Click"

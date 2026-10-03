@@ -815,7 +815,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// so every toggle, reorder, image, and font change previews live.
         /// </summary>
         // The custom-template scope for the current selection: a game in game mode, else the
-        // selected provider (null = global). Mirrors how the .pastyle style scope is chosen.
+        // selected provider (null = global). Mirrors how the style package scope is chosen.
         private string ScopeProviderKey => IsGameMode ? null : _selectedProviderKey;
 
         private Guid ScopeGameId => IsGameMode ? _gameId : Guid.Empty;
@@ -1404,89 +1404,9 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         }
 
         /// <summary>
-        /// Exports the full style (both surfaces) for the current platform selection to a
-        /// shareable .pastyle package. Debounced edits are flushed first so the file matches
-        /// what the editors show.
-        /// </summary>
-        private void ExportBothStyles_Click(object sender, RoutedEventArgs e)
-        {
-            var style = _currentStyle;
-            var store = _plugin?.NotificationStylePortableStore;
-            if (style == null || store == null)
-            {
-                return;
-            }
-
-            try
-            {
-                _toastEditorViewModel?.FlushPendingPersist();
-                _frameEditorViewModel?.FlushPendingPersist();
-
-                var dialog = new SaveFileDialog
-                {
-                    Filter = "Playnite Achievements Style (*.pastyle)|*.pastyle",
-                    AddExtension = true,
-                    DefaultExt = NotificationStylePortableStore.PackageFileExtension,
-                    FileName = BuildDefaultStyleFileName()
-                };
-
-                if (dialog.ShowDialog() != DialogResult.OK)
-                {
-                    return;
-                }
-
-                var destinationPath = NotificationStylePortableStore.NormalizeExportPath(
-                    dialog.FileName, NotificationStylePortableStore.PackageFileExtension);
-
-                // A package can also carry the toast and/or frame template, but only a template
-                // the user actually authored for this scope: that is portable loose XAML that
-                // passed validation on install. The active theme's override is never bundled
-                // (it is theme-coupled and would import broken), so when nothing is authored the
-                // prompt is skipped and the package is data-only. Users who want a working
-                // template to start from use the separate "export default template" action.
-                string toastTemplateXaml = null;
-                string frameTemplateXaml = null;
-                var resolver = _toastTemplateResolver;
-                if (resolver != null)
-                {
-                    var customToast = resolver.ReadCustomTemplateXaml(isFrame: false, ScopeProviderKey, ScopeGameId);
-                    if (customToast != null &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ExportIncludeToastTemplate")))
-                    {
-                        toastTemplateXaml = customToast;
-                    }
-
-                    var customFrame = resolver.ReadCustomTemplateXaml(isFrame: true, ScopeProviderKey, ScopeGameId);
-                    if (customFrame != null &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ExportIncludeFrameTemplate")))
-                    {
-                        frameTemplateXaml = customFrame;
-                    }
-                }
-
-                store.ExportPackage(style, destinationPath, toastTemplateXaml, frameTemplateXaml);
-
-                _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                    L("LOCPlayAch_Status_Succeeded") + "\n" + destinationPath,
-                    L("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed exporting notification style.");
-                _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
         /// Imports a style file onto the current platform selection, replacing the surfaces the
         /// file carries (a .panotif replaces the notification, a .paframe the frame, a
-        /// .pastyle both) and creating the provider's whole-style copy if it was
+        /// a retired .pastyle with both) and creating the provider's whole-style copy if it was
         /// following the default. Any file type imports from either tab; a file that does not
         /// cover the active tab's surface warns first. Bundled images are re-materialized into
         /// managed storage.
@@ -1504,11 +1424,12 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             {
                 var dialog = new OpenFileDialog
                 {
+                    // The retired .pastyle spelling stays accepted in the first filter so files
+                    // exported before 4.1 still import, without advertising it as a format.
                     Filter =
-                        "Playnite Achievements Style Files (*.panotif;*.paframe;*.pastyle)|*.panotif;*.paframe;*.pastyle;*.panotif.zip;*.paframe.zip;*.pastyle.zip|" +
+                        "Playnite Achievements Style Files (*.panotif;*.paframe)|*.panotif;*.paframe;*.panotif.zip;*.paframe.zip;*.pastyle;*.pastyle.zip|" +
                         "Playnite Achievements Notification Style (*.panotif)|*.panotif;*.panotif.zip|" +
-                        "Playnite Achievements Frame Style (*.paframe)|*.paframe;*.paframe.zip|" +
-                        "Playnite Achievements Style (*.pastyle)|*.pastyle;*.pastyle.zip",
+                        "Playnite Achievements Frame Style (*.paframe)|*.paframe;*.paframe.zip",
                     CheckFileExists = true,
                     Multiselect = false
                 };
