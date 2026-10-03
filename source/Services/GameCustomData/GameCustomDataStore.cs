@@ -166,6 +166,7 @@ namespace PlayniteAchievements.Services.GameCustomData
         private AchievementDataService _achievementDataService;
         private Func<string, CustomProviderDefinition> _tryGetCustomProvider;
         private Func<CustomProviderDefinition, bool> _importCustomProviderIfMissing;
+        private Func<Guid, IReadOnlyList<PortableGameKey>> _resolveGameKeys;
         private Dictionary<Guid, GameCustomDataFile> _cacheByGameId;
         private HashSet<Guid> _missingGameIds;
 
@@ -218,6 +219,15 @@ namespace PlayniteAchievements.Services.GameCustomData
         {
             _tryGetCustomProvider = tryGetCustomProvider;
             _importCustomProviderIfMissing = importCustomProviderIfMissing;
+        }
+
+        /// <summary>
+        /// Connects the lookup that names a game in machine-independent terms (provider ids,
+        /// name and platform), so an exported .pa file can be matched to a library game elsewhere.
+        /// </summary>
+        public void AttachGameKeyResolver(Func<Guid, IReadOnlyList<PortableGameKey>> resolveGameKeys)
+        {
+            _resolveGameKeys = resolveGameKeys;
         }
 
         public bool TryLoad(Guid playniteGameId, out GameCustomDataFile data)
@@ -909,7 +919,27 @@ namespace PlayniteAchievements.Services.GameCustomData
             portable.CustomProvider = string.IsNullOrWhiteSpace(portable.CustomProviderId)
                 ? null
                 : _tryGetCustomProvider?.Invoke(portable.CustomProviderId)?.Clone();
+            portable.Kind = GameCustomDataPortableFile.GameCustomDataKind;
+            var keys = SafeResolveGameKeys(playniteGameId);
+            portable.GameKeys = keys.Count == 0 ? null : keys;
             return portable;
+        }
+
+        private List<PortableGameKey> SafeResolveGameKeys(Guid playniteGameId)
+        {
+            try
+            {
+                return (_resolveGameKeys?.Invoke(playniteGameId) ?? Array.Empty<PortableGameKey>())
+                    .Where(key => key != null)
+                    .Select(key => key.Clone())
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                // A missing key only costs the workshop its automatic match; the export still works.
+                _logger?.Debug(ex, $"Failed resolving portable game keys for {playniteGameId}.");
+                return new List<PortableGameKey>();
+            }
         }
 
         /// <summary>
