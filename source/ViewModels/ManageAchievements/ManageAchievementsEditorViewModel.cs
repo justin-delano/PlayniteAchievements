@@ -58,6 +58,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly Func<bool> _showManualLinkDialog;
         private readonly Action _unlinkManualTracking;
         private readonly System.Windows.Input.ICommand _exportAllCustomData;
+        private readonly System.Windows.Input.ICommand _importFromWorkshop;
+        private readonly System.Windows.Input.ICommand _shareToWorkshop;
         private readonly Action<Action<CustomAchievementTextImportResult>, Action> _importPortable;
         private bool _isRefreshingAssignments;
 
@@ -139,6 +141,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             Func<bool> showManualLinkDialog = null,
             Action unlinkManualTracking = null,
             System.Windows.Input.ICommand exportAllCustomData = null,
+            System.Windows.Input.ICommand importFromWorkshop = null,
+            System.Windows.Input.ICommand shareToWorkshop = null,
             Action<Action<CustomAchievementTextImportResult>, Action> importPortable = null)
         {
             _includeProviderAchievements = includeProviderAchievements;
@@ -157,6 +161,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _showManualLinkDialog = showManualLinkDialog;
             _unlinkManualTracking = unlinkManualTracking;
             _exportAllCustomData = exportAllCustomData;
+            _importFromWorkshop = importFromWorkshop;
+            _shareToWorkshop = shareToWorkshop;
             _importPortable = importPortable;
             if (_customProviderStore != null)
             {
@@ -216,9 +222,19 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ExportAllCustomDataCommand = new RelayCommand(
                 _ => _exportAllCustomData?.Execute(null),
                 _ => _exportAllCustomData?.CanExecute(null) == true && !IsSaving);
+            ImportFromWorkshopCommand = new RelayCommand(
+                _ => _importFromWorkshop?.Execute(null),
+                _ => _importFromWorkshop?.CanExecute(null) == true && !IsSaving);
+            ShareToWorkshopCommand = new RelayCommand(
+                _ => _shareToWorkshop?.Execute(null),
+                _ => _shareToWorkshop?.CanExecute(null) == true && !IsSaving);
             if (_exportAllCustomData != null)
             {
                 _exportAllCustomData.CanExecuteChanged += ExportAllCustomData_CanExecuteChanged;
+                if (_shareToWorkshop != null)
+                {
+                    _shareToWorkshop.CanExecuteChanged += ExportAllCustomData_CanExecuteChanged;
+                }
             }
             ResetCommand = new RelayCommand(_ => ResetRows(), _ => HasRows && !IsSaving);
             ResetOrderCommand = new RelayCommand(_ => ResetOrder(), _ => HasCustomOrder && !IsSaving);
@@ -1116,6 +1132,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public RelayCommand ExportAchievementsCommand { get; }
 
         public RelayCommand ExportAllCustomDataCommand { get; }
+
+        public RelayCommand ImportFromWorkshopCommand { get; }
+
+        public RelayCommand ShareToWorkshopCommand { get; }
 
         /// <summary>
         /// Drops every customization this game carries -- the authored achievements, the
@@ -2217,6 +2237,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (_exportAllCustomData != null)
             {
                 _exportAllCustomData.CanExecuteChanged -= ExportAllCustomData_CanExecuteChanged;
+                if (_shareToWorkshop != null)
+                {
+                    _shareToWorkshop.CanExecuteChanged -= ExportAllCustomData_CanExecuteChanged;
+                }
             }
 
             // A running DispatcherTimer is rooted by the dispatcher and holds its handler, so it
@@ -3354,6 +3378,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void ExportAllCustomData_CanExecuteChanged(object sender, EventArgs e)
         {
             ExportAllCustomDataCommand?.RaiseCanExecuteChanged();
+            ShareToWorkshopCommand?.RaiseCanExecuteChanged();
         }
 
         private void MergeImportedDefinitions(CustomAchievementTextImportResult result)
