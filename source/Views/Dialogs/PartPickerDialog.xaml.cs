@@ -10,7 +10,7 @@ using System.Windows.Controls;
 namespace PlayniteAchievements.Views.Dialogs
 {
     /// <summary>One checkable row of a <see cref="PartPickerDialog"/>.</summary>
-    public sealed class PartPickerItem : ObservableObject
+    public sealed class PartPickerItem : Common.ObservableObject
     {
         private bool _isChecked;
 
