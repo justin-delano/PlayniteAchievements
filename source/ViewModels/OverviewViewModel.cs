@@ -3678,26 +3678,9 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(_selectedGameSortPath))
-            {
-                // Re-runs the active column sort and re-partitions goals, then syncs.
-                SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
-                return true;
-            }
-
-            // No column sort, so re-run exactly what the load path does: restore the natural order
-            // as the base (the configured sort may preserve source order), apply the configured
-            // default sort, then pin goals. Partitioning alone is stable, so without this a
-            // removed goal would stay stranded at the top.
-            RestoreSelectedGameNaturalOrder();
-            AchievementSortHelper.ApplyConfiguredDefaultSort(
-                _filteredSelectedGameAchievements,
-                _settings?.Persisted,
-                AchievementSortSurface.OverviewSelectedGame,
-                AchievementSortScope.GameAchievements,
-                stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
-            AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
-            AchievementSortHelper.ApplyGoalsFirst(_filteredSelectedGameAchievements);
+            // Re-run the full ordering from the natural order rather than re-partitioning in
+            // place: partitioning alone is stable, so a removed goal would stay stranded at the top.
+            OrderSelectedGameAchievements(useSourceOrder: false);
             SyncSelectedGameAchievementsDisplay();
             return true;
         }
@@ -4262,26 +4245,8 @@ namespace PlayniteAchievements.ViewModels
                     .Apply(_allSelectedGameAchievements)
                     .ToList();
 
-                if (!string.IsNullOrEmpty(_selectedGameSortPath))
-                {
-                    SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
-                }
-                else if (!skipDefaultSort)
-                {
-                    AchievementSortHelper.ApplyConfiguredDefaultSort(
-                        _filteredSelectedGameAchievements,
-                        _settings?.Persisted,
-                        AchievementSortSurface.OverviewSelectedGame,
-                        AchievementSortScope.GameAchievements,
-                        stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
-
-                    AchievementSortHelper.ApplyGoalsFirst(_filteredSelectedGameAchievements);
-                    SyncSelectedGameAchievementsDisplay();
-                }
-                else
-                {
-                    SyncSelectedGameAchievementsDisplay();
-                }
+                OrderSelectedGameAchievements(useSourceOrder: skipDefaultSort);
+                SyncSelectedGameAchievementsDisplay();
             }
             else
             {
@@ -4742,45 +4707,36 @@ namespace PlayniteAchievements.ViewModels
 
         private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
         {
-            var existingAllOrder = _allSelectedGameAchievements
-                .Select((item, index) => new { item, index })
-                .ToDictionary(x => x.item, x => x.index);
-
-            var selectedSortDirection = (ListSortDirection?)_selectedGameSortDirection;
-            if (!AchievementSortHelper.TrySortItems(
-                    _allSelectedGameAchievements,
-                    sortMemberPath,
-                    direction,
-                    AchievementSortScope.GameAchievements,
-                    ref _selectedGameSortPath,
-                    ref selectedSortDirection,
-                    existingAllOrder))
+            if (string.IsNullOrWhiteSpace(sortMemberPath) ||
+                AchievementSortHelper.GetComparison(sortMemberPath, direction, AchievementSortScope.GameAchievements) == null)
             {
                 return;
             }
 
-            if (selectedSortDirection.HasValue)
-            {
-                _selectedGameSortDirection = selectedSortDirection.Value;
-            }
-
-            var sortedAllOrder = _allSelectedGameAchievements
-                .Select((item, index) => new { item, index })
-                .ToDictionary(x => x.item, x => x.index);
-
-            selectedSortDirection = _selectedGameSortDirection;
-            AchievementSortHelper.TrySortItems(
-                _filteredSelectedGameAchievements,
-                sortMemberPath,
-                direction,
-                AchievementSortScope.GameAchievements,
-                ref _selectedGameSortPath,
-                ref selectedSortDirection,
-                sortedAllOrder);
-
-            AchievementSortHelper.ApplyGoalsFirst(_allSelectedGameAchievements);
-            AchievementSortHelper.ApplyGoalsFirst(_filteredSelectedGameAchievements);
+            _selectedGameSortPath = sortMemberPath;
+            _selectedGameSortDirection = direction;
+            OrderSelectedGameAchievements(useSourceOrder: false);
             SyncSelectedGameAchievementsDisplay();
+        }
+
+        /// <summary>
+        /// Re-orders the selected game's live lists from the natural-order snapshot through the
+        /// shared grid ordering: the active column sort, otherwise the configured default sort
+        /// unless <paramref name="useSourceOrder"/>, then goals first.
+        /// </summary>
+        private void OrderSelectedGameAchievements(bool useSourceOrder)
+        {
+            RestoreSelectedGameNaturalOrder();
+            foreach (var items in new[] { _allSelectedGameAchievements, _filteredSelectedGameAchievements })
+            {
+                AchievementSortHelper.OrderGameAchievementItems(
+                    items,
+                    _selectedGameSortPath,
+                    SelectedGameSortDirection,
+                    useSourceOrder,
+                    _settings?.Persisted,
+                    AchievementSortSurface.OverviewSelectedGame);
+            }
         }
 
         private static string L(string key)

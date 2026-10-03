@@ -819,6 +819,126 @@ namespace PlayniteAchievements.Services.Tests
                 items.Select(item => item.DisplayName).ToArray());
         }
 
+        [TestMethod]
+        public void TrySortItems_DescendingAfterAscendingState_SortsInsteadOfReversingInput()
+        {
+            // The modern theme grid rebuilds its rows in source order on every click while
+            // remembering the previous ascending sort; the result must still be descending.
+            var items = CreateRarityItems(12, 7, 17.7, 21.6);
+            var sortPath = nameof(AchievementDisplayItem.RaritySortValue);
+            ListSortDirection? sortDirection = ListSortDirection.Ascending;
+
+            var handled = AchievementSortHelper.TrySortItems(
+                items,
+                nameof(AchievementDisplayItem.RaritySortValue),
+                ListSortDirection.Descending,
+                AchievementSortScope.GameAchievements,
+                ref sortPath,
+                ref sortDirection);
+
+            Assert.IsTrue(handled);
+            CollectionAssert.AreEqual(
+                new[] { 21.6, 17.7, 12d, 7d },
+                items.Select(item => item.RaritySortValue).ToArray());
+        }
+
+        [TestMethod]
+        public void OrderGameAchievementItems_ColumnSort_IgnoresInputOrder()
+        {
+            foreach (var input in new[]
+            {
+                CreateRarityItems(12, 7, 17.7, 21.6),
+                CreateRarityItems(7, 12, 17.7, 21.6)
+            })
+            {
+                AchievementSortHelper.OrderGameAchievementItems(
+                    input,
+                    nameof(AchievementDisplayItem.RaritySortValue),
+                    ListSortDirection.Descending,
+                    useSourceOrder: false,
+                    new PersistedSettings(),
+                    AchievementSortSurface.AchievementDataGrid);
+
+                CollectionAssert.AreEqual(
+                    new[] { 21.6, 17.7, 12d, 7d },
+                    input.Select(item => item.RaritySortValue).ToArray());
+            }
+        }
+
+        [TestMethod]
+        public void OrderGameAchievementItems_TiesKeepSourceOrderInBothDirections()
+        {
+            foreach (var direction in new[] { ListSortDirection.Ascending, ListSortDirection.Descending })
+            {
+                var items = new List<AchievementDisplayItem>
+                {
+                    CreateItem("First", null, raritySortValue: 10, trophyType: null, points: 5),
+                    CreateItem("Second", null, raritySortValue: 10, trophyType: null, points: 5),
+                    CreateItem("Third", null, raritySortValue: 10, trophyType: null, points: 5)
+                };
+
+                AchievementSortHelper.OrderGameAchievementItems(
+                    items,
+                    nameof(AchievementDisplayItem.Points),
+                    direction,
+                    useSourceOrder: false,
+                    new PersistedSettings(),
+                    AchievementSortSurface.AchievementDataGrid);
+
+                CollectionAssert.AreEqual(
+                    new[] { "First", "Second", "Third" },
+                    items.Select(item => item.DisplayName).ToArray(),
+                    direction.ToString());
+            }
+        }
+
+        [TestMethod]
+        public void OrderGameAchievementItems_WithoutColumnSort_AppliesConfiguredDefaultUnlessSourceOrder()
+        {
+            var settings = new PersistedSettings
+            {
+                AchievementDataGridSortMode = CompactListSortMode.Rarity,
+                AchievementDataGridSortDescending = true
+            };
+
+            var configured = CreateRarityItems(12, 7, 17.7, 21.6);
+            AchievementSortHelper.OrderGameAchievementItems(
+                configured,
+                columnSortPath: null,
+                columnSortDirection: null,
+                useSourceOrder: false,
+                settings,
+                AchievementSortSurface.AchievementDataGrid);
+            CollectionAssert.AreEqual(
+                new[] { 21.6, 17.7, 12d, 7d },
+                configured.Select(item => item.RaritySortValue).ToArray());
+
+            var source = CreateRarityItems(12, 7, 17.7, 21.6);
+            AchievementSortHelper.OrderGameAchievementItems(
+                source,
+                columnSortPath: null,
+                columnSortDirection: null,
+                useSourceOrder: true,
+                settings,
+                AchievementSortSurface.AchievementDataGrid);
+            CollectionAssert.AreEqual(
+                new[] { 12d, 7d, 17.7, 21.6 },
+                source.Select(item => item.RaritySortValue).ToArray());
+        }
+
+        private static List<AchievementDisplayItem> CreateRarityItems(params double[] raritySortValues)
+        {
+            return raritySortValues
+                .Select((value, index) => CreateItem(
+                    $"Achievement {index}",
+                    null,
+                    raritySortValue: value,
+                    trophyType: null,
+                    points: 10,
+                    defaultOrderIndex: index))
+                .ToList();
+        }
+
         private static AchievementDisplayItem CreateItem(
             string displayName,
             DateTime? unlockTimeUtc,
