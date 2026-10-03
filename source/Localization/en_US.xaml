@@ -1611,7 +1611,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalFrame">Screenshot frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">Unlock sounds</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Theme">Theme (colors, sounds, notification style, frame)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_AlsoInThemes">Also in themes</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_ShowcasePage">Showcase page: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GameData">Game data: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">Your name</sys:String>
