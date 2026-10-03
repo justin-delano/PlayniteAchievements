@@ -65,6 +65,9 @@
     <Compile Include="..\..\source\Providers\Hypixel\HypixelParsing.cs" Link="Source\Providers\Hypixel\HypixelParsing.cs" />
     <Compile Include="..\..\source\Providers\Hypixel\HypixelAchievementMapper.cs" Link="Source\Providers\Hypixel\HypixelAchievementMapper.cs" />
 
+    <Compile Include="..\..\source\Providers\Meta\MetaModels.cs" Link="Source\Providers\Meta\MetaModels.cs" />
+    <Compile Include="..\..\source\Providers\Meta\MetaParsing.cs" Link="Source\Providers\Meta\MetaParsing.cs" />
+
     <Compile Include="..\..\source\Providers\GameJolt\GameJoltModels.cs" Link="Source\Providers\GameJolt\GameJoltModels.cs" />
     <Compile Include="..\..\source\Providers\GameJolt\GameJoltTrophyMapper.cs" Link="Source\Providers\GameJolt\GameJoltTrophyMapper.cs" />
 
