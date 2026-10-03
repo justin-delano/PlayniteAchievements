@@ -343,10 +343,50 @@ namespace PlayniteAchievements.Services.Achievements
         }
 
         /// <summary>
+        /// Orders one game's achievement rows for a grid surface: the active column sort when one
+        /// is set, otherwise the surface's configured default sort (skipped when
+        /// <paramref name="useSourceOrder"/> is true), then goals first. <paramref name="items"/>
+        /// must arrive in source order (custom order when configured, provider order otherwise);
+        /// that order breaks ties, so the result does not depend on any earlier sort.
+        /// </summary>
+        public static void OrderGameAchievementItems(
+            List<AchievementDisplayItem> items,
+            string columnSortPath,
+            ListSortDirection? columnSortDirection,
+            bool useSourceOrder,
+            PersistedSettings settings,
+            AchievementSortSurface surface)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return;
+            }
+
+            var sourceOrder = CreateStableOrderMap(items);
+            var columnComparison = !string.IsNullOrWhiteSpace(columnSortPath) && columnSortDirection.HasValue
+                ? GetComparison(columnSortPath, columnSortDirection.Value, AchievementSortScope.GameAchievements)
+                : null;
+            if (columnComparison != null)
+            {
+                items.Sort(WithStableOrder(columnComparison, sourceOrder));
+            }
+            else if (!useSourceOrder)
+            {
+                ApplyConfiguredDefaultSort(
+                    items,
+                    settings,
+                    surface,
+                    AchievementSortScope.GameAchievements,
+                    stableOrder: sourceOrder);
+            }
+
+            ApplyGoalsFirst(items);
+        }
+
+        /// <summary>
         /// Stable-partitions goal achievements to the front of an already-sorted list, ordered by
         /// the user's goal order. Applied after sorting rather than folded into the comparators so
-        /// it survives the <see cref="TrySortItems{TItem}"/> reverse fast path and cannot disturb
-        /// the relative order of everything else.
+        /// it cannot disturb the relative order of everything else.
         /// </summary>
         public static void ApplyGoalsFirst<TItem>(List<TItem> items)
             where TItem : AchievementDisplayItem
@@ -653,16 +693,6 @@ namespace PlayniteAchievements.Services.Achievements
                 return false;
             }
 
-            if (SupportsQuickReverse(sortMemberPath) &&
-                currentSortPath == sortMemberPath &&
-                currentSortDirection == ListSortDirection.Ascending &&
-                direction == ListSortDirection.Descending)
-            {
-                items.Reverse();
-                currentSortDirection = direction;
-                return true;
-            }
-
             var comparison = GetComparison(sortMemberPath, direction, scope);
             if (comparison == null)
             {
@@ -898,12 +928,6 @@ namespace PlayniteAchievements.Services.Achievements
                 "bronze" => 1,
                 _ => 0
             };
-        }
-
-        private static bool SupportsQuickReverse(string sortMemberPath)
-        {
-            return !string.Equals(sortMemberPath, nameof(AchievementDisplayItem.UnlockTime), StringComparison.Ordinal) &&
-                   !string.Equals(sortMemberPath, nameof(AchievementDisplayItem.TrophyType), StringComparison.Ordinal);
         }
 
         private static Comparison<AchievementDisplayItem> ApplyDirection(
