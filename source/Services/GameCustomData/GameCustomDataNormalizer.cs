@@ -416,6 +416,17 @@ namespace PlayniteAchievements.Services.GameCustomData
                         }
                         : null;
 
+                case "Meta":
+                    // Meta app ids are 15-16 digits, past the int range of the case above.
+                    return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var metaAppId) &&
+                           metaAppId > 0
+                        ? new ProviderOverrideData
+                        {
+                            ProviderKey = providerKey,
+                            Value = metaAppId.ToString(CultureInfo.InvariantCulture)
+                        }
+                        : null;
+
                 case "Xenia":
                     var xeniaTitleId = XeniaTitleIdHelper.Normalize(value);
                     return string.IsNullOrWhiteSpace(xeniaTitleId)
@@ -666,6 +677,11 @@ namespace PlayniteAchievements.Services.GameCustomData
             if (string.Equals(normalized, "Hypixel", StringComparison.OrdinalIgnoreCase))
             {
                 return "Hypixel";
+            }
+
+            if (string.Equals(normalized, "Meta", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Meta";
             }
 
             return null;
