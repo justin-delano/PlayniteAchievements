@@ -625,6 +625,7 @@
     <Compile Include="..\..\source\Common\PortablePackage.cs" Link="Source\Common\PortablePackage.cs" />
     <Compile Include="..\..\source\Services\UI\UnlockSoundResolver.cs" Link="Source\Services\UI\UnlockSoundResolver.cs" />
     <Compile Include="..\..\source\Services\Sound\UnlockSoundPortableStore.cs" Link="Source\Services\Sound\UnlockSoundPortableStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\ThemePackPortableStore.cs" Link="Source\Services\Workshop\ThemePackPortableStore.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
