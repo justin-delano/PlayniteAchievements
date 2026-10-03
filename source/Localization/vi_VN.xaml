@@ -608,7 +608,7 @@ This game's achievements come from a manual link, so clearing deletes the link a
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_ClearDescription">Clear cached achievement data. The next refresh rebuilds it.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Description">Remove discovered unowned friend games and their cached images. Owned and shared friend data is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Achievement data cached from your platforms. Clearing it does not touch icon files.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Cached Achievement Data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Dữ liệu thành tựu trong bộ nhớ đệm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Danh sách bị khoá thu gọn</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Danh sách đã mở khoá thu gọn</sys:String>
@@ -671,9 +671,9 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendBatchSize">Friends per Refresh (0 = all):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_MaxConcurrentToasts">Concurrent notifications:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastDurationSeconds">Duration (seconds):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotificationDelaySeconds">Notification delay (seconds):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CaptureDelaySeconds">Capture delay (seconds):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition">Position:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotificationDelaySeconds">Độ trễ thông báo (giây):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CaptureDelaySeconds">Độ trễ ghi hình (giây):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition">Vị trí:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableControllerVibration">Vibrate controller on notification</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ControllerVibrationStrength">Vibration strength (%):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ControllerVibrationDuration">Vibration duration (ms):</sys:String>
