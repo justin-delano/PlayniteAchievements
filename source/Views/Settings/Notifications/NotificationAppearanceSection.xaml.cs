@@ -1448,11 +1448,17 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 () => _plugin.OpenWorkshopWindow(focusKind: kind));
         }
 
-        private async void ImportStyleFile_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Adds a .panotif or .paframe file to the presets of the surface it carries, named
+        /// after the file. Applying it to a platform or game is the preset list's job, so the
+        /// current look does not change here. Files from before 4.1 that carry both surfaces
+        /// become one preset per surface.
+        /// </summary>
+        private void ImportStyleFile_Click(object sender, RoutedEventArgs e)
         {
-            var persisted = _settings?.Persisted;
             var store = _plugin?.NotificationStylePortableStore;
-            if (persisted == null || store == null)
+            var presets = _plugin?.NotificationStylePresetStore;
+            if (store == null || presets == null)
             {
                 return;
             }
@@ -1477,163 +1483,47 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 }
 
                 var contents = store.InspectPackage(dialog.FileName);
-
-                // Importing is allowed from either tab, but a file that does not cover the
-                // active tab's surface is easy to pick by accident, so it warns first. The
-                // mismatch prompt doubles as the import confirmation.
-                var activeIsFrame = FrameTabItem?.IsSelected == true;
-                var coversActiveSurface = activeIsFrame ? contents.HasFrameStyle : contents.HasToastStyle;
-                var mismatchConfirmed = false;
-                if (contents.HasStyle && !coversActiveSurface)
+                if (!contents.HasStyle)
                 {
-                    var carried = L(contents.HasFrameStyle
-                        ? "LOCPlayAch_Settings_FrameHeader"
-                        : "LOCPlayAch_Settings_Style_ToastTab");
-                    var active = L(activeIsFrame
-                        ? "LOCPlayAch_Settings_FrameHeader"
-                        : "LOCPlayAch_Settings_Style_ToastTab");
-                    if (!Confirm(string.Format(
-                            L("LOCPlayAch_Settings_Style_ImportSurfaceMismatch"), carried, active)))
-                    {
-                        return;
-                    }
-
-                    mismatchConfirmed = true;
+                    Inform(L("LOCPlayAch_Settings_Style_ImportUnsupportedFile"), MessageBoxImage.Warning);
+                    return;
                 }
 
-                var resolver = _toastTemplateResolver;
-                var offerTemplates = resolver != null &&
-                    (contents.HasToastTemplate || contents.HasFrameTemplate);
-
-                bool applyStyle;
-                var installToast = false;
-                var installFrame = false;
-
-                if (!offerTemplates)
+                var stem = NotificationStylePortableStore.StripRecognizedSuffix(Path.GetFileName(dialog.FileName));
+                string selectName = null;
+                var selectIsFrame = false;
+                foreach (var isFrame in new[] { false, true })
                 {
-                    // Style-only file: single confirmation, apply the style (unchanged behavior).
-                    if (!mismatchConfirmed && !Confirm(L("LOCPlayAch_Settings_Style_ImportConfirm")))
+                    if (isFrame ? !contents.HasFrameStyle : !contents.HasToastStyle)
                     {
-                        return;
+                        continue;
                     }
 
-                    applyStyle = true;
-                }
-                else
-                {
-                    // The package carries one or both templates: let the user pick any combination
-                    // of the available parts to apply.
-                    applyStyle = contents.HasStyle &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ImportApplyStyle"));
-                    installToast = contents.HasToastTemplate &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ImportInstallToastTemplate"));
-                    installFrame = contents.HasFrameTemplate &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ImportInstallFrameTemplate"));
-                    if (!applyStyle && !installToast && !installFrame)
+                    var preset = presets.SavePresetFromPackage(isFrame, presets.UniqueName(isFrame, stem), dialog.FileName);
+                    if (selectName == null || isFrame == IsFrameTabActive)
                     {
-                        return;
+                        selectName = preset.Name;
+                        selectIsFrame = isFrame;
                     }
                 }
 
-                _toastEditorViewModel?.FlushPendingPersist();
-                _frameEditorViewModel?.FlushPendingPersist();
-
-                if (applyStyle)
-                {
-                    var providerKey = _selectedProviderKey;
-                    var owner = IsGameMode
-                        ? NotificationImageOwner.ForGame(_gameId)
-                        : NotificationImageOwner.ForProvider(providerKey);
-                    var imported = await store.ImportAsync(
-                        dialog.FileName,
-                        owner,
-                        CancellationToken.None);
-                    if (imported == null)
-                    {
-                        throw new InvalidOperationException("Imported notification style was empty.");
-                    }
-
-                    // Merge only the surfaces the file carries onto the current scope's style.
-                    // When the target scope still follows an inherited style, snapshot the
-                    // inherited images into the scope first so an untouched surface never
-                    // references another owner's slot files.
-                    var merged = (_currentScopeStyle ?? NotificationStyleSettings.CreateDefault()).Clone();
-                    var mergeTarget = ResolveMergeTarget(merged);
-                    if (!IsGameMode && providerKey != null &&
-                        persisted.GetProviderNotificationStyle(providerKey) == null)
-                    {
-                        await _plugin.NotificationImageStore.CopyImagesForProviderAsync(
-                            merged, providerKey, CancellationToken.None);
-                    }
-                    else if (IsGameMode && CustomizeGameCheckBox?.IsChecked != true)
-                    {
-                        await _plugin.NotificationImageStore.CopyImagesForGameAsync(
-                            merged, _gameId, CancellationToken.None);
-                    }
-
-                    if (contents.HasToastStyle)
-                    {
-                        ApplyPackSurfaces(mergeTarget, imported, isFrame: false);
-                    }
-
-                    if (contents.HasFrameStyle)
-                    {
-                        ApplyPackSurfaces(mergeTarget, imported, isFrame: true);
-                    }
-
-                    ApplyImportedStyle(persisted, providerKey, merged);
-
-                    if (!IsGameMode)
-                    {
-                        _plugin.PersistSettingsForUi();
-                    }
-
-                    // Drop slot files the replaced style no longer references.
-                    _plugin.NotificationImageStore.PruneOrphans(
-                        persisted,
-                        _plugin.GameCustomDataStore?.LoadAll());
-                }
-
-                var templateErrors = new List<string>();
-                if (installToast)
-                {
-                    InstallImportedTemplate(store, resolver, dialog.FileName, isFrame: false, templateErrors);
-                }
-
-                if (installFrame)
-                {
-                    InstallImportedTemplate(store, resolver, dialog.FileName, isFrame: true, templateErrors);
-                }
-
-                ApplySelection();
-                UpdateMockups();
-
-                if (templateErrors.Count > 0)
-                {
-                    _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                        string.Format(L("LOCPlayAch_Status_Failed"), string.Join("\n", templateErrors)),
-                        L("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-                else
-                {
-                    _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                        L("LOCPlayAch_Status_Succeeded"),
-                        L("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
+                RefreshPresetOptions(selectIsFrame == IsFrameTabActive ? selectName : null);
+                Inform(string.Format(L("LOCPlayAch_Workshop_SavedAsPreset"), selectName), MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed importing notification style.");
-                _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                    string.Format(L("LOCPlayAch_Status_Failed"), ex.Message),
-                    L("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                Inform(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
             }
+        }
+
+        private void Inform(string message, MessageBoxImage image)
+        {
+            _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                message,
+                L("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                image);
         }
 
         private bool Confirm(string message)
@@ -1840,61 +1730,12 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
         private bool TryPromptPresetName(string defaultName, out string presetName)
         {
-            presetName = null;
-
-            var inputDialog = new TextInputDialog(
-                L("LOCPlayAch_Presets_NameDialogHint"),
-                defaultName ?? string.Empty);
-
-            var window = PlayniteUiProvider.CreateExtensionWindow(
-                L("LOCPlayAch_Presets_NameDialogTitle"),
-                inputDialog,
-                new WindowOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = false,
-                    ShowCloseButton = true,
-                    CanBeResizable = false,
-                    Width = 460,
-                    Height = 200
-                });
-
-            Views.Helpers.WindowPlacementPersistenceService.Attach(window, "PresetName");
-
-            try
-            {
-                if (window.Owner == null)
-                {
-                    window.Owner = _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow();
-                }
-            }
-            catch
-            {
-            }
-
-            inputDialog.RequestClose += (s, e) => window.Close();
-            window.ShowDialog();
-
-            if (inputDialog.DialogResult != true)
-            {
-                return false;
-            }
-
-            var sanitized = NotificationStylePresetStore.SanitizeName(inputDialog.InputText);
-            if (string.IsNullOrWhiteSpace(sanitized))
-            {
-                _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                    string.Format(
-                        L("LOCPlayAch_Presets_NameInvalid"),
-                        NotificationStylePresetStore.MaxNameLength),
-                    L("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
-
-            presetName = sanitized;
-            return true;
+            return PresetNamePrompt.TryAsk(
+                _plugin,
+                defaultName,
+                NotificationStylePresetStore.SanitizeName,
+                NotificationStylePresetStore.MaxNameLength,
+                out presetName);
         }
 
         /// <summary>
