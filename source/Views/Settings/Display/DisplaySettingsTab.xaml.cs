@@ -61,7 +61,7 @@ namespace PlayniteAchievements.Views.Settings.Display
                     ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"),
                     iconGlyph: "\uE790",
                     viewFactory: () => _colorsSection =
-                        new ColorsSection(settings, plugin.ProviderRegistry, pickColor)),
+                        new ColorsSection(settings, plugin, logger, pickColor)),
                 new SettingsNavigationItem(
                     "Spoilers",
                     ResourceProvider.GetString("LOCPlayAch_Settings_Spoilers"),

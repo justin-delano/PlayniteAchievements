@@ -84,6 +84,18 @@
                                         Margin="8,0,0,0"
                                         MinWidth="78"
                                         Click="ResetAllRarityColors_Click"/>
+
+                                <!-- The whole global look as one .patheme bundle: colors, unlock
+                                     sounds, notification and frame styles, any subset. -->
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                                        Margin="16,0,0,0"
+                                        MinWidth="58"
+                                        Click="ExportTheme_Click"/>
+
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
+                                        Margin="8,0,0,0"
+                                        MinWidth="58"
+                                        Click="ImportTheme_Click"/>
                               </StackPanel>
                             </controls:SettingRow>
                         </StackPanel>

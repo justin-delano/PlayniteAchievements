@@ -2,16 +2,24 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+// WinForms dialogs: the WPF Microsoft.Win32 pickers render legacy-style on .NET Framework.
+using DialogResult = System.Windows.Forms.DialogResult;
+using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
+using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Settings;
+using PlayniteAchievements.Views.Dialogs;
 
 namespace PlayniteAchievements.Views.Settings.Display
 {
@@ -22,7 +30,9 @@ namespace PlayniteAchievements.Views.Settings.Display
     public partial class ColorsSection : UserControl, IDisposable
     {
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ProviderRegistry _providerRegistry;
+        private readonly ILogger _logger;
         private readonly Func<Window, string, string> _pickColor;
         private readonly PersistedSettingsSubscription _persistedSubscription;
 
@@ -40,12 +50,15 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         internal ColorsSection(
             PlayniteAchievementsSettings settings,
-            ProviderRegistry providerRegistry,
+            PlayniteAchievementsPlugin plugin,
+            ILogger logger,
             Func<Window, string, string> pickColor)
             : this()
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
+            _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
+            _providerRegistry = plugin.ProviderRegistry ?? throw new ArgumentNullException(nameof(plugin.ProviderRegistry));
+            _logger = logger;
             _pickColor = pickColor ?? throw new ArgumentNullException(nameof(pickColor));
 
             _persistedSubscription = new PersistedSettingsSubscription(
@@ -261,6 +274,188 @@ namespace PlayniteAchievements.Views.Settings.Display
         private void ResetAllRarityColors_Click(object sender, RoutedEventArgs e)
         {
             ApplyRarityPalette(new RarityPalettePreset("Default", RarityColorSettings.CreateDefault(), null));
+        }
+
+        /// <summary>
+        /// Writes the global look as a .patheme bundle. The user picks which parts travel; the
+        /// notification parts carry the installed global custom templates when there are any.
+        /// </summary>
+        private void ExportTheme_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ThemePackPortableStore;
+            if (persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var parts = PickThemeParts(ThemePackParts.All);
+                if (parts == ThemePackParts.None)
+                {
+                    return;
+                }
+
+                var dialog = new SaveFileDialog
+                {
+                    Filter = ThemePackPortableStore.BuildFileDialogFilter(),
+                    AddExtension = true,
+                    DefaultExt = ThemePackPortableStore.PackageFileExtension,
+                    FileName = "theme" + ThemePackPortableStore.PackageFileExtension
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var resolver = CreateTemplateResolver();
+                store.Export(
+                    ThemePackPortableStore.NormalizeExportPath(dialog.FileName),
+                    parts,
+                    persisted,
+                    _plugin.UnlockSounds?.Resolver?.ResolveAll(),
+                    resolver.ReadCustomTemplateXaml(isFrame: false, providerKey: null, gameId: Guid.Empty),
+                    resolver.ReadCustomTemplateXaml(isFrame: true, providerKey: null, gameId: Guid.Empty));
+                ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed exporting theme bundle.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Applies a .patheme bundle's chosen parts to the global settings, then persists and
+        /// refreshes the application resources so the new look shows at once.
+        /// </summary>
+        private async void ImportTheme_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ThemePackPortableStore;
+            if (persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = ThemePackPortableStore.BuildFileDialogFilter(),
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var available = store.Inspect(dialog.FileName);
+                var parts = PickThemeParts(available);
+                if (parts == ThemePackParts.None)
+                {
+                    return;
+                }
+
+                var resolver = CreateTemplateResolver();
+                var templateErrors = new List<string>();
+                var applied = await store.ImportAsync(
+                    dialog.FileName,
+                    parts,
+                    persisted,
+                    (isFrame, xaml) =>
+                    {
+                        try
+                        {
+                            resolver.SaveCustomTemplate(isFrame, xaml, providerKey: null, gameId: Guid.Empty);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Error(ex, $"Failed installing theme {(isFrame ? "frame" : "toast")} template.");
+                            templateErrors.Add(ex.Message);
+                        }
+                    },
+                    CancellationToken.None);
+
+                _plugin.PersistSettingsForUi();
+                RefreshAppearanceEditorFromPersisted();
+                if (applied.HasFlag(ThemePackParts.Sounds))
+                {
+                    _plugin.UnlockSounds?.ApplySettings();
+                }
+
+                if (applied.HasFlag(ThemePackParts.Toast) || applied.HasFlag(ThemePackParts.Frame))
+                {
+                    _plugin.NotificationImageStore?.PruneOrphans(persisted, _plugin.GameCustomDataStore?.LoadAll());
+                }
+
+                if (templateErrors.Count > 0)
+                {
+                    ShowMessage(
+                        string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), string.Join("\n", templateErrors)),
+                        MessageBoxImage.Warning);
+                }
+                else
+                {
+                    ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed importing theme bundle.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Offers the four theme parts as a checklist, with parts outside
+        /// <paramref name="available"/> shown disabled, and returns the chosen set.
+        /// </summary>
+        private ThemePackParts PickThemeParts(ThemePackParts available)
+        {
+            var items = new[]
+            {
+                new PartPickerItem(ThemePackParts.Colors, ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"),
+                    isEnabled: available.HasFlag(ThemePackParts.Colors)),
+                new PartPickerItem(ThemePackParts.Sounds, ResourceProvider.GetString("LOCPlayAch_Settings_EnableUnlockSounds"),
+                    isEnabled: available.HasFlag(ThemePackParts.Sounds)),
+                new PartPickerItem(ThemePackParts.Toast, ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab"),
+                    isEnabled: available.HasFlag(ThemePackParts.Toast)),
+                new PartPickerItem(ThemePackParts.Frame, ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader"),
+                    isEnabled: available.HasFlag(ThemePackParts.Frame))
+            };
+
+            var selected = PartPickerDialog.Show(
+                ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_Presets"),
+                ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_Preset"),
+                items,
+                _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow());
+
+            return selected == null
+                ? ThemePackParts.None
+                : selected.OfType<ThemePackParts>().Aggregate(ThemePackParts.None, (acc, part) => acc | part);
+        }
+
+        private AchievementToastTemplateResolver CreateTemplateResolver()
+        {
+            return new AchievementToastTemplateResolver(
+                _plugin.PlayniteApi,
+                _logger,
+                customTemplatesDirectory: AchievementToastTemplateResolver.GetCustomTemplatesDirectory(
+                    _plugin.GetPluginUserDataPath()));
+        }
+
+        private void ShowMessage(string message, MessageBoxImage image)
+        {
+            _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                message,
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                image);
         }
 
         private void ApplyRarityPalette(RarityPalettePreset preset)
