@@ -8,11 +8,9 @@ using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,20 +28,11 @@ namespace PlayniteAchievements.Services.Workshop
         All = Colors | Sounds | Toast | Frame
     }
 
-    /// <summary>The colors part: rarity, provider and resource overrides, as the settings hold them.</summary>
-    public sealed class ThemePackColors
-    {
-        public RarityColorSettings RarityColors { get; set; }
-
-        public Dictionary<string, string> ProviderColorOverrides { get; set; }
-
-        public Dictionary<string, ResourceOverrideSetting> ResourceOverrides { get; set; }
-    }
-
     /// <summary>
-    /// A theme bundle's manifest. The sounds, toast and frame parts are not described here; each
-    /// is an embedded package of its own format under <c>parts/</c>, so a bundle is read with the
-    /// same code as the standalone files and never grows a second schema for them.
+    /// A theme bundle's manifest. It only names the parts; each part is an embedded package of
+    /// its own standalone format under <c>parts/</c> (<c>.pacolors</c>, <c>.pasounds</c>,
+    /// <c>.panotif</c>, <c>.paframe</c>), so a bundle is read with the same code as the
+    /// standalone files and never grows a second schema for them.
     /// </summary>
     public sealed class ThemePackFile
     {
@@ -55,8 +44,6 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>Part names (<see cref="ThemePackParts"/> members) the bundle carries.</summary>
         public List<string> Parts { get; set; } = new List<string>();
-
-        public ThemePackColors Colors { get; set; }
     }
 
     /// <summary>
@@ -71,6 +58,7 @@ namespace PlayniteAchievements.Services.Workshop
         public const string PackageFileExtension = ".patheme";
         public const string ManifestEntryName = "theme.json";
         public const string PartsFolderName = "parts";
+        public const string ColorsEntryName = PartsFolderName + "/colors" + ColorPackPortableStore.PackageFileExtension;
         public const string SoundsEntryName = PartsFolderName + "/sounds" + UnlockSoundPortableStore.PackageFileExtension;
         public const string ToastEntryName = PartsFolderName + "/toast" + NotificationStylePortableStore.ToastPackageFileExtension;
         public const string FrameEntryName = PartsFolderName + "/frame" + NotificationStylePortableStore.FramePackageFileExtension;
@@ -86,10 +74,6 @@ namespace PlayniteAchievements.Services.Workshop
             ".zip"
         };
 
-        private static readonly Regex HexColorPattern = new Regex(
-            @"^#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$",
-            RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
         private static readonly JsonSerializerSettings WriteSettings = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented,
@@ -98,15 +82,18 @@ namespace PlayniteAchievements.Services.Workshop
 
         private readonly NotificationStylePortableStore _styleStore;
         private readonly UnlockSoundPortableStore _soundStore;
+        private readonly ColorPackPortableStore _colorStore;
         private readonly ILogger _logger;
 
         public ThemePackPortableStore(
             NotificationStylePortableStore styleStore,
             UnlockSoundPortableStore soundStore,
+            ColorPackPortableStore colorStore,
             ILogger logger = null)
         {
             _styleStore = styleStore ?? throw new ArgumentNullException(nameof(styleStore));
             _soundStore = soundStore ?? throw new ArgumentNullException(nameof(soundStore));
+            _colorStore = colorStore ?? throw new ArgumentNullException(nameof(colorStore));
             _logger = logger;
         }
 
@@ -128,11 +115,11 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>
-        /// Writes the selected parts of the global look. Sounds come from
-        /// <paramref name="resolvedSounds"/> (what each tier actually plays); the toast and frame
-        /// come from <paramref name="persisted"/>'s global style with the optional installed custom
-        /// templates. A selected part with nothing to carry (no custom sounds) is dropped from the
-        /// manifest rather than failing the export.
+        /// Writes the selected parts of the global look, each as its standalone package embedded
+        /// under <c>parts/</c>. Sounds come from <paramref name="resolvedSounds"/> (what each tier
+        /// actually plays); the toast and frame come from <paramref name="persisted"/>'s global
+        /// style with the optional installed custom templates. A selected part with nothing to
+        /// carry (no custom sounds) is dropped from the manifest rather than failing the export.
         /// </summary>
         public void Export(
             string destinationPath,
@@ -170,16 +157,9 @@ namespace PlayniteAchievements.Services.Workshop
 
                 if (parts.HasFlag(ThemePackParts.Colors))
                 {
-                    manifest.Colors = new ThemePackColors
-                    {
-                        RarityColors = persisted.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
-                        ProviderColorOverrides = new Dictionary<string, string>(
-                            persisted.ProviderColorOverrides ?? new Dictionary<string, string>(),
-                            StringComparer.OrdinalIgnoreCase),
-                        ResourceOverrides = (persisted.ResourceOverrides ?? new Dictionary<string, ResourceOverrideSetting>())
-                            .Where(pair => pair.Value != null)
-                            .ToDictionary(pair => pair.Key, pair => pair.Value.Clone(), StringComparer.OrdinalIgnoreCase)
-                    };
+                    var colorsPath = Path.Combine(scratch, "colors" + ColorPackPortableStore.PackageFileExtension);
+                    _colorStore.Export(persisted, colorsPath);
+                    embedded[ColorsEntryName] = colorsPath;
                     manifest.Parts.Add(ThemePackParts.Colors.ToString());
                 }
 
@@ -267,16 +247,14 @@ namespace PlayniteAchievements.Services.Workshop
             var scratch = PortablePackage.CreateScratchDirectory("ThemeImport");
             try
             {
-                ThemePackFile manifest;
-                ThemePackParts available;
                 var extracted = new Dictionary<ThemePackParts, string>();
                 using (var archive = PortablePackage.OpenRead(sourcePath, NotPackageMessage))
                 {
                     var entries = PortablePackage.IndexEntries(archive);
-                    manifest = ReadManifestOrThrow(entries);
-                    available = ResolveParts(manifest, entries);
+                    var manifest = ReadManifestOrThrow(entries);
+                    var available = ResolveParts(manifest, entries);
 
-                    foreach (var part in new[] { ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
+                    foreach (var part in new[] { ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
                     {
                         if (selected.HasFlag(part) && available.HasFlag(part))
                         {
@@ -290,9 +268,9 @@ namespace PlayniteAchievements.Services.Workshop
 
                 var applied = ThemePackParts.None;
 
-                if (selected.HasFlag(ThemePackParts.Colors) && available.HasFlag(ThemePackParts.Colors))
+                if (extracted.TryGetValue(ThemePackParts.Colors, out var colorsPath))
                 {
-                    ApplyColors(manifest.Colors, persisted);
+                    _colorStore.Import(colorsPath, persisted);
                     applied |= ThemePackParts.Colors;
                 }
 
@@ -335,66 +313,6 @@ namespace PlayniteAchievements.Services.Workshop
             {
                 PortablePackage.TryDeleteDirectory(scratch);
             }
-        }
-
-        /// <summary>
-        /// Validates and applies the colors part. Rarity and provider colors must be hex; resource
-        /// overrides are kept only for keys the resolver knows, with values that parse for the
-        /// key's kind. A bad value anywhere rejects the part, since a half-applied palette is
-        /// harder to undo than a refused one.
-        /// </summary>
-        public static void ApplyColors(ThemePackColors colors, PersistedSettings persisted)
-        {
-            if (colors == null)
-            {
-                throw new InvalidOperationException("The theme bundle has no colors part.");
-            }
-
-            var rarity = colors.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
-            foreach (var value in new[]
-            {
-                rarity.Common, rarity.Uncommon, rarity.Rare, rarity.UltraRare,
-                rarity.CompletedStart, rarity.CompletedEnd,
-                rarity.TrophyBronze, rarity.TrophySilver, rarity.TrophyGold, rarity.TrophyPlatinum
-            })
-            {
-                EnsureHexColorOrThrow(value, "rarity color");
-            }
-
-            var providerColors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var pair in colors.ProviderColorOverrides ?? new Dictionary<string, string>())
-            {
-                if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-                {
-                    continue;
-                }
-
-                EnsureHexColorOrThrow(pair.Value, $"provider color for '{pair.Key}'");
-                providerColors[pair.Key.Trim()] = pair.Value.Trim();
-            }
-
-            var kinds = PlayAchResourceService.ResourceDescriptors
-                .ToDictionary(descriptor => descriptor.ResourceKey, descriptor => descriptor.ValueKind, StringComparer.OrdinalIgnoreCase);
-            var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
-            foreach (var pair in colors.ResourceOverrides ?? new Dictionary<string, ResourceOverrideSetting>())
-            {
-                if (pair.Value == null || !kinds.TryGetValue(pair.Key ?? string.Empty, out var kind))
-                {
-                    continue;
-                }
-
-                var setting = pair.Value.Clone();
-                if (setting.Mode == ResourceOverrideMode.Custom)
-                {
-                    EnsureResourceValueOrThrow(kind, setting.CustomValue, pair.Key);
-                }
-
-                overrides[pair.Key] = setting;
-            }
-
-            persisted.RarityColors = rarity;
-            persisted.ProviderColorOverrides = providerColors;
-            persisted.ResourceOverrides = overrides;
         }
 
         private static ThemePackFile ReadManifestOrThrow(IReadOnlyDictionary<string, ZipArchiveEntry> entries)
@@ -443,14 +361,7 @@ namespace PlayniteAchievements.Services.Workshop
                     throw new InvalidOperationException($"The theme names an unknown part '{name}'.");
                 }
 
-                if (part == ThemePackParts.Colors)
-                {
-                    if (manifest.Colors == null)
-                    {
-                        throw new InvalidOperationException("The theme declares a colors part but carries none.");
-                    }
-                }
-                else if (!entries.ContainsKey(EntryNameFor(part)))
+                if (!entries.ContainsKey(EntryNameFor(part)))
                 {
                     throw new InvalidOperationException($"The theme is missing its '{EntryNameFor(part)}' part.");
                 }
@@ -465,45 +376,11 @@ namespace PlayniteAchievements.Services.Workshop
         {
             switch (part)
             {
+                case ThemePackParts.Colors: return ColorsEntryName;
                 case ThemePackParts.Sounds: return SoundsEntryName;
                 case ThemePackParts.Toast: return ToastEntryName;
                 case ThemePackParts.Frame: return FrameEntryName;
                 default: throw new ArgumentOutOfRangeException(nameof(part), part, "No archive entry backs this part.");
-            }
-        }
-
-        private static void EnsureHexColorOrThrow(string value, string whatItIs)
-        {
-            if (string.IsNullOrWhiteSpace(value) || !HexColorPattern.IsMatch(value.Trim()))
-            {
-                throw new InvalidOperationException($"The theme's {whatItIs} '{value}' is not a #RRGGBB or #AARRGGBB color.");
-            }
-        }
-
-        private static void EnsureResourceValueOrThrow(ResourceOverrideValueKind kind, string value, string key)
-        {
-            switch (kind)
-            {
-                case ResourceOverrideValueKind.Brush:
-                    EnsureHexColorOrThrow(value, $"resource color for '{key}'");
-                    return;
-                case ResourceOverrideValueKind.FontSize:
-                    if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var size) ||
-                        size <= 0 || size > 200 || double.IsNaN(size) || double.IsInfinity(size))
-                    {
-                        throw new InvalidOperationException($"The theme's font size for '{key}' is not valid.");
-                    }
-
-                    return;
-                case ResourceOverrideValueKind.FontFamily:
-                    if (string.IsNullOrWhiteSpace(value) || value.Length > 128 || value.Any(char.IsControl))
-                    {
-                        throw new InvalidOperationException($"The theme's font family for '{key}' is not valid.");
-                    }
-
-                    return;
-                default:
-                    throw new InvalidOperationException($"The theme's resource override '{key}' has an unknown kind.");
             }
         }
     }
