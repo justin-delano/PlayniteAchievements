@@ -2177,28 +2177,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return normalized + extension;
         }
 
-        private static bool StoredDataRequiresRefresh(GameCustomDataFile data)
-        {
-            return data?.ManualLink != null ||
-                   data?.ProviderOverride != null ||
-                   data?.RetroAchievementsGameIdOverride.HasValue == true ||
-                   !string.IsNullOrWhiteSpace(data?.XeniaTitleIdOverride) ||
-                   !string.IsNullOrWhiteSpace(data?.ShadPS4MatchIdOverride) ||
-                   data?.ForceUseExophase == true ||
-                   !string.IsNullOrWhiteSpace(data?.ExophaseSlugOverride) ||
-                   !string.IsNullOrWhiteSpace(data?.ExophaseEnrichmentSlugOverride);
-        }
-
+        // Shared with the Workshop installer, which writes custom data through the same stores.
         private static CustomDataTransitionEffects AnalyzeCustomDataTransition(
             GameCustomDataFile previousData,
             GameCustomDataFile currentData)
         {
-            var forceIconRefresh = HaveIconOverridesChanged(previousData, currentData);
-            return new CustomDataTransitionEffects(
-                StoredDataRequiresRefresh(previousData) ||
-                StoredDataRequiresRefresh(currentData) ||
-                forceIconRefresh,
-                forceIconRefresh);
+            return CustomDataTransition.Analyze(previousData, currentData);
         }
 
         private GameCustomDataFile TryLoadStoredCustomData(GameCustomDataStore store)
@@ -2213,81 +2197,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 : null;
         }
 
-        private static bool HaveIconOverridesChanged(
-            GameCustomDataFile previousData,
-            GameCustomDataFile currentData)
-        {
-            return !AreStringMapsEqual(
-                       previousData?.AchievementUnlockedIconOverrides,
-                       currentData?.AchievementUnlockedIconOverrides) ||
-                   !AreStringMapsEqual(
-                       previousData?.AchievementLockedIconOverrides,
-                       currentData?.AchievementLockedIconOverrides);
-        }
-
-        private static bool AreStringMapsEqual(
-            IReadOnlyDictionary<string, string> left,
-            IReadOnlyDictionary<string, string> right)
-        {
-            var normalizedLeft = NormalizeStringMap(left);
-            var normalizedRight = NormalizeStringMap(right);
-            if (normalizedLeft.Count != normalizedRight.Count)
-            {
-                return false;
-            }
-
-            foreach (var pair in normalizedLeft)
-            {
-                if (!normalizedRight.TryGetValue(pair.Key, out var value) ||
-                    !string.Equals(pair.Value, value, StringComparison.Ordinal))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static Dictionary<string, string> NormalizeStringMap(IReadOnlyDictionary<string, string> source)
-        {
-            var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (source == null)
-            {
-                return normalized;
-            }
-
-            foreach (var pair in source)
-            {
-                var key = NormalizeOverrideValue(pair.Key);
-                var value = NormalizeOverrideValue(pair.Value);
-                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
-                {
-                    continue;
-                }
-
-                normalized[key] = value;
-            }
-
-            return normalized;
-        }
-
-        private static string NormalizeOverrideValue(string value)
-        {
-            var normalized = (value ?? string.Empty).Trim();
-            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
-        }
-
-        private readonly struct CustomDataTransitionEffects
-        {
-            public CustomDataTransitionEffects(bool requiresRefresh, bool forceIconRefresh)
-            {
-                RequiresRefresh = requiresRefresh;
-                ForceIconRefresh = forceIconRefresh;
-            }
-
-            public bool RequiresRefresh { get; }
-            public bool ForceIconRefresh { get; }
-        }
     }
 }
 
