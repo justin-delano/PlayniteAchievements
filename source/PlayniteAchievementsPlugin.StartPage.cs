@@ -63,13 +63,17 @@ namespace PlayniteAchievements
 
             EnsureAchievementResourcesLoaded();
 
-            var sharedSettings = definition.ShowcaseWidgetKind.HasValue
-                ? GetOrCreateStartPageWidgetSettings(
-                    viewId,
-                    instanceId,
-                    definition.ShowcaseWidgetKind.Value)
-                : null;
-            var viewModel = CreateStartPageViewModel(definition, sharedSettings);
+            // Seed the instance now; the view model re-resolves it per projection because a
+            // settings cancel replaces Persisted, and with it every StartPageInstances value.
+            Func<ShowcaseWidgetInstanceSettings> resolveSettings = null;
+            if (definition.ShowcaseWidgetKind.HasValue)
+            {
+                var kind = definition.ShowcaseWidgetKind.Value;
+                resolveSettings = () => GetOrCreateStartPageWidgetSettings(viewId, instanceId, kind);
+                resolveSettings();
+            }
+
+            var viewModel = CreateStartPageViewModel(definition, resolveSettings);
             if (viewModel == null)
             {
                 return null;
@@ -172,13 +176,13 @@ namespace PlayniteAchievements
 
         private IDisposable CreateStartPageViewModel(
             StartPageViewDefinition definition,
-            ShowcaseWidgetInstanceSettings sharedSettings)
+            Func<ShowcaseWidgetInstanceSettings> resolveSettings)
         {
             var widgetKind = definition.WidgetKind;
             if (definition.ShowcaseWidgetKind.HasValue)
             {
                 return new StartPageShowcaseWidgetViewModel(
-                    sharedSettings,
+                    resolveSettings,
                     GetStartPageDataCoordinator(),
                     Settings,
                     _logger);
