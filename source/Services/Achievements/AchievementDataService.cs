@@ -629,14 +629,52 @@ namespace PlayniteAchievements.Services.Achievements
         private HashSet<Guid> ResolveExcludedSummaryGameIds(
             Func<IReadOnlyDictionary<Guid, GameCustomDataFile>> customDataByGameId)
         {
+            HashSet<Guid> excluded;
             try
             {
-                return GameCustomDataLookup.GetExcludedSummaryGameIds(Persisted, _gameCustomDataStore);
+                excluded = GameCustomDataLookup.GetExcludedSummaryGameIds(Persisted, _gameCustomDataStore);
             }
             catch (Exception ex)
             {
                 _logger?.Warn(ex, "Failed to resolve excluded summary game IDs from custom-data store. Falling back to persisted settings projection.");
-                return BuildExcludedSummaryGameIdsFallback(customDataByGameId?.Invoke());
+                excluded = BuildExcludedSummaryGameIdsFallback(customDataByGameId?.Invoke());
+            }
+
+            AddPlayniteHiddenGameIds(excluded);
+            return excluded;
+        }
+
+        /// <summary>
+        /// Games hidden in Playnite are left out of summaries the same way as Excluded from
+        /// Summaries. They join only this resolved set, never the custom-data flag, so the
+        /// game menu and Manage Achievements keep showing the user's own exclusion.
+        /// </summary>
+        private void AddPlayniteHiddenGameIds(HashSet<Guid> excluded)
+        {
+            if (excluded == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var games = _api?.Database?.Games;
+                if (games == null)
+                {
+                    return;
+                }
+
+                foreach (var game in games)
+                {
+                    if (game?.Hidden == true)
+                    {
+                        excluded.Add(game.Id);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to resolve Playnite-hidden games for summary exclusion.");
             }
         }
 
