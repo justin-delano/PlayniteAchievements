@@ -1159,57 +1159,27 @@ namespace PlayniteAchievements.ViewModels
 
         public void SortDataGrid(string sortMemberPath, ListSortDirection direction)
         {
-            var items = _orderedAchievements.Count == _allAchievements.Count
-                ? _orderedAchievements.ToList()
-                : _allAchievements.ToList();
-            var currentSortDirection = (ListSortDirection?)_currentSortDirection;
-            if (!AchievementSortHelper.TrySortItems(
-                    items,
-                    sortMemberPath,
-                    direction,
-                    AchievementSortScope.GameAchievements,
-                    ref _currentSortPath,
-                    ref currentSortDirection))
+            if (string.IsNullOrWhiteSpace(sortMemberPath) ||
+                AchievementSortHelper.GetComparison(sortMemberPath, direction, AchievementSortScope.GameAchievements) == null)
             {
                 return;
             }
 
-            if (currentSortDirection.HasValue)
-            {
-                _currentSortDirection = currentSortDirection.Value;
-            }
-
-            AchievementSortHelper.ApplyGoalsFirst(items);
-            _orderedAchievements = items;
-            ApplySearchFilter();
+            _currentSortPath = sortMemberPath;
+            _currentSortDirection = direction;
+            ApplySearchFilter(refreshOrder: true);
         }
 
         private void RefreshOrderedAchievements(bool skipDefaultSort)
         {
             var items = _allAchievements.ToList();
-
-            if (CurrentSortDirection.HasValue)
-            {
-                var currentSortDirection = CurrentSortDirection;
-                AchievementSortHelper.TrySortItems(
-                    items,
-                    _currentSortPath,
-                    currentSortDirection.Value,
-                    AchievementSortScope.GameAchievements,
-                    ref _currentSortPath,
-                    ref currentSortDirection);
-            }
-            else if (!skipDefaultSort)
-            {
-                AchievementSortHelper.ApplyConfiguredDefaultSort(
-                    items,
-                    _settings?.Persisted,
-                    AchievementSortSurface.SingleGame,
-                    AchievementSortScope.GameAchievements,
-                    stableOrder: AchievementSortHelper.CreateStableOrderMap(items));
-            }
-
-            AchievementSortHelper.ApplyGoalsFirst(items);
+            AchievementSortHelper.OrderGameAchievementItems(
+                items,
+                _currentSortPath,
+                CurrentSortDirection,
+                skipDefaultSort,
+                _settings?.Persisted,
+                AchievementSortSurface.SingleGame);
             _orderedAchievements = items;
         }
 
