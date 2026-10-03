@@ -148,6 +148,70 @@ namespace PlayniteAchievements.Services.Notifications
         }
 
         /// <summary>
+        /// Saves an existing .panotif or .paframe file as the preset <paramref name="name"/>, for
+        /// files that arrive from the Workshop or a file import. The package must carry the
+        /// surface's style; a preset of the same name is replaced.
+        /// </summary>
+        public NotificationStylePresetInfo SavePresetFromPackage(bool isFrame, string name, string packagePath)
+        {
+            var sanitized = SanitizeName(name);
+            if (string.IsNullOrEmpty(sanitized))
+            {
+                throw new ArgumentException("Preset name is invalid.", nameof(name));
+            }
+
+            var contents = _portableStore.InspectPackage(packagePath);
+            if (isFrame ? !contents.HasFrameStyle : !contents.HasToastStyle)
+            {
+                throw new InvalidOperationException(isFrame
+                    ? "This package does not contain a frame style."
+                    : "This package does not contain a notification style.");
+            }
+
+            var destination = GetPresetPath(isFrame, sanitized);
+            if (!File.Exists(destination) && CountPresets(isFrame) >= MaxPresetCount)
+            {
+                throw new InvalidOperationException($"You can save up to {MaxPresetCount} presets.");
+            }
+
+            Directory.CreateDirectory(GetSurfaceDirectory(isFrame));
+            File.Copy(packagePath, destination, overwrite: true);
+            return new NotificationStylePresetInfo(sanitized, destination, isFrame);
+        }
+
+        /// <summary>
+        /// The sanitized name, or when a preset of that surface already has it, the name with
+        /// " (2)", " (3)" and so on appended, so a file import never replaces a saved preset.
+        /// </summary>
+        public string UniqueName(bool isFrame, string name)
+        {
+            var sanitized = SanitizeName(name);
+            if (string.IsNullOrEmpty(sanitized))
+            {
+                sanitized = "Preset";
+            }
+
+            if (!File.Exists(GetPresetPath(isFrame, sanitized)))
+            {
+                return sanitized;
+            }
+
+            for (var n = 2; n < 1000; n++)
+            {
+                var suffix = " (" + n + ")";
+                var stem = sanitized.Length + suffix.Length > MaxNameLength
+                    ? sanitized.Substring(0, MaxNameLength - suffix.Length).TrimEnd()
+                    : sanitized;
+                if (!File.Exists(GetPresetPath(isFrame, stem + suffix)))
+                {
+                    return stem + suffix;
+                }
+            }
+
+            throw new InvalidOperationException("Too many presets share this name.");
+        }
+
+        /// <summary>
         /// Loads a preset's style, re-materializing any bundled images into managed storage
         /// for <paramref name="targetOwner"/>. The caller merges only the preset's surface
         /// into the target style.
