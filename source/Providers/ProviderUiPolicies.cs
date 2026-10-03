@@ -31,6 +31,7 @@ namespace PlayniteAchievements.Providers
             {
                 "PSN",
                 "Xbox",
+                "Meta",
                 "Apple",
                 "GooglePlay"
             };
