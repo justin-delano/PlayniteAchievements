@@ -28,13 +28,13 @@ namespace PlayniteAchievements.Views.Workshop
             InitializeComponent();
         }
 
-        internal WorkshopControl(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId)
+        internal WorkshopControl(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId, WorkshopItemKind? focusKind)
             : this()
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
 
-            var viewModel = new WorkshopViewModel(plugin, logger, focusGameId)
+            var viewModel = new WorkshopViewModel(plugin, logger, focusGameId, focusKind)
             {
                 PickThemeParts = PickThemeParts,
                 PickGame = PickGame,
@@ -134,44 +134,6 @@ namespace PlayniteAchievements.Views.Workshop
                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                        MessageBoxButton.YesNo,
                        MessageBoxImage.Question) == MessageBoxResult.Yes;
-        }
-
-        private void Share_Click(object sender, RoutedEventArgs e)
-        {
-            if (!((sender as FrameworkElement)?.DataContext is WorkshopShareCandidate candidate) || ViewModel == null)
-            {
-                return;
-            }
-
-            var dialog = new WorkshopShareDialog(_plugin, _logger, candidate, ViewModel.ShareService, ViewModel.Registry);
-            var window = PlayniteUiProvider.CreateExtensionWindow(
-                ResourceProvider.GetString("LOCPlayAch_Workshop_Share"),
-                dialog,
-                new WindowOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = false,
-                    ShowCloseButton = true,
-                    CanBeResizable = true,
-                    Width = 620,
-                    Height = 640
-                });
-
-            try
-            {
-                if (window.Owner == null)
-                {
-                    window.Owner = Window.GetWindow(this);
-                }
-            }
-            catch (InvalidOperationException)
-            {
-            }
-
-            dialog.RequestClose += (s, args) => window.Close();
-            window.ShowDialog();
-            dialog.Cleanup();
-            ViewModel.OnShared();
         }
     }
 }
