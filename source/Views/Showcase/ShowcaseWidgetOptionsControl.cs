@@ -154,6 +154,11 @@ namespace PlayniteAchievements.Views.Showcase
                         value => ShowcaseWidgetOptions.SetPieShowLegend(_settings, value));
                     AddToggle(
                         panel,
+                        Localize("LOCPlayAch_Settings_ShowOverviewPieIcons"),
+                        ShowcaseWidgetOptions.GetPieShowIcons(_settings),
+                        value => ShowcaseWidgetOptions.SetPieShowIcons(_settings, value));
+                    AddToggle(
+                        panel,
                         Localize("LOCPlayAch_Settings_PieIncludeLocked"),
                         ShowcaseWidgetOptions.GetPieIncludeLocked(_settings),
                         value => ShowcaseWidgetOptions.SetPieIncludeLocked(_settings, value));
