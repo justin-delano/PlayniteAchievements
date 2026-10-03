@@ -21,6 +21,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Notifications;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Settings;
 using PlayniteAchievements.Views.Dialogs;
@@ -1333,6 +1334,24 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private void ExportStyle_Click(object sender, RoutedEventArgs e)
         {
+            // A game's own style is not a Workshop item; only the global look is shared there.
+            if (IsGameMode)
+            {
+                ExportStyleFile_Click(sender, e);
+                return;
+            }
+
+            var kind = FrameTabItem?.IsSelected == true
+                ? WorkshopItemKind.ScreenshotFrame
+                : WorkshopItemKind.NotificationStyle;
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => ExportStyleFile_Click(sender, e),
+                () => _plugin.OpenWorkshopShare(kind, Window.GetWindow(this)));
+        }
+
+        private void ExportStyleFile_Click(object sender, RoutedEventArgs e)
+        {
             var style = _currentStyle;
             var store = _plugin?.NotificationStylePortableStore;
             if (style == null || store == null)
@@ -1411,7 +1430,25 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// cover the active tab's surface warns first. Bundled images are re-materialized into
         /// managed storage.
         /// </summary>
-        private async void ImportStyle_Click(object sender, RoutedEventArgs e)
+        private void ImportStyle_Click(object sender, RoutedEventArgs e)
+        {
+            // A game's own style is not a Workshop item; only the global look is shared there.
+            if (IsGameMode)
+            {
+                ImportStyleFile_Click(sender, e);
+                return;
+            }
+
+            var kind = FrameTabItem?.IsSelected == true
+                ? WorkshopItemKind.ScreenshotFrame
+                : WorkshopItemKind.NotificationStyle;
+            WorkshopMenus.OpenImport(
+                sender as Button,
+                () => ImportStyleFile_Click(sender, e),
+                () => _plugin.OpenWorkshopWindow(focusKind: kind));
+        }
+
+        private async void ImportStyleFile_Click(object sender, RoutedEventArgs e)
         {
             var persisted = _settings?.Persisted;
             var store = _plugin?.NotificationStylePortableStore;
