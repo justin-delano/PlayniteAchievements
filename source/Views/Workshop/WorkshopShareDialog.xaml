@@ -1,0 +1,104 @@
+<UserControl x:Class="PlayniteAchievements.Views.Workshop.WorkshopShareDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="640" d:DesignWidth="620">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
+                <Setter Property="Margin" Value="0,10,0,4"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <TextBlock x:Name="CandidateLabel"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Column_Name}" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="NameBox" MaxLength="80"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_AuthorName}" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="AuthorBox" MaxLength="40"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Column_Description}" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="DescriptionBox" MaxLength="400" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="56"/>
+
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        <Run Text="{DynamicResource LOCPlayAch_Workshop_Tags}"/><Run Text=" ("/><Run Text="{DynamicResource LOCPlayAch_Workshop_Share_TagsHint}"/><Run Text=")"/>
+                    </TextBlock>
+                    <TextBox x:Name="TagsBox"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_License}" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="LicenseBox" Width="160" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="CC-BY-4.0" IsSelected="True"/>
+                        <ComboBoxItem Content="CC0-1.0"/>
+                    </ComboBox>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Readme}" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="ReadmeBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="90"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Preview}" Style="{StaticResource FieldLabel}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="PreviewBox" IsReadOnly="True"/>
+                        <Button Grid.Column="1" Content="{DynamicResource LOCPlayAch_Button_Browse}" Margin="6,0,0,0" Click="BrowsePreview_Click"/>
+                    </Grid>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_UpdateExisting}" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="ExistingBox" IsEditable="True" DisplayMemberPath="Label" SelectedValuePath="ItemId"/>
+
+                    <CheckBox x:Name="RightsBox"
+                              Content="{DynamicResource LOCPlayAch_Workshop_Share_Rights}"
+                              Margin="0,14,0,0">
+                        <CheckBox.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap"/>
+                            </Style>
+                        </CheckBox.Resources>
+                    </CheckBox>
+
+                    <TextBlock x:Name="StatusText"
+                               Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"/>
+                    <ProgressBar x:Name="Progress" Height="4" Minimum="0" Maximum="1" Margin="0,6,0,0" Visibility="Collapsed"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button x:Name="SubmitButton"
+                        Content="{DynamicResource LOCPlayAch_Workshop_Share_Submit}"
+                        MinWidth="100"
+                        Click="Submit_Click"
+                        IsDefault="True"/>
+                <Button x:Name="CancelButton"
+                        Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                        MinWidth="90"
+                        Margin="8,0,0,0"
+                        Click="Cancel_Click"
+                        IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
