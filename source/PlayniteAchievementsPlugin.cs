@@ -91,6 +91,12 @@ namespace PlayniteAchievements
         private NotificationStylePresetStore _notificationStylePresetStore;
         private Services.Sound.UnlockSoundPortableStore _unlockSoundPortableStore;
         private Services.Workshop.ThemePackPortableStore _themePackPortableStore;
+        private Services.Workshop.WorkshopInstalledRegistry _workshopRegistry;
+        private Services.Workshop.WorkshopUndoStore _workshopUndo;
+        private Services.Workshop.WorkshopInstaller _workshopInstaller;
+        private Services.Workshop.WorkshopClient _workshopClient;
+        private Services.Workshop.WorkshopSubmissionClient _workshopSubmissionClient;
+        private Services.Workshop.WorkshopShareService _workshopShareService;
         private readonly NotificationPublisher _notifications;
         private readonly ProviderRegistry _providerRegistry;
         private readonly GameCustomDataStore _gameCustomDataStore;
@@ -203,6 +209,30 @@ namespace PlayniteAchievements
         public Services.Workshop.ThemePackPortableStore ThemePackPortableStore =>
             _themePackPortableStore ?? (_themePackPortableStore =
                 new Services.Workshop.ThemePackPortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, _logger));
+        public Services.Workshop.WorkshopInstalledRegistry WorkshopRegistry =>
+            _workshopRegistry ?? (_workshopRegistry =
+                new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.WorkshopUndoStore WorkshopUndo =>
+            _workshopUndo ?? (_workshopUndo =
+                new Services.Workshop.WorkshopUndoStore(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.WorkshopInstaller WorkshopInstaller =>
+            _workshopInstaller ?? (_workshopInstaller =
+                new Services.Workshop.WorkshopInstaller(this, WorkshopRegistry, WorkshopUndo, _logger));
+        public Services.Workshop.WorkshopClient WorkshopClient =>
+            _workshopClient ?? (_workshopClient = new Services.Workshop.WorkshopClient(
+                () => _settingsViewModel?.Settings?.Persisted?.WorkshopIndexUrl,
+                System.IO.Path.Combine(GetPluginUserDataPath(), Services.Workshop.WorkshopInstalledRegistry.DirectoryName, "cache"),
+                _logger));
+        public Services.Workshop.WorkshopSubmissionClient WorkshopSubmissionClient =>
+            _workshopSubmissionClient ?? (_workshopSubmissionClient = new Services.Workshop.WorkshopSubmissionClient(
+                () => _settingsViewModel?.Settings?.Persisted?.WorkshopServiceUrl));
+        public Services.Workshop.WorkshopShareService WorkshopShareService =>
+            _workshopShareService ?? (_workshopShareService =
+                new Services.Workshop.WorkshopShareService(this, WorkshopSubmissionClient, WorkshopRegistry, _logger));
+        public Services.Workshop.WorkshopGameMatcher CreateWorkshopGameMatcher() =>
+            new Services.Workshop.WorkshopGameMatcher(
+                () => _achievementDataService?.GetAllGameAchievementData(),
+                () => PlayniteApi?.Database?.Games);
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationService ThemeUpdateService => _themeIntegrationService;
         public TagSyncService TagSyncService => _tagSyncService;

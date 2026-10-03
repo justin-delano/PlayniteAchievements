@@ -87,6 +87,29 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
+        /// Opens the Workshop browser, optionally landing on the game-data items that match one
+        /// library game.
+        /// </summary>
+        internal void OpenWorkshopWindow(Guid? focusGameId = null)
+        {
+            var view = new Views.Workshop.WorkshopControl(this, _logger, focusGameId);
+            _windowService.OpenManagedPopout(
+                ResourceProvider.GetString("LOCPlayAch_Workshop_Title"),
+                view,
+                new Views.Helpers.WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1100,
+                    Height = 720
+                },
+                "Workshop",
+                () => view.Cleanup());
+        }
+
+        /// <summary>
         /// Opens the plugin's color picker for the given owner window and current value,
         /// returning the chosen color string (or the current value on cancel). Exposed so
         /// settings sections can reuse the same picker.
