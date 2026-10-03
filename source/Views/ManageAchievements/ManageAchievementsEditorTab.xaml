@@ -385,8 +385,17 @@
                         <Button x:Name="ImportFileButton"
                                 Content="&#xE896;"
                                 ToolTip="{DynamicResource LOCPlayAch_Common_Import}"
-                                Command="{Binding ImportFileCommand}"
-                                Style="{StaticResource ToolbarIconButtonStyle}" />
+                                Click="ContextMenuButton_Click"
+                                Style="{StaticResource ToolbarIconButtonStyle}">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Menu_FromFile}"
+                                              Command="{Binding ImportFileCommand}" />
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Menu_FromWorkshop}"
+                                              Command="{Binding ImportFromWorkshopCommand}" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
                         <Button x:Name="ExportButton"
                                 Content="&#xE898;"
                                 ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
@@ -396,6 +405,8 @@
                                 <ContextMenu>
                                     <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_CustomDataHeader}"
                                               Command="{Binding ExportAllCustomDataCommand}" />
+                                    <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Share}"
+                                              Command="{Binding ShareToWorkshopCommand}" />
                                     <Separator />
                                     <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportAchievements}"
                                               Command="{Binding ExportAchievementsCommand}" />
