@@ -56,6 +56,64 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ExportPortablePackage_WritesKindAndGameKeys_ImportIgnoresThem()
+        {
+            WithStore((store, tempDir) =>
+            {
+                var gameId = Guid.NewGuid();
+                store.Save(gameId, BuildRecordWithPersonalState(gameId, "480", UnlockTime));
+                store.AttachGameKeyResolver(id => id == gameId
+                    ? new[]
+                    {
+                        new PortableGameKey { ProviderKey = "Steam", ProviderGameId = 480, Name = "Spacewar", Platform = "PC (Windows)" },
+                        new PortableGameKey { Name = "Spacewar", Platform = "PC (Windows)" }
+                    }
+                    : Array.Empty<PortableGameKey>());
+
+                var packagePath = Path.Combine(tempDir, "game.pa");
+                store.ExportPortablePackage(gameId, packagePath);
+
+                GameCustomDataPortableFile portable;
+                using (var archive = ZipFile.OpenRead(packagePath))
+                using (var reader = new StreamReader(archive.GetEntry(GameCustomDataStore.PortablePackageManifestEntryName).Open()))
+                {
+                    portable = JsonConvert.DeserializeObject<GameCustomDataPortableFile>(reader.ReadToEnd());
+                }
+
+                Assert.AreEqual(GameCustomDataPortableFile.GameCustomDataKind, portable.Kind);
+                Assert.AreEqual(2, portable.GameKeys.Count);
+                Assert.AreEqual("Steam", portable.GameKeys[0].ProviderKey);
+                Assert.AreEqual(480, portable.GameKeys[0].ProviderGameId);
+                Assert.IsNull(portable.GameKeys[1].ProviderKey);
+                Assert.AreEqual("Spacewar", portable.GameKeys[1].Name);
+
+                // Keys describe the exporter's game; the importer chose its own target.
+                var otherGame = Guid.NewGuid();
+                var imported = store.ImportReplacePortable(otherGame, packagePath).ImportedData;
+                Assert.AreEqual(otherGame, imported.PlayniteGameId);
+            });
+        }
+
+        [TestMethod]
+        public void ExportPortablePackage_WithoutResolver_OmitsGameKeys()
+        {
+            WithStore((store, tempDir) =>
+            {
+                var gameId = Guid.NewGuid();
+                store.Save(gameId, BuildRecordWithPersonalState(gameId, "480", UnlockTime));
+                var packagePath = Path.Combine(tempDir, "game.pa");
+                store.ExportPortablePackage(gameId, packagePath);
+
+                using (var archive = ZipFile.OpenRead(packagePath))
+                using (var reader = new StreamReader(archive.GetEntry(GameCustomDataStore.PortablePackageManifestEntryName).Open()))
+                {
+                    var portable = JsonConvert.DeserializeObject<GameCustomDataPortableFile>(reader.ReadToEnd());
+                    Assert.IsNull(portable.GameKeys);
+                }
+            });
+        }
+
+        [TestMethod]
         public void ImportReplacePortable_OverSameGame_KeepsLocalPersonalState()
         {
             WithStore((store, tempDir) =>
