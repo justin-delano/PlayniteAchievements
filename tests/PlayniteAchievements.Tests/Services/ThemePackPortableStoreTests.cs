@@ -87,6 +87,31 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task ExtractParts_WritesOnlyTheSelectedCarriedPartsAsStandalonePackages()
+        {
+            await WithTempAsync(async tempDir =>
+            {
+                var store = CreateStore(tempDir, out _);
+                var source = new PersistedSettings();
+                source.RarityColors = new RarityColorSettings { Common = "#445566" };
+                var packagePath = Path.Combine(tempDir, "look.patheme");
+                store.Export(packagePath, ThemePackParts.Colors | ThemePackParts.Toast | ThemePackParts.Frame, source, null, toastTemplateXaml: null);
+
+                var outDir = Path.Combine(tempDir, "parts");
+                var extracted = store.ExtractParts(packagePath, ThemePackParts.Colors | ThemePackParts.Sounds | ThemePackParts.Toast, outDir);
+
+                CollectionAssert.AreEquivalent(
+                    new[] { ThemePackParts.Colors, ThemePackParts.Toast },
+                    extracted.Keys.ToArray(),
+                    "sounds were not in the bundle and the frame was not selected");
+                Assert.AreEqual(Path.Combine(outDir, "colors" + ColorPackPortableStore.PackageFileExtension), extracted[ThemePackParts.Colors]);
+                Assert.AreEqual(Path.Combine(outDir, "toast" + NotificationStylePortableStore.ToastPackageFileExtension), extracted[ThemePackParts.Toast]);
+                Assert.AreEqual("#445566", new ColorPackPortableStore().Read(extracted[ThemePackParts.Colors]).RarityColors.Common, "each part is a valid standalone package");
+                await Task.CompletedTask;
+            });
+        }
+
+        [TestMethod]
         public async Task Import_AppliesOnlySelectedParts()
         {
             await WithTempAsync(async tempDir =>
