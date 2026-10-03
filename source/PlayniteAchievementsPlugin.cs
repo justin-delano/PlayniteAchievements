@@ -89,6 +89,7 @@ namespace PlayniteAchievements
         private readonly ShowcaseImageStore _showcaseImageStore;
         private NotificationStylePortableStore _notificationStylePortableStore;
         private NotificationStylePresetStore _notificationStylePresetStore;
+        private Services.Sound.UnlockSoundPortableStore _unlockSoundPortableStore;
         private readonly NotificationPublisher _notifications;
         private readonly ProviderRegistry _providerRegistry;
         private readonly GameCustomDataStore _gameCustomDataStore;
@@ -195,6 +196,9 @@ namespace PlayniteAchievements
         public NotificationStylePresetStore NotificationStylePresetStore =>
             _notificationStylePresetStore ?? (_notificationStylePresetStore =
                 new NotificationStylePresetStore(NotificationStylePortableStore, GetPluginUserDataPath()));
+        public Services.Sound.UnlockSoundPortableStore UnlockSoundPortableStore =>
+            _unlockSoundPortableStore ?? (_unlockSoundPortableStore =
+                new Services.Sound.UnlockSoundPortableStore(GetPluginUserDataPath(), _logger));
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationService ThemeUpdateService => _themeIntegrationService;
         public TagSyncService TagSyncService => _tagSyncService;
