@@ -84,9 +84,38 @@
                                         Margin="8,0,0,0"
                                         MinWidth="78"
                                         Click="ResetAllRarityColors_Click"/>
+                              </StackPanel>
+                            </controls:SettingRow>
+                            <!-- Saved color sets: .pacolors files under the plugin's data folder.
+                                 Imported files and Workshop installs land here; Apply copies one
+                                 onto the current colors. -->
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Workshop_Kind_Colors}"
+                                                 Margin="0">
+                              <StackPanel Orientation="Horizontal">
+                                <ComboBox x:Name="ColorSetPresetSelector"
+                                          MinWidth="240"
+                                          SelectionChanged="ColorSetPresetSelector_SelectionChanged"/>
+
+                                <Button x:Name="ApplyColorSetPresetButton"
+                                        Content="{DynamicResource LOCPlayAch_Button_Apply}"
+                                        Margin="8,0,0,0"
+                                        MinWidth="58"
+                                        IsEnabled="False"
+                                        Click="ApplyColorSetPreset_Click"/>
+
+                                <Button Content="{DynamicResource LOCPlayAch_Presets_Save}"
+                                        Margin="8,0,0,0"
+                                        Click="SaveColorSetPreset_Click"/>
+
+                                <Button x:Name="DeleteColorSetPresetButton"
+                                        Content="{DynamicResource LOCPlayAch_Button_Delete}"
+                                        Margin="8,0,0,0"
+                                        IsEnabled="False"
+                                        Click="DeleteColorSetPreset_Click"/>
 
                                 <!-- The colors alone (rarity, provider, resource overrides) as a
-                                     .pacolors file. -->
+                                     .pacolors file: Export writes the current colors, Import adds
+                                     a file to the sets above. -->
                                 <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                         Margin="16,0,0,0"
                                         MinWidth="58"
@@ -98,6 +127,7 @@
                                         Click="ImportColors_Click"/>
                               </StackPanel>
                             </controls:SettingRow>
+
 
                             <!-- The whole global look as one .patheme bundle: colors, unlock
                                  sounds, notification and frame styles, any subset, each a
