@@ -1567,6 +1567,72 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">Activity Calendar</sys:String>
 
     <!-- ================================================================= -->
+    <!-- 19 Workshop -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Workshop_Title">Workshop</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Browse">Browse</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Installed">Installed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Share">Share</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_NotificationStyle">Notification styles</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_ScreenshotFrame">Screenshot frames</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_ShowcasePage">Showcase pages</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_UnlockSounds">Sound packs</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_Theme">Themes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_GameCustomData">Game data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_SortMostDownloaded">Most downloaded</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_SortNewest">Newest</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_OnlyMyGames">Only games in my library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Empty">Nothing matches.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_LoadFailed">The Workshop could not be loaded: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Install">Install</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Update">Update</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_UpdateAvailable">Update available</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Downloads">Downloads</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Author">Author</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Version">Version</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_License">License</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Tags">Tags</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents">Contains</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">Open on GitHub</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Report">Report this item</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RequiresNewerPlugin">Requires extension version {0} or newer.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Downloading">Downloading {0}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Installing">Installing...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_InstallConfirmGameData">Install "{0}" onto {1}? This replaces that game's custom data (icons, categories, capstones, notes). Your unlock progress is kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the game this data belongs to</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_NoGameMatch">No game in your library matches "{0}".</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RecentInstalls">Recent installs</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Revert">Revert</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RevertTo">Revert to before "{0}" ({1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share">Share to Workshop</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Hint">Share your customizations with other players. Submissions are reviewed before they appear.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_What">What to share</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalStyle">Notification style</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalFrame">Screenshot frame</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">Unlock sounds</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Theme">Theme (colors, sounds, notification style, frame)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_ShowcasePage">Showcase page: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_GameData">Game data: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">Your name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">Comma-separated, up to 10</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">Notes shown on the item's page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Preview">Preview image</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Update my earlier submission</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Rights">Everything in this package is my own work or licensed for redistribution, and it contains no personal progress I want to keep private.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">Uploading {0}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. The Workshop reviews it before it appears; follow progress at {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_MySubmissions">My submissions</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Status_Validating">Checking</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Status_NeedsChanges">Needs changes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Status_InReview">In review</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Status_Published">Published</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Status_Closed">Closed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_WorkshopIndexUrl">Workshop index URL</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_WorkshopServiceUrl">Workshop submission service URL</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_WorkshopHint">Leave both blank to use the official Workshop. Point them at a fork or a local service to test.</sys:String>
+
+    <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayniteAchievementsAchievements">Achievements</sys:String>
