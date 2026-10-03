@@ -139,9 +139,21 @@
                             </controls:SettingRow>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh}"
-                                                 Hint="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh_Help}"
-                                                 Margin="0">
+                                                 Hint="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh_Help}">
                                 <CheckBox IsChecked="{Binding Persisted.EnableParallelProviderRefresh}"/>
+                            </controls:SettingRow>
+
+                            <!-- Workshop endpoints. Blank means the official repository and
+                                 service; a fork or a local test setup goes here. -->
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_WorkshopIndexUrl}"
+                                                 Hint="{DynamicResource LOCPlayAch_Settings_WorkshopHint}">
+                                <TextBox Text="{Binding Persisted.WorkshopIndexUrl, UpdateSourceTrigger=LostFocus}"
+                                         MinWidth="320"/>
+                            </controls:SettingRow>
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_WorkshopServiceUrl}"
+                                                 Margin="0">
+                                <TextBox Text="{Binding Persisted.WorkshopServiceUrl, UpdateSourceTrigger=LostFocus}"
+                                         MinWidth="320"/>
                             </controls:SettingRow>
                         </StackPanel>
                     </Expander>
