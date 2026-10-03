@@ -96,6 +96,10 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(nameof(ShowCenterPercentage), typeof(bool), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(true, OnShowCenterPercentageChanged));
 
+        public static readonly DependencyProperty ShowIconsProperty =
+            DependencyProperty.Register(nameof(ShowIcons), typeof(bool), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(true, OnLayoutPropertyChanged));
+
         private static readonly DependencyPropertyKey CenterPercentageTextPropertyKey =
             DependencyProperty.RegisterReadOnly(nameof(CenterPercentageText), typeof(string), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(string.Empty));
@@ -172,6 +176,12 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(ShowCenterPercentageProperty);
             set => SetValue(ShowCenterPercentageProperty, value);
+        }
+
+        public bool ShowIcons
+        {
+            get => (bool)GetValue(ShowIconsProperty);
+            set => SetValue(ShowIconsProperty, value);
         }
 
         public string CenterPercentageText
@@ -594,7 +604,8 @@ namespace PlayniteAchievements.Views.Controls
                 }
 
                 // Only show icon if count > 0
-                var shouldShowRadialIcon = legend.Count > 0 &&
+                var shouldShowRadialIcon = ShowIcons &&
+                    legend.Count > 0 &&
                     (i >= sliceData.Count || sliceData[i]?.ShowRadialIcon != false);
                 if (shouldShowRadialIcon)
                 {
