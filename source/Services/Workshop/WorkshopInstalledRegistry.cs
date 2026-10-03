@@ -20,6 +20,19 @@ namespace PlayniteAchievements.Services.Workshop
         public DateTime InstalledUtc { get; set; }
     }
 
+    /// <summary>A submission this install made, so its progress can be followed and it can be updated.</summary>
+    public sealed class WorkshopSubmissionRecord
+    {
+        public int IssueNumber { get; set; }
+        public string IssueUrl { get; set; }
+        public string Name { get; set; }
+        public WorkshopItemKind Kind { get; set; }
+        /// <summary>The Workshop item id once known (set on updates, or when the item is seen published).</summary>
+        public string ItemId { get; set; }
+        public DateTime SubmittedUtc { get; set; }
+        public string LastState { get; set; }
+    }
+
     /// <summary>
     /// Persists what was installed from the Workshop and the identity this install submits with:
     /// a random submitter key whose SHA-256 the Workshop stores as the owner of anything this user
@@ -42,6 +55,59 @@ namespace PlayniteAchievements.Services.Workshop
         {
             public string SubmitterKey { get; set; }
             public string DisplayName { get; set; }
+            public List<WorkshopSubmissionRecord> Submissions { get; set; } = new List<WorkshopSubmissionRecord>();
+        }
+
+        private List<WorkshopSubmissionRecord> _submissions = new List<WorkshopSubmissionRecord>();
+
+        /// <summary>Submissions made from this install, newest first.</summary>
+        public IReadOnlyList<WorkshopSubmissionRecord> Submissions
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    EnsureIdentityLoaded();
+                    return _submissions.OrderByDescending(s => s.SubmittedUtc).ToList();
+                }
+            }
+        }
+
+        public void RecordSubmission(WorkshopSubmissionRecord record)
+        {
+            if (record == null || record.IssueNumber <= 0)
+            {
+                return;
+            }
+
+            lock (_sync)
+            {
+                EnsureIdentityLoaded();
+                _submissions.RemoveAll(s => s.IssueNumber == record.IssueNumber);
+                _submissions.Add(record);
+                SaveIdentity();
+            }
+        }
+
+        public void UpdateSubmissionState(int issueNumber, string state, string itemId = null)
+        {
+            lock (_sync)
+            {
+                EnsureIdentityLoaded();
+                var record = _submissions.FirstOrDefault(s => s.IssueNumber == issueNumber);
+                if (record == null)
+                {
+                    return;
+                }
+
+                record.LastState = state;
+                if (!string.IsNullOrWhiteSpace(itemId))
+                {
+                    record.ItemId = itemId;
+                }
+
+                SaveIdentity();
+            }
         }
 
         public WorkshopInstalledRegistry(string pluginUserDataPath, ILogger logger = null)
@@ -238,6 +304,8 @@ namespace PlayniteAchievements.Services.Workshop
                 var identity = JsonConvert.DeserializeObject<IdentityFile>(File.ReadAllText(path));
                 _submitterKey = identity?.SubmitterKey;
                 _displayName = identity?.DisplayName;
+                _submissions = identity?.Submissions?.Where(s => s != null && s.IssueNumber > 0).ToList()
+                               ?? new List<WorkshopSubmissionRecord>();
             }
             catch (Exception ex)
             {
@@ -279,7 +347,9 @@ namespace PlayniteAchievements.Services.Workshop
                 System.IO.Directory.CreateDirectory(_directory);
                 File.WriteAllText(
                     Path.Combine(_directory, IdentityFileName),
-                    JsonConvert.SerializeObject(new IdentityFile { SubmitterKey = _submitterKey, DisplayName = _displayName }, Formatting.Indented));
+                    JsonConvert.SerializeObject(
+                        new IdentityFile { SubmitterKey = _submitterKey, DisplayName = _displayName, Submissions = _submissions },
+                        Formatting.Indented));
             }
             catch (Exception ex)
             {
