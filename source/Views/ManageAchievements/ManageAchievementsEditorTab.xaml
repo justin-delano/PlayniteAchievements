@@ -43,6 +43,19 @@
                 <Setter Property="Margin" Value="0,0,8,8" />
             </Style>
 
+            <!-- The row actions as glyphs, so the toolbar leaves room for the header beside it on a
+                 narrow window. Segoe MDL2 is hinted for 16px; IcoFont blurs at this size. The label
+                 moves to the tooltip, which a disabled button still shows. -->
+            <Style x:Key="ToolbarIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolbarButtonStyle}">
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Width" Value="34" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+            </Style>
+
             <Style x:Key="GridEditorTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                 <Setter Property="MinHeight" Value="26" />
                 <Setter Property="Padding" Value="6,2" />
@@ -315,36 +328,39 @@
                                 VerticalAlignment="Top"
                                 Margin="0,0,16,0">
                         <Button x:Name="UndoButton"
-                                Content="{DynamicResource LOCPlayAch_Common_Undo}"
+                                Content="&#xE7A7;"
                                 ToolTip="{Binding UndoDescription}"
                                 Command="{Binding UndoCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="RedoButton"
-                                Content="{DynamicResource LOCPlayAch_Common_Redo}"
+                                Content="&#xE7A6;"
                                 ToolTip="{Binding RedoDescription}"
                                 Command="{Binding RedoCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                     </StackPanel>
 
                     <StackPanel Margin="0,0,16,0">
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="AddButton"
-                                Content="{DynamicResource LOCPlayAch_Common_Add}"
+                                Content="&#xE710;"
+                                ToolTip="{DynamicResource LOCPlayAch_Common_Add}"
                                 Command="{Binding AddCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="DuplicateButton"
-                                Content="{DynamicResource LOCPlayAch_Common_Duplicate}"
+                                Content="&#xE8C8;"
+                                ToolTip="{DynamicResource LOCPlayAch_Common_Duplicate}"
                                 Command="{Binding DuplicateCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="RevertButton"
-                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Editor_Revert}"
+                                Content="&#xE777;"
                                 ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Editor_RevertHint}"
                                 Command="{Binding RevertCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="DeleteButton"
-                                Content="{DynamicResource LOCPlayAch_Common_Delete}"
+                                Content="&#xE74D;"
+                                ToolTip="{DynamicResource LOCPlayAch_Common_Delete}"
                                 Command="{Binding DeleteCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                     </StackPanel>
                         <!-- Second row: the shortcuts that rewrite one facet of the list, kept
                              off the row of per-achievement actions and centered under the group
@@ -367,13 +383,15 @@
                          second row, and a wrap panel would otherwise give every item that height. -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Top">
                         <Button x:Name="ImportFileButton"
-                                Content="{DynamicResource LOCPlayAch_Common_Import}"
+                                Content="&#xE896;"
+                                ToolTip="{DynamicResource LOCPlayAch_Common_Import}"
                                 Command="{Binding ImportFileCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
+                                Style="{StaticResource ToolbarIconButtonStyle}" />
                         <Button x:Name="ExportButton"
-                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                                Content="&#xE898;"
+                                ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                 Click="ContextMenuButton_Click"
-                                Style="{StaticResource ToolbarButtonStyle}">
+                                Style="{StaticResource ToolbarIconButtonStyle}">
                             <Button.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_CustomDataHeader}"
