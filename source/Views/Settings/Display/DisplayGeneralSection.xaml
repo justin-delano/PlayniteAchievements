@@ -238,6 +238,9 @@
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPiePercentages}">
                         <CheckBox IsChecked="{Binding Persisted.ShowOverviewPiePercentages}"/>
                     </controls:SettingRow>
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPieIcons}">
+                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewPieIcons}"/>
+                    </controls:SettingRow>
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PieIncludeLocked}">
                         <CheckBox IsChecked="{Binding Persisted.OverviewPieIncludeLocked}"/>
                     </controls:SettingRow>
