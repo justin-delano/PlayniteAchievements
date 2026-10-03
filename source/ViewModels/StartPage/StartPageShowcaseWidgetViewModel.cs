@@ -10,18 +10,21 @@ namespace PlayniteAchievements.ViewModels.StartPage
 {
     public sealed class StartPageShowcaseWidgetViewModel : StartPageWidgetViewModelBase
     {
-        private readonly ShowcaseWidgetInstanceSettings _instance;
+        // Resolved per projection rather than held: a settings cancel replaces Persisted with a
+        // deep clone, and a held instance would keep projecting the orphaned copy while the
+        // widget's settings editor writes to the live one.
+        private readonly Func<ShowcaseWidgetInstanceSettings> _resolveInstance;
         private OverviewDataSnapshot _latestSnapshot;
         private ShowcaseWidgetProjection _projection;
 
         public StartPageShowcaseWidgetViewModel(
-            ShowcaseWidgetInstanceSettings instance,
+            Func<ShowcaseWidgetInstanceSettings> resolveInstance,
             StartPageDataCoordinator dataCoordinator,
             PlayniteAchievementsSettings settings,
             ILogger logger)
             : base(dataCoordinator, settings, logger)
         {
-            _instance = instance ?? throw new ArgumentNullException(nameof(instance));
+            _resolveInstance = resolveInstance ?? throw new ArgumentNullException(nameof(resolveInstance));
             ShowcaseConfigurationEvents.Changed += ShowcaseConfigurationEvents_Changed;
         }
 
@@ -37,7 +40,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
             Projection = ShowcaseWidgetProjectionService.Build(
                 _latestSnapshot,
                 PersistedSettings?.Showcase,
-                _instance,
+                _resolveInstance(),
                 gridOptions: PersistedSettings?.GridOptions);
         }
 
