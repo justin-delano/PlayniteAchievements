@@ -138,7 +138,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private double _progressFraction;
         private Guid? _focusGameId;
 
-        public WorkshopViewModel(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId)
+        public WorkshopViewModel(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId, WorkshopItemKind? focusKind = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
@@ -166,7 +166,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 new WorkshopSortOption(WorkshopSort.Newest, ResourceProvider.GetString("LOCPlayAch_Workshop_SortNewest")),
                 new WorkshopSortOption(WorkshopSort.Name, ResourceProvider.GetString("LOCPlayAch_Column_Name"))
             };
-            _selectedKind = focusGameId.HasValue ? KindOptions.Last() : KindOptions[0];
+            _selectedKind = focusGameId.HasValue
+                ? KindOptions.Last()
+                : KindOptions.FirstOrDefault(option => option.Kind == focusKind) ?? KindOptions[0];
             _selectedSort = SortOptions[0];
 
             ItemsView = CollectionViewSource.GetDefaultView(Items);
@@ -188,7 +190,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public ObservableCollection<WorkshopItemViewModel> InstalledItems { get; } = new ObservableCollection<WorkshopItemViewModel>();
         public ObservableCollection<WorkshopUndoViewModel> UndoEntries { get; } = new ObservableCollection<WorkshopUndoViewModel>();
         public ObservableCollection<WorkshopSubmissionViewModel> Submissions { get; } = new ObservableCollection<WorkshopSubmissionViewModel>();
-        public ObservableCollection<WorkshopShareCandidate> ShareCandidates { get; } = new ObservableCollection<WorkshopShareCandidate>();
         public IReadOnlyList<WorkshopKindOption> KindOptions { get; }
         public IReadOnlyList<WorkshopSortOption> SortOptions { get; }
 
@@ -200,7 +201,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public RelayCommand OpenSubmissionCommand { get; }
         public AsyncCommand RefreshSubmissionsCommand { get; }
 
-        public WorkshopShareService ShareService => _plugin.WorkshopShareService;
         public WorkshopInstalledRegistry Registry => _registry;
 
         public string SearchText
@@ -430,19 +430,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
 
             OnPropertyChanged(nameof(HasSubmissions));
-
-            ShareCandidates.Clear();
-            try
-            {
-                foreach (var candidate in ShareService.ListCandidates())
-                {
-                    ShareCandidates.Add(candidate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Failed listing shareable items.");
-            }
         }
 
         private void RebuildInstalledList()
@@ -700,14 +687,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             {
                 IsBusy = false;
             }
-        }
-
-        // ---- sharing -----------------------------------------------------------------------
-
-        /// <summary>Called by the window after a share dialog completes, so the lists update.</summary>
-        public void OnShared()
-        {
-            ReloadLocalState();
         }
 
         public async Task RefreshSubmissionStatesAsync()
