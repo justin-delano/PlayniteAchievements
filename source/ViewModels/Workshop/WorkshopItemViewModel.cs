@@ -95,7 +95,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string ActionLabel => HasUpdate
             ? ResourceProvider.GetString("LOCPlayAch_Workshop_Update")
             : IsInstalled
-                ? ResourceProvider.GetString("LOCPlayAch_Workshop_Installed")
+                ? ResourceProvider.GetString("LOCPlayAch_Workshop_Tab_Installed")
                 : ResourceProvider.GetString("LOCPlayAch_Workshop_Install");
 
         public bool CanInstall => !RequiresNewerPlugin && (!IsInstalled || HasUpdate);

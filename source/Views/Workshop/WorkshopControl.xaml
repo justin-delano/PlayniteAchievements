@@ -62,7 +62,7 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Installed}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}"/>
