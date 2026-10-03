@@ -191,6 +191,57 @@ namespace PlayniteAchievements.Services.Notifications
         }
 
         /// <summary>
+        /// Installs a pack's surface onto the target style, and the pack's separately styled
+        /// kinds along with it, so a pack carries the whole look rather than one surface of it. A
+        /// kind the pack does not carry is left as it is rather than being overwritten with the
+        /// shared look. The pack's image paths must already point at managed storage (the result
+        /// of <see cref="ImportAsync(string, NotificationImageOwner, CancellationToken)"/>).
+        /// </summary>
+        public static void ApplyPackSurfaces(
+            NotificationStyleSettings target,
+            NotificationStyleSettings pack,
+            bool isFrame)
+        {
+            if (target == null || pack == null)
+            {
+                return;
+            }
+
+            CopySurface(target, pack, isFrame);
+            if (target.KindStyles == null)
+            {
+                return;
+            }
+
+            foreach (var pair in pack.KindStyles)
+            {
+                if (pair.Value == null ||
+                    !Enum.TryParse<NotificationKind>(pair.Key, ignoreCase: true, result: out var kind) ||
+                    kind == NotificationKind.Base)
+                {
+                    continue;
+                }
+
+                CopySurface(target.EnableKindStyle(kind), pair.Value, isFrame);
+            }
+        }
+
+        private static void CopySurface(
+            NotificationStyleSettings target,
+            NotificationStyleSettings source,
+            bool isFrame)
+        {
+            if (isFrame)
+            {
+                target.Frame = source.Frame;
+                return;
+            }
+
+            target.Toast = source.Toast;
+            target.ToastBackgroundImagePath = source.ToastBackgroundImagePath;
+        }
+
+        /// <summary>
         /// A copy of the style holding only the requested surface (and, for the toast, its
         /// background path), with no kind styles of its own.
         /// </summary>

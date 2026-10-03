@@ -1077,54 +1077,13 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             return scopeClone.ResolveKind(ActiveKind);
         }
 
-        /// <summary>
-        /// Installs a pack's surface onto the target style, and — when the target is the scope's
-        /// shared style — the pack's separately styled kinds along with it, so a pack carries
-        /// the whole look rather than one surface of it. A kind the pack does not carry is left
-        /// as it is rather than being overwritten with the shared look.
-        /// </summary>
+        // Shared with the theme pack installer, which applies a bundled surface to the global style.
         private static void ApplyPackSurfaces(
             NotificationStyleSettings target,
             NotificationStyleSettings pack,
             bool isFrame)
         {
-            if (target == null || pack == null)
-            {
-                return;
-            }
-
-            CopySurface(target, pack, isFrame);
-            if (target.KindStyles == null)
-            {
-                return;
-            }
-
-            foreach (var pair in pack.KindStyles)
-            {
-                if (pair.Value == null ||
-                    !Enum.TryParse<NotificationKind>(pair.Key, ignoreCase: true, result: out var kind) ||
-                    kind == NotificationKind.Base)
-                {
-                    continue;
-                }
-
-                CopySurface(target.EnableKindStyle(kind), pair.Value, isFrame);
-            }
-        }
-
-        private static void CopySurface(
-            NotificationStyleSettings target,
-            NotificationStyleSettings source,
-            bool isFrame)
-        {
-            if (isFrame)
-            {
-                target.Frame = source.Frame;
-                return;
-            }
-
-            target.Toast = source.Toast;
-            target.ToastBackgroundImagePath = source.ToastBackgroundImagePath;
+            NotificationStylePortableStore.ApplyPackSurfaces(target, pack, isFrame);
         }
 
         /// <summary>
