@@ -15,7 +15,7 @@
         <Style x:Key="FullscreenCloseButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -86,7 +86,7 @@
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Margin="16"
-                Content="&#xE711;"
+                Content="&#xEEE4;"
                 Style="{StaticResource FullscreenCloseButtonStyle}"
                 Click="CloseButton_Click"/>
     </Grid>
