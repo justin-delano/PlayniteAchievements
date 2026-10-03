@@ -1136,7 +1136,7 @@ namespace PlayniteAchievements.Views.Showcase
             return template;
         }
 
-        // Scissors cursor for the cut lines, generated once from the Segoe MDL2 "Cut" glyph
+        // Scissors cursor for the cut lines, generated once from the IcoFont "cut" glyph
         // (WPF ships no scissors cursor). Falls back to the crosshair if anything fails.
         private static readonly Lazy<Cursor> CutCursor =
             new Lazy<Cursor>(CreateCutCursor);
@@ -1146,7 +1146,13 @@ namespace PlayniteAchievements.Views.Showcase
             try
             {
                 const int size = 24;
-                var typeface = new System.Windows.Media.Typeface("Segoe MDL2 Assets");
+                if (!(Application.Current?.TryFindResource("PlayAch.FontFamily.Icon") is System.Windows.Media.FontFamily iconFont))
+                {
+                    return Cursors.Cross;
+                }
+
+                var typeface = new System.Windows.Media.Typeface(
+                    iconFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
                 var visual = new System.Windows.Media.DrawingVisual();
                 using (var context = visual.RenderOpen())
                 {
@@ -1211,7 +1217,7 @@ namespace PlayniteAchievements.Views.Showcase
             System.Windows.Media.Brush brush)
         {
             return new System.Windows.Media.FormattedText(
-                "\uE8C6",
+                "\uEDEB",
                 System.Globalization.CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
                 typeface,
@@ -1755,7 +1761,7 @@ namespace PlayniteAchievements.Views.Showcase
             // move/swap fast path just re-resolves visibility.
             var blockId = block.BlockId;
             var settingsButton = CreateBlockActionButton(
-                "\uE713",
+                "\uEF3A",
                 "LOCPlayAch_Showcase_WidgetSettings",
                 HorizontalAlignment.Left);
             settingsButton.Click += (_, __) =>
@@ -1770,7 +1776,7 @@ namespace PlayniteAchievements.Views.Showcase
             };
             layers.Children.Add(settingsButton);
             var deleteButton = CreateBlockActionButton(
-                "\uE74D",
+                "\uEE09",
                 "LOCPlayAch_Showcase_DeleteWidget",
                 HorizontalAlignment.Right);
             deleteButton.Click += (_, __) =>
@@ -2154,13 +2160,13 @@ namespace PlayniteAchievements.Views.Showcase
         {
             var addGlyph = new TextBlock
             {
-                Text = "\uE710",
+                Text = "\uEFC2",
                 FontSize = 34,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity = 0.85
             };
+            addGlyph.SetResourceReference(TextBlock.FontFamilyProperty, "PlayAch.FontFamily.Icon");
             addGlyph.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Accent");
             // A fixed-size centered target instead of a block-filling one: clicking anywhere
             // else in the empty block only selects it, keeping the cut lines reachable.
@@ -3270,7 +3276,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             // The button shows the mode a click switches to: pencil (edit) or eye (view).
             var switchingToEdit = EditLayoutButton.IsChecked != true;
-            EditLayoutButton.Content = switchingToEdit ? "\uE70F" : "\uE890";
+            EditLayoutButton.Content = switchingToEdit ? "\uEC55" : "\uEF24";
             EditLayoutButton.ToolTip = Localize(switchingToEdit
                 ? "LOCPlayAch_Common_Edit"
                 : "LOCPlayAch_Common_View");
