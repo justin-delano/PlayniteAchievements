@@ -1571,7 +1571,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Title">Workshop</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Tab_Browse">Browse</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Tab_Installed">Installed</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Share">Share</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_Colors">Color sets</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_NotificationStyle">Notification styles</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_ScreenshotFrame">Screenshot frames</sys:String>
@@ -1605,8 +1604,9 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Revert">Revert</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RevertTo">Revert to before "{0}" ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share">Share to Workshop</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Hint">Share your customizations with other players. Submissions are reviewed before they appear.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_What">What to share</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromFile">From file...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromWorkshop">From Workshop...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Menu_ToFile">To file...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalStyle">Notification style</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalFrame">Screenshot frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">Unlock sounds</sys:String>
