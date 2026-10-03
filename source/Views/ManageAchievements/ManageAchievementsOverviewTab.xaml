@@ -276,13 +276,31 @@
                                    VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
-                                    Command="{Binding ExportCustomCommand}"
+                                    Click="ContextMenuButton_Click"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
-                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
+                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Menu_ToFile}"
+                                                  Command="{Binding ExportCustomCommand}" />
+                                        <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Share}"
+                                                  Command="{Binding ShareToWorkshopCommand}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
                             <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
-                                    Command="{Binding ImportCustomJsonCommand}"
+                                    Click="ContextMenuButton_Click"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
-                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
+                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Menu_FromFile}"
+                                                  Command="{Binding ImportCustomJsonCommand}" />
+                                        <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Menu_FromWorkshop}"
+                                                  Command="{Binding ImportFromWorkshopCommand}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
                             <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataButton}"
                                     Command="{Binding ClearCustomDataCommand}"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}" />
