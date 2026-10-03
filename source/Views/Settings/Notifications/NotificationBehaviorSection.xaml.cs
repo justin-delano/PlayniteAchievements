@@ -40,6 +40,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         public NotificationBehaviorSection()
         {
             InitializeComponent();
+            RefreshSoundPackPresetOptions();
         }
 
         internal NotificationBehaviorSection(
@@ -161,12 +162,15 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 () => _plugin?.OpenWorkshopWindow(focusKind: WorkshopItemKind.UnlockSounds));
         }
 
+        /// <summary>
+        /// Adds a .pasounds file to the saved sound packs, named after the file. Applying it to
+        /// the tiers is the job of the pack list, so the current sounds do not change here.
+        /// </summary>
         private void UnlockSoundPackImportFile_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
-            var store = _plugin?.UnlockSoundPortableStore;
-            var sounds = _settings?.Persisted?.UnlockSounds;
-            if (store == null || sounds == null)
+            var presets = _plugin?.UnlockSoundPresetStore;
+            if (presets == null)
             {
                 return;
             }
@@ -185,17 +189,180 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                     return;
                 }
 
-                store.Import(dialog.FileName, sounds);
-                store.PruneUnreferenced(sounds);
-                _unlockSoundsViewModel?.Refresh();
-                _unlockSoundsViewModel?.ScheduleApply();
-                ShowMessage(L("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+                var saved = presets.SaveFrom(presets.UniqueName(PackageStem(dialog.FileName)), dialog.FileName);
+                RefreshSoundPackPresetOptions(saved.Name);
+                ShowMessage(string.Format(L("LOCPlayAch_Workshop_SavedAsPreset"), saved.Name), MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed importing unlock sound pack.");
                 ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>The file name without its package extension, including a trailing .zip.</summary>
+        private static string PackageStem(string path)
+        {
+            var name = System.IO.Path.GetFileName(path) ?? string.Empty;
+            foreach (var suffix in new[] { ".zip", UnlockSoundPortableStore.PackageFileExtension })
+            {
+                if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    name = name.Substring(0, name.Length - suffix.Length);
+                }
+            }
+
+            return name;
+        }
+
+        // ---- saved sound packs ---------------------------------------------------------------
+
+        private Services.Workshop.PackagePresetInfo SelectedSoundPackPreset =>
+            SoundPackPresetSelector?.SelectedItem as Services.Workshop.PackagePresetInfo;
+
+        private void RefreshSoundPackPresetOptions(string selectName = null)
+        {
+            var store = _plugin?.UnlockSoundPresetStore;
+            if (SoundPackPresetSelector == null || store == null)
+            {
+                return;
+            }
+
+            var items = new System.Collections.Generic.List<object> { L("LOCPlayAch_Common_None") };
+            try
+            {
+                items.AddRange(store.List());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed listing sound pack presets.");
+            }
+
+            SoundPackPresetSelector.ItemsSource = items;
+            SoundPackPresetSelector.SelectedItem = string.IsNullOrWhiteSpace(selectName)
+                ? items[0]
+                : items.OfType<Services.Workshop.PackagePresetInfo>().FirstOrDefault(preset =>
+                      string.Equals(preset.Name, selectName, StringComparison.OrdinalIgnoreCase)) ?? items[0];
+            RefreshSoundPackPresetButtons();
+        }
+
+        private void RefreshSoundPackPresetButtons()
+        {
+            if (ApplySoundPackPresetButton == null || DeleteSoundPackPresetButton == null)
+            {
+                return;
+            }
+
+            ApplySoundPackPresetButton.IsEnabled = DeleteSoundPackPresetButton.IsEnabled = SelectedSoundPackPreset != null;
+        }
+
+        private void SoundPackPresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshSoundPackPresetButtons();
+        }
+
+        /// <summary>Copies the selected pack onto the tiers: its files into managed storage, the rest left as they are.</summary>
+        private void ApplySoundPackPreset_Click(object sender, RoutedEventArgs e)
+        {
+            Keyboard.ClearFocus();
+            var preset = SelectedSoundPackPreset;
+            var store = _plugin?.UnlockSoundPortableStore;
+            var sounds = _settings?.Persisted?.UnlockSounds;
+            if (preset == null || store == null || sounds == null)
+            {
+                return;
+            }
+
+            try
+            {
+                store.Import(preset.FilePath, sounds);
+                store.PruneUnreferenced(sounds);
+                _unlockSoundsViewModel?.Refresh();
+                _unlockSoundsViewModel?.ScheduleApply();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed applying sound pack preset.");
+                ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>Saves the current own and theme sounds as a named pack, replacing one of the same name after confirmation.</summary>
+        private void SaveSoundPackPreset_Click(object sender, RoutedEventArgs e)
+        {
+            Keyboard.ClearFocus();
+            var presets = _plugin?.UnlockSoundPresetStore;
+            var store = _plugin?.UnlockSoundPortableStore;
+            var resolver = _plugin?.UnlockSounds?.Resolver;
+            if (presets == null || store == null || resolver == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var resolved = resolver.ResolveAll();
+                if (!PresetNamePrompt.TryAsk(_plugin, SelectedSoundPackPreset?.Name, Services.Workshop.PackagePresetStore.SanitizeName, Services.Workshop.PackagePresetStore.MaxNameLength, out var name))
+                {
+                    return;
+                }
+
+                var exists = presets.Exists(name);
+                if (!exists && presets.Count() >= Services.Workshop.PackagePresetStore.MaxPresetCount)
+                {
+                    ShowMessage(string.Format(L("LOCPlayAch_Presets_MaxReached"), Services.Workshop.PackagePresetStore.MaxPresetCount), MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (exists && !Confirm(string.Format(L("LOCPlayAch_Presets_OverwriteConfirm"), name)))
+                {
+                    return;
+                }
+
+                var saved = presets.Save(name, path => store.Export(resolved, path));
+                RefreshSoundPackPresetOptions(saved.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed saving sound pack preset.");
+                ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        private void DeleteSoundPackPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var preset = SelectedSoundPackPreset;
+            var presets = _plugin?.UnlockSoundPresetStore;
+            if (preset == null || presets == null)
+            {
+                return;
+            }
+
+            if (!Confirm(string.Format(L("LOCPlayAch_Presets_DeleteConfirm"), preset.Name)))
+            {
+                return;
+            }
+
+            try
+            {
+                presets.Delete(preset);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed deleting sound pack preset.");
+                ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+
+            RefreshSoundPackPresetOptions();
+        }
+
+        private bool Confirm(string message)
+        {
+            return _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                       message,
+                       L("LOCPlayAch_Title_PluginName"),
+                       MessageBoxButton.YesNo,
+                       MessageBoxImage.Question) == MessageBoxResult.Yes;
         }
 
         private void ShowMessage(string message, MessageBoxImage image)
