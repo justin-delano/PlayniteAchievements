@@ -133,6 +133,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public RelayCommand ClearGameDataCommand { get; }
         public RelayCommand ExportCustomCommand { get; }
         public RelayCommand ImportCustomJsonCommand { get; }
+        public RelayCommand ImportFromWorkshopCommand { get; }
+        public RelayCommand ShareToWorkshopCommand { get; }
         public RelayCommand ClearCustomDataCommand { get; }
 
         public ManageAchievementsViewModel(
@@ -172,6 +174,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ClearGameDataCommand = new RelayCommand(_ => ClearGameData(), _ => HasGame);
             ExportCustomCommand = new RelayCommand(_ => ExportCustom(), _ => HasGame && CanExportCustomJson);
             ImportCustomJsonCommand = new RelayCommand(_ => ImportCustomJson(), _ => HasGame);
+            ImportFromWorkshopCommand = new RelayCommand(_ => _plugin?.OpenWorkshopWindow(_gameId), _ => HasGame && _plugin != null);
+            ShareToWorkshopCommand = new RelayCommand(_ => ShareToWorkshop(), _ => HasGame && CanExportCustomJson && _plugin != null);
             ClearCustomDataCommand = new RelayCommand(_ => ClearCustomData(), _ => HasGame && CanClearCustomData);
 
             Reload();
@@ -1247,6 +1251,19 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ImportPortable();
         }
 
+        private void ShareToWorkshop()
+        {
+            if (!HasGame || _plugin == null)
+            {
+                return;
+            }
+
+            _plugin.OpenWorkshopShare(
+                Services.Workshop.WorkshopItemKind.GameCustomData,
+                _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow(),
+                gameId: _gameId);
+        }
+
         /// <summary>
         /// The one Import for this game's .pa files, shared by the Overview and Editor tabs. A
         /// whole-game package replaces the game's custom data; a custom-achievements package is
@@ -1684,6 +1701,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             RefreshGameCommand?.RaiseCanExecuteChanged();
             ClearGameDataCommand?.RaiseCanExecuteChanged();
             ExportCustomCommand?.RaiseCanExecuteChanged();
+            ShareToWorkshopCommand?.RaiseCanExecuteChanged();
             ImportCustomJsonCommand?.RaiseCanExecuteChanged();
             ClearCustomDataCommand?.RaiseCanExecuteChanged();
         }
