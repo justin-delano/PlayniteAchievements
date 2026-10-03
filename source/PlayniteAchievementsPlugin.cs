@@ -297,6 +297,41 @@ namespace PlayniteAchievements
             }
         }
 
+        /// <summary>
+        /// The machine-independent names for a game that an exported .pa file carries: the
+        /// servicing provider's identity from the cache, and the library's name and platform as a
+        /// fallback for games no provider services.
+        /// </summary>
+        private IReadOnlyList<PortableGameKey> ResolvePortableGameKeys(Guid gameId)
+        {
+            var keys = new List<PortableGameKey>();
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            var platform = game?.Platforms?.FirstOrDefault()?.Name;
+
+            var data = _achievementDataService?.GetRawGameAchievementData(gameId);
+            if (data != null && !string.IsNullOrWhiteSpace(data.ProviderKey) &&
+                (data.AppId > 0 || !string.IsNullOrWhiteSpace(data.ProviderGameKey)))
+            {
+                keys.Add(new PortableGameKey
+                {
+                    ProviderKey = data.ProviderKey,
+                    ProviderPlatformKey = string.IsNullOrWhiteSpace(data.ProviderPlatformKey) ? null : data.ProviderPlatformKey,
+                    ProviderGameId = data.AppId > 0 ? data.AppId : (int?)null,
+                    ProviderGameKey = string.IsNullOrWhiteSpace(data.ProviderGameKey) ? null : data.ProviderGameKey,
+                    Name = game?.Name ?? data.GameName,
+                    Platform = platform
+                });
+            }
+
+            var name = game?.Name ?? data?.GameName;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                keys.Add(new PortableGameKey { Name = name, Platform = platform });
+            }
+
+            return keys;
+        }
+
         private void TryWarmCustomDataCache()
         {
             if (_gameCustomDataStore == null)
@@ -597,6 +632,7 @@ namespace PlayniteAchievements
                 _gameCustomDataStore.AttachCustomProviderCatalog(
                     id => _customProviderStore.TryGet(id, out var definition) ? definition : null,
                     definition => _customProviderStore.ImportIfMissing(definition));
+                _gameCustomDataStore.AttachGameKeyResolver(ResolvePortableGameKeys);
                 TryWarmCustomDataCache();
 
                 List<IDataProvider> providers;
