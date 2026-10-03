@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.ViewModels;
@@ -87,12 +88,12 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
-        /// Opens the Workshop browser, optionally landing on the game-data items that match one
-        /// library game.
+        /// Opens the Workshop browser, optionally landing on one kind's tab or on the game-data
+        /// items that match one library game.
         /// </summary>
-        internal void OpenWorkshopWindow(Guid? focusGameId = null)
+        internal void OpenWorkshopWindow(Guid? focusGameId = null, Services.Workshop.WorkshopItemKind? focusKind = null)
         {
-            var view = new Views.Workshop.WorkshopControl(this, _logger, focusGameId);
+            var view = new Views.Workshop.WorkshopControl(this, _logger, focusGameId, focusKind);
             _windowService.OpenManagedPopout(
                 ResourceProvider.GetString("LOCPlayAch_Workshop_Title"),
                 view,
@@ -107,6 +108,57 @@ namespace PlayniteAchievements
                 },
                 "Workshop",
                 () => view.Cleanup());
+        }
+
+        /// <summary>
+        /// Opens the share dialog for one shareable thing: a kind, plus the game or showcase page
+        /// when the kind is per-game or per-page. Returns false when nothing of that kind can be
+        /// shared right now (for example no custom unlock sounds).
+        /// </summary>
+        internal bool OpenWorkshopShare(
+            Services.Workshop.WorkshopItemKind kind,
+            System.Windows.Window owner,
+            Guid? gameId = null,
+            string pageId = null)
+        {
+            var candidate = WorkshopShareService.ListCandidates().FirstOrDefault(c =>
+                c.Kind == kind
+                && (gameId == null || c.GameId == gameId)
+                && (pageId == null || string.Equals(c.PageId, pageId, StringComparison.Ordinal)));
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            var dialog = new Views.Workshop.WorkshopShareDialog(this, _logger, candidate, WorkshopShareService, WorkshopRegistry);
+            var window = Views.Helpers.PlayniteUiProvider.CreateExtensionWindow(
+                ResourceProvider.GetString("LOCPlayAch_Workshop_Share"),
+                dialog,
+                new Views.Helpers.WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 620,
+                    Height = 640
+                });
+
+            try
+            {
+                if (window.Owner == null)
+                {
+                    window.Owner = owner ?? PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            dialog.RequestClose += (s, args) => window.Close();
+            window.ShowDialog();
+            dialog.Cleanup();
+            return true;
         }
 
         /// <summary>
