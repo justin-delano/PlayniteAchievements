@@ -383,10 +383,10 @@ namespace PlayniteAchievements.Services.Overview
                 return null;
             }
 
-            var playniteGame = gameData.Game;
-            if (playniteGame == null && gameData.PlayniteGameId.HasValue)
+            var playniteGame = ResolvePlayniteGame(gameData);
+            if (playniteGame?.Hidden == true)
             {
-                playniteGame = _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value);
+                return null;
             }
 
             var providerKey = gameData.EffectiveProviderKey;
@@ -642,7 +642,9 @@ namespace PlayniteAchievements.Services.Overview
                 // An excluded game contributes nothing to summary surfaces, matching the delta path
                 // (BuildGameFragment returns no fragment for it); otherwise its pins appeared on a
                 // full build and turned into placeholders on the next delta.
-                if (gameData?.Achievements == null || gameData.ExcludedFromSummaries)
+                if (gameData?.Achievements == null ||
+                    gameData.ExcludedFromSummaries ||
+                    ResolvePlayniteGame(gameData)?.Hidden == true)
                 {
                     continue;
                 }
@@ -922,6 +924,17 @@ namespace PlayniteAchievements.Services.Overview
             var presentation = CreateGamePresentation(playniteGame);
             cache[playniteGameId.Value] = presentation;
             return presentation;
+        }
+
+        private Playnite.SDK.Models.Game ResolvePlayniteGame(GameAchievementData gameData)
+        {
+            var playniteGame = gameData?.Game;
+            if (playniteGame == null && gameData?.PlayniteGameId.HasValue == true)
+            {
+                playniteGame = _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value);
+            }
+
+            return playniteGame;
         }
 
         private GamePresentation CreateGamePresentation(Playnite.SDK.Models.Game playniteGame)
