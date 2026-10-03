@@ -13,7 +13,7 @@
         <Style x:Key="TransportGlyphButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="30"/>
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -58,12 +58,12 @@
 
             <Button x:Name="PlayPauseButton"
                     Grid.Column="0"
-                    Content="&#xE768;"
+                    Content="&#xEC74;"
                     Style="{StaticResource TransportGlyphButtonStyle}"
                     Click="PlayPauseButton_Click"/>
             <Button x:Name="StopButton"
                     Grid.Column="1"
-                    Content="&#xE71A;"
+                    Content="&#xEC73;"
                     Style="{StaticResource TransportGlyphButtonStyle}"
                     Click="StopButton_Click"/>
 
@@ -91,7 +91,7 @@
 
             <Button x:Name="MuteButton"
                     Grid.Column="4"
-                    Content="&#xE767;"
+                    Content="&#xEC94;"
                     Style="{StaticResource TransportGlyphButtonStyle}"
                     Click="MuteButton_Click"/>
 
