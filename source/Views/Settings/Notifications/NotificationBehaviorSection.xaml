@@ -195,9 +195,9 @@
                             <StackPanel Orientation="Horizontal"
                                         Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                 <Button Click="UnlockSoundPackExport_Click"
-                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"/>
+                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"/>
                                 <Button Click="UnlockSoundPackImport_Click"
-                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
+                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                         Margin="6,0,0,0"/>
                             </StackPanel>
                             <!-- DataContext island (see UnlockSoundSettingsViewModel); one row per tier.
