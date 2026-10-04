@@ -21,7 +21,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
 
-internal static class SlideCadenceProbe
+internal static partial class SlideCadenceProbe
 {
     private const int SlideDurationMs = 240;
     // Card geometry and effect weight, overridable from the command line. The defaults are the
@@ -177,6 +177,11 @@ internal static class SlideCadenceProbe
         return DwmGetCompositionTimingInfo(IntPtr.Zero, ref info) == 0 ? info.cFrame : 0UL;
     }
 
+    /// <summary>
+    /// Runs the ground-truth comparison (see SlideTruth.cs) instead of the cadence table.
+    /// </summary>
+    private static bool Truth;
+
     /// <summary>Mechanisms to run, by name; null runs all of them.</summary>
     private static HashSet<string> Only;
 
@@ -294,6 +299,10 @@ internal static class SlideCadenceProbe
                     System.Diagnostics.Process.GetCurrentProcess().Handle, priority);
                 Console.WriteLine("GPU scheduling priority class {0}: status=0x{1:X8}", priority, status);
             }
+            else if (args[i] == "--truth")
+            {
+                Truth = true;
+            }
             else if (args[i] == "--verify")
             {
                 VerifyTransparency = true;
@@ -339,6 +348,12 @@ internal static class SlideCadenceProbe
                 }
 
                 Console.WriteLine();
+
+                if (Truth)
+                {
+                    await RunTruth(repeats);
+                    return;
+                }
 
                 if (VerifyTransparency)
                 {
