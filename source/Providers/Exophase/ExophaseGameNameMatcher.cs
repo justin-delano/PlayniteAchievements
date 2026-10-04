@@ -17,12 +17,16 @@ namespace PlayniteAchievements.Providers.Exophase
         public const int ExactMatchScore = 100;
 
         /// <summary>
-        /// Normalizes a game name for matching by trimming and removing a known edition suffix.
-        /// Case is preserved; downstream comparisons are case-insensitive.
+        /// Normalizes a game name for matching by removing trademark symbols (store titles such
+        /// as "Prince of Persia™: The Lost Crown" carry them; Exophase titles do not), collapsing
+        /// whitespace, and removing a known edition suffix. Case is preserved; downstream
+        /// comparisons are case-insensitive.
         /// </summary>
         public static string NormalizeGameName(string name)
         {
-            return GameNameNormalizer.StripEditionSuffix(name);
+            return GameNameNormalizer.StripEditionSuffix(
+                GameNameNormalizer.CollapseWhitespace(
+                    GameNameNormalizer.StripTrademarkSymbols(name)));
         }
 
         /// <summary>
