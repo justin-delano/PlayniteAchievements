@@ -522,8 +522,22 @@ namespace PlayniteAchievements.ViewModels.Workshop
                         return _plugin.Settings?.Persisted?.Showcase?.Pages?.Any(page =>
                                    string.Equals(page?.Name, name, StringComparison.OrdinalIgnoreCase)) ?? true;
                     case WorkshopItemKind.GameCustomData:
-                        return !(installed.PlayniteGameId is Guid gameId)
-                               || (_plugin.GameCustomDataStore?.HasPortableData(gameId) ?? true);
+                    {
+                        var store = _plugin.GameCustomDataStore;
+                        if (!(installed.PlayniteGameId is Guid gameId) || store == null)
+                        {
+                            return true;
+                        }
+
+                        // Present while the package's own achievement changes remain, not while
+                        // any custom data does: a reset in the editor leaves category order and
+                        // images behind, and the item must become installable again.
+                        var current = store.LoadOrDefault(gameId);
+                        return WorkshopGameDataPresence.IsPresent(
+                            _installer?.Baselines?.Load(installed),
+                            current,
+                            store.HasPortableData(gameId));
+                    }
                     default:
                         return true;
                 }
