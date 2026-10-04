@@ -1,7 +1,9 @@
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Workshop;
+using PlayniteAchievements.Services.Workshop.Preview;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -185,6 +187,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
             RefreshCommand = new AsyncCommand(async _ => await LoadAsync());
             InstallCommand = new AsyncCommand(async parameter => await InstallAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
+            PreviewCommand = new AsyncCommand(async parameter => await PreviewAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
             OpenFolderCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopItemViewModel ?? SelectedItem)?.FolderUrl));
             ReportCommand = new RelayCommand(parameter => Report(parameter as WorkshopItemViewModel ?? SelectedItem));
             RevertCommand = new RelayCommand(parameter => Revert(parameter as WorkshopUndoViewModel), _ => !IsBusy);
@@ -210,6 +213,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public AsyncCommand RefreshCommand { get; }
         public AsyncCommand InstallCommand { get; }
+        public AsyncCommand PreviewCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
         public RelayCommand ReportCommand { get; }
         public RelayCommand RevertCommand { get; }
@@ -299,6 +303,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 if (SetValueAndReturn(ref _isBusy, value, nameof(IsBusy)))
                 {
                     InstallCommand.RaiseCanExecuteChanged();
+                    PreviewCommand.RaiseCanExecuteChanged();
                     RevertCommand.RaiseCanExecuteChanged();
                 }
             }
@@ -375,6 +380,17 @@ namespace PlayniteAchievements.ViewModels.Workshop
                         built.Add(row);
                     }
 
+                    // The index marks every item with its publisher's hash. Records of a first
+                    // submission learn their published id from this install's items here, as the
+                    // share dialog links them, so My submissions can address the item.
+                    var owner = _registry.TryGetSubmitterHash();
+                    if (owner != null)
+                    {
+                        _registry.LinkSubmissions(index.Items.Where(item =>
+                            !string.IsNullOrWhiteSpace(item.OwnerHash) &&
+                            string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase)));
+                    }
+
                     return built;
                 }, _lifetime.Token);
 
@@ -386,6 +402,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                 ApplySort();
                 RebuildInstalledList();
+                ReloadLocalState();
                 _ = PrefetchPreviewsAsync(rows);
 
                 if (_focusGameId.HasValue)
@@ -760,17 +777,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     request.TargetGameId = gameId;
                 }
 
+                // The install consumes its own copy, so the cached download stays for another
+                // preview or install of the same version, and this scratch folder stays the only
+                // thing the finally below cleans up.
+                var downloaded = await EnsureDownloadedAsync(row);
                 Directory.CreateDirectory(scratch);
                 request.PackagePath = Path.Combine(scratch, row.Item.Package?.File ?? "package.zip");
-
-                var total = Math.Max(1, row.Item.Package?.SizeBytes ?? 1);
-                StatusMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Downloading"), row.Name);
-                ProgressFraction = 0;
-                await _client.DownloadPackageAsync(
-                    row.Item,
-                    request.PackagePath,
-                    new Progress<long>(received => ProgressFraction = Math.Min(1, (double)received / total)),
-                    _lifetime.Token);
+                var packagePath = request.PackagePath;
+                await Task.Run(() => File.Copy(downloaded, packagePath, overwrite: true), _lifetime.Token);
 
                 StatusMessage = ResourceProvider.GetString("LOCPlayAch_Workshop_Installing");
                 var result = await _installer.InstallAsync(request, _lifetime.Token);
@@ -832,6 +846,177 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 : (_plugin.PlayniteApi?.Database?.Games?.OrderBy(g => g.Name, StringComparer.OrdinalIgnoreCase).ToList() ?? new List<Game>());
             var picked = PickGame?.Invoke(row, games);
             return picked?.Id;
+        }
+
+        // ---- download cache ----------------------------------------------------------------
+
+        /// <summary>The one package download kept between a preview and an install of the same version.</summary>
+        private sealed class CachedDownload
+        {
+            public string ItemId { get; set; }
+            public string Sha256 { get; set; }
+            public string Path { get; set; }
+            public string Directory { get; set; }
+        }
+
+        private CachedDownload _cachedDownload;
+
+        /// <summary>
+        /// The path of the row's package on disk: the cached download when it is the same item and
+        /// package hash and the file still verifies, else a fresh download that replaces the cache.
+        /// Reports progress through the status strip. UI thread.
+        /// </summary>
+        private async Task<string> EnsureDownloadedAsync(WorkshopItemViewModel row)
+        {
+            var item = row.Item;
+            var sha256 = item.Package?.Sha256 ?? string.Empty;
+            var cached = _cachedDownload;
+            if (cached != null &&
+                string.Equals(cached.ItemId, item.Id, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(cached.Sha256, sha256, StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(cached.Path))
+            {
+                var cachedPath = cached.Path;
+                if (await Task.Run(() => WorkshopClient.VerifyPackage(item, cachedPath), _lifetime.Token))
+                {
+                    return cachedPath;
+                }
+            }
+
+            DeleteCachedDownload();
+
+            var directory = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", WorkshopPreviewModelBuilder.ScratchFolderLabel, Guid.NewGuid().ToString("N"));
+            var path = Path.Combine(directory, item.Package?.File ?? "package.zip");
+            var total = Math.Max(1, item.Package?.SizeBytes ?? 1);
+            StatusMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Downloading"), row.Name);
+            ProgressFraction = 0;
+            try
+            {
+                Directory.CreateDirectory(directory);
+                await _client.DownloadPackageAsync(
+                    item,
+                    path,
+                    new Progress<long>(received => ProgressFraction = Math.Min(1, (double)received / total)),
+                    _lifetime.Token);
+            }
+            catch
+            {
+                PortablePackage.TryDeleteDirectory(directory);
+                throw;
+            }
+
+            _cachedDownload = new CachedDownload { ItemId = item.Id, Sha256 = sha256, Path = path, Directory = directory };
+            return path;
+        }
+
+        private void DeleteCachedDownload()
+        {
+            var cached = _cachedDownload;
+            _cachedDownload = null;
+            if (cached != null)
+            {
+                PortablePackage.TryDeleteDirectory(cached.Directory);
+            }
+        }
+
+        // ---- preview -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Shows a preview of the package and returns true when the user chose to install it. The
+        /// callee owns the model and disposes it. Set by the window; without it a preview is read
+        /// and discarded.
+        /// </summary>
+        public Func<WorkshopItemViewModel, WorkshopPreviewModel, bool> ShowPreview { get; set; }
+
+        /// <summary>
+        /// Downloads the row's package (or reuses the cached download), reads it into a preview
+        /// model off the UI thread and hands it to <see cref="ShowPreview"/>; installs when the
+        /// preview asks for it. Game data is compared against the matched library game only when
+        /// the match is certain enough to need no prompt; otherwise the package is listed alone.
+        /// </summary>
+        public async Task PreviewAsync(WorkshopItemViewModel row)
+        {
+            if (row == null || IsBusy)
+            {
+                return;
+            }
+
+            IsBusy = true;
+            ErrorMessage = null;
+            WorkshopPreviewModel model = null;
+            var install = false;
+            try
+            {
+                var packagePath = await EnsureDownloadedAsync(row);
+
+                var context = WorkshopPreviewContext.FromPlugin(_plugin);
+                var target = row.Kind == WorkshopItemKind.GameCustomData &&
+                             _matches.TryGetValue(row.Id, out var match) &&
+                             (match.Confidence == WorkshopGameMatchConfidence.Provider || match.Confidence == WorkshopGameMatchConfidence.Name)
+                    ? match
+                    : null;
+                var kind = row.Kind;
+                var itemId = row.Id;
+                var dataService = _plugin.AchievementDataService;
+                var persisted = _plugin.Settings?.Persisted;
+                var managedIcons = _plugin.ManagedCustomIconService;
+                var baselines = _installer.Baselines;
+
+                model = await Task.Run(() =>
+                {
+                    if (target != null)
+                    {
+                        var gameId = target.PlayniteGameId;
+                        GameCustomDataFile current = null;
+                        context.GameCustomDataStore?.TryLoad(gameId, out current);
+                        context.GameDataSource = new GameCustomDataPreviewSource
+                        {
+                            GameId = gameId,
+                            GameName = target.GameName,
+                            RawData = dataService?.GetRawGameAchievementData(gameId),
+                            CurrentData = dataService?.GetGameAchievementData(gameId),
+                            Current = current,
+                            Baseline = baselines.Load(_registry.Find(itemId, gameId)),
+                            Persisted = persisted,
+                            ManagedCustomIconService = managedIcons
+                        };
+                    }
+
+                    return WorkshopPreviewModelBuilder.Build(kind, packagePath, context);
+                }, _lifetime.Token);
+
+                StatusMessage = null;
+                ProgressFraction = 0;
+                IsBusy = false;
+
+                var show = ShowPreview;
+                if (show != null)
+                {
+                    var shown = model;
+                    model = null;
+                    install = show(row, shown);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed previewing Workshop item {row.Id}.");
+                ErrorMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message);
+                StatusMessage = null;
+            }
+            finally
+            {
+                model?.Dispose();
+                ProgressFraction = 0;
+                IsBusy = false;
+            }
+
+            if (install)
+            {
+                await InstallAsync(row);
+            }
         }
 
         private void Revert(WorkshopUndoViewModel entry)
@@ -922,6 +1107,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public void Dispose()
         {
+            DeleteCachedDownload();
             _lifetime.Cancel();
             _lifetime.Dispose();
         }

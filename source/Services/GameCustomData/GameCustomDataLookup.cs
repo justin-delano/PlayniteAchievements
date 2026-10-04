@@ -170,7 +170,12 @@ namespace PlayniteAchievements.Services.GameCustomData
             return resolved ?? BuildResolvedFromSettings(gameId, fallbackSettings);
         }
 
-        private static ResolvedGameCustomData BuildResolvedFromRecord(
+        /// <summary>
+        /// Resolves one custom data record against the global settings fallbacks, without reading
+        /// the store. Callers that hold a record not stored for any game (a package preview) use it
+        /// directly.
+        /// </summary>
+        internal static ResolvedGameCustomData BuildResolvedFromRecord(
             GameCustomDataFile customData,
             PersistedSettings fallbackSettings)
         {

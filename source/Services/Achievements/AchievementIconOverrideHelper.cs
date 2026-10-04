@@ -88,8 +88,38 @@ namespace PlayniteAchievements.Services.Achievements
                 return false;
             }
 
-            var unlockedOverrides = GameCustomDataLookup.GetAchievementUnlockedIconOverrides(gameId);
-            var lockedOverrides = GameCustomDataLookup.GetAchievementLockedIconOverrides(gameId);
+            return ApplyOverrides(
+                gameId,
+                items,
+                GameCustomDataLookup.GetAchievementUnlockedIconOverrides(gameId),
+                GameCustomDataLookup.GetAchievementLockedIconOverrides(gameId),
+                managedCustomIconService,
+                readApiName,
+                writeUnlockedIconPath,
+                writeLockedIconPath);
+        }
+
+        /// <summary>
+        /// Stamps the given unlocked and locked icon override maps onto a set of items, resolving
+        /// each value through the managed icon cache of <paramref name="gameId"/>. Returns whether
+        /// anything was written. Same semantics as the store-reading overload, for callers that
+        /// hold override maps not (yet) stored for the game, such as a package preview.
+        /// </summary>
+        public static bool ApplyOverrides<T>(
+            Guid gameId,
+            IEnumerable<T> items,
+            IReadOnlyDictionary<string, string> unlockedOverrides,
+            IReadOnlyDictionary<string, string> lockedOverrides,
+            ManagedCustomIconService managedCustomIconService,
+            Func<T, string> readApiName,
+            Action<T, string> writeUnlockedIconPath,
+            Action<T, string> writeLockedIconPath)
+        {
+            if (items == null || readApiName == null)
+            {
+                return false;
+            }
+
             if (!HasOverrides(unlockedOverrides, lockedOverrides))
             {
                 return false;

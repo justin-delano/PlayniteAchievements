@@ -475,6 +475,108 @@ namespace PlayniteAchievements.Services.Tests
             }
         }
 
+        [TestMethod]
+        public void ReadForPreview_ExtractsSlotImagesToScratch_AndReturnsTemplateXaml()
+        {
+            var tempDir = CreateTempDirectory();
+            try
+            {
+                var store = CreateStore(tempDir, out _);
+
+                var sourceDir = Path.Combine(tempDir, "src");
+                Directory.CreateDirectory(sourceDir);
+                var backgroundSource = Path.Combine(sourceDir, "bg.png");
+                var capstoneBadge = Path.Combine(sourceDir, "capstone.png");
+                WritePlaceholderFile(backgroundSource, "background-bytes");
+                WritePlaceholderFile(capstoneBadge, "capstone-bytes");
+
+                var style = NotificationStyleSettings.CreateDefault();
+                style.Toast.HeaderTexts.UnlockHeader = "Preview header";
+                style.ToastBackgroundImagePath = backgroundSource;
+                var capstone = style.EnableKindStyle(NotificationKind.Capstone);
+                capstone.Toast.BadgeImages.CommonPath = capstoneBadge;
+
+                const string toastXaml = "<ResourceDictionary xmlns=\"toast\"><!--toast--></ResourceDictionary>";
+                var packagePath = Path.Combine(tempDir, "pack.panotif");
+                store.ExportSurfacePackage(isFrame: false, style, packagePath, toastXaml);
+
+                var scratch = Path.Combine(tempDir, "scratch");
+                var preview = store.ReadForPreview(packagePath, scratch);
+
+                Assert.AreEqual("Preview header", preview.Style.Toast.HeaderTexts.UnlockHeader);
+                AssertScratchFile(scratch, preview.Style.ToastBackgroundImagePath, "background-bytes");
+                Assert.IsNull(preview.Style.Toast.BadgeImages.CommonPath, "a slot with no bundled image stays empty");
+
+                var previewCapstone = preview.Style.ResolveKind(NotificationKind.Capstone);
+                AssertScratchFile(scratch, previewCapstone.Toast.BadgeImages.CommonPath, "capstone-bytes");
+
+                Assert.IsTrue(preview.Contents.HasStyle);
+                Assert.IsTrue(preview.Contents.HasToastStyle);
+                Assert.IsFalse(preview.Contents.HasFrameStyle);
+                Assert.IsTrue(preview.Contents.HasToastTemplate);
+                Assert.IsFalse(preview.Contents.HasFrameTemplate);
+                Assert.AreEqual(toastXaml, preview.ToastTemplateXaml);
+                Assert.IsNull(preview.FrameTemplateXaml);
+
+                Assert.AreEqual(
+                    0,
+                    Directory.GetDirectories(tempDir, "notification_images", SearchOption.AllDirectories).Length,
+                    "a preview read writes nothing to managed image storage");
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void ReadForPreview_TraversalEntry_Throws()
+        {
+            var tempDir = CreateTempDirectory();
+            try
+            {
+                var store = CreateStore(tempDir, out _);
+
+                var packagePath = Path.Combine(tempDir, "evil.panotif");
+                using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
+                {
+                    var manifest = archive.CreateEntry(NotificationStylePortableStore.ManifestEntryName);
+                    using (var writer = new StreamWriter(manifest.Open()))
+                    {
+                        writer.Write("{\"Kind\":\"" + NotificationStylePortableFile.NotificationStyleKind +
+                                     "\",\"Version\":3,\"Style\":{}}");
+                    }
+
+                    var evil = archive.CreateEntry("images/background./../secret.png");
+                    using (var writer = new StreamWriter(evil.Open()))
+                    {
+                        writer.Write("payload");
+                    }
+                }
+
+                var scratch = Path.Combine(tempDir, "scratch");
+                Assert.ThrowsException<InvalidOperationException>(() => store.ReadForPreview(packagePath, scratch));
+                Assert.IsFalse(File.Exists(Path.Combine(tempDir, "secret.png")));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        private static void AssertScratchFile(string scratch, string path, string expectedContent)
+        {
+            Assert.IsNotNull(path);
+            Assert.IsTrue(Path.IsPathRooted(path), path);
+            Assert.IsTrue(
+                Path.GetFullPath(path).StartsWith(
+                    Path.GetFullPath(scratch).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase),
+                path);
+            Assert.IsTrue(File.Exists(path), path);
+            Assert.AreEqual(expectedContent, File.ReadAllText(path));
+        }
+
         private static NotificationStylePortableStore CreateStore(string tempDir, out NotificationImageStore imageStore)
         {
             var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);

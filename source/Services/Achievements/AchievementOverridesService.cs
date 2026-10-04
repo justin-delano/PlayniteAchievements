@@ -1235,33 +1235,11 @@ namespace PlayniteAchievements.Services.Achievements
             {
                 _gameCustomDataStore.Update(gameId, customData =>
                 {
-                    var merged = (customData.CustomAchievements ?? new List<CustomAchievementDefinition>())
-                        .Where(definition => definition != null)
-                        .ToList();
-                    foreach (var definition in imported.Where(definition => definition != null))
-                    {
-                        var id = CustomAchievementProjectionService.NormalizeId(definition.Id);
-                        var index = string.IsNullOrWhiteSpace(id)
-                            ? -1
-                            : merged.FindIndex(existing => string.Equals(
-                                CustomAchievementProjectionService.NormalizeId(existing.Id),
-                                id,
-                                StringComparison.OrdinalIgnoreCase));
-                        if (index >= 0)
-                        {
-                            var replacement = definition.Clone();
-                            PortablePersonalState.CarryLocal(merged[index], replacement);
-                            merged[index] = replacement;
-                            updatedCount++;
-                        }
-                        else
-                        {
-                            merged.Add(definition.Clone());
-                            addedCount++;
-                        }
-                    }
-
-                    customData.CustomAchievements = merged;
+                    customData.CustomAchievements = CustomAchievementProjectionService.MergeDefinitionsById(
+                        customData.CustomAchievements,
+                        imported,
+                        out addedCount,
+                        out updatedCount);
                 });
             }
 

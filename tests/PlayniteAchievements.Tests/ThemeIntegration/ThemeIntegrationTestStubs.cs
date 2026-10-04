@@ -265,6 +265,12 @@ namespace PlayniteAchievements.Models.Achievements
 
         public bool ExcludedFromSummaries { get; set; }
 
+        public bool ExcludedByUser { get; set; }
+
+        public bool UseSeparateLockedIconsWhenAvailable { get; set; }
+
+        public List<string> GoalAchievements { get; set; }
+
         public string GameName { get; set; }
 
         public int AppId { get; set; }

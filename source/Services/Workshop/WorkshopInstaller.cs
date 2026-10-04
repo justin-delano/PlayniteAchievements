@@ -16,7 +16,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
-using System.Security.Cryptography;
 using Newtonsoft.Json;
 
 namespace PlayniteAchievements.Services.Workshop
@@ -65,6 +64,7 @@ namespace PlayniteAchievements.Services.Workshop
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly WorkshopInstalledRegistry _registry;
         private readonly WorkshopUndoStore _undo;
+        private readonly WorkshopBaselineStore _baselines;
         private readonly ILogger _logger;
 
         public WorkshopInstaller(
@@ -77,7 +77,11 @@ namespace PlayniteAchievements.Services.Workshop
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _undo = undo ?? throw new ArgumentNullException(nameof(undo));
             _logger = logger;
+            _baselines = new WorkshopBaselineStore(Path.Combine(_registry.Directory, "baselines"), logger);
         }
+
+        /// <summary>The baselines game-data updates merge against; read by the Workshop preview.</summary>
+        internal WorkshopBaselineStore Baselines => _baselines;
 
         public async Task<WorkshopInstallResult> InstallAsync(WorkshopInstallRequest request, CancellationToken cancel)
         {
@@ -337,14 +341,7 @@ namespace PlayniteAchievements.Services.Workshop
             return null;
         }
 
-        private static string HashFile(string path)
-        {
-            using (var sha = SHA256.Create())
-            using (var stream = File.OpenRead(path))
-            {
-                return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty).ToLowerInvariant();
-            }
-        }
+        private static string HashFile(string path) => WorkshopBaselineStore.HashFile(path);
 
         // ---- showcase page -------------------------------------------------------------------
 
@@ -393,7 +390,7 @@ namespace PlayniteAchievements.Services.Workshop
             // that install left behind, so the merge below can tell their edits from the rest, and
             // icons they swapped in place are set aside before the import rewrites the slots.
             var record = _registry.Find(request.Item.Id, gameId);
-            var baseline = !isCustomAchievementsPackage && previous != null ? LoadBaseline(record) : null;
+            var baseline = !isCustomAchievementsPackage && previous != null ? _baselines.Load(record) : null;
             var iconDirectory = _plugin.ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D"));
             var editedIcons = baseline != null ? SnapshotEditedIcons(iconDirectory, record) : null;
 
@@ -448,7 +445,7 @@ namespace PlayniteAchievements.Services.Workshop
 
                 if (!isCustomAchievementsPackage && incoming != null)
                 {
-                    result.BaselineFile = WriteBaseline(request.Item.Id, gameId, incoming, iconDirectory);
+                    result.BaselineFile = _baselines.Write(request.Item.Id, gameId, incoming, iconDirectory);
                 }
                 else
                 {
@@ -504,67 +501,6 @@ namespace PlayniteAchievements.Services.Workshop
             public List<string> RelativePaths { get; } = new List<string>();
         }
 
-        private string BaselineDirectory => Path.Combine(_registry.Directory, "baselines");
-
-        private static string IconHashesPath(string baselineFile) => baselineFile + ".icons.json";
-
-        private GameCustomDataFile LoadBaseline(WorkshopInstalledItem record)
-        {
-            if (string.IsNullOrEmpty(record?.BaselineFile) || !File.Exists(record.BaselineFile))
-            {
-                return null;
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<GameCustomDataFile>(File.ReadAllText(record.BaselineFile));
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, $"Could not read the Workshop baseline for {record.Id}; the update replaces the data.");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Writes the data an install produced, plus the hashes of every managed icon file of the
-        /// game at that moment, so the next update knows what the user changed afterwards.
-        /// </summary>
-        private string WriteBaseline(string itemId, Guid gameId, GameCustomDataFile data, string iconDirectory)
-        {
-            try
-            {
-                Directory.CreateDirectory(BaselineDirectory);
-                var safeId = new string(itemId.Select(c => Path.GetInvalidFileNameChars().Contains(c) || c == '/' ? '_' : c).ToArray());
-                var path = Path.Combine(BaselineDirectory, safeId + "-" + gameId.ToString("N") + ".json");
-                File.WriteAllText(path, JsonConvert.SerializeObject(data));
-                File.WriteAllText(IconHashesPath(path), JsonConvert.SerializeObject(HashIcons(iconDirectory)));
-                return path;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, $"Could not write the Workshop baseline for {itemId}.");
-                return null;
-            }
-        }
-
-        private static Dictionary<string, string> HashIcons(string iconDirectory)
-        {
-            var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (string.IsNullOrEmpty(iconDirectory) || !Directory.Exists(iconDirectory))
-            {
-                return hashes;
-            }
-
-            foreach (var file in Directory.EnumerateFiles(iconDirectory, "*", SearchOption.AllDirectories))
-            {
-                var relative = file.Substring(iconDirectory.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                hashes[relative] = HashFile(file);
-            }
-
-            return hashes;
-        }
-
         private EditedIconSet SnapshotEditedIcons(string iconDirectory, WorkshopInstalledItem record)
         {
             if (string.IsNullOrEmpty(iconDirectory) || !Directory.Exists(iconDirectory) || string.IsNullOrEmpty(record?.BaselineFile))
@@ -572,27 +508,14 @@ namespace PlayniteAchievements.Services.Workshop
                 return null;
             }
 
-            Dictionary<string, string> baselineHashes;
-            try
-            {
-                var hashesPath = IconHashesPath(record.BaselineFile);
-                baselineHashes = File.Exists(hashesPath)
-                    ? JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(hashesPath))
-                    : null;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Could not read the Workshop icon baseline; swapped icons are not preserved.");
-                return null;
-            }
-
+            var baselineHashes = _baselines.LoadIconHashes(record);
             if (baselineHashes == null)
             {
                 return null;
             }
 
             var set = new EditedIconSet { Directory = PortablePackage.CreateScratchDirectory("WorkshopIcons") };
-            foreach (var pair in HashIcons(iconDirectory))
+            foreach (var pair in WorkshopBaselineStore.HashIcons(iconDirectory))
             {
                 if (baselineHashes.TryGetValue(pair.Key, out var recorded) && string.Equals(recorded, pair.Value, StringComparison.OrdinalIgnoreCase))
                 {

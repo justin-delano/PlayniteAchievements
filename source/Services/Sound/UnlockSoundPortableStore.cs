@@ -214,6 +214,59 @@ namespace PlayniteAchievements.Services.Sound
         }
 
         /// <summary>
+        /// Extracts the package's sounds into <paramref name="directory"/> for a preview, with the
+        /// same manifest, entry and content checks as <see cref="Import"/>, but without copying
+        /// into managed storage or touching any settings. Each file is named after its tier and
+        /// keeps its original extension. The caller owns <paramref name="directory"/> and deletes
+        /// it when the preview ends; on failure the files extracted so far are removed.
+        /// </summary>
+        public IReadOnlyDictionary<UnlockSoundTier, string> ExtractForPreview(string packagePath, string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                throw new ArgumentException("Directory is required.", nameof(directory));
+            }
+
+            using (var archive = PortablePackage.OpenRead(packagePath, NotPackageMessage))
+            {
+                var entries = PortablePackage.IndexEntries(archive);
+                var manifest = ReadManifestOrThrow(entries);
+                var slots = ResolveSlots(manifest, entries);
+                if (slots.Count == 0)
+                {
+                    throw new InvalidOperationException("The sound pack does not contain any sound files.");
+                }
+
+                Directory.CreateDirectory(directory);
+
+                var extracted = new Dictionary<UnlockSoundTier, string>();
+                try
+                {
+                    foreach (var pair in slots)
+                    {
+                        var entry = pair.Value;
+                        var extension = Path.GetExtension(entry.FullName).ToLowerInvariant();
+                        var destination = Path.Combine(directory, pair.Key.ToFileBaseName() + extension);
+                        extracted[pair.Key] = destination;
+                        PortablePackage.ExtractToFile(entry, destination);
+                        EnsureAudioContentOrThrow(destination, entry.FullName);
+                    }
+                }
+                catch
+                {
+                    foreach (var path in extracted.Values)
+                    {
+                        TryDeleteFile(path);
+                    }
+
+                    throw;
+                }
+
+                return extracted;
+            }
+        }
+
+        /// <summary>
         /// Deletes managed pack folders no slot in <paramref name="settings"/> points into, so a
         /// replaced pack does not leave its files behind.
         /// </summary>
@@ -388,6 +441,21 @@ namespace PlayniteAchievements.Services.Sound
             if (!ok)
             {
                 throw new InvalidOperationException($"The sound '{entryName}' is not a valid {extension} file.");
+            }
+        }
+
+        private void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to delete extracted preview sound: {path}");
             }
         }
 

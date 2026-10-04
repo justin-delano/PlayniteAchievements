@@ -41,8 +41,14 @@ namespace PlayniteAchievements.Services.UI
         /// <summary>
         /// Composites the frame template (with the toast view model as DataContext) onto the
         /// screenshot. Returns a frozen bitmap sized exactly like the input, or null on failure.
+        /// <paramref name="hostResources"/>, when given, becomes the frame host's resources, so the
+        /// template's dynamic resources resolve there before the application's theme.
         /// </summary>
-        public BitmapSource ComposeFramed(BitmapSource screenshot, DataTemplate frameTemplate, object viewModel)
+        public BitmapSource ComposeFramed(
+            BitmapSource screenshot,
+            DataTemplate frameTemplate,
+            object viewModel,
+            ResourceDictionary hostResources = null)
         {
             if (screenshot == null || frameTemplate == null || viewModel == null)
             {
@@ -59,7 +65,7 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 var (canvasWidth, canvasHeight, scale) = ComputeCanvas(pixelWidth, pixelHeight);
-                var host = CreateFrameHost(frameTemplate, viewModel, canvasWidth, canvasHeight);
+                var host = CreateFrameHost(frameTemplate, viewModel, canvasWidth, canvasHeight, hostResources);
 
                 var target = new RenderTargetBitmap(
                     pixelWidth,
@@ -131,14 +137,21 @@ namespace PlayniteAchievements.Services.UI
         }
 
         private static ContentControl CreateFrameHost(
-            DataTemplate frameTemplate, object viewModel, double canvasWidth, double canvasHeight)
+            DataTemplate frameTemplate,
+            object viewModel,
+            double canvasWidth,
+            double canvasHeight,
+            ResourceDictionary hostResources = null)
         {
             var canvasSize = new Size(canvasWidth, canvasHeight);
-            var host = new ContentControl
+            var host = new ContentControl();
+            if (hostResources != null)
             {
-                Content = viewModel,
-                ContentTemplate = frameTemplate,
-            };
+                host.Resources = hostResources;
+            }
+
+            host.Content = viewModel;
+            host.ContentTemplate = frameTemplate;
             host.Measure(canvasSize);
             host.Arrange(new Rect(canvasSize));
             host.UpdateLayout();

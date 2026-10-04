@@ -305,7 +305,28 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>SHA-256 hex of the submitter key: the value sent to the Workshop.</summary>
         public string GetSubmitterHash()
         {
-            var key = GetOrCreateSubmitterKey();
+            return HashKey(GetOrCreateSubmitterKey());
+        }
+
+        /// <summary>
+        /// SHA-256 hex of the submitter key, or null when this install has never created one.
+        /// Unlike <see cref="GetSubmitterHash"/>, it never creates a key, so browsing alone leaves
+        /// the identity file untouched.
+        /// </summary>
+        public string TryGetSubmitterHash()
+        {
+            string key;
+            lock (_sync)
+            {
+                EnsureIdentityLoaded();
+                key = _submitterKey;
+            }
+
+            return string.IsNullOrWhiteSpace(key) ? null : HashKey(key);
+        }
+
+        private static string HashKey(string key)
+        {
             using (var sha = SHA256.Create())
             {
                 return BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key)))

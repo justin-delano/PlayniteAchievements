@@ -1,0 +1,76 @@
+<UserControl x:Class="PlayniteAchievements.Views.Workshop.WorkshopPreviewDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="560" d:DesignWidth="760">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header: the item, its kind, version and author, and for game data its game. -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock x:Name="NameText"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           FontSize="{DynamicResource PlayAch.FontSize.Title}"
+                           FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                           Margin="0,2,0,0"
+                           TextTrimming="CharacterEllipsis">
+                    <Run x:Name="KindRun"/>
+                    <Run Text=" · "/>
+                    <Run Text="{DynamicResource LOCPlayAch_Workshop_Version}"/><Run Text=" "/><Run x:Name="VersionRun"/>
+                    <Run Text=" · "/>
+                    <Run Text="{DynamicResource LOCPlayAch_Workshop_Author}"/><Run Text=": "/><Run x:Name="AuthorRun"/>
+                </TextBlock>
+                <TextBlock x:Name="GameLine"
+                           Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                           Margin="0,2,0,0"
+                           TextTrimming="CharacterEllipsis"
+                           Visibility="Collapsed">
+                    <Run Text="{DynamicResource LOCPlayAch_Column_Game}"/><Run Text=": "/><Run x:Name="GameRun"/>
+                </TextBlock>
+            </StackPanel>
+
+            <!-- Body: the kind's preview, or one tab per bundle part. -->
+            <Border Grid.Row="1"
+                    Background="{DynamicResource PlayAch.Brush.Panel}"
+                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                    CornerRadius="4"
+                    Padding="12">
+                <ContentControl x:Name="BodyHost" Focusable="False"/>
+            </Border>
+
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,12,0,0">
+                <Button x:Name="InstallButton"
+                        Click="InstallButton_Click"
+                        Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                        MinWidth="88"
+                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                <Button Content="{DynamicResource LOCCloseLabel}"
+                        Click="CloseButton_Click"
+                        Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                        MinWidth="88"
+                        IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

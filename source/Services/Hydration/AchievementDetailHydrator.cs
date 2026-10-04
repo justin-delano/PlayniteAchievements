@@ -40,9 +40,29 @@ namespace PlayniteAchievements.Services.Hydration
                 return;
             }
 
-            var detailList = details as IList<AchievementDetail> ?? details.ToList();
+            ApplyOverlays(
+                details,
+                providerKey,
+                customData ?? GameCustomDataLookup.ResolveGameCustomData(playniteGameId, Persisted));
+        }
 
-            customData ??= GameCustomDataLookup.ResolveGameCustomData(playniteGameId, Persisted);
+        /// <summary>
+        /// Applies one game's resolved custom data to its achievements: default order index,
+        /// per-achievement overrides, category and category type, filters, note, goal state and
+        /// capstones. The store-free core of <see cref="HydrateAllWithCapstoneOverride"/>, for
+        /// callers that already hold the resolved record, such as a package preview.
+        /// </summary>
+        internal static void ApplyOverlays(
+            IEnumerable<AchievementDetail> details,
+            string providerKey,
+            ResolvedGameCustomData customData)
+        {
+            if (details == null || customData == null)
+            {
+                return;
+            }
+
+            var detailList = details as IList<AchievementDetail> ?? details.ToList();
 
             // The incoming list is provider-ordered (cache reads sort by definition rowid), so its
             // position under the custom-order overlay is the game's default order. Unlock-time

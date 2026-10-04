@@ -132,6 +132,56 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ExtractForPreview_WritesOneFilePerManifestTier_WithoutManagedStorage()
+        {
+            WithTemp(tempDir =>
+            {
+                var store = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
+                var packagePath = Path.Combine(tempDir, "pack.pasounds");
+                WritePackage(
+                    packagePath,
+                    new Dictionary<string, string>
+                    {
+                        ["Common"] = "sounds/common.wav",
+                        ["Rare"] = "sounds/rare.flac"
+                    },
+                    new Dictionary<string, byte[]>
+                    {
+                        ["sounds/common.wav"] = WavBytes(),
+                        ["sounds/rare.flac"] = FlacBytes()
+                    });
+
+                var previewDir = Path.Combine(tempDir, "preview");
+                var extracted = store.ExtractForPreview(packagePath, previewDir);
+
+                Assert.AreEqual(2, extracted.Count);
+                Assert.AreEqual(Path.Combine(previewDir, "common.wav"), extracted[UnlockSoundTier.Common]);
+                Assert.AreEqual(Path.Combine(previewDir, "rare.flac"), extracted[UnlockSoundTier.Rare]);
+                CollectionAssert.AreEqual(WavBytes(), File.ReadAllBytes(extracted[UnlockSoundTier.Common]));
+                CollectionAssert.AreEqual(FlacBytes(), File.ReadAllBytes(extracted[UnlockSoundTier.Rare]));
+                Assert.AreEqual(2, Directory.GetFiles(previewDir).Length);
+                Assert.IsFalse(Directory.Exists(store.ManagedRoot), "a preview extract never creates the managed sounds folder");
+            });
+        }
+
+        [TestMethod]
+        public void ExtractForPreview_RejectsNonAudioEntry_AndLeavesNoFileBehind()
+        {
+            WithTemp(tempDir =>
+            {
+                var store = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
+                var fake = Path.Combine(tempDir, "fake.pasounds");
+                WritePackage(fake, new Dictionary<string, string> { ["Common"] = "sounds/common.wav" },
+                    new Dictionary<string, byte[]> { ["sounds/common.wav"] = Encoding.ASCII.GetBytes("MZ this is not audio") });
+
+                var previewDir = Path.Combine(tempDir, "preview");
+                AssertThrows(() => store.ExtractForPreview(fake, previewDir), "not a valid .wav");
+                Assert.IsFalse(File.Exists(Path.Combine(previewDir, "common.wav")), "the rejected file is removed");
+                Assert.IsFalse(Directory.Exists(store.ManagedRoot));
+            });
+        }
+
+        [TestMethod]
         public void Export_WithNothingCustom_Throws()
         {
             WithTemp(tempDir =>
@@ -182,6 +232,13 @@ namespace PlayniteAchievements.Services.Tests
             var bytes = new byte[64];
             Encoding.ASCII.GetBytes("RIFF").CopyTo(bytes, 0);
             Encoding.ASCII.GetBytes("WAVE").CopyTo(bytes, 8);
+            return bytes;
+        }
+
+        private static byte[] FlacBytes()
+        {
+            var bytes = new byte[64];
+            Encoding.ASCII.GetBytes("fLaC").CopyTo(bytes, 0);
             return bytes;
         }
 

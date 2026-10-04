@@ -55,6 +55,21 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void TryGetSubmitterHash_IsNullUntilAKeyExists_AndCreatesNone()
+        {
+            WithTemp(dir =>
+            {
+                var registry = new WorkshopInstalledRegistry(dir);
+                Assert.IsNull(registry.TryGetSubmitterHash());
+                Assert.IsNull(new WorkshopInstalledRegistry(dir).TryGetSubmitterHash(), "the lookup saved no key");
+
+                var hash = registry.GetSubmitterHash();
+                Assert.AreEqual(hash, registry.TryGetSubmitterHash());
+                Assert.AreEqual(hash, new WorkshopInstalledRegistry(dir).TryGetSubmitterHash());
+            });
+        }
+
+        [TestMethod]
         public void GameData_IsRecordedPerGame()
         {
             WithTemp(dir =>

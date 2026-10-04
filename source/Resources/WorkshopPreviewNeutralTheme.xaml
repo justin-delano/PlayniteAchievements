@@ -1,0 +1,127 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!--
+        Fixed dark look for the standardized Workshop preview image (WorkshopPreviewRasterizer).
+        Set as the Resources of the render host, so every DynamicResource below it resolves here
+        before it reaches the sharer's Playnite theme in Application.Current.Resources: the image
+        is the same whichever theme the sharer runs.
+
+        Redefines every token PlayAchResourceService writes into the application resources, its
+        aliases, and the brushes and effects RarityAppearanceHelper publishes, all at fixed values
+        (rarity and completion colors at their defaults). The Playnite keys those tokens resolve
+        from are defined too, so a package's own template that binds Playnite keys directly also
+        renders neutral. PlayAch.FontFamily.Icon and FontIcoFont are not defined here: the
+        rasterizer copies Playnite's icon font in from the application at render time.
+    -->
+
+    <!-- Tokens (PlayAchResourceService.Tokens). -->
+    <SolidColorBrush x:Key="PlayAch.Brush.Text" Color="#F2F2F2"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Text.Secondary" Color="#B8BEC7"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Text.Tertiary" Color="#8C939D"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Surface" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Panel" Color="#232933"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.WindowSurface" Color="#161A20"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.GridSurface" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Border" Color="#343B46"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ControlBorder" Color="#414955"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Glyph" Color="#B8BEC7"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Accent" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Selection" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ControlSurface" Color="#2A313C"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.PopupSurface" Color="#232933"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.PopupBorder" Color="#343B46"/>
+
+    <sys:Double x:Key="PlayAch.FontSize.Caption">12</sys:Double>
+    <sys:Double x:Key="PlayAch.FontSize.Body">14</sys:Double>
+    <sys:Double x:Key="PlayAch.FontSize.Title">16</sys:Double>
+
+    <FontFamily x:Key="PlayAch.FontFamily.Body">Segoe UI</FontFamily>
+
+    <!-- Aliases (PlayAchResourceService.Aliases), with the alias alpha applied. -->
+    <SolidColorBrush x:Key="PlayAch.Brush.Button.Background" Color="#2A313C"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Button.Background.Hover" Color="#304CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Button.Background.Selected" Color="#454CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Button.Background.Pressed" Color="#604CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Button.Border" Color="#414955"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Control.Background" Color="#2A313C"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Control.Background.Hover" Color="#304CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Input.Background" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Input.Border" Color="#414955"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.Background" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.HeaderBackground" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.HeaderGripper.Hover" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.HeaderGripper.Pressed" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.RowBackground" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.RowHoverBackground" Color="#304CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Grid.RowSelectedBackground" Color="#454CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Window.Background" Color="#161A20"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Dialog.Background" Color="#232933"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Dialog.Border" Color="#343B46"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Chart.Separator" Color="#414955"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Progress.Track" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Progress.Fill" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Progress.Border" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Chrome.Background" Color="#1F2A313C"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ScrollBar.Track" Color="#001E232B"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ScrollBar.Thumb" Color="#414955"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ScrollBar.Thumb.Hover" Color="#B8BEC7"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ScrollBar.Thumb.Pressed" Color="#4CC9F0"/>
+
+    <!-- RarityAppearanceHelper resources, at the default rarity and completion colors. -->
+    <SolidColorBrush x:Key="PlayAch.Brush.Rarity.Common" Color="#B56A37"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Rarity.Uncommon" Color="#A6B1BF"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Rarity.Rare" Color="#CF9B1F"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Rarity.UltraRare" Color="#86C8FF"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Trophy.Bronze" Color="#B56A37"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Trophy.Silver" Color="#A6B1BF"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Trophy.Gold" Color="#CF9B1F"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Trophy.Platinum" Color="#86C8FF"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.CompletedGame" Color="#2196F3"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.Status.MissableLock" Color="#E04848"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowStart" BlurRadius="14" ShadowDepth="2" Direction="135" Color="#9C27B0" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEnd" BlurRadius="14" ShadowDepth="2" Direction="315" Color="#2196F3" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEdge" BlurRadius="4" ShadowDepth="0" Color="#2196F3" Opacity="1"/>
+    <LinearGradientBrush x:Key="PlayAch.Brush.Progress.CompletedFill" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0.00" Color="#9C27B0"/>
+        <GradientStop Offset="1.00" Color="#2196F3"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="PlayAch.Brush.CompletedGlowBloom" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#9C27B0"/>
+        <GradientStop Offset="1.00" Color="#2196F3"/>
+    </LinearGradientBrush>
+
+    <!-- Playnite theme keys the tokens resolve from, for templates that bind them directly. -->
+    <Color x:Key="TextColor">#F2F2F2</Color>
+    <Color x:Key="GlyphColor">#B8BEC7</Color>
+    <Color x:Key="HighlightGlyphColor">#4CC9F0</Color>
+    <Color x:Key="ControlBackgroundColor">#1E232B</Color>
+    <SolidColorBrush x:Key="TextBrush" Color="#F2F2F2"/>
+    <SolidColorBrush x:Key="TextBrushDark" Color="#161A20"/>
+    <SolidColorBrush x:Key="TextBrushDarker" Color="#B8BEC7"/>
+    <SolidColorBrush x:Key="GlyphBrush" Color="#B8BEC7"/>
+    <SolidColorBrush x:Key="HighlightGlyphBrush" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#1E232B"/>
+    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#232933"/>
+    <SolidColorBrush x:Key="WindowBackgourndBrush" Color="#161A20"/>
+    <SolidColorBrush x:Key="GridItemBackgroundBrush" Color="#1E232B"/>
+    <SolidColorBrush x:Key="NormalBorderBrush" Color="#343B46"/>
+    <SolidColorBrush x:Key="NormalBrush" Color="#414955"/>
+    <SolidColorBrush x:Key="SelectionLightBrush" Color="#4CC9F0"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#2A313C"/>
+    <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#232933"/>
+    <SolidColorBrush x:Key="PopupBorderBrush" Color="#343B46"/>
+    <sys:Double x:Key="FontSizeSmall">12</sys:Double>
+    <sys:Double x:Key="FontSize">14</sys:Double>
+    <sys:Double x:Key="FontSizeLarge">16</sys:Double>
+    <sys:Double x:Key="FontSizeLarger">20</sys:Double>
+    <sys:Double x:Key="FontSizeLargest">24</sys:Double>
+    <FontFamily x:Key="FontFamily">Segoe UI</FontFamily>
+    <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="#F2F2F2"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+</ResourceDictionary>
