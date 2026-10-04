@@ -5,6 +5,8 @@ using PlayniteAchievements.Services.Notifications;
 using PlayniteAchievements.Services.Showcase;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Media;
 
 namespace PlayniteAchievements.Services.Workshop.Preview
 {
@@ -98,6 +100,13 @@ namespace PlayniteAchievements.Services.Workshop.Preview
 
         /// <summary>Which optional parts the package carries.</summary>
         public NotificationStylePackageContents Contents { get; }
+
+        /// <summary>
+        /// The package's images decoded ahead of an offscreen render, keyed by the absolute path
+        /// the style names them by; null until a preloader has run. A card built from this model
+        /// shows these instead of loading the files asynchronously.
+        /// </summary>
+        public IReadOnlyDictionary<string, ImageSource> PreloadedImages { get; set; }
     }
 
     /// <summary>One sound of a sound pack, extracted for playback.</summary>
@@ -240,6 +249,7 @@ namespace PlayniteAchievements.Services.Workshop.Preview
             Columns = columns;
             Blocks = blocks ?? Array.Empty<ShowcaseBlockPreview>();
             ImagePaths = imagePaths ?? Array.Empty<string>();
+            Thumbnails = ImagePaths.Cast<object>().ToList();
         }
 
         /// <summary>The page's name.</summary>
@@ -256,6 +266,12 @@ namespace PlayniteAchievements.Services.Workshop.Preview
 
         /// <summary>The absolute paths of the images the page bundles, extracted to a temporary folder.</summary>
         public IReadOnlyList<string> ImagePaths { get; }
+
+        /// <summary>
+        /// What the preview shows for each of <see cref="ImagePaths"/>, in the same order: the
+        /// path, or a decoded image once a preloader has swapped one in for an offscreen render.
+        /// </summary>
+        public IReadOnlyList<object> Thumbnails { get; set; }
 
         /// <inheritdoc />
         protected override void DisposeCore()
