@@ -49,25 +49,34 @@
                             <Run Text="{Binding Author, Mode=OneWay}"/>
                         </TextBlock>
                         <TextBlock Text="{Binding GameName}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding HasGame, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Text="{Binding ContentsSummary}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding IsBundle, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,0,0">
-                        <TextBlock Text="{Binding Downloads}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                   HorizontalAlignment="Right"
-                                   ToolTip="{DynamicResource LOCPlayAch_Workshop_Downloads}"/>
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    ToolTip="{DynamicResource LOCPlayAch_Workshop_Downloads}">
+                            <TextBlock Text="&#xEF08;"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,4,0"/>
+                            <TextBlock Text="{Binding Downloads}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_UpdateAvailable}"
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
@@ -360,7 +369,7 @@
                                                                 <TextBlock Text="{Binding Name}"
                                                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                                            TextTrimming="CharacterEllipsis"/>
-                                                                <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Tertiary}">
+                                                                <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}">
                                                                     <Run Text="{Binding KindLabel, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Submitted, Mode=OneWay}"/>
                                                                 </TextBlock>
                                                             </StackPanel>
