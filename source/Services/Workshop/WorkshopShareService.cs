@@ -32,6 +32,12 @@ namespace PlayniteAchievements.Services.Workshop
         /// exported to scratch, or a preset file). Null means every part from the live settings.
         /// </summary>
         public IReadOnlyDictionary<ThemePackParts, string> ThemePartFiles { get; set; }
+
+        /// <summary>
+        /// A ready-made package to share as it is (a saved preset file). When set, nothing is
+        /// exported from the live settings; the file is copied under the item name.
+        /// </summary>
+        public string PackagePath { get; set; }
     }
 
     public enum WorkshopSharePhase
@@ -175,6 +181,19 @@ namespace PlayniteAchievements.Services.Workshop
             var persisted = _plugin.Settings?.Persisted ?? throw new InvalidOperationException("Settings are not available.");
             Directory.CreateDirectory(directory);
             var stem = SafeStem(candidate.DefaultName);
+
+            if (!string.IsNullOrWhiteSpace(candidate.PackagePath))
+            {
+                if (!File.Exists(candidate.PackagePath))
+                {
+                    throw new FileNotFoundException("The preset file is missing.", candidate.PackagePath);
+                }
+
+                var copy = Path.Combine(directory, stem + Path.GetExtension(candidate.PackagePath));
+                File.Copy(candidate.PackagePath, copy, overwrite: true);
+                return copy;
+            }
+
             var resolver = CreateTemplateResolver();
 
             switch (candidate.Kind)
