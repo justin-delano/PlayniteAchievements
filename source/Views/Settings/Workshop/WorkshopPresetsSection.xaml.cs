@@ -9,6 +9,7 @@ using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
 using PlayniteAchievements.Services.Notifications;
 using PlayniteAchievements.Services.Workshop;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
@@ -25,6 +26,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         /// <summary>One listed preset: where it came from and how to remove it.</summary>
         private sealed class PresetRow
         {
+            public WorkshopItemKind Kind { get; set; }
             public string KindLabel { get; set; }
             public string Name { get; set; }
             public string FilePath { get; set; }
@@ -62,6 +64,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                         var captured = preset;
                         rows.Add(new PresetRow
                         {
+                            Kind = isFrame ? WorkshopItemKind.ScreenshotFrame : WorkshopItemKind.NotificationStyle,
                             KindLabel = label,
                             Name = preset.Name,
                             FilePath = preset.FilePath,
@@ -70,8 +73,8 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     }
                 }
 
-                AddPackagePresets(rows, _plugin.ColorPresetStore, "LOCPlayAch_Workshop_Kind_Colors");
-                AddPackagePresets(rows, _plugin.UnlockSoundPresetStore, "LOCPlayAch_Workshop_Kind_UnlockSounds");
+                AddPackagePresets(rows, _plugin.ColorPresetStore, WorkshopItemKind.Colors, "LOCPlayAch_Workshop_Kind_Colors");
+                AddPackagePresets(rows, _plugin.UnlockSoundPresetStore, WorkshopItemKind.UnlockSounds, "LOCPlayAch_Workshop_Kind_UnlockSounds");
             }
             catch (Exception ex)
             {
@@ -90,7 +93,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
             UpdateButtons();
         }
 
-        private static void AddPackagePresets(List<PresetRow> rows, PackagePresetStore store, string kindKey)
+        private static void AddPackagePresets(List<PresetRow> rows, PackagePresetStore store, WorkshopItemKind kind, string kindKey)
         {
             if (store == null)
             {
@@ -103,6 +106,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                 var captured = preset;
                 rows.Add(new PresetRow
                 {
+                    Kind = kind,
                     KindLabel = label,
                     Name = preset.Name,
                     FilePath = preset.FilePath,
@@ -126,8 +130,22 @@ namespace PlayniteAchievements.Views.Settings.Workshop
             Refresh();
         }
 
-        /// <summary>Copies the preset's package file wherever the user chooses; it is already a valid package.</summary>
+        /// <summary>Export is the same two-way menu as everywhere else: to a file, or shared to the Workshop.</summary>
         private void Export_Click(object sender, RoutedEventArgs e)
+        {
+            if (Selected == null)
+            {
+                return;
+            }
+
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => ExportFile_Click(sender, e),
+                ShareToWorkshop);
+        }
+
+        /// <summary>Copies the preset package file wherever the user chooses; it is already a valid package.</summary>
+        private void ExportFile_Click(object sender, RoutedEventArgs e)
         {
             var row = Selected;
             if (row == null || !File.Exists(row.FilePath))
@@ -165,6 +183,18 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                 _logger?.Error(ex, "Failed exporting preset.");
                 ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>Shares the preset file as it is; the share dialog previews that preset, not the live look.</summary>
+        private void ShareToWorkshop()
+        {
+            var row = Selected;
+            if (row == null || !File.Exists(row.FilePath))
+            {
+                return;
+            }
+
+            _plugin.OpenWorkshopShare(row.Kind, Window.GetWindow(this), packagePath: row.FilePath, defaultName: row.Name);
         }
 
         private void Delete_Click(object sender, RoutedEventArgs e)
