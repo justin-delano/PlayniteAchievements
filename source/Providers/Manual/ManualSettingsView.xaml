@@ -85,7 +85,7 @@
                         </Grid>
                     </controls:SettingRow>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_ImportButton}"
+                    <Button Content="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                             Click="ManualLegacyImport_Click"
                             Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                             MinWidth="180"
