@@ -142,11 +142,18 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetPieMode(_settings),
                         value => ShowcaseWidgetOptions.SetPieMode(_settings, value),
                         PieModeName);
-                    AddToggle(
+                    AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Settings_ShowOverviewPiePercentages"),
-                        ShowcaseWidgetOptions.GetPieShowCenterPercentage(_settings),
-                        value => ShowcaseWidgetOptions.SetPieShowCenterPercentage(_settings, value));
+                        Localize("LOCPlayAch_Settings_PieCenter"),
+                        new[]
+                        {
+                            PieCenterMode.Percentage,
+                            PieCenterMode.Empty,
+                            PieCenterMode.Filled
+                        },
+                        ShowcaseWidgetOptions.GetPieCenterMode(_settings),
+                        value => ShowcaseWidgetOptions.SetPieCenterMode(_settings, value),
+                        PieCenterModeName);
                     AddToggle(
                         panel,
                         Localize("LOCPlayAch_Showcase_ShowLegend"),
@@ -1161,6 +1168,19 @@ namespace PlayniteAchievements.Views.Showcase
                     return Localize("LOCPlayAch_Filter_Unplayed");
                 default:
                     return Localize("LOCPlayAch_Common_All");
+            }
+        }
+
+        private static string PieCenterModeName(PieCenterMode value)
+        {
+            switch (value)
+            {
+                case PieCenterMode.Empty:
+                    return Localize("LOCPlayAch_Settings_PieCenter_Empty");
+                case PieCenterMode.Filled:
+                    return Localize("LOCPlayAch_Settings_PieCenter_Filled");
+                default:
+                    return Localize("LOCPlayAch_Settings_PieCenter_Percentage");
             }
         }
 
