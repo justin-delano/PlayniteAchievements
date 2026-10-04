@@ -147,6 +147,7 @@
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRepository.cs" Link="Source\Services\GameCustomData\GameCustomDataRepository.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRuntimeProjector.cs" Link="Source\Services\GameCustomData\GameCustomDataRuntimeProjector.cs" />
     <Compile Include="..\..\source\Services\Hydration\AchievementDetailHydrator.cs" Link="Source\Services\Hydration\AchievementDetailHydrator.cs" />
+    <Compile Include="..\..\source\Services\Hydration\AchievementOverlayPipeline.cs" Link="Source\Services\Hydration\AchievementOverlayPipeline.cs" />
     <Compile Include="..\..\source\Services\Achievements\AutoCapstoneCalculator.cs" Link="Source\Services\Achievements\AutoCapstoneCalculator.cs" />
     <Compile Include="..\..\source\Services\Achievements\AutoCapstoneEligibility.cs" Link="Source\Services\Achievements\AutoCapstoneEligibility.cs" />
     <Compile Include="..\..\source\Services\Achievements\AutoCapstoneTemplate.cs" Link="Source\Services\Achievements\AutoCapstoneTemplate.cs" />
@@ -644,6 +645,12 @@
     <Compile Include="..\..\source\Services\Workshop\WorkshopSubmissionClient.cs" Link="Source\Services\Workshop\WorkshopSubmissionClient.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopUndoStore.cs" Link="Source\Services\Workshop\WorkshopUndoStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\GameCustomDataThreeWayMerge.cs" Link="Source\Services\Workshop\GameCustomDataThreeWayMerge.cs" />
+    <Compile Include="..\..\source\Services\Workshop\Preview\GameCustomDataPreviewDiff.cs" Link="Source\Services\Workshop\Preview\GameCustomDataPreviewDiff.cs" />
+    <Compile Include="..\..\source\Services\Workshop\Preview\GameCustomDataPreviewDiffBuilder.cs" Link="Source\Services\Workshop\Preview\GameCustomDataPreviewDiffBuilder.cs" />
+    <Compile Include="..\..\source\Services\Workshop\Preview\GameCustomDataPreviewSource.cs" Link="Source\Services\Workshop\Preview\GameCustomDataPreviewSource.cs" />
+    <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewContext.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewContext.cs" />
+    <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewModel.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewModel.cs" />
+    <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewModelBuilder.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewModelBuilder.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
