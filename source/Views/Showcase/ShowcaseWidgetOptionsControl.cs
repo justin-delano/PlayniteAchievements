@@ -156,9 +156,16 @@ namespace PlayniteAchievements.Views.Showcase
                         PieCenterModeName);
                     AddToggle(
                         panel,
-                        Localize("LOCPlayAch_Showcase_ShowLegend"),
+                        Localize("LOCPlayAch_Settings_ShowOverviewPieLegend"),
                         ShowcaseWidgetOptions.GetPieShowLegend(_settings),
                         value => ShowcaseWidgetOptions.SetPieShowLegend(_settings, value));
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_PieLegendPosition"),
+                        new[] { PieLegendPosition.Left, PieLegendPosition.Right },
+                        ShowcaseWidgetOptions.GetPieLegendPosition(_settings),
+                        value => ShowcaseWidgetOptions.SetPieLegendPosition(_settings, value),
+                        PieLegendPositionName);
                     AddToggle(
                         panel,
                         Localize("LOCPlayAch_Settings_ShowOverviewPieIcons"),
@@ -1170,6 +1177,11 @@ namespace PlayniteAchievements.Views.Showcase
                     return Localize("LOCPlayAch_Common_All");
             }
         }
+
+        private static string PieLegendPositionName(PieLegendPosition value) =>
+            Localize(value == PieLegendPosition.Left
+                ? "LOCPlayAch_Settings_GridAlignment_Left"
+                : "LOCPlayAch_Settings_GridAlignment_Right");
 
         private static string PieCenterModeName(PieCenterMode value)
         {
