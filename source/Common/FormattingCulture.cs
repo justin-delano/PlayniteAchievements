@@ -122,6 +122,18 @@ namespace PlayniteAchievements.Common
             }
         }
 
+        /// <summary>
+        /// The culture tag (for example "fr-FR") mapped from a GlobalLanguage value, or null when the
+        /// value is empty or unknown. For APIs that take a locale code.
+        /// </summary>
+        public static string GetCultureTag(string globalLanguage)
+        {
+            return !string.IsNullOrWhiteSpace(globalLanguage) &&
+                   LanguageToCultureTag.TryGetValue(globalLanguage.Trim(), out var tag)
+                ? tag
+                : null;
+        }
+
         private static CultureInfo Resolve(string globalLanguage)
         {
             if (!string.IsNullOrWhiteSpace(globalLanguage) &&

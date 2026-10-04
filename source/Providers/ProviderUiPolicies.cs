@@ -57,8 +57,7 @@ namespace PlayniteAchievements.Providers
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "GooglePlay",
-                "Apple",
-                "Ubisoft"
+                "Apple"
             };
 
         public static bool ShouldHideFromSetupSurfaces(string providerKey)

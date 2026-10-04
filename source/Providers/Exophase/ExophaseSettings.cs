@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.Settings;
 
@@ -34,11 +35,13 @@ namespace PlayniteAchievements.Providers.Exophase
         private static readonly string[] DefaultManagedProviderTokens =
         {
             "android",
-            "apple",
-            "ubisoft"
+            "apple"
         };
 
+        private const string UbisoftToken = "ubisoft";
+
         private string _userId;
+        private bool _ubisoftHandedToNative = true;
         private HashSet<string> _managedProviders = CreateDefaultManagedProviders();
         private HashSet<Guid> _includedGames = new HashSet<Guid>();
         private Dictionary<Guid, string> _slugOverrides = new Dictionary<Guid, string>();
@@ -68,6 +71,18 @@ namespace PlayniteAchievements.Providers.Exophase
             set => SetValue(
                 ref _managedProviders,
                 NormalizeManagedProviders(value));
+        }
+
+        /// <summary>
+        /// True once Ubisoft games have been handed from Exophase to the native Ubisoft provider.
+        /// Configs saved before that provider existed lack this flag and had "ubisoft" managed by
+        /// default; loading one drops that token once. Every config written since carries the flag,
+        /// so re-checking Ubisoft afterwards is kept.
+        /// </summary>
+        public bool UbisoftHandedToNative
+        {
+            get => _ubisoftHandedToNative;
+            set => SetValue(ref _ubisoftHandedToNative, value);
         }
 
         /// <summary>
@@ -174,10 +189,46 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public override void DeserializeFromJson(string json)
         {
+            var predatesUbisoftHandoff = !HasProperty(json, nameof(UbisoftHandedToNative));
+
             base.DeserializeFromJson(json);
             ManagedProviders = _managedProviders;
             Friends = _friends;
             FriendGameMappings = _friendGameMappings;
+
+            if (predatesUbisoftHandoff)
+            {
+                HandUbisoftToNative();
+            }
+        }
+
+        private void HandUbisoftToNative()
+        {
+            if (ManagedProviders.Contains(UbisoftToken))
+            {
+                ManagedProviders = new HashSet<string>(
+                    ManagedProviders.Where(token => !string.Equals(token, UbisoftToken, StringComparison.OrdinalIgnoreCase)),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            UbisoftHandedToNative = true;
+        }
+
+        private static bool HasProperty(string json, string propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return false;
+            }
+
+            try
+            {
+                return JObject.Parse(json)[propertyName] != null;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
         }
 
         private static HashSet<string> NormalizeManagedProviders(IEnumerable<string> providers)

@@ -12,6 +12,7 @@ namespace PlayniteAchievements.Tests.Providers
         [DataRow("Epic")]
         [DataRow("GOG")]
         [DataRow("EA")]
+        [DataRow("Ubisoft")]
         [DataRow("Hoyoverse")]
         public void ShouldHideFromSetupSurfaces_ReturnsFalse_ForFirstClassProviders(string providerKey)
         {
@@ -21,7 +22,6 @@ namespace PlayniteAchievements.Tests.Providers
         [DataTestMethod]
         [DataRow("GooglePlay")]
         [DataRow("Apple")]
-        [DataRow("Ubisoft")]
         public void ShouldHideFromSetupSurfaces_ReturnsTrue_ForProvidersWithoutSetupSurfaces(string providerKey)
         {
             Assert.IsTrue(ProviderUiPolicies.ShouldHideFromSetupSurfaces(providerKey));
