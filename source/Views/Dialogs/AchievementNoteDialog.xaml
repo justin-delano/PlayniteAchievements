@@ -138,7 +138,7 @@
                        Margin="0,6,0,10" />
 
             <TextBlock Grid.Row="3"
-                       Text="{DynamicResource LOCPlayAch_NotesDialog_Preview}"
+                       Text="{DynamicResource LOCPlayAch_Common_Preview}"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                        FontWeight="SemiBold"
                        Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}" />
