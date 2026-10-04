@@ -112,6 +112,35 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task ExportParts_EmbedsReadyMadePackages_AndRejectsAFileOfTheWrongKind()
+        {
+            await WithTempAsync(async tempDir =>
+            {
+                var store = CreateStore(tempDir, out _);
+                var colorStore = new ColorPackPortableStore();
+                var persisted = new PersistedSettings();
+                persisted.RarityColors = new RarityColorSettings { Common = "#778899" };
+                var colorsFile = Path.Combine(tempDir, "set.pacolors");
+                colorStore.Export(persisted, colorsFile);
+
+                var bundle = Path.Combine(tempDir, "composed.patheme");
+                store.ExportParts(bundle, new Dictionary<ThemePackParts, string> { [ThemePackParts.Colors] = colorsFile });
+
+                Assert.AreEqual(ThemePackParts.Colors, store.Inspect(bundle));
+                var outDir = Path.Combine(tempDir, "out");
+                var extracted = store.ExtractParts(bundle, ThemePackParts.All, outDir);
+                Assert.AreEqual("#778899", colorStore.Read(extracted[ThemePackParts.Colors]).RarityColors.Common, "the preset file travels byte for byte");
+
+                Assert.ThrowsException<InvalidOperationException>(
+                    () => store.ExportParts(Path.Combine(tempDir, "bad.patheme"), new Dictionary<ThemePackParts, string> { [ThemePackParts.Toast] = colorsFile }),
+                    "a .pacolors is not a toast style");
+                Assert.ThrowsException<InvalidOperationException>(
+                    () => store.ExportParts(Path.Combine(tempDir, "empty.patheme"), new Dictionary<ThemePackParts, string>()));
+                await Task.CompletedTask;
+            });
+        }
+
+        [TestMethod]
         public async Task Import_AppliesOnlySelectedParts()
         {
             await WithTempAsync(async tempDir =>
