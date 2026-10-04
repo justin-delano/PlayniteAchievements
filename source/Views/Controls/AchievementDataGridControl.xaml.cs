@@ -2717,8 +2717,18 @@ namespace PlayniteAchievements.Views.Controls
             SetForcedColumnCollapsed(_columnPersistence, FriendAvatarColumnKey, !ShowFriendColumn);
             SetForcedColumnCollapsed(_columnPersistence, FriendColumnKey, !ShowFriendColumn);
             // Captures are the user's own screenshots and clips of their own unlocks; a friend's
-            // row has none to open, so the column is dropped from every friend surface.
-            SetForcedColumnCollapsed(_columnPersistence, CapturesColumnKey, IsFriendSurface(ColumnSettingsKey));
+            // row has none to open, and neither has a Workshop preview of a package, so the
+            // column is dropped from those surfaces.
+            SetForcedColumnCollapsed(
+                _columnPersistence,
+                CapturesColumnKey,
+                IsFriendSurface(ColumnSettingsKey) || IsWorkshopPreviewSurface(ColumnSettingsKey));
+        }
+
+        private static bool IsWorkshopPreviewSurface(string columnSettingsKey)
+        {
+            return columnSettingsKey != null &&
+                   columnSettingsKey.StartsWith("WorkshopPreview", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsFriendSurface(string columnSettingsKey)
