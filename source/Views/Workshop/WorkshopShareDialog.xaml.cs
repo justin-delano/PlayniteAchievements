@@ -86,8 +86,8 @@ namespace PlayniteAchievements.Views.Workshop
 
         public event EventHandler RequestClose;
 
-        /// <summary>The file filter of the preview image picker, shared with the preview update dialog.</summary>
-        internal const string PreviewImageFilter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp";
+        /// <summary>The file filter of the preview image picker.</summary>
+        private const string PreviewImageFilter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp";
 
         private static string RenderingPreviewText => ResourceProvider.GetString("LOCPlayAch_Workshop_Share_RenderingPreview");
 
