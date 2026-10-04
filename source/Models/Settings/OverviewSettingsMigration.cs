@@ -141,6 +141,8 @@ namespace PlayniteAchievements.Models.Settings
                     "ShowMetadataPlaytime",
                     "ShowMetadataRegion");
 
+                changed |= ConvertPiePercentagesToCenterMode(persisted);
+
                 changed |= CopyLegacyAchievementGridHeaderVisibility(persisted);
 
                 foreach (var dictionaryName in GameSummaryColumnDictionaries)
@@ -189,6 +191,32 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             obj.Remove(oldName);
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces the old show/hide pie percentage toggle with the pie center mode: on becomes
+        /// <see cref="PieCenterMode.Percentage"/>, off becomes <see cref="PieCenterMode.Empty"/>.
+        /// Runs after the property renames so the Sidebar-era name is covered too.
+        /// </summary>
+        private static bool ConvertPiePercentagesToCenterMode(JObject persisted)
+        {
+            const string oldName = "ShowOverviewPiePercentages";
+            const string newName = nameof(PersistedSettings.OverviewPieCenterMode);
+
+            var oldValue = persisted[oldName];
+            if (oldValue == null)
+            {
+                return false;
+            }
+
+            if (persisted[newName] == null)
+            {
+                var showPercentages = oldValue.Type != JTokenType.Boolean || oldValue.Value<bool>();
+                persisted[newName] = (showPercentages ? PieCenterMode.Percentage : PieCenterMode.Empty).ToString();
+            }
+
+            persisted.Remove(oldName);
             return true;
         }
 
