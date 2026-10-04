@@ -36,10 +36,10 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>A PNG under <paramref name="directory"/>, or null when this kind is not rendered.</summary>
         /// <param name="kind">What is being shared.</param>
         /// <param name="directory">Where the PNG goes.</param>
-        /// <param name="toastPackagePath">For a composed theme, the notification part being
-        /// shared when it is a saved preset rather than the current settings; the preview then
-        /// shows that style instead of the live one.</param>
-        public string TryRender(WorkshopItemKind kind, string directory, string toastPackagePath = null)
+        /// <param name="stylePackagePath">A .panotif or .paframe whose style the preview should
+        /// show instead of the live one: a saved preset being shared, or the notification part of
+        /// a composed theme.</param>
+        public string TryRender(WorkshopItemKind kind, string directory, string stylePackagePath = null)
         {
             try
             {
@@ -49,10 +49,11 @@ namespace PlayniteAchievements.Services.Workshop
                     return null;
                 }
 
-                if (!string.IsNullOrWhiteSpace(toastPackagePath) && kind == WorkshopItemKind.Theme)
+                if (!string.IsNullOrWhiteSpace(stylePackagePath)
+                    && (kind == WorkshopItemKind.Theme || kind == WorkshopItemKind.NotificationStyle || kind == WorkshopItemKind.ScreenshotFrame))
                 {
                     var composed = persisted.Clone();
-                    composed.NotificationStyle = _plugin.NotificationStylePortableStore.ReadStyle(toastPackagePath);
+                    composed.NotificationStyle = _plugin.NotificationStylePortableStore.ReadStyle(stylePackagePath);
                     persisted = composed;
                 }
 
