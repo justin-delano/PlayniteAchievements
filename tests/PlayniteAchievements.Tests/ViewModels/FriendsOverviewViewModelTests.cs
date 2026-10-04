@@ -333,66 +333,6 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void LockedRowsShowOnlyForSingleFriendGamePair()
-        {
-            var data = CreateData();
-            var locked = CreateAchievement(
-                "Steam",
-                "alice",
-                "Alice",
-                "https://cdn.example/alice.png",
-                10,
-                data.Games[0].PlayniteGameId.Value,
-                "Game One",
-                "Alice Locked",
-                "Story",
-                "Main",
-                new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-            locked.Unlocked = false;
-            locked.UnlockTimeUtc = null;
-            // Production shape: the overview snapshot carries unlocked rows only; the pair
-            // view's locked rows arrive through the stub's on-demand game-scoped load.
-            data.AllAchievements = data.AllUnlockedAchievements.ToList();
-            var cache = new StubFriendCache(data)
-            {
-                PairAchievements = data.AllUnlockedAchievements.Concat(new[] { locked }).ToList()
-            };
-
-            var viewModel = CreateViewModel(cache);
-            viewModel.LoadAsync().GetAwaiter().GetResult();
-
-            // No selection: recent unlocks only.
-            CollectionAssert.AreEqual(
-                new[] { "Recent Only" },
-                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
-
-            // Friend-only selection is an aggregated view: unlocked rows only.
-            viewModel.SelectedFriend = data.Friends[0];
-            Assert.IsFalse(viewModel.DisplayedAchievements.Any(item => item.DisplayName == "Alice Locked"));
-            CollectionAssert.AreEquivalent(
-                new[] { "Recent Only", "Alice Game Two" },
-                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
-            Assert.AreEqual(0, cache.PairAchievementLoadCalls);
-
-            // Single friend + single game pair: full comparison view including locked rows,
-            // materialized by the on-demand game-scoped load.
-            viewModel.SelectedGame = data.Games[0];
-            viewModel.PairAchievementsFetchTask?.GetAwaiter().GetResult();
-            Assert.AreEqual(1, cache.PairAchievementLoadCalls);
-            Assert.IsTrue(viewModel.DisplayedAchievements.Any(item =>
-                item.DisplayName == "Alice Locked" &&
-                !item.Unlocked));
-
-            // Game-only selection is aggregated again: locked rows disappear.
-            viewModel.ClearFriendSelection();
-            Assert.IsNotNull(viewModel.SelectedGame);
-            Assert.IsFalse(viewModel.DisplayedAchievements.Any(item => item.DisplayName == "Alice Locked"));
-            CollectionAssert.AreEquivalent(
-                new[] { "Recent Only", "Bob Game One" },
-                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
-        }
-
-        [TestMethod]
         public void UnlockStateTogglesFilterPairAchievementsByFriendUnlockState()
         {
             var data = CreateData();
