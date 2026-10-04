@@ -129,6 +129,39 @@ namespace PlayniteAchievements.Services.Tests
             }
         }
 
+        [TestMethod]
+        public void VerifyPackage_MatchesTheIndexHash_AndRejectsAMissingOrChangedFile()
+        {
+            var bytes = Encoding.ASCII.GetBytes("PK-package");
+            string hash;
+            using (var sha = SHA256.Create())
+            {
+                hash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToUpperInvariant();
+            }
+
+            var item = new WorkshopItem { Id = "bundles/neon", Package = new WorkshopPackage { Sha256 = hash } };
+            var dir = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(dir);
+                var path = Path.Combine(dir, "neon.pabundle");
+                File.WriteAllBytes(path, bytes);
+
+                Assert.IsTrue(WorkshopClient.VerifyPackage(item, path), "the hash compares case-insensitively");
+                Assert.IsFalse(WorkshopClient.VerifyPackage(item, Path.Combine(dir, "missing.pabundle")));
+
+                File.WriteAllBytes(path, Encoding.ASCII.GetBytes("PK-changed"));
+                Assert.IsFalse(WorkshopClient.VerifyPackage(item, path));
+
+                item.Package.Sha256 = null;
+                Assert.IsTrue(WorkshopClient.VerifyPackage(item, path), "an item listed without a hash accepts any existing file");
+            }
+            finally
+            {
+                try { Directory.Delete(dir, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+        }
+
         private static HttpResponseMessage Text(string body) =>
             new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 
