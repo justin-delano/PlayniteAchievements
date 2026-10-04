@@ -87,6 +87,11 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsNull(portable.GameKeys[1].ProviderKey);
                 Assert.AreEqual("Spacewar", portable.GameKeys[1].Name);
 
+                var read = store.ReadPortableGameKeys(packagePath);
+                Assert.AreEqual(2, read.Count, "the reader returns the keys without importing");
+                Assert.AreEqual(480, read[0].ProviderGameId);
+                Assert.AreEqual("Spacewar", read[1].Name);
+
                 // Keys describe the exporter's game; the importer chose its own target.
                 var otherGame = Guid.NewGuid();
                 var imported = store.ImportReplacePortable(otherGame, packagePath).ImportedData;
