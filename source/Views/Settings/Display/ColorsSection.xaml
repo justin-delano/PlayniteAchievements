@@ -117,12 +117,12 @@
                                 <!-- The colors alone (rarity, provider, resource overrides) as a
                                      .pacolors file: Export writes the current colors, Import adds
                                      a file to the sets above. -->
-                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
                                         Margin="16,0,0,0"
                                         MinWidth="58"
                                         Click="ExportColors_Click"/>
 
-                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                         Margin="8,0,0,0"
                                         MinWidth="58"
                                         Click="ImportColors_Click"/>
