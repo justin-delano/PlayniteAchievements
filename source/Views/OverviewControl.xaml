@@ -996,6 +996,7 @@
                                                                       ExactTotalCount="{Binding GamesPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding GamesPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding GamesPieChart.ShowIcons}"
+                                                                      IsFilled="{Binding GamesPieChart.IsFilled}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnGamesPieChartSliceClick"/>
                                 </Grid>
@@ -1025,6 +1026,7 @@
                                                                       ExactTotalCount="{Binding ProviderPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding ProviderPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding ProviderPieChart.ShowIcons}"
+                                                                      IsFilled="{Binding ProviderPieChart.IsFilled}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnProviderPieChartSliceClick"/>
                                 </Grid>
@@ -1053,6 +1055,7 @@
                                                                       ExactTotalCount="{Binding RarityPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding RarityPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding RarityPieChart.ShowIcons}"
+                                                                      IsFilled="{Binding RarityPieChart.IsFilled}"
                                                                       IconOffset="12"/>
                                 </Grid>
 
@@ -1080,6 +1083,7 @@
                                                                       ExactTotalCount="{Binding TrophyPieChart.ExactTotalCount}"
                                                                       ShowCenterPercentage="{Binding TrophyPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding TrophyPieChart.ShowIcons}"
+                                                                      IsFilled="{Binding TrophyPieChart.IsFilled}"
                                                                       IconOffset="12"/>
                                 </Grid>
                                 </Grid>
