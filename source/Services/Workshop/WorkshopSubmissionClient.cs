@@ -79,7 +79,10 @@ namespace PlayniteAchievements.Services.Workshop
         /// Uploads a file and returns the storage key the service knows it by. Large files go up
         /// in parts; <paramref name="progress"/> receives bytes sent.
         /// </summary>
-        public async Task<string> UploadAsync(string path, string contentType, IProgress<long> progress, CancellationToken cancel)
+        public Task<string> UploadAsync(string path, string contentType, IProgress<long> progress, CancellationToken cancel)
+            => Task.Run(() => UploadCoreAsync(path, contentType, progress, cancel), cancel);
+
+        private async Task<string> UploadCoreAsync(string path, string contentType, IProgress<long> progress, CancellationToken cancel)
         {
             var info = new FileInfo(path);
             if (!info.Exists)
@@ -138,7 +141,12 @@ namespace PlayniteAchievements.Services.Workshop
             return key;
         }
 
-        public async Task<WorkshopSubmissionReceipt> SubmitAsync(
+        public Task<WorkshopSubmissionReceipt> SubmitAsync(WorkshopSubmission submission, string submitterHash, string packageKey, string previewKey, string pluginVersion, CancellationToken cancel)
+
+            => Task.Run(() => SubmitCoreAsync(submission, submitterHash, packageKey, previewKey, pluginVersion, cancel), cancel);
+
+
+        private async Task<WorkshopSubmissionReceipt> SubmitCoreAsync(
             WorkshopSubmission submission,
             string submitterHash,
             string packageKey,
@@ -175,7 +183,12 @@ namespace PlayniteAchievements.Services.Workshop
             };
         }
 
-        public async Task<WorkshopSubmissionStatus> GetStatusAsync(int issueNumber, CancellationToken cancel)
+        public Task<WorkshopSubmissionStatus> GetStatusAsync(int issueNumber, CancellationToken cancel)
+
+            => Task.Run(() => GetStatusCoreAsync(issueNumber, cancel), cancel);
+
+
+        private async Task<WorkshopSubmissionStatus> GetStatusCoreAsync(int issueNumber, CancellationToken cancel)
         {
             using (var response = await _http.GetAsync($"{ServiceUrl}/v1/submissions/{issueNumber}", cancel).ConfigureAwait(false))
             {
