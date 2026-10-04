@@ -64,7 +64,8 @@ namespace PlayniteAchievements.Services.UI
         {
             Brush("PlayAch.Brush.Text", "LOCPlayAch_Settings_Appearance_Resource_Text", "TextBrush"),
             Brush("PlayAch.Brush.Text.Secondary", "LOCPlayAch_Settings_Appearance_Resource_TextSecondary", "TextBrushDarker", "TextBrush"),
-            Brush("PlayAch.Brush.Text.Tertiary", "LOCPlayAch_Settings_Appearance_Resource_TextTertiary", "TextBrushDark", "TextBrushDarker", "TextBrush"),
+            // TextBrushDark is pure black in Playnite's default theme (it is the brush for text on light accents), so a muted-text token must not fall to it.
+            Brush("PlayAch.Brush.Text.Tertiary", "LOCPlayAch_Settings_Appearance_Resource_TextTertiary", "TextBrushDarker", "TextBrush"),
             Brush("PlayAch.Brush.Surface", "LOCPlayAch_Settings_Appearance_Resource_Surface", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.Panel", "LOCPlayAch_Settings_Appearance_Resource_Panel", "PanelBackgroundBrush", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.WindowSurface", "LOCPlayAch_Settings_Appearance_Resource_WindowSurface", "WindowBackgourndBrush", "ControlBackgroundBrush"),
