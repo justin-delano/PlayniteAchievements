@@ -355,6 +355,7 @@ namespace PlayniteAchievements.Models
         private const string LegacyShowCenterPercentage = "ShowCenterPercentage";
         private const string ShowLegend = "ShowLegend";
         private const string ShowIcons = "ShowIcons";
+        private const string LegendPosition = "LegendPosition";
         private const string IncludeLocked = "IncludeLocked";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
@@ -531,6 +532,12 @@ namespace PlayniteAchievements.Models
 
         public static void SetPieShowLegend(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowLegend, value);
+
+        public static PieLegendPosition GetPieLegendPosition(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, LegendPosition, PieLegendPosition.Right);
+
+        public static void SetPieLegendPosition(ShowcaseWidgetInstanceSettings settings, PieLegendPosition value) =>
+            settings?.SetOption(LegendPosition, value);
 
         public static bool GetPieShowIcons(ShowcaseWidgetInstanceSettings settings) =>
             settings?.GetOption(ShowIcons, true) ?? true;
@@ -970,6 +977,7 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetPieMode(settings, ShowcasePieMode.CompletedGames);
                     ShowcaseWidgetOptions.SetPieCenterMode(settings, PieCenterMode.Percentage);
                     ShowcaseWidgetOptions.SetPieShowLegend(settings, true);
+                    ShowcaseWidgetOptions.SetPieLegendPosition(settings, PieLegendPosition.Right);
                     ShowcaseWidgetOptions.SetPieShowIcons(settings, true);
                     ShowcaseWidgetOptions.SetPieIncludeLocked(settings, true);
                     ShowcaseWidgetOptions.SetPieSmallSliceMode(settings, OverviewPieSmallSliceMode.Round);
