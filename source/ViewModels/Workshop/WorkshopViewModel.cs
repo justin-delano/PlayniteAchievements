@@ -76,6 +76,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
     public sealed class WorkshopSubmissionViewModel : ObservableObject
     {
         private string _stateLabel;
+        private WorkshopItemViewModel _ownedItem;
 
         public WorkshopSubmissionViewModel(WorkshopSubmissionRecord record)
         {
@@ -84,6 +85,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         public WorkshopSubmissionRecord Record { get; }
+
+        /// <summary>The loaded index item this submission published, when this install owns it; else null.</summary>
+        public WorkshopItemViewModel OwnedItem
+        {
+            get => _ownedItem;
+            set => SetValue(ref _ownedItem, value, nameof(OwnedItem), nameof(CanUpdatePreview));
+        }
+
+        /// <summary>True when the submission's published item can have its preview image replaced from here.</summary>
+        public bool CanUpdatePreview => _ownedItem != null;
 
         public string Name => Record.Name;
 
@@ -193,6 +204,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
             RevertCommand = new RelayCommand(parameter => Revert(parameter as WorkshopUndoViewModel), _ => !IsBusy);
             OpenSubmissionCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopSubmissionViewModel)?.Url));
             RefreshSubmissionsCommand = new AsyncCommand(async _ => await RefreshSubmissionStatesAsync());
+            UpdatePreviewCommand = new AsyncCommand(
+                async parameter => await UpdatePreviewAsync(parameter as WorkshopItemViewModel ?? (parameter as WorkshopSubmissionViewModel)?.OwnedItem),
+                _ => !IsBusy);
 
             ReloadLocalState();
         }
@@ -219,6 +233,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public RelayCommand RevertCommand { get; }
         public RelayCommand OpenSubmissionCommand { get; }
         public AsyncCommand RefreshSubmissionsCommand { get; }
+
+        /// <summary>Replaces the preview image of an item this install published (a row, or a submission's owned item).</summary>
+        public AsyncCommand UpdatePreviewCommand { get; }
 
         public WorkshopInstalledRegistry Registry => _registry;
 
@@ -305,6 +322,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     InstallCommand.RaiseCanExecuteChanged();
                     PreviewCommand.RaiseCanExecuteChanged();
                     RevertCommand.RaiseCanExecuteChanged();
+                    UpdatePreviewCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -371,15 +389,25 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 _matches.Clear();
                 var rows = await Task.Run(() =>
                 {
+                    // The index marks every item with its publisher's hash; this install's rows
+                    // offer a preview update.
+                    var owner = _registry.GetSubmitterHash();
                     var built = new List<WorkshopItemViewModel>();
                     foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         _lifetime.Token.ThrowIfCancellationRequested();
-                        var row = new WorkshopItemViewModel(item);
+                        var row = new WorkshopItemViewModel(item)
+                        {
+                            IsOwnedByMe = !string.IsNullOrWhiteSpace(item.OwnerHash) &&
+                                          string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase)
+                        };
                         ApplyLocalState(row);
                         built.Add(row);
                     }
 
+                    // Records of a first submission learn their published id here, as the share
+                    // dialog links them, so My submissions can address the item.
+                    _registry.LinkSubmissions(built.Where(row => row.IsOwnedByMe).Select(row => row.Item));
                     return built;
                 }, _lifetime.Token);
 
@@ -391,6 +419,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                 ApplySort();
                 RebuildInstalledList();
+                ReloadLocalState();
                 _ = PrefetchPreviewsAsync(rows);
 
                 if (_focusGameId.HasValue)
@@ -475,10 +504,24 @@ namespace PlayniteAchievements.ViewModels.Workshop
             Submissions.Clear();
             foreach (var record in _registry.Submissions)
             {
-                Submissions.Add(new WorkshopSubmissionViewModel(record));
+                Submissions.Add(new WorkshopSubmissionViewModel(record)
+                {
+                    OwnedItem = FindOwnedItem(record.ItemId)
+                });
             }
 
             OnPropertyChanged(nameof(HasSubmissions));
+        }
+
+        /// <summary>The loaded index row with this id when this install published it; else null.</summary>
+        private WorkshopItemViewModel FindOwnedItem(string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return null;
+            }
+
+            return Items.FirstOrDefault(row => row.IsOwnedByMe && string.Equals(row.Id, itemId, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -1004,6 +1047,94 @@ namespace PlayniteAchievements.ViewModels.Workshop
             if (install)
             {
                 await InstallAsync(row);
+            }
+        }
+
+        // ---- preview image update -----------------------------------------------------------
+
+        /// <summary>
+        /// Asks the window to confirm the preview image to submit: given the row and the rendered
+        /// image path (null when none was rendered), returns the image to upload, possibly one the
+        /// user picked instead, or null to cancel. Without it the rendered image is submitted.
+        /// </summary>
+        public Func<WorkshopItemViewModel, string, string> ConfirmPreviewImage { get; set; }
+
+        /// <summary>
+        /// Replaces the preview image of an item this install published: downloads the package
+        /// (or reuses the cached download), renders the standardized image from it as a
+        /// non-owner sees it (game data without a library comparison), lets the window confirm
+        /// or swap the image, and submits it as a preview-only update. The status line reports
+        /// the upload and then where to follow the review.
+        /// </summary>
+        public async Task UpdatePreviewAsync(WorkshopItemViewModel row)
+        {
+            if (row == null || IsBusy || !row.IsOwnedByMe)
+            {
+                return;
+            }
+
+            IsBusy = true;
+            ErrorMessage = null;
+            WorkshopPreviewModel model = null;
+            var scratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopPreviewUpdate", Guid.NewGuid().ToString("N"));
+            try
+            {
+                var packagePath = await EnsureDownloadedAsync(row);
+
+                StatusMessage = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_RenderingPreview");
+                ProgressFraction = 0;
+                var context = WorkshopPreviewContext.FromPlugin(_plugin);
+                var kind = row.Kind;
+                model = await Task.Run(() => WorkshopPreviewModelBuilder.Build(kind, packagePath, context), _lifetime.Token);
+                var rendered = await new WorkshopPreviewRasterizer(_plugin, _logger).RenderAsync(model, scratch, _lifetime.Token);
+                StatusMessage = null;
+
+                var confirm = ConfirmPreviewImage;
+                var chosen = confirm != null ? confirm(row, rendered) : rendered;
+                if (string.IsNullOrWhiteSpace(chosen))
+                {
+                    return;
+                }
+
+                var name = row.Name;
+                var progress = new Progress<WorkshopShareProgress>(p =>
+                {
+                    if (p.Phase == WorkshopSharePhase.Submitting)
+                    {
+                        ProgressFraction = 0;
+                        StatusMessage = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Submit");
+                        return;
+                    }
+
+                    ProgressFraction = p.BytesTotal > 0 ? Math.Min(1, (double)p.BytesSent / p.BytesTotal) : 0;
+                    StatusMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Uploading"), name);
+                });
+                var receipt = await _plugin.WorkshopShareService.UpdatePreviewAsync(row.Item, chosen, progress, _lifetime.Token);
+
+                ReloadLocalState();
+                var message = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Submitted"), receipt.IssueUrl);
+                StatusMessage = message;
+                _plugin.PlayniteApi?.Dialogs?.ShowMessage(
+                    message,
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed updating the preview image of Workshop item {row.Id}.");
+                ErrorMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message);
+                StatusMessage = null;
+            }
+            finally
+            {
+                model?.Dispose();
+                ProgressFraction = 0;
+                IsBusy = false;
+                PortablePackage.TryDeleteDirectory(scratch);
             }
         }
 
