@@ -11,6 +11,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.Views.Dialogs;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
@@ -46,6 +47,14 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         /// chosen parts are materialized into a scratch folder and zipped from there.
         /// </summary>
         private void ExportTheme_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => ExportThemeFile_Click(sender, e),
+                () => ShareTheme_Click(sender, e));
+        }
+
+        private void ExportThemeFile_Click(object sender, RoutedEventArgs e)
         {
             var store = _plugin?.ThemePackPortableStore;
             if (store == null)
