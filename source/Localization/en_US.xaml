@@ -1637,7 +1637,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Rights">Everything in this package is my own work or licensed for redistribution, and it contains no personal progress I want to keep private.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">Uploading {0}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. The Workshop reviews it before it appears; follow progress at {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. It appears in the Workshop once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_MySubmissions">My submissions</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Status_Validating">Checking</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Status_NeedsChanges">Needs changes</sys:String>
