@@ -34,14 +34,14 @@
 
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_Presets}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Presets_Header}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                     <Border Style="{StaticResource SettingGroupCardStyle}" Grid.IsSharedSizeScope="True">
                         <StackPanel>
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_Appearance_Preset}"
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_Palettes}"
                                                  Margin="0">
                               <StackPanel Orientation="Horizontal">
                                 <ComboBox x:Name="RarityPalettePresetComboBox"
@@ -89,7 +89,7 @@
                             <!-- Saved color sets: .pacolors files under the plugin's data folder.
                                  Imported files and Workshop installs land here; Apply copies one
                                  onto the current colors. -->
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Workshop_Kind_Colors}"
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Presets_Header}"
                                                  Margin="0">
                               <StackPanel Orientation="Horizontal">
                                 <ComboBox x:Name="ColorSetPresetSelector"
@@ -127,26 +127,7 @@
                                         MinWidth="58"
                                         Click="ImportColors_Click"/>
                               </StackPanel>
-                            </controls:SettingRow>
-
-
-                            <!-- The whole global look as one .patheme bundle: colors, unlock
-                                 sounds, notification and frame styles, any subset, each a
-                                 checkbox on export and on import. -->
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Workshop_Share_Theme}"
-                                                 Margin="0">
-                              <StackPanel Orientation="Horizontal">
-                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
-                                        MinWidth="58"
-                                        Click="ExportTheme_Click"/>
-
-                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}"
-                                        Margin="8,0,0,0"
-                                        MinWidth="58"
-                                        Click="ImportTheme_Click"/>
-                              </StackPanel>
-                            </controls:SettingRow>
-                        </StackPanel>
+                            </controls:SettingRow>                        </StackPanel>
                     </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_BadgeColors}"
