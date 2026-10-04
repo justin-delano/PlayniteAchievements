@@ -280,6 +280,32 @@
         </Setter>
     </Style>
 
+    <!-- Import and Export button faces: the editor toolbar's download and upload glyphs before
+         the localized word, so every Import and Export in the plugin reads the same. Content
+         stays the localized string; the template only adds the glyph. -->
+    <DataTemplate x:Key="PlayAch.ButtonContent.Import">
+        <StackPanel Orientation="Horizontal">
+            <controls:GlyphIcon Glyph="&#xEF08;"
+                                Size="14"
+                                Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+        </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="PlayAch.ButtonContent.Export">
+        <StackPanel Orientation="Horizontal">
+            <controls:GlyphIcon Glyph="&#xF01C;"
+                                Size="14"
+                                Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+        </StackPanel>
+    </DataTemplate>
+
     <!-- Small round "i" for explaining a surface, sized to sit beside a caption without pulling
          weight away from it. One definition so the score surfaces that carry it (the Scores widget
          and the start page score card) stay identical. -->
