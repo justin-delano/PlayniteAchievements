@@ -134,6 +134,10 @@ namespace PlayniteAchievements.ViewModels
         // Fire-test preview only: forces the template source for this notification. Null for
         // real unlocks. Read by the notification service when resolving the wave's template.
         internal Services.UI.NotificationTemplatePreviewSource? PreviewTemplateSource => _args.PreviewTemplateSource;
+
+        // Fire-test preview only: the exact template to render, which wins over
+        // PreviewTemplateSource. Null for real unlocks. Read by ToastSurfaceFactory.
+        internal System.Windows.DataTemplate PreviewTemplateOverride => _args.PreviewTemplateOverride;
         internal string AchievementName => ResolveAchievementName(_args);
         internal int AchievementNumber => _args.AchievementNumber;
 
