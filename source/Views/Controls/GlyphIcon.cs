@@ -39,6 +39,21 @@ namespace PlayniteAchievements.Views.Controls
         private Geometry _geometry;
         private bool _geometryResolved;
 
+        public GlyphIcon()
+        {
+            // The first paint can land before the font behind a pack URI answers outline
+            // queries, and nothing else invalidates a header glyph afterwards; paint again once
+            // the element is loaded and whenever it comes back into view.
+            Loaded += (sender, args) => InvalidateVisual();
+            IsVisibleChanged += (sender, args) =>
+            {
+                if (args.NewValue is bool visible && visible)
+                {
+                    InvalidateVisual();
+                }
+            };
+        }
+
         /// <summary>The character to draw, as the same string a TextBlock would show.</summary>
         public string Glyph
         {
@@ -92,8 +107,10 @@ namespace PlayniteAchievements.Views.Controls
 
             if (!_geometryResolved)
             {
-                _geometryResolved = true;
                 _geometry = ResolveGeometry(FontFamily, glyph[0], size);
+                // Only a successful resolution is final; a failed one is asked again on the next
+                // paint, since the fallback text below is what shows until then.
+                _geometryResolved = _geometry != null;
             }
 
             if (_geometry != null)
