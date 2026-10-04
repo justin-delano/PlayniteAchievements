@@ -106,6 +106,13 @@ internal static class SlideCadenceProbe
         /// software readback and no UpdateLayeredWindow call.
         /// </summary>
         TransformDwm,
+
+        /// <summary>
+        /// As shipped, but the storyboard is paused and seeked every composed frame to the real time
+        /// since Begin (a Stopwatch), instead of advancing on WPF's predicted frame time. Same curve,
+        /// same duration; only the time base differs.
+        /// </summary>
+        TransformClock,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -184,6 +191,61 @@ internal static class SlideCadenceProbe
         public double MedianMs;
         public double MaxGapMs;
         public double DwmHz;
+        public double SkewSdMs = double.NaN;
+        public double ErrMeanPx = double.NaN;
+        public double ErrSdPx = double.NaN;
+    }
+
+    /// <summary>
+    /// Per-frame accuracy of a transform slide against the real clock. Skew is the real time at the
+    /// frame callback minus WPF's RenderingTime; only its spread matters, since a constant offset is
+    /// just latency. Error is the card's offset minus where the curve puts it at the real time, in
+    /// DIP: a steady error is invisible, its spread is what reads as uneven steps.
+    /// </summary>
+    private sealed class SlideAccuracy
+    {
+        private readonly List<double> _skew = new List<double>();
+        private readonly List<double> _error = new List<double>();
+
+        public void Add(double renderingMs, double wallMs, double errorDip)
+        {
+            _skew.Add(wallMs - renderingMs);
+            _error.Add(errorDip);
+        }
+
+        public double SkewSdMs => StdDev(_skew);
+
+        public double ErrMeanPx => _error.Count == 0 ? double.NaN : Mean(_error);
+
+        public double ErrSdPx => StdDev(_error);
+
+        private static double Mean(List<double> values)
+        {
+            var sum = 0d;
+            foreach (var v in values)
+            {
+                sum += v;
+            }
+
+            return sum / values.Count;
+        }
+
+        private static double StdDev(List<double> values)
+        {
+            if (values.Count < 2)
+            {
+                return double.NaN;
+            }
+
+            var mean = Mean(values);
+            var sum = 0d;
+            foreach (var v in values)
+            {
+                sum += (v - mean) * (v - mean);
+            }
+
+            return Math.Sqrt(sum / (values.Count - 1));
+        }
     }
 
     private static double _displayPeriodMs = 1000d / 60d;
@@ -415,6 +477,7 @@ internal static class SlideCadenceProbe
             await WaitFrames(3, 300);
 
             var ticks = new TickCounter();
+            var accuracy = new SlideAccuracy();
             var dwmStartFrames = DwmFrameCount();
             var dwmClock = System.Diagnostics.Stopwatch.StartNew();
             var finished = new System.Threading.Tasks.TaskCompletionSource<bool>(
@@ -483,6 +546,9 @@ internal static class SlideCadenceProbe
                 var dueTolerance = _displayPeriodMs / 2d;
                 var nextDueMs = sampleIntervalMs;
                 byte[] previous = null;
+                var clockDriven = mechanism == Mechanism.TransformClock;
+                var wall = new System.Diagnostics.Stopwatch();
+                var ease = animation.EasingFunction;
 
                 EventHandler tick = null;
                 tick = (s, e) =>
@@ -491,6 +557,23 @@ internal static class SlideCadenceProbe
                     {
                         return;
                     }
+
+                    var wallMs = wall.Elapsed.TotalMilliseconds;
+                    if (clockDriven)
+                    {
+                        // The real clock decides where the card is: seek the (paused) storyboard to
+                        // the wall time since Begin, and judge completion by that same time.
+                        storyboard.SeekAlignedToLastTick(
+                            host, TimeSpan.FromMilliseconds(Math.Min(wallMs, SlideDurationMs)),
+                            TimeSeekOrigin.BeginTime);
+                        elapsed = wallMs;
+                    }
+
+                    var progress = Math.Min(1d, wallMs / SlideDurationMs);
+                    accuracy.Add(
+                        (e as RenderingEventArgs)?.RenderingTime.TotalMilliseconds ?? wallMs,
+                        wallMs,
+                        slide.Y - (travel * (1d - ease.Ease(progress))));
 
                     if (sampling && elapsed >= nextDueMs - dueTolerance)
                     {
@@ -513,6 +596,12 @@ internal static class SlideCadenceProbe
                 slide.Y = 0;
                 CompositionTarget.Rendering += tick;
                 storyboard.Begin(host, true);
+                if (clockDriven)
+                {
+                    storyboard.Pause(host);
+                }
+
+                wall.Start();
                 try
                 {
                     await System.Threading.Tasks.Task.WhenAny(
@@ -532,6 +621,9 @@ internal static class SlideCadenceProbe
                 MedianMs = ticks.MedianIntervalMs,
                 MaxGapMs = ticks.MaxIntervalMs,
                 DwmHz = (DwmFrameCount() - dwmStartFrames) * 1000d / Math.Max(1d, dwmClock.Elapsed.TotalMilliseconds),
+                SkewSdMs = accuracy.SkewSdMs,
+                ErrMeanPx = accuracy.ErrMeanPx,
+                ErrSdPx = accuracy.ErrSdPx,
             };
         }
         finally
@@ -866,8 +958,9 @@ internal static class SlideCadenceProbe
     private static void Report(List<Result> results)
     {
         Console.WriteLine(
-            "{0,-20} {1,7} {2,9} {3,9} {4,9} {5,9} {6,9}",
-            "mechanism", "frames", "medianMs", "sustained", "% of max", "maxGapMs", "dwmHz");
+            "{0,-20} {1,7} {2,9} {3,9} {4,9} {5,9} {6,9} {7,8} {8,8} {9,8}",
+            "mechanism", "frames", "medianMs", "sustained", "% of max", "maxGapMs", "dwmHz",
+            "skewSd", "errMean", "errSd");
 
         foreach (Mechanism mechanism in Enum.GetValues(typeof(Mechanism)))
         {
@@ -883,14 +976,17 @@ internal static class SlideCadenceProbe
             var sustained = mid.MedianMs > 0 ? 1000d / mid.MedianMs : 0d;
 
             Console.WriteLine(
-                "{0,-20} {1,7} {2,9:0.00} {3,7:0.0}Hz {4,8:0}% {5,9:0.0} {6,7:0.0}Hz",
+                "{0,-20} {1,7} {2,9:0.00} {3,7:0.0}Hz {4,8:0}% {5,9:0.0} {6,7:0.0}Hz {7,6:0.00}ms {8,6:0.0}px {9,6:0.0}px",
                 mechanism,
                 mid.Frames,
                 mid.MedianMs,
                 sustained,
                 100d * sustained / (1000d / _displayPeriodMs),
                 mid.MaxGapMs,
-                mid.DwmHz);
+                mid.DwmHz,
+                mid.SkewSdMs,
+                mid.ErrMeanPx,
+                mid.ErrSdPx);
         }
 
         Console.WriteLine();
