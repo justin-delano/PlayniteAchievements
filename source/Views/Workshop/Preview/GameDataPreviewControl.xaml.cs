@@ -68,9 +68,11 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         /// <summary>Decode size of a grid icon, as the grid's icon cell requests it.</summary>
         internal const int GridIconDecodePixel = 128;
 
-        // The grid takes the user's View Achievements layout live, and a fixed set of columns in
-        // the published image, so neither the sharer's layout nor their unlock dates reach it.
-        private const string LiveColumnSettingsKey = "SingleGame";
+        // The live grids keep a column layout of their own (right-click a header to show or hide
+        // columns), so hiding a column here leaves View Achievements alone. The published image
+        // uses a fixed set of columns, so neither the sharer's layout nor their unlock dates
+        // reach it. Both keys start with "WorkshopPreview", which drops the Captures column.
+        private const string LiveColumnSettingsKey = "WorkshopPreviewGrid";
         private const string NeutralColumnSettingsKey = "WorkshopPreview";
 
         private static readonly HashSet<string> NeutralColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -297,6 +299,8 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             if (NeutralRender)
             {
                 grid.ColumnSettingsKey = NeutralColumnSettingsKey;
+                grid.AllowLayoutPersistence = false;
+                grid.AllowColumnVisibilityMenu = false;
                 grid.ShowRarityGlow = false;
                 grid.ColorNamesByRarity = false;
                 grid.ColorRarityColumnsByRarity = false;

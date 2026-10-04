@@ -176,16 +176,12 @@
         <controls:AchievementDataGridControl x:Name="AfterGrid"
                                              Grid.Row="3"
                                              ShowControlBar="False"
-                                             AllowLayoutPersistence="False"
-                                             AllowColumnVisibilityMenu="False"
                                              AllowDisplaySettingsMenu="False"
                                              DataGridMaxHeight="{x:Static preview:GameDataPreviewControl.UnboundedHeight}"
                                              Visibility="Collapsed"/>
         <controls:AchievementDataGridControl x:Name="BeforeGrid"
                                              Grid.Row="3"
                                              ShowControlBar="False"
-                                             AllowLayoutPersistence="False"
-                                             AllowColumnVisibilityMenu="False"
                                              AllowDisplaySettingsMenu="False"
                                              DataGridMaxHeight="{x:Static preview:GameDataPreviewControl.UnboundedHeight}"
                                              Visibility="Collapsed"/>
