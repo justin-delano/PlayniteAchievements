@@ -1,0 +1,70 @@
+<UserControl x:Class="PlayniteAchievements.Views.Workshop.Preview.ColorsPreviewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:preview="clr-namespace:PlayniteAchievements.Views.Workshop.Preview"
+             mc:Ignorable="d"
+             d:DesignHeight="480" d:DesignWidth="480">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <helpers:SharedResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- One read-only swatch row: the color, what it colors, and its value. -->
+            <DataTemplate x:Key="SwatchRowTemplate" DataType="{x:Type preview:ColorSwatchRow}">
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Width="26" Height="26"
+                            CornerRadius="3"
+                            Margin="0,0,10,0"
+                            Background="{Binding Swatch}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                            Visibility="{Binding HasSwatch, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Label}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Value}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"/>
+                </Grid>
+            </DataTemplate>
+
+            <Style x:Key="GroupHeaderStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <StackPanel x:Name="RarityGroup" Margin="0,0,0,16">
+            <TextBlock Text="{DynamicResource LOCPlayAch_Column_Rarity}" Style="{StaticResource GroupHeaderStyle}"/>
+            <ItemsControl x:Name="RarityList" ItemTemplate="{StaticResource SwatchRowTemplate}"/>
+        </StackPanel>
+
+        <StackPanel x:Name="ProviderGroup" Margin="0,0,0,16">
+            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_ProviderColors}" Style="{StaticResource GroupHeaderStyle}"/>
+            <ItemsControl x:Name="ProviderList" ItemTemplate="{StaticResource SwatchRowTemplate}"/>
+        </StackPanel>
+
+        <StackPanel x:Name="ResourceGroup">
+            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_AdvancedResources}" Style="{StaticResource GroupHeaderStyle}"/>
+            <ItemsControl x:Name="ResourceList" ItemTemplate="{StaticResource SwatchRowTemplate}"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>
