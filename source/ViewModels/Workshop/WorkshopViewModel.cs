@@ -425,6 +425,15 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 installed = _registry.Find(row.Id);
             }
 
+            // The registry remembers installs; it does not see presets deleted from a card or a
+            // game whose custom data was cleared. Check the thing itself and drop stale records,
+            // so Installed means present, not merely installed once.
+            if (installed != null && !IsStillPresent(row, installed))
+            {
+                _registry.Forget(row.Id, installed.PlayniteGameId);
+                installed = null;
+            }
+
             row.IsInstalled = installed != null;
             row.HasUpdate = installed != null && WorkshopInstalledRegistry.IsNewer(row.Version, installed.Version);
         }
@@ -446,6 +455,48 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
 
             OnPropertyChanged(nameof(HasSubmissions));
+        }
+
+        /// <summary>
+        /// Whether what an install created still exists: the preset named after the item for
+        /// looks (any part for a bundle), a showcase page by that name, or custom data on the
+        /// recorded game. Unknown kinds are taken as present.
+        /// </summary>
+        private bool IsStillPresent(WorkshopItemViewModel row, WorkshopInstalledItem installed)
+        {
+            try
+            {
+                var name = row.Name;
+                switch (row.Kind)
+                {
+                    case WorkshopItemKind.Colors:
+                        return _plugin.ColorPresetStore.Exists(name);
+                    case WorkshopItemKind.UnlockSounds:
+                        return _plugin.UnlockSoundPresetStore.Exists(name);
+                    case WorkshopItemKind.NotificationStyle:
+                        return _plugin.NotificationStylePresetStore.PresetExists(isFrame: false, name);
+                    case WorkshopItemKind.ScreenshotFrame:
+                        return _plugin.NotificationStylePresetStore.PresetExists(isFrame: true, name);
+                    case WorkshopItemKind.Bundle:
+                        return _plugin.ColorPresetStore.Exists(name)
+                               || _plugin.UnlockSoundPresetStore.Exists(name)
+                               || _plugin.NotificationStylePresetStore.PresetExists(isFrame: false, name)
+                               || _plugin.NotificationStylePresetStore.PresetExists(isFrame: true, name);
+                    case WorkshopItemKind.ShowcasePage:
+                        return _plugin.Settings?.Persisted?.Showcase?.Pages?.Any(page =>
+                                   string.Equals(page?.Name, name, StringComparison.OrdinalIgnoreCase)) ?? true;
+                    case WorkshopItemKind.GameCustomData:
+                        return !(installed.PlayniteGameId is Guid gameId)
+                               || (_plugin.GameCustomDataStore?.HasPortableData(gameId) ?? true);
+                    default:
+                        return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Could not verify the installed state of {row.Id}.");
+                return true;
+            }
         }
 
         private void RebuildInstalledList()
