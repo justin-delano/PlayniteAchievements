@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Services.Achievements
                 nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable),
                 nameof(PersistedSettings.SeparateLockedIconEnabledGameIds),
                 nameof(PersistedSettings.ExcludedFromSummariesGameIds),
+                nameof(PersistedSettings.IncludeHiddenGamesInSummaries),
                 nameof(PersistedSettings.ManualCapstones),
                 nameof(PersistedSettings.AchievementCategoryOverrides),
                 nameof(PersistedSettings.AchievementCategoryTypeOverrides)
@@ -645,13 +646,14 @@ namespace PlayniteAchievements.Services.Achievements
         }
 
         /// <summary>
-        /// Games hidden in Playnite are left out of summaries the same way as Excluded from
-        /// Summaries. They join only this resolved set, never the custom-data flag, so the
-        /// game menu and Manage Achievements keep showing the user's own exclusion.
+        /// With IncludeHiddenGamesInSummaries off, games hidden in Playnite are left out of
+        /// summaries the same way as Excluded from Summaries. They join only this resolved set,
+        /// never the custom-data flag, so the game menu and Manage Achievements keep showing
+        /// the user's own exclusion.
         /// </summary>
         private void AddPlayniteHiddenGameIds(HashSet<Guid> excluded)
         {
-            if (excluded == null)
+            if (excluded == null || Persisted?.IncludeHiddenGamesInSummaries != false)
             {
                 return;
             }
@@ -1709,7 +1711,7 @@ namespace PlayniteAchievements.Services.Achievements
         /// </summary>
         public void InvalidateSummariesForPlayniteGames(IReadOnlyList<Guid> gameIds)
         {
-            if (gameIds == null || gameIds.Count == 0)
+            if (gameIds == null || gameIds.Count == 0 || Persisted?.IncludeHiddenGamesInSummaries != false)
             {
                 return;
             }

@@ -59,6 +59,7 @@ namespace PlayniteAchievements.Models.Settings
             // Update and Refresh Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
             target.IncludeHiddenGamesInBulkScans = source.IncludeHiddenGamesInBulkScans;
+            target.IncludeHiddenGamesInSummaries = source.IncludeHiddenGamesInSummaries;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
             target.EnableFriendsPeriodicUpdates = source.EnableFriendsPeriodicUpdates;
             target.FriendsPeriodicUpdateHours = source.FriendsPeriodicUpdateHours;

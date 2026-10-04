@@ -384,7 +384,7 @@ namespace PlayniteAchievements.Services.Overview
             }
 
             var playniteGame = ResolvePlayniteGame(gameData);
-            if (playniteGame?.Hidden == true)
+            if (IsLeftOutAsHidden(settings, playniteGame))
             {
                 return null;
             }
@@ -644,7 +644,7 @@ namespace PlayniteAchievements.Services.Overview
                 // full build and turned into placeholders on the next delta.
                 if (gameData?.Achievements == null ||
                     gameData.ExcludedFromSummaries ||
-                    ResolvePlayniteGame(gameData)?.Hidden == true)
+                    IsLeftOutAsHidden(settings, ResolvePlayniteGame(gameData)))
                 {
                     continue;
                 }
@@ -924,6 +924,14 @@ namespace PlayniteAchievements.Services.Overview
             var presentation = CreateGamePresentation(playniteGame);
             cache[playniteGameId.Value] = presentation;
             return presentation;
+        }
+
+        private static bool IsLeftOutAsHidden(
+            PlayniteAchievementsSettings settings,
+            Playnite.SDK.Models.Game playniteGame)
+        {
+            return playniteGame?.Hidden == true &&
+                   settings?.Persisted?.IncludeHiddenGamesInSummaries == false;
         }
 
         private Playnite.SDK.Models.Game ResolvePlayniteGame(GameAchievementData gameData)

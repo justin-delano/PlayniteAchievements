@@ -63,6 +63,7 @@ namespace PlayniteAchievements.Models.Settings
         private string _globalLanguage = "english";
         private bool _enablePeriodicUpdates = true;
         private bool _includeHiddenGamesInBulkScans = true;
+        private bool _includeHiddenGamesInSummaries = true;
         private int _periodicUpdateHours = 6;
         private bool _enableFriendsPeriodicUpdates = false;
         private int _friendsPeriodicUpdateHours = 24;
@@ -850,6 +851,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _includeHiddenGamesInBulkScans;
             set => SetValue(ref _includeHiddenGamesInBulkScans, value);
+        }
+
+        /// <summary>
+        /// When false, games marked hidden in Playnite are left out of the Overview window,
+        /// showcase widgets and theme library data. Their own views keep working.
+        /// </summary>
+        public bool IncludeHiddenGamesInSummaries
+        {
+            get => _includeHiddenGamesInSummaries;
+            set => SetValue(ref _includeHiddenGamesInSummaries, value);
         }
 
         /// <summary>
@@ -3136,6 +3147,7 @@ namespace PlayniteAchievements.Models.Settings
                 // Update and Refresh Settings
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
+                IncludeHiddenGamesInSummaries = this.IncludeHiddenGamesInSummaries,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableFriendsPeriodicUpdates = this.EnableFriendsPeriodicUpdates,
                 FriendsPeriodicUpdateHours = this.FriendsPeriodicUpdateHours,
