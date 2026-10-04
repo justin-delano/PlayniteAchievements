@@ -120,12 +120,24 @@ namespace PlayniteAchievements
             System.Windows.Window owner,
             Guid? gameId = null,
             string pageId = null,
-            System.Collections.Generic.IReadOnlyDictionary<Services.Workshop.ThemePackParts, string> themePartFiles = null)
+            System.Collections.Generic.IReadOnlyDictionary<Services.Workshop.ThemePackParts, string> themePartFiles = null,
+            string packagePath = null,
+            string defaultName = null)
         {
-            var candidate = WorkshopShareService.ListCandidates().FirstOrDefault(c =>
-                c.Kind == kind
-                && (gameId == null || c.GameId == gameId)
-                && (pageId == null || string.Equals(c.PageId, pageId, StringComparison.Ordinal)));
+            // A saved preset is shared as the file it already is; everything else is one of the
+            // live-settings candidates the share service lists.
+            var candidate = !string.IsNullOrWhiteSpace(packagePath)
+                ? new Services.Workshop.WorkshopShareCandidate
+                {
+                    Kind = kind,
+                    Label = ViewModels.Workshop.WorkshopItemViewModel.KindLabelFor(kind) + " \u00b7 " + defaultName,
+                    DefaultName = defaultName,
+                    PackagePath = packagePath
+                }
+                : WorkshopShareService.ListCandidates().FirstOrDefault(c =>
+                    c.Kind == kind
+                    && (gameId == null || c.GameId == gameId)
+                    && (pageId == null || string.Equals(c.PageId, pageId, StringComparison.Ordinal)));
             if (candidate == null)
             {
                 return false;
