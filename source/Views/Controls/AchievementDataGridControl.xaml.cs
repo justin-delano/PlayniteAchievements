@@ -585,6 +585,24 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Identifies the HighlightedItems dependency property.
+        /// </summary>
+        public static readonly DependencyProperty HighlightedItemsProperty =
+            DependencyProperty.Register(nameof(HighlightedItems), typeof(ICollection<AchievementDisplayItem>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, (d, e) => ((AchievementDataGridControl)d).UpdateRealizedRowHeights()));
+
+        /// <summary>
+        /// Rows drawn with the highlight background, or null for none. The row background is set
+        /// on the row itself as each row loads: a style trigger cannot set it, because the
+        /// DataGrid's own RowBackground outranks a row style.
+        /// </summary>
+        public ICollection<AchievementDisplayItem> HighlightedItems
+        {
+            get => (ICollection<AchievementDisplayItem>)GetValue(HighlightedItemsProperty);
+            set => SetValue(HighlightedItemsProperty, value);
+        }
+
+        /// <summary>
         /// Identifies the AllowLayoutPersistence dependency property.
         /// When false, the control reads persisted layout state but never writes changes back.
         /// </summary>
@@ -2900,6 +2918,7 @@ namespace PlayniteAchievements.Views.Controls
         private void AchievementsDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             ApplyFixedRowHeight(e.Row);
+            ApplyRowHighlight(e.Row);
         }
 
         private void UpdateRealizedRowHeights()
@@ -2914,7 +2933,25 @@ namespace PlayniteAchievements.Views.Controls
                 if (AchievementsDataGrid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
                 {
                     ApplyFixedRowHeight(row);
+                    ApplyRowHighlight(row);
                 }
+            }
+        }
+
+        private void ApplyRowHighlight(DataGridRow row)
+        {
+            if (row == null)
+            {
+                return;
+            }
+
+            if (HighlightedItems?.Contains(row.Item as AchievementDisplayItem) == true)
+            {
+                row.SetResourceReference(Control.BackgroundProperty, "PlayAch.Brush.Grid.RowHoverBackground");
+            }
+            else if (row.ReadLocalValue(Control.BackgroundProperty) != DependencyProperty.UnsetValue)
+            {
+                row.ClearValue(Control.BackgroundProperty);
             }
         }
 
