@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Media;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
@@ -12,72 +11,22 @@ using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
-    /// <summary>A pie legend row: color swatch, label, and formatted count.</summary>
-    public sealed class PieLegendRowViewModel
-    {
-        public PieLegendRowViewModel(LegendItem item)
-        {
-            Label = item?.Label ?? string.Empty;
-            CountText = (item?.Count ?? 0).ToString("N0", FormattingCulture.Current);
-            Swatch = CreateSwatch(item?.ColorHex);
-        }
-
-        public Brush Swatch { get; }
-
-        public string Label { get; }
-
-        public string CountText { get; }
-
-        private static Brush CreateSwatch(string colorHex)
-        {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(colorHex) &&
-                    new BrushConverter().ConvertFromString(colorHex) is Brush brush)
-                {
-                    if (brush.CanFreeze)
-                    {
-                        brush.Freeze();
-                    }
-
-                    return brush;
-                }
-            }
-            catch
-            {
-                // Fall through to a neutral swatch when the provider color cannot be parsed.
-            }
-
-            var fallback = new SolidColorBrush(Colors.Gray);
-            fallback.Freeze();
-            return fallback;
-        }
-    }
-
     /// <summary>
     /// Backs the Pie widget by reusing PieChartWithRadialIcons/PieChartViewModel. Builds the chart
-    /// for the configured distribution (completed games / provider / rarity / trophy) plus an
-    /// optional legend (a per-widget setting) capped to 8 rows. A fresh chart is produced per
-    /// refresh so the bound control always reflects the latest data.
+    /// for the configured distribution (completed games / provider / rarity / trophy); the legend
+    /// and its side are per-widget settings that the chart control renders. A fresh chart is
+    /// produced per refresh so the bound control always reflects the latest data.
     /// </summary>
     public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase, IDisposable
     {
         private PieChartViewModel _chart = new PieChartViewModel();
-        private bool _showLegend = true;
 
         public PieChartViewModel Chart { get => _chart; private set => SetValue(ref _chart, value); }
-
-        /// <summary>Per-widget option; the legend shows at every size when enabled.</summary>
-        public bool ShowLegend { get => _showLegend; private set => SetValue(ref _showLegend, value); }
-
-        public BulkObservableCollection<PieLegendRowViewModel> LegendRows { get; } =
-            new BulkObservableCollection<PieLegendRowViewModel>();
 
         protected override void Refresh()
         {
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
-            ShowLegend = ShowcaseWidgetOptions.GetPieShowLegend(Projection?.Instance);
             var chart = new PieChartViewModel
             {
                 // Both are applied by each Set*Data call, so they must be assigned before
@@ -85,7 +34,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 SmallSliceMode = ShowcaseWidgetOptions.GetPieSmallSliceMode(Projection?.Instance),
                 IncludeLocked = ShowcaseWidgetOptions.GetPieIncludeLocked(Projection?.Instance),
                 CenterMode = ShowcaseWidgetOptions.GetPieCenterMode(Projection?.Instance),
-                ShowIcons = ShowcaseWidgetOptions.GetPieShowIcons(Projection?.Instance)
+                ShowIcons = ShowcaseWidgetOptions.GetPieShowIcons(Projection?.Instance),
+                ShowLegend = ShowcaseWidgetOptions.GetPieShowLegend(Projection?.Instance),
+                LegendPosition = ShowcaseWidgetOptions.GetPieLegendPosition(Projection?.Instance)
             };
             switch (mode)
             {
@@ -167,10 +118,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             {
                 previous?.Dispose();
             }
-
-            CollectionHelper.Replace(LegendRows, (chart.LegendItems ?? Enumerable.Empty<LegendItem>())
-                .Take(8)
-                .Select(item => new PieLegendRowViewModel(item)));
         }
 
         /// <summary>
