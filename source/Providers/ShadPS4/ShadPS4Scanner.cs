@@ -28,6 +28,10 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly IPlayniteAPI _playniteApi;
         private readonly string _pluginUserDataPath;
 
+        // Each parsed game's trophy-set title, held from parse until its rarity enrichment.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, string> _trophySetTitles =
+            new System.Collections.Concurrent.ConcurrentDictionary<Guid, string>();
+
         // PS4's RTC epoch is January 1, 2008 00:00:00 UTC
         private static readonly DateTime Ps4Epoch = new DateTime(2008, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         private const long UnixTimestampMaxReasonableSeconds = 4102444800; // 2100-01-01 00:00:00 UTC
@@ -129,14 +133,37 @@ namespace PlayniteAchievements.Providers.ShadPS4
             ExophaseMetadataEnricher rarityEnricher,
             CancellationToken cancel)
         {
+            string trophySetTitle = null;
+            if (game != null)
+            {
+                _trophySetTitles.TryRemove(game.Id, out trophySetTitle);
+            }
+
             if (rarityEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
             {
                 return;
             }
 
             await rarityEnricher
-                .EnrichAsync(game, data.Achievements, "ps4", "PSN", cancel, regionHint: _provider?.ResolveRegionHintForGame(game))
+                .EnrichAsync(
+                    game,
+                    data.Achievements,
+                    "ps4",
+                    "PSN",
+                    cancel,
+                    regionHint: _provider?.ResolveRegionHintForGame(game),
+                    searchName: trophySetTitle)
                 .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The trophy set's base-language title from a TROP.XML-style document's root
+        /// &lt;title-name&gt;, or null when absent.
+        /// </summary>
+        internal static string ReadTrophySetTitle(XDocument document)
+        {
+            var title = document?.Root?.Element("title-name")?.Value?.Trim();
+            return string.IsNullOrWhiteSpace(title) ? null : title;
         }
 
         private async Task<Dictionary<string, string>> BuildTitleIdCacheAsync(CancellationToken cancel)
@@ -298,6 +325,13 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 }
 
                 var localizedDoc = TryLoadLocalizedDocument(localizedXmlFolder, ps4Locale, cancel);
+
+                // Base-language title (the localized TROP_XX.XML would give a translated one).
+                var trophySetTitle = ReadTrophySetTitle(metadataDoc) ?? ReadTrophySetTitle(doc);
+                if (game != null && trophySetTitle != null)
+                {
+                    _trophySetTitles[game.Id] = trophySetTitle;
+                }
 
                 var metadataById = BuildTrophyElementDictionary(metadataDoc);
                 var localizedById = BuildTrophyElementDictionary(localizedDoc);
