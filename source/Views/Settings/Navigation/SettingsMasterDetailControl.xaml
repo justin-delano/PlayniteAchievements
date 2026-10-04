@@ -41,6 +41,8 @@
 
                         <TextBlock Text="&#xED1B;"
                                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                   TextOptions.TextFormattingMode="Display"
+                                   TextOptions.TextRenderingMode="Grayscale"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="{StaticResource PlayAch.Opacity.Disabled}"
                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
