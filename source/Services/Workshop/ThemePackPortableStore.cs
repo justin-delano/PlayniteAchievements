@@ -144,23 +144,16 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new InvalidOperationException("Select at least one part to export.");
             }
 
-            var manifest = new ThemePackFile
-            {
-                Kind = ThemePackFile.ThemeKind,
-                Version = CurrentVersion
-            };
-
             var scratch = PortablePackage.CreateScratchDirectory("ThemeExport");
             try
             {
-                var embedded = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var files = new Dictionary<ThemePackParts, string>();
 
                 if (parts.HasFlag(ThemePackParts.Colors))
                 {
                     var colorsPath = Path.Combine(scratch, "colors" + ColorPackPortableStore.PackageFileExtension);
                     _colorStore.Export(persisted, colorsPath);
-                    embedded[ColorsEntryName] = colorsPath;
-                    manifest.Parts.Add(ThemePackParts.Colors.ToString());
+                    files[ThemePackParts.Colors] = colorsPath;
                 }
 
                 if (parts.HasFlag(ThemePackParts.Sounds) && resolvedSounds != null)
@@ -169,8 +162,7 @@ namespace PlayniteAchievements.Services.Workshop
                     try
                     {
                         _soundStore.Export(resolvedSounds, soundsPath);
-                        embedded[SoundsEntryName] = soundsPath;
-                        manifest.Parts.Add(ThemePackParts.Sounds.ToString());
+                        files[ThemePackParts.Sounds] = soundsPath;
                     }
                     catch (InvalidOperationException ex)
                     {
@@ -184,32 +176,105 @@ namespace PlayniteAchievements.Services.Workshop
                 {
                     var toastPath = Path.Combine(scratch, "toast" + NotificationStylePortableStore.ToastPackageFileExtension);
                     _styleStore.ExportSurfacePackage(isFrame: false, style, toastPath, toastTemplateXaml);
-                    embedded[ToastEntryName] = toastPath;
-                    manifest.Parts.Add(ThemePackParts.Toast.ToString());
+                    files[ThemePackParts.Toast] = toastPath;
                 }
 
                 if (parts.HasFlag(ThemePackParts.Frame))
                 {
                     var framePath = Path.Combine(scratch, "frame" + NotificationStylePortableStore.FramePackageFileExtension);
                     _styleStore.ExportSurfacePackage(isFrame: true, style, framePath, frameTemplateXaml);
-                    embedded[FrameEntryName] = framePath;
-                    manifest.Parts.Add(ThemePackParts.Frame.ToString());
+                    files[ThemePackParts.Frame] = framePath;
                 }
 
-                if (manifest.Parts.Count == 0)
+                if (files.Count == 0)
                 {
                     throw new InvalidOperationException("None of the selected parts has anything to export.");
                 }
 
-                PortablePackage.Write(destinationPath, archive =>
-                {
-                    PortablePackage.AddJson(archive, ManifestEntryName, manifest, WriteSettings);
-                    PortablePackage.AddFiles(archive, embedded);
-                });
+                ExportParts(destinationPath, files);
             }
             finally
             {
                 PortablePackage.TryDeleteDirectory(scratch);
+            }
+        }
+
+        /// <summary>
+        /// Writes a bundle from ready-made standalone packages, one per part: colors as a
+        /// .pacolors, sounds as a .pasounds, toast and frame as .panotif and .paframe. Each file
+        /// is checked to be a valid package of its kind before it is embedded, so a preset file
+        /// can be handed in directly.
+        /// </summary>
+        public void ExportParts(string destinationPath, IReadOnlyDictionary<ThemePackParts, string> partFiles)
+        {
+            if (!IsPackagePath(destinationPath))
+            {
+                throw new InvalidOperationException($"Destination path must end with {PackageFileExtension}.");
+            }
+
+            if (partFiles == null || partFiles.Count == 0)
+            {
+                throw new InvalidOperationException("Select at least one part to export.");
+            }
+
+            var manifest = new ThemePackFile
+            {
+                Kind = ThemePackFile.ThemeKind,
+                Version = CurrentVersion
+            };
+            var embedded = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var part in new[] { ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
+            {
+                if (!partFiles.TryGetValue(part, out var file) || string.IsNullOrWhiteSpace(file))
+                {
+                    continue;
+                }
+
+                if (!File.Exists(file))
+                {
+                    throw new FileNotFoundException($"The {part} part file is missing.", file);
+                }
+
+                ValidatePart(part, file);
+                embedded[EntryNameFor(part)] = file;
+                manifest.Parts.Add(part.ToString());
+            }
+
+            if (manifest.Parts.Count == 0)
+            {
+                throw new InvalidOperationException("None of the selected parts has anything to export.");
+            }
+
+            PortablePackage.Write(destinationPath, archive =>
+            {
+                PortablePackage.AddJson(archive, ManifestEntryName, manifest, WriteSettings);
+                PortablePackage.AddFiles(archive, embedded);
+            });
+        }
+
+        private void ValidatePart(ThemePackParts part, string file)
+        {
+            switch (part)
+            {
+                case ThemePackParts.Colors:
+                    _colorStore.Read(file);
+                    break;
+                case ThemePackParts.Sounds:
+                    _soundStore.Inspect(file);
+                    break;
+                case ThemePackParts.Toast:
+                case ThemePackParts.Frame:
+                {
+                    var contents = _styleStore.InspectPackage(file);
+                    var ok = part == ThemePackParts.Frame ? contents.HasFrameStyle : contents.HasToastStyle;
+                    if (!ok)
+                    {
+                        throw new InvalidOperationException($"The {part} part file does not carry that style.");
+                    }
+
+                    break;
+                }
             }
         }
 
