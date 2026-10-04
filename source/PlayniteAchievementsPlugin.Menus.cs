@@ -784,7 +784,7 @@ namespace PlayniteAchievements
                     MenuSection = PluginMainMenuSection,
                     Action = (a) =>
                     {
-                        OpenWorkshopWindow();
+                        OpenWorkshopSettings();
                     }
                 };
 
