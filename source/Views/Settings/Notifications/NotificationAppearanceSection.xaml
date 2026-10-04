@@ -327,7 +327,7 @@
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
                                         Margin="0,0,8,0"/>
                                 <Button Click="ExportDefaultToastTemplate_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}"/>
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"/>
                             </WrapPanel>
                             <WrapPanel Margin="0,10,0,0"
                                        Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
@@ -335,7 +335,7 @@
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
                                         Margin="0,0,8,0"/>
                                 <Button Click="ExportDefaultFrameTemplate_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}"/>
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"/>
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -383,11 +383,11 @@
                             <WrapPanel Margin="0,14,0,0">
                                 <Button x:Name="ExportStyleButton"
                                         Click="ExportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportButton}"
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
                                         Margin="0,0,8,0"/>
                                 <Button x:Name="ImportStyleButton"
                                         Click="ImportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ImportButton}"/>
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"/>
                             </WrapPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
                                        Style="{StaticResource MutedTextStyle}"
