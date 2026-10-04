@@ -261,6 +261,12 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             RefreshSoundPackPresetButtons();
         }
 
+        /// <summary>Presets saved elsewhere (a Workshop install, another window) show up when the list opens.</summary>
+        private void SoundPackPresetSelector_DropDownOpened(object sender, EventArgs e)
+        {
+            RefreshSoundPackPresetOptions(SelectedSoundPackPreset?.Name);
+        }
+
         /// <summary>Copies the selected pack onto the tiers: its files into managed storage, the rest left as they are.</summary>
         private void ApplySoundPackPreset_Click(object sender, RoutedEventArgs e)
         {
