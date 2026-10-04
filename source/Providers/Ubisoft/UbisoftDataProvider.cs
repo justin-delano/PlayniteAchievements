@@ -173,7 +173,7 @@ namespace PlayniteAchievements.Providers.Ubisoft
                         await EnrichMetadataAsync(
                             game,
                             achievements,
-                            UbisoftParsing.CleanTitle(graphGame?.Name),
+                            graphGame?.Name,
                             metadataEnricher,
                             ct).ConfigureAwait(false);
 
