@@ -1661,6 +1661,8 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">{0} icons · {1} overrides · {2} categories · {3} capstones · {4} custom achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">Your edits to {0} items will be kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">and {0} more</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">Rendering preview...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_UpdatePreview">Update preview</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_WorkshopIndexUrl">Workshop index URL</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_WorkshopServiceUrl">Workshop submission service URL</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_WorkshopHint">Leave both blank to use the official Workshop. Point them at a fork or a local service to test.</sys:String>
