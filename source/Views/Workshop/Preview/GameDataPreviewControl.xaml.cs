@@ -97,11 +97,25 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             DataContextChanged += (sender, args) => Rebuild();
         }
 
+        public static readonly DependencyProperty NeutralRenderProperty = DependencyProperty.Register(
+            nameof(NeutralRender), typeof(bool), typeof(GameDataPreviewControl),
+            new PropertyMetadata(false, (d, e) => ((GameDataPreviewControl)d).Rebuild()));
+
         /// <summary>The most rows the list shows, 0 for all; the rest are counted in an "and N more" line.</summary>
         public int MaxRows
         {
             get => (int)GetValue(MaxRowsProperty);
             set => SetValue(MaxRowsProperty, value);
+        }
+
+        /// <summary>
+        /// True for the published preview image: the note that addresses the viewing user
+        /// ("not in your library") is hidden, since it describes the sharer's machine.
+        /// </summary>
+        public bool NeutralRender
+        {
+            get => (bool)GetValue(NeutralRenderProperty);
+            set => SetValue(NeutralRenderProperty, value);
         }
 
         private void Rebuild()
@@ -132,7 +146,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 diff.CapstoneCount.ToString("N0", culture),
                 diff.CustomAchievementCount.ToString("N0", culture));
 
-            PackageOnlyText.Visibility = diff.IsPackageOnly ? Visibility.Visible : Visibility.Collapsed;
+            PackageOnlyText.Visibility = diff.IsPackageOnly && !NeutralRender ? Visibility.Visible : Visibility.Collapsed;
             GameText.Visibility = diff.IsPackageOnly ? Visibility.Collapsed : Visibility.Visible;
             GameNameRun.Text = diff.ComparedAgainstGameName ?? string.Empty;
 
