@@ -428,6 +428,12 @@ namespace PlayniteAchievements.Views.Settings.Display
             RefreshColorSetPresetButtons();
         }
 
+        /// <summary>Presets saved elsewhere (a Workshop install, another window) show up when the list opens.</summary>
+        private void ColorSetPresetSelector_DropDownOpened(object sender, EventArgs e)
+        {
+            RefreshColorSetPresetOptions(SelectedColorSetPreset?.Name);
+        }
+
         /// <summary>Copies the selected set onto the current colors (rarity, platform, resources).</summary>
         private void ApplyColorSetPreset_Click(object sender, RoutedEventArgs e)
         {
