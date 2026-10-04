@@ -186,7 +186,6 @@
     <sys:String x:Key="LOCPlayAch_Button_Paste">Paste</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Close">Close</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Compress">Compress</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Delete">Delete</sys:String>
