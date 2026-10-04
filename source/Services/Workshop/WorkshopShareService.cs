@@ -350,6 +350,72 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
+        /// <summary>
+        /// Replaces the preview image of an item this install published, without uploading the
+        /// package again. The Workshop keeps the item's package, version and release asset, so
+        /// installers are not offered an update. Returns the service's receipt and records it.
+        /// </summary>
+        public async Task<WorkshopSubmissionReceipt> UpdatePreviewAsync(
+            WorkshopItem item,
+            string previewPath,
+            IProgress<WorkshopShareProgress> progress,
+            CancellationToken cancel)
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            if (!_client.IsConfigured)
+            {
+                throw new InvalidOperationException("No Workshop submission service is configured.");
+            }
+
+            if (string.IsNullOrWhiteSpace(previewPath) || !File.Exists(previewPath))
+            {
+                throw new FileNotFoundException("The preview image was not found.", previewPath);
+            }
+
+            var total = new FileInfo(previewPath).Length;
+            progress?.Report(new WorkshopShareProgress { Phase = WorkshopSharePhase.Uploading, BytesTotal = total });
+            var previewKey = await _client.UploadAsync(
+                previewPath,
+                ContentTypeFor(previewPath),
+                new Progress<long>(sent => progress?.Report(new WorkshopShareProgress { Phase = WorkshopSharePhase.Uploading, BytesSent = sent, BytesTotal = total })),
+                cancel).ConfigureAwait(false);
+
+            progress?.Report(new WorkshopShareProgress { Phase = WorkshopSharePhase.Submitting });
+            var submission = new WorkshopSubmission
+            {
+                Kind = item.Kind,
+                Name = item.Name,
+                Author = string.IsNullOrWhiteSpace(item.Author) ? _registry.DisplayName : item.Author,
+                Description = item.Description,
+                Tags = item.Tags?.ToList() ?? new List<string>(),
+                License = string.IsNullOrWhiteSpace(item.License) ? "CC-BY-4.0" : item.License,
+                ExistingId = item.Id
+            };
+            var receipt = await _client.SubmitAsync(
+                submission,
+                _registry.GetSubmitterHash(),
+                packageKey: null,
+                previewKey,
+                PluginManifest.Version,
+                cancel).ConfigureAwait(false);
+
+            _registry.RecordSubmission(new WorkshopSubmissionRecord
+            {
+                IssueNumber = receipt.IssueNumber,
+                IssueUrl = receipt.IssueUrl,
+                Name = item.Name,
+                Kind = item.Kind,
+                ItemId = item.Id,
+                SubmittedUtc = DateTime.UtcNow,
+                LastState = "validating"
+            });
+            return receipt;
+        }
+
         private AchievementToastTemplateResolver CreateTemplateResolver()
         {
             return new AchievementToastTemplateResolver(
