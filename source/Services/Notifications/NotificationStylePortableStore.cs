@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Images;
 using System;
@@ -54,6 +55,27 @@ namespace PlayniteAchievements.Services.Notifications
         public bool HasToastTemplate { get; set; }
 
         public bool HasFrameTemplate { get; set; }
+    }
+
+    /// <summary>
+    /// Everything a style package carries, read for a preview render: the style with its slot
+    /// images extracted to a scratch folder (see
+    /// <see cref="NotificationStylePortableStore.ReadForPreview"/>), which parts the package
+    /// has, and the raw template XAML for each surface (null when the package carries none).
+    /// </summary>
+    public sealed class NotificationStylePreviewPackage
+    {
+        /// <summary>The style with every bundled slot path rewritten to an absolute scratch file.</summary>
+        public NotificationStyleSettings Style { get; set; }
+
+        /// <summary>Which optional parts the package carries, as <see cref="NotificationStylePortableStore.InspectPackage"/> reports them.</summary>
+        public NotificationStylePackageContents Contents { get; set; }
+
+        /// <summary>The toast template entry's text, or null when the package has none.</summary>
+        public string ToastTemplateXaml { get; set; }
+
+        /// <summary>The frame template entry's text, or null when the package has none.</summary>
+        public string FrameTemplateXaml { get; set; }
     }
 
     /// <summary>
@@ -466,16 +488,108 @@ namespace PlayniteAchievements.Services.Notifications
 
                 ExtractStyleOrThrow(portable);
 
-                return new NotificationStylePackageContents
+                return BuildContents(portable, names);
+            }
+        }
+
+        private static NotificationStylePackageContents BuildContents(
+            NotificationStylePortableFile portable,
+            IEnumerable<string> normalizedEntryNames)
+        {
+            var names = normalizedEntryNames.ToList();
+            return new NotificationStylePackageContents
+            {
+                HasStyle = true,
+                HasToastStyle = portable.HasToast,
+                HasFrameStyle = portable.HasFrame,
+                HasToastTemplate = names.Any(name =>
+                    string.Equals(name, ToastTemplateEntryName, StringComparison.OrdinalIgnoreCase)),
+                HasFrameTemplate = names.Any(name =>
+                    string.Equals(name, FrameTemplateEntryName, StringComparison.OrdinalIgnoreCase))
+            };
+        }
+
+        /// <summary>
+        /// Reads everything a package carries for a preview render: the style with each bundled
+        /// slot image extracted into <paramref name="scratchDirectory"/> and its path rewritten to
+        /// that absolute file, the package contents, and the template XAML of each surface. Bundled
+        /// images go through the same traversal and decoder checks as <see cref="ImportAsync(string, NotificationImageOwner, CancellationToken)"/>;
+        /// as there, the manifest's own image paths are ignored and a slot without a bundled image
+        /// is left empty. Nothing is written to managed image storage or settings. The caller owns
+        /// <paramref name="scratchDirectory"/> and deletes it when the preview ends.
+        /// </summary>
+        public NotificationStylePreviewPackage ReadForPreview(string packagePath, string scratchDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(scratchDirectory))
+            {
+                throw new ArgumentException("Scratch directory is required.", nameof(scratchDirectory));
+            }
+
+            using (var archive = PortablePackage.OpenRead(
+                packagePath,
+                ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportNotPackage")))
+            {
+                var entriesByName = PortablePackage.IndexEntries(archive);
+                if (!entriesByName.TryGetValue(ManifestEntryName, out var manifestEntry))
                 {
-                    HasStyle = true,
-                    HasToastStyle = portable.HasToast,
-                    HasFrameStyle = portable.HasFrame,
-                    HasToastTemplate = names.Any(name =>
-                        string.Equals(name, ToastTemplateEntryName, StringComparison.OrdinalIgnoreCase)),
-                    HasFrameTemplate = names.Any(name =>
-                        string.Equals(name, FrameTemplateEntryName, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportMissingManifest"));
+                }
+
+                var portable = PortablePackage.ReadJson<NotificationStylePortableFile>(manifestEntry);
+                var style = ExtractStyleOrThrow(portable);
+
+                Directory.CreateDirectory(scratchDirectory);
+                CopyBundledImagesToScratch(style, NotificationKind.Base, entriesByName, scratchDirectory);
+                foreach (var pair in style.KindStyles)
+                {
+                    if (pair.Value != null &&
+                        NotificationImageStore.TryParseNotificationKind(pair.Key, out var notificationKind))
+                    {
+                        CopyBundledImagesToScratch(pair.Value, notificationKind, entriesByName, scratchDirectory);
+                    }
+                }
+
+                entriesByName.TryGetValue(ToastTemplateEntryName, out var toastTemplateEntry);
+                entriesByName.TryGetValue(FrameTemplateEntryName, out var frameTemplateEntry);
+
+                return new NotificationStylePreviewPackage
+                {
+                    Style = style,
+                    Contents = BuildContents(portable, entriesByName.Keys),
+                    ToastTemplateXaml = PortablePackage.ReadText(toastTemplateEntry),
+                    FrameTemplateXaml = PortablePackage.ReadText(frameTemplateEntry)
                 };
+            }
+        }
+
+        /// <summary>
+        /// The preview counterpart of <see cref="MaterializeBundledImagesAsync"/>: each slot's
+        /// bundled entry (found and validated by <see cref="FindSlotEntry"/>) is extracted to
+        /// <c>&lt;scratchDirectory&gt;\&lt;entry stem&gt;&lt;ext&gt;</c> and the slot points at
+        /// that file; a slot without an entry is cleared.
+        /// </summary>
+        private static void CopyBundledImagesToScratch(
+            NotificationStyleSettings style,
+            NotificationKind notificationKind,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            string scratchDirectory)
+        {
+            foreach (var slot in NotificationImageSlotMap.Slots)
+            {
+                var stem = BuildEntryStem(notificationKind, slot);
+                var entry = FindSlotEntry(entriesByName, stem);
+                if (entry == null)
+                {
+                    NotificationImageSlotMap.SetPath(style, slot, null);
+                    continue;
+                }
+
+                var destination = Path.Combine(
+                    scratchDirectory,
+                    stem + Path.GetExtension(entry.Name).ToLowerInvariant());
+                PortablePackage.ExtractToFile(entry, destination);
+                NotificationImageSlotMap.SetPath(style, slot, destination);
             }
         }
 
