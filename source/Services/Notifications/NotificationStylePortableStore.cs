@@ -381,6 +381,45 @@ namespace PlayniteAchievements.Services.Notifications
         }
 
         /// <summary>
+        /// The style a package carries, read from its manifest alone: no images are
+        /// materialized, so bundled image paths stay package-relative. Enough for a preview
+        /// render of a preset or a composed theme part; applying a package still goes through
+        /// <see cref="ImportAsync"/>.
+        /// </summary>
+        public NotificationStyleSettings ReadStyle(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            {
+                throw new FileNotFoundException("File not found.", sourcePath);
+            }
+
+            if (!IsZipContent(sourcePath))
+            {
+                throw new InvalidOperationException(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportNotPackage"));
+            }
+
+            using (var archive = ZipFile.OpenRead(sourcePath))
+            {
+                var manifestEntry = archive.Entries.FirstOrDefault(entry =>
+                    string.Equals(NormalizeArchiveEntryName(entry.FullName), ManifestEntryName, StringComparison.OrdinalIgnoreCase));
+                if (manifestEntry == null)
+                {
+                    throw new InvalidOperationException(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportMissingManifest"));
+                }
+
+                NotificationStylePortableFile portable;
+                using (var reader = new StreamReader(manifestEntry.Open()))
+                {
+                    portable = JsonConvert.DeserializeObject<NotificationStylePortableFile>(reader.ReadToEnd());
+                }
+
+                return ExtractStyleOrThrow(portable);
+            }
+        }
+
+        /// <summary>
         /// Reports which optional parts a style package carries so the import UI can offer only
         /// the parts actually present.
         /// </summary>
