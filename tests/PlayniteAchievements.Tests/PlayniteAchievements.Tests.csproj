@@ -637,6 +637,7 @@
     <Compile Include="..\..\source\Services\Workshop\WorkshopGameMatcher.cs" Link="Source\Services\Workshop\WorkshopGameMatcher.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopSubmissionClient.cs" Link="Source\Services\Workshop\WorkshopSubmissionClient.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopUndoStore.cs" Link="Source\Services\Workshop\WorkshopUndoStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\GameCustomDataThreeWayMerge.cs" Link="Source\Services\Workshop\GameCustomDataThreeWayMerge.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
