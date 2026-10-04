@@ -1597,6 +1597,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_LoadFailed">The Workshop could not be loaded: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Install">Install</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Update">Update</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Reinstall">Reinstall</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateAvailable">Update available</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Downloads">Downloads</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Author">Author</sys:String>
@@ -1610,6 +1611,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Downloading">Downloading {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Installing">Installing...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InstallConfirmGameData">Install "{0}" onto {1}? This replaces that game's custom data (icons, categories, capstones, notes). Your unlock progress is kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_ReinstallConfirmGameData">Reinstall "{0}" onto {1}? This replaces that game's custom data with the package again, including any changes you made since installing it. Your unlock progress is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the game this data belongs to</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_NoGameMatch">No game in your library matches "{0}".</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RecentInstalls">Recent installs</sys:String>
