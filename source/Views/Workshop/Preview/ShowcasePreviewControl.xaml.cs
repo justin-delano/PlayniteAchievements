@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             BlockList.ItemsSource = (model?.Blocks ?? Array.Empty<ShowcaseBlockPreview>())
                 .Select(block => new ShowcaseBlockRow(KindLabel(block.WidgetKind), block.Title))
                 .ToList();
-            ImageList.ItemsSource = model?.ImagePaths ?? Array.Empty<string>();
+            ImageList.ItemsSource = model?.Thumbnails ?? Array.Empty<object>();
         }
 
         private static string KindLabel(ShowcaseWidgetKind kind)
