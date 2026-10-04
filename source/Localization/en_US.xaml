@@ -690,7 +690,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Kind">the "{0}" style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportButton">Export Style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportButton">Import Style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ShareHint">Export the current tab's style as a .panotif or .paframe file, or share it to the Workshop. Importing a file or installing from the Workshop adds it to the presets above. To share both surfaces together with colors and sounds, export a theme from Display &gt; Colors.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ShareHint">Export the current tab's style as a .panotif or .paframe file, or share it to the Workshop. Importing a file or installing from the Workshop adds it to the presets above. To share both surfaces together with colors and sounds, export a theme from the Workshop tab.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportSurfaceMismatch">This file contains the {0} appearance, but {1} is currently selected. Import it anyway?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportConfirm">Import this notification style and replace the currently displayed appearance?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportApplyStyle">Apply the appearance style from this file to the selected platform?</sys:String>
