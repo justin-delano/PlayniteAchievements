@@ -110,6 +110,14 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         /// </summary>
         private void ImportBundle_Click(object sender, RoutedEventArgs e)
         {
+            WorkshopMenus.OpenImport(
+                sender as Button,
+                () => ImportBundleFile_Click(sender, e),
+                () => _plugin?.OpenWorkshopWindow(focusKind: WorkshopItemKind.Bundle));
+        }
+
+        private void ImportBundleFile_Click(object sender, RoutedEventArgs e)
+        {
             var store = _plugin?.BundlePortableStore;
             if (store == null)
             {
