@@ -1885,6 +1885,12 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             RefreshPresetButtons();
         }
 
+        /// <summary>Presets saved elsewhere (a Workshop install, another window) show up when the list opens.</summary>
+        private void PresetSelector_DropDownOpened(object sender, EventArgs e)
+        {
+            RefreshPresetOptions(SelectedPreset?.Name);
+        }
+
         /// <summary>
         /// Saves the active surface tab's appearance as a named preset: the surface style, its
         /// images (toast only), and the current scope's custom template when one is installed.
