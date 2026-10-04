@@ -181,6 +181,8 @@
     <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Apply">Apply</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Browse">Browse</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Copy">Copy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Paste">Paste</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Compress">Compress</sys:String>
@@ -1142,6 +1144,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Appearance presets</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Preset">Preset</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Palettes">Palettes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">Preset {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Badge colors</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColors">Platform colors</sys:String>
@@ -1608,6 +1611,17 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromWorkshop">From Workshop...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_ToFile">To file...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SavedAsPreset">Saved as preset "{0}". Choose it in the preset list to apply it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Account">Account</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">Submitter key</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKeyHint">Identifies your submissions so you can update or remove them later. Copy it to use the same identity on another Playnite install, or paste a key from one.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_ReplaceKeyConfirm">Replace your submitter key with the one on the clipboard? Items submitted with the current key can no longer be updated from this install unless you paste it back.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_InvalidKey">The clipboard does not contain a submitter key.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_ExportTheme">Export theme...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_ImportTheme">Import theme...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_ThemesHint">A theme bundles your colors, unlock sounds, notification style and screenshot frame into one .patheme file. Importing one adds each part to its preset list.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Presets_Hint">Every saved preset, downloaded or your own. Apply one from the card it belongs to.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_NoPresets">No saved presets.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Kind">Kind</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalStyle">Notification style</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalFrame">Screenshot frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">Unlock sounds</sys:String>
