@@ -1,0 +1,99 @@
+<UserControl x:Class="PlayniteAchievements.Views.Workshop.Preview.NotificationStylePreviewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             mc:Ignorable="d"
+             d:DesignHeight="420" d:DesignWidth="640">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <helpers:SharedResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Layout rounding and device-pixel snapping as the settings mockup sets them, so the
+         card renders as the live notification does. -->
+    <StackPanel UseLayoutRounding="True" SnapsToDevicePixels="True">
+        <TextBlock x:Name="LoadErrorText"
+                   Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"
+                   Visibility="Collapsed"/>
+
+        <!-- Notification: the card at its natural size, built as the live wave builds it. -->
+        <Border x:Name="ToastPanel"
+                Background="{DynamicResource PlayAch.Brush.Surface}"
+                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                CornerRadius="8"
+                HorizontalAlignment="Left"
+                Margin="0,0,0,10">
+            <ContentControl x:Name="ToastHost"/>
+        </Border>
+
+        <!-- Screenshot frame: the template on the compositor's 1080-DIP canvas, scaled down,
+             bottom half only (the frame's content is bottom-anchored). -->
+        <Border x:Name="FramePanel"
+                Background="{DynamicResource PlayAch.Brush.Surface}"
+                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                CornerRadius="8"
+                Padding="10"
+                HorizontalAlignment="Stretch"
+                Margin="0,0,0,10"
+                Visibility="Collapsed">
+            <Viewbox Stretch="Uniform"
+                     HorizontalAlignment="Stretch"
+                     MaxHeight="320">
+                <Border Width="1920"
+                        Height="540"
+                        ClipToBounds="True">
+                    <Grid Width="1920"
+                          Height="1080"
+                          VerticalAlignment="Bottom"
+                          Background="{DynamicResource PlayAch.Brush.Window.Background}">
+                        <ContentControl x:Name="FrameHost"/>
+                    </Grid>
+                </Border>
+            </Viewbox>
+        </Border>
+
+        <StackPanel x:Name="TesterPanel">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_SampleUnlock}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+                <ComboBox x:Name="SampleSelector"
+                          SelectedValuePath="Tag"
+                          SelectionChanged="SampleSelector_SelectionChanged"
+                          MinWidth="160">
+                    <ComboBoxItem Tag="common" Content="{DynamicResource LOCPlayAch_Rarity_Common}"/>
+                    <ComboBoxItem Tag="uncommon" Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"/>
+                    <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
+                    <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
+                    <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
+                    <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                    <ComboBoxItem x:Name="FriendSample" Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
+                    <ComboBoxItem x:Name="ProgressSample" Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
+                </ComboBox>
+            </StackPanel>
+            <WrapPanel>
+                <Button x:Name="FireButton"
+                        Content="{DynamicResource LOCPlayAch_Button_Test}"
+                        Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                        Click="FireButton_Click"
+                        Margin="0,0,8,8"/>
+                <Button x:Name="FrameOnScreenButton"
+                        Content="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
+                        Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                        Click="FrameOnScreenButton_Click"
+                        Margin="0,0,8,8"
+                        Visibility="Collapsed"/>
+            </WrapPanel>
+        </StackPanel>
+    </StackPanel>
+</UserControl>
