@@ -113,57 +113,65 @@ namespace PlayniteAchievements.Services.GameCustomData
 
             using (var archive = ZipFile.OpenRead(sourcePath))
             {
-                var entriesByName = archive.Entries
-                    .Select(entry => new { Entry = entry, Name = NormalizeArchiveEntryName(entry.FullName) })
-                    .Where(item => !string.IsNullOrWhiteSpace(item.Entry.Name) && !string.IsNullOrWhiteSpace(item.Name))
-                    .GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(group => group.Key, group => group.First().Entry, StringComparer.OrdinalIgnoreCase);
-
-                if (!entriesByName.TryGetValue(CustomAchievementsPackageCsvEntryName, out var csvEntry))
-                {
-                    throw new InvalidOperationException(
-                        "Package does not contain " + CustomAchievementsPackageCsvEntryName + ".");
-                }
-
-                string csvText;
-                using (var reader = new StreamReader(csvEntry.Open()))
-                {
-                    csvText = reader.ReadToEnd();
-                }
-
-                var result = new CustomAchievementTextImportService().Import(csvText);
-                if (result.HasErrors || result.Definitions.Count == 0)
-                {
-                    return result;
-                }
-
-                foreach (var definition in result.Definitions)
-                {
-                    PortablePersonalState.Strip(definition);
-                }
-
-                var fileStems = AchievementIconCachePathBuilder.BuildFileStems(
-                    result.Definitions.Select(definition => CustomAchievementProjectionService.BuildApiName(definition?.Id)));
-                foreach (var definition in result.Definitions)
-                {
-                    var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
-                    if (definition == null || string.IsNullOrWhiteSpace(apiName))
-                    {
-                        continue;
-                    }
-
-                    definition.UnlockedIconPath = ImportPackagedCustomAchievementIcon(
-                        playniteGameId, entriesByName, fileStems, apiName, definition.UnlockedIconPath, AchievementIconVariant.Unlocked);
-                    definition.LockedIconPath = ImportPackagedCustomAchievementIcon(
-                        playniteGameId, entriesByName, fileStems, apiName, definition.LockedIconPath, AchievementIconVariant.Locked);
-                }
-
-                return result;
+                return ReadCustomAchievementsPackage(
+                    new ManagedPackageImageSink(this, playniteGameId),
+                    IndexPackageEntries(archive));
             }
         }
 
-        private string ImportPackagedCustomAchievementIcon(
-            Guid playniteGameId,
+        /// <summary>
+        /// Parses the package CSV, strips personal state, and hands each bundled icon to the sink,
+        /// returning definitions whose icon paths point at the files the sink wrote. Returns the
+        /// parse result untouched when it has errors or no definitions.
+        /// </summary>
+        private static CustomAchievementTextImportResult ReadCustomAchievementsPackage(
+            IPackageImageSink sink,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName)
+        {
+            if (!entriesByName.TryGetValue(CustomAchievementsPackageCsvEntryName, out var csvEntry))
+            {
+                throw new InvalidOperationException(
+                    "Package does not contain " + CustomAchievementsPackageCsvEntryName + ".");
+            }
+
+            string csvText;
+            using (var reader = new StreamReader(csvEntry.Open()))
+            {
+                csvText = reader.ReadToEnd();
+            }
+
+            var result = new CustomAchievementTextImportService().Import(csvText);
+            if (result.HasErrors || result.Definitions.Count == 0)
+            {
+                return result;
+            }
+
+            foreach (var definition in result.Definitions)
+            {
+                PortablePersonalState.Strip(definition);
+            }
+
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(
+                result.Definitions.Select(definition => CustomAchievementProjectionService.BuildApiName(definition?.Id)));
+            foreach (var definition in result.Definitions)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (definition == null || string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                definition.UnlockedIconPath = ImportPackagedCustomAchievementIcon(
+                    sink, entriesByName, fileStems, apiName, definition.UnlockedIconPath, AchievementIconVariant.Unlocked);
+                definition.LockedIconPath = ImportPackagedCustomAchievementIcon(
+                    sink, entriesByName, fileStems, apiName, definition.LockedIconPath, AchievementIconVariant.Locked);
+            }
+
+            return result;
+        }
+
+        private static string ImportPackagedCustomAchievementIcon(
+            IPackageImageSink sink,
             IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
             IReadOnlyDictionary<string, string> fileStems,
             string apiName,
@@ -177,7 +185,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             }
 
             return RewritePackageCustomAchievementImage(
-                playniteGameId,
+                sink,
                 entriesByName,
                 fileStems,
                 apiName,
