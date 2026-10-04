@@ -94,7 +94,8 @@
                               <StackPanel Orientation="Horizontal">
                                 <ComboBox x:Name="ColorSetPresetSelector"
                                           MinWidth="240"
-                                          SelectionChanged="ColorSetPresetSelector_SelectionChanged"/>
+                                          SelectionChanged="ColorSetPresetSelector_SelectionChanged"
+                                          DropDownOpened="ColorSetPresetSelector_DropDownOpened"/>
 
                                 <Button x:Name="ApplyColorSetPresetButton"
                                         Content="{DynamicResource LOCPlayAch_Button_Apply}"
