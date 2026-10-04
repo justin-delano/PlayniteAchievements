@@ -38,7 +38,27 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string Version => Item.Version;
         public string License => Item.License;
         public string Updated => Item.Updated;
-        public long Downloads => Item.Downloads?.Total ?? 0;
+        private long? _liveDownloads;
+
+        /// <summary>The release API count fetched when the item was picked; null until then.</summary>
+        public long? LiveDownloads
+        {
+            get => _liveDownloads;
+            set
+            {
+                if (_liveDownloads == value)
+                {
+                    return;
+                }
+
+                _liveDownloads = value;
+                OnPropertyChanged(nameof(LiveDownloads));
+                OnPropertyChanged(nameof(Downloads));
+            }
+        }
+
+        /// <summary>Live count when known, otherwise the count the index carried at its last build.</summary>
+        public long Downloads => _liveDownloads ?? Item.Downloads?.Total ?? 0;
         public string GameName => Item.Game?.Name;
         public string Tags => string.Join(", ", Item.Tags ?? new List<string>());
         public bool HasTags => Item.Tags != null && Item.Tags.Count > 0;
