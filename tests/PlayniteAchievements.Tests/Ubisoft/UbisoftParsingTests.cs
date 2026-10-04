@@ -142,6 +142,17 @@ namespace PlayniteAchievements.Ubisoft.Tests
             Assert.IsNull(last.UnlockedIconPath);
         }
 
+        [DataTestMethod]
+        [DataRow("Prince of Persia™: The Lost Crown", "Prince of Persia: The Lost Crown")]
+        [DataRow("Tom Clancy's Rainbow Six® Siege", "Tom Clancy's Rainbow Six Siege")]
+        [DataRow("Assassin's Creed ™ Mirage", "Assassin's Creed Mirage")]
+        [DataRow("  ", null)]
+        [DataRow(null, null)]
+        public void CleanTitle_DropsTrademarkMarks(string title, string expected)
+        {
+            Assert.AreEqual(expected, UbisoftParsing.CleanTitle(title));
+        }
+
         [TestMethod]
         public void MapAchievements_ReturnsEmpty_ForMissingConnection()
         {
