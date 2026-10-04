@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 // WinForms dialog: the WPF Microsoft.Win32 picker renders legacy-style on .NET Framework.
@@ -74,6 +75,7 @@ namespace PlayniteAchievements.Views.Workshop
                 .Select(g => new ExistingOption { ItemId = g.Key, Label = $"{g.First().Name} ({g.Key})" })
                 .ToList();
             ExistingBox.ItemsSource = options;
+            _ = LoadOwnedItemsAsync(options);
         }
 
         public event EventHandler RequestClose;
@@ -192,6 +194,56 @@ namespace PlayniteAchievements.Views.Workshop
             {
                 _busy = false;
                 SubmitButton.IsEnabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Adds the user's published items of this kind to the update list. The index marks
+        /// every item with its owner's hash, so anything shared from this install is found even
+        /// when the local record does not know its id (a first submission has none until it is
+        /// published), and matching records are linked to their id for next time.
+        /// </summary>
+        private async Task LoadOwnedItemsAsync(List<ExistingOption> options)
+        {
+            try
+            {
+                var client = _plugin.WorkshopClient;
+                if (client == null)
+                {
+                    return;
+                }
+
+                var index = await client.FetchIndexAsync(_cancel.Token);
+                var owner = _registry.GetSubmitterHash();
+                var owned = index.Items
+                    .Where(item => item.Kind == _candidate.Kind && string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (owned.Count == 0)
+                {
+                    return;
+                }
+
+                _registry.LinkSubmissions(owned);
+                foreach (var item in owned)
+                {
+                    if (options.Any(option => string.Equals(option.ItemId, item.Id, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    options.Add(new ExistingOption { ItemId = item.Id, Label = $"{item.Name} ({item.Id})" });
+                }
+
+                var selected = ExistingBox.SelectedItem;
+                ExistingBox.ItemsSource = options.OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase).ToList();
+                ExistingBox.SelectedItem = selected;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Could not list this user's published Workshop items.");
             }
         }
 
