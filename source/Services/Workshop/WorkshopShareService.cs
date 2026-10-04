@@ -275,13 +275,19 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        /// <summary>Packages, uploads, and submits. Returns the service's receipt and records it locally.</summary>
+        /// <summary>
+        /// Packages, uploads, and submits. Returns the service's receipt and records it locally.
+        /// <paramref name="prebuiltPackagePath"/>, when it names an existing file, is uploaded as
+        /// the package instead of building the candidate again (the share dialog builds one for
+        /// its preview image).
+        /// </summary>
         public async Task<WorkshopSubmissionReceipt> ShareAsync(
             WorkshopShareCandidate candidate,
             WorkshopSubmission submission,
             string previewPath,
             IProgress<WorkshopShareProgress> progress,
-            CancellationToken cancel)
+            CancellationToken cancel,
+            string prebuiltPackagePath = null)
         {
             if (!_client.IsConfigured)
             {
@@ -295,7 +301,9 @@ namespace PlayniteAchievements.Services.Workshop
                 if (!submission.Remove)
                 {
                     progress?.Report(new WorkshopShareProgress { Phase = WorkshopSharePhase.Packaging });
-                    var packagePath = BuildPackage(candidate, work);
+                    var packagePath = !string.IsNullOrWhiteSpace(prebuiltPackagePath) && File.Exists(prebuiltPackagePath)
+                        ? prebuiltPackagePath
+                        : BuildPackage(candidate, work);
                     var total = new FileInfo(packagePath).Length;
                     progress?.Report(new WorkshopShareProgress { Phase = WorkshopSharePhase.Uploading, BytesTotal = total });
                     packageKey = await _client.UploadAsync(
