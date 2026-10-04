@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Views.Controls
         private const double IconCollisionPadding = 4.0;
         private const double SliceHighlightOffset = 5.0;
         private const double LiveChartsRotationOffset = 45.0;
+        private const double RingInnerRadius = 30.0;
         private static readonly Duration SliceAnimationDuration = new Duration(TimeSpan.FromMilliseconds(150));
         private static readonly PropertyInfo PiePointViewSliceProperty =
             typeof(PieSlice).Assembly
@@ -95,6 +96,13 @@ namespace PlayniteAchievements.Views.Controls
         public static readonly DependencyProperty ShowCenterPercentageProperty =
             DependencyProperty.Register(nameof(ShowCenterPercentage), typeof(bool), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(true, OnShowCenterPercentageChanged));
+
+        /// <summary>
+        /// When true, draws a full pie instead of a ring, so there is no center to hold the percentage.
+        /// </summary>
+        public static readonly DependencyProperty IsFilledProperty =
+            DependencyProperty.Register(nameof(IsFilled), typeof(bool), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(false, OnIsFilledChanged));
 
         public static readonly DependencyProperty ShowIconsProperty =
             DependencyProperty.Register(nameof(ShowIcons), typeof(bool), typeof(PieChartWithRadialIcons),
@@ -176,6 +184,12 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(ShowCenterPercentageProperty);
             set => SetValue(ShowCenterPercentageProperty, value);
+        }
+
+        public bool IsFilled
+        {
+            get => (bool)GetValue(IsFilledProperty);
+            set => SetValue(IsFilledProperty, value);
         }
 
         public bool ShowIcons
@@ -366,6 +380,12 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             control.ScheduleCalculation();
+        }
+
+        private static void OnIsFilledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (PieChartWithRadialIcons)d;
+            control.Chart.InnerRadius = (bool)e.NewValue ? 0 : RingInnerRadius;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
