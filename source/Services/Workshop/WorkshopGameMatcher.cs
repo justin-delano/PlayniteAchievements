@@ -44,6 +44,8 @@ namespace PlayniteAchievements.Services.Workshop
     {
         private readonly Func<IEnumerable<GameAchievementData>> _getCachedGames;
         private readonly Func<IEnumerable<Game>> _getLibraryGames;
+        private readonly object _sync = new object();
+        private Snapshot _snapshot;
 
         public WorkshopGameMatcher(
             Func<IEnumerable<GameAchievementData>> getCachedGames,
@@ -53,6 +55,19 @@ namespace PlayniteAchievements.Services.Workshop
             _getLibraryGames = getLibraryGames ?? (() => Enumerable.Empty<Game>());
         }
 
+        /// <summary>
+        /// Drops the indexed snapshot, so the next lookup reads the achievement cache and the
+        /// library again. Between resets every lookup uses one snapshot: reading the whole cache
+        /// for each item is what stalled the Workshop list.
+        /// </summary>
+        public void Reset()
+        {
+            lock (_sync)
+            {
+                _snapshot = null;
+            }
+        }
+
         public WorkshopGameMatch Match(IReadOnlyList<PortableGameKey> keys)
         {
             if (keys == null || keys.Count == 0)
@@ -60,23 +75,19 @@ namespace PlayniteAchievements.Services.Workshop
                 return null;
             }
 
-            var providerKeys = keys.Where(key => key != null && !string.IsNullOrWhiteSpace(key.ProviderKey)).ToList();
-            if (providerKeys.Count > 0)
+            var snapshot = GetSnapshot();
+            foreach (var key in keys.Where(key => key != null && !string.IsNullOrWhiteSpace(key.ProviderKey)))
             {
-                var cached = SafeEnumerate(_getCachedGames).Where(data => data?.PlayniteGameId != null && data.PlayniteGameId != Guid.Empty).ToList();
-                foreach (var key in providerKeys)
+                var hit = snapshot.FindByProvider(key);
+                if (hit != null)
                 {
-                    var hit = cached.FirstOrDefault(data => MatchesProvider(data, key));
-                    if (hit != null)
-                    {
-                        return new WorkshopGameMatch(hit.PlayniteGameId.Value, hit.GameName, WorkshopGameMatchConfidence.Provider);
-                    }
+                    return hit;
                 }
             }
 
             foreach (var key in keys.Where(key => key != null && !string.IsNullOrWhiteSpace(key.Name)))
             {
-                var match = MatchByName(key.Name, key.Platform);
+                var match = MatchByName(snapshot, key.Name, key.Platform);
                 if (match != null)
                 {
                     return match;
@@ -99,29 +110,23 @@ namespace PlayniteAchievements.Services.Workshop
                 return Array.Empty<Game>();
             }
 
-            return SafeEnumerate(_getLibraryGames)
-                .Where(game => game != null && names.Contains(Normalize(game.Name)))
+            var snapshot = GetSnapshot();
+            return names
+                .SelectMany(name => snapshot.GamesNamed(name))
+                .Distinct()
                 .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
 
-        private static bool MatchesProvider(GameAchievementData data, PortableGameKey key)
+        private Snapshot GetSnapshot()
         {
-            if (!string.Equals(data.ProviderKey, key.ProviderKey, StringComparison.OrdinalIgnoreCase))
+            lock (_sync)
             {
-                return false;
+                return _snapshot ?? (_snapshot = Snapshot.Build(SafeEnumerate(_getCachedGames), SafeEnumerate(_getLibraryGames)));
             }
-
-            if (key.ProviderGameId is int id && id > 0 && data.AppId == id)
-            {
-                return true;
-            }
-
-            return !string.IsNullOrWhiteSpace(key.ProviderGameKey) &&
-                   string.Equals(data.ProviderGameKey, key.ProviderGameKey, StringComparison.OrdinalIgnoreCase);
         }
 
-        private WorkshopGameMatch MatchByName(string name, string platform)
+        private static WorkshopGameMatch MatchByName(Snapshot snapshot, string name, string platform)
         {
             var normalized = Normalize(name);
             if (normalized.Length == 0)
@@ -129,9 +134,7 @@ namespace PlayniteAchievements.Services.Workshop
                 return null;
             }
 
-            var byName = SafeEnumerate(_getLibraryGames)
-                .Where(game => game != null && Normalize(game.Name) == normalized)
-                .ToList();
+            var byName = snapshot.GamesNamed(normalized);
             if (byName.Count == 0)
             {
                 return null;
@@ -152,6 +155,86 @@ namespace PlayniteAchievements.Services.Workshop
                 : null;
         }
 
+        /// <summary>One read of the achievement cache and the library, indexed for the lookups above.</summary>
+        private sealed class Snapshot
+        {
+            private readonly Dictionary<string, GameAchievementData> _byAppId = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
+            private readonly Dictionary<string, GameAchievementData> _byProviderGameKey = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
+            private readonly Dictionary<string, List<Game>> _byName = new Dictionary<string, List<Game>>(StringComparer.Ordinal);
+
+            public static Snapshot Build(IEnumerable<GameAchievementData> cached, IEnumerable<Game> library)
+            {
+                var snapshot = new Snapshot();
+                foreach (var data in cached)
+                {
+                    if (data?.PlayniteGameId == null || data.PlayniteGameId == Guid.Empty || string.IsNullOrWhiteSpace(data.ProviderKey))
+                    {
+                        continue;
+                    }
+
+                    // First entry wins, as the linear scan this replaces did.
+                    if (data.AppId > 0)
+                    {
+                        var key = data.ProviderKey + "|" + data.AppId;
+                        if (!snapshot._byAppId.ContainsKey(key))
+                        {
+                            snapshot._byAppId[key] = data;
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(data.ProviderGameKey))
+                    {
+                        var key = data.ProviderKey + "|" + data.ProviderGameKey;
+                        if (!snapshot._byProviderGameKey.ContainsKey(key))
+                        {
+                            snapshot._byProviderGameKey[key] = data;
+                        }
+                    }
+                }
+
+                foreach (var game in library)
+                {
+                    var normalized = game == null ? string.Empty : Normalize(game.Name);
+                    if (normalized.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    if (!snapshot._byName.TryGetValue(normalized, out var list))
+                    {
+                        list = new List<Game>();
+                        snapshot._byName[normalized] = list;
+                    }
+
+                    list.Add(game);
+                }
+
+                return snapshot;
+            }
+
+            public WorkshopGameMatch FindByProvider(PortableGameKey key)
+            {
+                GameAchievementData hit = null;
+                if (key.ProviderGameId is int id && id > 0)
+                {
+                    _byAppId.TryGetValue(key.ProviderKey + "|" + id, out hit);
+                }
+
+                if (hit == null && !string.IsNullOrWhiteSpace(key.ProviderGameKey))
+                {
+                    _byProviderGameKey.TryGetValue(key.ProviderKey + "|" + key.ProviderGameKey, out hit);
+                }
+
+                return hit == null
+                    ? null
+                    : new WorkshopGameMatch(hit.PlayniteGameId.Value, hit.GameName, WorkshopGameMatchConfidence.Provider);
+            }
+
+            public List<Game> GamesNamed(string normalized)
+            {
+                return _byName.TryGetValue(normalized, out var list) ? list : new List<Game>();
+            }
+        }
         /// <summary>Lowercase letters and digits only, so punctuation and spacing differences do not matter.</summary>
         public static string Normalize(string value)
         {
