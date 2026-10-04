@@ -51,7 +51,15 @@ namespace PlayniteAchievements.Services.Workshop.Preview
             diff.HasBaseline = hasBaseline;
             diff.OrderChanged = !SameOrder(predicted?.AchievementOrder, source.Current?.AchievementOrder);
 
-            var after = HydratePredicted(predicted, source);
+            var afterData = HydratePredicted(predicted, source);
+            diff.AfterData = afterData;
+            diff.BeforeData = source.CurrentData;
+
+            // Hydration stamps each row's position under the custom order.
+            var after = afterData.Achievements
+                .Where(achievement => achievement != null)
+                .OrderBy(achievement => achievement.DefaultOrderIndex)
+                .ToList();
             var before = source.CurrentData?.Achievements ?? new List<AchievementDetail>();
             CompareRows(diff, before, after);
             return diff;
@@ -172,15 +180,26 @@ namespace PlayniteAchievements.Services.Workshop.Preview
         // ---- after rows ---------------------------------------------------------------------
 
         /// <summary>
-        /// The game's rows as they would show with <paramref name="predicted"/> stored: a copy of
-        /// the raw achievements through the hydration pipeline, in display order.
+        /// The game as it would show with <paramref name="predicted"/> stored: a copy of the raw
+        /// achievements through the hydration pipeline, with the game-level fields
+        /// <c>GameDataHydrator.Hydrate</c> sets taken from the predicted record. Category image
+        /// overrides are left out.
         /// </summary>
-        private static List<AchievementDetail> HydratePredicted(
+        private static GameAchievementData HydratePredicted(
             GameCustomDataFile predicted,
             GameCustomDataPreviewSource source)
         {
             var data = CopyForHydration(source.RawData, source.GameId);
             var resolved = GameCustomDataLookup.BuildResolvedFromRecord(predicted, source.Persisted);
+            data.Game = source.CurrentData?.Game;
+            data.ExcludedByUser = resolved.ExcludedFromRefreshes;
+            data.ExcludedFromSummaries = resolved.ExcludedFromSummaries;
+            data.UseSeparateLockedIconsWhenAvailable = resolved.UseSeparateLockedIcons;
+            data.AchievementOrder = resolved.AchievementOrder.Count > 0 ? new List<string>(resolved.AchievementOrder) : null;
+            data.GoalAchievements = resolved.GoalAchievementApiNames.Count > 0 ? new List<string>(resolved.GoalAchievementApiNames) : null;
+            data.AchievementCategoryOrder = resolved.AchievementCategoryOrder.Count > 0 ? new List<string>(resolved.AchievementCategoryOrder) : null;
+            data.GameSummaryCategory = resolved.GameSummaryCategory;
+
             AchievementOverlayPipeline.Apply(
                 data,
                 source.GameId,
@@ -188,12 +207,8 @@ namespace PlayniteAchievements.Services.Workshop.Preview
                 source.ManagedCustomIconService,
                 () => predicted.AchievementUnlockedIconOverrides,
                 () => predicted.AchievementLockedIconOverrides);
-
-            // Hydration stamps each row's position under the custom order.
-            return (data.Achievements ?? new List<AchievementDetail>())
-                .Where(achievement => achievement != null)
-                .OrderBy(achievement => achievement.DefaultOrderIndex)
-                .ToList();
+            data.Achievements ??= new List<AchievementDetail>();
+            return data;
         }
 
         /// <summary>
