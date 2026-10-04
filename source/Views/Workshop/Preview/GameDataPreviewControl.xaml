@@ -99,14 +99,15 @@
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"
                                Margin="8,0,0,0"/>
-                    <controls:GlyphIcon Grid.Column="5"
-                                        Glyph="&#xEEF6;"
-                                        Size="14"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                        Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                                        Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
+                    <!-- The capstone badge the achievement grids show (BadgeRarityCompleted). -->
+                    <Image Grid.Column="5"
+                           Source="{DynamicResource BadgeRarityCompleted}"
+                           Width="18"
+                           Height="18"
+                           Stretch="Uniform"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
                 </Grid>
             </DataTemplate>
 
@@ -141,14 +142,14 @@
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"
                                Margin="8,0,0,0"/>
-                    <controls:GlyphIcon Grid.Column="3"
-                                        Glyph="&#xEEF6;"
-                                        Size="14"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                        Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                                        Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
+                    <Image Grid.Column="3"
+                           Source="{DynamicResource BadgeRarityCompleted}"
+                           Width="18"
+                           Height="18"
+                           Stretch="Uniform"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
                 </Grid>
             </DataTemplate>
         </ResourceDictionary>
