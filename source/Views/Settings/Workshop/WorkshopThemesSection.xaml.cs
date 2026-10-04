@@ -9,15 +9,15 @@ using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.Views.Dialogs;
 
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
     /// <summary>
-    /// Workshop settings: the Themes page. Exports the global look as a .patheme bundle, adds
-    /// the parts of a bundle file to their preset lists, or shares the look to the Workshop.
+    /// Workshop settings: the Themes page. Composes a .patheme bundle part by part (current
+    /// settings or a saved preset for each), writes it to a file or shares it to the Workshop,
+    /// and adds the parts of a bundle file to their preset lists.
     /// </summary>
     public partial class WorkshopThemesSection : UserControl
     {
@@ -42,22 +42,21 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         }
 
         /// <summary>
-        /// Writes the global look as a .patheme bundle. The user picks which parts travel; the
-        /// notification parts carry the installed global custom templates when there are any.
+        /// Composer first, so the user sees what the bundle will hold, then the save dialog. The
+        /// chosen parts are materialized into a scratch folder and zipped from there.
         /// </summary>
         private void ExportTheme_Click(object sender, RoutedEventArgs e)
         {
-            var persisted = _settings?.Persisted;
             var store = _plugin?.ThemePackPortableStore;
-            if (persisted == null || store == null)
+            if (store == null)
             {
                 return;
             }
 
             try
             {
-                var parts = PickThemeParts(ThemePackParts.All, ResourceProvider.GetString("LOCPlayAch_Workshop_ExportTheme"));
-                if (parts == ThemePackParts.None)
+                var choices = Compose(ResourceProvider.GetString("LOCPlayAch_Workshop_ExportTheme"));
+                if (choices == null)
                 {
                     return;
                 }
@@ -75,14 +74,17 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     return;
                 }
 
-                var resolver = CreateTemplateResolver();
-                store.Export(
-                    ThemePackPortableStore.NormalizeExportPath(dialog.FileName),
-                    parts,
-                    persisted,
-                    _plugin.UnlockSounds?.Resolver?.ResolveAll(),
-                    resolver.ReadCustomTemplateXaml(isFrame: false, providerKey: null, gameId: Guid.Empty),
-                    resolver.ReadCustomTemplateXaml(isFrame: true, providerKey: null, gameId: Guid.Empty));
+                var scratch = PortablePackage.CreateScratchDirectory("ThemeCompose");
+                try
+                {
+                    var parts = new ThemeComposer(_plugin, _logger).BuildPartFiles(choices, scratch);
+                    store.ExportParts(ThemePackPortableStore.NormalizeExportPath(dialog.FileName), parts);
+                }
+                finally
+                {
+                    PortablePackage.TryDeleteDirectory(scratch);
+                }
+
                 ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -171,29 +173,61 @@ namespace PlayniteAchievements.Views.Settings.Workshop
             }
         }
 
+        /// <summary>
+        /// Same composer as Export, then the share dialog with the composed parts. The scratch
+        /// folder outlives the modal share dialog and is removed when it closes.
+        /// </summary>
         private void ShareTheme_Click(object sender, RoutedEventArgs e)
         {
-            _plugin?.OpenWorkshopShare(WorkshopItemKind.Theme, Window.GetWindow(this));
+            if (_plugin == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var choices = Compose(ResourceProvider.GetString("LOCPlayAch_Workshop_Share"));
+                if (choices == null)
+                {
+                    return;
+                }
+
+                var scratch = PortablePackage.CreateScratchDirectory("ThemeCompose");
+                try
+                {
+                    var parts = new ThemeComposer(_plugin, _logger).BuildPartFiles(choices, scratch);
+                    _plugin.OpenWorkshopShare(WorkshopItemKind.Theme, Window.GetWindow(this), themePartFiles: parts);
+                }
+                finally
+                {
+                    PortablePackage.TryDeleteDirectory(scratch);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed composing theme for sharing.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        private IReadOnlyList<ThemePartChoice> Compose(string title)
+        {
+            return ThemeComposerDialog.Show(
+                new ThemeComposer(_plugin, _logger),
+                title,
+                ResourceProvider.GetString("LOCPlayAch_Workshop_ThemeComposerHint"),
+                Window.GetWindow(this) ?? _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow());
         }
 
         /// <summary>
-        /// Offers the four theme parts as a checklist titled as the theme row, with
-        /// <paramref name="hint"/> above the list and parts outside <paramref name="available"/>
-        /// shown disabled, and returns the chosen set.
+        /// Offers the four theme parts of an imported bundle as a checklist, with parts outside
+        /// <paramref name="available"/> shown disabled, and returns the chosen set.
         /// </summary>
         private ThemePackParts PickThemeParts(ThemePackParts available, string hint)
         {
-            var items = new[]
-            {
-                new PartPickerItem(ThemePackParts.Colors, ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"),
-                    isEnabled: available.HasFlag(ThemePackParts.Colors)),
-                new PartPickerItem(ThemePackParts.Sounds, ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Sounds"),
-                    isEnabled: available.HasFlag(ThemePackParts.Sounds)),
-                new PartPickerItem(ThemePackParts.Toast, ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab"),
-                    isEnabled: available.HasFlag(ThemePackParts.Toast)),
-                new PartPickerItem(ThemePackParts.Frame, ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader"),
-                    isEnabled: available.HasFlag(ThemePackParts.Frame))
-            };
+            var items = ThemeComposer.Parts
+                .Select(part => new PartPickerItem(part, ThemeComposer.LabelFor(part), isEnabled: available.HasFlag(part)))
+                .ToList();
 
             var selected = PartPickerDialog.Show(
                 ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Theme"),
@@ -219,15 +253,6 @@ namespace PlayniteAchievements.Views.Settings.Workshop
             }
 
             return name;
-        }
-
-        private AchievementToastTemplateResolver CreateTemplateResolver()
-        {
-            return new AchievementToastTemplateResolver(
-                _plugin.PlayniteApi,
-                _logger,
-                customTemplatesDirectory: AchievementToastTemplateResolver.GetCustomTemplatesDirectory(
-                    _plugin.GetPluginUserDataPath()));
         }
 
         private void ShowMessage(string message, MessageBoxImage image)
