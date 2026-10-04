@@ -194,7 +194,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewProviderPieChart = true;
         private bool _showOverviewRarityPieChart = true;
         private bool _showOverviewTrophyPieChart = true;
-        private bool _showOverviewPiePercentages = true;
+        private PieCenterMode _overviewPieCenterMode = PieCenterMode.Percentage;
         private bool _showOverviewPieIcons = true;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
@@ -2229,12 +2229,13 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows the center percentage text on overview pie charts.
+        /// What overview pie charts draw in their center: the unlocked percentage, nothing,
+        /// or no hole at all.
         /// </summary>
-        public bool ShowOverviewPiePercentages
+        public PieCenterMode OverviewPieCenterMode
         {
-            get => _showOverviewPiePercentages;
-            set => SetValue(ref _showOverviewPiePercentages, value);
+            get => _overviewPieCenterMode;
+            set => SetValue(ref _overviewPieCenterMode, value);
         }
 
         /// <summary>
@@ -3276,7 +3277,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewProviderPieChart = this.ShowOverviewProviderPieChart,
                 ShowOverviewRarityPieChart = this.ShowOverviewRarityPieChart,
                 ShowOverviewTrophyPieChart = this.ShowOverviewTrophyPieChart,
-                ShowOverviewPiePercentages = this.ShowOverviewPiePercentages,
+                OverviewPieCenterMode = this.OverviewPieCenterMode,
                 ShowOverviewPieIcons = this.ShowOverviewPieIcons,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 OverviewPieIncludeLocked = this.OverviewPieIncludeLocked,
@@ -3448,7 +3449,7 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewProviderPieChart = defaults.ShowOverviewProviderPieChart;
             ShowOverviewRarityPieChart = defaults.ShowOverviewRarityPieChart;
             ShowOverviewTrophyPieChart = defaults.ShowOverviewTrophyPieChart;
-            ShowOverviewPiePercentages = defaults.ShowOverviewPiePercentages;
+            OverviewPieCenterMode = defaults.OverviewPieCenterMode;
             ShowOverviewPieIcons = defaults.ShowOverviewPieIcons;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             OverviewPieIncludeLocked = defaults.OverviewPieIncludeLocked;
