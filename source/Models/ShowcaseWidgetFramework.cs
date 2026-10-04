@@ -351,7 +351,8 @@ namespace PlayniteAchievements.Models
         private const string ShowControlBar = "ShowControlBar";
         private const string UseCoverImages = "UseCoverImages";
         private const string ShowCompletionGlow = "ShowCompletionGlow";
-        private const string ShowCenterPercentage = "ShowCenterPercentage";
+        private const string CenterMode = "CenterMode";
+        private const string LegacyShowCenterPercentage = "ShowCenterPercentage";
         private const string ShowLegend = "ShowLegend";
         private const string ShowIcons = "ShowIcons";
         private const string IncludeLocked = "IncludeLocked";
@@ -487,11 +488,33 @@ namespace PlayniteAchievements.Models
         public static void SetPieMode(ShowcaseWidgetInstanceSettings settings, ShowcasePieMode value) =>
             settings?.SetOption(Mode, value);
 
-        public static bool GetPieShowCenterPercentage(ShowcaseWidgetInstanceSettings settings) =>
-            settings?.GetOption(ShowCenterPercentage, true) ?? true;
+        /// <summary>
+        /// Falls back to the legacy show-percentage toggle for widgets saved before the center
+        /// mode existed: on reads as <see cref="PieCenterMode.Percentage"/>, off as
+        /// <see cref="PieCenterMode.Empty"/>.
+        /// </summary>
+        public static PieCenterMode GetPieCenterMode(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (settings?.Options != null && settings.Options.ContainsKey(CenterMode))
+            {
+                return GetEnum(settings, CenterMode, PieCenterMode.Percentage);
+            }
 
-        public static void SetPieShowCenterPercentage(ShowcaseWidgetInstanceSettings settings, bool value) =>
-            settings?.SetOption(ShowCenterPercentage, value);
+            return settings?.GetOption(LegacyShowCenterPercentage, true) ?? true
+                ? PieCenterMode.Percentage
+                : PieCenterMode.Empty;
+        }
+
+        public static void SetPieCenterMode(ShowcaseWidgetInstanceSettings settings, PieCenterMode value)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            settings.SetOption(CenterMode, value);
+            settings.Options?.Remove(LegacyShowCenterPercentage);
+        }
 
         /// <summary>
         /// Whether the pie draws its trailing locked slice. Ignored by the completions mode,
@@ -945,7 +968,7 @@ namespace PlayniteAchievements.Models
                     break;
                 case ShowcaseWidgetKind.Pie:
                     ShowcaseWidgetOptions.SetPieMode(settings, ShowcasePieMode.CompletedGames);
-                    ShowcaseWidgetOptions.SetPieShowCenterPercentage(settings, true);
+                    ShowcaseWidgetOptions.SetPieCenterMode(settings, PieCenterMode.Percentage);
                     ShowcaseWidgetOptions.SetPieShowLegend(settings, true);
                     ShowcaseWidgetOptions.SetPieShowIcons(settings, true);
                     ShowcaseWidgetOptions.SetPieIncludeLocked(settings, true);
