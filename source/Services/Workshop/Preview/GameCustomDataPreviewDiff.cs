@@ -129,6 +129,12 @@ namespace PlayniteAchievements.Services.Workshop.Preview
         /// <summary>The changed rows, in the order the game shows them after the install, removed rows last.</summary>
         public IReadOnlyList<AchievementPreviewRow> Rows { get; internal set; } = Array.Empty<AchievementPreviewRow>();
 
+        /// <summary>
+        /// The compared achievements the install leaves as they are, in the order the game shows
+        /// them after the install; empty when <see cref="IsPackageOnly"/>.
+        /// </summary>
+        public IReadOnlyList<AchievementPreviewRow> UnchangedRows { get; internal set; } = Array.Empty<AchievementPreviewRow>();
+
         /// <summary>How many compared achievements the install leaves as they are.</summary>
         public int UnchangedCount { get; internal set; }
 
