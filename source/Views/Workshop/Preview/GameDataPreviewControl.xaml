@@ -14,7 +14,7 @@
                 <helpers:SharedResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- One side of a row: icon, name, and up to two lines of description. -->
+            <!-- One package entry: icon, name, and up to two lines of description. -->
             <DataTemplate x:Key="StateTemplate">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -52,65 +52,6 @@
                 </Grid>
             </DataTemplate>
 
-            <!-- Compared against a library game: badge | before | arrow | after | category | capstone. -->
-            <DataTemplate x:Key="ComparisonRowTemplate" DataType="{x:Type preview:GameDataPreviewRow}">
-                <Grid Height="{x:Static preview:GameDataPreviewControl.RowHeight}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.BadgeColumnWidth}"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.ArrowColumnWidth}"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.CategoryColumnWidth}"/>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.BadgeColumnWidth}"/>
-                    </Grid.ColumnDefinitions>
-                    <controls:GlyphIcon Grid.Column="0"
-                                        Glyph="{Binding BadgeGlyph}"
-                                        Size="14"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                        Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                                        Visibility="{Binding HasBadge, Converter={StaticResource BoolToVis}}"/>
-                    <ContentControl Grid.Column="1"
-                                    Content="{Binding Before}"
-                                    ContentTemplate="{StaticResource StateTemplate}"
-                                    VerticalAlignment="Center"
-                                    Focusable="False"
-                                    Visibility="{Binding HasBefore, Converter={StaticResource BoolToVis}}"/>
-                    <controls:GlyphIcon Grid.Column="2"
-                                        Glyph="&#xEA94;"
-                                        Size="14"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                        Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
-                    <ContentControl Grid.Column="3"
-                                    Content="{Binding After}"
-                                    ContentTemplate="{StaticResource StateTemplate}"
-                                    VerticalAlignment="Center"
-                                    Focusable="False"
-                                    Visibility="{Binding HasAfter, Converter={StaticResource BoolToVis}}"/>
-                    <TextBlock Grid.Column="4"
-                               Text="{Binding CategoryText}"
-                               ToolTip="{Binding CategoryText}"
-                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                               TextTrimming="CharacterEllipsis"
-                               VerticalAlignment="Center"
-                               Margin="8,0,0,0"/>
-                    <!-- The capstone badge the achievement grids show (BadgeRarityCompleted). -->
-                    <Image Grid.Column="5"
-                           Source="{DynamicResource BadgeRarityCompleted}"
-                           Width="18"
-                           Height="18"
-                           Stretch="Uniform"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Center"
-                           Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
-                </Grid>
-            </DataTemplate>
-
             <!-- Package only: badge | the package's entry | category | capstone. -->
             <DataTemplate x:Key="PackageRowTemplate" DataType="{x:Type preview:GameDataPreviewRow}">
                 <Grid Height="{x:Static preview:GameDataPreviewControl.RowHeight}">
@@ -132,8 +73,7 @@
                                     Content="{Binding After}"
                                     ContentTemplate="{StaticResource StateTemplate}"
                                     VerticalAlignment="Center"
-                                    Focusable="False"
-                                    Visibility="{Binding HasAfter, Converter={StaticResource BoolToVis}}"/>
+                                    Focusable="False"/>
                     <TextBlock Grid.Column="2"
                                Text="{Binding CategoryText}"
                                ToolTip="{Binding CategoryText}"
@@ -142,6 +82,7 @@
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"
                                Margin="8,0,0,0"/>
+                    <!-- The capstone badge the achievement grids show (BadgeRarityCompleted). -->
                     <Image Grid.Column="3"
                            Source="{DynamicResource BadgeRarityCompleted}"
                            Width="18"
@@ -157,7 +98,6 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -193,51 +133,65 @@
                        Visibility="Collapsed"/>
         </StackPanel>
 
-        <CheckBox x:Name="ShowUnchangedCheckBox"
-                  Grid.Row="2"
-                  Content="{DynamicResource LOCPlayAch_Workshop_Preview_ShowUnchanged}"
-                  Margin="0,0,0,8"
-                  Checked="ShowUnchanged_Changed"
-                  Unchecked="ShowUnchanged_Changed"
-                  Visibility="Collapsed"/>
+        <!-- Compared against a library game: which rows, and which side of the install. -->
+        <StackPanel x:Name="ComparisonOptions"
+                    Grid.Row="2"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,8"
+                    Visibility="Collapsed">
+            <!-- The time-window preset chips' style, as a two-state toggle. -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                <RadioButton x:Name="BeforeButton"
+                             Style="{StaticResource PlayAch.TimeRangeChip.Style}"
+                             Content="{DynamicResource LOCPlayAch_Workshop_Preview_Before}"
+                             Checked="Options_Changed"/>
+                <RadioButton x:Name="AfterButton"
+                             Style="{StaticResource PlayAch.TimeRangeChip.Style}"
+                             Content="{DynamicResource LOCPlayAch_Workshop_Preview_After}"
+                             IsChecked="True"
+                             Checked="Options_Changed"/>
+            </StackPanel>
+            <CheckBox x:Name="ShowUnchangedCheckBox"
+                      VerticalAlignment="Center"
+                      Content="{DynamicResource LOCPlayAch_Workshop_Preview_ShowUnchanged}"
+                      Checked="Options_Changed"
+                      Unchecked="Options_Changed"/>
+        </StackPanel>
 
-        <!-- Column headers over the before and after sides. -->
-        <Grid x:Name="ComparisonHeader" Grid.Row="3" Margin="4,0,4,4" Visibility="Collapsed">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.BadgeColumnWidth}"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.ArrowColumnWidth}"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.CategoryColumnWidth}"/>
-                <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.BadgeColumnWidth}"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="1"
-                       Text="{DynamicResource LOCPlayAch_Workshop_Preview_Before}"
-                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                       Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
-            <TextBlock Grid.Column="3"
-                       Text="{DynamicResource LOCPlayAch_Workshop_Preview_After}"
-                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                       Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
-            <TextBlock Grid.Column="4"
-                       Text="{DynamicResource LOCPlayAch_Common_Label_Category}"
-                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                       Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                       Margin="8,0,0,0"/>
-        </Grid>
-
+        <!-- Package only: the package's own entries. -->
         <ListBox x:Name="RowList"
-                 Grid.Row="4"
+                 Grid.Row="3"
                  Foreground="{DynamicResource PlayAch.Brush.Text}"
                  HorizontalContentAlignment="Stretch"
+                 ItemTemplate="{StaticResource PackageRowTemplate}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.CanContentScroll="True"
                  VirtualizingPanel.IsVirtualizing="True"
                  VirtualizingPanel.VirtualizationMode="Recycling"
-                 VirtualizingPanel.ScrollUnit="Item"/>
+                 VirtualizingPanel.ScrollUnit="Item"
+                 Visibility="Collapsed"/>
+
+        <!-- Compared: the game's achievements in the grid View Achievements shows them in, one
+             grid after the install and one as they are now; Before / After shows one of them. -->
+        <controls:AchievementDataGridControl x:Name="AfterGrid"
+                                             Grid.Row="3"
+                                             ShowControlBar="False"
+                                             AllowLayoutPersistence="False"
+                                             AllowColumnVisibilityMenu="False"
+                                             AllowDisplaySettingsMenu="False"
+                                             DataGridMaxHeight="{x:Static preview:GameDataPreviewControl.UnboundedHeight}"
+                                             Visibility="Collapsed"/>
+        <controls:AchievementDataGridControl x:Name="BeforeGrid"
+                                             Grid.Row="3"
+                                             ShowControlBar="False"
+                                             AllowLayoutPersistence="False"
+                                             AllowColumnVisibilityMenu="False"
+                                             AllowDisplaySettingsMenu="False"
+                                             DataGridMaxHeight="{x:Static preview:GameDataPreviewControl.UnboundedHeight}"
+                                             Visibility="Collapsed"/>
 
         <TextBlock x:Name="MoreRowsText"
-                   Grid.Row="5"
+                   Grid.Row="4"
                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                    Opacity="{StaticResource PlayAch.Opacity.Muted}"
                    Margin="4,6,0,0"
