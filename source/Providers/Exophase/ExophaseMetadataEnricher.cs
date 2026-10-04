@@ -109,7 +109,8 @@ namespace PlayniteAchievements.Providers.Exophase
             CancellationToken ct,
             ExophaseMetadataFields fields = ExophaseMetadataFields.Rarity,
             string regionHint = null,
-            string searchName = null)
+            string searchName = null,
+            bool fallBackToGameName = true)
         {
             if (!_isReady ||
                 fields == ExophaseMetadataFields.None ||
@@ -120,17 +121,25 @@ namespace PlayniteAchievements.Providers.Exophase
                 return;
             }
 
-            // Multipack collections enrich one trophy set at a time; searchName carries the
-            // set's own title, which Exophase lists, where the collection name is not listed.
-            var effectiveName = string.IsNullOrWhiteSpace(searchName) ? game.Name : searchName.Trim();
+            // searchName is the platform's own title for the game (or, for a multipack
+            // collection, one trophy set's title), which Exophase lists under that name where
+            // the Playnite name may differ. The Playnite name is searched next unless the caller
+            // opts out, as a collection does: its name belongs to no single set.
+            var searchNames = BuildSearchNames(searchName, game.Name, fallBackToGameName);
+            if (searchNames.Count == 0)
+            {
+                return;
+            }
+
+            var effectiveName = searchNames[0];
 
             try
             {
                 var platformSlug = ResolvePlatformSlug(game, platformSlugHint);
-                var slugs = await ResolveSlugsAsync(game, effectiveName, platformSlug, regionHint, ct).ConfigureAwait(false);
+                var slugs = await ResolveSlugsAsync(game, searchNames, platformSlug, regionHint, ct).ConfigureAwait(false);
                 if (slugs.Count == 0)
                 {
-                    _logger?.Debug($"[ExophaseMetadata] No Exophase slug resolved for '{effectiveName}'.");
+                    _logger?.Debug($"[ExophaseMetadata] No Exophase slug resolved for '{string.Join("' / '", searchNames)}'.");
                     return;
                 }
 
@@ -179,7 +188,49 @@ namespace PlayniteAchievements.Providers.Exophase
             }
         }
 
-        private async Task<List<string>> ResolveSlugsAsync(Game game, string effectiveName, string platformSlug, string regionHint, CancellationToken ct)
+        /// <summary>
+        /// The names to search, in order: the caller's name, then the Playnite name when allowed and
+        /// different once normalized. Blank names are skipped.
+        /// </summary>
+        internal static List<string> BuildSearchNames(string searchName, string gameName, bool fallBackToGameName)
+        {
+            var names = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void Add(string name)
+            {
+                var trimmed = name?.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    return;
+                }
+
+                var key = ExophaseGameNameMatcher.NormalizeGameName(trimmed) ?? trimmed;
+                if (seen.Add(key))
+                {
+                    names.Add(trimmed);
+                }
+            }
+
+            Add(searchName);
+            if (fallBackToGameName || string.IsNullOrWhiteSpace(searchName))
+            {
+                Add(gameName);
+            }
+
+            return names;
+        }
+
+        /// <summary>
+        /// Overrides first; then each search name in turn, returning the first name's match; and
+        /// only when every search misses, slugs generated from the first name.
+        /// </summary>
+        private async Task<List<string>> ResolveSlugsAsync(
+            Game game,
+            IReadOnlyList<string> searchNames,
+            string platformSlug,
+            string regionHint,
+            CancellationToken ct)
         {
             if (GameCustomDataLookup.TryGetExophaseEnrichmentSlugOverride(game.Id, out var enrichmentSlug) &&
                 !string.IsNullOrWhiteSpace(enrichmentSlug))
@@ -197,15 +248,43 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             var platformSlugs = GetPlatformSlugCandidates(platformSlug);
-            // The name is part of the key because collections resolve one slug per trophy set
-            // under the same game id.
-            var cacheKey = $"{game.Id:N}:{effectiveName}:{string.Join("|", platformSlugs)}";
-            if (TryGetCachedSlug(cacheKey, out var cachedSlug))
+            foreach (var searchName in searchNames)
             {
-                return new List<string> { cachedSlug };
+                var searched = await SearchSlugAsync(game, searchName, platformSlugs, regionHint, ct).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(searched))
+                {
+                    return new List<string> { searched };
+                }
             }
 
-            var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(effectiveName);
+            // PSN slugs on Exophase carry no platform suffix and regional variants get
+            // opaque dedup suffixes, so a generated slug can never be right there; skip
+            // the guess instead of fetching a guaranteed 404 every refresh.
+            return platformSlugs
+                .Where(candidatePlatformSlug => !PsnPlatformSlugs.Contains(candidatePlatformSlug))
+                .Select(candidatePlatformSlug => GenerateDefaultSlug(searchNames[0], candidatePlatformSlug))
+                .Where(defaultSlug => !string.IsNullOrWhiteSpace(defaultSlug))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        /// <summary>The slug of the best search match for one name, or null.</summary>
+        private async Task<string> SearchSlugAsync(
+            Game game,
+            string searchName,
+            IReadOnlyList<string> platformSlugs,
+            string regionHint,
+            CancellationToken ct)
+        {
+            // The name is part of the key because collections resolve one slug per trophy set
+            // under the same game id.
+            var cacheKey = $"{game.Id:N}:{searchName}:{string.Join("|", platformSlugs)}";
+            if (TryGetCachedSlug(cacheKey, out var cachedSlug))
+            {
+                return cachedSlug;
+            }
+
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(searchName);
             if (!string.IsNullOrWhiteSpace(normalizedName))
             {
                 foreach (var candidatePlatformSlug in platformSlugs)
@@ -238,20 +317,12 @@ namespace PlayniteAchievements.Providers.Exophase
                     if (!string.IsNullOrWhiteSpace(resolvedSlug))
                     {
                         CacheSlug(cacheKey, resolvedSlug);
-                        return new List<string> { resolvedSlug };
+                        return resolvedSlug;
                     }
                 }
             }
 
-            // PSN slugs on Exophase carry no platform suffix and regional variants get
-            // opaque dedup suffixes, so a generated slug can never be right there; skip
-            // the guess instead of fetching a guaranteed 404 every refresh.
-            return platformSlugs
-                .Where(candidatePlatformSlug => !PsnPlatformSlugs.Contains(candidatePlatformSlug))
-                .Select(candidatePlatformSlug => GenerateDefaultSlug(effectiveName, candidatePlatformSlug))
-                .Where(defaultSlug => !string.IsNullOrWhiteSpace(defaultSlug))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            return null;
         }
 
         private static readonly HashSet<string> PsnPlatformSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
