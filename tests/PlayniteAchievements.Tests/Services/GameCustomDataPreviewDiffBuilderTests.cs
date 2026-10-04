@@ -367,6 +367,58 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void AfterData_IsTheHydratedGameAfterTheInstall_AndBeforeDataTheCurrentOne()
+        {
+            var source = Source(current: null);
+            var manifest = new GameCustomDataPortableFile
+            {
+                AchievementOrder = new List<string> { "a3", "a1", "a2" },
+                AchievementCategoryOrder = new List<string> { "DLC" },
+                AchievementOverrides = Overrides(("a1", new AchievementOverride { DisplayName = "Renamed", Category = "DLC" })),
+                CapstonesMaterialized = true,
+                Capstones = new List<CapstoneAssignment> { new CapstoneAssignment { ApiName = "a2" } },
+                CustomAchievements = new List<CustomAchievementDefinition>
+                {
+                    new CustomAchievementDefinition { Id = "bonus", DisplayName = "Bonus", TrophyType = "gold", Points = 50 }
+                }
+            };
+
+            var diff = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(manifest), source);
+
+            Assert.AreSame(source.CurrentData, diff.BeforeData);
+            var after = diff.AfterData;
+            Assert.IsNotNull(after);
+            Assert.AreNotSame(source.RawData, after);
+            Assert.AreEqual(GameId, after.PlayniteGameId);
+            CollectionAssert.AreEqual(new[] { "a3", "a1", "a2" }, after.AchievementOrder);
+            CollectionAssert.AreEqual(new[] { "DLC" }, after.AchievementCategoryOrder);
+            Assert.AreEqual(4, after.Achievements.Count);
+
+            var a1 = after.Achievements.Single(achievement => achievement.ApiName == "a1");
+            Assert.AreEqual("Renamed", a1.DisplayName);
+            Assert.AreEqual("DLC", a1.Category);
+            Assert.IsTrue(after.Achievements.Single(achievement => achievement.ApiName == "a2").IsCapstone);
+            var bonus = after.Achievements.Single(achievement => achievement.IsCustom);
+            Assert.AreEqual("gold", bonus.TrophyType);
+            Assert.AreEqual(50, bonus.Points);
+            Assert.AreEqual("A1", diff.BeforeData.Achievements.Single(achievement => achievement.ApiName == "a1").DisplayName);
+        }
+
+        [TestMethod]
+        public void PackageOnly_HasNoAfterOrBeforeData()
+        {
+            var manifest = new GameCustomDataPortableFile
+            {
+                AchievementOverrides = Overrides(("a1", new AchievementOverride { DisplayName = "Renamed" }))
+            };
+
+            var diff = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(manifest), source: null);
+
+            Assert.IsNull(diff.AfterData);
+            Assert.IsNull(diff.BeforeData);
+        }
+
+        [TestMethod]
         public void PreviewState_RaisesPropertyChangedWhenAnIconIsSwapped()
         {
             var state = new AchievementPreviewState { UnlockedIcon = "path" };
