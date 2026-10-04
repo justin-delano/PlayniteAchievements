@@ -224,6 +224,7 @@ namespace PlayniteAchievements.ViewModels
             ApplyOverviewPieIncludeLocked();
             ApplyOverviewPieCenterMode();
             ApplyOverviewPieIcons();
+            ApplyOverviewPieLegend();
 
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
@@ -2702,6 +2703,7 @@ namespace PlayniteAchievements.ViewModels
                 ApplyOverviewPieIncludeLocked();
                 ApplyOverviewPieCenterMode();
                 ApplyOverviewPieIcons();
+                ApplyOverviewPieLegend();
                 RaiseOverviewPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
                 OnPropertyChanged(nameof(EnableFriendsFeatures));
@@ -2901,6 +2903,11 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.OverviewPieCenterMode))
             {
                 ApplyOverviewPieCenterMode();
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewPieLegend) ||
+                propertyName == nameof(PersistedSettings.OverviewPieLegendPosition))
+            {
+                ApplyOverviewPieLegend();
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewPieIcons))
             {
@@ -3873,6 +3880,17 @@ namespace PlayniteAchievements.ViewModels
             ProviderPieChart.CenterMode = centerMode;
             RarityPieChart.CenterMode = centerMode;
             TrophyPieChart.CenterMode = centerMode;
+        }
+
+        private void ApplyOverviewPieLegend()
+        {
+            var showLegend = _settings?.Persisted?.ShowOverviewPieLegend ?? false;
+            var position = _settings?.Persisted?.OverviewPieLegendPosition ?? PieLegendPosition.Right;
+            foreach (var chart in new[] { GamesPieChart, ProviderPieChart, RarityPieChart, TrophyPieChart })
+            {
+                chart.ShowLegend = showLegend;
+                chart.LegendPosition = position;
+            }
         }
 
         private void ApplyOverviewPieIcons()

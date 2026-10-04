@@ -119,7 +119,9 @@ namespace PlayniteAchievements.Models.Tests
             var source = new PersistedSettings
             {
                 OverviewPieCenterMode = PieCenterMode.Filled,
-                ShowOverviewPieIcons = false
+                ShowOverviewPieIcons = false,
+                ShowOverviewPieLegend = true,
+                OverviewPieLegendPosition = PieLegendPosition.Left
             };
 
             var clone = source.Clone();
@@ -130,6 +132,8 @@ namespace PlayniteAchievements.Models.Tests
             {
                 Assert.AreEqual(PieCenterMode.Filled, copy.OverviewPieCenterMode);
                 Assert.IsFalse(copy.ShowOverviewPieIcons);
+                Assert.IsTrue(copy.ShowOverviewPieLegend);
+                Assert.AreEqual(PieLegendPosition.Left, copy.OverviewPieLegendPosition);
             }
         }
 

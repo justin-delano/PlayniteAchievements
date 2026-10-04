@@ -62,6 +62,8 @@ namespace PlayniteAchievements.ViewModels
         private bool _includeLocked = true;
         private PieCenterMode _centerMode = PieCenterMode.Percentage;
         private bool _showIcons = true;
+        private bool _showLegend;
+        private PieLegendPosition _legendPosition = PieLegendPosition.Right;
         private int _exactUnlockedCount;
         private int _exactTotalCount;
         private bool _alwaysShowSmallSliceIcons;
@@ -123,6 +125,19 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _showIcons;
             set => SetValue(ref _showIcons, value);
+        }
+
+        /// <summary>Whether the chart control draws a legend beside the pie. Render-only, like <see cref="ShowIcons"/>.</summary>
+        public bool ShowLegend
+        {
+            get => _showLegend;
+            set => SetValue(ref _showLegend, value);
+        }
+
+        public PieLegendPosition LegendPosition
+        {
+            get => _legendPosition;
+            set => SetValue(ref _legendPosition, value);
         }
 
         public int ExactUnlockedCount

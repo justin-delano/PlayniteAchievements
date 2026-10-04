@@ -15,7 +15,10 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid>
+    <controls:PieLegendLayoutPanel LegendPosition="{Binding LegendPosition, ElementName=Root}">
+    <!-- The pie and its overlays share one square host; icon and percentage geometry is
+         measured against it, not against the whole control. -->
+    <Grid x:Name="PieHost">
         <lvc:PieChart x:Name="Chart"
                       SnapsToDevicePixels="True"
                       UseLayoutRounding="True"
@@ -102,4 +105,47 @@
             </ItemsControl>
         </Canvas>
     </Grid>
+
+    <!-- Legend rows stand in for their slices: hovering one pushes the slice out and clicking
+         one raises SliceClick, exactly as the slice itself would. -->
+    <ItemsControl ItemsSource="{Binding LegendRows, ElementName=Root}"
+                  VerticalAlignment="Center"
+                  Visibility="{Binding ShowLegend, ElementName=Root, Converter={StaticResource BoolToVis}}">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Grid Margin="0,3"
+                      Background="Transparent"
+                      MouseEnter="OnLegendRowMouseEnter"
+                      MouseLeave="OnLegendRowMouseLeave"
+                      MouseLeftButtonUp="OnLegendRowMouseLeftButtonUp">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="8"
+                            Height="8"
+                            CornerRadius="4"
+                            Margin="0,0,7,0"
+                            VerticalAlignment="Center"
+                            Background="{Binding Swatch}"/>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Label}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding CountText}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               FontWeight="SemiBold"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    </controls:PieLegendLayoutPanel>
 </UserControl>

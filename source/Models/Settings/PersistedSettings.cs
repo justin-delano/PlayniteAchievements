@@ -198,6 +198,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewTrophyPieChart = true;
         private PieCenterMode _overviewPieCenterMode = PieCenterMode.Percentage;
         private bool _showOverviewPieIcons = true;
+        private bool _showOverviewPieLegend;
+        private PieLegendPosition _overviewPieLegendPosition = PieLegendPosition.Right;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
@@ -2270,6 +2272,24 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, overview pie charts draw a legend beside the pie.
+        /// </summary>
+        public bool ShowOverviewPieLegend
+        {
+            get => _showOverviewPieLegend;
+            set => SetValue(ref _showOverviewPieLegend, value);
+        }
+
+        /// <summary>
+        /// Which side of each overview pie its legend sits on.
+        /// </summary>
+        public PieLegendPosition OverviewPieLegendPosition
+        {
+            get => _overviewPieLegendPosition;
+            set => SetValue(ref _overviewPieLegendPosition, value);
+        }
+
+        /// <summary>
         /// Determines how overview pie charts handle slices below five percent.
         /// </summary>
         public OverviewPieSmallSliceMode OverviewPieSmallSliceMode
@@ -3303,6 +3323,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewTrophyPieChart = this.ShowOverviewTrophyPieChart,
                 OverviewPieCenterMode = this.OverviewPieCenterMode,
                 ShowOverviewPieIcons = this.ShowOverviewPieIcons,
+                ShowOverviewPieLegend = this.ShowOverviewPieLegend,
+                OverviewPieLegendPosition = this.OverviewPieLegendPosition,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 OverviewPieIncludeLocked = this.OverviewPieIncludeLocked,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
@@ -3475,6 +3497,8 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewTrophyPieChart = defaults.ShowOverviewTrophyPieChart;
             OverviewPieCenterMode = defaults.OverviewPieCenterMode;
             ShowOverviewPieIcons = defaults.ShowOverviewPieIcons;
+            ShowOverviewPieLegend = defaults.ShowOverviewPieLegend;
+            OverviewPieLegendPosition = defaults.OverviewPieLegendPosition;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             OverviewPieIncludeLocked = defaults.OverviewPieIncludeLocked;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;

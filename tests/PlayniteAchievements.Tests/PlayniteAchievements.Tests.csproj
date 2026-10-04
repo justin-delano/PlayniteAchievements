@@ -496,6 +496,7 @@
     <Compile Include="..\..\source\Services\CustomProviders\SvgGeometryImporter.cs" Link="Source\Services\CustomProviders\SvgGeometryImporter.cs" />
     <Compile Include="..\..\source\Models\Settings\OverviewPieSmallSliceMode.cs" Link="Source\Models\Settings\OverviewPieSmallSliceMode.cs" />
     <Compile Include="..\..\source\Models\Settings\PieCenterMode.cs" Link="Source\Models\Settings\PieCenterMode.cs" />
+    <Compile Include="..\..\source\Models\Settings\PieLegendPosition.cs" Link="Source\Models\Settings\PieLegendPosition.cs" />
     <Compile Include="..\..\source\Models\Settings\SettingsExtensions.cs" Link="Source\Models\Settings\SettingsExtensions.cs" />
     <Compile Include="..\..\source\Models\AchievementUnlockedEventArgs.cs" Link="Source\Models\AchievementUnlockedEventArgs.cs" />
     <Compile Include="..\..\source\Models\Achievements\UnlockCaptureRarityFilter.cs" Link="Source\Models\Achievements\UnlockCaptureRarityFilter.cs" />

@@ -250,6 +250,20 @@
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPieIcons}">
                         <CheckBox IsChecked="{Binding Persisted.ShowOverviewPieIcons}"/>
                     </controls:SettingRow>
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPieLegend}">
+                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewPieLegend}"/>
+                    </controls:SettingRow>
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PieLegendPosition}"
+                                         IsEnabled="{Binding Persisted.ShowOverviewPieLegend}">
+                        <ComboBox SelectedValue="{Binding Persisted.OverviewPieLegendPosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValuePath="Tag"
+                                  MinWidth="140">
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}"
+                                          Tag="{x:Static settings:PieLegendPosition.Left}"/>
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}"
+                                          Tag="{x:Static settings:PieLegendPosition.Right}"/>
+                        </ComboBox>
+                    </controls:SettingRow>
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PieIncludeLocked}">
                         <CheckBox IsChecked="{Binding Persisted.OverviewPieIncludeLocked}"/>
                     </controls:SettingRow>

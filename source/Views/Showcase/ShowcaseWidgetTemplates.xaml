@@ -516,57 +516,21 @@
       </DockPanel>
     </DataTemplate>
 
-    <!-- Pie: reuses PieChartWithRadialIcons with an optional legend on the right; the pair is centered. -->
+    <!-- Pie: reuses PieChartWithRadialIcons, which also draws the optional legend on either side. -->
     <DataTemplate DataType="{x:Type widgets:PieWidgetViewModel}">
-        <showcase:ShowcasePieLegendPanel>
-            <controls:PieChartWithRadialIcons
-                PieSeries="{Binding Chart.PieSeries}"
-                LegendItems="{Binding Chart.LegendItems}"
-                HighlightedLabels="{Binding Chart.HighlightedLabels}"
-                ExactUnlockedCount="{Binding Chart.ExactUnlockedCount}"
-                ExactTotalCount="{Binding Chart.ExactTotalCount}"
-                ShowCenterPercentage="{Binding Chart.ShowCenterPercentage}"
-                ShowIcons="{Binding Chart.ShowIcons}"
-                IsFilled="{Binding Chart.IsFilled}"
-                PieMargin="23"
-                MinHeight="70"/>
-            <ItemsControl ItemsSource="{Binding LegendRows}"
-                          VerticalAlignment="Center"
-                          Margin="16,0,0,0"
-                          Visibility="{Binding ShowLegend, Converter={StaticResource BoolToVis}}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="0,3">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Width="8"
-                                    Height="8"
-                                    CornerRadius="4"
-                                    Margin="0,0,7,0"
-                                    VerticalAlignment="Center"
-                                    Background="{Binding Swatch}"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding Label}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       Opacity="{StaticResource PlayAch.Opacity.Hint}"
-                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                       TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="{Binding CountText}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontWeight="SemiBold"
-                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                       Margin="8,0,0,0"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </showcase:ShowcasePieLegendPanel>
+        <controls:PieChartWithRadialIcons
+            PieSeries="{Binding Chart.PieSeries}"
+            LegendItems="{Binding Chart.LegendItems}"
+            HighlightedLabels="{Binding Chart.HighlightedLabels}"
+            ExactUnlockedCount="{Binding Chart.ExactUnlockedCount}"
+            ExactTotalCount="{Binding Chart.ExactTotalCount}"
+            ShowCenterPercentage="{Binding Chart.ShowCenterPercentage}"
+            ShowIcons="{Binding Chart.ShowIcons}"
+            IsFilled="{Binding Chart.IsFilled}"
+            ShowLegend="{Binding Chart.ShowLegend}"
+            LegendPosition="{Binding Chart.LegendPosition}"
+            PieMargin="23"
+            MinHeight="70"/>
     </DataTemplate>
 
     <!-- Timeline: the reused LiveCharts column chart with range buttons, identical at every size. -->
