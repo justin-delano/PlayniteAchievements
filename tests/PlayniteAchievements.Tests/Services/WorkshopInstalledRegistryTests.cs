@@ -35,6 +35,26 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Find_ReturnsContentHashAndBaselineFile()
+        {
+            WithTemp(dir =>
+            {
+                var registry = new WorkshopInstalledRegistry(dir);
+                var item = new WorkshopItem { Id = "game-data/steam-1/pack", Kind = WorkshopItemKind.GameCustomData, Name = "Pack", Version = "1.0.0" };
+                var game = Guid.NewGuid();
+                registry.Record(item, game, "icons=abc;data=def", Path.Combine(dir, "baseline.json"));
+
+                var found = registry.Find(item.Id, game);
+                Assert.AreEqual("icons=abc;data=def", found.ContentHash);
+                Assert.AreEqual(Path.Combine(dir, "baseline.json"), found.BaselineFile);
+
+                var reloaded = new WorkshopInstalledRegistry(dir).Find(item.Id);
+                Assert.AreEqual("icons=abc;data=def", reloaded.ContentHash, "the hash survives a reload");
+                Assert.AreEqual(Path.Combine(dir, "baseline.json"), reloaded.BaselineFile, "the baseline path survives a reload");
+            });
+        }
+
+        [TestMethod]
         public void GameData_IsRecordedPerGame()
         {
             WithTemp(dir =>
