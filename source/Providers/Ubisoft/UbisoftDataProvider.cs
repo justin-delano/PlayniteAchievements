@@ -168,7 +168,14 @@ namespace PlayniteAchievements.Providers.Ubisoft
                             ct).ConfigureAwait(false);
 
                         var achievements = UbisoftParsing.MapAchievements(graphGame?.Viewer?.Meta?.Achievements);
-                        await EnrichMetadataAsync(game, achievements, metadataEnricher, ct).ConfigureAwait(false);
+                        // Search Exophase by Ubisoft's own title: the Playnite name can differ, and
+                        // an overridden game's name can be anything.
+                        await EnrichMetadataAsync(
+                            game,
+                            achievements,
+                            UbisoftParsing.CleanTitle(graphGame?.Name),
+                            metadataEnricher,
+                            ct).ConfigureAwait(false);
 
                         return new ProviderRefreshExecutor.ProviderGameResult
                         {
@@ -223,6 +230,7 @@ namespace PlayniteAchievements.Providers.Ubisoft
         private static async Task EnrichMetadataAsync(
             Game game,
             List<AchievementDetail> achievements,
+            string searchName,
             ExophaseMetadataEnricher metadataEnricher,
             CancellationToken cancel)
         {
@@ -237,7 +245,8 @@ namespace PlayniteAchievements.Providers.Ubisoft
                 "ubisoft",
                 "Ubisoft",
                 cancel,
-                ExophaseMetadataFields.Rarity).ConfigureAwait(false);
+                ExophaseMetadataFields.Rarity,
+                searchName: searchName).ConfigureAwait(false);
         }
 
         private static bool IsTransientError(Exception ex)
