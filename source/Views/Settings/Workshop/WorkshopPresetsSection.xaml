@@ -39,7 +39,7 @@
                            Margin="0,0,0,10"/>
                 <WrapPanel Grid.Row="3" Margin="0,0,0,8">
                     <Button x:Name="ExportButton"
-                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
                             Click="Export_Click"
                             IsEnabled="False"
                             Margin="0,0,8,0"/>
