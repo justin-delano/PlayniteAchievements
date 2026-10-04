@@ -222,6 +222,7 @@ namespace PlayniteAchievements.ViewModels
             };
             ApplyOverviewPieSmallSliceMode();
             ApplyOverviewPieIncludeLocked();
+            ApplyOverviewPieCenterMode();
             ApplyOverviewPieIcons();
 
             // Set defaults: Unlocked Only, sorted by Unlock Date
@@ -1059,8 +1060,6 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowOverviewRarityPieChart => _settings?.Persisted?.ShowOverviewRarityPieChart ?? true;
 
         public bool ShowOverviewTrophyPieChart => _settings?.Persisted?.ShowOverviewTrophyPieChart ?? true;
-
-        public bool ShowOverviewPiePercentages => _settings?.Persisted?.ShowOverviewPiePercentages ?? true;
 
         public bool ShowOverviewBarCharts => _settings?.Persisted?.ShowOverviewBarCharts ?? true;
 
@@ -2701,9 +2700,9 @@ namespace PlayniteAchievements.ViewModels
                 RaiseOverviewScoreCardVisibilityChanged();
                 ApplyOverviewPieSmallSliceMode();
                 ApplyOverviewPieIncludeLocked();
+                ApplyOverviewPieCenterMode();
                 ApplyOverviewPieIcons();
                 RaiseOverviewPieChartVisibilityChanged();
-                OnPropertyChanged(nameof(ShowOverviewPiePercentages));
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
                 OnPropertyChanged(nameof(EnableFriendsFeatures));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlatform));
@@ -2781,10 +2780,6 @@ namespace PlayniteAchievements.ViewModels
                 || propertyName == nameof(PersistedSettings.ShowOverviewTrophyPieChart))
             {
                 RaiseOverviewPieChartVisibilityChanged();
-            }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewPiePercentages))
-            {
-                OnPropertyChanged(nameof(ShowOverviewPiePercentages));
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewBarCharts))
             {
@@ -2898,11 +2893,14 @@ namespace PlayniteAchievements.ViewModels
                 ApplyOverviewPieSmallSliceMode();
                 UpdateAggregatePieCharts();
             }
-            else if (propertyName == nameof(PersistedSettings.OverviewPieIncludeLocked) ||
-                propertyName == nameof(PersistedSettings.ShowOverviewPiePercentages))
+            else if (propertyName == nameof(PersistedSettings.OverviewPieIncludeLocked))
             {
                 ApplyOverviewPieIncludeLocked();
                 UpdateAggregatePieCharts();
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewPieCenterMode))
+            {
+                ApplyOverviewPieCenterMode();
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewPieIcons))
             {
@@ -3863,14 +3861,18 @@ namespace PlayniteAchievements.ViewModels
         private void ApplyOverviewPieIncludeLocked()
         {
             var includeLocked = _settings?.Persisted?.OverviewPieIncludeLocked ?? true;
-            var showPercentages = _settings?.Persisted?.ShowOverviewPiePercentages ?? true;
-            GamesPieChart.ShowCenterPercentageRequested = showPercentages;
-            ProviderPieChart.ShowCenterPercentageRequested = showPercentages;
-            RarityPieChart.ShowCenterPercentageRequested = showPercentages;
-            TrophyPieChart.ShowCenterPercentageRequested = showPercentages;
             ProviderPieChart.IncludeLocked = includeLocked;
             RarityPieChart.IncludeLocked = includeLocked;
             TrophyPieChart.IncludeLocked = includeLocked;
+        }
+
+        private void ApplyOverviewPieCenterMode()
+        {
+            var centerMode = _settings?.Persisted?.OverviewPieCenterMode ?? PieCenterMode.Percentage;
+            GamesPieChart.CenterMode = centerMode;
+            ProviderPieChart.CenterMode = centerMode;
+            RarityPieChart.CenterMode = centerMode;
+            TrophyPieChart.CenterMode = centerMode;
         }
 
         private void ApplyOverviewPieIcons()
