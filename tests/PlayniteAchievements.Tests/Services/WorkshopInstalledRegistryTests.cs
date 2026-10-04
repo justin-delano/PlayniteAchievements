@@ -88,6 +88,28 @@ namespace PlayniteAchievements.Services.Tests
             });
         }
 
+        [TestMethod]
+        public void TrySetSubmitterKey_AcceptsAKeyFromAnotherInstall_AndRejectsAnythingElse()
+        {
+            WithTemp(dir =>
+            {
+                var registry = new WorkshopInstalledRegistry(dir);
+                var original = registry.GetOrCreateSubmitterKey();
+                var other = new string('a', 32) + new string('B', 32);
+
+                Assert.IsFalse(registry.TrySetSubmitterKey(null));
+                Assert.IsFalse(registry.TrySetSubmitterKey("not a key"));
+                Assert.IsFalse(registry.TrySetSubmitterKey(original.Substring(1)));
+                Assert.IsFalse(registry.TrySetSubmitterKey(new string('g', 64)));
+                Assert.AreEqual(original, registry.GetOrCreateSubmitterKey(), "rejected input leaves the key alone");
+
+                Assert.IsTrue(registry.IsValidSubmitterKey("  " + other + "  "));
+                Assert.IsTrue(registry.TrySetSubmitterKey("  " + other + "  "));
+                Assert.AreEqual(other.ToLowerInvariant(), registry.GetOrCreateSubmitterKey(), "stored lower-case and trimmed");
+                Assert.AreEqual(other.ToLowerInvariant(), new WorkshopInstalledRegistry(dir).GetOrCreateSubmitterKey(), "persisted");
+            });
+        }
+
         private static void WithTemp(Action<string> body)
         {
             var dir = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
