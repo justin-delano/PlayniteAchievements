@@ -339,7 +339,8 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static string TierLabelKey(UnlockSoundTier tier)
+        /// <summary>The localization key naming a sound tier, shared with the Workshop sound pack preview.</summary>
+        internal static string TierLabelKey(UnlockSoundTier tier)
         {
             switch (tier)
             {
