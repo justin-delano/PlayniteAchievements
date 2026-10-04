@@ -84,6 +84,12 @@
     <Style x:Key="HeaderIconStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
         <Setter Property="FontSize" Value="16"/>
+        <!-- Icon glyphs at 16px: Display formatting snaps them to the pixel grid, Grayscale avoids
+             ClearType fringes on the dark panel. Playnite windows run Ideal/Auto, which renders
+             these filled glyphs soft. -->
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Right.Sm}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
