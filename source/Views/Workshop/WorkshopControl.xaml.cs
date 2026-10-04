@@ -47,8 +47,7 @@ namespace PlayniteAchievements.Views.Workshop
                 PickBundleParts = PickBundleParts,
                 PickGame = PickGame,
                 Confirm = Confirm,
-                ShowPreview = (row, model) => WorkshopPreviewDialog.Show(plugin, row, model, Window.GetWindow(this)),
-                ConfirmPreviewImage = (row, imagePath) => WorkshopPreviewImageDialog.Show(row?.Name, imagePath, Window.GetWindow(this))
+                ShowPreview = (row, model) => WorkshopPreviewDialog.Show(plugin, row, model, Window.GetWindow(this))
             };
             DataContext = viewModel;
             viewModel.ItemsView.CollectionChanged += ItemsView_CollectionChanged;

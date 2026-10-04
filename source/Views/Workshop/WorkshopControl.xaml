@@ -149,11 +149,6 @@
                                     Margin="8,0,0,0"
                                     Command="{Binding DataContext.ReportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Workshop_UpdatePreview}"
-                                    Margin="8,0,0,0"
-                                    Command="{Binding DataContext.UpdatePreviewCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"
-                                    Visibility="{Binding IsOwnedByMe, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding RequiresNewerPluginText}"
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
@@ -373,7 +368,6 @@
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
                                                                 <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="Auto"/>
                                                             </Grid.ColumnDefinitions>
                                                             <StackPanel>
                                                                 <TextBlock Text="{Binding Name}"
@@ -389,12 +383,6 @@
                                                                        VerticalAlignment="Center"
                                                                        Margin="8,0"/>
                                                             <Button Grid.Column="2"
-                                                                    Content="{DynamicResource LOCPlayAch_Workshop_UpdatePreview}"
-                                                                    Margin="0,0,8,0"
-                                                                    Command="{Binding DataContext.UpdatePreviewCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding}"
-                                                                    Visibility="{Binding CanUpdatePreview, Converter={StaticResource BoolToVis}}"/>
-                                                            <Button Grid.Column="3"
                                                                     Content="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
                                                                     Command="{Binding DataContext.OpenSubmissionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                     CommandParameter="{Binding}"/>
