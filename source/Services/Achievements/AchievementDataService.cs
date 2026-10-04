@@ -271,6 +271,22 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
+        /// <summary>
+        /// Every cached game as stored, without hydration: enough for identity lookups (provider
+        /// key, app id, Playnite id, name) at a fraction of <see cref="GetAllGameAchievementData"/>.
+        /// </summary>
+        public List<GameAchievementData> GetAllCachedGameDataForLookup()
+        {
+            try
+            {
+                return LoadAllCachedGameData();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to load cached game identities");
+                return new List<GameAchievementData>();
+            }
+        }
         public List<GameAchievementData> GetAllGameAchievementDataForTheme()
         {
             try
