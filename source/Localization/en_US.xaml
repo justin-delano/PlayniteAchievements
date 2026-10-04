@@ -1610,6 +1610,9 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromWorkshop">From Workshop...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_ToFile">To file...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SavedAsPreset">Saved as preset "{0}". Choose it in the preset list to apply it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_UpdatesAvailable">Workshop updates available: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptEdits">Kept your edits to {0} items; everything else was updated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptPreset">Your edited preset "{0}" was kept; the new version was saved as "{1}".</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Account">Account</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">Submitter key</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKeyHint">Identifies your submissions so you can update or remove them later. Copy it to use the same identity on another Playnite install, or paste a key from one.</sys:String>
