@@ -356,7 +356,8 @@
                                           MinWidth="220"
                                           VerticalAlignment="Center"
                                           Margin="0,0,8,0"
-                                          SelectionChanged="PresetSelector_SelectionChanged"/>
+                                          SelectionChanged="PresetSelector_SelectionChanged"
+                                          DropDownOpened="PresetSelector_DropDownOpened"/>
                                 <Button x:Name="ApplyPresetButton"
                                         Click="ApplyPreset_Click"
                                         Content="{DynamicResource LOCPlayAch_Button_Apply}"
