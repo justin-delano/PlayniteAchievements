@@ -3,6 +3,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Workshop;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -124,7 +125,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private readonly WorkshopUndoStore _undo;
         private readonly WorkshopGameMatcher _matcher;
         private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
-        private readonly Dictionary<string, WorkshopGameMatch> _matches = new Dictionary<string, WorkshopGameMatch>(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, WorkshopGameMatch> _matches = new ConcurrentDictionary<string, WorkshopGameMatch>(StringComparer.OrdinalIgnoreCase);
 
         private string _searchText = string.Empty;
         private WorkshopKindOption _selectedKind;
@@ -357,17 +358,35 @@ namespace PlayniteAchievements.ViewModels.Workshop
             try
             {
                 var index = await _client.FetchIndexAsync(_lifetime.Token);
-                Items.Clear();
+
+                // Matching game data against the library and checking what is still installed
+                // read the achievement cache and disk; that runs off the UI thread, on rows
+                // nothing is bound to yet, against one snapshot of the library.
+                _matcher.Reset();
                 _matches.Clear();
-                foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+                var rows = await Task.Run(() =>
                 {
-                    var row = new WorkshopItemViewModel(item);
-                    ApplyLocalState(row);
+                    var built = new List<WorkshopItemViewModel>();
+                    foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        _lifetime.Token.ThrowIfCancellationRequested();
+                        var row = new WorkshopItemViewModel(item);
+                        ApplyLocalState(row);
+                        built.Add(row);
+                    }
+
+                    return built;
+                }, _lifetime.Token);
+
+                Items.Clear();
+                foreach (var row in rows)
+                {
                     Items.Add(row);
                 }
 
                 ApplySort();
                 RebuildInstalledList();
+                _ = PrefetchPreviewsAsync(rows);
 
                 if (_focusGameId.HasValue)
                 {
@@ -526,6 +545,57 @@ namespace PlayniteAchievements.ViewModels.Workshop
             return row.Kind == WorkshopItemKind.Bundle
                 && BundlePartFor(wanted) is BundleParts part
                 && WorkshopInstaller.BundlePartsOf(row.Item).HasFlag(part);
+        }
+
+        /// <summary>
+        /// Fetches every row's preview in the background, a few at a time, so the list shows
+        /// its images without each item having to be selected first. Cached files return at
+        /// once; the detail pane's own fetch finds them already there.
+        /// </summary>
+        private async Task PrefetchPreviewsAsync(IReadOnlyList<WorkshopItemViewModel> rows)
+        {
+            var pending = rows
+                .Where(row => row.PreviewPath == null && !string.IsNullOrWhiteSpace(row.Item?.Urls?.Preview))
+                .ToList();
+            if (pending.Count == 0)
+            {
+                return;
+            }
+
+            using (var gate = new SemaphoreSlim(4))
+            {
+                var fetches = pending.Select(async row =>
+                {
+                    await gate.WaitAsync(_lifetime.Token).ConfigureAwait(false);
+                    try
+                    {
+                        var path = await _client.FetchPreviewAsync(row.Item, _lifetime.Token).ConfigureAwait(false);
+                        if (path != null)
+                        {
+                            row.PreviewPath = path;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, $"Failed prefetching the Workshop preview for {row.Id}.");
+                    }
+                    finally
+                    {
+                        gate.Release();
+                    }
+                }).ToList();
+
+                try
+                {
+                    await Task.WhenAll(fetches).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
         }
 
         private async Task LoadDetailsAsync(WorkshopItemViewModel row)
