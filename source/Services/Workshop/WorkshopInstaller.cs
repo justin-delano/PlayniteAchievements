@@ -80,6 +80,9 @@ namespace PlayniteAchievements.Services.Workshop
             _baselines = new WorkshopBaselineStore(Path.Combine(_registry.Directory, "baselines"), logger);
         }
 
+        /// <summary>The baselines game-data updates merge against; read by the Workshop preview.</summary>
+        internal WorkshopBaselineStore Baselines => _baselines;
+
         public async Task<WorkshopInstallResult> InstallAsync(WorkshopInstallRequest request, CancellationToken cancel)
         {
             if (request?.Item == null)
