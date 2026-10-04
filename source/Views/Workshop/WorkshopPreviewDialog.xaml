@@ -65,7 +65,7 @@
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="88"
                         Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                <Button Content="{DynamicResource LOCPlayAch_Button_Close}"
+                <Button Content="{DynamicResource LOCCloseLabel}"
                         Click="CloseButton_Click"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="88"
