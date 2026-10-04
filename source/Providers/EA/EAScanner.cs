@@ -87,12 +87,12 @@ namespace PlayniteAchievements.Providers.EA
                             return ProviderRefreshExecutor.ProviderGameResult.Skipped();
                         }
 
-                        var data = await rateLimiter.ExecuteWithRetryAsync(
+                        var (data, eaProductName) = await rateLimiter.ExecuteWithRetryAsync(
                             () => FetchGameDataAsync(game, gameId, token),
                             EAApiClient.IsTransientError,
                             token).ConfigureAwait(false);
 
-                        await EnrichMetadataAsync(game, data, metadataEnricher, token).ConfigureAwait(false);
+                        await EnrichMetadataAsync(game, data, eaProductName, metadataEnricher, token).ConfigureAwait(false);
 
                         return new ProviderRefreshExecutor.ProviderGameResult
                         {
@@ -132,7 +132,11 @@ namespace PlayniteAchievements.Providers.EA
             return _authContext?.IsProviderAuthenticated("EA") == true;
         }
 
-        private async Task<GameAchievementData> FetchGameDataAsync(Game game, string gameId, CancellationToken cancel)
+        /// <summary>
+        /// The game's achievements, with the matched owned game's EA product name (null when an
+        /// offer-ID override bypassed owned-game matching or nothing matched).
+        /// </summary>
+        private async Task<(GameAchievementData Data, string ProductName)> FetchGameDataAsync(Game game, string gameId, CancellationToken cancel)
         {
             cancel.ThrowIfCancellationRequested();
 
@@ -163,7 +167,7 @@ namespace PlayniteAchievements.Providers.EA
             if (offerIdCandidates.Count == 0)
             {
                 _logger?.Debug($"[EAAch] No EA owned game matched and could not build offer ID candidates from gameId={gameId}, game={game?.Name}.");
-                return null;
+                return (null, null);
             }
 
             if (matched == null)
@@ -197,7 +201,7 @@ namespace PlayniteAchievements.Providers.EA
                 _logger?.Debug($"[EAAch] No achievements returned for gameId={gameId} after trying {offerIdCandidates.Count} offer ID candidate(s). Last offer ID={lastOfferId}.");
             }
 
-            return EAProviderSupport.MapToGameData(game, items);
+            return (EAProviderSupport.MapToGameData(game, items), matched?.ProductName);
         }
 
         private async Task<ExophaseMetadataEnricher> CreateMetadataEnricherAsync(CancellationToken cancel)
@@ -212,9 +216,13 @@ namespace PlayniteAchievements.Providers.EA
             return enricher;
         }
 
+        /// <param name="eaProductName">
+        /// The matched owned game's EA product name, searched before the Playnite name.
+        /// </param>
         private static async Task EnrichMetadataAsync(
             Game game,
             GameAchievementData data,
+            string eaProductName,
             ExophaseMetadataEnricher metadataEnricher,
             CancellationToken cancel)
         {
@@ -229,7 +237,8 @@ namespace PlayniteAchievements.Providers.EA
                 "origin",
                 "EA",
                 cancel,
-                ExophaseMetadataFields.Rarity | ExophaseMetadataFields.IconPaths).ConfigureAwait(false);
+                ExophaseMetadataFields.Rarity | ExophaseMetadataFields.IconPaths,
+                searchName: eaProductName).ConfigureAwait(false);
         }
     }
 }
