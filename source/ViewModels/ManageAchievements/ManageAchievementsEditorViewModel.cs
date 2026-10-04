@@ -3021,6 +3021,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
                 RaiseAssignmentsChanged();
 
+                // The cleared records took their icon overrides with them and the store pruned the
+                // files, but the cached rows still name those files. Announcing the reset rows
+                // puts the provider's own art back in the cache, as clearing an icon edit does.
+                RaiseIconOverridesSaved(targets);
+
                 // Reverting drops each reverted row's own capstone and leaves the rest of the set
                 // alone, so reverting one achievement cannot clear a capstone elsewhere. Cleared
                 // in one write: a clear never displaces another category's capstone, so folding
