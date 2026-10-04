@@ -59,16 +59,20 @@ namespace PlayniteAchievements.Services.Notifications
     /// <summary>
     /// Exports and imports notification appearance styles as shareable zip packages that
     /// bundle the style's background and badge images under an <c>images/</c> folder so the
-    /// look transfers intact: <c>.pastyle</c> carries both surfaces, while <c>.panotif</c>
-    /// and <c>.paframe</c> carry a single surface (flagged in the manifest). Import
-    /// re-materializes bundled images into managed storage via
-    /// <see cref="NotificationImageStore"/> so paths are always rewritten to the local machine.
+    /// look transfers intact: <c>.panotif</c> carries the toast surface and <c>.paframe</c> the
+    /// screenshot frame (flagged in the manifest). A bundle (<c>.pabundle</c>) is how both
+    /// travel together. Files with the retired <c>.pastyle</c> extension, which carried both
+    /// surfaces, are still read. Import re-materializes bundled images into managed storage
+    /// via <see cref="NotificationImageStore"/> so paths are always rewritten to the local
+    /// machine.
     /// </summary>
     public sealed class NotificationStylePortableStore
     {
-        public const string PackageFileExtension = ".pastyle";
+        /// <summary>Retired both-surfaces extension; still accepted on import and for presets saved before 4.1.</summary>
+        public const string LegacyPackageFileExtension = ".pastyle";
         public const string ToastPackageFileExtension = ".panotif";
         public const string FramePackageFileExtension = ".paframe";
+        /// <summary>The manifest entry inside every style package; the name predates the extension split and stays for compatibility.</summary>
         public const string ManifestEntryName = "notification-style.pastyle";
 
         // Optional full-template XAML entries a package may carry, independently, alongside the
@@ -88,15 +92,19 @@ namespace PlayniteAchievements.Services.Notifications
         // ".pastyle" followed by a stray ".zip".
         private static readonly string[] RecognizedFileSuffixes =
         {
-            PackageFileExtension + ".zip",
+            LegacyPackageFileExtension + ".zip",
             ToastPackageFileExtension + ".zip",
             FramePackageFileExtension + ".zip",
-            PackageFileExtension,
+            LegacyPackageFileExtension,
             ToastPackageFileExtension,
             FramePackageFileExtension,
             ".zip",
             ".json"
         };
+
+        /// <summary>The extension a surface's package carries.</summary>
+        public static string SurfaceExtension(bool isFrame) =>
+            isFrame ? FramePackageFileExtension : ToastPackageFileExtension;
 
         /// <summary>
         /// The package entry stem each slot is bundled under (path accessors come from
@@ -137,13 +145,11 @@ namespace PlayniteAchievements.Services.Notifications
         }
 
         /// <summary>
-        /// Writes the full style (both surfaces) to a <c>.pastyle</c> package, bundling every
-        /// referenced image under <c>images/</c> and rewriting the manifest's paths to those
-        /// relative entry names. Optionally embeds full-template XAML for the toast and/or frame
-        /// surfaces (independently) so a single package can carry the data style, either template,
-        /// both, or neither template.
+        /// Writes both surfaces to one package, the shape the retired <c>.pastyle</c> files have.
+        /// Nothing in the plugin exports this any more (a bundle carries both surfaces);
+        /// it remains so the tests can produce the files the importer must keep reading.
         /// </summary>
-        public void ExportPackage(
+        internal void ExportLegacyBothSurfacesPackage(
             NotificationStyleSettings style,
             string destinationPath,
             string toastTemplateXaml = null,
@@ -188,6 +194,57 @@ namespace PlayniteAchievements.Services.Notifications
                 frameTemplateXaml: isFrame ? templateXamlOrNull : null,
                 hasToast: !isFrame,
                 hasFrame: isFrame);
+        }
+
+        /// <summary>
+        /// Installs a pack's surface onto the target style, and the pack's separately styled
+        /// kinds along with it, so a pack carries the whole look rather than one surface of it. A
+        /// kind the pack does not carry is left as it is rather than being overwritten with the
+        /// shared look. The pack's image paths must already point at managed storage (the result
+        /// of <see cref="ImportAsync(string, NotificationImageOwner, CancellationToken)"/>).
+        /// </summary>
+        public static void ApplyPackSurfaces(
+            NotificationStyleSettings target,
+            NotificationStyleSettings pack,
+            bool isFrame)
+        {
+            if (target == null || pack == null)
+            {
+                return;
+            }
+
+            CopySurface(target, pack, isFrame);
+            if (target.KindStyles == null)
+            {
+                return;
+            }
+
+            foreach (var pair in pack.KindStyles)
+            {
+                if (pair.Value == null ||
+                    !Enum.TryParse<NotificationKind>(pair.Key, ignoreCase: true, result: out var kind) ||
+                    kind == NotificationKind.Base)
+                {
+                    continue;
+                }
+
+                CopySurface(target.EnableKindStyle(kind), pair.Value, isFrame);
+            }
+        }
+
+        private static void CopySurface(
+            NotificationStyleSettings target,
+            NotificationStyleSettings source,
+            bool isFrame)
+        {
+            if (isFrame)
+            {
+                target.Frame = source.Frame;
+                return;
+            }
+
+            target.Toast = source.Toast;
+            target.ToastBackgroundImagePath = source.ToastBackgroundImagePath;
         }
 
         /// <summary>
@@ -320,6 +377,45 @@ namespace PlayniteAchievements.Services.Notifications
             using (var writer = new StreamWriter(entry.Open()))
             {
                 writer.Write(xaml);
+            }
+        }
+
+        /// <summary>
+        /// The style a package carries, read from its manifest alone: no images are
+        /// materialized, so bundled image paths stay package-relative. Enough for a preview
+        /// render of a preset or a composed theme part; applying a package still goes through
+        /// <see cref="ImportAsync"/>.
+        /// </summary>
+        public NotificationStyleSettings ReadStyle(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            {
+                throw new FileNotFoundException("File not found.", sourcePath);
+            }
+
+            if (!IsZipContent(sourcePath))
+            {
+                throw new InvalidOperationException(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportNotPackage"));
+            }
+
+            using (var archive = ZipFile.OpenRead(sourcePath))
+            {
+                var manifestEntry = archive.Entries.FirstOrDefault(entry =>
+                    string.Equals(NormalizeArchiveEntryName(entry.FullName), ManifestEntryName, StringComparison.OrdinalIgnoreCase));
+                if (manifestEntry == null)
+                {
+                    throw new InvalidOperationException(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportMissingManifest"));
+                }
+
+                NotificationStylePortableFile portable;
+                using (var reader = new StreamReader(manifestEntry.Open()))
+                {
+                    portable = JsonConvert.DeserializeObject<NotificationStylePortableFile>(reader.ReadToEnd());
+                }
+
+                return ExtractStyleOrThrow(portable);
             }
         }
 
@@ -481,13 +577,13 @@ namespace PlayniteAchievements.Services.Notifications
                 return false;
             }
 
-            // All style files are canonically bare zip packages (.pastyle/.panotif/.paframe,
-            // zip inside like Playnite's .pext); a ".zip"-suffixed rename (or a legacy
-            // .pastyle.zip export) still imports.
-            return path.EndsWith(PackageFileExtension, StringComparison.OrdinalIgnoreCase) ||
+            // All style files are canonically bare zip packages (.panotif/.paframe, zip inside
+            // like Playnite's .pext); a ".zip"-suffixed rename, the retired .pastyle, or a legacy
+            // .pastyle.zip export still imports.
+            return path.EndsWith(LegacyPackageFileExtension, StringComparison.OrdinalIgnoreCase) ||
                    path.EndsWith(ToastPackageFileExtension, StringComparison.OrdinalIgnoreCase) ||
                    path.EndsWith(FramePackageFileExtension, StringComparison.OrdinalIgnoreCase) ||
-                   path.EndsWith(PackageFileExtension + ".zip", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(LegacyPackageFileExtension + ".zip", StringComparison.OrdinalIgnoreCase) ||
                    path.EndsWith(ToastPackageFileExtension + ".zip", StringComparison.OrdinalIgnoreCase) ||
                    path.EndsWith(FramePackageFileExtension + ".zip", StringComparison.OrdinalIgnoreCase);
         }
@@ -712,7 +808,7 @@ namespace PlayniteAchievements.Services.Notifications
             if (!IsPackagePath(path))
             {
                 throw new InvalidOperationException(
-                    "Destination path must end with .pastyle, .panotif, or .paframe.");
+                    "Destination path must end with .panotif or .paframe.");
             }
         }
 

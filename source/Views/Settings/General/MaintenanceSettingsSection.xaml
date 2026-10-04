@@ -142,7 +142,7 @@
                             </controls:SettingRow>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ExportDatabase}">
-                                <Button Content="{DynamicResource LOCPlayAch_Settings_ExportDatabaseButton}"
+                                <Button Content="{DynamicResource LOCPlayAch_Settings_ExportDatabaseButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
                                         Click="ExportDatabase_Click"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                         MinWidth="130"/>

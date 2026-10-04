@@ -3441,12 +3441,20 @@ namespace PlayniteAchievements.Views.Showcase
                 Localize("LOCPlayAch_Showcase_RenamePage"),
                 RenameCurrentPage));
             menu.Items.Add(new Separator());
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ExportPage"),
-                ExportCurrentPage));
-            menu.Items.Add(MenuItem(
-                Localize("LOCPlayAch_Showcase_ImportPage"),
-                ImportPageFromFile));
+            var exportPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ExportPage"), Icon = ImportExportGlyph("\uF01C") };
+            foreach (var item in Helpers.WorkshopMenus.ExportItems(ExportCurrentPage, SharePageToWorkshop))
+            {
+                exportPage.Items.Add(item);
+            }
+
+            menu.Items.Add(exportPage);
+            var importPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ImportPage"), Icon = ImportExportGlyph("\uEF08") };
+            foreach (var item in Helpers.WorkshopMenus.ImportItems(ImportPageFromFile, ImportPageFromWorkshop))
+            {
+                importPage.Items.Add(item);
+            }
+
+            menu.Items.Add(importPage);
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_MovePageLeft"),
@@ -3618,6 +3626,26 @@ namespace PlayniteAchievements.Views.Showcase
 
         // Writes the current page to a .pashowcase package: layout and appearance only, no pin
         // collections or control-bar filter state, and of a profile card only its background.
+        private void SharePageToWorkshop()
+        {
+            var page = CurrentPage;
+            if (page == null)
+            {
+                return;
+            }
+
+            PlayniteAchievementsPlugin.Instance?.OpenWorkshopShare(
+                Services.Workshop.WorkshopItemKind.ShowcasePage,
+                Window.GetWindow(this),
+                pageId: page.PageId);
+        }
+
+        private void ImportPageFromWorkshop()
+        {
+            PlayniteAchievementsPlugin.Instance?.OpenWorkshopWindow(
+                focusKind: Services.Workshop.WorkshopItemKind.ShowcasePage);
+        }
+
         private void ExportCurrentPage()
         {
             var page = CurrentPage;
@@ -3937,6 +3965,15 @@ namespace PlayniteAchievements.Views.Showcase
             return widget == null
                 ? Localize("LOCPlayAch_Showcase_Widget")
                 : ShowcaseUiText.GetWidgetName(widget.Kind);
+        }
+
+        /// <summary>The same download and upload glyphs the Import and Export buttons wear elsewhere.</summary>
+        private static Controls.GlyphIcon ImportExportGlyph(string glyph)
+        {
+            var icon = new Controls.GlyphIcon { Glyph = glyph, Size = 14 };
+            icon.SetResourceReference(Controls.GlyphIcon.FontFamilyProperty, "PlayAch.FontFamily.Icon");
+            icon.SetResourceReference(Controls.GlyphIcon.ForegroundProperty, "PlayAch.Brush.Text");
+            return icon;
         }
 
         private static MenuItem MenuItem(string header, Action action)

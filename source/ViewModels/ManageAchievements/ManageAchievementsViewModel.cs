@@ -133,6 +133,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public RelayCommand ClearGameDataCommand { get; }
         public RelayCommand ExportCustomCommand { get; }
         public RelayCommand ImportCustomJsonCommand { get; }
+        public RelayCommand ImportFromWorkshopCommand { get; }
+        public RelayCommand ShareToWorkshopCommand { get; }
         public RelayCommand ClearCustomDataCommand { get; }
 
         public ManageAchievementsViewModel(
@@ -172,6 +174,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ClearGameDataCommand = new RelayCommand(_ => ClearGameData(), _ => HasGame);
             ExportCustomCommand = new RelayCommand(_ => ExportCustom(), _ => HasGame && CanExportCustomJson);
             ImportCustomJsonCommand = new RelayCommand(_ => ImportCustomJson(), _ => HasGame);
+            ImportFromWorkshopCommand = new RelayCommand(_ => _plugin?.OpenWorkshopWindow(_gameId), _ => HasGame && _plugin != null);
+            ShareToWorkshopCommand = new RelayCommand(_ => ShareToWorkshop(), _ => HasGame && CanExportCustomJson && _plugin != null);
             ClearCustomDataCommand = new RelayCommand(_ => ClearCustomData(), _ => HasGame && CanClearCustomData);
 
             Reload();
@@ -1247,6 +1251,19 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ImportPortable();
         }
 
+        private void ShareToWorkshop()
+        {
+            if (!HasGame || _plugin == null)
+            {
+                return;
+            }
+
+            _plugin.OpenWorkshopShare(
+                Services.Workshop.WorkshopItemKind.GameCustomData,
+                _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow(),
+                gameId: _gameId);
+        }
+
         /// <summary>
         /// The one Import for this game's .pa files, shared by the Overview and Editor tabs. A
         /// whole-game package replaces the game's custom data; a custom-achievements package is
@@ -1300,6 +1317,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     return;
                 }
 
+                // A .pa names the game it came from. Importing it onto a different game is
+                // allowed (the same game on another platform, say) but never silent, because
+                // overrides keyed by another game's achievement ids would land here unseen.
+                if (!ConfirmGameMatches(store, dialog.FileName))
+                {
+                    return;
+                }
+
                 beforeReplace?.Invoke();
                 ReplaceFromPortablePackage(store, dialog.FileName);
             }
@@ -1312,6 +1337,49 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// True when the package was exported from this game (by provider identity or by name),
+        /// carries no game keys at all, or the user confirms the cross-game import.
+        /// </summary>
+        private bool ConfirmGameMatches(GameCustomDataStore store, string packagePath)
+        {
+            IReadOnlyList<Models.Settings.PortableGameKey> keys;
+            try
+            {
+                keys = store.ReadPortableGameKeys(packagePath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Could not read the game keys of a portable package; importing without the check.");
+                return true;
+            }
+
+            if (keys == null || keys.Count == 0)
+            {
+                return true;
+            }
+
+            var matcher = _plugin?.CreateWorkshopGameMatcher();
+            if (matcher == null)
+            {
+                return true;
+            }
+
+            if (matcher.Match(keys)?.PlayniteGameId == _gameId
+                || matcher.Candidates(keys).Any(game => game.Id == _gameId))
+            {
+                return true;
+            }
+
+            var source = keys.Select(key => key.Name).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "?";
+            var target = _playniteApi?.Database?.Games?.Get(_gameId)?.Name ?? _gameId.ToString();
+            return _playniteApi?.Dialogs?.ShowMessage(
+                       string.Format(L("LOCPlayAch_ManageAchievements_Overrides_ImportGameMismatch"), source, target),
+                       L("LOCPlayAch_Title_PluginName"),
+                       MessageBoxButton.YesNo,
+                       MessageBoxImage.Warning) == MessageBoxResult.Yes;
         }
 
         private void MergeCustomAchievementsIntoStore(GameCustomDataStore store, CustomAchievementTextImportResult parsed)
@@ -1684,6 +1752,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             RefreshGameCommand?.RaiseCanExecuteChanged();
             ClearGameDataCommand?.RaiseCanExecuteChanged();
             ExportCustomCommand?.RaiseCanExecuteChanged();
+            ShareToWorkshopCommand?.RaiseCanExecuteChanged();
             ImportCustomJsonCommand?.RaiseCanExecuteChanged();
             ClearCustomDataCommand?.RaiseCanExecuteChanged();
         }
@@ -2177,28 +2246,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return normalized + extension;
         }
 
-        private static bool StoredDataRequiresRefresh(GameCustomDataFile data)
-        {
-            return data?.ManualLink != null ||
-                   data?.ProviderOverride != null ||
-                   data?.RetroAchievementsGameIdOverride.HasValue == true ||
-                   !string.IsNullOrWhiteSpace(data?.XeniaTitleIdOverride) ||
-                   !string.IsNullOrWhiteSpace(data?.ShadPS4MatchIdOverride) ||
-                   data?.ForceUseExophase == true ||
-                   !string.IsNullOrWhiteSpace(data?.ExophaseSlugOverride) ||
-                   !string.IsNullOrWhiteSpace(data?.ExophaseEnrichmentSlugOverride);
-        }
-
+        // Shared with the Workshop installer, which writes custom data through the same stores.
         private static CustomDataTransitionEffects AnalyzeCustomDataTransition(
             GameCustomDataFile previousData,
             GameCustomDataFile currentData)
         {
-            var forceIconRefresh = HaveIconOverridesChanged(previousData, currentData);
-            return new CustomDataTransitionEffects(
-                StoredDataRequiresRefresh(previousData) ||
-                StoredDataRequiresRefresh(currentData) ||
-                forceIconRefresh,
-                forceIconRefresh);
+            return CustomDataTransition.Analyze(previousData, currentData);
         }
 
         private GameCustomDataFile TryLoadStoredCustomData(GameCustomDataStore store)
@@ -2213,81 +2266,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 : null;
         }
 
-        private static bool HaveIconOverridesChanged(
-            GameCustomDataFile previousData,
-            GameCustomDataFile currentData)
-        {
-            return !AreStringMapsEqual(
-                       previousData?.AchievementUnlockedIconOverrides,
-                       currentData?.AchievementUnlockedIconOverrides) ||
-                   !AreStringMapsEqual(
-                       previousData?.AchievementLockedIconOverrides,
-                       currentData?.AchievementLockedIconOverrides);
-        }
-
-        private static bool AreStringMapsEqual(
-            IReadOnlyDictionary<string, string> left,
-            IReadOnlyDictionary<string, string> right)
-        {
-            var normalizedLeft = NormalizeStringMap(left);
-            var normalizedRight = NormalizeStringMap(right);
-            if (normalizedLeft.Count != normalizedRight.Count)
-            {
-                return false;
-            }
-
-            foreach (var pair in normalizedLeft)
-            {
-                if (!normalizedRight.TryGetValue(pair.Key, out var value) ||
-                    !string.Equals(pair.Value, value, StringComparison.Ordinal))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static Dictionary<string, string> NormalizeStringMap(IReadOnlyDictionary<string, string> source)
-        {
-            var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (source == null)
-            {
-                return normalized;
-            }
-
-            foreach (var pair in source)
-            {
-                var key = NormalizeOverrideValue(pair.Key);
-                var value = NormalizeOverrideValue(pair.Value);
-                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
-                {
-                    continue;
-                }
-
-                normalized[key] = value;
-            }
-
-            return normalized;
-        }
-
-        private static string NormalizeOverrideValue(string value)
-        {
-            var normalized = (value ?? string.Empty).Trim();
-            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
-        }
-
-        private readonly struct CustomDataTransitionEffects
-        {
-            public CustomDataTransitionEffects(bool requiresRefresh, bool forceIconRefresh)
-            {
-                RequiresRefresh = requiresRefresh;
-                ForceIconRefresh = forceIconRefresh;
-            }
-
-            public bool RequiresRefresh { get; }
-            public bool ForceIconRefresh { get; }
-        }
     }
 }
 

@@ -34,14 +34,14 @@
 
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_Presets}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Presets_Header}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                     <Border Style="{StaticResource SettingGroupCardStyle}" Grid.IsSharedSizeScope="True">
                         <StackPanel>
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_Appearance_Preset}"
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_Palettes}"
                                                  Margin="0">
                               <StackPanel Orientation="Horizontal">
                                 <ComboBox x:Name="RarityPalettePresetComboBox"
@@ -86,7 +86,48 @@
                                         Click="ResetAllRarityColors_Click"/>
                               </StackPanel>
                             </controls:SettingRow>
-                        </StackPanel>
+                            <!-- Saved color sets: .pacolors files under the plugin's data folder.
+                                 Imported files and Workshop installs land here; Apply copies one
+                                 onto the current colors. -->
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Presets_Header}"
+                                                 Margin="0">
+                              <StackPanel Orientation="Horizontal">
+                                <ComboBox x:Name="ColorSetPresetSelector"
+                                          MinWidth="240"
+                                          SelectionChanged="ColorSetPresetSelector_SelectionChanged"
+                                          DropDownOpened="ColorSetPresetSelector_DropDownOpened"/>
+
+                                <Button x:Name="ApplyColorSetPresetButton"
+                                        Content="{DynamicResource LOCPlayAch_Button_Apply}"
+                                        Margin="8,0,0,0"
+                                        MinWidth="58"
+                                        IsEnabled="False"
+                                        Click="ApplyColorSetPreset_Click"/>
+
+                                <Button Content="{DynamicResource LOCPlayAch_Presets_Save}"
+                                        Margin="8,0,0,0"
+                                        Click="SaveColorSetPreset_Click"/>
+
+                                <Button x:Name="DeleteColorSetPresetButton"
+                                        Content="{DynamicResource LOCPlayAch_Button_Delete}"
+                                        Margin="8,0,0,0"
+                                        IsEnabled="False"
+                                        Click="DeleteColorSetPreset_Click"/>
+
+                                <!-- The colors alone (rarity, provider, resource overrides) as a
+                                     .pacolors file: Export writes the current colors, Import adds
+                                     a file to the sets above. -->
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                        Margin="16,0,0,0"
+                                        MinWidth="58"
+                                        Click="ExportColors_Click"/>
+
+                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                        Margin="8,0,0,0"
+                                        MinWidth="58"
+                                        Click="ImportColors_Click"/>
+                              </StackPanel>
+                            </controls:SettingRow>                        </StackPanel>
                     </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_BadgeColors}"

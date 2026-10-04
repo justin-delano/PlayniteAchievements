@@ -2,16 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+// WinForms dialogs: the WPF Microsoft.Win32 pickers render legacy-style on .NET Framework.
+using DialogResult = System.Windows.Forms.DialogResult;
+using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
+using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Settings;
+using PlayniteAchievements.Views.Dialogs;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Display
 {
@@ -22,7 +32,9 @@ namespace PlayniteAchievements.Views.Settings.Display
     public partial class ColorsSection : UserControl, IDisposable
     {
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ProviderRegistry _providerRegistry;
+        private readonly ILogger _logger;
         private readonly Func<Window, string, string> _pickColor;
         private readonly PersistedSettingsSubscription _persistedSubscription;
 
@@ -36,16 +48,20 @@ namespace PlayniteAchievements.Views.Settings.Display
         public ColorsSection()
         {
             InitializeComponent();
+            RefreshColorSetPresetOptions();
         }
 
         internal ColorsSection(
             PlayniteAchievementsSettings settings,
-            ProviderRegistry providerRegistry,
+            PlayniteAchievementsPlugin plugin,
+            ILogger logger,
             Func<Window, string, string> pickColor)
             : this()
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
+            _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
+            _providerRegistry = plugin.ProviderRegistry ?? throw new ArgumentNullException(nameof(plugin.ProviderRegistry));
+            _logger = logger;
             _pickColor = pickColor ?? throw new ArgumentNullException(nameof(pickColor));
 
             _persistedSubscription = new PersistedSettingsSubscription(
@@ -261,6 +277,280 @@ namespace PlayniteAchievements.Views.Settings.Display
         private void ResetAllRarityColors_Click(object sender, RoutedEventArgs e)
         {
             ApplyRarityPalette(new RarityPalettePreset("Default", RarityColorSettings.CreateDefault(), null));
+        }
+
+        /// <summary>Writes the current colors (rarity, provider, resource overrides) to a .pacolors file.</summary>
+        private void ExportColors_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenExport(
+                sender as Button,
+                () => ExportColorsFile_Click(sender, e),
+                () => _plugin.OpenWorkshopShare(WorkshopItemKind.Colors, Window.GetWindow(this)));
+        }
+
+        private void ExportColorsFile_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ColorPackPortableStore;
+            if (persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = ColorPackPortableStore.BuildFileDialogFilter(),
+                    AddExtension = true,
+                    DefaultExt = ColorPackPortableStore.PackageFileExtension,
+                    FileName = "colors" + ColorPackPortableStore.PackageFileExtension
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                store.Export(persisted, ColorPackPortableStore.NormalizeExportPath(dialog.FileName));
+                ShowMessage(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed exporting colors.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>Replaces the current colors with a .pacolors file's, then refreshes the live resources.</summary>
+        private void ImportColors_Click(object sender, RoutedEventArgs e)
+        {
+            WorkshopMenus.OpenImport(
+                sender as Button,
+                () => ImportColorsFile_Click(sender, e),
+                () => _plugin.OpenWorkshopWindow(focusKind: WorkshopItemKind.Colors));
+        }
+
+        /// <summary>
+        /// Adds a .pacolors file to the saved color sets, named after the file. Applying it is
+        /// the job of the set list, so the current colors do not change here.
+        /// </summary>
+        private void ImportColorsFile_Click(object sender, RoutedEventArgs e)
+        {
+            var presets = _plugin?.ColorPresetStore;
+            if (presets == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = ColorPackPortableStore.BuildFileDialogFilter(),
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var saved = presets.SaveFrom(presets.UniqueName(PackageStem(dialog.FileName)), dialog.FileName);
+                RefreshColorSetPresetOptions(saved.Name);
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"), saved.Name), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed importing colors.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>The file name without its package extension, including a trailing .zip.</summary>
+        private static string PackageStem(string path)
+        {
+            var name = System.IO.Path.GetFileName(path) ?? string.Empty;
+            foreach (var suffix in new[] { ".zip", ColorPackPortableStore.PackageFileExtension, BundlePortableStore.PackageFileExtension })
+            {
+                if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    name = name.Substring(0, name.Length - suffix.Length);
+                }
+            }
+
+            return name;
+        }
+
+        // ---- saved color sets ----------------------------------------------------------------
+
+        private PackagePresetInfo SelectedColorSetPreset => ColorSetPresetSelector?.SelectedItem as PackagePresetInfo;
+
+        private void RefreshColorSetPresetOptions(string selectName = null)
+        {
+            var store = _plugin?.ColorPresetStore;
+            if (ColorSetPresetSelector == null || store == null)
+            {
+                return;
+            }
+
+            var items = new List<object> { ResourceProvider.GetString("LOCPlayAch_Common_None") };
+            try
+            {
+                items.AddRange(store.List());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed listing color set presets.");
+            }
+
+            ColorSetPresetSelector.ItemsSource = items;
+            ColorSetPresetSelector.SelectedItem = string.IsNullOrWhiteSpace(selectName)
+                ? items[0]
+                : items.OfType<PackagePresetInfo>().FirstOrDefault(preset =>
+                      string.Equals(preset.Name, selectName, StringComparison.OrdinalIgnoreCase)) ?? items[0];
+            RefreshColorSetPresetButtons();
+        }
+
+        private void RefreshColorSetPresetButtons()
+        {
+            if (ApplyColorSetPresetButton == null || DeleteColorSetPresetButton == null)
+            {
+                return;
+            }
+
+            ApplyColorSetPresetButton.IsEnabled = DeleteColorSetPresetButton.IsEnabled = SelectedColorSetPreset != null;
+        }
+
+        private void ColorSetPresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshColorSetPresetButtons();
+        }
+
+        /// <summary>Presets saved elsewhere (a Workshop install, another window) show up when the list opens.</summary>
+        private void ColorSetPresetSelector_DropDownOpened(object sender, EventArgs e)
+        {
+            RefreshColorSetPresetOptions(SelectedColorSetPreset?.Name);
+        }
+
+        /// <summary>Copies the selected set onto the current colors (rarity, platform, resources).</summary>
+        private void ApplyColorSetPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var preset = SelectedColorSetPreset;
+            var persisted = _settings?.Persisted;
+            var store = _plugin?.ColorPackPortableStore;
+            if (preset == null || persisted == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                store.Import(preset.FilePath, persisted);
+                _plugin.PersistSettingsForUi();
+                RefreshAppearanceEditorFromPersisted();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed applying color set preset.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>Saves the current colors as a named set, replacing one of the same name after confirmation.</summary>
+        private void SaveColorSetPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            var presets = _plugin?.ColorPresetStore;
+            var store = _plugin?.ColorPackPortableStore;
+            if (persisted == null || presets == null || store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!PresetNamePrompt.TryAsk(_plugin, SelectedColorSetPreset?.Name, PackagePresetStore.SanitizeName, PackagePresetStore.MaxNameLength, out var name))
+                {
+                    return;
+                }
+
+                var exists = presets.Exists(name);
+                if (!exists && presets.Count() >= PackagePresetStore.MaxPresetCount)
+                {
+                    ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_MaxReached"), PackagePresetStore.MaxPresetCount), MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (exists && !Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_OverwriteConfirm"), name)))
+                {
+                    return;
+                }
+
+                var saved = presets.Save(name, path => store.Export(persisted, path));
+                RefreshColorSetPresetOptions(saved.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed saving color set preset.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        private void DeleteColorSetPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var preset = SelectedColorSetPreset;
+            var presets = _plugin?.ColorPresetStore;
+            if (preset == null || presets == null)
+            {
+                return;
+            }
+
+            if (!Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_DeleteConfirm"), preset.Name)))
+            {
+                return;
+            }
+
+            try
+            {
+                presets.Delete(preset);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed deleting color set preset.");
+                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+
+            RefreshColorSetPresetOptions();
+        }
+
+        private bool Confirm(string message)
+        {
+            return _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                       message,
+                       ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                       MessageBoxButton.YesNo,
+                       MessageBoxImage.Question) == MessageBoxResult.Yes;
+        }
+
+
+        private AchievementToastTemplateResolver CreateTemplateResolver()
+        {
+            return new AchievementToastTemplateResolver(
+                _plugin.PlayniteApi,
+                _logger,
+                customTemplatesDirectory: AchievementToastTemplateResolver.GetCustomTemplatesDirectory(
+                    _plugin.GetPluginUserDataPath()));
+        }
+
+        private void ShowMessage(string message, MessageBoxImage image)
+        {
+            _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                message,
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                image);
         }
 
         private void ApplyRarityPalette(RarityPalettePreset preset)

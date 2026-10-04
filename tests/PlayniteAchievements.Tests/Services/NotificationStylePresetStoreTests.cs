@@ -197,6 +197,39 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void SavePresetFromPackage_CopiesASurfacePackage_RejectsTheWrongSurface_AndUniqueNameCounts()
+        {
+            var tempDir = CreateTempDirectory();
+            try
+            {
+                var store = CreateStore(tempDir);
+                var style = NotificationStyleSettings.CreateDefault();
+                style.Toast.CardWidth = 321;
+                store.SavePreset(isFrame: false, "look", style, null);
+                var toastFile = store.ListPresets(isFrame: false).Single().FilePath;
+
+                var copy = store.SavePresetFromPackage(isFrame: false, "Workshop look", toastFile);
+
+                Assert.AreEqual("Workshop look", copy.Name);
+                Assert.IsFalse(copy.IsFrame);
+                Assert.AreEqual(2, store.CountPresets(isFrame: false));
+                Assert.AreEqual(321d, ReadManifest(copy.FilePath).Style.Toast.CardWidth);
+                Assert.ThrowsException<InvalidOperationException>(
+                    () => store.SavePresetFromPackage(isFrame: true, "frame", toastFile),
+                    "a toast package is not a frame preset");
+                Assert.AreEqual(0, store.CountPresets(isFrame: true));
+
+                Assert.AreEqual("look (2)", store.UniqueName(isFrame: false, "look"));
+                Assert.AreEqual("look", store.UniqueName(isFrame: true, "look"), "names are unique per surface");
+                Assert.AreEqual("Preset", store.UniqueName(isFrame: false, "???"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void SanitizeName_StripsInvalidChars_TrimsAndCapsLength()
         {
             Assert.AreEqual("my preset", NotificationStylePresetStore.SanitizeName("  my preset  "));

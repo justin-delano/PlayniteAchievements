@@ -136,6 +136,8 @@ namespace PlayniteAchievements.Models.Settings
             target.UnlockScreenshotSuffixWithToast = source.UnlockScreenshotSuffixWithToast;
             target.UnlockScreenshotSuffixFramed = source.UnlockScreenshotSuffixFramed;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
+            target.WorkshopIndexUrl = source.WorkshopIndexUrl;
+            target.WorkshopServiceUrl = source.WorkshopServiceUrl;
             target.ScreenshotResolution = source.ScreenshotResolution;
             target.UnlockScreenshotCleanRarities = source.UnlockScreenshotCleanRarities;
             target.UnlockScreenshotCleanAlwaysCaptureCompletion = source.UnlockScreenshotCleanAlwaysCaptureCompletion;

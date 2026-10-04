@@ -89,6 +89,17 @@ namespace PlayniteAchievements
         private readonly ShowcaseImageStore _showcaseImageStore;
         private NotificationStylePortableStore _notificationStylePortableStore;
         private NotificationStylePresetStore _notificationStylePresetStore;
+        private Services.Workshop.PackagePresetStore _colorPresetStore;
+        private Services.Workshop.PackagePresetStore _unlockSoundPresetStore;
+        private Services.Sound.UnlockSoundPortableStore _unlockSoundPortableStore;
+        private Services.Workshop.BundlePortableStore _bundlePortableStore;
+        private Services.Workshop.ColorPackPortableStore _colorPackPortableStore;
+        private Services.Workshop.WorkshopInstalledRegistry _workshopRegistry;
+        private Services.Workshop.WorkshopUndoStore _workshopUndo;
+        private Services.Workshop.WorkshopInstaller _workshopInstaller;
+        private Services.Workshop.WorkshopClient _workshopClient;
+        private Services.Workshop.WorkshopSubmissionClient _workshopSubmissionClient;
+        private Services.Workshop.WorkshopShareService _workshopShareService;
         private readonly NotificationPublisher _notifications;
         private readonly ProviderRegistry _providerRegistry;
         private readonly GameCustomDataStore _gameCustomDataStore;
@@ -100,6 +111,7 @@ namespace PlayniteAchievements
         private bool _unlockNextPoolRequired;
 
         private readonly BackgroundUpdater _backgroundUpdates;
+        private Services.Workshop.WorkshopUpdateChecker _workshopUpdateChecker;
         private readonly InGameAchievementMonitor _inGameMonitor;
         private readonly ActiveGameWindowTracker _windowTracker;
         private readonly Services.Sound.UnlockSoundService _unlockSounds;
@@ -195,6 +207,52 @@ namespace PlayniteAchievements
         public NotificationStylePresetStore NotificationStylePresetStore =>
             _notificationStylePresetStore ?? (_notificationStylePresetStore =
                 new NotificationStylePresetStore(NotificationStylePortableStore, GetPluginUserDataPath()));
+        public Services.Sound.UnlockSoundPortableStore UnlockSoundPortableStore =>
+            _unlockSoundPortableStore ?? (_unlockSoundPortableStore =
+                new Services.Sound.UnlockSoundPortableStore(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.ColorPackPortableStore ColorPackPortableStore =>
+            _colorPackPortableStore ?? (_colorPackPortableStore = new Services.Workshop.ColorPackPortableStore());
+        /// <summary>Saved color sets (.pacolors files), the presets behind Display > Colors.</summary>
+        public Services.Workshop.PackagePresetStore ColorPresetStore =>
+            _colorPresetStore ?? (_colorPresetStore = new Services.Workshop.PackagePresetStore(
+                GetPluginUserDataPath(),
+                "color_presets",
+                Services.Workshop.ColorPackPortableStore.PackageFileExtension,
+                path => ColorPackPortableStore.Read(path)));
+        /// <summary>Saved sound packs (.pasounds files), the presets behind the unlock sounds card.</summary>
+        public Services.Workshop.PackagePresetStore UnlockSoundPresetStore =>
+            _unlockSoundPresetStore ?? (_unlockSoundPresetStore = new Services.Workshop.PackagePresetStore(
+                GetPluginUserDataPath(),
+                "unlock_sound_presets",
+                Services.Sound.UnlockSoundPortableStore.PackageFileExtension,
+                path => UnlockSoundPortableStore.Inspect(path)));
+        public Services.Workshop.BundlePortableStore BundlePortableStore =>
+            _bundlePortableStore ?? (_bundlePortableStore =
+                new Services.Workshop.BundlePortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, ColorPackPortableStore, _logger));
+        public Services.Workshop.WorkshopInstalledRegistry WorkshopRegistry =>
+            _workshopRegistry ?? (_workshopRegistry =
+                new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.WorkshopUndoStore WorkshopUndo =>
+            _workshopUndo ?? (_workshopUndo =
+                new Services.Workshop.WorkshopUndoStore(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.WorkshopInstaller WorkshopInstaller =>
+            _workshopInstaller ?? (_workshopInstaller =
+                new Services.Workshop.WorkshopInstaller(this, WorkshopRegistry, WorkshopUndo, _logger));
+        public Services.Workshop.WorkshopClient WorkshopClient =>
+            _workshopClient ?? (_workshopClient = new Services.Workshop.WorkshopClient(
+                () => _settingsViewModel?.Settings?.Persisted?.WorkshopIndexUrl,
+                System.IO.Path.Combine(GetPluginUserDataPath(), Services.Workshop.WorkshopInstalledRegistry.DirectoryName, "cache"),
+                _logger));
+        public Services.Workshop.WorkshopSubmissionClient WorkshopSubmissionClient =>
+            _workshopSubmissionClient ?? (_workshopSubmissionClient = new Services.Workshop.WorkshopSubmissionClient(
+                () => _settingsViewModel?.Settings?.Persisted?.WorkshopServiceUrl));
+        public Services.Workshop.WorkshopShareService WorkshopShareService =>
+            _workshopShareService ?? (_workshopShareService =
+                new Services.Workshop.WorkshopShareService(this, WorkshopSubmissionClient, WorkshopRegistry, _logger));
+        public Services.Workshop.WorkshopGameMatcher CreateWorkshopGameMatcher() =>
+            new Services.Workshop.WorkshopGameMatcher(
+                () => _achievementDataService?.GetAllGameAchievementData(),
+                () => PlayniteApi?.Database?.Games);
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationService ThemeUpdateService => _themeIntegrationService;
         public TagSyncService TagSyncService => _tagSyncService;
@@ -287,6 +345,41 @@ namespace PlayniteAchievements
             {
                 Instance?._logger?.Error(ex, $"Failed clearing goal for unlocked achievement '{args.ApiName}'.");
             }
+        }
+
+        /// <summary>
+        /// The machine-independent names for a game that an exported .pa file carries: the
+        /// servicing provider's identity from the cache, and the library's name and platform as a
+        /// fallback for games no provider services.
+        /// </summary>
+        private IReadOnlyList<PortableGameKey> ResolvePortableGameKeys(Guid gameId)
+        {
+            var keys = new List<PortableGameKey>();
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            var platform = game?.Platforms?.FirstOrDefault()?.Name;
+
+            var data = _achievementDataService?.GetRawGameAchievementData(gameId);
+            if (data != null && !string.IsNullOrWhiteSpace(data.ProviderKey) &&
+                (data.AppId > 0 || !string.IsNullOrWhiteSpace(data.ProviderGameKey)))
+            {
+                keys.Add(new PortableGameKey
+                {
+                    ProviderKey = data.ProviderKey,
+                    ProviderPlatformKey = string.IsNullOrWhiteSpace(data.ProviderPlatformKey) ? null : data.ProviderPlatformKey,
+                    ProviderGameId = data.AppId > 0 ? data.AppId : (int?)null,
+                    ProviderGameKey = string.IsNullOrWhiteSpace(data.ProviderGameKey) ? null : data.ProviderGameKey,
+                    Name = game?.Name ?? data.GameName,
+                    Platform = platform
+                });
+            }
+
+            var name = game?.Name ?? data?.GameName;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                keys.Add(new PortableGameKey { Name = name, Platform = platform });
+            }
+
+            return keys;
         }
 
         private void TryWarmCustomDataCache()
@@ -589,6 +682,7 @@ namespace PlayniteAchievements
                 _gameCustomDataStore.AttachCustomProviderCatalog(
                     id => _customProviderStore.TryGet(id, out var definition) ? definition : null,
                     definition => _customProviderStore.ImportIfMissing(definition));
+                _gameCustomDataStore.AttachGameKeyResolver(ResolvePortableGameKeys);
                 TryWarmCustomDataCache();
 
                 List<IDataProvider> providers;
@@ -1315,6 +1409,19 @@ namespace PlayniteAchievements
                 // Playnite's populated database rather than the blank values an early startup warm
                 // would bake in.
                 _libraryProjectionService?.Warm();
+
+                // Hourly look for newer versions of installed Workshop items; its first tick also
+                // resolves the proxy for the Workshop host off the UI thread, so the first index
+                // fetch from a settings page does not stall on WPAD.
+                try
+                {
+                    _workshopUpdateChecker = _workshopUpdateChecker ?? new Services.Workshop.WorkshopUpdateChecker(this, _logger);
+                    _workshopUpdateChecker.Start();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, "Failed starting the Workshop update checker.");
+                }
                 // The friends overview snapshot is intentionally NOT warmed here: it is built
                 // on demand by the first consumer (friends view or a theme friend binding) and
                 // released when the last consumer detaches, so it only occupies memory while
@@ -1779,6 +1886,7 @@ namespace PlayniteAchievements
             }
 
             _backgroundUpdates.Stop();
+            try { _workshopUpdateChecker?.Stop(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to stop the Workshop update checker"); }
             try { _inGameMonitor?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGameMonitor"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
             try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }

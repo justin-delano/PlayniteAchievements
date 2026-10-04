@@ -108,6 +108,8 @@ namespace PlayniteAchievements.Models.Settings
         private string _unlockScreenshotSuffixWithToast = "notification";
         private string _unlockScreenshotSuffixFramed = "framed";
         private string _unlockScreenshotDirectory;
+        private string _workshopIndexUrl;
+        private string _workshopServiceUrl;
         private ScreenshotResolution _screenshotResolution = ScreenshotResolution.Native;
         private RaritySelection _unlockScreenshotCleanRarities = RaritySelection.All;
         private bool _unlockScreenshotCleanAlwaysCaptureCompletion = true;
@@ -1455,6 +1457,26 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockScreenshotDirectory;
             set => SetValue(ref _unlockScreenshotDirectory, value);
+        }
+
+        /// <summary>
+        /// The Workshop index the browser reads. Blank uses the official repository; a fork or a
+        /// local test index can be pointed at here.
+        /// </summary>
+        public string WorkshopIndexUrl
+        {
+            get => _workshopIndexUrl;
+            set => SetValue(ref _workshopIndexUrl, string.IsNullOrWhiteSpace(value) ? null : value.Trim());
+        }
+
+        /// <summary>
+        /// The Workshop submission service (uploads and submissions from inside Playnite). Blank
+        /// uses the official service.
+        /// </summary>
+        public string WorkshopServiceUrl
+        {
+            get => _workshopServiceUrl;
+            set => SetValue(ref _workshopServiceUrl, string.IsNullOrWhiteSpace(value) ? null : value.Trim());
         }
 
         /// <summary>
@@ -3203,6 +3225,8 @@ namespace PlayniteAchievements.Models.Settings
                 UnlockScreenshotSuffixWithToast = this.UnlockScreenshotSuffixWithToast,
                 UnlockScreenshotSuffixFramed = this.UnlockScreenshotSuffixFramed,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
+                WorkshopIndexUrl = this.WorkshopIndexUrl,
+                WorkshopServiceUrl = this.WorkshopServiceUrl,
                 ScreenshotResolution = this.ScreenshotResolution,
                 UnlockScreenshotCleanRarities = this.UnlockScreenshotCleanRarities,
                 UnlockScreenshotCleanAlwaysCaptureCompletion = this.UnlockScreenshotCleanAlwaysCaptureCompletion,

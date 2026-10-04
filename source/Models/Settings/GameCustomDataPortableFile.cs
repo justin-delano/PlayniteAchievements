@@ -9,9 +9,24 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public sealed class GameCustomDataPortableFile
     {
+        /// <summary>Discriminator shared with the other portable package manifests.</summary>
+        public const string GameCustomDataKind = "PlayniteAchievements.GameCustomData";
+
+        /// <summary>
+        /// Written on export; files from before the field read as null and are still accepted.
+        /// </summary>
+        public string Kind { get; set; }
+
         public int SchemaVersion { get; set; } = 7;
 
         public Guid PlayniteGameId { get; set; }
+
+        /// <summary>
+        /// How another machine can recognize the game this file is for. Import ignores it (the
+        /// caller picks the target game); the workshop uses it to match a shared file to a
+        /// library game.
+        /// </summary>
+        public List<PortableGameKey> GameKeys { get; set; }
 
         public bool? UseSeparateLockedIconsOverride { get; set; }
 
@@ -89,8 +104,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new GameCustomDataPortableFile
             {
+                Kind = Kind,
                 SchemaVersion = SchemaVersion,
                 PlayniteGameId = PlayniteGameId,
+                GameKeys = GameKeys != null
+                    ? GameKeys.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null,
                 UseSeparateLockedIconsOverride = UseSeparateLockedIconsOverride,
                 ManualCapstoneApiName = ManualCapstoneApiName,
                 CapstonesMaterialized = CapstonesMaterialized,

@@ -858,6 +858,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 showManualLinkDialog: ShowManualLinkDialog,
                 unlinkManualTracking: () => _viewModel.UnlinkManualTrackingCommand?.Execute(null),
                 exportAllCustomData: _viewModel.ExportCustomCommand,
+                importFromWorkshop: _viewModel.ImportFromWorkshopCommand,
+                shareToWorkshop: _viewModel.ShareToWorkshopCommand,
                 importPortable: (mergeCustomAchievements, beforeReplace) =>
                     _viewModel.ImportPortable(mergeCustomAchievements, beforeReplace));
             _editorViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;

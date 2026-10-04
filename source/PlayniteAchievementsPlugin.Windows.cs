@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.ViewModels;
@@ -84,6 +85,114 @@ namespace PlayniteAchievements
         private void OpenOverviewWindow()
         {
             _windowService.OpenOverviewWindow();
+        }
+
+        /// <summary>
+        /// Opens the Workshop browser, optionally landing on one kind's tab or on the game-data
+        /// items that match one library game.
+        /// </summary>
+        internal void OpenWorkshopWindow(Guid? focusGameId = null, Services.Workshop.WorkshopItemKind? focusKind = null)
+        {
+            var view = new Views.Workshop.WorkshopControl(this, _logger, focusGameId, focusKind);
+            _windowService.OpenManagedPopout(
+                ResourceProvider.GetString("LOCPlayAch_Workshop_Title"),
+                view,
+                new Views.Helpers.WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1100,
+                    Height = 720
+                },
+                "Workshop",
+                () => view.Cleanup());
+        }
+
+        /// <summary>
+        /// Opens the share dialog for one shareable thing: a kind, plus the game or showcase page
+        /// when the kind is per-game or per-page. Returns false when nothing of that kind can be
+        /// shared right now (for example no custom unlock sounds).
+        /// </summary>
+        internal bool OpenWorkshopShare(
+            Services.Workshop.WorkshopItemKind kind,
+            System.Windows.Window owner,
+            Guid? gameId = null,
+            string pageId = null,
+            System.Collections.Generic.IReadOnlyDictionary<Services.Workshop.BundleParts, string> bundlePartFiles = null,
+            string packagePath = null,
+            string defaultName = null)
+        {
+            // A saved preset is shared as the file it already is; everything else is one of the
+            // live-settings candidates the share service lists.
+            var candidate = !string.IsNullOrWhiteSpace(packagePath)
+                ? new Services.Workshop.WorkshopShareCandidate
+                {
+                    Kind = kind,
+                    Label = ViewModels.Workshop.WorkshopItemViewModel.KindLabelFor(kind) + " \u00b7 " + defaultName,
+                    DefaultName = defaultName,
+                    PackagePath = packagePath
+                }
+                : WorkshopShareService.ListCandidates().FirstOrDefault(c =>
+                    c.Kind == kind
+                    && (gameId == null || c.GameId == gameId)
+                    && (pageId == null || string.Equals(c.PageId, pageId, StringComparison.Ordinal)));
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            // A composed theme travels as the parts the user picked; the files live in the
+            // caller's scratch folder for the life of this modal dialog.
+            candidate.BundlePartFiles = bundlePartFiles;
+
+            var dialog = new Views.Workshop.WorkshopShareDialog(this, _logger, candidate, WorkshopShareService, WorkshopRegistry);
+            var window = Views.Helpers.PlayniteUiProvider.CreateExtensionWindow(
+                ResourceProvider.GetString("LOCPlayAch_Workshop_Share"),
+                dialog,
+                new Views.Helpers.WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 620,
+                    Height = 640
+                });
+
+            try
+            {
+                if (window.Owner == null)
+                {
+                    window.Owner = owner ?? PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            dialog.RequestClose += (s, args) => window.Close();
+            window.ShowDialog();
+            dialog.Cleanup();
+            return true;
+        }
+        /// <summary>
+        /// Opens the settings on the Workshop tab: the Playnite settings dialog on desktop, the
+        /// managed popout in fullscreen. The tab is handed over through
+        /// <see cref="Views.SettingsControl.PendingTabKey"/> because neither opener takes one.
+        /// </summary>
+        internal void OpenWorkshopSettings()
+        {
+            Views.SettingsControl.PendingTabKey = "Workshop";
+            if (IsFullscreenMode())
+            {
+                OpenSettingsWindow();
+            }
+            else
+            {
+                OpenSettingsView();
+            }
         }
 
         /// <summary>

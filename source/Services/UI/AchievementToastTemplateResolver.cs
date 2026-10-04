@@ -869,6 +869,16 @@ namespace PlayniteAchievements.Services.UI
                 return false;
             }
 
+            // Allowlist first: loose XAML can instantiate any reachable type, so a template is
+            // never handed to the parser until every namespace, type and URI it uses is one a
+            // notification surface legitimately needs. Every install path (local file, style
+            // package, workshop download) goes through here.
+            if (!XamlTemplateSanitizer.TryValidate(xaml, out var sanitizerError))
+            {
+                error = sanitizerError;
+                return false;
+            }
+
             var key = isFrame ? FrameTemplateKey : TemplateKey;
             string tempPath = null;
             try

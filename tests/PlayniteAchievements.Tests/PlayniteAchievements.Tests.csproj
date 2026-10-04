@@ -489,6 +489,7 @@
     <Compile Include="..\..\source\Models\Settings\CapstoneAssignment.cs" Link="Source\Models\Settings\CapstoneAssignment.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataFile.cs" Link="Source\Models\Settings\GameCustomDataFile.cs" />
     <Compile Include="..\..\source\Models\Settings\GameCustomDataPortableFile.cs" Link="Source\Models\Settings\GameCustomDataPortableFile.cs" />
+    <Compile Include="..\..\source\Models\Settings\PortableGameKey.cs" Link="Source\Models\Settings\PortableGameKey.cs" />
     <Compile Include="..\..\source\Models\Settings\CustomAchievementDefinition.cs" Link="Source\Models\Settings\CustomAchievementDefinition.cs" />
     <Compile Include="..\..\source\Models\Settings\CustomProviderDefinition.cs" Link="Source\Models\Settings\CustomProviderDefinition.cs" />
     <Compile Include="..\..\source\Services\CustomProviders\CustomProviderKeys.cs" Link="Source\Services\CustomProviders\CustomProviderKeys.cs" />
@@ -622,7 +623,22 @@
     <Compile Include="..\..\source\Services\UI\GameWindowRanking.cs" Link="Source\Services\UI\GameWindowRanking.cs" />
     <Compile Include="..\..\source\Services\UI\AchievementHotkeyTargetResolver.cs" Link="Source\Services\UI\AchievementHotkeyTargetResolver.cs" />
     <Compile Include="..\..\source\Services\UI\AchievementToastTemplateResolver.cs" Link="Source\Services\UI\AchievementToastTemplateResolver.cs" />
+    <Compile Include="..\..\source\Services\UI\XamlTemplateSanitizer.cs" Link="Source\Services\UI\XamlTemplateSanitizer.cs" />
+    <Compile Include="..\..\source\Common\PortablePackage.cs" Link="Source\Common\PortablePackage.cs" />
     <Compile Include="..\..\source\Services\UI\UnlockSoundResolver.cs" Link="Source\Services\UI\UnlockSoundResolver.cs" />
+    <Compile Include="..\..\source\Services\Sound\UnlockSoundPortableStore.cs" Link="Source\Services\Sound\UnlockSoundPortableStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\BundlePortableStore.cs" Link="Source\Services\Workshop\BundlePortableStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\ColorPackPortableStore.cs" Link="Source\Services\Workshop\ColorPackPortableStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\PackagePresetStore.cs" Link="Source\Services\Workshop\PackagePresetStore.cs" />
+    <Compile Include="..\..\source\Views\Controls\GlyphIcon.cs" Link="Source\Views\Controls\GlyphIcon.cs" />
+    <Compile Include="..\..\source\Common\HttpClientFactory.cs" Link="Source\Common\HttpClientFactory.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopModels.cs" Link="Source\Services\Workshop\WorkshopModels.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopClient.cs" Link="Source\Services\Workshop\WorkshopClient.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopInstalledRegistry.cs" Link="Source\Services\Workshop\WorkshopInstalledRegistry.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopGameMatcher.cs" Link="Source\Services\Workshop\WorkshopGameMatcher.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopSubmissionClient.cs" Link="Source\Services\Workshop\WorkshopSubmissionClient.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopUndoStore.cs" Link="Source\Services\Workshop\WorkshopUndoStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\GameCustomDataThreeWayMerge.cs" Link="Source\Services\Workshop\GameCustomDataThreeWayMerge.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
