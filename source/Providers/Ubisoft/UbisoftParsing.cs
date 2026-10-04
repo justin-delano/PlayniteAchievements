@@ -127,16 +127,6 @@ namespace PlayniteAchievements.Providers.Ubisoft
                 : (long?)null;
         }
 
-        /// <summary>
-        /// Ubisoft's game title without trademark marks ("Prince of Persia™: The Lost Crown" becomes
-        /// "Prince of Persia: The Lost Crown"), for searching other services by name. Null when blank.
-        /// </summary>
-        internal static string CleanTitle(string title)
-        {
-            var cleaned = NullIfBlank(title?.Replace("™", string.Empty).Replace("®", string.Empty).Replace("©", string.Empty));
-            return cleaned == null ? null : string.Join(" ", cleaned.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
-        }
-
         internal static List<AchievementDetail> MapAchievements(UbisoftGraphAchievementConnection connection)
         {
             var result = new List<AchievementDetail>();
