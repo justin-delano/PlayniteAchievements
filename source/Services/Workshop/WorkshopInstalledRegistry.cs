@@ -221,6 +221,37 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
+        /// <summary>A submitter key as Copy spells it: 64 hex digits, any case.</summary>
+        public bool IsValidSubmitterKey(string key)
+        {
+            var trimmed = key?.Trim();
+            return !string.IsNullOrEmpty(trimmed)
+                && trimmed.Length == 64
+                && trimmed.All(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+        }
+
+        /// <summary>
+        /// Replaces the submitter key with one copied from another install, so that the other
+        /// install's submissions can be updated from here. Returns false for anything that is
+        /// not a key; the current key is then left alone.
+        /// </summary>
+        public bool TrySetSubmitterKey(string key)
+        {
+            if (!IsValidSubmitterKey(key))
+            {
+                return false;
+            }
+
+            lock (_sync)
+            {
+                EnsureIdentityLoaded();
+                _submitterKey = key.Trim().ToLowerInvariant();
+                SaveIdentity();
+            }
+
+            return true;
+        }
+
         /// <summary>SHA-256 hex of the submitter key: the value sent to the Workshop.</summary>
         public string GetSubmitterHash()
         {
