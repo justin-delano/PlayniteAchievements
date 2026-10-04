@@ -3441,14 +3441,14 @@ namespace PlayniteAchievements.Views.Showcase
                 Localize("LOCPlayAch_Showcase_RenamePage"),
                 RenameCurrentPage));
             menu.Items.Add(new Separator());
-            var exportPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ExportPage") };
+            var exportPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ExportPage"), Icon = ImportExportGlyph("\uF01C") };
             foreach (var item in Helpers.WorkshopMenus.ExportItems(ExportCurrentPage, SharePageToWorkshop))
             {
                 exportPage.Items.Add(item);
             }
 
             menu.Items.Add(exportPage);
-            var importPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ImportPage") };
+            var importPage = new MenuItem { Header = Localize("LOCPlayAch_Showcase_ImportPage"), Icon = ImportExportGlyph("\uEF08") };
             foreach (var item in Helpers.WorkshopMenus.ImportItems(ImportPageFromFile, ImportPageFromWorkshop))
             {
                 importPage.Items.Add(item);
@@ -3965,6 +3965,15 @@ namespace PlayniteAchievements.Views.Showcase
             return widget == null
                 ? Localize("LOCPlayAch_Showcase_Widget")
                 : ShowcaseUiText.GetWidgetName(widget.Kind);
+        }
+
+        /// <summary>The same download and upload glyphs the Import and Export buttons wear elsewhere.</summary>
+        private static Controls.GlyphIcon ImportExportGlyph(string glyph)
+        {
+            var icon = new Controls.GlyphIcon { Glyph = glyph, Size = 14 };
+            icon.SetResourceReference(Controls.GlyphIcon.FontFamilyProperty, "PlayAch.FontFamily.Icon");
+            icon.SetResourceReference(Controls.GlyphIcon.ForegroundProperty, "PlayAch.Brush.Text");
+            return icon;
         }
 
         private static MenuItem MenuItem(string header, Action action)
