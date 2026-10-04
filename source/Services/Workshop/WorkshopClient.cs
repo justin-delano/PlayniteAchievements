@@ -1,8 +1,10 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading;
@@ -144,6 +146,100 @@ namespace PlayniteAchievements.Services.Workshop
                 _logger?.Debug(ex, $"Failed fetching Workshop preview for {item.Id}.");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The live download total for an item from the GitHub release API, or null when the
+        /// release URL is not a GitHub release page or the request fails. The index carries the
+        /// count as of its last build; the detail pane asks for this once an item is picked.
+        /// </summary>
+        public async Task<long?> FetchLiveDownloadsAsync(WorkshopItem item, CancellationToken cancel)
+        {
+            var api = ReleaseApiUrl(item?.Package?.Release?.Url);
+            if (api == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel))
+                {
+                    timeout.CancelAfter(IndexTimeout);
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, api))
+                    {
+                        request.Headers.Accept.ParseAdd("application/vnd.github+json");
+                        request.Headers.UserAgent.ParseAdd("PlayniteAchievements");
+                        using (var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false))
+                        {
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                return null;
+                            }
+
+                            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            return SumAssetDownloads(json);
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"Live download count unavailable for {item?.Id}: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>The sum of download_count over a GitHub release JSON document, or null when it has no assets array.</summary>
+        public static long? SumAssetDownloads(string releaseJson)
+        {
+            if (string.IsNullOrWhiteSpace(releaseJson))
+            {
+                return null;
+            }
+
+            var release = JObject.Parse(releaseJson);
+            if (!(release["assets"] is JArray assets))
+            {
+                return null;
+            }
+
+            long total = 0;
+            foreach (var asset in assets)
+            {
+                total += asset.Value<long?>("download_count") ?? 0;
+            }
+
+            return total;
+        }
+
+        /// <summary>
+        /// github.com/{owner}/{repo}/releases/tag/{tag} as its api.github.com release-by-tag URL,
+        /// or null for any other address. Tags may contain slashes and arrive percent-encoded.
+        /// </summary>
+        public static string ReleaseApiUrl(string releasePageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(releasePageUrl)
+                || !Uri.TryCreate(releasePageUrl.Trim(), UriKind.Absolute, out var uri)
+                || !string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var parts = uri.AbsolutePath.Trim('/').Split('/');
+            if (parts.Length < 5
+                || !string.Equals(parts[2], "releases", StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(parts[3], "tag", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var tag = string.Join("/", parts.Skip(4));
+            return $"https://api.github.com/repos/{parts[0]}/{parts[1]}/releases/tags/{tag}";
         }
 
         /// <summary>
