@@ -7,6 +7,7 @@ using PlayniteAchievements.Services.Workshop.Preview;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -36,6 +37,9 @@ namespace PlayniteAchievements.Views.Workshop.Preview
 
         // The package's own template for the surface, or null when it carries none (or it failed to load).
         private DataTemplate _packageTemplate;
+
+        // The view model of the card or frame on display, or null.
+        private AchievementToastViewModel _shownViewModel;
 
         public NotificationStylePreviewControl()
         {
@@ -145,6 +149,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
 
             ShowLoadError(null);
             _packageTemplate = null;
+            _shownViewModel = null;
             ToastHost.Content = null;
             FrameHost.Content = null;
             FrameHost.ContentTemplate = null;
@@ -166,6 +171,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             }
 
             var viewModel = BuildViewModel(SampleKind);
+            _shownViewModel = viewModel;
             if (isFrame)
             {
                 FrameHost.ContentTemplate = _packageTemplate ?? ResolveFallbackFrameTemplate(viewModel);
@@ -200,7 +206,19 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 Model?.Style,
                 gameCustomDataStore: null,
                 toastUseThemeStylingOverride: ThemeStylingOverride,
-                frameUseThemeStylingOverride: ThemeStylingOverride);
+                frameUseThemeStylingOverride: ThemeStylingOverride)
+            {
+                PreloadedImages = Model?.PreloadedImages
+            };
+        }
+
+        /// <summary>
+        /// Completes the image loads of the card on display, so an offscreen render can wait for
+        /// the achievement icon before it rasterizes. Completed when nothing is shown.
+        /// </summary>
+        internal Task PrepareImagesAsync()
+        {
+            return _shownViewModel?.PrepareImagesAsync() ?? Task.CompletedTask;
         }
 
         private void ShowLoadError(string error)
