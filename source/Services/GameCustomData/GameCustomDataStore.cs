@@ -815,6 +815,37 @@ namespace PlayniteAchievements.Services.GameCustomData
             }
         }
 
+        /// <summary>
+        /// The game keys a .pa package names (provider identity, name and platform of the game it
+        /// was exported from), without importing anything. Empty for a package written before
+        /// game keys existed or for a custom-achievements package, which has no manifest.
+        /// </summary>
+        public IReadOnlyList<PortableGameKey> ReadPortableGameKeys(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath) || !IsPortablePackagePath(sourcePath))
+            {
+                return Array.Empty<PortableGameKey>();
+            }
+
+            using (var archive = ZipFile.OpenRead(sourcePath))
+            {
+                var manifestEntry = archive.Entries.FirstOrDefault(entry =>
+                    string.Equals(NormalizeArchiveEntryName(entry.FullName), PortablePackageManifestEntryName, StringComparison.OrdinalIgnoreCase));
+                if (manifestEntry == null)
+                {
+                    return Array.Empty<PortableGameKey>();
+                }
+
+                GameCustomDataPortableFile portable;
+                using (var reader = new StreamReader(manifestEntry.Open()))
+                {
+                    portable = JsonConvert.DeserializeObject<GameCustomDataPortableFile>(reader.ReadToEnd());
+                }
+
+                return portable?.GameKeys?.Where(key => key != null).ToList() ?? (IReadOnlyList<PortableGameKey>)Array.Empty<PortableGameKey>();
+            }
+        }
+
         public PortableGameCustomDataImportResult ImportReplacePortable(Guid playniteGameId, string sourcePath)
         {
             if (playniteGameId == Guid.Empty)
