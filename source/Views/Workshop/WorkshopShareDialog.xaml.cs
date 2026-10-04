@@ -1,5 +1,6 @@
 using Playnite.SDK;
 using PlayniteAchievements.Services.Workshop;
+using PlayniteAchievements.Services.Workshop.Preview;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +36,15 @@ namespace PlayniteAchievements.Views.Workshop
         private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
         private string _previewScratch;
         private bool _busy;
+        private bool _rendering;
+        private bool _userPickedPreview;
+        private bool _closed;
+
+        // The package built for the preview image, uploaded as is on submit; null until built.
+        private string _packagePath;
+
+        // The preview model the image was rendered from; disposed in Cleanup.
+        private WorkshopPreviewModel _model;
 
         public WorkshopShareDialog()
         {
@@ -59,14 +69,10 @@ namespace PlayniteAchievements.Views.Workshop
             NameBox.Text = candidate.DefaultName ?? string.Empty;
             AuthorBox.Text = registry.DisplayName ?? string.Empty;
 
-            // Where the plugin can draw the thing itself (toast, frame, bundle), start with that
-            // render; the user can still browse for a different image.
+            // The standardized preview image is rendered once the dialog is up (OnLoaded); the
+            // user can still browse for a different image.
             _previewScratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopPreview", Guid.NewGuid().ToString("N"));
-            var rendered = new WorkshopPreviewRenderer(plugin, logger).TryRender(candidate.Kind, _previewScratch, candidate.PackagePath ?? (candidate.BundlePartFiles != null && candidate.BundlePartFiles.TryGetValue(BundleParts.Toast, out var toastPart) ? toastPart : null));
-            if (rendered != null)
-            {
-                PreviewBox.Text = rendered;
-            }
+            Loaded += OnLoaded;
 
             // Earlier submissions of the same kind whose Workshop id is known can be updated.
             var options = registry.Submissions
@@ -80,11 +86,89 @@ namespace PlayniteAchievements.Views.Workshop
 
         public event EventHandler RequestClose;
 
+        /// <summary>The file filter of the preview image picker, shared with the preview update dialog.</summary>
+        internal const string PreviewImageFilter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp";
+
+        private static string RenderingPreviewText => ResourceProvider.GetString("LOCPlayAch_Workshop_Share_RenderingPreview");
+
+        private async void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= OnLoaded;
+            await RenderPreviewAsync();
+        }
+
+        /// <summary>
+        /// Builds the package once (kept for the submit), reads it into a preview model and renders
+        /// the standardized preview image into the preview box. Submit waits for it unless the
+        /// user picks an image of their own; a failed render leaves the box empty.
+        /// </summary>
+        private async Task RenderPreviewAsync()
+        {
+            _rendering = true;
+            StatusText.Text = RenderingPreviewText;
+            UpdateSubmitEnabled();
+            try
+            {
+                var candidate = _candidate;
+                var share = _share;
+                var cancel = _cancel.Token;
+                var packageDirectory = Path.Combine(_previewScratch, "package");
+                var packagePath = await Task.Run(() => share.BuildPackage(candidate, packageDirectory), cancel);
+                if (_closed)
+                {
+                    return;
+                }
+
+                _packagePath = packagePath;
+                var context = WorkshopPreviewContext.FromPlugin(_plugin);
+                var model = await Task.Run(() => WorkshopPreviewModelBuilder.Build(candidate.Kind, packagePath, context), cancel);
+                if (_closed)
+                {
+                    model.Dispose();
+                    return;
+                }
+
+                _model = model;
+                var rendered = await new WorkshopPreviewRasterizer(_plugin, _logger)
+                    .RenderAsync(model, Path.Combine(_previewScratch, "render"), cancel);
+                if (!_closed && !_userPickedPreview && !string.IsNullOrWhiteSpace(rendered))
+                {
+                    PreviewBox.Text = rendered;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                if (!_closed)
+                {
+                    _logger?.Warn(ex, $"Rendering the Workshop preview image for {_candidate.Kind} failed.");
+                }
+            }
+            finally
+            {
+                _rendering = false;
+                if (!_busy && string.Equals(StatusText.Text, RenderingPreviewText, StringComparison.Ordinal))
+                {
+                    StatusText.Text = string.Empty;
+                }
+
+                UpdateSubmitEnabled();
+            }
+        }
+
+        // Submit waits for the rendered image unless the user picked one; never while submitting.
+        private void UpdateSubmitEnabled()
+        {
+            SubmitButton.IsEnabled = !_busy && (!_rendering || _userPickedPreview);
+        }
+
         private void BrowsePreview_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
-                Filter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp",
+                Filter = PreviewImageFilter,
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -92,6 +176,13 @@ namespace PlayniteAchievements.Views.Workshop
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 PreviewBox.Text = dialog.FileName;
+                _userPickedPreview = true;
+                if (!_busy && string.Equals(StatusText.Text, RenderingPreviewText, StringComparison.Ordinal))
+                {
+                    StatusText.Text = string.Empty;
+                }
+
+                UpdateSubmitEnabled();
             }
         }
 
@@ -169,7 +260,8 @@ namespace PlayniteAchievements.Views.Workshop
                     submission,
                     string.IsNullOrWhiteSpace(PreviewBox.Text) ? null : PreviewBox.Text,
                     progress,
-                    _cancel.Token);
+                    _cancel.Token,
+                    _packagePath);
 
                 Progress.Visibility = Visibility.Collapsed;
                 var message = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Submitted"), receipt.IssueUrl);
@@ -193,7 +285,7 @@ namespace PlayniteAchievements.Views.Workshop
             finally
             {
                 _busy = false;
-                SubmitButton.IsEnabled = true;
+                UpdateSubmitEnabled();
             }
         }
 
@@ -264,9 +356,17 @@ namespace PlayniteAchievements.Views.Workshop
             RequestClose?.Invoke(this, EventArgs.Empty);
         }
 
-        /// <summary>Removes the rendered preview scratch folder; called by the host when the window closes.</summary>
+        /// <summary>
+        /// Stops a render still in progress, disposes the preview model and removes the preview
+        /// scratch folder (the built package and the rendered image); called by the host when the
+        /// window closes.
+        /// </summary>
         public void Cleanup()
         {
+            _closed = true;
+            _cancel.Cancel();
+            _model?.Dispose();
+            _model = null;
             try
             {
                 if (!string.IsNullOrWhiteSpace(_previewScratch) && Directory.Exists(_previewScratch))
