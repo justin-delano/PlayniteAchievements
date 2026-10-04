@@ -324,5 +324,38 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(false, startPage["ShowMetadataPlaytime"].Value<bool>());
             Assert.AreEqual(false, startPage["ShowMetadataRegion"].Value<bool>());
         }
+
+        [DataTestMethod]
+        [DataRow("ShowOverviewPiePercentages", true, "Percentage")]
+        [DataRow("ShowOverviewPiePercentages", false, "Empty")]
+        [DataRow("ShowSidebarPiePercentages", false, "Empty")]
+        public void MigrateFromJson_ConvertsPiePercentageToggleToCenterMode(
+            string oldName,
+            bool showPercentages,
+            string expected)
+        {
+            var json = new JObject
+            {
+                ["Persisted"] = new JObject { [oldName] = showPercentages }
+            }.ToString();
+
+            var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
+
+            Assert.AreEqual(expected, persisted["OverviewPieCenterMode"].Value<string>());
+            Assert.IsNull(persisted["ShowOverviewPiePercentages"]);
+            Assert.IsNull(persisted["ShowSidebarPiePercentages"]);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_KeepsExistingCenterModeOverLegacyToggle()
+        {
+            const string json =
+                @"{ ""Persisted"": { ""ShowOverviewPiePercentages"": false, ""OverviewPieCenterMode"": ""Filled"" } }";
+
+            var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
+
+            Assert.AreEqual("Filled", persisted["OverviewPieCenterMode"].Value<string>());
+            Assert.IsNull(persisted["ShowOverviewPiePercentages"]);
+        }
     }
 }
