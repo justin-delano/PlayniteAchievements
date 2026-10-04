@@ -173,7 +173,8 @@
                                     <ComboBox x:Name="SoundPackPresetSelector"
                                               MinWidth="220"
                                               VerticalAlignment="Center"
-                                              SelectionChanged="SoundPackPresetSelector_SelectionChanged"/>
+                                              SelectionChanged="SoundPackPresetSelector_SelectionChanged"
+                                          DropDownOpened="SoundPackPresetSelector_DropDownOpened"/>
                                     <Button x:Name="ApplySoundPackPresetButton"
                                             Content="{DynamicResource LOCPlayAch_Button_Apply}"
                                             IsEnabled="False"
