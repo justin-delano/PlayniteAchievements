@@ -133,6 +133,11 @@
                                 <CheckBox IsChecked="{Binding Persisted.IncludeHiddenGamesInBulkScans}"/>
                             </controls:SettingRow>
 
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_IncludeHiddenGamesInSummaries}"
+                                                 Hint="{DynamicResource LOCPlayAch_Settings_IncludeHiddenGamesInSummaries_Description}">
+                                <CheckBox IsChecked="{Binding Persisted.IncludeHiddenGamesInSummaries}"/>
+                            </controls:SettingRow>
+
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_IncludeUnplayedGames}"
                                                  Hint="{DynamicResource LOCPlayAch_IncludeUnplayedGames_Help}">
                                 <CheckBox IsChecked="{Binding Persisted.IncludeUnplayedGames}"/>
