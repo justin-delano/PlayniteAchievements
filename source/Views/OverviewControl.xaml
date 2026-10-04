@@ -997,6 +997,8 @@
                                                                       ShowCenterPercentage="{Binding GamesPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding GamesPieChart.ShowIcons}"
                                                                       IsFilled="{Binding GamesPieChart.IsFilled}"
+                                                                      ShowLegend="{Binding GamesPieChart.ShowLegend}"
+                                                                      LegendPosition="{Binding GamesPieChart.LegendPosition}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnGamesPieChartSliceClick"/>
                                 </Grid>
@@ -1027,6 +1029,8 @@
                                                                       ShowCenterPercentage="{Binding ProviderPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding ProviderPieChart.ShowIcons}"
                                                                       IsFilled="{Binding ProviderPieChart.IsFilled}"
+                                                                      ShowLegend="{Binding ProviderPieChart.ShowLegend}"
+                                                                      LegendPosition="{Binding ProviderPieChart.LegendPosition}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnProviderPieChartSliceClick"/>
                                 </Grid>
@@ -1056,6 +1060,8 @@
                                                                       ShowCenterPercentage="{Binding RarityPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding RarityPieChart.ShowIcons}"
                                                                       IsFilled="{Binding RarityPieChart.IsFilled}"
+                                                                      ShowLegend="{Binding RarityPieChart.ShowLegend}"
+                                                                      LegendPosition="{Binding RarityPieChart.LegendPosition}"
                                                                       IconOffset="12"/>
                                 </Grid>
 
@@ -1084,6 +1090,8 @@
                                                                       ShowCenterPercentage="{Binding TrophyPieChart.ShowCenterPercentage}"
                                                                       ShowIcons="{Binding TrophyPieChart.ShowIcons}"
                                                                       IsFilled="{Binding TrophyPieChart.IsFilled}"
+                                                                      ShowLegend="{Binding TrophyPieChart.ShowLegend}"
+                                                                      LegendPosition="{Binding TrophyPieChart.LegendPosition}"
                                                                       IconOffset="12"/>
                                 </Grid>
                                 </Grid>
