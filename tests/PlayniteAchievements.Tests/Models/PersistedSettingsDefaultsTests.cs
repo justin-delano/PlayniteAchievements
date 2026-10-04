@@ -114,6 +114,26 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreserveOverviewPieDisplay()
+        {
+            var source = new PersistedSettings
+            {
+                OverviewPieCenterMode = PieCenterMode.Filled,
+                ShowOverviewPieIcons = false
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(PieCenterMode.Filled, copy.OverviewPieCenterMode);
+                Assert.IsFalse(copy.ShowOverviewPieIcons);
+            }
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveClipVariants()
         {
             var source = new PersistedSettings
