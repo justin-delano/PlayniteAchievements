@@ -1,0 +1,81 @@
+<UserControl x:Class="PlayniteAchievements.Views.Settings.Workshop.WorkshopPresetsSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="600"
+             d:DesignWidth="700">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
+        <!-- Every saved preset across kinds, read from the three preset stores when the page
+             opens and after each action. Apply lives on the owning card; this page only lists,
+             exports and deletes. -->
+        <Border Style="{StaticResource SectionBorderStyle}" Margin="20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0"
+                           Text="{DynamicResource LOCPlayAch_Presets_Header}"
+                           Style="{StaticResource SectionHeaderStyle}"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                <Border Grid.Row="1" Style="{StaticResource SectionAccentRuleStyle}"/>
+                <TextBlock Grid.Row="2"
+                           Text="{DynamicResource LOCPlayAch_Workshop_Presets_Hint}"
+                           Style="{StaticResource MutedTextStyle}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,10"/>
+                <WrapPanel Grid.Row="3" Margin="0,0,0,8">
+                    <Button x:Name="ExportButton"
+                            Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
+                            Click="Export_Click"
+                            IsEnabled="False"
+                            Margin="0,0,8,0"/>
+                    <Button x:Name="DeleteButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Delete}"
+                            Click="Delete_Click"
+                            IsEnabled="False"
+                            Margin="0,0,8,0"/>
+                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                            Click="Refresh_Click"/>
+                </WrapPanel>
+                <Grid Grid.Row="4">
+                    <ListView x:Name="PresetList"
+                              SelectionMode="Single"
+                              SelectionChanged="PresetList_SelectionChanged"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="{DynamicResource LOCPlayAch_Common_Kind}"
+                                                DisplayMemberBinding="{Binding KindLabel}"
+                                                Width="180"/>
+                                <GridViewColumn Header="{DynamicResource LOCPlayAch_Column_Name}"
+                                                DisplayMemberBinding="{Binding Name}"
+                                                Width="360"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <TextBlock x:Name="EmptyText"
+                               Text="{DynamicResource LOCPlayAch_Workshop_NoPresets}"
+                               Style="{StaticResource MutedTextStyle}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               IsHitTestVisible="False"
+                               Visibility="Collapsed"/>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
