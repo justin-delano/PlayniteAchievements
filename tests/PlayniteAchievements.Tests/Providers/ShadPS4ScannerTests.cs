@@ -25,6 +25,21 @@ namespace PlayniteAchievements.Providers.Tests
         // shadPS4's s_language_xml_names index for Italian (TROP_05.XML).
         private const int ItalianTropIndex = 5;
 
+        [DataTestMethod]
+        [DataRow("<trophyconf version=\"1.1\"><npcommid>NPWR00001_00</npcommid><title-name> Bloodborne </title-name><trophy id=\"0\"/></trophyconf>", "Bloodborne")]
+        [DataRow("<trophyconf version=\"1.1\"><npcommid>NPWR00001_00</npcommid><title-name>  </title-name></trophyconf>", null)]
+        [DataRow("<trophyconf version=\"1.1\"><npcommid>NPWR00001_00</npcommid></trophyconf>", null)]
+        public void ReadTrophySetTitle_ReadsRootTitleName(string xml, string expected)
+        {
+            Assert.AreEqual(expected, ShadPS4Scanner.ReadTrophySetTitle(System.Xml.Linq.XDocument.Parse(xml)));
+        }
+
+        [TestMethod]
+        public void ReadTrophySetTitle_NullDocument_ReturnsNull()
+        {
+            Assert.IsNull(ShadPS4Scanner.ReadTrophySetTitle(null));
+        }
+
         [TestMethod]
         public async Task RefreshAsync_NpwrOverride_BeatsNpbindDetection()
         {
