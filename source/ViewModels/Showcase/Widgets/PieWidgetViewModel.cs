@@ -63,20 +63,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase, IDisposable
     {
         private PieChartViewModel _chart = new PieChartViewModel();
-        private bool _showCenterPercentage = true;
         private bool _showLegend = true;
 
         public PieChartViewModel Chart { get => _chart; private set => SetValue(ref _chart, value); }
 
         /// <summary>Per-widget option; the legend shows at every size when enabled.</summary>
         public bool ShowLegend { get => _showLegend; private set => SetValue(ref _showLegend, value); }
-
-        /// <summary>Per-widget option; replaces the retired global pie display settings.</summary>
-        public bool ShowCenterPercentage
-        {
-            get => _showCenterPercentage;
-            private set => SetValue(ref _showCenterPercentage, value);
-        }
 
         public BulkObservableCollection<PieLegendRowViewModel> LegendRows { get; } =
             new BulkObservableCollection<PieLegendRowViewModel>();
@@ -85,7 +77,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         {
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
-            ShowCenterPercentage = ShowcaseWidgetOptions.GetPieShowCenterPercentage(Projection?.Instance);
             ShowLegend = ShowcaseWidgetOptions.GetPieShowLegend(Projection?.Instance);
             var chart = new PieChartViewModel
             {
@@ -93,7 +84,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 // the data.
                 SmallSliceMode = ShowcaseWidgetOptions.GetPieSmallSliceMode(Projection?.Instance),
                 IncludeLocked = ShowcaseWidgetOptions.GetPieIncludeLocked(Projection?.Instance),
-                ShowCenterPercentageRequested = ShowCenterPercentage,
+                CenterMode = ShowcaseWidgetOptions.GetPieCenterMode(Projection?.Instance),
                 ShowIcons = ShowcaseWidgetOptions.GetPieShowIcons(Projection?.Instance)
             };
             switch (mode)
