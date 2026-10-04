@@ -60,8 +60,8 @@
                             ToolTip="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
                             AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                       FontSize="20" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale" Margin="0,0,10,0" Text="&#xEA48;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
+                            <controls:GlyphIcon FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                       Size="20" Margin="0,0,10,0" VerticalAlignment="Center" Glyph="&#xEA48;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
@@ -72,8 +72,8 @@
                             ToolTip="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}"
                             AutomationProperties.Name="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                       FontSize="20" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale" Margin="0,0,10,0" Text="&#xEA30;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
+                            <controls:GlyphIcon FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                       Size="20" Margin="0,0,10,0" VerticalAlignment="Center" Glyph="&#xEA30;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
@@ -84,8 +84,8 @@
                             ToolTip="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                             AutomationProperties.Name="{DynamicResource LOCPlayAch_ThemeMigration_Title}">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                       FontSize="20" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale" Margin="0,0,10,0" Text="&#xEF18;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
+                            <controls:GlyphIcon FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                       Size="20" Margin="0,0,10,0" VerticalAlignment="Center" Glyph="&#xEF18;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
