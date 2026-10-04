@@ -119,7 +119,8 @@ namespace PlayniteAchievements
             Services.Workshop.WorkshopItemKind kind,
             System.Windows.Window owner,
             Guid? gameId = null,
-            string pageId = null)
+            string pageId = null,
+            System.Collections.Generic.IReadOnlyDictionary<Services.Workshop.ThemePackParts, string> themePartFiles = null)
         {
             var candidate = WorkshopShareService.ListCandidates().FirstOrDefault(c =>
                 c.Kind == kind
@@ -129,6 +130,10 @@ namespace PlayniteAchievements
             {
                 return false;
             }
+
+            // A composed theme travels as the parts the user picked; the files live in the
+            // caller's scratch folder for the life of this modal dialog.
+            candidate.ThemePartFiles = themePartFiles;
 
             var dialog = new Views.Workshop.WorkshopShareDialog(this, _logger, candidate, WorkshopShareService, WorkshopRegistry);
             var window = Views.Helpers.PlayniteUiProvider.CreateExtensionWindow(
