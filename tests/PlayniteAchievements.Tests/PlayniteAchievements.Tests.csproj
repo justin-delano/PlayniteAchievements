@@ -629,6 +629,7 @@
     <Compile Include="..\..\source\Services\Workshop\ThemePackPortableStore.cs" Link="Source\Services\Workshop\ThemePackPortableStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\ColorPackPortableStore.cs" Link="Source\Services\Workshop\ColorPackPortableStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\PackagePresetStore.cs" Link="Source\Services\Workshop\PackagePresetStore.cs" />
+    <Compile Include="..\..\source\Views\Controls\GlyphIcon.cs" Link="Source\Views\Controls\GlyphIcon.cs" />
     <Compile Include="..\..\source\Common\HttpClientFactory.cs" Link="Source\Common\HttpClientFactory.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopModels.cs" Link="Source\Services\Workshop\WorkshopModels.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopClient.cs" Link="Source\Services\Workshop\WorkshopClient.cs" />
