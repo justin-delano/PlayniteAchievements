@@ -16,7 +16,7 @@ using PlayniteAchievements.Views.Helpers;
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
     /// <summary>
-    /// Workshop settings: the Themes page. Composes a .pabundle bundle part by part (current
+    /// Workshop settings: the Bundles page. Composes a .pabundle part by part (current
     /// settings or a saved preset for each), writes it to a file or shares it to the Workshop,
     /// and adds the parts of a bundle file to their preset lists.
     /// </summary>
@@ -46,15 +46,15 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         /// Composer first, so the user sees what the bundle will hold, then the save dialog. The
         /// chosen parts are materialized into a scratch folder and zipped from there.
         /// </summary>
-        private void ExportTheme_Click(object sender, RoutedEventArgs e)
+        private void ExportBundle_Click(object sender, RoutedEventArgs e)
         {
             WorkshopMenus.OpenExport(
                 sender as Button,
-                () => ExportThemeFile_Click(sender, e),
-                () => ShareTheme_Click(sender, e));
+                () => ExportBundleFile_Click(sender, e),
+                () => ShareBundle_Click(sender, e));
         }
 
-        private void ExportThemeFile_Click(object sender, RoutedEventArgs e)
+        private void ExportBundleFile_Click(object sender, RoutedEventArgs e)
         {
             var store = _plugin?.BundlePortableStore;
             if (store == null)
@@ -75,7 +75,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     Filter = BundlePortableStore.BuildFileDialogFilter(),
                     AddExtension = true,
                     DefaultExt = BundlePortableStore.PackageFileExtension,
-                    FileName = "theme" + BundlePortableStore.PackageFileExtension
+                    FileName = "bundle" + BundlePortableStore.PackageFileExtension
                 };
 
                 if (dialog.ShowDialog() != DialogResult.OK)
@@ -108,7 +108,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         /// the color set, the sound pack, and the notification and frame styles. Nothing is
         /// applied until picked from the owning card.
         /// </summary>
-        private void ImportTheme_Click(object sender, RoutedEventArgs e)
+        private void ImportBundle_Click(object sender, RoutedEventArgs e)
         {
             var store = _plugin?.BundlePortableStore;
             if (store == null)
@@ -186,7 +186,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         /// Same composer as Export, then the share dialog with the composed parts. The scratch
         /// folder outlives the modal share dialog and is removed when it closes.
         /// </summary>
-        private void ShareTheme_Click(object sender, RoutedEventArgs e)
+        private void ShareBundle_Click(object sender, RoutedEventArgs e)
         {
             if (_plugin == null)
             {
@@ -214,7 +214,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed composing theme for sharing.");
+                _logger?.Error(ex, "Failed composing bundle for sharing.");
                 ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
             }
         }
@@ -229,7 +229,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         }
 
         /// <summary>
-        /// Offers the four theme parts of an imported bundle as a checklist, with parts outside
+        /// Offers the four bundle parts of an imported bundle as a checklist, with parts outside
         /// <paramref name="available"/> shown disabled, and returns the chosen set.
         /// </summary>
         private BundleParts PickBundleParts(BundleParts available, string hint)

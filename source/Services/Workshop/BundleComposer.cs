@@ -10,7 +10,7 @@ using PlayniteAchievements.Services.UI;
 
 namespace PlayniteAchievements.Services.Workshop
 {
-    /// <summary>Where one theme part comes from: the live settings, or a saved preset file.</summary>
+    /// <summary>Where one bundle part comes from: the live settings, or a saved preset file.</summary>
     public sealed class BundlePartSource
     {
         public BundlePartSource(BundleParts part, string label, string presetPath)
@@ -32,7 +32,7 @@ namespace PlayniteAchievements.Services.Workshop
         public override string ToString() => Label;
     }
 
-    /// <summary>One part of a theme being composed: included or not, and from which source.</summary>
+    /// <summary>One part of a bundle being composed: included or not, and from which source.</summary>
     public sealed class BundlePartChoice
     {
         public BundlePartChoice(BundleParts part, bool included, BundlePartSource source)
@@ -50,9 +50,9 @@ namespace PlayniteAchievements.Services.Workshop
     }
 
     /// <summary>
-    /// Lists what each theme part can be built from and turns a set of choices into the
+    /// Lists what each bundle part can be built from and turns a set of choices into the
     /// standalone package files a bundle embeds: a preset is used as it is (a preset file is
-    /// already a valid package), the current settings are exported fresh. Shared by theme export
+    /// already a valid package), the current settings are exported fresh. Shared by bundle export
     /// to file and Share to Workshop, so both show the same composer.
     /// </summary>
     public sealed class BundleComposer
@@ -118,7 +118,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed listing presets for theme part {part}.");
+                _logger?.Warn(ex, $"Failed listing presets for bundle part {part}.");
             }
 
             return sources;

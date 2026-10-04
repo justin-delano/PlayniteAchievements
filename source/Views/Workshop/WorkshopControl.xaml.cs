@@ -105,7 +105,7 @@ namespace PlayniteAchievements.Views.Workshop
 
         private BundleParts? PickBundleParts(WorkshopItemViewModel item, BundleParts available)
         {
-            // From a part's tab only that part starts ticked; from Themes or All, everything does.
+            // From a part's tab only that part starts ticked; from Bundles or All, everything does.
             var preferred = ViewModel?.PreferredBundleParts ?? BundleParts.All;
             PartPickerItem Part(BundleParts part, string key) =>
                 new PartPickerItem(part, ResourceProvider.GetString(key), isChecked: preferred.HasFlag(part), isEnabled: available.HasFlag(part));

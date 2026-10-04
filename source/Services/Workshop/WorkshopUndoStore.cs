@@ -41,7 +41,7 @@ namespace PlayniteAchievements.Services.Workshop
     /// "Revert to before &lt;item&gt;": before a Workshop install writes into the global settings,
     /// the slices it will replace are copied to <c>UserData\workshop\undo\</c>; restoring assigns
     /// them back through the same setters the install used. Covers the settings-based kinds
-    /// (colors, sounds, notification styles, showcase pages, themes). Per-game data is not
+    /// (colors, sounds, notification styles, showcase pages, bundles). Per-game data is not
     /// snapshotted here: a game's custom data can be exported as a .pa before installing.
     /// Managed files (images, sounds) are left on disk, so a restored path still resolves.
     /// </summary>

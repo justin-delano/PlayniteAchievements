@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Services.Workshop
         public string PageId { get; set; }
 
         /// <summary>
-        /// For a theme, the standalone package per part the composer chose (current settings
+        /// For a bundle, the standalone package per part the composer chose (current settings
         /// exported to scratch, or a preset file). Null means every part from the live settings.
         /// </summary>
         public IReadOnlyDictionary<BundleParts, string> BundlePartFiles { get; set; }

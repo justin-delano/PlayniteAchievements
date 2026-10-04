@@ -183,9 +183,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                     break;
                 case WorkshopItemKind.Bundle:
-                    if (contents["parts"] is JArray themeParts)
+                    if (contents["parts"] is JArray bundleParts)
                     {
-                        parts.Add(string.Join(", ", themeParts.Select(s => s.ToString())));
+                        parts.Add(string.Join(", ", bundleParts.Select(s => s.ToString())));
                     }
 
                     break;

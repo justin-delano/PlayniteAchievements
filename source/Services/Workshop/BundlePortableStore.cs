@@ -111,7 +111,7 @@ namespace PlayniteAchievements.Services.Workshop
 
         public static string BuildFileDialogFilter()
         {
-            return $"Playnite Achievements Theme (*{PackageFileExtension})|*{PackageFileExtension};*{PackageFileExtension}.zip";
+            return $"Playnite Achievements Bundle (*{PackageFileExtension})|*{PackageFileExtension};*{PackageFileExtension}.zip";
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace PlayniteAchievements.Services.Workshop
                     catch (InvalidOperationException ex)
                     {
                         // Nothing custom to carry: the bundle simply has no sounds part.
-                        _logger?.Debug(ex, "Theme export skipped the sounds part.");
+                        _logger?.Debug(ex, "Bundle export skipped the sounds part.");
                     }
                 }
 
@@ -301,7 +301,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// Writes the selected parts that the bundle carries into <paramref name="directory"/>
         /// as their standalone packages (colors.pacolors, sounds.pasounds, toast.panotif,
         /// frame.paframe) and returns the path of each. Callers that save presets rather than
-        /// apply the theme use this; <see cref="ImportAsync"/> builds on it.
+        /// apply the bundle use this; <see cref="ImportAsync"/> builds on it.
         /// </summary>
         public IReadOnlyDictionary<BundleParts, string> ExtractParts(string sourcePath, BundleParts selected, string directory)
         {
@@ -402,7 +402,7 @@ namespace PlayniteAchievements.Services.Workshop
         {
             if (!entries.TryGetValue(ManifestEntryName, out var manifestEntry))
             {
-                throw new InvalidOperationException("The package does not contain a theme manifest.");
+                throw new InvalidOperationException("The package does not contain a bundle manifest.");
             }
 
             BundleFile manifest;
@@ -417,13 +417,13 @@ namespace PlayniteAchievements.Services.Workshop
 
             if (manifest == null || !string.Equals(manifest.Kind, BundleFile.BundleKind, StringComparison.Ordinal))
             {
-                throw new InvalidOperationException("This file is not a Playnite Achievements theme.");
+                throw new InvalidOperationException("This file is not a Playnite Achievements bundle.");
             }
 
             if (manifest.Version > CurrentVersion)
             {
                 throw new InvalidOperationException(
-                    "This theme was exported by a newer version of Playnite Achievements. Update the extension to import it.");
+                    "This bundle was exported by a newer version of Playnite Achievements. Update the extension to import it.");
             }
 
             return manifest;
@@ -441,12 +441,12 @@ namespace PlayniteAchievements.Services.Workshop
                 if (!Enum.TryParse(name, ignoreCase: true, out BundleParts part) ||
                     part == BundleParts.None || part == BundleParts.All)
                 {
-                    throw new InvalidOperationException($"The theme names an unknown part '{name}'.");
+                    throw new InvalidOperationException($"The bundle names an unknown part '{name}'.");
                 }
 
                 if (!entries.ContainsKey(EntryNameFor(part)))
                 {
-                    throw new InvalidOperationException($"The theme is missing its '{EntryNameFor(part)}' part.");
+                    throw new InvalidOperationException($"The bundle is missing its '{EntryNameFor(part)}' part.");
                 }
 
                 parts |= part;

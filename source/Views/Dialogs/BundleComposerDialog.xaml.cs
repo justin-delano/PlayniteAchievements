@@ -9,7 +9,7 @@ using System.Windows.Controls;
 
 namespace PlayniteAchievements.Views.Dialogs
 {
-    /// <summary>One row of the theme composer: a part, whether it travels, and from which source.</summary>
+    /// <summary>One row of the bundle composer: a part, whether it travels, and from which source.</summary>
     public sealed class BundleComposerRow : Common.ObservableObject
     {
         private bool _isIncluded;
@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Views.Dialogs
     }
 
     /// <summary>
-    /// The theme composer: one row per part with an include checkbox and a dropdown of sources
+    /// The bundle composer: one row per part with an include checkbox and a dropdown of sources
     /// (the current settings, then every saved preset of that kind), so the user sees exactly
     /// what a bundle will contain before it is written or shared.
     /// </summary>

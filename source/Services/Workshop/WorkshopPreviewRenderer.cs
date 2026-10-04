@@ -38,7 +38,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// <param name="directory">Where the PNG goes.</param>
         /// <param name="stylePackagePath">A .panotif or .paframe whose style the preview should
         /// show instead of the live one: a saved preset being shared, or the notification part of
-        /// a composed theme.</param>
+        /// a composed bundle.</param>
         public string TryRender(WorkshopItemKind kind, string directory, string stylePackagePath = null)
         {
             try

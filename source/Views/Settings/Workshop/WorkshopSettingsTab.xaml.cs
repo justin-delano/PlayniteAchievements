@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
     /// <summary>
     /// Workshop settings tab: everything the community Workshop offers in one place, as five
     /// left-nav pages. Browse and Installed host the same control the scoped Workshop window
-    /// uses, one pane each; Themes bundles and unbundles the global look; Presets lists every
+    /// uses, one pane each; Bundles packs and unpacks the global look; Presets lists every
     /// saved preset across kinds; Account holds the sharer identity and the endpoint overrides.
     /// Pages are created lazily when first selected, so the index is fetched only when Browse
     /// or Installed is opened.

@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Services.Workshop
         [JsonProperty("downloads")] public WorkshopDownloads Downloads { get; set; }
         [JsonProperty("urls")] public WorkshopUrls Urls { get; set; }
 
-        /// <summary>The theme parts a bundle carries, or empty for other kinds.</summary>
+        /// <summary>The bundle parts a bundle carries, or empty for other kinds.</summary>
         public IReadOnlyList<string> PartNames
         {
             get

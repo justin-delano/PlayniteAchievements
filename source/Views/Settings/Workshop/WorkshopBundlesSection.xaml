@@ -33,10 +33,10 @@
                                    Margin="0,0,0,12"/>
                         <WrapPanel>
                             <Button Content="{DynamicResource LOCPlayAch_Workshop_ExportBundle}"
-                                    Click="ExportTheme_Click"
+                                    Click="ExportBundle_Click"
                                     Margin="0,0,8,0"/>
                             <Button Content="{DynamicResource LOCPlayAch_Workshop_ImportBundle}"
-                                    Click="ImportTheme_Click"/>
+                                    Click="ImportBundle_Click"/>
                         </WrapPanel>
                     </StackPanel>
                 </Border>

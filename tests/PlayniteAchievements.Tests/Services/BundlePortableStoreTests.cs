@@ -187,7 +187,7 @@ namespace PlayniteAchievements.Services.Tests
 
                 var wrongKind = Path.Combine(tempDir, "kind.pabundle");
                 WriteManifestOnly(wrongKind, new BundleFile { Kind = "Other", Version = 1 });
-                AssertThrows(() => store.Inspect(wrongKind), "not a Playnite Achievements theme");
+                AssertThrows(() => store.Inspect(wrongKind), "not a Playnite Achievements bundle");
 
                 var missingPart = Path.Combine(tempDir, "missing.pabundle");
                 WriteManifestOnly(missingPart, new BundleFile

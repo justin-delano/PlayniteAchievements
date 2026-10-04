@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Views.Workshop
             NameBox.Text = candidate.DefaultName ?? string.Empty;
             AuthorBox.Text = registry.DisplayName ?? string.Empty;
 
-            // Where the plugin can draw the thing itself (toast, frame, theme), start with that
+            // Where the plugin can draw the thing itself (toast, frame, bundle), start with that
             // render; the user can still browse for a different image.
             _previewScratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopPreview", Guid.NewGuid().ToString("N"));
             var rendered = new WorkshopPreviewRenderer(plugin, logger).TryRender(candidate.Kind, _previewScratch, candidate.PackagePath ?? (candidate.BundlePartFiles != null && candidate.BundlePartFiles.TryGetValue(BundleParts.Toast, out var toastPart) ? toastPart : null));

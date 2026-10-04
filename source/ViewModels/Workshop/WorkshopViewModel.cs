@@ -167,7 +167,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 new WorkshopSortOption(WorkshopSort.Name, ResourceProvider.GetString("LOCPlayAch_Column_Name"))
             };
             // Opened from the window that owns one kind (or from a game): that kind alone is
-            // offered, themes carrying the part still list under it, and the selector hides.
+            // offered, bundles carrying the part still list under it, and the selector hides.
             var focusedKind = focusGameId.HasValue ? WorkshopItemKind.GameCustomData : focusKind;
             if (focusedKind is WorkshopItemKind only)
             {
@@ -462,8 +462,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         /// <summary>
-        /// Whether a row belongs under a kind filter: its own kind, or a theme carrying that
-        /// kind as a part ("also in themes"). Null matches everything.
+        /// Whether a row belongs under a kind filter: its own kind, or a bundle carrying that
+        /// kind as a part ("also in bundles"). Null matches everything.
         /// </summary>
         private static bool MatchesKind(WorkshopItemViewModel row, WorkshopItemKind? kind)
         {
@@ -521,7 +521,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 return false;
             }
 
-            // A kind tab also lists the themes that carry that part ("also in themes"), so a user
+            // A kind tab also lists the bundles that carry that part ("also in bundles"), so a user
             // looking for sounds sees sound packs first and bundles containing sounds after them.
             if (!MatchesKind(row, _selectedKind?.Kind))
             {
@@ -537,7 +537,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             return query.Length == 0 || row.SearchText.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>The theme part a kind tab corresponds to, or null for kinds themes never carry.</summary>
+        /// <summary>The bundle part a kind tab corresponds to, or null for kinds bundles never carry.</summary>
         public static BundleParts? BundlePartFor(WorkshopItemKind kind)
         {
             switch (kind)
@@ -551,8 +551,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         /// <summary>
-        /// When a theme is installed from a part's tab, the part picker starts with just that
-        /// part ticked; from the Themes or All tab every available part is ticked.
+        /// When a bundle is installed from a part's tab, the part picker starts with just that
+        /// part ticked; from the Bundles or All tab every available part is ticked.
         /// </summary>
         public BundleParts PreferredBundleParts =>
             _selectedKind?.Kind is WorkshopItemKind kind && BundlePartFor(kind) is BundleParts part
@@ -586,7 +586,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         // ---- install -----------------------------------------------------------------------
 
-        /// <summary>Asks the window to pick theme parts; null cancels.</summary>
+        /// <summary>Asks the window to pick bundle parts; null cancels.</summary>
         public Func<WorkshopItemViewModel, Services.Workshop.BundleParts, Services.Workshop.BundleParts?> PickBundleParts { get; set; }
 
         /// <summary>Asks the window to pick a library game for game data; null cancels.</summary>

@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>The downloaded, checksum-verified package.</summary>
         public string PackagePath { get; set; }
 
-        /// <summary>For themes, which parts to apply.</summary>
+        /// <summary>For bundles, which parts to apply.</summary>
         public BundleParts Parts { get; set; } = BundleParts.All;
 
         /// <summary>For per-game data, the library game to install onto.</summary>
@@ -46,7 +46,7 @@ namespace PlayniteAchievements.Services.Workshop
 
     /// <summary>
     /// Installs a downloaded Workshop package. Looks (color sets, notification styles, frames,
-    /// sound packs and themes) are saved as presets under the item's name and applied only when
+    /// sound packs and bundles) are saved as presets under the item's name and applied only when
     /// the user picks them from a preset list, so installing never overwrites the current look.
     /// Showcase pages and game data apply directly, after snapshotting what they replace so the
     /// install can be reverted. Runs on the UI thread: the showcase refresh needs it.
@@ -130,7 +130,7 @@ namespace PlayniteAchievements.Services.Workshop
             _undo.Delete(snapshotId);
         }
 
-        /// <summary>Which theme parts a Workshop item offers, as the installer's flags.</summary>
+        /// <summary>Which bundle parts a Workshop item offers, as the installer's flags.</summary>
         public static BundleParts BundlePartsOf(WorkshopItem item)
         {
             var parts = BundleParts.None;
@@ -192,7 +192,7 @@ namespace PlayniteAchievements.Services.Workshop
             result.PresetNames.Add(preset.Name);
         }
 
-        // ---- theme ---------------------------------------------------------------------------
+        // ---- bundle ---------------------------------------------------------------------------
 
         private Task InstallBundleAsync(
             WorkshopInstallRequest request,
@@ -205,10 +205,10 @@ namespace PlayniteAchievements.Services.Workshop
             var parts = request.Parts & available;
             if (parts == BundleParts.None)
             {
-                throw new InvalidOperationException("None of the selected theme parts is in this package.");
+                throw new InvalidOperationException("None of the selected bundle parts is in this package.");
             }
 
-            // Each part becomes a preset of its own kind under the theme's name, so a theme can
+            // Each part becomes a preset of its own kind under the bundle's name, so a bundle can
             // be picked up piece by piece from the preset lists and never overwrites anything.
             var scratch = PortablePackage.CreateScratchDirectory("WorkshopBundle");
             try
