@@ -80,10 +80,14 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        /// <summary>The rows a game data preview capped at <paramref name="maxRows"/> shows, unchanged rows hidden.</summary>
+        /// <summary>
+        /// The package entries a package-only game data preview capped at
+        /// <paramref name="maxRows"/> lists. A compared preview shows the achievement grid, whose
+        /// icons the render decodes itself, so it lists none here.
+        /// </summary>
         internal static IEnumerable<AchievementPreviewRow> DisplayedRows(GameCustomDataPreviewDiff diff, int maxRows)
         {
-            if (diff == null)
+            if (diff == null || diff.AfterData != null)
             {
                 return Enumerable.Empty<AchievementPreviewRow>();
             }
@@ -143,7 +147,11 @@ namespace PlayniteAchievements.Services.Workshop
                 cancel);
         }
 
-        private async Task<Dictionary<string, ImageSource>> DecodeAllAsync(
+        /// <summary>
+        /// Decodes each distinct path or image URI, keyed by it; ones that fail are left out.
+        /// Resumes on the caller's context.
+        /// </summary>
+        internal async Task<Dictionary<string, ImageSource>> DecodeAllAsync(
             IEnumerable<string> paths,
             Func<string, int> decodePixel,
             CancellationToken cancel)
@@ -188,9 +196,17 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        // Without the plugin's image service (tests, tools): a local file only, frozen.
+        // Without the plugin's image service (tests, tools): a local file only, frozen. A grid
+        // icon's "cachebust|<token>|<path>" source is read as its path.
         private static BitmapSource DecodeFile(string path, int decodePixel)
         {
+            const string cacheBustPrefix = "cachebust|";
+            if (path.StartsWith(cacheBustPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var separator = path.IndexOf('|', cacheBustPrefix.Length);
+                path = separator < 0 ? path : path.Substring(separator + 1);
+            }
+
             if (!Path.IsPathRooted(path) || !File.Exists(path))
             {
                 return null;
