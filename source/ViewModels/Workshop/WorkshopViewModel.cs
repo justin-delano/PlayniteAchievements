@@ -341,6 +341,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public bool HasSubmissions => Submissions.Count > 0;
 
+        public bool HasNoInstalledItems => InstalledItems.Count == 0;
+
         // ---- loading -----------------------------------------------------------------------
 
         public async Task LoadAsync()
@@ -455,6 +457,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
             {
                 InstalledItems.Add(row);
             }
+
+            OnPropertyChanged(nameof(HasNoInstalledItems));
         }
 
         /// <summary>
@@ -485,6 +489,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 if (row.PreviewPath == null)
                 {
                     row.PreviewPath = await _client.FetchPreviewAsync(row.Item, _lifetime.Token);
+                }
+
+                // The index carries the count as of its last build; the release API has the
+                // live number, fetched once per item per window.
+                if (row.LiveDownloads == null)
+                {
+                    row.LiveDownloads = await _client.FetchLiveDownloadsAsync(row.Item, _lifetime.Token);
                 }
 
                 if (row.Readme == null)
