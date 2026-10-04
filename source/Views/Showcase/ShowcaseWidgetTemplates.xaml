@@ -527,6 +527,7 @@
                 ExactTotalCount="{Binding Chart.ExactTotalCount}"
                 ShowCenterPercentage="{Binding Chart.ShowCenterPercentage}"
                 ShowIcons="{Binding Chart.ShowIcons}"
+                IsFilled="{Binding Chart.IsFilled}"
                 PieMargin="23"
                 MinHeight="70"/>
             <ItemsControl ItemsSource="{Binding LegendRows}"
