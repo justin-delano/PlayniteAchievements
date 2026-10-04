@@ -291,7 +291,9 @@
         <Setter Property="Width" Value="18"/>
         <Setter Property="Height" Value="18"/>
         <Setter Property="MinHeight" Value="0"/>
-        <Setter Property="Content" Value="&#xEF4E;"/>
+        <!-- IcoFont has no outlined info-circle (EF4E is a filled disc), so the ring is the
+             border below and the glyph is the bare "i" (EF50). -->
+        <Setter Property="Content" Value="&#xEF50;"/>
         <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
         <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Subtle}"/>
@@ -304,7 +306,9 @@
                             Width="{TemplateBinding Width}"
                             Height="{TemplateBinding Height}"
                             CornerRadius="9"
-                            Background="{TemplateBinding Background}">
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding Foreground}"
+                            BorderThickness="1">
                         <TextBlock Text="{TemplateBinding Content}"
                                    Foreground="{TemplateBinding Foreground}"
                                    FontFamily="{TemplateBinding FontFamily}"
