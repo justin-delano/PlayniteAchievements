@@ -16,6 +16,8 @@ using LiveCharts.Wpf.Points;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Views.Controls
 {
@@ -41,8 +43,10 @@ namespace PlayniteAchievements.Views.Controls
         private readonly List<PieSeries> subscribedSeries = new List<PieSeries>();
         private readonly List<INotifyPropertyChanged> subscribedLegendItems = new List<INotifyPropertyChanged>();
         private readonly List<INotifyPropertyChanged> subscribedSliceItems = new List<INotifyPropertyChanged>();
+        private const int MaxLegendRows = 8;
         private bool calculationScheduled;
         private string hoveredSliceLabel;
+        private string legendRowsKey;
 
         private sealed class IconCandidate
         {
@@ -103,6 +107,18 @@ namespace PlayniteAchievements.Views.Controls
         public static readonly DependencyProperty IsFilledProperty =
             DependencyProperty.Register(nameof(IsFilled), typeof(bool), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(false, OnIsFilledChanged));
+
+        /// <summary>
+        /// When true, draws a legend of up to eight rows beside the pie, on the
+        /// <see cref="LegendPosition"/> side.
+        /// </summary>
+        public static readonly DependencyProperty ShowLegendProperty =
+            DependencyProperty.Register(nameof(ShowLegend), typeof(bool), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(false, OnLayoutPropertyChanged));
+
+        public static readonly DependencyProperty LegendPositionProperty =
+            DependencyProperty.Register(nameof(LegendPosition), typeof(PieLegendPosition), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(PieLegendPosition.Right));
 
         public static readonly DependencyProperty ShowIconsProperty =
             DependencyProperty.Register(nameof(ShowIcons), typeof(bool), typeof(PieChartWithRadialIcons),
@@ -192,6 +208,20 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(IsFilledProperty, value);
         }
 
+        public bool ShowLegend
+        {
+            get => (bool)GetValue(ShowLegendProperty);
+            set => SetValue(ShowLegendProperty, value);
+        }
+
+        public PieLegendPosition LegendPosition
+        {
+            get => (PieLegendPosition)GetValue(LegendPositionProperty);
+            set => SetValue(LegendPositionProperty, value);
+        }
+
+        public ObservableCollection<PieLegendRowViewModel> LegendRows { get; } = new ObservableCollection<PieLegendRowViewModel>();
+
         public bool ShowIcons
         {
             get => (bool)GetValue(ShowIconsProperty);
@@ -235,7 +265,9 @@ namespace PlayniteAchievements.Views.Controls
             InitializeComponent();
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-            SizeChanged += OnSizeChanged;
+            // The pie's square changes size when the legend appears or changes width, even when
+            // the control itself keeps its size.
+            PieHost.SizeChanged += OnSizeChanged;
         }
 
         /// <summary>
@@ -542,9 +574,11 @@ namespace PlayniteAchievements.Views.Controls
 
         private void CalculatePositions()
         {
+            SynchronizeLegendRows();
+
             var margin = Chart?.Margin ?? new Thickness(0);
-            double availableWidth = Math.Max(0, ActualWidth - margin.Left - margin.Right);
-            double availableHeight = Math.Max(0, ActualHeight - margin.Top - margin.Bottom);
+            double availableWidth = Math.Max(0, PieHost.ActualWidth - margin.Left - margin.Right);
+            double availableHeight = Math.Max(0, PieHost.ActualHeight - margin.Top - margin.Bottom);
             double controlSize = Math.Min(availableWidth, availableHeight);
             if (controlSize <= 0)
             {
@@ -732,8 +766,8 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            CenterPercentageOffsetX = (pieBounds.Left + (pieBounds.Width / 2.0)) - (ActualWidth / 2.0);
-            CenterPercentageOffsetY = (pieBounds.Top + (pieBounds.Height / 2.0)) - (ActualHeight / 2.0);
+            CenterPercentageOffsetX = (pieBounds.Left + (pieBounds.Width / 2.0)) - (PieHost.ActualWidth / 2.0);
+            CenterPercentageOffsetY = (pieBounds.Top + (pieBounds.Height / 2.0)) - (PieHost.ActualHeight / 2.0);
         }
 
         private void ClearCenterPercentageOffset()
@@ -767,7 +801,7 @@ namespace PlayniteAchievements.Views.Controls
                         continue;
                     }
 
-                    bounds = slice.TransformToAncestor(this).TransformBounds(localBounds);
+                    bounds = slice.TransformToAncestor(PieHost).TransformBounds(localBounds);
                 }
                 catch
                 {
@@ -841,7 +875,17 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnPieChartDataHover(object sender, ChartPoint chartPoint)
         {
-            var nextHoveredSliceLabel = (chartPoint?.SeriesView as PieSeries)?.Title;
+            SetHoveredSlice((chartPoint?.SeriesView as PieSeries)?.Title);
+        }
+
+        private void OnPieChartMouseLeave(object sender, MouseEventArgs e)
+        {
+            SetHoveredSlice(null);
+        }
+
+        private void SetHoveredSlice(string label)
+        {
+            var nextHoveredSliceLabel = string.IsNullOrEmpty(label) ? null : label;
             if (string.Equals(hoveredSliceLabel, nextHoveredSliceLabel, StringComparison.Ordinal))
             {
                 return;
@@ -851,15 +895,47 @@ namespace PlayniteAchievements.Views.Controls
             ApplySliceTransforms();
         }
 
-        private void OnPieChartMouseLeave(object sender, MouseEventArgs e)
+        private void OnLegendRowMouseEnter(object sender, MouseEventArgs e)
         {
-            if (string.IsNullOrEmpty(hoveredSliceLabel))
+            SetHoveredSlice(((sender as FrameworkElement)?.DataContext as PieLegendRowViewModel)?.Label);
+        }
+
+        private void OnLegendRowMouseLeave(object sender, MouseEventArgs e)
+        {
+            SetHoveredSlice(null);
+        }
+
+        private void OnLegendRowMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var label = ((sender as FrameworkElement)?.DataContext as PieLegendRowViewModel)?.Label;
+            if (!string.IsNullOrEmpty(label))
+            {
+                SliceClick?.Invoke(this, label);
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the legend rows only when what they show has changed, so a layout pass that
+        /// re-runs the calculation does not recreate rows (and drop the row under the mouse).
+        /// </summary>
+        private void SynchronizeLegendRows()
+        {
+            var items = ShowLegend
+                ? (LegendItems ?? Enumerable.Empty<LegendItem>()).Where(item => item != null).Take(MaxLegendRows).ToList()
+                : new List<LegendItem>();
+            var key = string.Join("\u001f", items.Select(item => $"{item.Label}\u001e{item.Count}\u001e{item.ColorHex}"));
+            if (string.Equals(key, legendRowsKey, StringComparison.Ordinal) &&
+                LegendRows.Count == items.Count)
             {
                 return;
             }
 
-            hoveredSliceLabel = null;
-            ApplySliceTransforms();
+            legendRowsKey = key;
+            LegendRows.Clear();
+            foreach (var item in items)
+            {
+                LegendRows.Add(new PieLegendRowViewModel(item));
+            }
         }
 
         private static List<PieIconPosition> ResolveIconPositions(IReadOnlyList<IconCandidate> candidates)
