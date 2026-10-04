@@ -15,6 +15,16 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("Titanfall 2", ExophaseGameNameMatcher.NormalizeGameName("Titanfall 2 (Deluxe Edition)"));
         }
 
+        [DataTestMethod]
+        [DataRow("Prince of Persia™: The Lost Crown", "Prince of Persia: The Lost Crown")]
+        [DataRow("Tom Clancy's Rainbow Six® Siege", "Tom Clancy's Rainbow Six Siege")]
+        [DataRow("Assassin's Creed ™ Mirage", "Assassin's Creed Mirage")]
+        [DataRow("Forza Horizon 5 ™ Deluxe Edition", "Forza Horizon 5")]
+        public void NormalizeGameName_StripsTrademarkSymbols(string storeTitle, string expected)
+        {
+            Assert.AreEqual(expected, ExophaseGameNameMatcher.NormalizeGameName(storeTitle));
+        }
+
         [TestMethod]
         public void NormalizeGameName_StripsDirectorsCutSuffix()
         {
