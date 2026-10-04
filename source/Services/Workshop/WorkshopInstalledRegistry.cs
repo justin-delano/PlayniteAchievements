@@ -18,6 +18,12 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>The library game a per-game package was installed onto.</summary>
         public Guid? PlayniteGameId { get; set; }
         public DateTime InstalledUtc { get; set; }
+
+        /// <summary>SHA-256 of the preset file(s) the install wrote, so a later update can tell a user edit from the original; for a bundle, one entry per part.</summary>
+        public string ContentHash { get; set; }
+
+        /// <summary>For game data, the JSON snapshot of the custom data as the install left it: the baseline a later update merges against.</summary>
+        public string BaselineFile { get; set; }
     }
 
     /// <summary>A submission this install made, so its progress can be followed and it can be updated.</summary>
@@ -110,6 +116,48 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
+        /// <summary>
+        /// Gives records that do not know their Workshop id yet the id of the published item
+        /// with the same kind and name, so later updates can be addressed to it.
+        /// </summary>
+        public void LinkSubmissions(IEnumerable<WorkshopItem> published)
+        {
+            if (published == null)
+            {
+                return;
+            }
+
+            lock (_sync)
+            {
+                EnsureIdentityLoaded();
+                var changed = false;
+                foreach (var item in published)
+                {
+                    if (item == null || string.IsNullOrWhiteSpace(item.Id))
+                    {
+                        continue;
+                    }
+
+                    foreach (var record in _submissions)
+                    {
+                        if (!string.IsNullOrWhiteSpace(record.ItemId) || record.Kind != item.Kind ||
+                            !string.Equals(record.Name, item.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        record.ItemId = item.Id;
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    SaveIdentity();
+                }
+            }
+        }
+
         public WorkshopInstalledRegistry(string pluginUserDataPath, ILogger logger = null)
         {
             _directory = string.IsNullOrWhiteSpace(pluginUserDataPath)
@@ -145,7 +193,7 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>Records an install, replacing any earlier record of the same item (and game).</summary>
-        public void Record(WorkshopItem item, Guid? playniteGameId = null)
+        public void Record(WorkshopItem item, Guid? playniteGameId = null, string contentHash = null, string baselineFile = null)
         {
             if (item == null)
             {
@@ -165,6 +213,8 @@ namespace PlayniteAchievements.Services.Workshop
                     Kind = item.Kind,
                     Name = item.Name,
                     PlayniteGameId = playniteGameId,
+                    ContentHash = contentHash,
+                    BaselineFile = baselineFile,
                     InstalledUtc = DateTime.UtcNow
                 });
                 Save();
