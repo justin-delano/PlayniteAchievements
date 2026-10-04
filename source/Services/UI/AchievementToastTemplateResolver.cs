@@ -262,6 +262,18 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
+        /// The plugin's shipped default template for the surface, independent of the active
+        /// theme's override and of any installed custom template. Null when the bundled template
+        /// fails to load. UI thread only.
+        /// </summary>
+        public DataTemplate ResolveBundledDefaultTemplate(bool isFrame)
+        {
+            return LoadPluginDefaultResource(
+                isFrame ? FrameTemplateKey : TemplateKey,
+                isFrame ? _loadDefaultFrameTemplate : _loadDefaultTemplate);
+        }
+
+        /// <summary>
         /// True when the given preview source can supply its own template: the plugin style
         /// always can; the active theme only when it actually ships the surface override. Lets
         /// the UI disable a theme fire-test button that would just fall back to the plugin
@@ -859,9 +871,24 @@ namespace PlayniteAchievements.Services.UI
         /// resolution uses) as a ResourceDictionary defining the surface's template key. Loose XAML
         /// needs assembly-qualified namespaces, so this catches the classic authoring mistake at
         /// install time. Returns true on success; otherwise sets <paramref name="error"/>.
+        /// UI thread only: the check realizes the template's content tree.
         /// </summary>
         public bool TryValidateTemplateXaml(string xaml, bool isFrame, out string error)
         {
+            return TryLoadTemplateFromXaml(xaml, isFrame, out _, out error);
+        }
+
+        /// <summary>
+        /// Loads the surface's DataTemplate from <paramref name="xaml"/> with the same sanitizer,
+        /// native Source loader and realization check as <see cref="TryValidateTemplateXaml"/>, and
+        /// hands back the template instead of discarding it, so a caller can render text that is
+        /// not installed (for example a package being previewed). Nothing is cached or written
+        /// to the custom-templates directory. UI thread only: the template is created and
+        /// realized here and belongs to the calling thread.
+        /// </summary>
+        public bool TryLoadTemplateFromXaml(string xaml, bool isFrame, out DataTemplate template, out string error)
+        {
+            template = null;
             error = null;
             if (string.IsNullOrWhiteSpace(xaml))
             {
@@ -889,7 +916,7 @@ namespace PlayniteAchievements.Services.UI
                 File.WriteAllText(tempPath, xaml, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
                 var dictionary = new ResourceDictionary { Source = new Uri(tempPath, UriKind.Absolute) };
-                if (!TryGetDirectResource(dictionary, key, out DataTemplate template))
+                if (!TryGetDirectResource(dictionary, key, out DataTemplate loaded))
                 {
                     error = $"The file does not define a DataTemplate with x:Key \"{key}\".";
                     return false;
@@ -901,7 +928,7 @@ namespace PlayniteAchievements.Services.UI
                 // a layout pass on every subsequent open. Callers are on the UI thread.
                 try
                 {
-                    template.LoadContent();
+                    loaded.LoadContent();
                 }
                 catch (Exception ex)
                 {
@@ -909,6 +936,7 @@ namespace PlayniteAchievements.Services.UI
                     return false;
                 }
 
+                template = loaded;
                 return true;
             }
             catch (Exception ex)
