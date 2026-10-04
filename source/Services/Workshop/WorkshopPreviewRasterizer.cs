@@ -6,6 +6,7 @@ using PlayniteAchievements.Services.Workshop.Preview;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Workshop.Preview;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +40,6 @@ namespace PlayniteAchievements.Services.Workshop
         private const string SampleKind = "rare";
         private const string IconFontKey = "PlayAch.FontFamily.Icon";
         private const string PlayniteIconFontKey = "FontIcoFont";
-        private const string CompletedBadgeKey = "BadgeRarityCompleted";
         private const string WindowBackgroundKey = "PlayAch.Brush.Window.Background";
         private const string TextKey = "PlayAch.Brush.Text";
         private const string BodyFontKey = "PlayAch.FontFamily.Body";
@@ -89,6 +89,9 @@ namespace PlayniteAchievements.Services.Workshop
             public int MaxHeight { get; set; }
 
             public Func<Task> PrepareAsync { get; set; }
+
+            /// <summary>Runs once the host is laid out; the host is laid out again after it.</summary>
+            public Action AfterLayout { get; set; }
 
             public Func<BitmapSource> Compose { get; set; }
         }
@@ -189,9 +192,7 @@ namespace PlayniteAchievements.Services.Workshop
                 case ShowcasePagePreviewModel showcase:
                     return BuildPanelSurface(new ShowcasePreviewControl { DataContext = showcase }, PanelWidth, PanelMaxHeight);
                 case GameCustomDataPreviewModel gameData:
-                    var gameDataControl = new GameDataPreviewControl { MaxRows = GameDataMaxRows, NeutralRender = true };
-                    gameDataControl.DataContext = gameData;
-                    return BuildPanelSurface(gameDataControl, GameDataWidth, GameDataMaxHeight);
+                    return BuildGameDataSurface(gameData);
                 default:
                     return null;
             }
@@ -205,6 +206,33 @@ namespace PlayniteAchievements.Services.Workshop
                 Width = width,
                 MaxHeight = maxHeight
             };
+        }
+
+        // The game data preview in neutral mode. Compared against a game it shows the achievement
+        // grid, whose icon cells load asynchronously and so never on an offscreen tree: their
+        // sources are decoded ahead and put into the laid-out cells.
+        private Surface BuildGameDataSurface(GameCustomDataPreviewModel gameData)
+        {
+            var control = new GameDataPreviewControl { MaxRows = GameDataMaxRows, NeutralRender = true };
+            control.DataContext = gameData;
+            var surface = BuildPanelSurface(control, GameDataWidth, GameDataMaxHeight);
+            if (gameData.Diff?.AfterData == null)
+            {
+                return surface;
+            }
+
+            var preloader = new WorkshopPreviewImagePreloader(_plugin?.ImageService ?? PlayniteAchievementsPlugin.Instance?.ImageService);
+            IReadOnlyDictionary<string, ImageSource> icons = null;
+            surface.PrepareAsync = async () => icons = await preloader.DecodeAllAsync(
+                control.DisplayedIconUris,
+                uri => GameDataPreviewControl.GridIconDecodePixel,
+                CancellationToken.None);
+            surface.AfterLayout = () =>
+            {
+                control.FixStarColumnWidths(GameDataWidth - 2 * HostPadding);
+                control.ApplyPreloadedIcons(icons);
+            };
+            return surface;
         }
 
         // The notification card as the preview control builds it in neutral mode, centered on a
@@ -354,9 +382,9 @@ namespace PlayniteAchievements.Services.Workshop
                 resources[PlayniteIconFontKey] = iconFont;
             }
 
-            // The capstone badge at its default look, so a sharer's customized badge does not
-            // reach the published image.
-            resources[CompletedBadgeKey] = RarityAppearanceHelper.CreateCompletedBadgePreview(new PersistedSettings());
+            // The rarity, trophy and capstone badges at their default look, so a sharer's
+            // customized badges do not reach the published image.
+            RarityAppearanceHelper.ApplyBadgeResources(resources, new PersistedSettings());
 
             return resources;
         }
@@ -375,10 +403,23 @@ namespace PlayniteAchievements.Services.Workshop
                 host.Height = surface.Height.Value;
             }
 
-            host.Measure(new Size(surface.Width, surface.Height ?? double.PositiveInfinity));
-            var laidOutHeight = surface.Height ?? Math.Max(1, host.DesiredSize.Height);
-            host.Arrange(new Rect(0, 0, surface.Width, laidOutHeight));
-            host.UpdateLayout();
+            double LayOut()
+            {
+                host.Measure(new Size(surface.Width, surface.Height ?? double.PositiveInfinity));
+                var height = surface.Height ?? Math.Max(1, host.DesiredSize.Height);
+                host.Arrange(new Rect(0, 0, surface.Width, height));
+                host.UpdateLayout();
+                return height;
+            }
+
+            var laidOutHeight = LayOut();
+            if (surface.AfterLayout != null)
+            {
+                surface.AfterLayout();
+                host.InvalidateMeasure();
+                LayOut();
+                laidOutHeight = LayOut();
+            }
 
             var height = (int)Math.Min(surface.MaxHeight, Math.Ceiling(laidOutHeight));
             return Rasterize(host, (host as Border)?.Background, surface.Width, Math.Max(1, height));
