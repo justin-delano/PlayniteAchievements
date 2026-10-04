@@ -49,7 +49,10 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        public async Task<WorkshopIndexFile> FetchIndexAsync(CancellationToken cancel)
+        public Task<WorkshopIndexFile> FetchIndexAsync(CancellationToken cancel) => Task.Run(() => FetchIndexCoreAsync(cancel), cancel);
+
+
+        private async Task<WorkshopIndexFile> FetchIndexCoreAsync(CancellationToken cancel)
         {
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel))
             {
@@ -79,7 +82,9 @@ namespace PlayniteAchievements.Services.Workshop
         /// The item's README text, from the per-commit CDN URL (so the cache can be keyed by URL
         /// and never goes stale). Null when the item has none or the fetch fails.
         /// </summary>
-        public async Task<string> FetchReadmeAsync(WorkshopItem item, CancellationToken cancel)
+        public Task<string> FetchReadmeAsync(WorkshopItem item, CancellationToken cancel) => Task.Run(() => FetchReadmeCoreAsync(item, cancel), cancel);
+
+        private async Task<string> FetchReadmeCoreAsync(WorkshopItem item, CancellationToken cancel)
         {
             var url = item?.Urls?.Readme;
             if (string.IsNullOrWhiteSpace(url))
@@ -115,7 +120,9 @@ namespace PlayniteAchievements.Services.Workshop
         /// The item's preview image as a local cached file path, or null. Cached by URL; the URL
         /// is pinned to the publishing commit, so a changed preview has a new URL.
         /// </summary>
-        public async Task<string> FetchPreviewAsync(WorkshopItem item, CancellationToken cancel)
+        public Task<string> FetchPreviewAsync(WorkshopItem item, CancellationToken cancel) => Task.Run(() => FetchPreviewCoreAsync(item, cancel), cancel);
+
+        private async Task<string> FetchPreviewCoreAsync(WorkshopItem item, CancellationToken cancel)
         {
             var url = item?.Urls?.Preview;
             if (string.IsNullOrWhiteSpace(url))
@@ -153,7 +160,9 @@ namespace PlayniteAchievements.Services.Workshop
         /// release URL is not a GitHub release page or the request fails. The index carries the
         /// count as of its last build; the detail pane asks for this once an item is picked.
         /// </summary>
-        public async Task<long?> FetchLiveDownloadsAsync(WorkshopItem item, CancellationToken cancel)
+        public Task<long?> FetchLiveDownloadsAsync(WorkshopItem item, CancellationToken cancel) => Task.Run(() => FetchLiveDownloadsCoreAsync(item, cancel), cancel);
+
+        private async Task<long?> FetchLiveDownloadsCoreAsync(WorkshopItem item, CancellationToken cancel)
         {
             var api = ReleaseApiUrl(item?.Package?.Release?.Url);
             if (api == null)
@@ -247,7 +256,10 @@ namespace PlayniteAchievements.Services.Workshop
         /// received, and verifies its SHA-256 against the index. A mismatch deletes the file and
         /// throws, so a tampered or truncated download is never imported.
         /// </summary>
-        public async Task DownloadPackageAsync(
+        public Task DownloadPackageAsync(WorkshopItem item, string destinationPath, IProgress<long> progress, CancellationToken cancel)
+            => Task.Run(() => DownloadPackageCoreAsync(item, destinationPath, progress, cancel), cancel);
+
+        private async Task DownloadPackageCoreAsync(
             WorkshopItem item,
             string destinationPath,
             IProgress<long> progress,
