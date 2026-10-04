@@ -64,7 +64,7 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0"
-                                       FontFamily="Segoe MDL2 Assets"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                        Margin="{StaticResource PlayAch.Thickness.Right.Md}"
                                        VerticalAlignment="Center">
@@ -73,12 +73,12 @@
                                 </TextBlock.RenderTransform>
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="&#xE73E;"/>
+                                        <Setter Property="Text" Value="&#xF00E;"/>
                                         <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                          Value="False">
-                                                <Setter Property="Text" Value="&#xE783;"/>
+                                                <Setter Property="Text" Value="&#xEF19;"/>
                                                 <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthError}"/>
                                             </DataTrigger>
                                         </Style.Triggers>

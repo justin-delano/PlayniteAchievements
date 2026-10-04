@@ -18,13 +18,13 @@ namespace PlayniteAchievements.Views.Controls
     /// </summary>
     public partial class MediaTransportBar : UserControl
     {
-        // Segoe MDL2 Assets glyphs (built from code points to keep the source pure ASCII).
-        private static readonly string PlayGlyph = char.ConvertFromUtf32(0xE768);
-        private static readonly string PauseGlyph = char.ConvertFromUtf32(0xE769);
-        private static readonly string MuteGlyph = char.ConvertFromUtf32(0xE74F);
-        private static readonly string VolumeLowGlyph = char.ConvertFromUtf32(0xE993);
-        private static readonly string VolumeMediumGlyph = char.ConvertFromUtf32(0xE994);
-        private static readonly string VolumeHighGlyph = char.ConvertFromUtf32(0xE995);
+        // IcoFont glyphs (built from code points to keep the source pure ASCII).
+        private static readonly string PlayGlyph = char.ConvertFromUtf32(0xEC74);
+        private static readonly string PauseGlyph = char.ConvertFromUtf32(0xEC72);
+        private static readonly string MuteGlyph = char.ConvertFromUtf32(0xEC6C);
+        private static readonly string VolumeLowGlyph = char.ConvertFromUtf32(0xECB9);
+        private static readonly string VolumeMediumGlyph = char.ConvertFromUtf32(0xECB7);
+        private static readonly string VolumeHighGlyph = char.ConvertFromUtf32(0xECBA);
 
         // A clip paused this close to its end counts as finished, so pressing play restarts it
         // instead of resuming at a position with nothing left to render.

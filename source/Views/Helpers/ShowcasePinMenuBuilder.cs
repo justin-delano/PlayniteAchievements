@@ -172,14 +172,14 @@ namespace PlayniteAchievements.Views.Helpers
             row.Children.Add(label);
 
             var edit = CreateGlyphButton(
-                "\uE70F",
+                "\uEC55",
                 L(resourceOwner, "LOCPlayAch_Showcase_RenameCollection"),
                 rename);
             Grid.SetColumn(edit, 1);
             row.Children.Add(edit);
 
             var delete = CreateGlyphButton(
-                "\uE74D",
+                "\uEE09",
                 L(
                     resourceOwner,
                     isDefault
@@ -193,14 +193,15 @@ namespace PlayniteAchievements.Views.Helpers
 
         private static Button CreateGlyphButton(string glyph, string label, Action action)
         {
+            var glyphText = new TextBlock
+            {
+                Text = glyph,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            glyphText.SetResourceReference(TextBlock.FontFamilyProperty, "PlayAch.FontFamily.Icon");
             var button = new Button
             {
-                Content = new TextBlock
-                {
-                    Text = glyph,
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    VerticalAlignment = VerticalAlignment.Center
-                },
+                Content = glyphText,
                 ToolTip = label,
                 MinWidth = 28,
                 MinHeight = 24,

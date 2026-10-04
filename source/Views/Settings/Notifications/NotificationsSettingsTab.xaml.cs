@@ -42,25 +42,25 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 new SettingsNavigationItem(
                     "Behavior",
                     ResourceProvider.GetString("LOCPlayAch_Settings_ToastBehavior"),
-                    iconGlyph: "\uEA8F",
+                    iconGlyph: "\uEEA3",
                     viewFactory: () => _behaviorSection =
                         new NotificationBehaviorSection(settings, plugin, logger)),
                 new SettingsNavigationItem(
                     "Captures",
                     ResourceProvider.GetString("LOCPlayAch_Column_Captures"),
-                    iconGlyph: "\uE722",
+                    iconGlyph: "\uEECF",
                     viewFactory: () => _capturesSection =
                         new NotificationCapturesSection(settings, plugin)),
                 new SettingsNavigationItem(
                     "Appearance",
                     ResourceProvider.GetString("LOCPlayAch_Settings_Appearance"),
-                    iconGlyph: "\uE790",
+                    iconGlyph: "\uEFB3",
                     viewFactory: () => _appearanceSection =
                         new NotificationAppearanceSection(settings, plugin, logger)),
                 new SettingsNavigationItem(
                     "Platforms",
                     ResourceProvider.GetString("LOCPlayAch_Common_Label_Platforms"),
-                    iconGlyph: "\uE7FC",
+                    iconGlyph: "\uEA30",
                     viewFactory: () => _platformsSection =
                         new NotificationPlatformsSection(settings, plugin, logger))
             };

@@ -56,7 +56,7 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="HorizontalAlignment" Value="Left"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
@@ -354,7 +354,7 @@
                             Margin="0,0,18,0">
                     <Button x:Name="CloseViewButton"
                             Command="{Binding CloseViewCommand}"
-                            Content="&#xE72B;"
+                            Content="&#xEA5C;"
                             Style="{StaticResource NavigationButtonStyle}"
                             ToolTip="{Binding CloseViewToolTip}"/>
 

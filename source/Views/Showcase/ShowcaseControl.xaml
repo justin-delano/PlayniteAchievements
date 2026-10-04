@@ -32,16 +32,16 @@
             <!-- Header actions speak in glyphs; localized text lives in the tooltips. -->
             <Button x:Name="CapturePageButton"
                     Grid.Column="0"
-                    Content="&#xE722;"
-                    FontFamily="Segoe MDL2 Assets"
+                    Content="&#xEECF;"
+                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                     ToolTip="{DynamicResource LOCPlayAch_Button_Save}"
                     Click="CapturePageButton_Click"
                     MinWidth="36"
                     Margin="0,0,6,0"/>
             <Button x:Name="PreviousPageButton"
                     Grid.Column="1"
-                    Content="&#xE76B;"
-                    FontFamily="Segoe MDL2 Assets"
+                    Content="&#xEAB5;"
+                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PreviousPage}"
                     Click="PreviousPageButton_Click"
                     MinWidth="36"/>
@@ -54,8 +54,8 @@
                       Margin="6,0"/>
             <Button x:Name="NextPageButton"
                     Grid.Column="3"
-                    Content="&#xE76C;"
-                    FontFamily="Segoe MDL2 Assets"
+                    Content="&#xEAB8;"
+                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_NextPage}"
                     Click="NextPageButton_Click"
                     MinWidth="36"/>
@@ -70,8 +70,8 @@
                  editing. Glyph and tooltip are swapped in EditLayoutButton_Changed. -->
             <ToggleButton x:Name="EditLayoutButton"
                           Grid.Column="6"
-                          Content="&#xE70F;"
-                          FontFamily="Segoe MDL2 Assets"
+                          Content="&#xEC55;"
+                          FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                           ToolTip="{DynamicResource LOCPlayAch_Common_Edit}"
                           Checked="EditLayoutButton_Changed"
                           Unchecked="EditLayoutButton_Changed"
@@ -79,8 +79,8 @@
                           Margin="18,0,6,0"/>
             <Button x:Name="PageActionsButton"
                     Grid.Column="7"
-                    Content="&#xE712;"
-                    FontFamily="Segoe MDL2 Assets"
+                    Content="&#xEFA2;"
+                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                     ToolTip="{DynamicResource LOCPlayAch_Showcase_PageActions}"
                     Click="PageActionsButton_Click"
                     MinWidth="36"/>

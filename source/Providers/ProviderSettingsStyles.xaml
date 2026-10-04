@@ -86,7 +86,7 @@
     </Style>
 
     <Style x:Key="AuthStatusIconStyle" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
         <Setter Property="FontSize" Value="20"/>
         <Setter Property="Width" Value="{StaticResource PlayAch.Size.Icon.Medium}"/>
         <Setter Property="Height" Value="{StaticResource PlayAch.Size.Icon.Medium}"/>
@@ -95,7 +95,7 @@
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Right.Md}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextAlignment" Value="Center"/>
-        <Setter Property="Text" Value="&#xE783;"/>
+        <Setter Property="Text" Value="&#xEF19;"/>
         <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthError}"/>
         <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         <Setter Property="RenderTransform">
@@ -106,20 +106,21 @@
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsAuthStatusPending, RelativeSource={RelativeSource AncestorType=UserControl}}"
                          Value="True">
-                <Setter Property="Text" Value="&#xE9CE;"/>
+                <Setter Property="Text" Value="&#xEFCA;"/>
                 <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthPending}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding IsAuthStatusSuccess, RelativeSource={RelativeSource AncestorType=UserControl}}"
                          Value="True">
-                <Setter Property="Text" Value="&#xE930;"/>
+                <Setter Property="Text" Value="&#xEED7;"/>
                 <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding IsAuthStatusChecking, RelativeSource={RelativeSource AncestorType=UserControl}}"
                          Value="True">
-                <Setter Property="Text" Value="&#xE895;"/>
+                <Setter Property="Text" Value="&#xEFD1;"/>
                 <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthPending}"/>
-                <!-- Segoe MDL2 glyphs fill the em square with no descent, so the element
-                     bounds only match the glyph (making center rotation true) when
+                <!-- IcoFont glyphs are centered in a one-em advance and sit within a
+                     quarter pixel of the line box center at 16px, so the element bounds
+                     match the glyph (making center rotation true) when
                      FontSize == Width == Height == LineHeight. The margin re-centers the
                      smaller box within the 24px icon slot so neighboring text stays put. -->
                 <Setter Property="FontSize" Value="16"/>
@@ -157,16 +158,16 @@
     </Style>
 
     <Style x:Key="ProviderConfigStatusIconStyle" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Right.Md}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Text" Value="&#xE783;"/>
+        <Setter Property="Text" Value="&#xEF19;"/>
         <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthError}"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
                          Value="True">
-                <Setter Property="Text" Value="&#xE73E;"/>
+                <Setter Property="Text" Value="&#xF00E;"/>
                 <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
             </DataTrigger>
         </Style.Triggers>

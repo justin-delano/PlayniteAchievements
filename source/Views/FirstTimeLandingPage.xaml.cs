@@ -89,7 +89,7 @@ namespace PlayniteAchievements.Views
                 }
             }
 
-            public string StatusIcon => IsChecking ? "\uE946" : IsAuthenticated ? "\uE73E" : "\uE711";
+            public string StatusIcon => IsChecking ? "\uEF4E" : IsAuthenticated ? "\uF00E" : "\uEEE4";
 
             /// <summary>
             /// Gets the localized subtitle text based on authentication and enabled status.

@@ -26,8 +26,8 @@
             </Style>
 
             <Style x:Key="ScoreInfoTierArrowStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
-                <Setter Property="Text" Value="&#xE76C;"/>
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="Text" Value="&#xEAB8;"/>
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="Opacity" Value="0.58"/>

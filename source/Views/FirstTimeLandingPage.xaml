@@ -95,7 +95,7 @@
             </Style>
 
             <Style x:Key="LandingProviderStatusIconStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
                 <Setter Property="FontSize" Value="{StaticResource PlayAch.FontSize.InlineIcon}"/>
                 <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthError}"/>
                 <Setter Property="Margin" Value="0,0,10,0"/>
@@ -400,8 +400,8 @@
                     <!-- Ready indicator -->
                     <Border Style="{StaticResource LandingIndicatorCardStyle}">
                         <StackPanel>
-                            <TextBlock Text="&#xE8FB;"
-                                       FontFamily="Segoe MDL2 Assets"
+                            <TextBlock Text="&#xF00E;"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                                        Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                                        Foreground="{StaticResource PlayAch.Brush.AuthSuccess}"
                                        HorizontalAlignment="Center"
