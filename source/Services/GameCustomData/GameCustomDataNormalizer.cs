@@ -394,6 +394,12 @@ namespace PlayniteAchievements.Services.GameCustomData
             return value.Clone();
         }
 
+        /// <summary>
+        /// Canonicalizes the providers whose override values have a stored shape to enforce, and
+        /// keeps every other provider's override as entered: its value was validated by the
+        /// provider's override descriptor when it was set, and the provider parses it again when it
+        /// refreshes. This runs on every read too, before providers exist, so it cannot consult them.
+        /// </summary>
         internal static ProviderOverrideData NormalizeProviderOverride(ProviderOverrideData providerOverride)
         {
             var providerKey = NormalizeProviderKey(providerOverride?.ProviderKey);
@@ -475,7 +481,11 @@ namespace PlayniteAchievements.Services.GameCustomData
                     };
 
                 default:
-                    return null;
+                    return new ProviderOverrideData
+                    {
+                        ProviderKey = providerKey,
+                        Value = value
+                    };
             }
         }
 
@@ -684,7 +694,8 @@ namespace PlayniteAchievements.Services.GameCustomData
                 return "Meta";
             }
 
-            return null;
+            // Any other provider's key is kept as written; lookups compare keys case-insensitively.
+            return normalized;
         }
 
         private static bool TryNormalizePositiveInteger(string value, out int id)
