@@ -159,6 +159,8 @@ namespace PlayniteAchievements.Providers.Exophase
 
             public string SearchName { get; set; }
 
+            public bool FallBackToGameName { get; set; }
+
             public int AchievementCount { get; set; }
         }
 
@@ -187,7 +189,8 @@ namespace PlayniteAchievements.Providers.Exophase
             CancellationToken ct,
             ExophaseMetadataFields fields = ExophaseMetadataFields.Rarity,
             string regionHint = null,
-            string searchName = null)
+            string searchName = null,
+            bool fallBackToGameName = true)
         {
             lock (EnrichCalls)
             {
@@ -195,6 +198,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 {
                     GameName = game?.Name,
                     SearchName = searchName,
+                    FallBackToGameName = fallBackToGameName,
                     AchievementCount = achievements?.Count ?? 0
                 });
             }
