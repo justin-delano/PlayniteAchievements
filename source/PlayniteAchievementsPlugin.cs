@@ -111,6 +111,7 @@ namespace PlayniteAchievements
         private bool _unlockNextPoolRequired;
 
         private readonly BackgroundUpdater _backgroundUpdates;
+        private Services.Workshop.WorkshopUpdateChecker _workshopUpdateChecker;
         private readonly InGameAchievementMonitor _inGameMonitor;
         private readonly ActiveGameWindowTracker _windowTracker;
         private readonly Services.Sound.UnlockSoundService _unlockSounds;
@@ -1408,6 +1409,19 @@ namespace PlayniteAchievements
                 // Playnite's populated database rather than the blank values an early startup warm
                 // would bake in.
                 _libraryProjectionService?.Warm();
+
+                // Hourly look for newer versions of installed Workshop items; its first tick also
+                // resolves the proxy for the Workshop host off the UI thread, so the first index
+                // fetch from a settings page does not stall on WPAD.
+                try
+                {
+                    _workshopUpdateChecker = _workshopUpdateChecker ?? new Services.Workshop.WorkshopUpdateChecker(this, _logger);
+                    _workshopUpdateChecker.Start();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, "Failed starting the Workshop update checker.");
+                }
                 // The friends overview snapshot is intentionally NOT warmed here: it is built
                 // on demand by the first consumer (friends view or a theme friend binding) and
                 // released when the last consumer detaches, so it only occupies memory while
@@ -1872,6 +1886,7 @@ namespace PlayniteAchievements
             }
 
             _backgroundUpdates.Stop();
+            try { _workshopUpdateChecker?.Stop(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to stop the Workshop update checker"); }
             try { _inGameMonitor?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGameMonitor"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
             try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
