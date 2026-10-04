@@ -264,8 +264,8 @@ namespace PlayniteAchievements.Services.Workshop.Preview
 
             var images = new ImageComparer();
             var rows = new List<AchievementPreviewRow>();
+            var unchangedRows = new List<AchievementPreviewRow>();
             var matched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var unchanged = 0;
 
             foreach (var achievement in after)
             {
@@ -286,7 +286,7 @@ namespace PlayniteAchievements.Services.Workshop.Preview
                 var changes = Compare(beforeState, afterState, images);
                 if (changes == AchievementPreviewChange.None)
                 {
-                    unchanged++;
+                    unchangedRows.Add(new AchievementPreviewRow(apiName, beforeState, afterState, AchievementPreviewChange.None));
                     continue;
                 }
 
@@ -299,7 +299,8 @@ namespace PlayniteAchievements.Services.Workshop.Preview
             }
 
             diff.Rows = rows;
-            diff.UnchangedCount = unchanged;
+            diff.UnchangedRows = unchangedRows;
+            diff.UnchangedCount = unchangedRows.Count;
         }
 
         private static AchievementPreviewChange Compare(
