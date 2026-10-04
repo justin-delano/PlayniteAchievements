@@ -63,6 +63,7 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">No Achievements Found</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Not authenticated</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Preview">Preview</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Redo">Redo</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Reorder">Reorder</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Reset Selected</sys:String>
@@ -185,6 +186,7 @@
     <sys:String x:Key="LOCPlayAch_Button_Paste">Paste</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Close">Close</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Compress">Compress</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Delete">Delete</sys:String>
@@ -467,7 +469,6 @@
     <sys:String x:Key="LOCPlayAch_NotesDialog_CharacterCountFormat">{0} / {1} characters</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">Edit Note</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Italic">Italic</sys:String>
-    <sys:String x:Key="LOCPlayAch_NotesDialog_Preview">Preview</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Underline">Underline</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_ViewTitle">View Note</sys:String>
 
@@ -1653,6 +1654,13 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Status_InReview">In review</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Status_Published">Published</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Status_Closed">Closed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Before">Before</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_After">After</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_ShowUnchanged">Show unchanged achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_PackageOnly">This game is not in your library, so the package contents are shown without a comparison.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">{0} icons · {1} overrides · {2} categories · {3} capstones · {4} custom achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">Your edits to {0} items will be kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">and {0} more</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_WorkshopIndexUrl">Workshop index URL</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_WorkshopServiceUrl">Workshop submission service URL</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_WorkshopHint">Leave both blank to use the official Workshop. Point them at a fork or a local service to test.</sys:String>
