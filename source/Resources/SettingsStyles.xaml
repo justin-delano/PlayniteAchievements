@@ -89,6 +89,7 @@
              these filled glyphs soft. -->
         <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
         <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
+        <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Right.Sm}"/>
