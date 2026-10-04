@@ -167,5 +167,12 @@ namespace PlayniteAchievements.Models
         /// override — e.g. the sample provider's per-provider style). Null for real unlocks.
         /// </summary>
         public Settings.NotificationStyleSettings PreviewStyleOverride { get; set; }
+
+        /// <summary>
+        /// For fire-test previews only: the exact toast template to render (for example one
+        /// loaded from a package being previewed). When set it wins over
+        /// <see cref="PreviewTemplateSource"/> and normal resolution. Null for real unlocks.
+        /// </summary>
+        public System.Windows.DataTemplate PreviewTemplateOverride { get; set; }
     }
 }
