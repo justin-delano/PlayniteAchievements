@@ -385,6 +385,63 @@ which is now explained rather than merely observed - there is no per-frame raste
 save. Its numbers, and `TransformNoPadding`'s, varied run to run by enough (20-38 frames) that only
 `Transform`'s stable 22-23 should be read as a measurement; repeat those two before acting on them.
 
+#### Under GPU load, DWM is the ceiling, not the window
+
+`TransformDwm` replaces the layered window with a non-layered one: `AllowsTransparency` off, a
+transparent `HwndSource` background, and `DwmExtendFrameIntoClientArea` with -1 margins.
+That removes the per-frame software readback and `UpdateLayeredWindow` call.
+`--verify` confirms both window kinds show a magenta backdrop through the travel padding and draw the
+card opaque, so the comparison is like for like.
+The `dwmHz` column is DWM's own composed-frame count (`DwmGetCompositionTimingInfo.cFrame`) across the
+slide.
+
+Measured on the 165 Hz display at a reported user's physical card size
+(`--card-width 1164 --card-height 248 --glow 36 --nested`, 7 repeats):
+
+| load | `Transform` | `TransformDwm` | DWM itself |
+|---|---|---|---|
+| none | 165 Hz | 165 Hz | 135-159 Hz |
+| `--load 1` | 82.5 Hz | 82.5 Hz | 78-91 Hz |
+| `--load 3` | 41-55 Hz | 55 Hz | 48-53 Hz |
+
+The slide runs at whatever rate DWM composes at, and DWM slows down when other processes saturate the
+GPU.
+No window mechanism in this process can beat that: the non-layered window matches the layered one
+within run-to-run noise, and `--gpu-priority 4` (`D3DKMTSetProcessSchedulingPriorityClass` HIGH,
+accepted with status 0) moved nothing either.
+A notification over a GPU-bound game therefore animates at roughly the rate DWM is composing at the
+time, whatever the toast window is made of.
+
+#### Ground truth: real clock helps when idle, nothing helps under load
+
+`--truth` (SlideTruth.cs) measures where the card actually was on screen at the instant each frame
+was presented, via DXGI desktop duplication: each duplicated frame carries `LastPresentTime` on the
+`Stopwatch` QPC clock, and one pixel column through the card over a magenta backdrop gives its edge.
+Each slide is fitted to the curve with a free constant latency and position offset, so `residualSd`
+counts uneven steps, not delay. `SLIDE_TRUTH_DUMP=1` prints every presented frame.
+The `skewSd`/`errSd` columns of the cadence table cannot settle this: `TransformClock` is measured
+against the clock it is driven by, so it scores near zero by construction.
+
+`TransformClock` pauses the storyboard and seeks it every frame to `Stopwatch` time since Begin.
+Measured on the 165 Hz display at `--card-width 1164 --card-height 248 --glow 36 --nested`,
+9 repeats, median residual (spread of all runs):
+
+| load | `Transform` (WPF clock) | `TransformClock` (real clock) |
+|---|---|---|
+| none | 7.4 px (4.1-15.5) | 1.9 px (1.0-18.8) |
+| `--load 1` | 11.2 px (4.0-17.4) | 11.2 px (7.4-16.5) |
+| `--load 3` | 21.6 px (15.9-28.7) | 21.3 px (14.8-27.3) |
+
+Idle, the real clock removes most of the unevenness. Under GPU load both are equally uneven:
+the error is now the varying delay between building a frame and DWM presenting it (raw dumps show
+the same position presented three times, then a 79 px jump), and no clock read at build time can
+predict that delay.
+
+The default `BackEase` (amplitude 0.35) also concentrates the motion: the card reaches its rest
+offset about 100 ms into the 240 ms slide and spends the rest in the overshoot, so most of the
+visible travel happens in a handful of frames at peak speed. Residual in pixels is speed times
+timing error, so a curve that spreads the travel over the whole duration lowers it in proportion.
+
 ## The composer probe
 
 ```powershell

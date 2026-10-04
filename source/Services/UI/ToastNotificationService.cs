@@ -4310,7 +4310,8 @@ namespace PlayniteAchievements.Services.UI
         /// This is a real WPF animation rather than a per-frame interpolation. It advances at whatever
         /// rate WPF composes at and at sub-pixel precision, where the previous per-frame
         /// <c>SetWindowPos</c> both cost a window move every frame and quantised to whole physical
-        /// pixels. <see cref="_activeSlideTick"/> is attached purely to count frames for the diagnostic.
+        /// pixels. <see cref="_activeSlideTick"/> seeks it to the real clock each frame (see
+        /// <see cref="DriveSlideByClock"/>) and counts frames for the diagnostic.
         /// </summary>
         private void RunSlideStoryboard(
             Storyboard authored, double fromDip, double toDip, IEasingFunction fallbackEase,
@@ -4356,8 +4357,7 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            // Counting only. The slide no longer needs a per-frame callback to move anything, but the
-            // cadence it achieved is the number this change is judged on, so it is still measured.
+            // The cadence the slide achieved is measured per frame alongside the clock drive below.
             // How far the card actually moved, watched per frame. A storyboard that resolves to no
             // property animates nothing and does NOT throw, so without this a slide that never moved is
             // indistinguishable in the log from one that ran perfectly — which is exactly how a target
@@ -4366,11 +4366,26 @@ namespace PlayniteAchievements.Services.UI
             var minY = double.MaxValue;
             var maxY = double.MinValue;
             _activeSlideMovedDip = 0d;
+
+            // The storyboard is paused once begun and seeked here every frame to the real time since
+            // Begin, rather than advancing on WPF's predicted frame time. On a monitor with headroom
+            // the two disagree by a few milliseconds frame to frame, which at the slide's peak speed
+            // is several pixels of uneven step; SlideCadenceProbe --truth measured the on-screen
+            // residual falling from 7.4 to 1.9 DIP idle, and equal under GPU load. Once the real
+            // time passes the slide's duration the storyboard resumes from there, so it finishes and
+            // raises Completed exactly as a free-running one does.
+            var clock = new Stopwatch();
+            var driving = false;
             EventHandler tick = (s, e) =>
             {
                 if (!ticks.TryAdvance(e, out _))
                 {
                     return;
+                }
+
+                if (driving)
+                {
+                    driving = DriveSlideByClock(storyboard, host, clock.Elapsed, durationMs);
                 }
 
                 var y = transform.Y;
@@ -4402,6 +4417,17 @@ namespace PlayniteAchievements.Services.UI
             try
             {
                 storyboard.Begin(host, isControllable: true);
+                try
+                {
+                    storyboard.Pause(host);
+                    clock.Start();
+                    driving = true;
+                }
+                catch (Exception ex)
+                {
+                    // Free-running on WPF's own clock is the slide as it always ran.
+                    _logger?.Debug(ex, "Toast slide could not be clock-driven; running free.");
+                }
             }
             catch (Exception ex)
             {
@@ -4414,6 +4440,42 @@ namespace PlayniteAchievements.Services.UI
                 _runningSlideStoryboard = null;
                 transform.Y = restDip;
                 ReportActiveSlide("failed");
+            }
+        }
+
+        /// <summary>
+        /// One frame of a clock-driven slide: seeks the paused storyboard to <paramref name="elapsed"/>,
+        /// or, once that reaches <paramref name="durationMs"/>, seeks to the duration and resumes it so
+        /// the storyboard completes on its own. Returns whether the slide is still being driven. Any
+        /// failure resumes the storyboard, which then simply runs free.
+        /// </summary>
+        private bool DriveSlideByClock(Storyboard storyboard, FrameworkElement host, TimeSpan elapsed, double durationMs)
+        {
+            try
+            {
+                var duration = TimeSpan.FromMilliseconds(durationMs);
+                var done = elapsed >= duration;
+                storyboard.SeekAlignedToLastTick(host, done ? duration : elapsed, TimeSeekOrigin.BeginTime);
+                if (done)
+                {
+                    storyboard.Resume(host);
+                }
+
+                return !done;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Toast slide clock drive failed; running free.");
+                try
+                {
+                    storyboard.Resume(host);
+                }
+                catch
+                {
+                    // The slide's own stop and quiet-scope backstops still settle the card.
+                }
+
+                return false;
             }
         }
 

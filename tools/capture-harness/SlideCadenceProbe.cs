@@ -21,7 +21,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
 
-internal static class SlideCadenceProbe
+internal static partial class SlideCadenceProbe
 {
     private const int SlideDurationMs = 240;
     // Card geometry and effect weight, overridable from the command line. The defaults are the
@@ -98,7 +98,92 @@ internal static class SlideCadenceProbe
         /// that competes with the slide for the render loop.
         /// </summary>
         TransformWithSampling,
+
+        /// <summary>
+        /// As shipped, but the window is not layered: AllowsTransparency off, a transparent
+        /// composition background, and the DWM frame extended over the whole client area. DWM then
+        /// alpha-composites the window's GPU redirection surface directly, with no per-frame
+        /// software readback and no UpdateLayeredWindow call.
+        /// </summary>
+        TransformDwm,
+
+        /// <summary>
+        /// As shipped, but the storyboard is paused and seeked every composed frame to the real time
+        /// since Begin (a Stopwatch), instead of advancing on WPF's predicted frame time. Same curve,
+        /// same duration; only the time base differs.
+        /// </summary>
+        TransformClock,
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MARGINS
+    {
+        public int Left, Right, Top, Bottom;
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+    /// <summary>
+    /// Whether to check, once per window kind, that the transparent padding really shows what is
+    /// behind it. A non-layered window that renders opaque would win the cadence comparison for the
+    /// wrong reason, so this sanity check guards the result.
+    /// </summary>
+    private static bool VerifyTransparency;
+
+    /// <summary>
+    /// Sets this process's GPU scheduling priority class (gdi32 D3DKMT, process-wide, so it covers
+    /// WPF's own render device). 0 idle .. 2 normal .. 4 high, 5 realtime. Returns an NTSTATUS.
+    /// </summary>
+    [DllImport("gdi32.dll")]
+    private static extern int D3DKMTSetProcessSchedulingPriorityClass(IntPtr process, int priority);
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct DWM_TIMING_INFO
+    {
+        public uint cbSize;
+        public uint rateRefreshNum, rateRefreshDen;
+        public ulong qpcRefreshPeriod;
+        public uint rateComposeNum, rateComposeDen;
+        public ulong qpcVBlank, cRefresh;
+        public uint cDXRefresh;
+        public ulong qpcCompose, cFrame;
+        public uint cDXPresent;
+        public ulong cRefreshFrame, cFrameSubmitted;
+        public uint cDXPresentSubmitted;
+        public ulong cFrameConfirmed;
+        public uint cDXPresentConfirmed;
+        public ulong cRefreshConfirmed;
+        public uint cDXRefreshConfirmed;
+        public ulong cFramesLate;
+        public uint cFramesOutstanding;
+        public ulong cFrameDisplayed, qpcFrameDisplayed, cRefreshFrameDisplayed, cFrameComplete, qpcFrameComplete;
+        public ulong cFramePending, qpcFramePending, cFramesDisplayed, cFramesComplete, cFramesPending;
+        public ulong cFramesAvailable, cFramesDropped, cFramesMissed, cRefreshNextDisplayed, cRefreshNextPresented;
+        public ulong cRefreshesDisplayed, cRefreshesPresented, cRefreshStarted, cPixelsReceived, cPixelsDrawn;
+        public ulong cBuffersEmpty;
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetCompositionTimingInfo(IntPtr hwnd, ref DWM_TIMING_INFO info);
+
+    /// <summary>
+    /// DWM's own composed-frame counter, system-wide. Read across a slide it gives the rate DWM
+    /// itself composed at, which no window in this process can exceed.
+    /// </summary>
+    private static ulong DwmFrameCount()
+    {
+        var info = new DWM_TIMING_INFO { cbSize = (uint)Marshal.SizeOf(typeof(DWM_TIMING_INFO)) };
+        return DwmGetCompositionTimingInfo(IntPtr.Zero, ref info) == 0 ? info.cFrame : 0UL;
+    }
+
+    /// <summary>
+    /// Runs the ground-truth comparison (see SlideTruth.cs) instead of the cadence table.
+    /// </summary>
+    private static bool Truth;
+
+    /// <summary>Mechanisms to run, by name; null runs all of them.</summary>
+    private static HashSet<string> Only;
 
     /// <summary>Recording rate the sampling variant paces itself at, mirroring RecordingFps.</summary>
     private const int RecordingFps = 60;
@@ -110,6 +195,62 @@ internal static class SlideCadenceProbe
         public double SpanMs;
         public double MedianMs;
         public double MaxGapMs;
+        public double DwmHz;
+        public double SkewSdMs = double.NaN;
+        public double ErrMeanPx = double.NaN;
+        public double ErrSdPx = double.NaN;
+    }
+
+    /// <summary>
+    /// Per-frame accuracy of a transform slide against the real clock. Skew is the real time at the
+    /// frame callback minus WPF's RenderingTime; only its spread matters, since a constant offset is
+    /// just latency. Error is the card's offset minus where the curve puts it at the real time, in
+    /// DIP: a steady error is invisible, its spread is what reads as uneven steps.
+    /// </summary>
+    private sealed class SlideAccuracy
+    {
+        private readonly List<double> _skew = new List<double>();
+        private readonly List<double> _error = new List<double>();
+
+        public void Add(double renderingMs, double wallMs, double errorDip)
+        {
+            _skew.Add(wallMs - renderingMs);
+            _error.Add(errorDip);
+        }
+
+        public double SkewSdMs => StdDev(_skew);
+
+        public double ErrMeanPx => _error.Count == 0 ? double.NaN : Mean(_error);
+
+        public double ErrSdPx => StdDev(_error);
+
+        private static double Mean(List<double> values)
+        {
+            var sum = 0d;
+            foreach (var v in values)
+            {
+                sum += v;
+            }
+
+            return sum / values.Count;
+        }
+
+        private static double StdDev(List<double> values)
+        {
+            if (values.Count < 2)
+            {
+                return double.NaN;
+            }
+
+            var mean = Mean(values);
+            var sum = 0d;
+            foreach (var v in values)
+            {
+                sum += (v - mean) * (v - mean);
+            }
+
+            return Math.Sqrt(sum / (values.Count - 1));
+        }
     }
 
     private static double _displayPeriodMs = 1000d / 60d;
@@ -151,6 +292,25 @@ internal static class SlideCadenceProbe
             {
                 NestedTextShadows = true;
             }
+            else if (args[i] == "--gpu-priority" && i + 1 < args.Length)
+            {
+                var priority = int.Parse(args[++i], CultureInfo.InvariantCulture);
+                var status = D3DKMTSetProcessSchedulingPriorityClass(
+                    System.Diagnostics.Process.GetCurrentProcess().Handle, priority);
+                Console.WriteLine("GPU scheduling priority class {0}: status=0x{1:X8}", priority, status);
+            }
+            else if (args[i] == "--truth")
+            {
+                Truth = true;
+            }
+            else if (args[i] == "--verify")
+            {
+                VerifyTransparency = true;
+            }
+            else if (args[i] == "--only" && i + 1 < args.Length)
+            {
+                Only = new HashSet<string>(args[++i].Split(','), StringComparer.OrdinalIgnoreCase);
+            }
         }
 
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -189,8 +349,26 @@ internal static class SlideCadenceProbe
 
                 Console.WriteLine();
 
+                if (Truth)
+                {
+                    await RunTruth(repeats);
+                    return;
+                }
+
+                if (VerifyTransparency)
+                {
+                    await VerifyTransparencyOf(Mechanism.Transform);
+                    await VerifyTransparencyOf(Mechanism.TransformDwm);
+                    Console.WriteLine();
+                }
+
                 foreach (Mechanism mechanism in Enum.GetValues(typeof(Mechanism)))
                 {
+                    if (Only != null && !Only.Contains(mechanism.ToString()))
+                    {
+                        continue;
+                    }
+
                     for (var run = 0; run < repeats; run++)
                     {
                         var result = await RunOne(mechanism);
@@ -302,36 +480,7 @@ internal static class SlideCadenceProbe
             card.CacheMode = new BitmapCache { RenderAtScale = 1.0, SnapsToDevicePixels = false };
         }
 
-        card.Margin = padded ? new Thickness(0, 0, 0, travel) : new Thickness(0);
-
-        var host = new Grid
-        {
-            IsHitTestVisible = false,
-            UseLayoutRounding = false,
-            SnapsToDevicePixels = false,
-            RenderTransform = group,
-            RenderTransformOrigin = new Point(0.5, 0.5),
-        };
-        host.Children.Add(card);
-
-        var window = new Window
-        {
-            ShowInTaskbar = false,
-            ShowActivated = false,
-            Topmost = true,
-            WindowStyle = WindowStyle.None,
-            ResizeMode = ResizeMode.NoResize,
-            SizeToContent = SizeToContent.WidthAndHeight,
-            WindowStartupLocation = WindowStartupLocation.Manual,
-            AllowsTransparency = true,
-            Background = Brushes.Transparent,
-            UseLayoutRounding = true,
-            SnapsToDevicePixels = true,
-            Left = 120,
-            Top = 120,
-            Opacity = 1,
-            Content = host,
-        };
+        var window = BuildWindow(mechanism, card, group, padded, travel, out var host);
 
         try
         {
@@ -343,6 +492,9 @@ internal static class SlideCadenceProbe
             await WaitFrames(3, 300);
 
             var ticks = new TickCounter();
+            var accuracy = new SlideAccuracy();
+            var dwmStartFrames = DwmFrameCount();
+            var dwmClock = System.Diagnostics.Stopwatch.StartNew();
             var finished = new System.Threading.Tasks.TaskCompletionSource<bool>(
                 System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -409,6 +561,9 @@ internal static class SlideCadenceProbe
                 var dueTolerance = _displayPeriodMs / 2d;
                 var nextDueMs = sampleIntervalMs;
                 byte[] previous = null;
+                var clockDriven = mechanism == Mechanism.TransformClock;
+                var wall = new System.Diagnostics.Stopwatch();
+                var ease = animation.EasingFunction;
 
                 EventHandler tick = null;
                 tick = (s, e) =>
@@ -417,6 +572,23 @@ internal static class SlideCadenceProbe
                     {
                         return;
                     }
+
+                    var wallMs = wall.Elapsed.TotalMilliseconds;
+                    if (clockDriven)
+                    {
+                        // The real clock decides where the card is: seek the (paused) storyboard to
+                        // the wall time since Begin, and judge completion by that same time.
+                        storyboard.SeekAlignedToLastTick(
+                            host, TimeSpan.FromMilliseconds(Math.Min(wallMs, SlideDurationMs)),
+                            TimeSeekOrigin.BeginTime);
+                        elapsed = wallMs;
+                    }
+
+                    var progress = Math.Min(1d, wallMs / SlideDurationMs);
+                    accuracy.Add(
+                        (e as RenderingEventArgs)?.RenderingTime.TotalMilliseconds ?? wallMs,
+                        wallMs,
+                        slide.Y - (travel * (1d - ease.Ease(progress))));
 
                     if (sampling && elapsed >= nextDueMs - dueTolerance)
                     {
@@ -439,6 +611,12 @@ internal static class SlideCadenceProbe
                 slide.Y = 0;
                 CompositionTarget.Rendering += tick;
                 storyboard.Begin(host, true);
+                if (clockDriven)
+                {
+                    storyboard.Pause(host);
+                }
+
+                wall.Start();
                 try
                 {
                     await System.Threading.Tasks.Task.WhenAny(
@@ -457,6 +635,10 @@ internal static class SlideCadenceProbe
                 SpanMs = ticks.SpanMs,
                 MedianMs = ticks.MedianIntervalMs,
                 MaxGapMs = ticks.MaxIntervalMs,
+                DwmHz = (DwmFrameCount() - dwmStartFrames) * 1000d / Math.Max(1d, dwmClock.Elapsed.TotalMilliseconds),
+                SkewSdMs = accuracy.SkewSdMs,
+                ErrMeanPx = accuracy.ErrMeanPx,
+                ErrSdPx = accuracy.ErrSdPx,
             };
         }
         finally
@@ -469,6 +651,138 @@ internal static class SlideCadenceProbe
             {
             }
         }
+    }
+
+    /// <summary>
+    /// The probe window around the slide host: layered as shipped, or DWM-composited for
+    /// <see cref="Mechanism.TransformDwm"/>.
+    /// </summary>
+    private static Window BuildWindow(
+        Mechanism mechanism, FrameworkElement card, TransformGroup group, bool padded, double travel,
+        out Grid host)
+    {
+        var dwm = mechanism == Mechanism.TransformDwm;
+        card.Margin = padded ? new Thickness(0, 0, 0, travel) : new Thickness(0);
+
+        host = new Grid
+        {
+            IsHitTestVisible = false,
+            UseLayoutRounding = false,
+            SnapsToDevicePixels = false,
+            RenderTransform = group,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+        };
+        host.Children.Add(card);
+
+        var window = new Window
+        {
+            ShowInTaskbar = false,
+            ShowActivated = false,
+            Topmost = true,
+            WindowStyle = WindowStyle.None,
+            ResizeMode = ResizeMode.NoResize,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            AllowsTransparency = !dwm,
+            Background = Brushes.Transparent,
+            UseLayoutRounding = true,
+            SnapsToDevicePixels = true,
+            Left = 120,
+            Top = 120,
+            Opacity = 1,
+            Content = host,
+        };
+
+        if (dwm)
+        {
+            window.SourceInitialized += (s, e) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                var source = System.Windows.Interop.HwndSource.FromHwnd(hwnd);
+                if (source?.CompositionTarget != null)
+                {
+                    source.CompositionTarget.BackgroundColor = Colors.Transparent;
+                }
+
+                var margins = new MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+                DwmExtendFrameIntoClientArea(hwnd, ref margins);
+            };
+        }
+
+        return window;
+    }
+
+    /// <summary>
+    /// Shows a magenta backdrop, puts the probe window over it, and reads the screen at a point in
+    /// the window's transparent travel padding and at the card's centre. The padding must read as
+    /// the backdrop and the card must not, or the window kind is not transparent where it matters.
+    /// </summary>
+    private static async System.Threading.Tasks.Task VerifyTransparencyOf(Mechanism mechanism)
+    {
+        var backdrop = new Window
+        {
+            ShowInTaskbar = false,
+            ShowActivated = false,
+            // Topmost, shown before the probe window: an unactivated plain window can open beneath
+            // the console, and the padding would then read the console instead of the backdrop.
+            Topmost = true,
+            WindowStyle = WindowStyle.None,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = 60,
+            Top = 60,
+            Width = CardWidthDip + 200,
+            Height = (2 * CardHeightDip) + TravelPaddingDip + 200,
+            Background = Brushes.Magenta,
+        };
+
+        var group = new TransformGroup();
+        group.Children.Add(new ScaleTransform(1, 1));
+        group.Children.Add(new TranslateTransform());
+        var window = BuildWindow(mechanism, BuildCard(), group, true, CardHeightDip + TravelPaddingDip, out _);
+        try
+        {
+            backdrop.Show();
+            window.Show();
+            window.UpdateLayout();
+            await WaitFrames(10, 1000);
+            await System.Threading.Tasks.Task.Delay(300);
+
+            var topLeft = window.PointToScreen(new Point(0, 0));
+            var bottomRight = window.PointToScreen(new Point(window.ActualWidth, window.ActualHeight));
+            var cardCentre = window.PointToScreen(new Point(window.ActualWidth / 2, CardHeightDip / 2));
+            var padding = new System.Drawing.Point(
+                (int)((topLeft.X + bottomRight.X) / 2), (int)bottomRight.Y - 10);
+            Console.WriteLine(
+                "{0,-14} window {1:0}x{2:0} px  padding={3}  card={4}",
+                mechanism,
+                bottomRight.X - topLeft.X,
+                bottomRight.Y - topLeft.Y,
+                Describe(ReadScreen(padding)),
+                Describe(ReadScreen(new System.Drawing.Point((int)cardCentre.X, (int)cardCentre.Y))));
+        }
+        finally
+        {
+            window.Close();
+            backdrop.Close();
+        }
+    }
+
+    private static System.Drawing.Color ReadScreen(System.Drawing.Point point)
+    {
+        using (var bitmap = new System.Drawing.Bitmap(1, 1))
+        using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
+        {
+            graphics.CopyFromScreen(point, System.Drawing.Point.Empty, new System.Drawing.Size(1, 1));
+            return bitmap.GetPixel(0, 0);
+        }
+    }
+
+    private static string Describe(System.Drawing.Color c)
+    {
+        var backdrop = c.R > 200 && c.G < 60 && c.B > 200;
+        return string.Format(
+            CultureInfo.InvariantCulture, "#{0:X2}{1:X2}{2:X2}{3}", c.R, c.G, c.B, backdrop ? " (backdrop)" : "");
     }
 
     /// <summary>
@@ -659,8 +973,9 @@ internal static class SlideCadenceProbe
     private static void Report(List<Result> results)
     {
         Console.WriteLine(
-            "{0,-20} {1,7} {2,9} {3,9} {4,9} {5,9}",
-            "mechanism", "frames", "medianMs", "sustained", "% of max", "maxGapMs");
+            "{0,-20} {1,7} {2,9} {3,9} {4,9} {5,9} {6,9} {7,8} {8,8} {9,8}",
+            "mechanism", "frames", "medianMs", "sustained", "% of max", "maxGapMs", "dwmHz",
+            "skewSd", "errMean", "errSd");
 
         foreach (Mechanism mechanism in Enum.GetValues(typeof(Mechanism)))
         {
@@ -676,13 +991,17 @@ internal static class SlideCadenceProbe
             var sustained = mid.MedianMs > 0 ? 1000d / mid.MedianMs : 0d;
 
             Console.WriteLine(
-                "{0,-20} {1,7} {2,9:0.00} {3,7:0.0}Hz {4,8:0}% {5,9:0.0}",
+                "{0,-20} {1,7} {2,9:0.00} {3,7:0.0}Hz {4,8:0}% {5,9:0.0} {6,7:0.0}Hz {7,6:0.00}ms {8,6:0.0}px {9,6:0.0}px",
                 mechanism,
                 mid.Frames,
                 mid.MedianMs,
                 sustained,
                 100d * sustained / (1000d / _displayPeriodMs),
-                mid.MaxGapMs);
+                mid.MaxGapMs,
+                mid.DwmHz,
+                mid.SkewSdMs,
+                mid.ErrMeanPx,
+                mid.ErrSdPx);
         }
 
         Console.WriteLine();
