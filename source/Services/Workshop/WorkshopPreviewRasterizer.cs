@@ -187,7 +187,7 @@ namespace PlayniteAchievements.Services.Workshop
                 case ShowcasePagePreviewModel showcase:
                     return BuildPanelSurface(new ShowcasePreviewControl { DataContext = showcase }, PanelWidth, PanelMaxHeight);
                 case GameCustomDataPreviewModel gameData:
-                    var gameDataControl = new GameDataPreviewControl { MaxRows = GameDataMaxRows };
+                    var gameDataControl = new GameDataPreviewControl { MaxRows = GameDataMaxRows, NeutralRender = true };
                     gameDataControl.DataContext = gameData;
                     return BuildPanelSurface(gameDataControl, GameDataWidth, GameDataMaxHeight);
                 default:
