@@ -67,6 +67,37 @@ namespace PlayniteAchievements.Tests.Models
             Assert.IsFalse(instance.Options.ContainsKey("RangeDays"));
         }
 
+        [DataTestMethod]
+        [DataRow(true, PieCenterMode.Percentage)]
+        [DataRow(false, PieCenterMode.Empty)]
+        public void PieCenterMode_ReadsLegacyShowCenterPercentage(bool showPercentage, PieCenterMode expected)
+        {
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Pie };
+            instance.SetOption("ShowCenterPercentage", showPercentage);
+
+            Assert.AreEqual(expected, ShowcaseWidgetOptions.GetPieCenterMode(instance));
+        }
+
+        [TestMethod]
+        public void PieCenterMode_PersistsAndRemovesLegacyOption()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Pie };
+            instance.SetOption("ShowCenterPercentage", false);
+
+            ShowcaseWidgetOptions.SetPieCenterMode(instance, PieCenterMode.Filled);
+
+            Assert.AreEqual(PieCenterMode.Filled, ShowcaseWidgetOptions.GetPieCenterMode(instance));
+            Assert.IsFalse(instance.Options.ContainsKey("ShowCenterPercentage"));
+        }
+
+        [TestMethod]
+        public void PieCenterMode_DefaultsToPercentage()
+        {
+            Assert.AreEqual(
+                PieCenterMode.Percentage,
+                ShowcaseWidgetOptions.GetPieCenterMode(new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Pie }));
+        }
+
         [TestMethod]
         public void TimeWindow_ReadsLegacyPresetNameAndRoundTripsCustomRanges()
         {
