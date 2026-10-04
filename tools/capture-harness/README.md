@@ -385,6 +385,33 @@ which is now explained rather than merely observed - there is no per-frame raste
 save. Its numbers, and `TransformNoPadding`'s, varied run to run by enough (20-38 frames) that only
 `Transform`'s stable 22-23 should be read as a measurement; repeat those two before acting on them.
 
+#### Under GPU load, DWM is the ceiling, not the window
+
+`TransformDwm` replaces the layered window with a non-layered one: `AllowsTransparency` off, a
+transparent `HwndSource` background, and `DwmExtendFrameIntoClientArea` with -1 margins.
+That removes the per-frame software readback and `UpdateLayeredWindow` call.
+`--verify` confirms both window kinds show a magenta backdrop through the travel padding and draw the
+card opaque, so the comparison is like for like.
+The `dwmHz` column is DWM's own composed-frame count (`DwmGetCompositionTimingInfo.cFrame`) across the
+slide.
+
+Measured on the 165 Hz display at a reported user's physical card size
+(`--card-width 1164 --card-height 248 --glow 36 --nested`, 7 repeats):
+
+| load | `Transform` | `TransformDwm` | DWM itself |
+|---|---|---|---|
+| none | 165 Hz | 165 Hz | 135-159 Hz |
+| `--load 1` | 82.5 Hz | 82.5 Hz | 78-91 Hz |
+| `--load 3` | 41-55 Hz | 55 Hz | 48-53 Hz |
+
+The slide runs at whatever rate DWM composes at, and DWM slows down when other processes saturate the
+GPU.
+No window mechanism in this process can beat that: the non-layered window matches the layered one
+within run-to-run noise, and `--gpu-priority 4` (`D3DKMTSetProcessSchedulingPriorityClass` HIGH,
+accepted with status 0) moved nothing either.
+A notification over a GPU-bound game therefore animates at roughly the rate DWM is composing at the
+time, whatever the toast window is made of.
+
 ## The composer probe
 
 ```powershell
