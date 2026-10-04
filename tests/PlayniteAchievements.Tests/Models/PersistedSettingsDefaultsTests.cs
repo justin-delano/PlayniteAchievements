@@ -1520,6 +1520,7 @@ namespace PlayniteAchievements.Models.Tests
                 },
                 EnablePeriodicUpdates = false,
                 IncludeHiddenGamesInBulkScans = false,
+                IncludeHiddenGamesInSummaries = false,
                 PeriodicUpdateHours = 48,
                 RecentRefreshGamesCount = 7,
                 FirstTimeSetupCompleted = true,
@@ -1797,6 +1798,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual("secret", settings.ProviderSettings["Steam"]["ApiKey"].Value<string>());
             Assert.IsFalse(settings.EnablePeriodicUpdates);
             Assert.IsFalse(settings.IncludeHiddenGamesInBulkScans);
+            Assert.IsFalse(settings.IncludeHiddenGamesInSummaries);
             Assert.AreEqual(48, settings.PeriodicUpdateHours);
             Assert.AreEqual(7, settings.RecentRefreshGamesCount);
             Assert.IsTrue(settings.FirstTimeSetupCompleted);
