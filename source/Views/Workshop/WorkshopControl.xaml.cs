@@ -13,6 +13,14 @@ using System.Windows.Controls;
 
 namespace PlayniteAchievements.Views.Workshop
 {
+    /// <summary>Which of the Workshop panes a control shows: both tabs, or one of them without the tab strip.</summary>
+    public enum WorkshopPane
+    {
+        Full,
+        Browse,
+        Installed
+    }
+
     /// <summary>
     /// The Workshop window: browse and install community items, see what is installed and revert
     /// recent installs, and share this install's customizations.
@@ -28,7 +36,7 @@ namespace PlayniteAchievements.Views.Workshop
             InitializeComponent();
         }
 
-        internal WorkshopControl(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId, WorkshopItemKind? focusKind)
+        internal WorkshopControl(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId, WorkshopItemKind? focusKind, WorkshopPane pane = WorkshopPane.Full)
             : this()
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
@@ -42,6 +50,17 @@ namespace PlayniteAchievements.Views.Workshop
             };
             DataContext = viewModel;
             viewModel.ItemsView.CollectionChanged += ItemsView_CollectionChanged;
+
+            if (pane != WorkshopPane.Full)
+            {
+                // Hosted as one settings page: that tab alone, with the tab strip hidden. A
+                // collapsed TabItem still presents its content while it is the selected one.
+                Tabs.SelectedIndex = pane == WorkshopPane.Browse ? 0 : 1;
+                foreach (var item in Tabs.Items.OfType<TabItem>())
+                {
+                    item.Visibility = Visibility.Collapsed;
+                }
+            }
         }
 
         private WorkshopViewModel ViewModel => DataContext as WorkshopViewModel;
