@@ -110,6 +110,41 @@ namespace PlayniteAchievements.Services.Tests
             });
         }
 
+        [TestMethod]
+        public void LinkSubmissions_GivesUnlinkedRecordsTheirPublishedId()
+        {
+            WithTemp(dir =>
+            {
+                var registry = new WorkshopInstalledRegistry(dir);
+                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 1, Name = "Neon", Kind = WorkshopItemKind.Colors, SubmittedUtc = DateTime.UtcNow });
+                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 2, Name = "Neon", Kind = WorkshopItemKind.UnlockSounds, SubmittedUtc = DateTime.UtcNow });
+                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 3, Name = "Other", Kind = WorkshopItemKind.Colors, ItemId = "colors/kept", SubmittedUtc = DateTime.UtcNow });
+
+                registry.LinkSubmissions(new[]
+                {
+                    new WorkshopItem { Id = "colors/neon", Kind = WorkshopItemKind.Colors, Name = "neon" },
+                    new WorkshopItem { Id = "colors/other", Kind = WorkshopItemKind.Colors, Name = "Other" }
+                });
+
+                var reloaded = new WorkshopInstalledRegistry(dir);
+                Assert.AreEqual("colors/neon", Find(reloaded, 1).ItemId, "same kind and name, case-insensitive");
+                Assert.IsNull(Find(reloaded, 2).ItemId, "a different kind is not linked");
+                Assert.AreEqual("colors/kept", Find(reloaded, 3).ItemId, "an existing id is left alone");
+            });
+        }
+
+        private static WorkshopSubmissionRecord Find(WorkshopInstalledRegistry registry, int issueNumber)
+        {
+            foreach (var record in registry.Submissions)
+            {
+                if (record.IssueNumber == issueNumber)
+                {
+                    return record;
+                }
+            }
+
+            return null;
+        }
         private static void WithTemp(Action<string> body)
         {
             var dir = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
