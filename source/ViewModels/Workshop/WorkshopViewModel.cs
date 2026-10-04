@@ -391,14 +391,15 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 {
                     // The index marks every item with its publisher's hash; this install's rows
                     // offer a preview update.
-                    var owner = _registry.GetSubmitterHash();
+                    var owner = _registry.TryGetSubmitterHash();
                     var built = new List<WorkshopItemViewModel>();
                     foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         _lifetime.Token.ThrowIfCancellationRequested();
                         var row = new WorkshopItemViewModel(item)
                         {
-                            IsOwnedByMe = !string.IsNullOrWhiteSpace(item.OwnerHash) &&
+                            IsOwnedByMe = owner != null &&
+                                          !string.IsNullOrWhiteSpace(item.OwnerHash) &&
                                           string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase)
                         };
                         ApplyLocalState(row);
