@@ -768,13 +768,19 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     }
 
                     var gameName = _plugin.PlayniteApi?.Database?.Games?.Get(gameId.Value)?.Name ?? row.GameName;
-                    var question = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_InstallConfirmGameData"), row.Name, gameName);
+                    var question = string.Format(
+                        ResourceProvider.GetString(row.IsReinstall
+                            ? "LOCPlayAch_Workshop_ReinstallConfirmGameData"
+                            : "LOCPlayAch_Workshop_InstallConfirmGameData"),
+                        row.Name,
+                        gameName);
                     if (Confirm != null && !Confirm(question))
                     {
                         return;
                     }
 
                     request.TargetGameId = gameId;
+                    request.Fresh = row.IsReinstall;
                 }
 
                 // The install consumes its own copy, so the cached download stays for another
@@ -961,6 +967,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 var persisted = _plugin.Settings?.Persisted;
                 var managedIcons = _plugin.ManagedCustomIconService;
                 var baselines = _installer.Baselines;
+                // Only an update keeps edits made since the last install; a reinstall applies the
+                // package fresh, so its preview compares without the baseline.
+                var keepsEdits = row.HasUpdate;
 
                 model = await Task.Run(() =>
                 {
@@ -976,7 +985,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                             RawData = dataService?.GetRawGameAchievementData(gameId),
                             CurrentData = dataService?.GetGameAchievementData(gameId),
                             Current = current,
-                            Baseline = baselines.Load(_registry.Find(itemId, gameId)),
+                            Baseline = keepsEdits ? baselines.Load(_registry.Find(itemId, gameId)) : null,
                             Persisted = persisted,
                             ManagedCustomIconService = managedIcons
                         };
