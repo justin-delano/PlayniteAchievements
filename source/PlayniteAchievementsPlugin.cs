@@ -251,7 +251,7 @@ namespace PlayniteAchievements
                 new Services.Workshop.WorkshopShareService(this, WorkshopSubmissionClient, WorkshopRegistry, _logger));
         public Services.Workshop.WorkshopGameMatcher CreateWorkshopGameMatcher() =>
             new Services.Workshop.WorkshopGameMatcher(
-                () => _achievementDataService?.GetAllGameAchievementData(),
+                () => _achievementDataService?.GetAllCachedGameDataForLookup(),
                 () => PlayniteApi?.Database?.Games);
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationService ThemeUpdateService => _themeIntegrationService;
