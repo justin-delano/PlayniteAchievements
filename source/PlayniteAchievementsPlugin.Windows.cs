@@ -160,6 +160,23 @@ namespace PlayniteAchievements
             dialog.Cleanup();
             return true;
         }
+        /// <summary>
+        /// Opens the settings on the Workshop tab: the Playnite settings dialog on desktop, the
+        /// managed popout in fullscreen. The tab is handed over through
+        /// <see cref="Views.SettingsControl.PendingTabKey"/> because neither opener takes one.
+        /// </summary>
+        internal void OpenWorkshopSettings()
+        {
+            Views.SettingsControl.PendingTabKey = "Workshop";
+            if (IsFullscreenMode())
+            {
+                OpenSettingsWindow();
+            }
+            else
+            {
+                OpenSettingsView();
+            }
+        }
 
         /// <summary>
         /// Opens the plugin's color picker for the given owner window and current value,
