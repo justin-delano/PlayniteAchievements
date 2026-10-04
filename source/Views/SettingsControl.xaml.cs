@@ -35,6 +35,13 @@ namespace PlayniteAchievements.Views
         private ThemeMigrationController _themeMigrationController;
         private GeneralSettingsTab _generalSettingsTab;
         private Settings.Notifications.NotificationsSettingsTab _notificationsSettingsTab;
+        private Settings.Workshop.WorkshopSettingsTab _workshopSettingsTab;
+
+        /// <summary>
+        /// The tab the next SettingsControl should open on. Set by the plugin before it asks
+        /// Playnite for the settings dialog, which takes no arguments, and consumed once.
+        /// </summary>
+        public static string PendingTabKey { get; set; }
         private bool _providerNavigationBuilt;
         private readonly HashSet<string> _autoAuthCheckedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _autoAuthDebounceCts;
@@ -144,6 +151,22 @@ namespace PlayniteAchievements.Views
                     _plugin,
                     _logger);
                 NotificationsSettingsContent.Content = _notificationsSettingsTab;
+            }
+
+            if (WorkshopSettingsContent != null)
+            {
+                _workshopSettingsTab = new Settings.Workshop.WorkshopSettingsTab(
+                    _settingsViewModel.Settings,
+                    _plugin,
+                    _logger);
+                WorkshopSettingsContent.Content = _workshopSettingsTab;
+            }
+
+            if (!string.IsNullOrEmpty(PendingTabKey))
+            {
+                var pending = PendingTabKey;
+                PendingTabKey = null;
+                JumpToTab(pending);
             }
 
             _settingsViewModel.Settings.PropertyChanged += Settings_PropertyChanged;
@@ -407,6 +430,9 @@ namespace PlayniteAchievements.Views
                 case "Themes":
                     tab = ThemesTab;
                     break;
+                case "Workshop":
+                    tab = WorkshopTab;
+                    break;
                 case "ThemeMigration":
                     // Theme migration is listed on both Display and Themes. Display is the
                     // canonical target because it comes first in the tab strip.
@@ -450,6 +476,7 @@ namespace PlayniteAchievements.Views
             _themesSettingsTab?.Dispose();
             _generalSettingsTab?.Dispose();
             _notificationsSettingsTab?.Dispose();
+            _workshopSettingsTab?.Dispose();
         }
 
         private void Persisted_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
