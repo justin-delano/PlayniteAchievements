@@ -176,6 +176,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
             // Try fetching achievements - Xbox 360 first if platform matches, otherwise Xbox One first
             List<AchievementDetail> achievements = null;
+            string xboxTitleName = null;
             var achievementSource = XboxAchievementSource.Unknown;
 
             if (isXbox360)
@@ -188,7 +189,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
                 if (achievements == null || achievements.Count == 0)
                 {
-                    achievements = await TryGetXboxOneAchievementsAsync(xuid, titleId, game.Name, authData, cancel).ConfigureAwait(false);
+                    (achievements, xboxTitleName) = await TryGetXboxOneAchievementsAsync(xuid, titleId, game.Name, authData, cancel).ConfigureAwait(false);
                     if (achievements != null && achievements.Count > 0)
                     {
                         achievementSource = XboxAchievementSource.Modern;
@@ -197,7 +198,7 @@ namespace PlayniteAchievements.Providers.Xbox
             }
             else
             {
-                achievements = await TryGetXboxOneAchievementsAsync(xuid, titleId, game.Name, authData, cancel).ConfigureAwait(false);
+                (achievements, xboxTitleName) = await TryGetXboxOneAchievementsAsync(xuid, titleId, game.Name, authData, cancel).ConfigureAwait(false);
                 if (achievements != null && achievements.Count > 0)
                 {
                     achievementSource = XboxAchievementSource.Modern;
@@ -232,7 +233,7 @@ namespace PlayniteAchievements.Providers.Xbox
                 Achievements = achievements ?? new List<AchievementDetail>()
             };
 
-            await EnrichRarityAsync(game, data, rarityEnricher, achievementSource, cancel).ConfigureAwait(false);
+            await EnrichRarityAsync(game, data, xboxTitleName, rarityEnricher, achievementSource, cancel).ConfigureAwait(false);
             return data;
         }
 
@@ -248,9 +249,14 @@ namespace PlayniteAchievements.Providers.Xbox
             return enricher;
         }
 
+        /// <param name="xboxTitleName">
+        /// The title's name as Xbox lists it, searched before the Playnite name; null when the
+        /// response carried none (the Xbox 360 endpoints do not).
+        /// </param>
         private static async Task EnrichRarityAsync(
             Game game,
             GameAchievementData data,
+            string xboxTitleName,
             ExophaseMetadataEnricher rarityEnricher,
             XboxAchievementSource achievementSource,
             CancellationToken cancel)
@@ -260,7 +266,13 @@ namespace PlayniteAchievements.Providers.Xbox
                 return;
             }
 
-            await rarityEnricher.EnrichAsync(game, data.Achievements, ResolveExophasePlatformSlug(game, achievementSource), "Xbox", cancel).ConfigureAwait(false);
+            await rarityEnricher.EnrichAsync(
+                game,
+                data.Achievements,
+                ResolveExophasePlatformSlug(game, achievementSource),
+                "Xbox",
+                cancel,
+                searchName: xboxTitleName).ConfigureAwait(false);
         }
 
         private async Task<string> ResolveTitleIdAsync(Game game, AuthorizationData authData, CancellationToken cancel)
@@ -331,7 +343,11 @@ namespace PlayniteAchievements.Providers.Xbox
             }
         }
 
-        private async Task<List<AchievementDetail>> TryGetXboxOneAchievementsAsync(
+        /// <summary>
+        /// The modern achievements for a title, with the title's name as Xbox lists it (null when
+        /// the response carries none).
+        /// </summary>
+        private async Task<(List<AchievementDetail> Achievements, string TitleName)> TryGetXboxOneAchievementsAsync(
             string xuid,
             string titleId,
             string gameName,
@@ -344,7 +360,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
                 if (response?.achievements == null || response.achievements.Count == 0)
                 {
-                    return null;
+                    return (null, null);
                 }
 
                 // Filter by game name if no title ID was provided
@@ -356,13 +372,31 @@ namespace PlayniteAchievements.Providers.Xbox
                         .ToList();
                 }
 
-                return achievements.Select(ConvertToAchievementDetail).ToList();
+                return (achievements.Select(ConvertToAchievementDetail).ToList(), ResolveTitleName(achievements, titleId));
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger?.Debug(ex, $"[XboxAch] Failed to get Xbox One achievements for title {titleId}");
-                return null;
+                return (null, null);
             }
+        }
+
+        /// <summary>
+        /// The title name from the achievements' title associations: the association for
+        /// <paramref name="titleId"/> when present, otherwise the first named one.
+        /// </summary>
+        internal static string ResolveTitleName(IEnumerable<XboxOneAchievement> achievements, string titleId)
+        {
+            var associations = (achievements ?? Enumerable.Empty<XboxOneAchievement>())
+                .Where(achievement => achievement?.titleAssociations != null)
+                .SelectMany(achievement => achievement.titleAssociations)
+                .Where(association => association != null && !string.IsNullOrWhiteSpace(association.name))
+                .ToList();
+
+            var matching = int.TryParse(titleId, out var numericTitleId)
+                ? associations.FirstOrDefault(association => association.id == numericTitleId)
+                : null;
+            return (matching ?? associations.FirstOrDefault())?.name.Trim();
         }
 
         private async Task<List<AchievementDetail>> TryGetXbox360AchievementsAsync(
