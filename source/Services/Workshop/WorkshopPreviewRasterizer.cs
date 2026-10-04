@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Services.Workshop.Preview;
@@ -38,6 +39,7 @@ namespace PlayniteAchievements.Services.Workshop
         private const string SampleKind = "rare";
         private const string IconFontKey = "PlayAch.FontFamily.Icon";
         private const string PlayniteIconFontKey = "FontIcoFont";
+        private const string CompletedBadgeKey = "BadgeRarityCompleted";
         private const string WindowBackgroundKey = "PlayAch.Brush.Window.Background";
         private const string TextKey = "PlayAch.Brush.Text";
         private const string BodyFontKey = "PlayAch.FontFamily.Body";
@@ -351,6 +353,10 @@ namespace PlayniteAchievements.Services.Workshop
                 resources[IconFontKey] = iconFont;
                 resources[PlayniteIconFontKey] = iconFont;
             }
+
+            // The capstone badge at its default look, so a sharer's customized badge does not
+            // reach the published image.
+            resources[CompletedBadgeKey] = RarityAppearanceHelper.CreateCompletedBadgePreview(new PersistedSettings());
 
             return resources;
         }
