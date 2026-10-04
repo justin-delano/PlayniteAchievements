@@ -32,6 +32,13 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>For per-game data, the library game to install onto.</summary>
         public Guid? TargetGameId { get; set; }
+
+        /// <summary>
+        /// For per-game data, apply the package as a fresh install: the game's custom data is
+        /// replaced by the package, without the merge that keeps edits made since an earlier
+        /// install. Reinstall sets it; Update leaves it off.
+        /// </summary>
+        public bool Fresh { get; set; }
     }
 
     public sealed class WorkshopInstallResult
@@ -390,7 +397,7 @@ namespace PlayniteAchievements.Services.Workshop
             // that install left behind, so the merge below can tell their edits from the rest, and
             // icons they swapped in place are set aside before the import rewrites the slots.
             var record = _registry.Find(request.Item.Id, gameId);
-            var baseline = !isCustomAchievementsPackage && previous != null ? _baselines.Load(record) : null;
+            var baseline = !request.Fresh && !isCustomAchievementsPackage && previous != null ? _baselines.Load(record) : null;
             var iconDirectory = _plugin.ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D"));
             var editedIcons = baseline != null ? SnapshotEditedIcons(iconDirectory, record) : null;
 
