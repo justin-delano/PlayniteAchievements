@@ -61,7 +61,7 @@ namespace PlayniteAchievements.Views.Workshop
             // Where the plugin can draw the thing itself (toast, frame, theme), start with that
             // render; the user can still browse for a different image.
             _previewScratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopPreview", Guid.NewGuid().ToString("N"));
-            var rendered = new WorkshopPreviewRenderer(plugin, logger).TryRender(candidate.Kind, _previewScratch, candidate.ThemePartFiles != null && candidate.ThemePartFiles.TryGetValue(ThemePackParts.Toast, out var toastPart) ? toastPart : null);
+            var rendered = new WorkshopPreviewRenderer(plugin, logger).TryRender(candidate.Kind, _previewScratch, candidate.PackagePath ?? (candidate.ThemePartFiles != null && candidate.ThemePartFiles.TryGetValue(ThemePackParts.Toast, out var toastPart) ? toastPart : null));
             if (rendered != null)
             {
                 PreviewBox.Text = rendered;
