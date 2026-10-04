@@ -152,5 +152,32 @@ namespace PlayniteAchievements.Services.Tests
                 return Task.FromResult(_respond(request));
             }
         }
+
+        [TestMethod]
+        public void ReleaseApiUrl_MapsGitHubReleasePages_AndRejectsOtherAddresses()
+        {
+            Assert.AreEqual(
+                "https://api.github.com/repos/justin-delano/PlayniteAchievements-Workshop/releases/tags/themes/neon",
+                WorkshopClient.ReleaseApiUrl("https://github.com/justin-delano/PlayniteAchievements-Workshop/releases/tag/themes/neon"));
+            Assert.AreEqual(
+                "https://api.github.com/repos/o/r/releases/tags/colors%2Fset",
+                WorkshopClient.ReleaseApiUrl("https://github.com/o/r/releases/tag/colors%2Fset"),
+                "percent-encoded tags pass through unchanged");
+            Assert.IsNull(WorkshopClient.ReleaseApiUrl("https://gitlab.com/o/r/releases/tag/x"));
+            Assert.IsNull(WorkshopClient.ReleaseApiUrl("https://github.com/o/r/releases"));
+            Assert.IsNull(WorkshopClient.ReleaseApiUrl("https://github.com/o/r/blob/main/README.md"));
+            Assert.IsNull(WorkshopClient.ReleaseApiUrl(null));
+            Assert.IsNull(WorkshopClient.ReleaseApiUrl("not a url"));
+        }
+
+        [TestMethod]
+        public void SumAssetDownloads_AddsEveryAsset_AndIsNullWithoutAnAssetsArray()
+        {
+            Assert.AreEqual(12L, WorkshopClient.SumAssetDownloads(
+                @"{ ""tag_name"": ""themes/neon"", ""assets"": [ { ""download_count"": 5 }, { ""download_count"": 7 }, { ""name"": ""no-count"" } ] }"));
+            Assert.AreEqual(0L, WorkshopClient.SumAssetDownloads(@"{ ""assets"": [] }"));
+            Assert.IsNull(WorkshopClient.SumAssetDownloads(@"{ ""message"": ""Not Found"" }"));
+            Assert.IsNull(WorkshopClient.SumAssetDownloads(""));
+        }
     }
 }
