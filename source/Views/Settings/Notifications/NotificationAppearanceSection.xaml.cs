@@ -1173,10 +1173,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         }
 
         /// <summary>
-        /// Shows the screenshot frame full-monitor over Playnite so themes can be checked at
-        /// real scale. Reproduces the compositor's 1080-DIP virtual canvas exactly (Viewbox
-        /// Fill onto the monitor), so what is shown matches what gets stamped onto saved
-        /// images. Dismissed by click, Escape, or a 10s auto-close timer.
+        /// Shows the screenshot frame full-monitor over Playnite through
+        /// <see cref="FramePreviewOverlay"/> so themes can be checked at real scale.
         /// </summary>
         private void FireFrame_Click(object sender, RoutedEventArgs e)
         {
@@ -1203,76 +1201,30 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 return;
             }
 
-            var window = Views.Helpers.PlayniteUiProvider.CreateBorderlessTopmostWindow(
+            var window = FramePreviewOverlay.Show(
                 _plugin.PlayniteApi,
-                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
-            window.SizeToContent = SizeToContent.Manual;
-            window.ShowActivated = true;
-            window.Focusable = true;
-
-            var reference = _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow() ?? Window.GetWindow(this);
-            var monitorPixels = Views.Helpers.PlayniteUiProvider.PlaceOnWindowMonitor(window, reference);
-            if (monitorPixels == null)
-            {
-                return;
-            }
-
-            var (canvasWidth, canvasHeight, _) = ScreenshotFrameCompositor.ComputeCanvas(
-                monitorPixels.Value.Width,
-                monitorPixels.Value.Height);
-            var canvas = new Grid
-            {
-                Width = canvasWidth,
-                Height = canvasHeight,
-                // Almost-transparent so the live screen shows through while the window still
-                // receives the dismissing click (fully transparent pixels are not hit-testable).
-                Background = new System.Windows.Media.SolidColorBrush(
-                    System.Windows.Media.Color.FromArgb(1, 0, 0, 0)),
-            };
-            canvas.Children.Add(new ContentControl
-            {
-                Content = new AchievementToastViewModel(
+                Window.GetWindow(this),
+                template,
+                new AchievementToastViewModel(
                     BuildPreviewArgs(kind),
                     persisted,
                     _currentStyle,
                     gameCustomDataStore: null,
                     toastUseThemeStylingOverride: _currentToastUseThemeStyling,
-                    frameUseThemeStylingOverride: _currentFrameUseThemeStyling),
-                ContentTemplate = template,
-            });
-            window.Content = new System.Windows.Controls.Viewbox
+                    frameUseThemeStylingOverride: _currentFrameUseThemeStyling));
+            if (window == null)
             {
-                Stretch = System.Windows.Media.Stretch.Fill,
-                Child = canvas,
-            };
+                return;
+            }
 
-            var autoClose = new System.Windows.Threading.DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(10),
-            };
-            autoClose.Tick += (s, args) => window.Close();
-            window.PreviewMouseDown += (s, args) => window.Close();
-            window.PreviewKeyDown += (s, args) =>
-            {
-                if (args.Key == System.Windows.Input.Key.Escape)
-                {
-                    args.Handled = true;
-                    window.Close();
-                }
-            };
             window.Closed += (s, args) =>
             {
-                autoClose.Stop();
                 if (ReferenceEquals(_framePreviewWindow, window))
                 {
                     _framePreviewWindow = null;
                 }
             };
-
             _framePreviewWindow = window;
-            window.Show();
-            window.Focus();
-            autoClose.Start();
         }
 
         private AchievementUnlockedEventArgs BuildPreviewArgs(
