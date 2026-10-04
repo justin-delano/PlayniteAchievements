@@ -16,9 +16,9 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services.Workshop
 {
-    /// <summary>The four parts a theme bundle can carry; a bundle holds any subset.</summary>
+    /// <summary>The four parts a bundle can carry; a bundle holds any subset.</summary>
     [Flags]
-    public enum ThemePackParts
+    public enum BundleParts
     {
         None = 0,
         Colors = 1,
@@ -29,34 +29,34 @@ namespace PlayniteAchievements.Services.Workshop
     }
 
     /// <summary>
-    /// A theme bundle's manifest. It only names the parts; each part is an embedded package of
+    /// A bundle's manifest. It only names the parts; each part is an embedded package of
     /// its own standalone format under <c>parts/</c> (<c>.pacolors</c>, <c>.pasounds</c>,
     /// <c>.panotif</c>, <c>.paframe</c>), so a bundle is read with the same code as the
     /// standalone files and never grows a second schema for them.
     /// </summary>
-    public sealed class ThemePackFile
+    public sealed class BundleFile
     {
-        public const string ThemeKind = "PlayniteAchievements.Theme";
+        public const string BundleKind = "PlayniteAchievements.Bundle";
 
         public string Kind { get; set; }
 
         public int Version { get; set; }
 
-        /// <summary>Part names (<see cref="ThemePackParts"/> members) the bundle carries.</summary>
+        /// <summary>Part names (<see cref="BundleParts"/> members) the bundle carries.</summary>
         public List<string> Parts { get; set; } = new List<string>();
     }
 
     /// <summary>
-    /// Exports and imports a <c>.patheme</c> bundle: the global look as any subset of colors,
+    /// Exports and imports a <c>.pabundle</c> bundle: the global look as any subset of colors,
     /// unlock sounds, notification style and screenshot-frame style. Parts are embedded, not
     /// referenced, so a bundle installs offline and cannot break when another item changes. The
     /// importer applies only the parts the caller selects and leaves the rest of the settings as
     /// they are.
     /// </summary>
-    public sealed class ThemePackPortableStore
+    public sealed class BundlePortableStore
     {
-        public const string PackageFileExtension = ".patheme";
-        public const string ManifestEntryName = "theme.json";
+        public const string PackageFileExtension = ".pabundle";
+        public const string ManifestEntryName = "bundle.json";
         public const string PartsFolderName = "parts";
         public const string ColorsEntryName = PartsFolderName + "/colors" + ColorPackPortableStore.PackageFileExtension;
         public const string SoundsEntryName = PartsFolderName + "/sounds" + UnlockSoundPortableStore.PackageFileExtension;
@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Services.Workshop
         public const int CurrentVersion = 1;
 
         private const string NotPackageMessage =
-            "This file is not a theme bundle. Import the original .patheme file, not a file extracted from it.";
+            "This file is not a bundle. Import the original .pabundle file, not a file extracted from it.";
 
         private static readonly string[] RecognizedFileSuffixes =
         {
@@ -85,7 +85,7 @@ namespace PlayniteAchievements.Services.Workshop
         private readonly ColorPackPortableStore _colorStore;
         private readonly ILogger _logger;
 
-        public ThemePackPortableStore(
+        public BundlePortableStore(
             NotificationStylePortableStore styleStore,
             UnlockSoundPortableStore soundStore,
             ColorPackPortableStore colorStore,
@@ -123,7 +123,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// </summary>
         public void Export(
             string destinationPath,
-            ThemePackParts parts,
+            BundleParts parts,
             PersistedSettings persisted,
             IEnumerable<ResolvedUnlockSound> resolvedSounds = null,
             string toastTemplateXaml = null,
@@ -139,30 +139,30 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new InvalidOperationException($"Destination path must end with {PackageFileExtension}.");
             }
 
-            if (parts == ThemePackParts.None)
+            if (parts == BundleParts.None)
             {
                 throw new InvalidOperationException("Select at least one part to export.");
             }
 
-            var scratch = PortablePackage.CreateScratchDirectory("ThemeExport");
+            var scratch = PortablePackage.CreateScratchDirectory("BundleExport");
             try
             {
-                var files = new Dictionary<ThemePackParts, string>();
+                var files = new Dictionary<BundleParts, string>();
 
-                if (parts.HasFlag(ThemePackParts.Colors))
+                if (parts.HasFlag(BundleParts.Colors))
                 {
                     var colorsPath = Path.Combine(scratch, "colors" + ColorPackPortableStore.PackageFileExtension);
                     _colorStore.Export(persisted, colorsPath);
-                    files[ThemePackParts.Colors] = colorsPath;
+                    files[BundleParts.Colors] = colorsPath;
                 }
 
-                if (parts.HasFlag(ThemePackParts.Sounds) && resolvedSounds != null)
+                if (parts.HasFlag(BundleParts.Sounds) && resolvedSounds != null)
                 {
                     var soundsPath = Path.Combine(scratch, "sounds" + UnlockSoundPortableStore.PackageFileExtension);
                     try
                     {
                         _soundStore.Export(resolvedSounds, soundsPath);
-                        files[ThemePackParts.Sounds] = soundsPath;
+                        files[BundleParts.Sounds] = soundsPath;
                     }
                     catch (InvalidOperationException ex)
                     {
@@ -172,18 +172,18 @@ namespace PlayniteAchievements.Services.Workshop
                 }
 
                 var style = persisted.NotificationStyle ?? NotificationStyleSettings.CreateDefault();
-                if (parts.HasFlag(ThemePackParts.Toast))
+                if (parts.HasFlag(BundleParts.Toast))
                 {
                     var toastPath = Path.Combine(scratch, "toast" + NotificationStylePortableStore.ToastPackageFileExtension);
                     _styleStore.ExportSurfacePackage(isFrame: false, style, toastPath, toastTemplateXaml);
-                    files[ThemePackParts.Toast] = toastPath;
+                    files[BundleParts.Toast] = toastPath;
                 }
 
-                if (parts.HasFlag(ThemePackParts.Frame))
+                if (parts.HasFlag(BundleParts.Frame))
                 {
                     var framePath = Path.Combine(scratch, "frame" + NotificationStylePortableStore.FramePackageFileExtension);
                     _styleStore.ExportSurfacePackage(isFrame: true, style, framePath, frameTemplateXaml);
-                    files[ThemePackParts.Frame] = framePath;
+                    files[BundleParts.Frame] = framePath;
                 }
 
                 if (files.Count == 0)
@@ -205,7 +205,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// is checked to be a valid package of its kind before it is embedded, so a preset file
         /// can be handed in directly.
         /// </summary>
-        public void ExportParts(string destinationPath, IReadOnlyDictionary<ThemePackParts, string> partFiles)
+        public void ExportParts(string destinationPath, IReadOnlyDictionary<BundleParts, string> partFiles)
         {
             if (!IsPackagePath(destinationPath))
             {
@@ -217,14 +217,14 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new InvalidOperationException("Select at least one part to export.");
             }
 
-            var manifest = new ThemePackFile
+            var manifest = new BundleFile
             {
-                Kind = ThemePackFile.ThemeKind,
+                Kind = BundleFile.BundleKind,
                 Version = CurrentVersion
             };
             var embedded = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var part in new[] { ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
+            foreach (var part in new[] { BundleParts.Colors, BundleParts.Sounds, BundleParts.Toast, BundleParts.Frame })
             {
                 if (!partFiles.TryGetValue(part, out var file) || string.IsNullOrWhiteSpace(file))
                 {
@@ -253,21 +253,21 @@ namespace PlayniteAchievements.Services.Workshop
             });
         }
 
-        private void ValidatePart(ThemePackParts part, string file)
+        private void ValidatePart(BundleParts part, string file)
         {
             switch (part)
             {
-                case ThemePackParts.Colors:
+                case BundleParts.Colors:
                     _colorStore.Read(file);
                     break;
-                case ThemePackParts.Sounds:
+                case BundleParts.Sounds:
                     _soundStore.Inspect(file);
                     break;
-                case ThemePackParts.Toast:
-                case ThemePackParts.Frame:
+                case BundleParts.Toast:
+                case BundleParts.Frame:
                 {
                     var contents = _styleStore.InspectPackage(file);
-                    var ok = part == ThemePackParts.Frame ? contents.HasFrameStyle : contents.HasToastStyle;
+                    var ok = part == BundleParts.Frame ? contents.HasFrameStyle : contents.HasToastStyle;
                     if (!ok)
                     {
                         throw new InvalidOperationException($"The {part} part file does not carry that style.");
@@ -279,7 +279,7 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>Reads the manifest and reports which parts the bundle carries.</summary>
-        public ThemePackParts Inspect(string sourcePath)
+        public BundleParts Inspect(string sourcePath)
         {
             using (var archive = PortablePackage.OpenRead(sourcePath, NotPackageMessage))
             {
@@ -303,21 +303,21 @@ namespace PlayniteAchievements.Services.Workshop
         /// frame.paframe) and returns the path of each. Callers that save presets rather than
         /// apply the theme use this; <see cref="ImportAsync"/> builds on it.
         /// </summary>
-        public IReadOnlyDictionary<ThemePackParts, string> ExtractParts(string sourcePath, ThemePackParts selected, string directory)
+        public IReadOnlyDictionary<BundleParts, string> ExtractParts(string sourcePath, BundleParts selected, string directory)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {
                 throw new ArgumentException("Directory is required.", nameof(directory));
             }
 
-            var extracted = new Dictionary<ThemePackParts, string>();
+            var extracted = new Dictionary<BundleParts, string>();
             using (var archive = PortablePackage.OpenRead(sourcePath, NotPackageMessage))
             {
                 var entries = PortablePackage.IndexEntries(archive);
                 var manifest = ReadManifestOrThrow(entries);
                 var available = ResolveParts(manifest, entries);
 
-                foreach (var part in new[] { ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame })
+                foreach (var part in new[] { BundleParts.Colors, BundleParts.Sounds, BundleParts.Toast, BundleParts.Frame })
                 {
                     if (selected.HasFlag(part) && available.HasFlag(part))
                     {
@@ -332,9 +332,9 @@ namespace PlayniteAchievements.Services.Workshop
             return extracted;
         }
 
-        public async Task<ThemePackParts> ImportAsync(
+        public async Task<BundleParts> ImportAsync(
             string sourcePath,
-            ThemePackParts selected,
+            BundleParts selected,
             PersistedSettings persisted,
             Action<bool, string> installTemplate,
             CancellationToken cancel)
@@ -344,36 +344,36 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new ArgumentNullException(nameof(persisted));
             }
 
-            var scratch = PortablePackage.CreateScratchDirectory("ThemeImport");
+            var scratch = PortablePackage.CreateScratchDirectory("BundleImport");
             try
             {
                 var extracted = ExtractParts(sourcePath, selected, scratch);
 
-                var applied = ThemePackParts.None;
+                var applied = BundleParts.None;
 
-                if (extracted.TryGetValue(ThemePackParts.Colors, out var colorsPath))
+                if (extracted.TryGetValue(BundleParts.Colors, out var colorsPath))
                 {
                     _colorStore.Import(colorsPath, persisted);
-                    applied |= ThemePackParts.Colors;
+                    applied |= BundleParts.Colors;
                 }
 
-                if (extracted.TryGetValue(ThemePackParts.Sounds, out var soundsPath))
+                if (extracted.TryGetValue(BundleParts.Sounds, out var soundsPath))
                 {
                     var sounds = persisted.UnlockSounds ?? UnlockSoundSettings.CreateDefault();
                     _soundStore.Import(soundsPath, sounds);
                     persisted.UnlockSounds = sounds;
                     _soundStore.PruneUnreferenced(sounds);
-                    applied |= ThemePackParts.Sounds;
+                    applied |= BundleParts.Sounds;
                 }
 
-                foreach (var part in new[] { ThemePackParts.Toast, ThemePackParts.Frame })
+                foreach (var part in new[] { BundleParts.Toast, BundleParts.Frame })
                 {
                     if (!extracted.TryGetValue(part, out var packagePath))
                     {
                         continue;
                     }
 
-                    var isFrame = part == ThemePackParts.Frame;
+                    var isFrame = part == BundleParts.Frame;
                     var imported = await _styleStore
                         .ImportAsync(packagePath, NotificationImageOwner.Global, cancel)
                         .ConfigureAwait(false);
@@ -398,24 +398,24 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        private static ThemePackFile ReadManifestOrThrow(IReadOnlyDictionary<string, ZipArchiveEntry> entries)
+        private static BundleFile ReadManifestOrThrow(IReadOnlyDictionary<string, ZipArchiveEntry> entries)
         {
             if (!entries.TryGetValue(ManifestEntryName, out var manifestEntry))
             {
                 throw new InvalidOperationException("The package does not contain a theme manifest.");
             }
 
-            ThemePackFile manifest;
+            BundleFile manifest;
             try
             {
-                manifest = PortablePackage.ReadJson<ThemePackFile>(manifestEntry);
+                manifest = PortablePackage.ReadJson<BundleFile>(manifestEntry);
             }
             catch (JsonException ex)
             {
                 throw new InvalidOperationException("This theme file is damaged and could not be read.", ex);
             }
 
-            if (manifest == null || !string.Equals(manifest.Kind, ThemePackFile.ThemeKind, StringComparison.Ordinal))
+            if (manifest == null || !string.Equals(manifest.Kind, BundleFile.BundleKind, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException("This file is not a Playnite Achievements theme.");
             }
@@ -433,13 +433,13 @@ namespace PlayniteAchievements.Services.Workshop
         /// The parts the manifest declares that the archive actually backs. A declared part with
         /// no payload is an error, so a tampered bundle fails rather than silently shrinking.
         /// </summary>
-        private static ThemePackParts ResolveParts(ThemePackFile manifest, IReadOnlyDictionary<string, ZipArchiveEntry> entries)
+        private static BundleParts ResolveParts(BundleFile manifest, IReadOnlyDictionary<string, ZipArchiveEntry> entries)
         {
-            var parts = ThemePackParts.None;
+            var parts = BundleParts.None;
             foreach (var name in manifest.Parts ?? new List<string>())
             {
-                if (!Enum.TryParse(name, ignoreCase: true, out ThemePackParts part) ||
-                    part == ThemePackParts.None || part == ThemePackParts.All)
+                if (!Enum.TryParse(name, ignoreCase: true, out BundleParts part) ||
+                    part == BundleParts.None || part == BundleParts.All)
                 {
                     throw new InvalidOperationException($"The theme names an unknown part '{name}'.");
                 }
@@ -455,14 +455,14 @@ namespace PlayniteAchievements.Services.Workshop
             return parts;
         }
 
-        private static string EntryNameFor(ThemePackParts part)
+        private static string EntryNameFor(BundleParts part)
         {
             switch (part)
             {
-                case ThemePackParts.Colors: return ColorsEntryName;
-                case ThemePackParts.Sounds: return SoundsEntryName;
-                case ThemePackParts.Toast: return ToastEntryName;
-                case ThemePackParts.Frame: return FrameEntryName;
+                case BundleParts.Colors: return ColorsEntryName;
+                case BundleParts.Sounds: return SoundsEntryName;
+                case BundleParts.Toast: return ToastEntryName;
+                case BundleParts.Frame: return FrameEntryName;
                 default: throw new ArgumentOutOfRangeException(nameof(part), part, "No archive entry backs this part.");
             }
         }

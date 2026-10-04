@@ -626,7 +626,7 @@
     <Compile Include="..\..\source\Common\PortablePackage.cs" Link="Source\Common\PortablePackage.cs" />
     <Compile Include="..\..\source\Services\UI\UnlockSoundResolver.cs" Link="Source\Services\UI\UnlockSoundResolver.cs" />
     <Compile Include="..\..\source\Services\Sound\UnlockSoundPortableStore.cs" Link="Source\Services\Sound\UnlockSoundPortableStore.cs" />
-    <Compile Include="..\..\source\Services\Workshop\ThemePackPortableStore.cs" Link="Source\Services\Workshop\ThemePackPortableStore.cs" />
+    <Compile Include="..\..\source\Services\Workshop\BundlePortableStore.cs" Link="Source\Services\Workshop\BundlePortableStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\ColorPackPortableStore.cs" Link="Source\Services\Workshop\ColorPackPortableStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\PackagePresetStore.cs" Link="Source\Services\Workshop\PackagePresetStore.cs" />
     <Compile Include="..\..\source\Views\Controls\GlyphIcon.cs" Link="Source\Views\Controls\GlyphIcon.cs" />

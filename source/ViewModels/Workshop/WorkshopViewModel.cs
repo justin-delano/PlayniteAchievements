@@ -157,7 +157,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 new WorkshopKindOption(WorkshopItemKind.ScreenshotFrame, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.ScreenshotFrame)),
                 new WorkshopKindOption(WorkshopItemKind.ShowcasePage, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.ShowcasePage)),
                 new WorkshopKindOption(WorkshopItemKind.UnlockSounds, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.UnlockSounds)),
-                new WorkshopKindOption(WorkshopItemKind.Theme, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.Theme)),
+                new WorkshopKindOption(WorkshopItemKind.Bundle, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.Bundle)),
                 new WorkshopKindOption(WorkshopItemKind.GameCustomData, WorkshopItemViewModel.KindLabelFor(WorkshopItemKind.GameCustomData))
             };
             SortOptions = new List<WorkshopSortOption>
@@ -472,9 +472,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 return true;
             }
 
-            return row.Kind == WorkshopItemKind.Theme
-                && ThemePartFor(wanted) is ThemePackParts part
-                && WorkshopInstaller.ThemePartsOf(row.Item).HasFlag(part);
+            return row.Kind == WorkshopItemKind.Bundle
+                && BundlePartFor(wanted) is BundleParts part
+                && WorkshopInstaller.BundlePartsOf(row.Item).HasFlag(part);
         }
 
         private async Task LoadDetailsAsync(WorkshopItemViewModel row)
@@ -538,14 +538,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         /// <summary>The theme part a kind tab corresponds to, or null for kinds themes never carry.</summary>
-        public static ThemePackParts? ThemePartFor(WorkshopItemKind kind)
+        public static BundleParts? BundlePartFor(WorkshopItemKind kind)
         {
             switch (kind)
             {
-                case WorkshopItemKind.Colors: return ThemePackParts.Colors;
-                case WorkshopItemKind.UnlockSounds: return ThemePackParts.Sounds;
-                case WorkshopItemKind.NotificationStyle: return ThemePackParts.Toast;
-                case WorkshopItemKind.ScreenshotFrame: return ThemePackParts.Frame;
+                case WorkshopItemKind.Colors: return BundleParts.Colors;
+                case WorkshopItemKind.UnlockSounds: return BundleParts.Sounds;
+                case WorkshopItemKind.NotificationStyle: return BundleParts.Toast;
+                case WorkshopItemKind.ScreenshotFrame: return BundleParts.Frame;
                 default: return null;
             }
         }
@@ -554,16 +554,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
         /// When a theme is installed from a part's tab, the part picker starts with just that
         /// part ticked; from the Themes or All tab every available part is ticked.
         /// </summary>
-        public ThemePackParts PreferredThemeParts =>
-            _selectedKind?.Kind is WorkshopItemKind kind && ThemePartFor(kind) is ThemePackParts part
+        public BundleParts PreferredBundleParts =>
+            _selectedKind?.Kind is WorkshopItemKind kind && BundlePartFor(kind) is BundleParts part
                 ? part
-                : ThemePackParts.All;
+                : BundleParts.All;
 
         private void ApplySort()
         {
             ItemsView.SortDescriptions.Clear();
             // Within a part tab, standalone items of that kind come before the bundles.
-            if (_selectedKind?.Kind is WorkshopItemKind kind && kind != WorkshopItemKind.Theme)
+            if (_selectedKind?.Kind is WorkshopItemKind kind && kind != WorkshopItemKind.Bundle)
             {
                 ItemsView.SortDescriptions.Add(new SortDescription(nameof(WorkshopItemViewModel.IsBundle), ListSortDirection.Ascending));
             }
@@ -587,7 +587,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         // ---- install -----------------------------------------------------------------------
 
         /// <summary>Asks the window to pick theme parts; null cancels.</summary>
-        public Func<WorkshopItemViewModel, Services.Workshop.ThemePackParts, Services.Workshop.ThemePackParts?> PickThemeParts { get; set; }
+        public Func<WorkshopItemViewModel, Services.Workshop.BundleParts, Services.Workshop.BundleParts?> PickBundleParts { get; set; }
 
         /// <summary>Asks the window to pick a library game for game data; null cancels.</summary>
         public Func<WorkshopItemViewModel, IReadOnlyList<Game>, Game> PickGame { get; set; }
@@ -609,16 +609,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
             {
                 var request = new WorkshopInstallRequest { Item = row.Item };
 
-                if (row.Kind == WorkshopItemKind.Theme)
+                if (row.Kind == WorkshopItemKind.Bundle)
                 {
-                    var available = WorkshopInstaller.ThemePartsOf(row.Item);
-                    var picked = PickThemeParts?.Invoke(row, available) ?? available;
-                    if (picked == Services.Workshop.ThemePackParts.None)
+                    var available = WorkshopInstaller.BundlePartsOf(row.Item);
+                    var picked = PickBundleParts?.Invoke(row, available) ?? available;
+                    if (picked == Services.Workshop.BundleParts.None)
                     {
                         return;
                     }
 
-                    request.ThemeParts = picked;
+                    request.Parts = picked;
                 }
 
                 if (row.Kind == WorkshopItemKind.GameCustomData)

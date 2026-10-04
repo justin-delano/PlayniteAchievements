@@ -11,16 +11,16 @@ using PlayniteAchievements.Services.UI;
 namespace PlayniteAchievements.Services.Workshop
 {
     /// <summary>Where one theme part comes from: the live settings, or a saved preset file.</summary>
-    public sealed class ThemePartSource
+    public sealed class BundlePartSource
     {
-        public ThemePartSource(ThemePackParts part, string label, string presetPath)
+        public BundlePartSource(BundleParts part, string label, string presetPath)
         {
             Part = part;
             Label = label;
             PresetPath = presetPath;
         }
 
-        public ThemePackParts Part { get; }
+        public BundleParts Part { get; }
 
         public string Label { get; }
 
@@ -33,20 +33,20 @@ namespace PlayniteAchievements.Services.Workshop
     }
 
     /// <summary>One part of a theme being composed: included or not, and from which source.</summary>
-    public sealed class ThemePartChoice
+    public sealed class BundlePartChoice
     {
-        public ThemePartChoice(ThemePackParts part, bool included, ThemePartSource source)
+        public BundlePartChoice(BundleParts part, bool included, BundlePartSource source)
         {
             Part = part;
             Included = included;
             Source = source;
         }
 
-        public ThemePackParts Part { get; }
+        public BundleParts Part { get; }
 
         public bool Included { get; }
 
-        public ThemePartSource Source { get; }
+        public BundlePartSource Source { get; }
     }
 
     /// <summary>
@@ -55,33 +55,33 @@ namespace PlayniteAchievements.Services.Workshop
     /// already a valid package), the current settings are exported fresh. Shared by theme export
     /// to file and Share to Workshop, so both show the same composer.
     /// </summary>
-    public sealed class ThemeComposer
+    public sealed class BundleComposer
     {
-        private static readonly ThemePackParts[] AllParts =
+        private static readonly BundleParts[] AllParts =
         {
-            ThemePackParts.Colors, ThemePackParts.Sounds, ThemePackParts.Toast, ThemePackParts.Frame
+            BundleParts.Colors, BundleParts.Sounds, BundleParts.Toast, BundleParts.Frame
         };
 
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ILogger _logger;
 
-        public ThemeComposer(PlayniteAchievementsPlugin plugin, ILogger logger = null)
+        public BundleComposer(PlayniteAchievementsPlugin plugin, ILogger logger = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
         }
 
-        public static IReadOnlyList<ThemePackParts> Parts => AllParts;
+        public static IReadOnlyList<BundleParts> Parts => AllParts;
 
         /// <summary>The user-facing label of a part, the same words the part picker uses.</summary>
-        public static string LabelFor(ThemePackParts part)
+        public static string LabelFor(BundleParts part)
         {
             switch (part)
             {
-                case ThemePackParts.Colors: return ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors");
-                case ThemePackParts.Sounds: return ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Sounds");
-                case ThemePackParts.Toast: return ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab");
-                case ThemePackParts.Frame: return ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader");
+                case BundleParts.Colors: return ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors");
+                case BundleParts.Sounds: return ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Sounds");
+                case BundleParts.Toast: return ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab");
+                case BundleParts.Frame: return ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader");
                 default: return part.ToString();
             }
         }
@@ -90,29 +90,29 @@ namespace PlayniteAchievements.Services.Workshop
         /// The sources offered for a part: the current settings first (when they have anything
         /// to carry), then every saved preset of that kind by name.
         /// </summary>
-        public IReadOnlyList<ThemePartSource> SourcesFor(ThemePackParts part)
+        public IReadOnlyList<BundlePartSource> SourcesFor(BundleParts part)
         {
-            var sources = new List<ThemePartSource>();
+            var sources = new List<BundlePartSource>();
             if (HasCurrent(part))
             {
-                sources.Add(new ThemePartSource(part, ResourceProvider.GetString("LOCPlayAch_Workshop_CurrentSettings"), null));
+                sources.Add(new BundlePartSource(part, ResourceProvider.GetString("LOCPlayAch_Workshop_CurrentSettings"), null));
             }
 
             try
             {
                 switch (part)
                 {
-                    case ThemePackParts.Colors:
-                        sources.AddRange(_plugin.ColorPresetStore.List().Select(p => new ThemePartSource(part, p.Name, p.FilePath)));
+                    case BundleParts.Colors:
+                        sources.AddRange(_plugin.ColorPresetStore.List().Select(p => new BundlePartSource(part, p.Name, p.FilePath)));
                         break;
-                    case ThemePackParts.Sounds:
-                        sources.AddRange(_plugin.UnlockSoundPresetStore.List().Select(p => new ThemePartSource(part, p.Name, p.FilePath)));
+                    case BundleParts.Sounds:
+                        sources.AddRange(_plugin.UnlockSoundPresetStore.List().Select(p => new BundlePartSource(part, p.Name, p.FilePath)));
                         break;
-                    case ThemePackParts.Toast:
-                    case ThemePackParts.Frame:
+                    case BundleParts.Toast:
+                    case BundleParts.Frame:
                         sources.AddRange(_plugin.NotificationStylePresetStore
-                            .ListPresets(isFrame: part == ThemePackParts.Frame)
-                            .Select(p => new ThemePartSource(part, p.Name, p.FilePath)));
+                            .ListPresets(isFrame: part == BundleParts.Frame)
+                            .Select(p => new BundlePartSource(part, p.Name, p.FilePath)));
                         break;
                 }
             }
@@ -128,9 +128,9 @@ namespace PlayniteAchievements.Services.Workshop
         /// Whether the live settings have something to export for a part. Colors and the two
         /// styles always do; sounds only when some tier plays a custom or theme file.
         /// </summary>
-        public bool HasCurrent(ThemePackParts part)
+        public bool HasCurrent(BundleParts part)
         {
-            if (part != ThemePackParts.Sounds)
+            if (part != BundleParts.Sounds)
             {
                 return true;
             }
@@ -144,7 +144,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// they are, current settings are exported into <paramref name="directory"/>. The caller
         /// owns the directory and deletes it once the bundle has been written or shared.
         /// </summary>
-        public IReadOnlyDictionary<ThemePackParts, string> BuildPartFiles(IEnumerable<ThemePartChoice> choices, string directory)
+        public IReadOnlyDictionary<BundleParts, string> BuildPartFiles(IEnumerable<BundlePartChoice> choices, string directory)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {
@@ -153,9 +153,9 @@ namespace PlayniteAchievements.Services.Workshop
 
             var persisted = _plugin.Settings?.Persisted ?? throw new InvalidOperationException("Settings are not available.");
             Directory.CreateDirectory(directory);
-            var files = new Dictionary<ThemePackParts, string>();
+            var files = new Dictionary<BundleParts, string>();
 
-            foreach (var choice in choices ?? Enumerable.Empty<ThemePartChoice>())
+            foreach (var choice in choices ?? Enumerable.Empty<BundlePartChoice>())
             {
                 if (choice == null || !choice.Included || choice.Source == null)
                 {
@@ -179,28 +179,28 @@ namespace PlayniteAchievements.Services.Workshop
             return files;
         }
 
-        private string ExportCurrent(ThemePackParts part, PersistedSettings persisted, string directory)
+        private string ExportCurrent(BundleParts part, PersistedSettings persisted, string directory)
         {
             switch (part)
             {
-                case ThemePackParts.Colors:
+                case BundleParts.Colors:
                 {
                     var path = Path.Combine(directory, "colors" + ColorPackPortableStore.PackageFileExtension);
                     _plugin.ColorPackPortableStore.Export(persisted, path);
                     return path;
                 }
 
-                case ThemePackParts.Sounds:
+                case BundleParts.Sounds:
                 {
                     var path = Path.Combine(directory, "sounds" + UnlockSoundPortableStore.PackageFileExtension);
                     _plugin.UnlockSoundPortableStore.Export(_plugin.UnlockSounds?.Resolver?.ResolveAll(), path);
                     return path;
                 }
 
-                case ThemePackParts.Toast:
-                case ThemePackParts.Frame:
+                case BundleParts.Toast:
+                case BundleParts.Frame:
                 {
-                    var isFrame = part == ThemePackParts.Frame;
+                    var isFrame = part == BundleParts.Frame;
                     var path = Path.Combine(
                         directory,
                         (isFrame ? "frame" : "toast") + NotificationStylePortableStore.SurfaceExtension(isFrame));

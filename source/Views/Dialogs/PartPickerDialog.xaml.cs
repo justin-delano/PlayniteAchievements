@@ -37,7 +37,7 @@ namespace PlayniteAchievements.Views.Dialogs
 
     /// <summary>
     /// A checklist dialog: a hint, one checkbox per offered part, OK and Cancel. Used wherever a
-    /// package carries several independently applicable parts (theme bundles, workshop installs)
+    /// package carries several independently applicable parts (bundles, workshop installs)
     /// so the user picks a subset in one step instead of answering a chain of yes/no prompts.
     /// </summary>
     public partial class PartPickerDialog : UserControl

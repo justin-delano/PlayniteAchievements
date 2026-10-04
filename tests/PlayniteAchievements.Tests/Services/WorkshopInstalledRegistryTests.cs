@@ -15,22 +15,22 @@ namespace PlayniteAchievements.Services.Tests
             WithTemp(dir =>
             {
                 var registry = new WorkshopInstalledRegistry(dir);
-                var item = new WorkshopItem { Id = "themes/neon", Kind = WorkshopItemKind.Theme, Name = "Neon", Version = "1.0.0" };
+                var item = new WorkshopItem { Id = "bundles/neon", Kind = WorkshopItemKind.Bundle, Name = "Neon", Version = "1.0.0" };
                 registry.Record(item);
 
                 var reloaded = new WorkshopInstalledRegistry(dir);
-                var found = reloaded.Find("themes/neon");
+                var found = reloaded.Find("bundles/neon");
                 Assert.IsNotNull(found);
                 Assert.AreEqual("1.0.0", found.Version);
-                Assert.AreEqual(WorkshopItemKind.Theme, found.Kind);
+                Assert.AreEqual(WorkshopItemKind.Bundle, found.Kind);
 
                 item.Version = "1.1.0";
                 reloaded.Record(item);
                 Assert.AreEqual(1, reloaded.Items.Count, "re-recording replaces the earlier record");
-                Assert.AreEqual("1.1.0", reloaded.Find("themes/neon").Version);
+                Assert.AreEqual("1.1.0", reloaded.Find("bundles/neon").Version);
 
-                reloaded.Forget("themes/neon");
-                Assert.IsNull(new WorkshopInstalledRegistry(dir).Find("themes/neon"));
+                reloaded.Forget("bundles/neon");
+                Assert.IsNull(new WorkshopInstalledRegistry(dir).Find("bundles/neon"));
             });
         }
 
@@ -76,15 +76,15 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreNotEqual(key, hash);
 
                 registry.DisplayName = "Someone";
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Theme, SubmittedUtc = DateTime.UtcNow });
-                registry.UpdateSubmissionState(7, "in-review", "themes/neon");
+                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Bundle, SubmittedUtc = DateTime.UtcNow });
+                registry.UpdateSubmissionState(7, "in-review", "bundles/neon");
 
                 var reloaded = new WorkshopInstalledRegistry(dir);
                 Assert.AreEqual(key, reloaded.GetOrCreateSubmitterKey(), "the key survives a restart");
                 Assert.AreEqual("Someone", reloaded.DisplayName);
                 Assert.AreEqual(1, reloaded.Submissions.Count);
                 Assert.AreEqual("in-review", reloaded.Submissions[0].LastState);
-                Assert.AreEqual("themes/neon", reloaded.Submissions[0].ItemId);
+                Assert.AreEqual("bundles/neon", reloaded.Submissions[0].ItemId);
             });
         }
 

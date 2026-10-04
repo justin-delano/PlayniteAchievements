@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// For a theme, the standalone package per part the composer chose (current settings
         /// exported to scratch, or a preset file). Null means every part from the live settings.
         /// </summary>
-        public IReadOnlyDictionary<ThemePackParts, string> ThemePartFiles { get; set; }
+        public IReadOnlyDictionary<BundleParts, string> BundlePartFiles { get; set; }
 
         /// <summary>
         /// A ready-made package to share as it is (a saved preset file). When set, nothing is
@@ -119,9 +119,9 @@ namespace PlayniteAchievements.Services.Workshop
 
             result.Add(new WorkshopShareCandidate
             {
-                Kind = WorkshopItemKind.Theme,
-                Label = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Theme"),
-                DefaultName = ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Theme")
+                Kind = WorkshopItemKind.Bundle,
+                Label = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Bundle"),
+                DefaultName = ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Bundle")
             });
 
             foreach (var page in persisted.Showcase?.Pages ?? new List<ShowcasePageSettings>())
@@ -234,18 +234,18 @@ namespace PlayniteAchievements.Services.Workshop
                     return path;
                 }
 
-                case WorkshopItemKind.Theme:
+                case WorkshopItemKind.Bundle:
                 {
-                    var path = Path.Combine(directory, stem + ThemePackPortableStore.PackageFileExtension);
-                    if (candidate.ThemePartFiles != null && candidate.ThemePartFiles.Count > 0)
+                    var path = Path.Combine(directory, stem + BundlePortableStore.PackageFileExtension);
+                    if (candidate.BundlePartFiles != null && candidate.BundlePartFiles.Count > 0)
                     {
-                        _plugin.ThemePackPortableStore.ExportParts(path, candidate.ThemePartFiles);
+                        _plugin.BundlePortableStore.ExportParts(path, candidate.BundlePartFiles);
                         return path;
                     }
 
-                    _plugin.ThemePackPortableStore.Export(
+                    _plugin.BundlePortableStore.Export(
                         path,
-                        ThemePackParts.All,
+                        BundleParts.All,
                         persisted,
                         _plugin.UnlockSounds?.Resolver?.ResolveAll(),
                         resolver.ReadCustomTemplateXaml(isFrame: false, providerKey: null, gameId: Guid.Empty),

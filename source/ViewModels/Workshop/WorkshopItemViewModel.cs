@@ -65,7 +65,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public bool HasGame => Item.Game != null;
         public string FolderUrl => Item.Urls?.Folder;
         public string KindLabel => KindLabelFor(Kind);
-        public bool IsBundle => Kind == WorkshopItemKind.Theme;
+        public bool IsBundle => Kind == WorkshopItemKind.Bundle;
         public string SearchText { get; }
 
         /// <summary>Sortable date; the index writes yyyy-MM-dd.</summary>
@@ -133,7 +133,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 case WorkshopItemKind.ScreenshotFrame: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_ScreenshotFrame");
                 case WorkshopItemKind.ShowcasePage: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_ShowcasePage");
                 case WorkshopItemKind.UnlockSounds: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_UnlockSounds");
-                case WorkshopItemKind.Theme: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Theme");
+                case WorkshopItemKind.Bundle: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Bundle");
                 default: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_GameCustomData");
             }
         }
@@ -182,7 +182,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     }
 
                     break;
-                case WorkshopItemKind.Theme:
+                case WorkshopItemKind.Bundle:
                     if (contents["parts"] is JArray themeParts)
                     {
                         parts.Add(string.Join(", ", themeParts.Select(s => s.ToString())));

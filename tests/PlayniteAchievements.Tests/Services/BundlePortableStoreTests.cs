@@ -19,7 +19,7 @@ namespace PlayniteAchievements.Services.Tests
 {
     [TestClass]
     [DoNotParallelize]
-    public class ThemePackPortableStoreTests
+    public class BundlePortableStoreTests
     {
         [TestMethod]
         public async Task Export_AllParts_ThenImport_AppliesEachPartToFreshSettings()
@@ -43,33 +43,33 @@ namespace PlayniteAchievements.Services.Tests
                 var rareSound = WriteWav(Path.Combine(tempDir, "rare.wav"));
                 var resolved = new[] { new ResolvedUnlockSound(UnlockSoundTier.Rare, UnlockSoundSource.Custom, rareSound) };
 
-                var packagePath = Path.Combine(tempDir, "look.patheme");
-                store.Export(packagePath, ThemePackParts.All, source, resolved, toastTemplateXaml: "<x/>");
+                var packagePath = Path.Combine(tempDir, "look.pabundle");
+                store.Export(packagePath, BundleParts.All, source, resolved, toastTemplateXaml: "<x/>");
 
                 using (var archive = ZipFile.OpenRead(packagePath))
                 {
                     var names = archive.Entries.Select(entry => entry.FullName).ToList();
-                    CollectionAssert.Contains(names, ThemePackPortableStore.ManifestEntryName);
-                    CollectionAssert.Contains(names, ThemePackPortableStore.ColorsEntryName);
-                    CollectionAssert.Contains(names, ThemePackPortableStore.SoundsEntryName);
-                    CollectionAssert.Contains(names, ThemePackPortableStore.ToastEntryName);
-                    CollectionAssert.Contains(names, ThemePackPortableStore.FrameEntryName);
+                    CollectionAssert.Contains(names, BundlePortableStore.ManifestEntryName);
+                    CollectionAssert.Contains(names, BundlePortableStore.ColorsEntryName);
+                    CollectionAssert.Contains(names, BundlePortableStore.SoundsEntryName);
+                    CollectionAssert.Contains(names, BundlePortableStore.ToastEntryName);
+                    CollectionAssert.Contains(names, BundlePortableStore.FrameEntryName);
                     Assert.AreEqual(5, names.Count, "the manifest names parts; each part is an embedded standalone package");
                 }
 
-                Assert.AreEqual(ThemePackParts.All, store.Inspect(packagePath));
+                Assert.AreEqual(BundleParts.All, store.Inspect(packagePath));
 
                 var target = new PersistedSettings();
                 target.UnlockSounds.Common = @"C:\keep\common.wav";
                 string installedToastXaml = null;
                 var applied = await store.ImportAsync(
                     packagePath,
-                    ThemePackParts.All,
+                    BundleParts.All,
                     target,
                     (isFrame, xaml) => { if (!isFrame) installedToastXaml = xaml; },
                     CancellationToken.None);
 
-                Assert.AreEqual(ThemePackParts.All, applied);
+                Assert.AreEqual(BundleParts.All, applied);
                 Assert.AreEqual("#112233", target.RarityColors.Common);
                 Assert.AreEqual("#AABBCCDD", target.RarityColors.UltraRare);
                 Assert.AreEqual("#010203", target.ProviderColorOverrides["Steam"]);
@@ -94,19 +94,19 @@ namespace PlayniteAchievements.Services.Tests
                 var store = CreateStore(tempDir, out _);
                 var source = new PersistedSettings();
                 source.RarityColors = new RarityColorSettings { Common = "#445566" };
-                var packagePath = Path.Combine(tempDir, "look.patheme");
-                store.Export(packagePath, ThemePackParts.Colors | ThemePackParts.Toast | ThemePackParts.Frame, source, null, toastTemplateXaml: null);
+                var packagePath = Path.Combine(tempDir, "look.pabundle");
+                store.Export(packagePath, BundleParts.Colors | BundleParts.Toast | BundleParts.Frame, source, null, toastTemplateXaml: null);
 
                 var outDir = Path.Combine(tempDir, "parts");
-                var extracted = store.ExtractParts(packagePath, ThemePackParts.Colors | ThemePackParts.Sounds | ThemePackParts.Toast, outDir);
+                var extracted = store.ExtractParts(packagePath, BundleParts.Colors | BundleParts.Sounds | BundleParts.Toast, outDir);
 
                 CollectionAssert.AreEquivalent(
-                    new[] { ThemePackParts.Colors, ThemePackParts.Toast },
+                    new[] { BundleParts.Colors, BundleParts.Toast },
                     extracted.Keys.ToArray(),
                     "sounds were not in the bundle and the frame was not selected");
-                Assert.AreEqual(Path.Combine(outDir, "colors" + ColorPackPortableStore.PackageFileExtension), extracted[ThemePackParts.Colors]);
-                Assert.AreEqual(Path.Combine(outDir, "toast" + NotificationStylePortableStore.ToastPackageFileExtension), extracted[ThemePackParts.Toast]);
-                Assert.AreEqual("#445566", new ColorPackPortableStore().Read(extracted[ThemePackParts.Colors]).RarityColors.Common, "each part is a valid standalone package");
+                Assert.AreEqual(Path.Combine(outDir, "colors" + ColorPackPortableStore.PackageFileExtension), extracted[BundleParts.Colors]);
+                Assert.AreEqual(Path.Combine(outDir, "toast" + NotificationStylePortableStore.ToastPackageFileExtension), extracted[BundleParts.Toast]);
+                Assert.AreEqual("#445566", new ColorPackPortableStore().Read(extracted[BundleParts.Colors]).RarityColors.Common, "each part is a valid standalone package");
                 await Task.CompletedTask;
             });
         }
@@ -123,19 +123,19 @@ namespace PlayniteAchievements.Services.Tests
                 var colorsFile = Path.Combine(tempDir, "set.pacolors");
                 colorStore.Export(persisted, colorsFile);
 
-                var bundle = Path.Combine(tempDir, "composed.patheme");
-                store.ExportParts(bundle, new Dictionary<ThemePackParts, string> { [ThemePackParts.Colors] = colorsFile });
+                var bundle = Path.Combine(tempDir, "composed.pabundle");
+                store.ExportParts(bundle, new Dictionary<BundleParts, string> { [BundleParts.Colors] = colorsFile });
 
-                Assert.AreEqual(ThemePackParts.Colors, store.Inspect(bundle));
+                Assert.AreEqual(BundleParts.Colors, store.Inspect(bundle));
                 var outDir = Path.Combine(tempDir, "out");
-                var extracted = store.ExtractParts(bundle, ThemePackParts.All, outDir);
-                Assert.AreEqual("#778899", colorStore.Read(extracted[ThemePackParts.Colors]).RarityColors.Common, "the preset file travels byte for byte");
+                var extracted = store.ExtractParts(bundle, BundleParts.All, outDir);
+                Assert.AreEqual("#778899", colorStore.Read(extracted[BundleParts.Colors]).RarityColors.Common, "the preset file travels byte for byte");
 
                 Assert.ThrowsException<InvalidOperationException>(
-                    () => store.ExportParts(Path.Combine(tempDir, "bad.patheme"), new Dictionary<ThemePackParts, string> { [ThemePackParts.Toast] = colorsFile }),
+                    () => store.ExportParts(Path.Combine(tempDir, "bad.pabundle"), new Dictionary<BundleParts, string> { [BundleParts.Toast] = colorsFile }),
                     "a .pacolors is not a toast style");
                 Assert.ThrowsException<InvalidOperationException>(
-                    () => store.ExportParts(Path.Combine(tempDir, "empty.patheme"), new Dictionary<ThemePackParts, string>()));
+                    () => store.ExportParts(Path.Combine(tempDir, "empty.pabundle"), new Dictionary<BundleParts, string>()));
                 await Task.CompletedTask;
             });
         }
@@ -150,14 +150,14 @@ namespace PlayniteAchievements.Services.Tests
                 source.RarityColors = new RarityColorSettings { Common = "#112233" };
                 source.NotificationStyle.Toast.HeaderTexts.UnlockHeader = "Bundled!";
 
-                var packagePath = Path.Combine(tempDir, "look.patheme");
-                store.Export(packagePath, ThemePackParts.Colors | ThemePackParts.Toast, source);
+                var packagePath = Path.Combine(tempDir, "look.pabundle");
+                store.Export(packagePath, BundleParts.Colors | BundleParts.Toast, source);
 
                 var target = new PersistedSettings();
                 var originalHeader = target.NotificationStyle.Toast.HeaderTexts.UnlockHeader;
-                var applied = await store.ImportAsync(packagePath, ThemePackParts.Colors, target, null, CancellationToken.None);
+                var applied = await store.ImportAsync(packagePath, BundleParts.Colors, target, null, CancellationToken.None);
 
-                Assert.AreEqual(ThemePackParts.Colors, applied);
+                Assert.AreEqual(BundleParts.Colors, applied);
                 Assert.AreEqual("#112233", target.RarityColors.Common);
                 Assert.AreEqual(originalHeader, target.NotificationStyle.Toast.HeaderTexts.UnlockHeader);
             });
@@ -169,12 +169,12 @@ namespace PlayniteAchievements.Services.Tests
             WithTemp(tempDir =>
             {
                 var store = CreateStore(tempDir, out _);
-                var packagePath = Path.Combine(tempDir, "look.patheme");
+                var packagePath = Path.Combine(tempDir, "look.pabundle");
                 var onlyDefaults = new[] { new ResolvedUnlockSound(UnlockSoundTier.Common, UnlockSoundSource.Default, WriteWav(Path.Combine(tempDir, "d.wav"))) };
 
-                store.Export(packagePath, ThemePackParts.Colors | ThemePackParts.Sounds, new PersistedSettings(), onlyDefaults);
+                store.Export(packagePath, BundleParts.Colors | BundleParts.Sounds, new PersistedSettings(), onlyDefaults);
 
-                Assert.AreEqual(ThemePackParts.Colors, store.Inspect(packagePath));
+                Assert.AreEqual(BundleParts.Colors, store.Inspect(packagePath));
             });
         }
 
@@ -185,42 +185,42 @@ namespace PlayniteAchievements.Services.Tests
             {
                 var store = CreateStore(tempDir, out _);
 
-                var wrongKind = Path.Combine(tempDir, "kind.patheme");
-                WriteManifestOnly(wrongKind, new ThemePackFile { Kind = "Other", Version = 1 });
+                var wrongKind = Path.Combine(tempDir, "kind.pabundle");
+                WriteManifestOnly(wrongKind, new BundleFile { Kind = "Other", Version = 1 });
                 AssertThrows(() => store.Inspect(wrongKind), "not a Playnite Achievements theme");
 
-                var missingPart = Path.Combine(tempDir, "missing.patheme");
-                WriteManifestOnly(missingPart, new ThemePackFile
+                var missingPart = Path.Combine(tempDir, "missing.pabundle");
+                WriteManifestOnly(missingPart, new BundleFile
                 {
-                    Kind = ThemePackFile.ThemeKind,
+                    Kind = BundleFile.BundleKind,
                     Version = 1,
                     Parts = new List<string> { "Colors" }
                 });
                 AssertThrows(() => store.Inspect(missingPart), "missing its");
 
-                var newer = Path.Combine(tempDir, "newer.patheme");
-                WriteManifestOnly(newer, new ThemePackFile { Kind = ThemePackFile.ThemeKind, Version = ThemePackPortableStore.CurrentVersion + 1 });
+                var newer = Path.Combine(tempDir, "newer.pabundle");
+                WriteManifestOnly(newer, new BundleFile { Kind = BundleFile.BundleKind, Version = BundlePortableStore.CurrentVersion + 1 });
                 AssertThrows(() => store.Inspect(newer), "newer version");
 
-                var notZip = Path.Combine(tempDir, "text.patheme");
+                var notZip = Path.Combine(tempDir, "text.pabundle");
                 File.WriteAllText(notZip, "{}");
-                AssertThrows(() => store.Inspect(notZip), "not a theme bundle");
+                AssertThrows(() => store.Inspect(notZip), "not a bundle");
             });
         }
 
-        private static ThemePackPortableStore CreateStore(string tempDir, out UnlockSoundPortableStore soundStore)
+        private static BundlePortableStore CreateStore(string tempDir, out UnlockSoundPortableStore soundStore)
         {
             var diskImageService = new DiskImageService(logger: null, cacheRoot: Path.Combine(tempDir, "images"));
             var imageStore = new NotificationImageStore(diskImageService, logger: null);
             var styleStore = new NotificationStylePortableStore(imageStore, logger: null);
             soundStore = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
-            return new ThemePackPortableStore(styleStore, soundStore, new ColorPackPortableStore());
+            return new BundlePortableStore(styleStore, soundStore, new ColorPackPortableStore());
         }
 
-        private static void WriteManifestOnly(string path, ThemePackFile manifest)
+        private static void WriteManifestOnly(string path, BundleFile manifest)
         {
             using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
-            using (var writer = new StreamWriter(archive.CreateEntry(ThemePackPortableStore.ManifestEntryName).Open()))
+            using (var writer = new StreamWriter(archive.CreateEntry(BundlePortableStore.ManifestEntryName).Open()))
             {
                 writer.Write(JsonConvert.SerializeObject(manifest));
             }

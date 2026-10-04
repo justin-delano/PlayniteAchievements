@@ -14,7 +14,7 @@ namespace PlayniteAchievements.Services.Workshop
         ScreenshotFrame,
         ShowcasePage,
         UnlockSounds,
-        Theme,
+        Bundle,
         GameCustomData
     }
 
@@ -59,7 +59,7 @@ namespace PlayniteAchievements.Services.Workshop
         [JsonProperty("urls")] public WorkshopUrls Urls { get; set; }
 
         /// <summary>The theme parts a bundle carries, or empty for other kinds.</summary>
-        public IReadOnlyList<string> ThemeParts
+        public IReadOnlyList<string> PartNames
         {
             get
             {

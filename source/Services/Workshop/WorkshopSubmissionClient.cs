@@ -200,7 +200,7 @@ namespace PlayniteAchievements.Services.Workshop
                 case WorkshopItemKind.ScreenshotFrame: return "Screenshot frame";
                 case WorkshopItemKind.ShowcasePage: return "Showcase page";
                 case WorkshopItemKind.UnlockSounds: return "Unlock sound pack";
-                case WorkshopItemKind.Theme: return "Theme";
+                case WorkshopItemKind.Bundle: return "Bundle";
                 default: return "Per-game custom data";
             }
         }

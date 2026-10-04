@@ -372,7 +372,7 @@ namespace PlayniteAchievements.Views.Settings.Display
         private static string PackageStem(string path)
         {
             var name = System.IO.Path.GetFileName(path) ?? string.Empty;
-            foreach (var suffix in new[] { ".zip", ColorPackPortableStore.PackageFileExtension, ThemePackPortableStore.PackageFileExtension })
+            foreach (var suffix in new[] { ".zip", ColorPackPortableStore.PackageFileExtension, BundlePortableStore.PackageFileExtension })
             {
                 if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                 {

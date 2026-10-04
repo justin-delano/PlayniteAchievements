@@ -23,17 +23,17 @@ namespace PlayniteAchievements.Services.Tests
   ""repository"": ""justin-delano/PlayniteAchievements-Workshop"",
   ""items"": [
     {
-      ""schemaVersion"": 1, ""id"": ""themes/neon"", ""kind"": ""Theme"", ""name"": ""Neon"", ""description"": ""Glow."",
+      ""schemaVersion"": 1, ""id"": ""bundles/neon"", ""kind"": ""Bundle"", ""name"": ""Neon"", ""description"": ""Glow."",
       ""author"": ""someone"", ""version"": ""1.2.0"", ""license"": ""CC-BY-4.0"", ""tags"": [""dark""], ""minPluginVersion"": ""4.1.0"",
       ""created"": ""2026-10-01"", ""updated"": ""2026-10-03"",
       ""contents"": { ""parts"": [""Colors"", ""Toast""] },
-      ""package"": { ""file"": ""neon-1.2.0.patheme"", ""formatKind"": ""PlayniteAchievements.Theme"", ""formatVersion"": 1, ""sizeBytes"": 5, ""sha256"": ""HASH"",
-                     ""release"": { ""tag"": ""themes/neon"", ""url"": ""https://example.invalid/neon-1.2.0.patheme"" } },
+      ""package"": { ""file"": ""neon-1.2.0.pabundle"", ""formatKind"": ""PlayniteAchievements.Bundle"", ""formatVersion"": 1, ""sizeBytes"": 5, ""sha256"": ""HASH"",
+                     ""release"": { ""tag"": ""bundles/neon"", ""url"": ""https://example.invalid/neon-1.2.0.pabundle"" } },
       ""preview"": ""preview.png"",
       ""downloads"": { ""total"": 42, ""current"": 7 },
-      ""urls"": { ""package"": ""https://example.invalid/neon-1.2.0.patheme"", ""preview"": null, ""readme"": null, ""folder"": ""https://github.com/x/y/tree/main/themes/neon"" }
+      ""urls"": { ""package"": ""https://example.invalid/neon-1.2.0.pabundle"", ""preview"": null, ""readme"": null, ""folder"": ""https://github.com/x/y/tree/main/bundles/neon"" }
     },
-    { ""id"": """", ""kind"": ""Theme"" },
+    { ""id"": """", ""kind"": ""Bundle"" },
     {
       ""id"": ""game-data/steam-440/icons"", ""kind"": ""GameCustomData"", ""name"": ""Icons"", ""version"": ""1.0.0"",
       ""game"": { ""name"": ""Team Fortress 2"", ""keys"": [ { ""providerKey"": ""Steam"", ""providerGameId"": 440 } ] },
@@ -54,9 +54,9 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(1, index.SchemaVersion);
             Assert.AreEqual(2, index.Items.Count);
             var theme = index.Items[0];
-            Assert.AreEqual(WorkshopItemKind.Theme, theme.Kind);
+            Assert.AreEqual(WorkshopItemKind.Bundle, theme.Kind);
             Assert.AreEqual(42, theme.Downloads.Total);
-            CollectionAssert.AreEqual(new[] { "Colors", "Toast" }, new List<string>(theme.ThemeParts));
+            CollectionAssert.AreEqual(new[] { "Colors", "Toast" }, new List<string>(theme.PartNames));
             var game = index.Items[1];
             Assert.AreEqual(440, game.Game.Keys[0].ProviderGameId);
             Assert.AreEqual("Steam", game.Game.Keys[0].ProviderKey);
@@ -95,22 +95,22 @@ namespace PlayniteAchievements.Services.Tests
             var client = new WorkshopClient(() => null, null, null, handler);
             var item = new WorkshopItem
             {
-                Id = "themes/neon",
+                Id = "bundles/neon",
                 Package = new WorkshopPackage { Sha256 = hash, SizeBytes = bytes.Length },
-                Urls = new WorkshopUrls { Package = "https://example.invalid/neon.patheme" }
+                Urls = new WorkshopUrls { Package = "https://example.invalid/neon.pabundle" }
             };
 
             var dir = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
             try
             {
-                var good = Path.Combine(dir, "good.patheme");
+                var good = Path.Combine(dir, "good.pabundle");
                 long reported = 0;
                 await client.DownloadPackageAsync(item, good, new Progress<long>(n => reported = n), CancellationToken.None);
                 Assert.IsTrue(File.Exists(good));
                 CollectionAssert.AreEqual(bytes, File.ReadAllBytes(good));
 
                 item.Package.Sha256 = new string('0', 64);
-                var bad = Path.Combine(dir, "bad.patheme");
+                var bad = Path.Combine(dir, "bad.pabundle");
                 try
                 {
                     await client.DownloadPackageAsync(item, bad, null, CancellationToken.None);
@@ -157,8 +157,8 @@ namespace PlayniteAchievements.Services.Tests
         public void ReleaseApiUrl_MapsGitHubReleasePages_AndRejectsOtherAddresses()
         {
             Assert.AreEqual(
-                "https://api.github.com/repos/justin-delano/PlayniteAchievements-Workshop/releases/tags/themes/neon",
-                WorkshopClient.ReleaseApiUrl("https://github.com/justin-delano/PlayniteAchievements-Workshop/releases/tag/themes/neon"));
+                "https://api.github.com/repos/justin-delano/PlayniteAchievements-Workshop/releases/tags/bundles/neon",
+                WorkshopClient.ReleaseApiUrl("https://github.com/justin-delano/PlayniteAchievements-Workshop/releases/tag/bundles/neon"));
             Assert.AreEqual(
                 "https://api.github.com/repos/o/r/releases/tags/colors%2Fset",
                 WorkshopClient.ReleaseApiUrl("https://github.com/o/r/releases/tag/colors%2Fset"),
@@ -174,7 +174,7 @@ namespace PlayniteAchievements.Services.Tests
         public void SumAssetDownloads_AddsEveryAsset_AndIsNullWithoutAnAssetsArray()
         {
             Assert.AreEqual(12L, WorkshopClient.SumAssetDownloads(
-                @"{ ""tag_name"": ""themes/neon"", ""assets"": [ { ""download_count"": 5 }, { ""download_count"": 7 }, { ""name"": ""no-count"" } ] }"));
+                @"{ ""tag_name"": ""bundles/neon"", ""assets"": [ { ""download_count"": 5 }, { ""download_count"": 7 }, { ""name"": ""no-count"" } ] }"));
             Assert.AreEqual(0L, WorkshopClient.SumAssetDownloads(@"{ ""assets"": [] }"));
             Assert.IsNull(WorkshopClient.SumAssetDownloads(@"{ ""message"": ""Not Found"" }"));
             Assert.IsNull(WorkshopClient.SumAssetDownloads(""));

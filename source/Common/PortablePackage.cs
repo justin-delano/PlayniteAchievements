@@ -10,7 +10,7 @@ namespace PlayniteAchievements.Common
 {
     /// <summary>
     /// The zip plumbing every portable package format shares (.pa, .pastyle, .pashowcase,
-    /// .pasounds, .patheme): entry-name normalization, traversal checks, size and entry caps, and
+    /// .pasounds, .pabundle): entry-name normalization, traversal checks, size and entry caps, and
     /// manifest reads. Packages may come from other users, so a reader never trusts an entry name
     /// or a declared length. Writers build beside the destination and swap in, so a failed write
     /// leaves any existing file intact.

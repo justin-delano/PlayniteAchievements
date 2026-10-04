@@ -379,7 +379,7 @@
 
                             <!-- Share the selected surface's style as a .panotif/.paframe file or
                                  import one onto the current platform selection. Both surfaces
-                                 together travel as a theme bundle (Display > Colors). -->
+                                 together travel as a bundle (Display > Colors). -->
                             <WrapPanel Margin="0,14,0,0">
                                 <Button x:Name="ExportStyleButton"
                                         Click="ExportStyle_Click"

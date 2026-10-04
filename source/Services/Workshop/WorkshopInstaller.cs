@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Services.Workshop
         public string PackagePath { get; set; }
 
         /// <summary>For themes, which parts to apply.</summary>
-        public ThemePackParts ThemeParts { get; set; } = ThemePackParts.All;
+        public BundleParts Parts { get; set; } = BundleParts.All;
 
         /// <summary>For per-game data, the library game to install onto.</summary>
         public Guid? TargetGameId { get; set; }
@@ -93,8 +93,8 @@ namespace PlayniteAchievements.Services.Workshop
                 case WorkshopItemKind.UnlockSounds:
                     InstallSounds(request, persisted, result);
                     break;
-                case WorkshopItemKind.Theme:
-                    await InstallThemeAsync(request, persisted, result, cancel).ConfigureAwait(true);
+                case WorkshopItemKind.Bundle:
+                    await InstallBundleAsync(request, persisted, result, cancel).ConfigureAwait(true);
                     break;
                 case WorkshopItemKind.ShowcasePage:
                     InstallShowcasePage(request, persisted, result);
@@ -131,12 +131,12 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>Which theme parts a Workshop item offers, as the installer's flags.</summary>
-        public static ThemePackParts ThemePartsOf(WorkshopItem item)
+        public static BundleParts BundlePartsOf(WorkshopItem item)
         {
-            var parts = ThemePackParts.None;
-            foreach (var name in item?.ThemeParts ?? Array.Empty<string>())
+            var parts = BundleParts.None;
+            foreach (var name in item?.PartNames ?? Array.Empty<string>())
             {
-                if (Enum.TryParse(name, ignoreCase: true, out ThemePackParts part))
+                if (Enum.TryParse(name, ignoreCase: true, out BundleParts part))
                 {
                     parts |= part;
                 }
@@ -194,42 +194,42 @@ namespace PlayniteAchievements.Services.Workshop
 
         // ---- theme ---------------------------------------------------------------------------
 
-        private Task InstallThemeAsync(
+        private Task InstallBundleAsync(
             WorkshopInstallRequest request,
             PersistedSettings persisted,
             WorkshopInstallResult result,
             CancellationToken cancel)
         {
-            var store = _plugin.ThemePackPortableStore;
+            var store = _plugin.BundlePortableStore;
             var available = store.Inspect(request.PackagePath);
-            var parts = request.ThemeParts & available;
-            if (parts == ThemePackParts.None)
+            var parts = request.Parts & available;
+            if (parts == BundleParts.None)
             {
                 throw new InvalidOperationException("None of the selected theme parts is in this package.");
             }
 
             // Each part becomes a preset of its own kind under the theme's name, so a theme can
             // be picked up piece by piece from the preset lists and never overwrites anything.
-            var scratch = PortablePackage.CreateScratchDirectory("WorkshopTheme");
+            var scratch = PortablePackage.CreateScratchDirectory("WorkshopBundle");
             try
             {
                 var extracted = store.ExtractParts(request.PackagePath, parts, scratch);
-                if (extracted.TryGetValue(ThemePackParts.Colors, out var colorsPath))
+                if (extracted.TryGetValue(BundleParts.Colors, out var colorsPath))
                 {
                     result.PresetNames.Add(_plugin.ColorPresetStore.SaveFrom(request.Item.Name, colorsPath).Name);
                 }
 
-                if (extracted.TryGetValue(ThemePackParts.Sounds, out var soundsPath))
+                if (extracted.TryGetValue(BundleParts.Sounds, out var soundsPath))
                 {
                     result.PresetNames.Add(_plugin.UnlockSoundPresetStore.SaveFrom(request.Item.Name, soundsPath).Name);
                 }
 
-                if (extracted.TryGetValue(ThemePackParts.Toast, out var toastPath))
+                if (extracted.TryGetValue(BundleParts.Toast, out var toastPath))
                 {
                     result.PresetNames.Add(_plugin.NotificationStylePresetStore.SavePresetFromPackage(false, request.Item.Name, toastPath).Name);
                 }
 
-                if (extracted.TryGetValue(ThemePackParts.Frame, out var framePath))
+                if (extracted.TryGetValue(BundleParts.Frame, out var framePath))
                 {
                     result.PresetNames.Add(_plugin.NotificationStylePresetStore.SavePresetFromPackage(true, request.Item.Name, framePath).Name);
                 }

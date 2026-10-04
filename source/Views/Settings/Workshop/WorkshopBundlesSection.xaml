@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.Settings.Workshop.WorkshopThemesSection"
+<UserControl x:Class="PlayniteAchievements.Views.Settings.Workshop.WorkshopBundlesSection"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -18,24 +18,24 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="20">
-                <!-- The whole global look as one .patheme bundle: colors, unlock sounds,
+                <!-- The whole global look as one .pabundle bundle: colors, unlock sounds,
                      notification and frame styles, any subset, each a checkbox on export and on
                      import. Import adds each chosen part to its preset list; nothing applies here. -->
                 <Border Style="{StaticResource SectionBorderStyle}">
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Kind_Theme}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Kind_Bundle}"
                                    Style="{StaticResource SectionHeaderStyle}"
                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_ThemesHint}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_BundlesHint}"
                                    Style="{StaticResource MutedTextStyle}"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,12"/>
                         <WrapPanel>
-                            <Button Content="{DynamicResource LOCPlayAch_Workshop_ExportTheme}"
+                            <Button Content="{DynamicResource LOCPlayAch_Workshop_ExportBundle}"
                                     Click="ExportTheme_Click"
                                     Margin="0,0,8,0"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Workshop_ImportTheme}"
+                            <Button Content="{DynamicResource LOCPlayAch_Workshop_ImportBundle}"
                                     Click="ImportTheme_Click"/>
                         </WrapPanel>
                     </StackPanel>

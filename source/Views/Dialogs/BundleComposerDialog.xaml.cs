@@ -10,26 +10,26 @@ using System.Windows.Controls;
 namespace PlayniteAchievements.Views.Dialogs
 {
     /// <summary>One row of the theme composer: a part, whether it travels, and from which source.</summary>
-    public sealed class ThemeComposerRow : Common.ObservableObject
+    public sealed class BundleComposerRow : Common.ObservableObject
     {
         private bool _isIncluded;
-        private ThemePartSource _selectedSource;
+        private BundlePartSource _selectedSource;
 
-        public ThemeComposerRow(ThemePackParts part, string label, IReadOnlyList<ThemePartSource> sources, bool included)
+        public BundleComposerRow(BundleParts part, string label, IReadOnlyList<BundlePartSource> sources, bool included)
         {
             Part = part;
             Label = label;
-            Sources = sources ?? new List<ThemePartSource>();
+            Sources = sources ?? new List<BundlePartSource>();
             IsEnabled = Sources.Count > 0;
             _isIncluded = included && IsEnabled;
             _selectedSource = Sources.FirstOrDefault();
         }
 
-        public ThemePackParts Part { get; }
+        public BundleParts Part { get; }
 
         public string Label { get; }
 
-        public IReadOnlyList<ThemePartSource> Sources { get; }
+        public IReadOnlyList<BundlePartSource> Sources { get; }
 
         /// <summary>False when neither the current settings nor any preset can feed this part.</summary>
         public bool IsEnabled { get; }
@@ -48,13 +48,13 @@ namespace PlayniteAchievements.Views.Dialogs
 
         public bool CanPickSource => IsEnabled && IsIncluded && Sources.Count > 1;
 
-        public ThemePartSource SelectedSource
+        public BundlePartSource SelectedSource
         {
             get => _selectedSource;
             set => SetValue(ref _selectedSource, value);
         }
 
-        public ThemePartChoice ToChoice() => new ThemePartChoice(Part, IsIncluded && IsEnabled, SelectedSource);
+        public BundlePartChoice ToChoice() => new BundlePartChoice(Part, IsIncluded && IsEnabled, SelectedSource);
     }
 
     /// <summary>
@@ -62,21 +62,21 @@ namespace PlayniteAchievements.Views.Dialogs
     /// (the current settings, then every saved preset of that kind), so the user sees exactly
     /// what a bundle will contain before it is written or shared.
     /// </summary>
-    public partial class ThemeComposerDialog : UserControl
+    public partial class BundleComposerDialog : UserControl
     {
         public static readonly DependencyProperty HintProperty =
-            DependencyProperty.Register(nameof(Hint), typeof(string), typeof(ThemeComposerDialog), new PropertyMetadata(string.Empty));
+            DependencyProperty.Register(nameof(Hint), typeof(string), typeof(BundleComposerDialog), new PropertyMetadata(string.Empty));
 
-        public ThemeComposerDialog()
+        public BundleComposerDialog()
         {
             InitializeComponent();
             DataContext = this;
         }
 
-        public ThemeComposerDialog(string hint, IEnumerable<ThemeComposerRow> rows) : this()
+        public BundleComposerDialog(string hint, IEnumerable<BundleComposerRow> rows) : this()
         {
             Hint = hint ?? string.Empty;
-            foreach (var row in rows ?? Enumerable.Empty<ThemeComposerRow>())
+            foreach (var row in rows ?? Enumerable.Empty<BundleComposerRow>())
             {
                 Rows.Add(row);
             }
@@ -88,7 +88,7 @@ namespace PlayniteAchievements.Views.Dialogs
             set => SetValue(HintProperty, value);
         }
 
-        public ObservableCollection<ThemeComposerRow> Rows { get; } = new ObservableCollection<ThemeComposerRow>();
+        public ObservableCollection<BundleComposerRow> Rows { get; } = new ObservableCollection<BundleComposerRow>();
 
         public bool? DialogResult { get; private set; }
 
@@ -98,8 +98,8 @@ namespace PlayniteAchievements.Views.Dialogs
         /// Builds the rows from <paramref name="composer"/>, shows the dialog modally and returns
         /// the included choices, or null when cancelled or when nothing was included.
         /// </summary>
-        public static IReadOnlyList<ThemePartChoice> Show(
-            ThemeComposer composer,
+        public static IReadOnlyList<BundlePartChoice> Show(
+            BundleComposer composer,
             string title,
             string hint,
             Window owner = null)
@@ -109,11 +109,11 @@ namespace PlayniteAchievements.Views.Dialogs
                 throw new ArgumentNullException(nameof(composer));
             }
 
-            var rows = ThemeComposer.Parts
-                .Select(part => new ThemeComposerRow(part, ThemeComposer.LabelFor(part), composer.SourcesFor(part), included: true))
+            var rows = BundleComposer.Parts
+                .Select(part => new BundleComposerRow(part, BundleComposer.LabelFor(part), composer.SourcesFor(part), included: true))
                 .ToList();
 
-            var dialog = new ThemeComposerDialog(hint, rows);
+            var dialog = new BundleComposerDialog(hint, rows);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 title,
                 dialog,

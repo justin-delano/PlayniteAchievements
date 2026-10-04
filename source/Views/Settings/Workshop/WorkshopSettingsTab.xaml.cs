@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
 
         private WorkshopControl _browse;
         private WorkshopControl _installed;
-        private WorkshopThemesSection _themes;
+        private WorkshopBundlesSection _bundles;
         private WorkshopPresetsSection _presets;
         private WorkshopAccountSection _account;
 
@@ -55,11 +55,11 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     viewFactory: () => _installed =
                         new WorkshopControl(plugin, logger, null, null, WorkshopPane.Installed)),
                 new SettingsNavigationItem(
-                    "Themes",
-                    ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Theme"),
+                    "Bundles",
+                    ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Bundle"),
                     iconGlyph: "",
-                    viewFactory: () => _themes =
-                        new WorkshopThemesSection(settings, plugin, logger)),
+                    viewFactory: () => _bundles =
+                        new WorkshopBundlesSection(settings, plugin, logger)),
                 new SettingsNavigationItem(
                     "Presets",
                     ResourceProvider.GetString("LOCPlayAch_Presets_Header"),

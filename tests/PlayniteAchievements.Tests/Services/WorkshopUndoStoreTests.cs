@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Services.Tests
                 persisted.UnlockSounds.Rare = @"C:\before\rare.wav";
                 persisted.NotificationStyle.Toast.HeaderTexts.UnlockHeader = "Before";
 
-                var id = store.Snapshot(persisted, WorkshopSettingsSlices.Colors | WorkshopSettingsSlices.NotificationStyle, "themes/neon", "Neon");
+                var id = store.Snapshot(persisted, WorkshopSettingsSlices.Colors | WorkshopSettingsSlices.NotificationStyle, "bundles/neon", "Neon");
                 Assert.IsNotNull(id);
 
                 // The install changes everything; only colors and the style were snapshotted.

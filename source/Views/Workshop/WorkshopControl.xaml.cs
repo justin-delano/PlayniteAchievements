@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Views.Workshop
 
             var viewModel = new WorkshopViewModel(plugin, logger, focusGameId, focusKind)
             {
-                PickThemeParts = PickThemeParts,
+                PickBundleParts = PickBundleParts,
                 PickGame = PickGame,
                 Confirm = Confirm
             };
@@ -103,19 +103,19 @@ namespace PlayniteAchievements.Views.Workshop
             EmptyText.Visibility = !any && !viewModel.IsLoading && !viewModel.HasError ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private ThemePackParts? PickThemeParts(WorkshopItemViewModel item, ThemePackParts available)
+        private BundleParts? PickBundleParts(WorkshopItemViewModel item, BundleParts available)
         {
             // From a part's tab only that part starts ticked; from Themes or All, everything does.
-            var preferred = ViewModel?.PreferredThemeParts ?? ThemePackParts.All;
-            PartPickerItem Part(ThemePackParts part, string key) =>
+            var preferred = ViewModel?.PreferredBundleParts ?? BundleParts.All;
+            PartPickerItem Part(BundleParts part, string key) =>
                 new PartPickerItem(part, ResourceProvider.GetString(key), isChecked: preferred.HasFlag(part), isEnabled: available.HasFlag(part));
 
             var items = new[]
             {
-                Part(ThemePackParts.Colors, "LOCPlayAch_Settings_Display_Colors"),
-                Part(ThemePackParts.Sounds, "LOCPlayAch_Workshop_Share_Sounds"),
-                Part(ThemePackParts.Toast, "LOCPlayAch_Settings_Style_ToastTab"),
-                Part(ThemePackParts.Frame, "LOCPlayAch_Settings_FrameHeader")
+                Part(BundleParts.Colors, "LOCPlayAch_Settings_Display_Colors"),
+                Part(BundleParts.Sounds, "LOCPlayAch_Workshop_Share_Sounds"),
+                Part(BundleParts.Toast, "LOCPlayAch_Settings_Style_ToastTab"),
+                Part(BundleParts.Frame, "LOCPlayAch_Settings_FrameHeader")
             };
 
             var selected = PartPickerDialog.Show(item.Name, item.Description, items, Window.GetWindow(this));
@@ -124,7 +124,7 @@ namespace PlayniteAchievements.Views.Workshop
                 return null;
             }
 
-            return selected.OfType<ThemePackParts>().Aggregate(ThemePackParts.None, (acc, part) => acc | part);
+            return selected.OfType<BundleParts>().Aggregate(BundleParts.None, (acc, part) => acc | part);
         }
 
         private Game PickGame(WorkshopItemViewModel item, IReadOnlyList<Game> games)

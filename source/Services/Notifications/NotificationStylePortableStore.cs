@@ -60,7 +60,7 @@ namespace PlayniteAchievements.Services.Notifications
     /// Exports and imports notification appearance styles as shareable zip packages that
     /// bundle the style's background and badge images under an <c>images/</c> folder so the
     /// look transfers intact: <c>.panotif</c> carries the toast surface and <c>.paframe</c> the
-    /// screenshot frame (flagged in the manifest). A theme bundle (<c>.patheme</c>) is how both
+    /// screenshot frame (flagged in the manifest). A bundle (<c>.pabundle</c>) is how both
     /// travel together. Files with the retired <c>.pastyle</c> extension, which carried both
     /// surfaces, are still read. Import re-materializes bundled images into managed storage
     /// via <see cref="NotificationImageStore"/> so paths are always rewritten to the local
@@ -146,7 +146,7 @@ namespace PlayniteAchievements.Services.Notifications
 
         /// <summary>
         /// Writes both surfaces to one package, the shape the retired <c>.pastyle</c> files have.
-        /// Nothing in the plugin exports this any more (a theme bundle carries both surfaces);
+        /// Nothing in the plugin exports this any more (a bundle carries both surfaces);
         /// it remains so the tests can produce the files the importer must keep reading.
         /// </summary>
         internal void ExportLegacyBothSurfacesPackage(

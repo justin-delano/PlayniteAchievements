@@ -50,7 +50,7 @@ namespace PlayniteAchievements.Services.Workshop
                 }
 
                 if (!string.IsNullOrWhiteSpace(stylePackagePath)
-                    && (kind == WorkshopItemKind.Theme || kind == WorkshopItemKind.NotificationStyle || kind == WorkshopItemKind.ScreenshotFrame))
+                    && (kind == WorkshopItemKind.Bundle || kind == WorkshopItemKind.NotificationStyle || kind == WorkshopItemKind.ScreenshotFrame))
                 {
                     var composed = persisted.Clone();
                     composed.NotificationStyle = _plugin.NotificationStylePortableStore.ReadStyle(stylePackagePath);
@@ -61,7 +61,7 @@ namespace PlayniteAchievements.Services.Workshop
                 switch (kind)
                 {
                     case WorkshopItemKind.NotificationStyle:
-                    case WorkshopItemKind.Theme:
+                    case WorkshopItemKind.Bundle:
                         bitmap = RenderToast(persisted);
                         break;
                     case WorkshopItemKind.ScreenshotFrame:
