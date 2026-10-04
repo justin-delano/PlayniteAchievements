@@ -53,6 +53,9 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual("Renamed", row.After.DisplayName);
             Assert.AreEqual("New text", row.After.Description);
             Assert.AreEqual(2, diff.UnchangedCount);
+            CollectionAssert.AreEqual(new[] { "a2", "a3" }, diff.UnchangedRows.Select(unchanged => unchanged.ApiName).ToList());
+            Assert.IsTrue(diff.UnchangedRows.All(unchanged =>
+                unchanged.Changes == AchievementPreviewChange.None && unchanged.Before != null && unchanged.After != null));
             Assert.IsFalse(diff.OrderChanged);
             Assert.IsFalse(diff.HasBaseline);
         }
@@ -124,6 +127,10 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsTrue(diff.OrderChanged);
             Assert.AreEqual(0, diff.Rows.Count, "order alone changes no row");
             Assert.AreEqual(3, diff.UnchangedCount);
+            CollectionAssert.AreEqual(
+                new[] { "a3", "a1", "a2" },
+                diff.UnchangedRows.Select(row => row.ApiName).ToList(),
+                "unchanged rows follow the order after the install");
 
             var current = new GameCustomDataFile { PlayniteGameId = GameId, AchievementOrder = new List<string> { "a3", "a1", "a2" } };
             var same = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(reordered), Source(current));
@@ -296,6 +303,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsTrue(diff.IsPackageOnly);
             Assert.IsNull(diff.ComparedAgainstGameName);
             Assert.AreEqual(4, diff.Rows.Count);
+            Assert.AreEqual(0, diff.UnchangedRows.Count);
             Assert.IsTrue(diff.Rows.All(row => row.Before == null && row.After != null));
 
             var a1 = diff.Rows.Single(row => row.ApiName == "a1");
