@@ -137,6 +137,10 @@
                                     IsEnabled="{Binding CanInstall}"
                                     Command="{Binding DataContext.InstallCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
+                            <Button Content="{DynamicResource LOCPlayAch_Common_Preview}"
+                                    Margin="8,0,0,0"
+                                    Command="{Binding DataContext.PreviewCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
                             <Button Content="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
                                     Margin="8,0,0,0"
                                     Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
