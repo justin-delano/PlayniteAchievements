@@ -905,6 +905,55 @@ namespace PlayniteAchievements.Services.Tests
             AssertProviderOverride(normalized, "Exophase", null);
         }
 
+        [DataTestMethod]
+        [DataRow("Ubisoft", " 7021 ", "7021")]
+        [DataRow("EA", "Origin.OFR.50.0002694", "Origin.OFR.50.0002694")]
+        [DataRow("Epic", "fn", "fn")]
+        [DataRow("GOG", "1207658924", "1207658924")]
+        [DataRow("PSN", "NPWR12345_00", "NPWR12345_00")]
+        [DataRow("Xbox", "1915865634", "1915865634")]
+        [DataRow("BattleNet", "wow", "wow")]
+        [DataRow("Hoyoverse", "genshin", "genshin")]
+        public void NormalizeInternal_DescriptorValidatedProviderOverride_SurvivesWithTrimmedValue(
+            string providerKey,
+            string value,
+            string expected)
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = providerKey,
+                        Value = value
+                    }
+                },
+                gameId);
+
+            // These providers validate through their override descriptor when the value is set;
+            // the normalizer must not drop a key it has no special case for.
+            AssertProviderOverride(normalized, providerKey, expected);
+        }
+
+        [DataTestMethod]
+        [DataRow("None")]
+        [DataRow("  ")]
+        public void NormalizeInternal_NoneOrBlankProviderOverride_DropsOverride(string providerKey)
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ProviderOverride = new ProviderOverrideData { ProviderKey = providerKey, Value = "1" }
+                },
+                gameId);
+
+            Assert.IsNull(normalized.ProviderOverride);
+        }
+
         [TestMethod]
         public void NormalizeInternal_FfxivProviderOverride_PreservesKeyWithNullValue()
         {
