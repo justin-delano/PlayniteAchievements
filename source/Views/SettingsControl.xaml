@@ -98,6 +98,16 @@
                 </TabItem.Header>
                 <ContentControl x:Name="NotificationsSettingsContent"/>
             </TabItem>
+            <!-- ================== TAB: WORKSHOP ================== -->
+            <TabItem x:Name="WorkshopTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_Title}">
+                <TabItem.Header>
+                    <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
+                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xEFE7;"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Title}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <ContentControl x:Name="WorkshopSettingsContent"/>
+            </TabItem>
 
         </TabControl>
     </Grid>
