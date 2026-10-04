@@ -26,6 +26,12 @@ namespace PlayniteAchievements.Services.Workshop
         public Guid? GameId { get; set; }
 
         public string PageId { get; set; }
+
+        /// <summary>
+        /// For a theme, the standalone package per part the composer chose (current settings
+        /// exported to scratch, or a preset file). Null means every part from the live settings.
+        /// </summary>
+        public IReadOnlyDictionary<ThemePackParts, string> ThemePartFiles { get; set; }
     }
 
     public enum WorkshopSharePhase
@@ -212,6 +218,12 @@ namespace PlayniteAchievements.Services.Workshop
                 case WorkshopItemKind.Theme:
                 {
                     var path = Path.Combine(directory, stem + ThemePackPortableStore.PackageFileExtension);
+                    if (candidate.ThemePartFiles != null && candidate.ThemePartFiles.Count > 0)
+                    {
+                        _plugin.ThemePackPortableStore.ExportParts(path, candidate.ThemePartFiles);
+                        return path;
+                    }
+
                     _plugin.ThemePackPortableStore.Export(
                         path,
                         ThemePackParts.All,
