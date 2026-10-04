@@ -22,7 +22,6 @@ namespace PlayniteAchievements.Services.Hydration
         // Persisted instance, and this hydrator outlives a settings dialog.
         private readonly PlayniteAchievementsSettings _settingsHost;
         private readonly GameCustomDataStore _gameCustomDataStore;
-        private readonly AchievementDetailHydrator _achievementHydrator;
 
         public GameDataHydrator(
             IPlayniteAPI api,
@@ -32,7 +31,6 @@ namespace PlayniteAchievements.Services.Hydration
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _settingsHost = settings ?? throw new ArgumentNullException(nameof(settings));
             _gameCustomDataStore = gameCustomDataStore;
-            _achievementHydrator = new AchievementDetailHydrator(settings);
         }
 
         private PersistedSettings Persisted => _settingsHost.Persisted;
@@ -80,17 +78,7 @@ namespace PlayniteAchievements.Services.Hydration
             data.GameSummaryCategory = customData.GameSummaryCategory;
 
             // Hydrate achievements with settings overlays (capstone + category/category-type overrides).
-            AppendCustomAchievements(data, gameId, customData);
-            if (data.Achievements != null && data.Achievements.Count > 0)
-            {
-                _achievementHydrator.HydrateAllWithCapstoneOverride(
-                    data.Achievements,
-                    gameId,
-                    data.EffectiveProviderKey,
-                    customData);
-
-                ApplyAchievementIconOverrides(gameId, data.Achievements);
-            }
+            ApplyAchievementOverlays(data, gameId, customData);
         }
 
         /// <summary>
@@ -119,17 +107,7 @@ namespace PlayniteAchievements.Services.Hydration
                 : null;
             data.GameSummaryCategory = customData.GameSummaryCategory;
 
-            AppendCustomAchievements(data, gameId, customData);
-            if (data.Achievements != null && data.Achievements.Count > 0)
-            {
-                _achievementHydrator.HydrateAllWithCapstoneOverride(
-                    data.Achievements,
-                    gameId,
-                    data.EffectiveProviderKey,
-                    customData);
-
-                ApplyAchievementIconOverrides(gameId, data.Achievements);
-            }
+            ApplyAchievementOverlays(data, gameId, customData);
         }
 
         /// <summary>
@@ -146,48 +124,25 @@ namespace PlayniteAchievements.Services.Hydration
 
             var gameId = data.PlayniteGameId.Value;
             var customData = GameCustomDataLookup.ResolveGameCustomData(gameId, Persisted, _gameCustomDataStore);
-            AppendCustomAchievements(data, gameId, customData);
+            AchievementOverlayPipeline.AppendCustomAchievements(
+                data,
+                gameId,
+                customData,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService);
         }
 
-        private static void AppendCustomAchievements(
+        private static void ApplyAchievementOverlays(
             GameAchievementData data,
             Guid gameId,
             ResolvedGameCustomData customData)
         {
-            if (data == null)
-            {
-                return;
-            }
-
-            data.Achievements ??= new List<AchievementDetail>();
-            for (var i = data.Achievements.Count - 1; i >= 0; i--)
-            {
-                var achievement = data.Achievements[i];
-                if (achievement?.IsCustom == true ||
-                    CustomAchievementProjectionService.IsCustomApiName(achievement?.ApiName))
-                {
-                    data.Achievements.RemoveAt(i);
-                }
-            }
-
-            var definitions = customData?.CustomAchievements;
-            if (definitions == null || definitions.Count == 0)
-            {
-                return;
-            }
-
-            var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
-            var projected = CustomAchievementProjectionService.ProjectAchievements(
+            AchievementOverlayPipeline.Apply(
+                data,
                 gameId,
-                definitions,
-                managedCustomIconService);
-            if (projected.Count == 0)
-            {
-                return;
-            }
-
-            data.HasAchievements = true;
-            data.Achievements.AddRange(projected);
+                customData,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                () => GameCustomDataLookup.GetAchievementUnlockedIconOverrides(gameId),
+                () => GameCustomDataLookup.GetAchievementLockedIconOverrides(gameId));
         }
 
         /// <summary>
@@ -232,17 +187,6 @@ namespace PlayniteAchievements.Services.Hydration
             {
                 return null;
             }
-        }
-
-        private static void ApplyAchievementIconOverrides(Guid gameId, IList<AchievementDetail> achievements)
-        {
-            AchievementIconOverrideHelper.ApplyOverrides(
-                gameId,
-                achievements,
-                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
-                achievement => achievement.ApiName,
-                (achievement, path) => achievement.UnlockedIconPath = path,
-                (achievement, path) => achievement.LockedIconPath = path);
         }
 
         private static string ResolveIconOverridePath(
