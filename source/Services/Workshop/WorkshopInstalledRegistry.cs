@@ -447,6 +447,8 @@ namespace PlayniteAchievements.Services.Workshop
                 Kind = item.Kind,
                 Name = item.Name,
                 PlayniteGameId = item.PlayniteGameId,
+                ContentHash = item.ContentHash,
+                BaselineFile = item.BaselineFile,
                 InstalledUtc = item.InstalledUtc
             };
         }
