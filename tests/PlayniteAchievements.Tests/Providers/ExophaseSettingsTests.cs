@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Providers.Tests
 
             Assert.IsTrue(settings.ManagedProviders.Contains("android"));
             Assert.IsTrue(settings.ManagedProviders.Contains("apple"));
-            Assert.IsTrue(settings.ManagedProviders.Contains("ubisoft"));
+            Assert.IsFalse(settings.ManagedProviders.Contains("ubisoft"));
 
             Assert.IsFalse(settings.ManagedProviders.Contains("blizzard"));
             Assert.IsFalse(settings.ManagedProviders.Contains("origin"));
@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Providers.Tests
 
             Assert.IsTrue(settings.ManagedProviders.Contains("android"));
             Assert.IsTrue(settings.ManagedProviders.Contains("apple"));
-            Assert.IsTrue(settings.ManagedProviders.Contains("ubisoft"));
+            Assert.IsFalse(settings.ManagedProviders.Contains("ubisoft"));
             Assert.IsFalse(settings.ManagedProviders.Contains("blizzard"));
             Assert.IsFalse(settings.ManagedProviders.Contains("origin"));
             Assert.IsFalse(settings.ManagedProviders.Contains("ea"));
@@ -82,7 +82,42 @@ namespace PlayniteAchievements.Providers.Tests
             CollectionAssert.DoesNotContain(managedProviders, "steam");
             CollectionAssert.Contains(managedProviders, "android");
             CollectionAssert.Contains(managedProviders, "apple");
-            CollectionAssert.Contains(managedProviders, "ubisoft");
+            CollectionAssert.DoesNotContain(managedProviders, "ubisoft");
+        }
+
+        [TestMethod]
+        public void DeserializeFromJson_ConfigWithoutHandoffFlag_DropsUbisoftOnce()
+        {
+            var settings = new ExophaseSettings();
+
+            settings.DeserializeFromJson("{\"ManagedProviders\":[\"android\",\"apple\",\"ubisoft\"]}");
+
+            Assert.IsFalse(settings.ManagedProviders.Contains("ubisoft"));
+            Assert.IsTrue(settings.ManagedProviders.Contains("android"));
+            Assert.IsTrue(settings.ManagedProviders.Contains("apple"));
+            Assert.IsTrue(settings.UbisoftHandedToNative);
+        }
+
+        [TestMethod]
+        public void DeserializeFromJson_ConfigWithHandoffFlag_KeepsUserChosenUbisoft()
+        {
+            var settings = new ExophaseSettings();
+
+            settings.DeserializeFromJson("{\"ManagedProviders\":[\"ubisoft\"],\"UbisoftHandedToNative\":true}");
+
+            Assert.IsTrue(settings.ManagedProviders.Contains("ubisoft"));
+        }
+
+        [TestMethod]
+        public void Clone_AfterReCheckingUbisoft_KeepsUbisoft()
+        {
+            var settings = new ExophaseSettings();
+            settings.DeserializeFromJson("{\"ManagedProviders\":[\"ubisoft\"]}");
+            settings.ManagedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ubisoft" };
+
+            var clone = (ExophaseSettings)settings.Clone();
+
+            Assert.IsTrue(clone.ManagedProviders.Contains("ubisoft"));
         }
 
         [TestMethod]
