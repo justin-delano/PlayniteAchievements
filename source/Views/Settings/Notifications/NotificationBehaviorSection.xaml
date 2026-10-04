@@ -168,7 +168,7 @@
                             <!-- Saved sound packs: .pasounds files under the plugin data folder.
                                  Imported files and Workshop installs land here; Apply copies one
                                  onto the tiers below. -->
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Workshop_Kind_UnlockSounds}">
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Presets_Header}">
                                 <StackPanel Orientation="Horizontal">
                                     <ComboBox x:Name="SoundPackPresetSelector"
                                               MinWidth="220"
