@@ -1029,11 +1029,40 @@ namespace PlayniteAchievements.ViewModels
         // decoding) so an overwritten badge file at the same managed slot path never shows a
         // stale cached bitmap.
         public object ToastBadgeSource =>
-            (object)AchievementIconResolver.ApplyCacheBust(ResolveCustomBadgePath(_style.Toast.BadgeImages)) ?? BadgeImage;
+            ToastImageSource(ResolveCustomBadgePath(_style.Toast.BadgeImages)) ?? BadgeImage;
 
         // Toast icon-swap source for the completion trigger, mirroring CompletedBadgeImage.
         public object ToastCompletedBadgeSource =>
-            (object)AchievementIconResolver.ApplyCacheBust(NullIfBlank(_style.Toast.BadgeImages.CompletionPath)) ?? CompletedBadgeImage;
+            ToastImageSource(NullIfBlank(_style.Toast.BadgeImages.CompletionPath)) ?? CompletedBadgeImage;
+
+        /// <summary>
+        /// Images decoded ahead of an offscreen render (the Workshop preview image), keyed by the
+        /// absolute path the style names them by. A toast image found here binds as the decoded
+        /// image, since the async loader never runs on a card that is not on screen. Null for
+        /// live notifications.
+        /// </summary>
+        internal IReadOnlyDictionary<string, ImageSource> PreloadedImages { get; set; }
+
+        // A toast image binding: the preloaded image for the path when there is one, else the
+        // cache-busted path for AsyncImage; null for a blank path.
+        private object ToastImageSource(string path)
+        {
+            if (TryGetPreloadedImage(path, out var image))
+            {
+                return image;
+            }
+
+            return AchievementIconResolver.ApplyCacheBust(path);
+        }
+
+        private bool TryGetPreloadedImage(string path, out ImageSource image)
+        {
+            image = null;
+            return !string.IsNullOrWhiteSpace(path)
+                   && PreloadedImages != null
+                   && PreloadedImages.TryGetValue(path, out image)
+                   && image != null;
+        }
 
         // Frame equivalents read the frame surface's own badge set. The frame is rendered
         // offscreen, so images must be synchronously decoded (an async load renders blank);
@@ -1101,7 +1130,9 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         public object ToastBackgroundRenderSource => _useToastBackgroundRenderSourceOverride
             ? (object)_toastBackgroundRenderSourceOverride
-            : ToastBackgroundImagePath;
+            : TryGetPreloadedImage(_style.ToastBackgroundImagePath, out var preloaded)
+                ? preloaded
+                : (object)ToastBackgroundImagePath;
 
         /// <summary>
         /// Completes this notification's image loads. Surfaces that render synchronously have to
