@@ -1,3 +1,4 @@
+using PlayniteAchievements.Models.Achievements;
 using System;
 using System.Collections.Generic;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -137,6 +138,16 @@ namespace PlayniteAchievements.Services.Workshop.Preview
 
         /// <summary>How many compared achievements the install leaves as they are.</summary>
         public int UnchangedCount { get; internal set; }
+
+        /// <summary>
+        /// The compared game's achievements as the install would leave them: a hydrated copy with
+        /// the game-level order and category settings of the predicted record. Null when
+        /// <see cref="IsPackageOnly"/>.
+        /// </summary>
+        public GameAchievementData AfterData { get; internal set; }
+
+        /// <summary>The compared game's achievements as they show now; null when <see cref="IsPackageOnly"/>.</summary>
+        public GameAchievementData BeforeData { get; internal set; }
 
         /// <summary>True when the install changes the game's custom achievement order.</summary>
         public bool OrderChanged { get; internal set; }
