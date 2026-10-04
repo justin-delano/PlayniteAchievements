@@ -167,9 +167,13 @@ namespace PlayniteAchievements.Providers.RPCS3
             return enricher;
         }
 
+        /// <param name="setTitle">
+        /// The trophy set's own title, searched before the Playnite name; null when unreadable.
+        /// </param>
         private static async Task EnrichRarityAsync(
             Game game,
             GameAchievementData data,
+            string setTitle,
             ExophaseMetadataEnricher rarityEnricher,
             CancellationToken cancel)
         {
@@ -179,8 +183,29 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             await rarityEnricher
-                .EnrichAsync(game, data.Achievements, "ps3", "PSN", cancel, regionHint: ResolveExophaseRegionHint(game))
+                .EnrichAsync(
+                    game,
+                    data.Achievements,
+                    "ps3",
+                    "PSN",
+                    cancel,
+                    regionHint: ResolveExophaseRegionHint(game),
+                    searchName: setTitle)
                 .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// CategoryLabel is the set's own title from TROPCONF/TRP, read without XML decoding; when
+        /// the title could not be read it falls back to the NP communication id, which is
+        /// unsearchable. Returns the decoded title, or null when there is none.
+        /// </summary>
+        internal static string ResolveSearchableSetTitle(GameTrophySource source, SourceAchievements sourceAchievements)
+        {
+            var label = System.Net.WebUtility.HtmlDecode(sourceAchievements?.CategoryLabel ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(label) ||
+                   string.Equals(label, source?.NpCommId, StringComparison.OrdinalIgnoreCase)
+                ? null
+                : label;
         }
 
         private async Task EnrichSourceRarityAsync(
@@ -197,11 +222,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return;
             }
 
-            // CategoryLabel is the set's own title from TROPCONF/TRP; when the title could not
-            // be read it falls back to the NP communication id, which is unsearchable.
-            var searchName = sourceAchievements.CategoryLabel;
-            if (string.IsNullOrWhiteSpace(searchName) ||
-                string.Equals(searchName, source?.NpCommId, StringComparison.OrdinalIgnoreCase))
+            var searchName = ResolveSearchableSetTitle(source, sourceAchievements);
+            if (searchName == null)
             {
                 _logger?.Info($"[RPCS3] '{game?.Name}': no set title for '{source?.NpCommId}'; skipping Exophase rarity for this set.");
                 return;
@@ -215,7 +237,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                     "PSN",
                     cancel,
                     regionHint: ResolveExophaseRegionHint(game),
-                    searchName: searchName)
+                    searchName: searchName,
+                    fallBackToGameName: false)
                 .ConfigureAwait(false);
         }
 
@@ -311,6 +334,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             var achievements = new List<AchievementDetail>();
             var categoryArt = new List<(string Label, string ArtPath)>();
+            string singleSetTitle = null;
             foreach (var source in sources)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -319,6 +343,11 @@ namespace PlayniteAchievements.Providers.RPCS3
                 {
                     _logger?.Warn($"[RPCS3] '{game.Name}': progress for '{source.NpCommId}' was not trustworthy; cached achievements preserved.");
                     return null;
+                }
+
+                if (!isCollection)
+                {
+                    singleSetTitle = ResolveSearchableSetTitle(source, sourceAchievements);
                 }
 
                 if (enrichPerSource)
@@ -368,7 +397,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             if (!enrichPerSource)
             {
-                await EnrichRarityAsync(game, data, rarityEnricher, cancel).ConfigureAwait(false);
+                await EnrichRarityAsync(game, data, singleSetTitle, rarityEnricher, cancel).ConfigureAwait(false);
             }
 
             return data;
