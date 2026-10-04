@@ -1,0 +1,83 @@
+<UserControl x:Class="PlayniteAchievements.Views.Workshop.Preview.ShowcasePreviewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:preview="clr-namespace:PlayniteAchievements.Views.Workshop.Preview"
+             mc:Ignorable="d"
+             d:DesignHeight="480" d:DesignWidth="560">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <helpers:SharedResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <TextBlock Text="{Binding PageName}"
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                   FontWeight="SemiBold"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="0,0,0,10"/>
+
+        <!-- One card per block: the widget it holds and its custom title. -->
+        <ItemsControl x:Name="BlockList" Margin="0,0,0,6">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type preview:ShowcaseBlockRow}">
+                    <Border Width="180"
+                            Margin="0,0,8,8"
+                            Padding="10,8"
+                            CornerRadius="4"
+                            Background="{DynamicResource PlayAch.Brush.Surface}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding KindLabel}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Title}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding HasTitle, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- The images the page bundles. -->
+        <ItemsControl x:Name="ImageList">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="160" Height="90"
+                            Margin="0,0,8,8"
+                            CornerRadius="3"
+                            ClipToBounds="True"
+                            Background="{DynamicResource PlayAch.Brush.Surface}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}">
+                        <Image Width="158" Height="88"
+                               helpers:AsyncImage.Uri="{Binding}"
+                               helpers:AsyncImage.DecodePixel="320"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>
