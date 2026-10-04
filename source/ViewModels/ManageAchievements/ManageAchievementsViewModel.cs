@@ -1317,6 +1317,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     return;
                 }
 
+                // A .pa names the game it came from. Importing it onto a different game is
+                // allowed (the same game on another platform, say) but never silent, because
+                // overrides keyed by another game's achievement ids would land here unseen.
+                if (!ConfirmGameMatches(store, dialog.FileName))
+                {
+                    return;
+                }
+
                 beforeReplace?.Invoke();
                 ReplaceFromPortablePackage(store, dialog.FileName);
             }
@@ -1329,6 +1337,49 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// True when the package was exported from this game (by provider identity or by name),
+        /// carries no game keys at all, or the user confirms the cross-game import.
+        /// </summary>
+        private bool ConfirmGameMatches(GameCustomDataStore store, string packagePath)
+        {
+            IReadOnlyList<Models.Settings.PortableGameKey> keys;
+            try
+            {
+                keys = store.ReadPortableGameKeys(packagePath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Could not read the game keys of a portable package; importing without the check.");
+                return true;
+            }
+
+            if (keys == null || keys.Count == 0)
+            {
+                return true;
+            }
+
+            var matcher = _plugin?.CreateWorkshopGameMatcher();
+            if (matcher == null)
+            {
+                return true;
+            }
+
+            if (matcher.Match(keys)?.PlayniteGameId == _gameId
+                || matcher.Candidates(keys).Any(game => game.Id == _gameId))
+            {
+                return true;
+            }
+
+            var source = keys.Select(key => key.Name).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "?";
+            var target = _playniteApi?.Database?.Games?.Get(_gameId)?.Name ?? _gameId.ToString();
+            return _playniteApi?.Dialogs?.ShowMessage(
+                       string.Format(L("LOCPlayAch_ManageAchievements_Overrides_ImportGameMismatch"), source, target),
+                       L("LOCPlayAch_Title_PluginName"),
+                       MessageBoxButton.YesNo,
+                       MessageBoxImage.Warning) == MessageBoxResult.Yes;
         }
 
         private void MergeCustomAchievementsIntoStore(GameCustomDataStore store, CustomAchievementTextImportResult parsed)
