@@ -277,7 +277,6 @@ namespace PlayniteAchievements.Services.Workshop
                 response.EnsureSuccessStatusCode();
                 using (var source = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                 using (var destination = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16, useAsync: true))
-                using (var sha = SHA256.Create())
                 {
                     var buffer = new byte[1 << 16];
                     long total = 0;
@@ -285,22 +284,43 @@ namespace PlayniteAchievements.Services.Workshop
                     while ((read = await source.ReadAsync(buffer, 0, buffer.Length, cancel).ConfigureAwait(false)) > 0)
                     {
                         await destination.WriteAsync(buffer, 0, read, cancel).ConfigureAwait(false);
-                        sha.TransformBlock(buffer, 0, read, null, 0);
                         total += read;
                         progress?.Report(total);
                     }
-
-                    sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-                    var actual = BitConverter.ToString(sha.Hash).Replace("-", string.Empty).ToLowerInvariant();
-                    var expected = (item.Package?.Sha256 ?? string.Empty).Trim().ToLowerInvariant();
-                    if (expected.Length > 0 && !string.Equals(actual, expected, StringComparison.Ordinal))
-                    {
-                        destination.Dispose();
-                        TryDelete(destinationPath);
-                        throw new InvalidOperationException(
-                            "The downloaded package does not match the Workshop's checksum, so it was not installed.");
-                    }
                 }
+            }
+
+            if (!VerifyPackage(item, destinationPath))
+            {
+                TryDelete(destinationPath);
+                throw new InvalidOperationException(
+                    "The downloaded package does not match the Workshop's checksum, so it was not installed.");
+            }
+        }
+
+        /// <summary>
+        /// True when the file at <paramref name="path"/> exists and its SHA-256 matches the
+        /// index's hash for <paramref name="item"/>. An item the index lists without a hash
+        /// accepts any existing file.
+        /// </summary>
+        public static bool VerifyPackage(WorkshopItem item, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                return false;
+            }
+
+            var expected = (item?.Package?.Sha256 ?? string.Empty).Trim().ToLowerInvariant();
+            if (expected.Length == 0)
+            {
+                return true;
+            }
+
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16))
+            using (var sha = SHA256.Create())
+            {
+                var actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty).ToLowerInvariant();
+                return string.Equals(actual, expected, StringComparison.Ordinal);
             }
         }
 
