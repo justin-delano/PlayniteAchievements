@@ -12,6 +12,21 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- ListView and its column headers have no themed implicit style, so the preset
+                 list sets its own brushes; without them the rows render in default black. -->
+            <Style x:Key="PresetHeaderStyle" TargetType="GridViewColumnHeader">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Panel}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            </Style>
+            <Style x:Key="PresetRowStyle" TargetType="ListViewItem">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="Padding" Value="4,3"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
@@ -53,11 +68,15 @@
                 </WrapPanel>
                 <Grid Grid.Row="4">
                     <ListView x:Name="PresetList"
+                              Background="{DynamicResource PlayAch.Brush.Panel}"
+                              Foreground="{DynamicResource PlayAch.Brush.Text}"
+                              BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                              ItemContainerStyle="{StaticResource PresetRowStyle}"
                               SelectionMode="Single"
                               SelectionChanged="PresetList_SelectionChanged"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListView.View>
-                            <GridView>
+                            <GridView ColumnHeaderContainerStyle="{StaticResource PresetHeaderStyle}">
                                 <GridViewColumn Header="{DynamicResource LOCPlayAch_Common_Kind}"
                                                 DisplayMemberBinding="{Binding KindLabel}"
                                                 Width="180"/>
