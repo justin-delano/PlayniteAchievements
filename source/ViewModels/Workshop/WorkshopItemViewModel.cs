@@ -113,13 +113,22 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string RequiresNewerPluginText =>
             string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_RequiresNewerPlugin"), Item.MinPluginVersion);
 
+        /// <summary>
+        /// Installed game data at the published version: the action applies the package again
+        /// from scratch. Looks are left alone here, since a second install only adds a copy of
+        /// the preset.
+        /// </summary>
+        public bool IsReinstall => IsInstalled && !HasUpdate && Kind == WorkshopItemKind.GameCustomData;
+
         public string ActionLabel => HasUpdate
             ? ResourceProvider.GetString("LOCPlayAch_Workshop_Update")
-            : IsInstalled
-                ? ResourceProvider.GetString("LOCPlayAch_Workshop_Tab_Installed")
-                : ResourceProvider.GetString("LOCPlayAch_Workshop_Install");
+            : IsReinstall
+                ? ResourceProvider.GetString("LOCPlayAch_Workshop_Reinstall")
+                : IsInstalled
+                    ? ResourceProvider.GetString("LOCPlayAch_Workshop_Tab_Installed")
+                    : ResourceProvider.GetString("LOCPlayAch_Workshop_Install");
 
-        public bool CanInstall => !RequiresNewerPlugin && (!IsInstalled || HasUpdate);
+        public bool CanInstall => !RequiresNewerPlugin && (!IsInstalled || HasUpdate || IsReinstall);
 
         /// <summary>A readable line from the manifest's `contents` counts.</summary>
         public string ContentsSummary => SummarizeContents(Item.Contents, Kind);
