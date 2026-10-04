@@ -60,7 +60,7 @@ namespace PlayniteAchievements.ViewModels
         private ObservableCollection<string> _highlightedLabels = new ObservableCollection<string>();
         private OverviewPieSmallSliceMode _smallSliceMode = OverviewPieSmallSliceMode.Round;
         private bool _includeLocked = true;
-        private bool _showCenterPercentageRequested = true;
+        private PieCenterMode _centerMode = PieCenterMode.Percentage;
         private bool _showIcons = true;
         private int _exactUnlockedCount;
         private int _exactTotalCount;
@@ -95,22 +95,25 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// What the host asked for. Hiding the locked slice also hides the centre percentage,
-        /// because the percentage is unlocked-of-total and the pie no longer shows the total.
-        /// Kept separate from <see cref="ShowCenterPercentage"/> so toggling locked back on
+        /// What the host asked for in the center. Hiding the locked slice also hides the centre
+        /// percentage, because the percentage is unlocked-of-total and the pie no longer shows the
+        /// total. Kept separate from <see cref="ShowCenterPercentage"/> so toggling locked back on
         /// restores the host's own choice.
         /// </summary>
-        public bool ShowCenterPercentageRequested
+        public PieCenterMode CenterMode
         {
-            get => _showCenterPercentageRequested;
+            get => _centerMode;
             set => SetValue(
-                ref _showCenterPercentageRequested,
+                ref _centerMode,
                 value,
-                nameof(ShowCenterPercentageRequested),
-                nameof(ShowCenterPercentage));
+                nameof(CenterMode),
+                nameof(ShowCenterPercentage),
+                nameof(IsFilled));
         }
 
-        public bool ShowCenterPercentage => _showCenterPercentageRequested && _includeLocked;
+        public bool ShowCenterPercentage => _centerMode == PieCenterMode.Percentage && _includeLocked;
+
+        public bool IsFilled => _centerMode == PieCenterMode.Filled;
 
         /// <summary>
         /// Whether the radial icons are drawn around the slices. A render-only flag: the slices
