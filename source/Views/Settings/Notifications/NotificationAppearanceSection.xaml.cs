@@ -15,6 +15,7 @@ using DialogResult = System.Windows.Forms.DialogResult;
 using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
 using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
@@ -1335,20 +1336,54 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private void ExportStyle_Click(object sender, RoutedEventArgs e)
         {
-            // A game's own style is not a Workshop item; only the global look is shared there.
-            if (IsGameMode)
-            {
-                ExportStyleFile_Click(sender, e);
-                return;
-            }
-
-            var kind = FrameTabItem?.IsSelected == true
-                ? WorkshopItemKind.ScreenshotFrame
-                : WorkshopItemKind.NotificationStyle;
+            // Both scopes share the menu: a file export of what the tab shows, or sharing it to the
+            // Workshop as a style of that surface (a game's own look travels like any other).
+            var isFrame = FrameTabItem?.IsSelected == true;
             WorkshopMenus.OpenExport(
                 sender as Button,
                 () => ExportStyleFile_Click(sender, e),
-                () => _plugin.OpenWorkshopShare(kind, Window.GetWindow(this)));
+                () => ShareStyleToWorkshop(isFrame));
+        }
+
+        /// <summary>
+        /// Packages the surface shown in the active tab for the current scope (global, platform
+        /// or game) into a scratch .panotif or .paframe and opens the share dialog on it; the
+        /// dialog previews that package. The scratch folder outlives the modal dialog only.
+        /// </summary>
+        private void ShareStyleToWorkshop(bool isFrame)
+        {
+            var style = _currentStyle;
+            var store = _plugin?.NotificationStylePortableStore;
+            if (style == null || store == null)
+            {
+                return;
+            }
+
+            _toastEditorViewModel?.FlushPendingPersist();
+            _frameEditorViewModel?.FlushPendingPersist();
+
+            var scratch = PortablePackage.CreateScratchDirectory("StyleShare");
+            try
+            {
+                var name = BuildDefaultStyleFileName();
+                var path = Path.Combine(scratch, name + NotificationStylePortableStore.SurfaceExtension(isFrame));
+                var templateXaml = _toastTemplateResolver?.ReadCustomTemplateXaml(isFrame, ScopeProviderKey, ScopeGameId);
+                store.ExportSurfacePackage(isFrame, style, path, templateXaml);
+                _plugin.OpenWorkshopShare(
+                    isFrame ? WorkshopItemKind.ScreenshotFrame : WorkshopItemKind.NotificationStyle,
+                    Window.GetWindow(this),
+                    packagePath: path,
+                    defaultName: name);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed sharing the notification style.");
+                Inform(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+            finally
+            {
+                PortablePackage.TryDeleteDirectory(scratch);
+            }
         }
 
         private void ExportStyleFile_Click(object sender, RoutedEventArgs e)
@@ -1433,19 +1468,24 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private void ImportStyle_Click(object sender, RoutedEventArgs e)
         {
-            // A game's own style is not a Workshop item; only the global look is shared there.
-            if (IsGameMode)
-            {
-                ImportStyleIntoGame_Click(sender, e);
-                return;
-            }
-
+            // From file: the global page saves a preset, a game tab applies straight onto the game.
+            // From Workshop: the browser scoped to this surface; installs land in the presets.
             var kind = FrameTabItem?.IsSelected == true
                 ? WorkshopItemKind.ScreenshotFrame
                 : WorkshopItemKind.NotificationStyle;
             WorkshopMenus.OpenImport(
                 sender as Button,
-                () => ImportStyleFile_Click(sender, e),
+                () =>
+                {
+                    if (IsGameMode)
+                    {
+                        ImportStyleIntoGame_Click(sender, e);
+                    }
+                    else
+                    {
+                        ImportStyleFile_Click(sender, e);
+                    }
+                },
                 () => _plugin.OpenWorkshopWindow(focusKind: kind));
         }
 
