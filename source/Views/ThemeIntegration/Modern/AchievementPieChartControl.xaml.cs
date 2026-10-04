@@ -131,7 +131,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             // All three are applied by SetRarityData, so they must be assigned before the data.
             _viewModel.IncludeLocked = IncludeLocked;
             _viewModel.SmallSliceMode = SmallSliceMode;
-            _viewModel.ShowCenterPercentageRequested = ShowCenterPercentage;
+            _viewModel.CenterMode = ShowCenterPercentage ? PieCenterMode.Percentage : PieCenterMode.Empty;
             _viewModel.SetRarityData(
                 theme.Common.Unlocked, theme.Uncommon.Unlocked, theme.Rare.Unlocked, theme.UltraRare.Unlocked, theme.LockedCount,
                 theme.Common.Total, theme.Uncommon.Total, theme.Rare.Total, theme.UltraRare.Total,
