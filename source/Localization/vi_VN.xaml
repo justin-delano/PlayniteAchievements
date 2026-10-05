@@ -828,13 +828,13 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">Bật phím tắt thành tựu</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_EnableGlobal">Bật phím tắt cục bộ</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotification">Kích hoạt lại thông báo</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotificationHelp">Re-fires the full notification flow (notification, screenshot, and recording) for the running game's most recently earned achievement, and saves the captures to that game's capture folder. Does nothing when no game is running unless the test folder option below is enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotificationHelp">Kích hoạt lại toàn bộ quy trình thông báo (thông báo, ảnh chụp màn hình và bản ghi) cho thành tựu mới đạt gần đây nhất của trò chơi đang chạy, đồng thời lưu các ghi hình vào thư mục lưu ảnh chụp của trò chơi đó. Không thực hiện thao tác nào khi không có trò chơi đang chạy, trừ khi bật tùy chọn thư mục kiểm thử bên dưới.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolder">Write retriggers to a test folder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolderHelp">Retriggered captures go to a shared &quot;Test&quot; subfolder, so they never appear alongside a game's own captures. Enabling this also lets the retrigger shortcut work when no game is running.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalHelp">Global hotkeys work outside Playnite for function keys and shortcuts with modifiers. Plain letters and digits only work while Playnite is focused.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">Global shortcut unavailable: {0}. Another app may already be using the same key.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Select one game or start a game before using achievement hotkeys.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalHelp">Phím tắt toàn cục hoạt động bên ngoài Playnite đối với các phím chức năng và phím tắt có phím bổ trợ. Các phím chữ và chữ số đơn chỉ hoạt động khi Playnite đang được chọn.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">Phím tắt toàn cục không khả dụng: {0}. Có thể một ứng dụng khác đang sử dụng phím này.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">Phím tắt không được hỗ trợ. Hãy nhấn một phím chữ, chữ số, phím chức năng hoặc phím tắt đã sửa đổi.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Hãy chọn một trò chơi hoặc khởi chạy trò chơi trước khi sử dụng phím tắt thành tựu.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Phím tắt</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Enable Tag Sync</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
@@ -1025,7 +1025,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <!-- Provider: RetroAchievements -->
     <sys:String x:Key="LOCPlayAch_Settings_RaUsername">Tên người dùng</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Khóa API Web</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Find your key in your RetroAchievements control panel:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Tìm khóa của bạn trong bảng điều khiển RetroAchievements:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Points Display</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio weights points by rarity, so harder achievements are worth more.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Standard Points</sys:String>
@@ -1040,13 +1040,13 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_RaEmulatorLogTracking_Help">Detects unlocks instantly from your emulator's log file instead of polling the RetroAchievements website. Turn on log-to-file in the emulator; set a path override below only if the log isn't found automatically.</sys:String>
 
     <!-- Provider: Guild Wars 2 -->
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_Help">Guild Wars 2 achievements are read from ArenaNet's official API, which needs a free API key tied to your Guild Wars 2 account:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GW2_Help">Thành tựu Guild Wars 2 được lấy từ API chính thức của ArenaNet, yêu cầu một khóa API miễn phí được liên kết với tài khoản Guild Wars 2 của bạn:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep1">1. Open the {0} and sign in with your Guild Wars 2 account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep2">2. Tạo một khóa mới và tích chọn tiến trình. Đây là quyền duy nhất mà phần bổ trợ này cần; một khóa chỉ được cấp quyền này sẽ không thể đọc thông tin về ví, túi đồ hoặc lịch sử chợ giao dịch của bạn.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep3">3. Copy the key into the box below, then click Check.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep3">3. Sao chép khoá vào ô bên dưới, sau đó nhấp vào Kiểm tra.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_NoDatesNote">Guild Wars 2 does not record when an achievement was earned and publishes no completion rates, so Guild Wars 2 achievements show no unlock date and no rarity.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_ApiKey_Help">Khóa là một mã dài gồm các nhóm ký tự được phân tách bằng dấu gạch ngang. Mã này được lưu ở dạng có thể đọc được trong phần cài đặt phần bổ trợ và chỉ được gửi đến api.guildwars2.com. Đây không phải là mật khẩu của bạn; mã chỉ có quyền đọc và bạn có thể xóa bất cứ lúc nào tại chính trang mà bạn đã tạo mã.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_MissingProgression">The key is valid but lacks the progression permission. Create a new key with progression ticked.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GW2_MissingProgression">Khóa hợp lệ nhưng thiếu quyền truy cập tiến trình. Hãy tạo khóa mới và đánh dấu vào mục tiến trình.</sys:String>
 
     <!-- Provider: Hypixel -->
     <sys:String x:Key="LOCPlayAch_Settings_Hypixel_NoDatesNote">Achievements are read from your public Hypixel profile. Hypixel does not record when an achievement was earned, so Hypixel achievements show no unlock date.</sys:String>
@@ -1055,11 +1055,11 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_Hypixel_Unavailable">hypixel.net could not be reached to look up the player. Try again later.</sys:String>
 
     <!-- Provider: Riot -->
-    <sys:String x:Key="LOCPlayAch_Settings_Riot_Help">Reading League of Legends Challenges uses Riot's official API, which needs a free API key tied to your Riot account. Riot publishes no per-player endpoint that works without one:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Riot_Help">Việc đọc Thử thách trong League of Legends sử dụng API chính thức của Riot, yêu cầu một khóa API miễn phí được liên kết với tài khoản Riot của bạn. Riot không cung cấp điểm cuối API theo từng người chơi nào có thể hoạt động mà không cần khóa:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep1">1. Mở {0} và đăng nhập với tài khoản Riot của bạn.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep2">2. Copy the development API key shown on the dashboard into the API Key box below. Use the regenerate button there if it has expired.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep2">2. Sao chép khóa API phát triển hiển thị trên bảng điều khiển vào ô Khóa API bên dưới. Nếu khóa đã hết hạn, hãy sử dụng nút tạo lại tại đó.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep3">3. Nhập ID Riot của bạn và chọn vùng bạn đang chơi rồi nhấp Kiểm tra.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Riot_Expiry">A development key stops working after 24 hours and has to be regenerated each time. For a key that does not expire, use Register Product on the portal to apply for a personal key.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Riot_Expiry">Khóa phát triển sẽ ngừng hoạt động sau 24 giờ và phải được tạo lại mỗi lần. Để sử dụng khóa không hết hạn, hãy dùng chức năng Register Product trên cổng thông tin để đăng ký nhận khóa cá nhân.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_Note">Riot reviews personal and production applications separately; the {0} explains what to expect.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RiotId">Riot ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RiotId_Help">Your in-game name and tag, for example Faker and KR1. The tag is the part after the # on your profile.</sys:String>
