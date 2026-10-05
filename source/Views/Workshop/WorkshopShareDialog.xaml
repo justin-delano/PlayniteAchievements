@@ -55,16 +55,6 @@
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Readme}" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="ReadmeBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="90"/>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Preview}" Style="{StaticResource FieldLabel}"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="PreviewBox" IsReadOnly="True"/>
-                        <Button Grid.Column="1" Content="{DynamicResource LOCPlayAch_Button_Browse}" Margin="6,0,0,0" Click="BrowsePreview_Click"/>
-                    </Grid>
-
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_UpdateExisting}" Style="{StaticResource FieldLabel}"/>
                     <ComboBox x:Name="ExistingBox" IsEditable="True" DisplayMemberPath="Label" SelectedValuePath="ItemId"/>
 

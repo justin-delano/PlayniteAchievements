@@ -10,9 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-// WinForms dialog: the WPF Microsoft.Win32 picker renders legacy-style on .NET Framework.
-using DialogResult = System.Windows.Forms.DialogResult;
-using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
 
 namespace PlayniteAchievements.Views.Workshop
 {
@@ -37,8 +34,11 @@ namespace PlayniteAchievements.Views.Workshop
         private string _previewScratch;
         private bool _busy;
         private bool _rendering;
-        private bool _userPickedPreview;
         private bool _closed;
+
+        // The standardized preview image rendered from the package; null until rendered or when
+        // rendering failed, in which case the submission goes without one.
+        private string _previewPath;
 
         // The package built for the preview image, uploaded as is on submit; null until built.
         private string _packagePath;
@@ -69,8 +69,8 @@ namespace PlayniteAchievements.Views.Workshop
             NameBox.Text = candidate.DefaultName ?? string.Empty;
             AuthorBox.Text = registry.DisplayName ?? string.Empty;
 
-            // The standardized preview image is rendered once the dialog is up (OnLoaded); the
-            // user can still browse for a different image.
+            // The standardized preview image is rendered once the dialog is up (OnLoaded) and
+            // always submitted with the package; it is not chosen by hand.
             _previewScratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopPreview", Guid.NewGuid().ToString("N"));
             Loaded += OnLoaded;
 
@@ -86,9 +86,6 @@ namespace PlayniteAchievements.Views.Workshop
 
         public event EventHandler RequestClose;
 
-        /// <summary>The file filter of the preview image picker.</summary>
-        private const string PreviewImageFilter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp";
-
         private static string RenderingPreviewText => ResourceProvider.GetString("LOCPlayAch_Workshop_Share_RenderingPreview");
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -99,8 +96,8 @@ namespace PlayniteAchievements.Views.Workshop
 
         /// <summary>
         /// Builds the package once (kept for the submit), reads it into a preview model and renders
-        /// the standardized preview image into the preview box. Submit waits for it unless the
-        /// user picks an image of their own; a failed render leaves the box empty.
+        /// the standardized preview image. Submit waits for it; a failed render submits without an
+        /// image.
         /// </summary>
         private async Task RenderPreviewAsync()
         {
@@ -131,9 +128,9 @@ namespace PlayniteAchievements.Views.Workshop
                 _model = model;
                 var rendered = await new WorkshopPreviewRasterizer(_plugin, _logger)
                     .RenderAsync(model, Path.Combine(_previewScratch, "render"), cancel);
-                if (!_closed && !_userPickedPreview && !string.IsNullOrWhiteSpace(rendered))
+                if (!_closed && !string.IsNullOrWhiteSpace(rendered))
                 {
-                    PreviewBox.Text = rendered;
+                    _previewPath = rendered;
                 }
             }
             catch (OperationCanceledException)
@@ -158,32 +155,10 @@ namespace PlayniteAchievements.Views.Workshop
             }
         }
 
-        // Submit waits for the rendered image unless the user picked one; never while submitting.
+        // Submit waits for the rendered image; never while submitting.
         private void UpdateSubmitEnabled()
         {
-            SubmitButton.IsEnabled = !_busy && (!_rendering || _userPickedPreview);
-        }
-
-        private void BrowsePreview_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFileDialog
-            {
-                Filter = PreviewImageFilter,
-                CheckFileExists = true,
-                Multiselect = false
-            };
-
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                PreviewBox.Text = dialog.FileName;
-                _userPickedPreview = true;
-                if (!_busy && string.Equals(StatusText.Text, RenderingPreviewText, StringComparison.Ordinal))
-                {
-                    StatusText.Text = string.Empty;
-                }
-
-                UpdateSubmitEnabled();
-            }
+            SubmitButton.IsEnabled = !_busy && !_rendering;
         }
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
@@ -258,7 +233,7 @@ namespace PlayniteAchievements.Views.Workshop
                 var receipt = await _share.ShareAsync(
                     _candidate,
                     submission,
-                    string.IsNullOrWhiteSpace(PreviewBox.Text) ? null : PreviewBox.Text,
+                    _previewPath,
                     progress,
                     _cancel.Token,
                     _packagePath);
