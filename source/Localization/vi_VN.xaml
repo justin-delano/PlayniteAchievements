@@ -37,7 +37,7 @@
     <sys:String x:Key="LOCPlayAch_Common_General">Chung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Ẩn</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Import">Nhập</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">Chìa khoá API</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">Khoá API</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">Danh mục</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart; the options follow the label -->
     <sys:String x:Key="LOCPlayAch_Common_Label_Granularity">Độ chi tiết</sys:String>
@@ -546,8 +546,8 @@ Thành tựu của trò chơi này đến từ một liên kết thủ công, v�
     <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">Bạn có thể kiểm tra tiến trình trong giao diện bao quát.</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Làm mới tuỳ chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Làm mới các trò chơi ưa thích</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Làm mới đầy đủ</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsFull">Làm mới bạn bè đầy đủ</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Làm mới toàn bộ</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsFull">Làm mới toàn bộ bạn bè</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsCustom">Làm mới bạn bè tuỳ chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsInstalled">Làm mới bạn bè các trò chơi đã cài</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsRecent">Làm mới bạn bè các trò chơi gần đây</sys:String>
@@ -560,8 +560,8 @@ Thành tựu của trò chơi này đến từ một liên kết thủ công, v�
     <sys:String x:Key="LOCPlayAch_RefreshMode_Single">Làm mới một trò chơi</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Custom">Tuỳ chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Ưu thích</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Đầy đủ</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsFull">Đầy đủ</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Toàn bộ</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsFull">Toàn bộ</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsCustom">Tuỳ chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsInstalled">Đã cài đặt</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Gần đây</sys:String>
@@ -820,14 +820,14 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleTitle">Example Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleDescription">An example achievement description.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleFriend">Friend</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_CaptureButton">Press keys...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">Press a shortcut...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_CaptureButton">Nhấn phím...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">Nhấn tổ hợp phím tắt...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CategoryModeHelp">Phím tắt nhóm danh mục hoạt động khi cửa sổ đang hoạt động có lưới thành tựu kèm tùy chọn bật/tắt danh mục.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Description">Cấu hình phím tắt để mở các cửa sổ thành tựu và trang tổng quan. Phím tắt dành riêng cho từng trò chơi sẽ ưu tiên trò chơi đang chạy, sau đó mới đến trò chơi được chọn.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_DuplicateShortcut">That shortcut is already assigned.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_DuplicateShortcut">Phím tắt đó đã được gán.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">Bật phím tắt thành tựu</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_EnableGlobal">Bật phím tắt cục bộ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotification">Retrigger notification</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotification">Kích hoạt lại thông báo</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotificationHelp">Re-fires the full notification flow (notification, screenshot, and recording) for the running game's most recently earned achievement, and saves the captures to that game's capture folder. Does nothing when no game is running unless the test folder option below is enabled.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolder">Write retriggers to a test folder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolderHelp">Retriggered captures go to a shared &quot;Test&quot; subfolder, so they never appear alongside a game's own captures. Enabling this also lets the retrigger shortcut work when no game is running.</sys:String>
@@ -949,31 +949,31 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">Which category rows show the completed badge under their progress bar in category mode. First uses the first category in your configured category order, so it stays with that category when you sort the grid by a column.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Lưới thành tựu gần đây</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Thanh tiến trình</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Lưới tóm tắt trò chơi</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Selected Game Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Lưới trò chơi đã chọn</sys:String>
 
     <!-- Provider: Shared -->
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} Đã xác thực</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} chưa được cấu hình.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} Kết nối</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">Nền tảng này đã tắt. Hãy bật nó để theo dõi thành tựu.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Bật nền tảng này</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_StoresLaunchers">Stores &amp; Launchers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_StoresLaunchers">Cửa hàng &amp; Trình khởi chạy</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ConsoleMobile">Máy chơi điện tử và Điện thoại</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">Trình giả lập và Retro</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Thủ công &amp; Dịch vụ tổng hợp</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Khác</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Sử dụng {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">Use Exophase for Steam friend ownership</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Friends">Bạn bè</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Tự động tìm bạn bè</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Chọn các nền tảng có thể tự động điền danh sách này.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">Sử dụng Exophase để kiểm tra quyền sở hữu trò chơi của bạn bè trên Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">Thêm các trò chơi Steam còn thiếu từ hồ sơ Exophase đã hợp nhất khi làm mới trò chơi Steam bạn bè sở hữu. Yêu cầu bật Exophase.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGames">Include unowned games in refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGamesHint">Allow Full refreshes to scan friend games you do not own. When disabled, the Full mode is hidden and friend refreshes only cover games in your library.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGames">Bao gồm các trò chơi chưa sở hữu khi làm mới</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGamesHint">Cho phép làm mới toàn bộ quét những trò chơi của bạn bè mà bạn chưa sở hữu. Khi tắt, chế độ Toàn bộ sẽ bị ẩn và việc làm mới danh sách bạn bè chỉ bao gồm các trò chơi trong thư viện của bạn.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_ManualAdd">Thêm bạn bè thủ công</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeInvalid">Select at least two friends from different platforms to merge.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeSelected">Merge Selected</sys:String>
@@ -1023,8 +1023,8 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_LodestoneUnavailable">The Lodestone could not be reached to look up the character. Try again later.</sys:String>
 
     <!-- Provider: RetroAchievements -->
-    <sys:String x:Key="LOCPlayAch_Settings_RaUsername">Username</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Web API Key</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaUsername">Tên người dùng</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Khóa API Web</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Find your key in your RetroAchievements control panel:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Points Display</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio weights points by rarity, so harder achievements are worth more.</sys:String>
@@ -1042,7 +1042,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <!-- Provider: Guild Wars 2 -->
     <sys:String x:Key="LOCPlayAch_Settings_GW2_Help">Guild Wars 2 achievements are read from ArenaNet's official API, which needs a free API key tied to your Guild Wars 2 account:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep1">1. Open the {0} and sign in with your Guild Wars 2 account.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep2">2. Tạo một khóa mới và tích chọn tiến trình. Đây là quyền duy nhất mà phần bổ trợ này cần; một khóa chỉ được cấp quyền này sẽ không thể đọc thông tin về ví, túi đồ hoặc lịch sử Chợ giao dịch của bạn.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep2">2. Tạo một khóa mới và tích chọn tiến trình. Đây là quyền duy nhất mà phần bổ trợ này cần; một khóa chỉ được cấp quyền này sẽ không thể đọc thông tin về ví, túi đồ hoặc lịch sử chợ giao dịch của bạn.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep3">3. Copy the key into the box below, then click Check.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_NoDatesNote">Guild Wars 2 does not record when an achievement was earned and publishes no completion rates, so Guild Wars 2 achievements show no unlock date and no rarity.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_ApiKey_Help">Khóa là một mã dài gồm các nhóm ký tự được phân tách bằng dấu gạch ngang. Mã này được lưu ở dạng có thể đọc được trong phần cài đặt phần bổ trợ và chỉ được gửi đến api.guildwars2.com. Đây không phải là mật khẩu của bạn; mã chỉ có quyền đọc và bạn có thể xóa bất cứ lúc nào tại chính trang mà bạn đã tạo mã.</sys:String>
