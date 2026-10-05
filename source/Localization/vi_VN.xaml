@@ -627,14 +627,14 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">Không có hình ảnh nào trong bộ nhớ đệm lớn hơn {0} px.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">Đang nén các hình ảnh trong bộ nhớ đệm... ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">Đang quét hình ảnh trong bộ nhớ đệm... ({0}/{1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Result">Đã nén {0} hình ảnh. {1} đã bỏ qua, {2} đã thất bại.
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Result">Đã nén {0} ảnh. Đã bỏ qua {1} ảnh, thất bại {2} ảnh.
 
-{3} đã giải phóng.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ResultCanceled">Canceled after compressing {0} images.
+Đã giải phóng {3} ảnh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ResultCanceled">Đã huỷ sau khi nén {0} ảnh.
 
-Reclaimed {1}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Title">Compress Cached Images</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
+Đã giải phóng {1} ảnh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Title">Nén hình ảnh trong bộ nhớ đệm</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Description">Cài đặt Thành tựu Playnite</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Alignment">Căn chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Colors">Màu sắc</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Formatting">Định dạng</sys:String>
@@ -642,17 +642,17 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Tích hợp chủ đề cửa sổ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Themes">Chủ đề</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Bật quét tệp nén (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Enable disc hashing (for disc-based consoles)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Bật tạo mã băm cho đĩa (đổi với máy chơi điện tử dùng đĩa)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DefaultOverviewRefreshMode">Chế độ làm mới tổng quan mặc định</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DefaultOverviewRefreshMode_Description">Chế độ làm mới mặc định khi mở chế độ xem Tổng quan.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Bật thông báo</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Bật làm mới nền tảng song song</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">If disabled, platforms refresh sequentially in deterministic order.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Enable Background Periodic Refreshes</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsPeriodicUpdates">Enable Background Friends Refreshes (Recent)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">Monitor Achievements While a Game Is Running</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">Uses local file events or provider feeds for fast unlock detection, with lightweight scoped refreshes as a fallback.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration">Automatically Generate Auto Capstones</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">Nếu tắt, các nền tảng sẽ được làm mới lần lượt theo thứ tự xác định trước.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Bật làm mới định kỳ trong nền</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsPeriodicUpdates">Bật làm mới bạn bè trong nền (Gần đây)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">Giám sát thành tựu khi trò chơi đang chạy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">Sử dụng các sự kiện tệp cục bộ hoặc nguồn cấp dữ liệu của nhà cung cấp để phát hiện mở khóa nhanh chóng, với các lần làm mới giới hạn và nhẹ nhàng làm phương án dự phòng.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration">Tự động tạo cột mốc</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration_Description">After a game refreshes, gives it an auto capstone once if it has no capstone yet. Turning this off stops new ones and keeps existing capstones.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_ApplyToExisting">Also add auto capstones to games already in your library?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_Progress">Adding auto capstones...</sys:String>
