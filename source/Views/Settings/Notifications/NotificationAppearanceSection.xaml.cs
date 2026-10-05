@@ -1244,12 +1244,25 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         private void ExportStyle_Click(object sender, RoutedEventArgs e)
         {
             // Both scopes share the menu: a file export of what the tab shows, or sharing it to the
-            // Workshop as a style of that surface (a game's own look travels like any other).
+            // Workshop as a style of that surface (a game's own look travels like any other),
+            // then the surface's default template as a loose .xaml starting point.
             var isFrame = FrameTabItem?.IsSelected == true;
-            WorkshopMenus.OpenExport(
-                sender as Button,
-                () => ExportStyleFile_Click(sender, e),
-                () => ShareStyleToWorkshop(isFrame));
+            var menu = new ContextMenu();
+            foreach (var item in WorkshopMenus.ExportItems(
+                         () => ExportStyleFile_Click(sender, e),
+                         () => ShareStyleToWorkshop(isFrame)))
+            {
+                menu.Items.Add(item);
+            }
+
+            menu.Items.Add(new Separator());
+            var defaultTemplate = new MenuItem
+            {
+                Header = L("LOCPlayAch_Settings_Style_ExportDefaultTemplate")
+            };
+            defaultTemplate.Click += (s, args) => ExportDefaultTemplate(isFrame);
+            menu.Items.Add(defaultTemplate);
+            SelectorContextMenuHelper.Open(sender as Button, menu);
         }
 
         /// <summary>
@@ -2073,16 +2086,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             RefreshPresetOptions();
         }
 
-        private void ExportDefaultToastTemplate_Click(object sender, RoutedEventArgs e)
-        {
-            ExportDefaultTemplate(isFrame: false);
-        }
-
-        private void ExportDefaultFrameTemplate_Click(object sender, RoutedEventArgs e)
-        {
-            ExportDefaultTemplate(isFrame: true);
-        }
-
         /// <summary>
         /// Writes the default template for the surface to a loose <c>.xaml</c> file as a working,
         /// theme-independent starting point the user can edit and re-import. Deliberately separate
@@ -2137,14 +2140,9 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             }
         }
 
-        private void ResetToastStyle_Click(object sender, RoutedEventArgs e)
+        private void ResetStyle_Click(object sender, RoutedEventArgs e)
         {
-            ResetStyle(isFrame: false);
-        }
-
-        private void ResetFrameStyle_Click(object sender, RoutedEventArgs e)
-        {
-            ResetStyle(isFrame: true);
+            ResetStyle(isFrame: FrameTabItem?.IsSelected == true);
         }
 
         /// <summary>

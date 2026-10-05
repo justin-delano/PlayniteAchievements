@@ -23,6 +23,20 @@
                 <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Border}"/>
                 <Setter Property="Margin" Value="4,0,12,8"/>
             </Style>
+
+            <!-- Icon-only toolbar button, matching the Manage Achievements editor toolbar. -->
+            <Style x:Key="ToolbarIconButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="Width" Value="34"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
+                <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
     <!-- Two-band layout: the pinned band at the top holds the surface tabs with their toolbar
@@ -188,6 +202,14 @@
                                         ToolTipService.ShowOnDisabled="True"
                                         Margin="0,0,0,8"/>
                             </StackPanel>
+
+                            <!-- Resets the active tab's surface to its built-in default (style edits
+                                 and any custom template), after confirmation. -->
+                            <Button Click="ResetStyle_Click"
+                                    Content="&#xEFD1;"
+                                    ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
+                                    Style="{StaticResource ToolbarIconButtonStyle}"
+                                    Margin="16,0,0,8"/>
                         </WrapPanel>
                     </Grid>
 
@@ -330,12 +352,11 @@
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
 
-                    <!-- Presets, sharing and reset for the tab selected above: save the active
-                         surface's appearance (including images and any custom template) under a
-                         name, apply a saved preset to the current platform/game selection, exchange
-                         styles as .panotif/.paframe files, reset the surface to its built-in default,
-                         or export the default template as a loose .xaml starting point. The dropdown
-                         lists only presets for the active surface. -->
+                    <!-- Presets and sharing for the tab selected above: save the active surface's
+                         appearance (including images and any custom template) under a name, apply a
+                         saved preset to the current platform/game selection, or exchange styles as
+                         .panotif/.paframe files. Export also offers the default template as a loose
+                         .xaml starting point. The dropdown lists only presets for the active surface. -->
                     <Border Style="{StaticResource SectionBorderStyle}">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Presets_Header}"
@@ -371,35 +392,14 @@
                                      import one onto the current platform selection. -->
                                 <Button x:Name="ImportStyleButton"
                                         Click="ImportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                        Content="{DynamicResource LOCPlayAch_Common_Import}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                         ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
                                         Margin="0,0,8,8"/>
                                 <Button x:Name="ExportStyleButton"
                                         Click="ExportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
                                         ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
                                         Margin="0,0,8,8"/>
-
-                                <Border Style="{StaticResource ToolbarSeparatorStyle}"/>
-
-                                <StackPanel Orientation="Horizontal"
-                                            Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}">
-                                    <Button Click="ResetToastStyle_Click"
-                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
-                                            Margin="0,0,8,8"/>
-                                    <Button Click="ExportDefaultToastTemplate_Click"
-                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
-                                            Margin="0,0,0,8"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal"
-                                            Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
-                                    <Button Click="ResetFrameStyle_Click"
-                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
-                                            Margin="0,0,8,8"/>
-                                    <Button Click="ExportDefaultFrameTemplate_Click"
-                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
-                                            Margin="0,0,0,8"/>
-                                </StackPanel>
                             </WrapPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_Presets_Hint}"
                                        Style="{StaticResource MutedTextStyle}"
