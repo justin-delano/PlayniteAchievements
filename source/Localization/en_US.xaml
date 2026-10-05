@@ -683,7 +683,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_AlwaysCaptureCompletion">Always capture completion unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FrameHeader">Screenshot frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ToastTab">Notification</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_FollowDefaultHint">This platform follows the default appearance until customized.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_RevertConfirm">Revert this platform to the default notification appearance? Its custom images will be deleted.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_Customize">Style "{0}" notifications separately</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_ResetToBase">Reset to Shared Style</sys:String>
