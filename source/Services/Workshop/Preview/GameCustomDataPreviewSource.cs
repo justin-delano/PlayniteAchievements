@@ -38,5 +38,12 @@ namespace PlayniteAchievements.Services.Workshop.Preview
 
         /// <summary>Resolves managed icon paths of the game's current data for display; may be null.</summary>
         public ManagedCustomIconService ManagedCustomIconService { get; set; }
+
+        /// <summary>
+        /// True for an image that is published: every after-install row is built unlocked with no
+        /// unlock time or progress, so no row's icon, masking or state follows the sharer's own
+        /// progress. The before rows are left as they are.
+        /// </summary>
+        public bool HidePersonalProgress { get; set; }
     }
 }
