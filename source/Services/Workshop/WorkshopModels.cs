@@ -55,6 +55,8 @@ namespace PlayniteAchievements.Services.Workshop
         [JsonProperty("contents")] public JObject Contents { get; set; }
         [JsonProperty("package")] public WorkshopPackage Package { get; set; }
         [JsonProperty("preview")] public string Preview { get; set; }
+        /// <summary>The sharer's optional cover image file name, shown ahead of the preview.</summary>
+        [JsonProperty("cover")] public string Cover { get; set; }
         [JsonProperty("downloads")] public WorkshopDownloads Downloads { get; set; }
         [JsonProperty("urls")] public WorkshopUrls Urls { get; set; }
 
@@ -115,6 +117,7 @@ namespace PlayniteAchievements.Services.Workshop
     {
         [JsonProperty("package")] public string Package { get; set; }
         [JsonProperty("preview")] public string Preview { get; set; }
+        [JsonProperty("cover")] public string Cover { get; set; }
         [JsonProperty("readme")] public string Readme { get; set; }
         [JsonProperty("folder")] public string Folder { get; set; }
     }
