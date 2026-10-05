@@ -691,7 +691,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_CustomHint">These notifications have their own style, started from a copy of the shared one, including their own copies of its images. Later changes to the shared style no longer reach them. Custom templates still come from the shared style.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_ResetToBase">Reset to Shared Style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_RevertConfirm">Drop the separate style for these notifications and follow the shared one again? The separate design is discarded.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Kind">the "{0}" style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportButton">Export Style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportButton">Import Style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShareHint">Export the current tab's style as a .panotif or .paframe file, or share it to the Workshop. Importing a file or installing from the Workshop adds it to the presets above. To share both surfaces together with colors and sounds, export a bundle from the Workshop tab.</sys:String>
@@ -736,13 +735,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_FirePluginStyle">Plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FireTheme">Theme</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_UseThemeTemplate">Use my theme's design when available</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceSummary">Showing {0} with {1}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Global">the global style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Platform">the {0} style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Game">this game's style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Plugin">the plugin's look</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Theme">your theme's look</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Imported">an imported template</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Plugin">The preview uses the plugin's look.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Theme">The preview uses your theme's look.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Imported">The preview uses an imported template.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextLines">Text lines</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextLinesHint">Drag to reorder. A blank size uses the theme default.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontFamily">Font family</sys:String>
