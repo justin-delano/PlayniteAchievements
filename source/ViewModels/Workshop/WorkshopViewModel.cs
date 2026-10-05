@@ -565,14 +565,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         /// <summary>
-        /// Fetches every row's preview in the background, a few at a time, so the list shows
-        /// its images without each item having to be selected first. Cached files return at
-        /// once; the detail pane's own fetch finds them already there.
+        /// Fetches every row's preview and cover in the background, a few rows at a time, so the
+        /// list shows its images without each item having to be selected first. Cached files
+        /// return at once; the detail pane's own fetch finds them already there.
         /// </summary>
         private async Task PrefetchPreviewsAsync(IReadOnlyList<WorkshopItemViewModel> rows)
         {
             var pending = rows
-                .Where(row => row.PreviewPath == null && !string.IsNullOrWhiteSpace(row.Item?.Urls?.Preview))
+                .Where(row => NeedsPreview(row) || NeedsCover(row))
                 .ToList();
             if (pending.Count == 0)
             {
@@ -586,10 +586,22 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     await gate.WaitAsync(_lifetime.Token).ConfigureAwait(false);
                     try
                     {
-                        var path = await _client.FetchPreviewAsync(row.Item, _lifetime.Token).ConfigureAwait(false);
-                        if (path != null)
+                        if (NeedsCover(row))
                         {
-                            row.PreviewPath = path;
+                            var cover = await _client.FetchCoverAsync(row.Item, _lifetime.Token).ConfigureAwait(false);
+                            if (cover != null)
+                            {
+                                row.CoverPath = cover;
+                            }
+                        }
+
+                        if (NeedsPreview(row))
+                        {
+                            var path = await _client.FetchPreviewAsync(row.Item, _lifetime.Token).ConfigureAwait(false);
+                            if (path != null)
+                            {
+                                row.PreviewPath = path;
+                            }
                         }
                     }
                     catch (OperationCanceledException)
@@ -615,6 +627,12 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
+        private static bool NeedsPreview(WorkshopItemViewModel row)
+            => row.PreviewPath == null && !string.IsNullOrWhiteSpace(row.Item?.Urls?.Preview);
+
+        private static bool NeedsCover(WorkshopItemViewModel row)
+            => row.CoverPath == null && !string.IsNullOrWhiteSpace(row.Item?.Urls?.Cover);
+
         private async Task LoadDetailsAsync(WorkshopItemViewModel row)
         {
             if (row == null)
@@ -624,6 +642,11 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
             try
             {
+                if (NeedsCover(row))
+                {
+                    row.CoverPath = await _client.FetchCoverAsync(row.Item, _lifetime.Token);
+                }
+
                 if (row.PreviewPath == null)
                 {
                     row.PreviewPath = await _client.FetchPreviewAsync(row.Item, _lifetime.Token);
