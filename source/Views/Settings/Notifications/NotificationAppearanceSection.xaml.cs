@@ -118,7 +118,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
             if (IsGameMode)
             {
-                PlatformHeader.Visibility = Visibility.Collapsed;
+                PlatformSelector.Visibility = Visibility.Collapsed;
                 PlatformSelectorPanel.Visibility = Visibility.Collapsed;
                 FollowDefaultHint.Visibility = Visibility.Collapsed;
                 GameSelectionPanel.Visibility = Visibility.Visible;
@@ -248,6 +248,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
             var hasKindStyle = scopeStyle.HasKindStyle(kind);
             KindStylePanel.Visibility = Visibility.Visible;
+            KindStyleHeader.Text = GetKindDisplayName(kind);
             KindStyleCheckBox.Content = string.Format(
                 L("LOCPlayAch_Settings_Style_Kind_Customize"),
                 GetKindDisplayName(kind));
@@ -364,6 +365,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             {
                 style = persisted.NotificationStyle;
                 editable = true;
+                // Default has no platform scope to opt into, so its block in the scope column hides.
+                PlatformSelectorPanel.Visibility = Visibility.Collapsed;
                 CustomizeCheckBox.Visibility = Visibility.Collapsed;
                 FollowDefaultHint.Visibility = Visibility.Collapsed;
             }
@@ -373,6 +376,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 editable = custom != null;
                 style = custom ?? persisted.NotificationStyle;
 
+                PlatformSelectorPanel.Visibility = Visibility.Visible;
                 CustomizeCheckBox.Visibility = Visibility.Visible;
                 _suppressCustomizeEvents = true;
                 CustomizeCheckBox.IsChecked = editable;
@@ -464,65 +468,38 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         }
 
         /// <summary>
-        /// Sets the plain-language line under each surface's tester naming, in words, where the
-        /// shown style and look come from right now: the current scope (global / a platform / this
-        /// game) and the look (the plugin, the active theme, or an imported template). Recomputed
-        /// on every selection, toggle, import, and revert so it always matches the preview.
+        /// Sets the line under each surface's theme checkbox naming the look the preview uses
+        /// right now: the plugin's, the active theme's, or an imported template. Recomputed on
+        /// every selection, toggle, import, and revert so it always matches the preview. The
+        /// scope needs no line of its own; the platform dropdown and the scope column show it.
         /// </summary>
-        private void RefreshSourceSummary()
+        private void RefreshLookText()
         {
-            if (ToastSourceSummary == null || FrameSourceSummary == null)
+            if (ToastLookText == null || FrameLookText == null)
             {
                 return;
             }
 
-            ToastSourceSummary.Text = BuildSourceSummary(isFrame: false, _currentToastUseThemeStyling);
-            FrameSourceSummary.Text = BuildSourceSummary(isFrame: true, _currentFrameUseThemeStyling);
+            ToastLookText.Text = BuildLookText(isFrame: false, _currentToastUseThemeStyling);
+            FrameLookText.Text = BuildLookText(isFrame: true, _currentFrameUseThemeStyling);
         }
 
-        private string BuildSourceSummary(bool isFrame, bool useThemeStyling)
+        private string BuildLookText(bool isFrame, bool useThemeStyling)
         {
-            string scope;
-            // A kind with its own style is the narrowest thing on screen, so it names the
-            // scope; the platform card below still says which platform it belongs to.
-            if (!ReferenceEquals(_currentStyle, _currentScopeStyle) &&
-                GetKindDisplayName(ActiveKind) is string kindName)
-            {
-                scope = string.Format(L("LOCPlayAch_Settings_Style_SourceScope_Kind"), kindName);
-            }
-            else if (IsGameMode)
-            {
-                scope = L("LOCPlayAch_Settings_Style_SourceScope_Game");
-            }
-            else if (string.IsNullOrWhiteSpace(_selectedProviderKey))
-            {
-                scope = L("LOCPlayAch_Settings_Style_SourceScope_Global");
-            }
-            else
-            {
-                scope = string.Format(
-                    L("LOCPlayAch_Settings_Style_SourceScope_Platform"),
-                    ProviderRegistry.GetLocalizedName(_selectedProviderKey));
-            }
-
-            string look;
             if (useThemeStyling && _toastTemplateResolver != null &&
                 _toastTemplateResolver.ThemeProvidesTemplate(NotificationTemplatePreviewSource.ActiveTheme, isFrame))
             {
-                look = L("LOCPlayAch_Settings_Style_SourceLook_Theme");
-            }
-            else if (_toastTemplateResolver != null &&
-                     !string.IsNullOrWhiteSpace(
-                         _toastTemplateResolver.ResolveCustomTemplatePath(isFrame, ScopeProviderKey, ScopeGameId)))
-            {
-                look = L("LOCPlayAch_Settings_Style_SourceLook_Imported");
-            }
-            else
-            {
-                look = L("LOCPlayAch_Settings_Style_SourceLook_Plugin");
+                return L("LOCPlayAch_Settings_Style_SourceLook_Theme");
             }
 
-            return string.Format(L("LOCPlayAch_Settings_Style_SourceSummary"), scope, look);
+            if (_toastTemplateResolver != null &&
+                !string.IsNullOrWhiteSpace(
+                    _toastTemplateResolver.ResolveCustomTemplatePath(isFrame, ScopeProviderKey, ScopeGameId)))
+            {
+                return L("LOCPlayAch_Settings_Style_SourceLook_Imported");
+            }
+
+            return L("LOCPlayAch_Settings_Style_SourceLook_Plugin");
         }
 
         /// <summary>
@@ -865,15 +842,15 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
         private void UpdateMockupsCore()
         {
-            // Mockups (and the source summary) are visual-only; while the control is not in the
+            // Mockups (and the look lines) are visual-only; while the control is not in the
             // visual tree, the Loaded handler's rebuild covers every change made in the meantime.
             if (!IsLoaded)
             {
                 return;
             }
 
-            // The source summary needs no mockup hosts, so refresh it before the host guard.
-            RefreshSourceSummary();
+            // The look lines need no mockup hosts, so refresh them before the host guard.
+            RefreshLookText();
 
             var persisted = _settings?.Persisted;
             if (persisted == null || ToastMockupHost == null || FrameMockupHost == null ||

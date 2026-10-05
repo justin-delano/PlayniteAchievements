@@ -15,12 +15,22 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="ToolbarSeparatorStyle" TargetType="Border">
+                <Setter Property="Width" Value="1"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Border}"/>
+                <Setter Property="Margin" Value="4,0,12,8"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
-    <!-- Two-band layout: the preview and tester are pinned at the top (always in view) while the
-         scope/import-export controls and the per-surface editor scroll below. The Toast/Frame tabs
-         live in the pinned band; the matching editor in the scroll band shows/hides by binding to
-         each tab's IsSelected, so switching surface swaps both at once. -->
+    <!-- Two-band layout: the pinned band at the top holds the surface tabs with their toolbar
+         (sample, platform, fire tests), the preview, and the scope column beside it; the presets
+         card and the per-surface editor scroll below. The tabs are a header-only strip: every
+         per-surface element (preview, sample dropdown, fire buttons, theme checkbox, editor)
+         shows/hides by binding to its tab's IsSelected, so switching surface swaps them at once
+         while the scope column stays shared. -->
     <!-- UseLayoutRounding/SnapsToDevicePixels are repeated here, even though both hosts (the
          settings root and the Manage Achievements popout) already supply them, so the section stays
          correct wherever it is hosted next. PlayniteUiProvider.CreateExtensionWindow carries the
@@ -50,62 +60,109 @@
                    RenderOptions.BitmapScalingMode="HighQuality"
                    helpers:AsyncImage.DecodePixel="768"/>
 
-            <!-- ============================ PINNED: preview + tester ============================ -->
+            <!-- ======================= PINNED: tabs + toolbar, preview, scope ======================= -->
             <Border Grid.Row="0"
                     Style="{StaticResource SectionBorderStyle}"
                     Margin="0,0,0,10">
-                <StackPanel>
-                <TabControl x:Name="SurfaceTabs"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            SelectionChanged="SurfaceTabs_SelectionChanged">
-                    <TabItem x:Name="ToastTabItem"
-                             Header="{DynamicResource LOCPlayAch_Settings_Style_ToastTab}">
-                        <StackPanel Margin="0,12,0,0">
-                            <!-- Prominent, live line naming where the previewed style/look come
-                                 from (scope + template source). -->
-                            <TextBlock x:Name="ToastSourceSummary"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontWeight="SemiBold"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,8"/>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                            <!-- Device-pixel snapping for this card comes from the section root, not
-                                 from here: layout rounding resolves an element's rect in its parent's
-                                 coordinate space, so it cannot repair a fractional offset an ancestor
-                                 already introduced. See the root Grid. -->
-                            <Border Background="{DynamicResource PlayAch.Brush.Surface}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
+                    <!-- Tab strip and toolbar share one row; the toolbar wraps under itself
+                         when the window is too narrow for both. -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TabControl x:Name="SurfaceTabs"
+                                    Grid.Column="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
                                     Padding="0"
-                                    HorizontalAlignment="Left"
-                                    Margin="0,0,0,10">
-                                <ContentControl x:Name="ToastMockupHost"
-                                                ContentTemplate="{DynamicResource PlayAch.Template.AchievementToast}"/>
-                            </Border>
+                                    VerticalAlignment="Top"
+                                    SelectionChanged="SurfaceTabs_SelectionChanged">
+                            <TabItem x:Name="ToastTabItem"
+                                     Header="{DynamicResource LOCPlayAch_Settings_Style_ToastTab}"/>
+                            <TabItem x:Name="FrameTabItem"
+                                     Header="{DynamicResource LOCPlayAch_Settings_FrameHeader}"/>
+                        </TabControl>
 
-                            <!-- Tester. -->
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_SampleUnlock}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"/>
-                                <ComboBox x:Name="NotificationSampleSelector"
-                                          SelectedValuePath="Tag"
-                                          SelectionChanged="SampleSelector_SelectionChanged"
-                                          MinWidth="160">
-                                    <ComboBoxItem Tag="common" Content="{DynamicResource LOCPlayAch_Rarity_Common}"/>
-                                    <ComboBoxItem Tag="uncommon" Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"/>
-                                    <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
-                                    <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
-                                    <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                                    <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
-                                    <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
-                                    <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
-                                </ComboBox>
-                            </StackPanel>
-                            <WrapPanel Margin="0,0,0,10">
+                        <WrapPanel Grid.Column="1"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   Margin="16,0,0,0">
+                            <!-- The sample dropdown names the kind being previewed and doubles as
+                                 the kind scope selector for the Unlock type block below. The frame
+                                 list leaves out the kinds a screenshot never carries. -->
+                            <ComboBox x:Name="NotificationSampleSelector"
+                                      SelectedValuePath="Tag"
+                                      SelectionChanged="SampleSelector_SelectionChanged"
+                                      MinWidth="150"
+                                      Margin="0,0,8,8"
+                                      Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}">
+                                <ComboBoxItem Tag="common" Content="{DynamicResource LOCPlayAch_Rarity_Common}"/>
+                                <ComboBoxItem Tag="uncommon" Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"/>
+                                <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
+                                <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
+                                <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
+                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                                <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
+                                <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
+                            </ComboBox>
+                            <ComboBox x:Name="FrameSampleSelector"
+                                      SelectedValuePath="Tag"
+                                      SelectionChanged="SampleSelector_SelectionChanged"
+                                      MinWidth="150"
+                                      Margin="0,0,8,8"
+                                      Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
+                                <ComboBoxItem Tag="common" Content="{DynamicResource LOCPlayAch_Rarity_Common}"/>
+                                <ComboBoxItem Tag="uncommon" Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"/>
+                                <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
+                                <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
+                                <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
+                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                            </ComboBox>
+
+                            <!-- Platform selector: Default edits the global appearance; a platform can
+                                 be given its own whole-style copy via the Customize checkbox in the
+                                 scope column. Collapsed in game mode. -->
+                            <ComboBox x:Name="PlatformSelector"
+                                      MinWidth="180"
+                                      Margin="0,0,8,8"
+                                      SelectionChanged="PlatformSelector_SelectionChanged">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal"
+                                                    VerticalAlignment="Center">
+                                            <Image Width="16"
+                                                   Height="16"
+                                                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
+                                                   VerticalAlignment="Center"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                                   Visibility="{Binding HasProviderIcon, Converter={StaticResource BoolToVis}}">
+                                                <Image.Source>
+                                                    <MultiBinding Converter="{StaticResource ProviderIconConverter}">
+                                                        <Binding Path="ProviderIconKey"/>
+                                                        <Binding Path="ProviderColorHex"/>
+                                                    </MultiBinding>
+                                                </Image.Source>
+                                            </Image>
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <!-- Fire tests: show the selected sample on screen with the plugin's
+                                 design or the active theme's. -->
+                            <StackPanel Orientation="Horizontal"
+                                        Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}">
                                 <Button Click="FireNotification_Click"
                                         Tag="PluginStyle"
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_FirePluginStyle}"
@@ -114,201 +171,148 @@
                                         Click="FireNotification_Click"
                                         Tag="ActiveTheme"
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_FireTheme}"
-                                        Margin="0,0,8,8"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </TabItem>
-
-                    <TabItem x:Name="FrameTabItem"
-                             Header="{DynamicResource LOCPlayAch_Settings_FrameHeader}">
-                        <StackPanel Margin="0,12,0,0">
-                            <!-- Prominent, live line naming where the previewed style/look come
-                                 from (scope + template source). -->
-                            <TextBlock x:Name="FrameSourceSummary"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontWeight="SemiBold"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,8"/>
-
-                            <!-- The 16:9 grid stands in for the screenshot; the frame template lays
-                                 out on the same 1080-DIP virtual canvas the compositor uses, scaled
-                                 down uniformly. -->
-                            <Border Background="{DynamicResource PlayAch.Brush.Surface}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="10"
-                                    HorizontalAlignment="Stretch"
-                                    Margin="0,0,0,10">
-                                <!-- Show only the bottom half of the canvas (the frame's content is
-                                     bottom-anchored), so fitting the tab width costs half the height.
-                                     MaxHeight backstops very wide windows. -->
-                                <Viewbox Stretch="Uniform"
-                                         HorizontalAlignment="Stretch"
-                                         MaxHeight="320">
-                                    <Border Width="1920"
-                                            Height="540"
-                                            ClipToBounds="True">
-                                        <Grid Width="1920"
-                                              Height="1080"
-                                              VerticalAlignment="Bottom"
-                                              Background="#FF17222D">
-                                            <ContentControl x:Name="FrameMockupHost"/>
-                                        </Grid>
-                                    </Border>
-                                </Viewbox>
-                            </Border>
-
-                            <!-- Tester. -->
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,6"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_SampleUnlock}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"/>
-                                <ComboBox x:Name="FrameSampleSelector"
-                                          SelectedValuePath="Tag"
-                                          SelectionChanged="SampleSelector_SelectionChanged"
-                                          MinWidth="160">
-                                    <ComboBoxItem Tag="common" Content="{DynamicResource LOCPlayAch_Rarity_Common}"/>
-                                    <ComboBoxItem Tag="uncommon" Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"/>
-                                    <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
-                                    <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
-                                    <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                                    <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
-                                </ComboBox>
+                                        Margin="0,0,0,8"/>
                             </StackPanel>
-                            <WrapPanel Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal"
+                                        Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
                                 <Button Click="FireFrame_Click"
                                         Tag="PluginStyle"
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_FirePluginStyle}"
+                                        ToolTip="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
                                         Margin="0,0,8,8"/>
                                 <Button x:Name="FrameThemeButton"
                                         Click="FireFrame_Click"
                                         Tag="ActiveTheme"
                                         Content="{DynamicResource LOCPlayAch_Settings_Style_FireTheme}"
-                                        Margin="0,0,8,8"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </TabItem>
-                </TabControl>
+                                        ToolTip="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
+                                        ToolTipService.ShowOnDisabled="True"
+                                        Margin="0,0,0,8"/>
+                            </StackPanel>
+                        </WrapPanel>
+                    </Grid>
 
-                <!-- Per-kind styling. The sample dropdown above already names the kind being
-                     previewed, so it doubles as the scope selector: with one of the special
-                     kinds selected, this row opts that kind out of the scope's shared style
-                     into its own copy, seeded from it. The row hides for the plain rarity
-                     samples, which always follow the shared style. One slot covers both
-                     surfaces, so the toast and frame tabs show the same state. -->
-                <StackPanel x:Name="KindStylePanel"
-                            Visibility="Collapsed"
-                            Margin="0,4,0,0">
-                    <StackPanel Orientation="Horizontal">
-                        <CheckBox x:Name="KindStyleCheckBox"
-                                  Click="KindStyleCheckBox_Click"
-                                  VerticalAlignment="Center"/>
-                        <Button x:Name="ResetKindStyleButton"
-                                Click="ResetKindStyle_Click"
-                                Content="{DynamicResource LOCPlayAch_Settings_Style_Kind_ResetToBase}"
-                                Margin="14,0,0,0"
-                                Visibility="Collapsed"/>
-                    </StackPanel>
-                    <TextBlock x:Name="KindStyleHint"
-                               Style="{StaticResource MutedTextStyle}"
-                               TextWrapping="Wrap"
-                               Margin="0,6,0,0"/>
-                </StackPanel>
-                </StackPanel>
-            </Border>
+                    <!-- Preview on the left, the shared scope column on the right. -->
+                    <Grid Grid.Row="1" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="280"/>
+                        </Grid.ColumnDefinitions>
 
-            <!-- ======================= SCROLL: scope / share / editor ======================= -->
-            <ScrollViewer Grid.Row="1"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-                <StackPanel>
+                        <!-- Device-pixel snapping for this card comes from the section root, not
+                             from here: layout rounding resolves an element's rect in its parent's
+                             coordinate space, so it cannot repair a fractional offset an ancestor
+                             already introduced. See the root Grid. -->
+                        <Border Grid.Column="0"
+                                Background="{DynamicResource PlayAch.Brush.Surface}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}">
+                            <ContentControl x:Name="ToastMockupHost"
+                                            ContentTemplate="{DynamicResource PlayAch.Template.AchievementToast}"/>
+                        </Border>
 
-                    <!-- Platform selector: Default edits the global appearance; a platform can be
-                         given its own whole-style copy via the Customize checkbox. -->
-                    <Border Style="{StaticResource SectionBorderStyle}">
-                        <StackPanel>
-                            <TextBlock x:Name="PlatformHeader"
-                                       Text="{DynamicResource LOCPlayAch_Common_Label_Platform}"
-                                       Style="{StaticResource SectionHeaderStyle}"
-                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                            <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                        <!-- The 16:9 grid stands in for the screenshot; the frame template lays
+                             out on the same 1080-DIP virtual canvas the compositor uses, scaled
+                             down uniformly. -->
+                        <Border Grid.Column="0"
+                                Background="{DynamicResource PlayAch.Brush.Surface}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
+                            <!-- Show only the bottom half of the canvas (the frame's content is
+                                 bottom-anchored), so fitting the column width costs half the height.
+                                 MaxHeight backstops very wide windows. -->
+                            <Viewbox Stretch="Uniform"
+                                     HorizontalAlignment="Stretch"
+                                     MaxHeight="320">
+                                <Border Width="1920"
+                                        Height="540"
+                                        ClipToBounds="True">
+                                    <Grid Width="1920"
+                                          Height="1080"
+                                          VerticalAlignment="Bottom"
+                                          Background="#FF17222D">
+                                        <ContentControl x:Name="FrameMockupHost"/>
+                                    </Grid>
+                                </Border>
+                            </Viewbox>
+                        </Border>
 
+                        <!-- Scope column: every decision about which style the preview and the
+                             editor below show, top to bottom from widest to narrowest scope. -->
+                        <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                            <!-- Platform scope. In game mode the game's own override takes its place. -->
                             <StackPanel x:Name="PlatformSelectorPanel"
-                                        Orientation="Horizontal">
-                                <ComboBox x:Name="PlatformSelector"
-                                          MinWidth="220"
-                                          SelectionChanged="PlatformSelector_SelectionChanged">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal"
-                                                        VerticalAlignment="Center">
-                                                <Image Width="16"
-                                                       Height="16"
-                                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
-                                                       VerticalAlignment="Center"
-                                                       RenderOptions.BitmapScalingMode="HighQuality"
-                                                       Visibility="{Binding HasProviderIcon, Converter={StaticResource BoolToVis}}">
-                                                    <Image.Source>
-                                                        <MultiBinding Converter="{StaticResource ProviderIconConverter}">
-                                                            <Binding Path="ProviderIconKey"/>
-                                                            <Binding Path="ProviderColorHex"/>
-                                                        </MultiBinding>
-                                                    </Image.Source>
-                                                </Image>
-                                                <TextBlock Text="{Binding DisplayName}"
-                                                           VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                        Margin="0,0,0,16">
+                                <TextBlock x:Name="PlatformHeader"
+                                           Text="{DynamicResource LOCPlayAch_Common_Label_Platform}"
+                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                           Margin="0,0,0,6"/>
                                 <CheckBox x:Name="CustomizeCheckBox"
                                           Content="{DynamicResource LOCPlayAch_Settings_Style_CustomizeForPlatform}"
                                           Click="CustomizeCheckBox_Click"
-                                          VerticalAlignment="Center"
-                                          Margin="14,0,0,0"
                                           Visibility="Collapsed"/>
+                                <TextBlock x:Name="FollowDefaultHint"
+                                           Text="{DynamicResource LOCPlayAch_Settings_Style_FollowDefaultHint}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           TextWrapping="Wrap"
+                                           Visibility="Collapsed"
+                                           Margin="0,6,0,0"/>
                             </StackPanel>
-                            <TextBlock x:Name="FollowDefaultHint"
-                                       Text="{DynamicResource LOCPlayAch_Settings_Style_FollowDefaultHint}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Visibility="Collapsed"
-                                       Margin="0,8,0,0"/>
                             <StackPanel x:Name="GameSelectionPanel"
-                                        Visibility="Collapsed">
+                                        Visibility="Collapsed"
+                                        Margin="0,0,0,16">
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Section_Notifications}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
+                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                           Margin="0,0,0,6"/>
                                 <CheckBox x:Name="CustomizeGameCheckBox"
                                           Content="{DynamicResource LOCPlayAch_ManageAchievements_Notifications_Customize}"
-                                          Click="CustomizeGameCheckBox_Click"
-                                          Margin="0,10,0,0"/>
+                                          Click="CustomizeGameCheckBox_Click"/>
                                 <TextBlock x:Name="GameInheritanceHint"
                                            Style="{StaticResource MutedTextStyle}"
                                            TextWrapping="Wrap"
-                                           Margin="0,8,0,0"/>
+                                           Margin="0,6,0,0"/>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
 
-                    <!-- General: baseline design for the tab selected above. Only the active tab's
-                         controls show; the theme checkboxes exist per surface because each persists
-                         its own flag. -->
-                    <Border Style="{StaticResource SectionBorderStyle}">
-                        <StackPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Common_General}"
-                                       Style="{StaticResource SectionHeaderStyle}"
-                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                            <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                            <!-- Per-kind styling. With one of the special kinds selected in the sample
+                                 dropdown, this block opts that kind out of the scope's shared style
+                                 into its own copy, seeded from it. It hides for the plain rarity
+                                 samples, which always follow the shared style. One slot covers both
+                                 surfaces, so the toast and frame tabs show the same state. -->
+                            <StackPanel x:Name="KindStylePanel"
+                                        Visibility="Collapsed"
+                                        Margin="0,0,0,16">
+                                <TextBlock x:Name="KindStyleHeader"
+                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                           Margin="0,0,0,6"/>
+                                <CheckBox x:Name="KindStyleCheckBox"
+                                          Click="KindStyleCheckBox_Click"/>
+                                <Button x:Name="ResetKindStyleButton"
+                                        Click="ResetKindStyle_Click"
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_Kind_ResetToBase}"
+                                        HorizontalAlignment="Left"
+                                        Margin="0,8,0,0"
+                                        Visibility="Collapsed"/>
+                                <TextBlock x:Name="KindStyleHint"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,6,0,0"/>
+                            </StackPanel>
 
-                            <!-- Theme toggle: decides whether the live notification / saved frame
-                                 (and the preview above) use the theme's design or the plugin's. -->
+                            <!-- Design: whether the live notification / saved frame (and the preview)
+                                 use the theme's design or the plugin's. Each surface persists its
+                                 own flag, so each has its own checkbox and look line. -->
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_FireTheme}"
+                                       Style="{StaticResource SubSectionHeaderStyle}"
+                                       Margin="0,0,0,6"/>
                             <CheckBox x:Name="ToastThemeStylingCheckBox"
                                       Content="{DynamicResource LOCPlayAch_Settings_Style_UseThemeTemplate}"
                                       Click="ThemeStylingCheckBox_Click"
@@ -317,33 +321,33 @@
                                       Content="{DynamicResource LOCPlayAch_Settings_Style_UseThemeTemplate}"
                                       Click="ThemeStylingCheckBox_Click"
                                       Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}"/>
-
-                            <!-- Per-surface actions: reset the surface to its built-in default
-                                 (clears style edits and any custom template), or export the default
-                                 template as a loose .xaml starting point to edit and re-import. -->
-                            <WrapPanel Margin="0,10,0,0"
-                                       Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}">
-                                <Button Click="ResetToastStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
-                                        Margin="0,0,8,0"/>
-                                <Button Click="ExportDefaultToastTemplate_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"/>
-                            </WrapPanel>
-                            <WrapPanel Margin="0,10,0,0"
-                                       Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
-                                <Button Click="ResetFrameStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
-                                        Margin="0,0,8,0"/>
-                                <Button Click="ExportDefaultFrameTemplate_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"/>
-                            </WrapPanel>
+                            <TextBlock x:Name="ToastLookText"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"
+                                       Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock x:Name="FrameLookText"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"
+                                       Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
-                    </Border>
+                    </Grid>
+                </Grid>
+            </Border>
 
-                    <!-- Presets and sharing for the tab selected above: save the active surface's
-                         appearance (including images and any custom template) under a name, apply a
-                         saved preset to the current platform/game selection, or exchange styles as
-                         .panotif/.paframe files. The dropdown lists only presets for the active surface. -->
+            <!-- ========================= SCROLL: presets / share / editor ========================= -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+
+                    <!-- Presets, sharing and reset for the tab selected above: save the active
+                         surface's appearance (including images and any custom template) under a
+                         name, apply a saved preset to the current platform/game selection, exchange
+                         styles as .panotif/.paframe files, reset the surface to its built-in default,
+                         or export the default template as a loose .xaml starting point. The dropdown
+                         lists only presets for the active surface. -->
                     <Border Style="{StaticResource SectionBorderStyle}">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Presets_Header}"
@@ -353,46 +357,66 @@
 
                             <WrapPanel>
                                 <ComboBox x:Name="PresetSelector"
-                                          MinWidth="220"
+                                          MinWidth="200"
                                           VerticalAlignment="Center"
-                                          Margin="0,0,8,0"
+                                          Margin="0,0,8,8"
                                           SelectionChanged="PresetSelector_SelectionChanged"
                                           DropDownOpened="PresetSelector_DropDownOpened"/>
                                 <Button x:Name="ApplyPresetButton"
                                         Click="ApplyPreset_Click"
                                         Content="{DynamicResource LOCPlayAch_Button_Apply}"
                                         IsEnabled="False"
-                                        Margin="0,0,8,0"/>
+                                        Margin="0,0,8,8"/>
                                 <Button x:Name="SavePresetButton"
                                         Click="SavePreset_Click"
                                         Content="{DynamicResource LOCPlayAch_Presets_Save}"
-                                        Margin="0,0,8,0"/>
+                                        Margin="0,0,8,8"/>
                                 <Button x:Name="DeletePresetButton"
                                         Click="DeletePreset_Click"
                                         Content="{DynamicResource LOCPlayAch_Button_Delete}"
-                                        IsEnabled="False"/>
+                                        IsEnabled="False"
+                                        Margin="0,0,8,8"/>
+
+                                <Border Style="{StaticResource ToolbarSeparatorStyle}"/>
+
+                                <!-- Share the selected surface's style as a .panotif/.paframe file or
+                                     import one onto the current platform selection. -->
+                                <Button x:Name="ImportStyleButton"
+                                        Click="ImportStyle_Click"
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                        ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
+                                        Margin="0,0,8,8"/>
+                                <Button x:Name="ExportStyleButton"
+                                        Click="ExportStyle_Click"
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                        ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
+                                        Margin="0,0,8,8"/>
+
+                                <Border Style="{StaticResource ToolbarSeparatorStyle}"/>
+
+                                <StackPanel Orientation="Horizontal"
+                                            Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}">
+                                    <Button Click="ResetToastStyle_Click"
+                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
+                                            Margin="0,0,8,8"/>
+                                    <Button Click="ExportDefaultToastTemplate_Click"
+                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                            Margin="0,0,0,8"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal"
+                                            Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}">
+                                    <Button Click="ResetFrameStyle_Click"
+                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
+                                            Margin="0,0,8,8"/>
+                                    <Button Click="ExportDefaultFrameTemplate_Click"
+                                            Content="{DynamicResource LOCPlayAch_Settings_Style_ExportDefaultTemplate}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                            Margin="0,0,0,8"/>
+                                </StackPanel>
                             </WrapPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_Presets_Hint}"
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
-                                       Margin="0,8,0,0"/>
-
-                            <!-- Share the selected surface's style as a .panotif/.paframe file or
-                                 import one onto the current platform selection. Both surfaces
-                                 together travel as a bundle (Display > Colors). -->
-                            <WrapPanel Margin="0,14,0,0">
-                                <Button x:Name="ExportStyleButton"
-                                        Click="ExportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
-                                        Margin="0,0,8,0"/>
-                                <Button x:Name="ImportStyleButton"
-                                        Click="ImportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"/>
-                            </WrapPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,8,0,0"/>
+                                       Margin="0,2,0,0"/>
                         </StackPanel>
                     </Border>
 
