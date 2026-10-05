@@ -22,22 +22,7 @@
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Border}"/>
                 <Setter Property="Margin" Value="4,0,12,8"/>
-            </Style>
-
-            <!-- Icon-only toolbar button, matching the Manage Achievements editor toolbar. -->
-            <Style x:Key="ToolbarIconButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
-                <Setter Property="FontSize" Value="16"/>
-                <Setter Property="Width" Value="34"/>
-                <Setter Property="MinWidth" Value="0"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                <Setter Property="VerticalContentAlignment" Value="Center"/>
-                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
-                <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
-                <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
-            </Style>
-        </ResourceDictionary>
+            </Style>        </ResourceDictionary>
     </UserControl.Resources>
     <!-- Two-band layout: the pinned band at the top holds the surface tabs with their toolbar
          (sample, platform, fire tests), the preview, and the scope column beside it; the presets
@@ -208,7 +193,7 @@
                             <Button Click="ResetStyle_Click"
                                     Content="&#xEFD1;"
                                     ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
-                                    Style="{StaticResource ToolbarIconButtonStyle}"
+                                    Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
                                     Margin="16,0,0,8"/>
                         </WrapPanel>
                     </Grid>
@@ -284,12 +269,6 @@
                                 <CheckBox x:Name="CustomizeCheckBox"
                                           Click="CustomizeCheckBox_Click"
                                           Visibility="Collapsed"/>
-                                <TextBlock x:Name="FollowDefaultHint"
-                                           Text="{DynamicResource LOCPlayAch_Settings_Style_FollowDefaultHint}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           TextWrapping="Wrap"
-                                           Visibility="Collapsed"
-                                           Margin="0,6,0,0"/>
                             </StackPanel>
                             <StackPanel x:Name="GameSelectionPanel"
                                         Visibility="Collapsed"

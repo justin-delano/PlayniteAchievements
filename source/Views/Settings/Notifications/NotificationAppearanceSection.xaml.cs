@@ -120,7 +120,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             {
                 PlatformSelector.Visibility = Visibility.Collapsed;
                 PlatformSelectorPanel.Visibility = Visibility.Collapsed;
-                FollowDefaultHint.Visibility = Visibility.Collapsed;
                 GameSelectionPanel.Visibility = Visibility.Visible;
             }
             else
@@ -365,7 +364,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 // Default has no platform scope to opt into, so its block in the scope column hides.
                 PlatformSelectorPanel.Visibility = Visibility.Collapsed;
                 CustomizeCheckBox.Visibility = Visibility.Collapsed;
-                FollowDefaultHint.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -381,7 +379,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 _suppressCustomizeEvents = true;
                 CustomizeCheckBox.IsChecked = editable;
                 _suppressCustomizeEvents = false;
-                FollowDefaultHint.Visibility = editable ? Visibility.Collapsed : Visibility.Visible;
             }
 
             _currentScopeStyle = style;
