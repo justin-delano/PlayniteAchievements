@@ -219,7 +219,7 @@
 
             <TabControl Grid.Row="0" x:Name="Tabs" Background="Transparent" BorderThickness="0">
                 <!-- Browse -->
-                <TabItem Header="{DynamicResource LOCPlayAch_Workshop_Tab_Browse}">
+                <TabItem x:Name="BrowseTab" Header="{DynamicResource LOCPlayAch_Workshop_Tab_Browse}">
                     <Grid Margin="0,10,0,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -293,9 +293,8 @@
                     </Grid>
                 </TabItem>
 
-                <!-- Installed: the same list-and-detail shape as Browse, with this install's
-                     submissions as a card under the detail pane. -->
-                <TabItem Header="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}">
+                <!-- Installed: the same list-and-detail shape as Browse. -->
+                <TabItem x:Name="InstalledTab" Header="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}">
                     <Grid Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="3*" MinWidth="320"/>
@@ -318,74 +317,80 @@
 
                         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
 
-                        <Grid Grid.Column="2">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                        <Border Grid.Column="2"
+                                Background="{DynamicResource PlayAch.Brush.Panel}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                CornerRadius="4">
+                            <ContentControl Content="{Binding SelectedItem}"
+                                            ContentTemplate="{StaticResource WorkshopItemDetailTemplate}"
+                                            Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
 
-                            <Border Grid.Row="0"
-                                    Background="{DynamicResource PlayAch.Brush.Panel}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                    CornerRadius="4">
-                                <ContentControl Content="{Binding SelectedItem}"
-                                                ContentTemplate="{StaticResource WorkshopItemDetailTemplate}"
-                                                Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}"/>
-                            </Border>
+                <!-- My submissions: what this install has shared, with each item's review state. -->
+                <TabItem x:Name="SubmissionsTab" Header="{DynamicResource LOCPlayAch_Workshop_MySubmissions}">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                            <Grid Grid.Row="1" Margin="0,10,0,0" MaxHeight="240">
-                                <Border Padding="12"
-                                        Background="{DynamicResource PlayAch.Brush.Panel}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                        CornerRadius="4">
-                                    <DockPanel>
-                                        <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_MySubmissions}"
-                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
-                                                    HorizontalAlignment="Right"
-                                                    Command="{Binding RefreshSubmissionsCommand}"/>
-                                        </Grid>
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                            <ItemsControl ItemsSource="{Binding Submissions}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="{x:Type vm:WorkshopSubmissionViewModel}">
-                                                        <Grid Margin="0,0,0,6">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <StackPanel>
-                                                                <TextBlock Text="{Binding Name}"
-                                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                                           TextTrimming="CharacterEllipsis"/>
-                                                                <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}">
-                                                                    <Run Text="{Binding KindLabel, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Submitted, Mode=OneWay}"/>
-                                                                </TextBlock>
-                                                            </StackPanel>
-                                                            <TextBlock Grid.Column="1"
-                                                                       Text="{Binding State}"
-                                                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                                                       VerticalAlignment="Center"
-                                                                       Margin="8,0"/>
-                                                            <Button Grid.Column="2"
-                                                                    Content="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
-                                                                    Command="{Binding DataContext.OpenSubmissionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding}"/>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </DockPanel>
-                                </Border>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                                    Command="{Binding RefreshSubmissionsCommand}"/>
+                        </StackPanel>
+
+                        <Border Grid.Row="1"
+                                Padding="12"
+                                Background="{DynamicResource PlayAch.Brush.Panel}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                CornerRadius="4">
+                            <Grid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl ItemsSource="{Binding Submissions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:WorkshopSubmissionViewModel}">
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                   FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                                                                   TextTrimming="CharacterEllipsis">
+                                                            <Run Text="{Binding KindLabel, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Submitted, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding State}"
+                                                               Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="12,0"/>
+                                                    <Button Grid.Column="2"
+                                                            Content="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
+                                                            VerticalAlignment="Center"
+                                                            Command="{Binding DataContext.OpenSubmissionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_NoSubmissions}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="{Binding HasSubmissions, Converter={StaticResource InverseBoolToVis}}"/>
                             </Grid>
-                        </Grid>
+                        </Border>
                     </Grid>
                 </TabItem>
             </TabControl>

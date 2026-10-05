@@ -13,17 +13,18 @@ using System.Windows.Controls;
 
 namespace PlayniteAchievements.Views.Workshop
 {
-    /// <summary>Which of the Workshop panes a control shows: both tabs, or one of them without the tab strip.</summary>
+    /// <summary>Which of the Workshop panes a control shows: every tab, or one of them without the tab strip.</summary>
     public enum WorkshopPane
     {
         Full,
         Browse,
-        Installed
+        Installed,
+        Submissions
     }
 
     /// <summary>
-    /// The Workshop window: browse and install community items, see what is installed and revert
-    /// recent installs, and share this install's customizations.
+    /// The Workshop window: browse and install community items, see what is installed, and follow
+    /// the items this install has shared.
     /// </summary>
     public partial class WorkshopControl : UserControl
     {
@@ -57,7 +58,9 @@ namespace PlayniteAchievements.Views.Workshop
             {
                 // Hosted as one settings page: that tab alone, with the tab strip hidden. A
                 // collapsed TabItem still presents its content while it is the selected one.
-                Tabs.SelectedIndex = pane == WorkshopPane.Browse ? 0 : 1;
+                Tabs.SelectedItem = pane == WorkshopPane.Browse
+                    ? BrowseTab
+                    : pane == WorkshopPane.Installed ? InstalledTab : SubmissionsTab;
                 foreach (var item in Tabs.Items.OfType<TabItem>())
                 {
                     item.Visibility = Visibility.Collapsed;
