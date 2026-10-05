@@ -76,7 +76,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string PreviewPath
         {
             get => _previewPath;
-            set => SetValue(ref _previewPath, value, nameof(PreviewPath), nameof(HasPreview), nameof(ThumbnailPath));
+            set => SetValue(ref _previewPath, value, nameof(PreviewPath), nameof(HasPreview), nameof(ThumbnailPath), nameof(HasThumbnail));
         }
 
         public bool HasPreview => !string.IsNullOrWhiteSpace(_previewPath);
@@ -85,13 +85,33 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string CoverPath
         {
             get => _coverPath;
-            set => SetValue(ref _coverPath, value, nameof(CoverPath), nameof(HasCover), nameof(ThumbnailPath));
+            set => SetValue(ref _coverPath, value, nameof(CoverPath), nameof(HasCover), nameof(ThumbnailPath), nameof(HasThumbnail));
         }
 
         public bool HasCover => !string.IsNullOrWhiteSpace(_coverPath);
 
         /// <summary>The list thumbnail: the cover when the item has one, otherwise the preview.</summary>
         public string ThumbnailPath => HasCover ? _coverPath : _previewPath;
+
+        /// <summary>True when the item has a cover or a preview to show; otherwise the kind glyph stands in.</summary>
+        public bool HasThumbnail => HasCover || HasPreview;
+
+        /// <summary>The IcoFont glyph standing in for an item with neither a cover nor a preview.</summary>
+        public string KindGlyph => KindGlyphFor(Kind);
+
+        public static string KindGlyphFor(WorkshopItemKind kind)
+        {
+            switch (kind)
+            {
+                case WorkshopItemKind.Colors: return ""; // paint
+                case WorkshopItemKind.NotificationStyle: return ""; // notification
+                case WorkshopItemKind.ScreenshotFrame: return ""; // picture
+                case WorkshopItemKind.ShowcasePage: return ""; // dashboard-web
+                case WorkshopItemKind.UnlockSounds: return ""; // music-note
+                case WorkshopItemKind.Bundle: return ""; // box
+                default: return ""; // trophy
+            }
+        }
 
         public string Readme
         {
