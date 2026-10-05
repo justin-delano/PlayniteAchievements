@@ -70,6 +70,30 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Changed_IsRaisedForRecordForgetAndSubmissions_ButNotForAMissingForget()
+        {
+            WithTemp(dir =>
+            {
+                var registry = new WorkshopInstalledRegistry(dir);
+                var raised = 0;
+                registry.Changed += (_, __) => raised++;
+                var item = new WorkshopItem { Id = "colors/neon", Kind = WorkshopItemKind.Colors, Name = "Neon", Version = "1.0.0" };
+
+                registry.Record(item);
+                Assert.AreEqual(1, raised, "an install is announced");
+
+                registry.Forget("colors/missing");
+                Assert.AreEqual(1, raised, "forgetting nothing is not a change");
+
+                registry.Forget(item.Id);
+                Assert.AreEqual(2, raised, "a forgotten install is announced");
+
+                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
+                Assert.AreEqual(3, raised, "a submission is announced");
+            });
+        }
+
+        [TestMethod]
         public void GameData_IsRecordedPerGame()
         {
             WithTemp(dir =>
