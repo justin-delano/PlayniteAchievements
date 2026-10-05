@@ -1648,7 +1648,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">Your name</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">Comma-separated, up to 10</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">Notes shown on the item's page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Preview">Preview image</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Update my earlier submission</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Rights">Everything in this package is my own work or licensed for redistribution, and it contains no personal progress I want to keep private.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
