@@ -1611,6 +1611,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Downloading">Downloading {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Installing">Installing...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InstallConfirmGameData">Install "{0}" onto {1}? This replaces that game's custom data (icons, categories, capstones, notes). Your unlock progress is kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_InstallChoiceGameData">{1} already has custom data. Merge keeps everything you set and fills in only what the package adds; Replace swaps that data for the package. How should "{0}" be installed? Your unlock progress is kept either way.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ReinstallConfirmGameData">Reinstall "{0}" onto {1}? This replaces that game's custom data with the package again, including any changes you made since installing it. Your unlock progress is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the game this data belongs to</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_NoGameMatch">No game in your library matches "{0}".</sys:String>
