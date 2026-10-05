@@ -1594,9 +1594,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_ReinstallConfirmGameData">Reinstall "{0}" onto {1}? This replaces that game's custom data with the package again, including any changes you made since installing it. Your unlock progress is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the game this data belongs to</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_NoGameMatch">No game in your library matches "{0}".</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_RecentInstalls">Recent installs</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Revert">Revert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_RevertTo">Revert to before "{0}" ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share">Share to Workshop</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromFile">From file...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromWorkshop">From Workshop...</sys:String>
