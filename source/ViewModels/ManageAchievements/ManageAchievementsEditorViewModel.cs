@@ -2707,7 +2707,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         .Select(AchievementCategoryTypeHelper.Normalize)
                         .Where(categoryType => !string.IsNullOrWhiteSpace(categoryType))));
 
-            StageAcross(targets, row => row.CategoryTypeValue = normalized);
+            StageAcross(targets, row => row.CategoryTypeValue =
+                AchievementCategoryTypeHelper.OverrideOrNull(normalized, row.ProviderCategoryTypeValue));
             PersistCategoryAssignmentsFromRows();
             SyncBulkRowFromSelection();
         }
@@ -2740,10 +2741,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             // no override of its own has a null one, which reads as Default, so ticking a second
             // type used to drop the provider's grouping the ticks beside it were still showing.
             // The Categories tab and the shared row menu both toggle from the effective value.
-            StageAcross(targets, row => row.CategoryTypeValue = AchievementCategoryTypeHelper.WithCategoryType(
-                AchievementCategoryTypeHelper.NormalizeOrDefault(row.EffectiveCategoryTypeValue),
-                normalizedType,
-                isSelected));
+            StageAcross(targets, row => row.CategoryTypeValue = AchievementCategoryTypeHelper.OverrideOrNull(
+                AchievementCategoryTypeHelper.WithCategoryType(
+                    AchievementCategoryTypeHelper.NormalizeOrDefault(row.EffectiveCategoryTypeValue),
+                    normalizedType,
+                    isSelected),
+                row.ProviderCategoryTypeValue));
             PersistCategoryAssignmentsFromRows();
             SyncBulkRowFromSelection();
         }
@@ -5193,7 +5196,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         return;
 
                     case nameof(AchievementEditorRow.CategoryTypeValue):
-                        StageAcrossSelection(row => row.CategoryTypeValue = bulk.CategoryTypeValue);
+                        StageAcrossSelection(row => row.CategoryTypeValue = bulk.CategoryTypeValue == null
+                            ? null
+                            : AchievementCategoryTypeHelper.OverrideOrNull(bulk.CategoryTypeValue, row.ProviderCategoryTypeValue));
                         PersistCategoryAssignmentsFromRows();
                         return;
 
