@@ -317,6 +317,21 @@ namespace PlayniteAchievements.Services.Achievements
         /// canonical order. Normalizes to <see cref="DefaultCategoryType"/> when no components
         /// remain. A null/blank <paramref name="categoryType"/> leaves the value unchanged.
         /// </summary>
+        /// <summary>
+        /// The category type override to store for a row, or null when <paramref name="value"/>
+        /// is what the provider already gives it. An override equal to the provider's type changes
+        /// nothing, and storing one (most often "Default" after the last type is unticked on a row
+        /// the provider leaves untyped) only adds an empty override to the game's custom data.
+        /// "Default" stays a real override when the provider does assign a type.
+        /// </summary>
+        public static string OverrideOrNull(string value, string providerValue)
+        {
+            var normalized = NormalizeOrDefault(value);
+            return string.Equals(normalized, NormalizeOrDefault(providerValue), StringComparison.OrdinalIgnoreCase)
+                ? null
+                : normalized;
+        }
+
         public static string WithCategoryType(string categoryTypeValue, string categoryType, bool include)
         {
             var token = Normalize(categoryType);
