@@ -120,17 +120,24 @@ namespace PlayniteAchievements.Services.Workshop
         /// The item's preview image as a local cached file path, or null. Cached by URL; the URL
         /// is pinned to the publishing commit, so a changed preview has a new URL.
         /// </summary>
-        public Task<string> FetchPreviewAsync(WorkshopItem item, CancellationToken cancel) => Task.Run(() => FetchPreviewCoreAsync(item, cancel), cancel);
+        public Task<string> FetchPreviewAsync(WorkshopItem item, CancellationToken cancel)
+            => Task.Run(() => FetchImageCoreAsync(item, item?.Urls?.Preview, item?.Preview, "preview"), cancel);
 
-        private async Task<string> FetchPreviewCoreAsync(WorkshopItem item, CancellationToken cancel)
+        /// <summary>
+        /// The item's optional cover image as a local cached file path, or null when it has none
+        /// or the fetch fails. Cached by URL like the preview.
+        /// </summary>
+        public Task<string> FetchCoverAsync(WorkshopItem item, CancellationToken cancel)
+            => Task.Run(() => FetchImageCoreAsync(item, item?.Urls?.Cover, item?.Cover, "cover"), cancel);
+
+        private async Task<string> FetchImageCoreAsync(WorkshopItem item, string url, string fileName, string label)
         {
-            var url = item?.Urls?.Preview;
             if (string.IsNullOrWhiteSpace(url))
             {
                 return null;
             }
 
-            var cached = CachePathFor(url, Path.GetExtension(item.Preview ?? ".png"));
+            var cached = CachePathFor(url, Path.GetExtension(string.IsNullOrWhiteSpace(fileName) ? ".png" : fileName));
             if (cached == null)
             {
                 return null;
@@ -150,7 +157,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"Failed fetching Workshop preview for {item.Id}.");
+                _logger?.Debug(ex, $"Failed fetching Workshop {label} for {item?.Id}.");
                 return null;
             }
         }
