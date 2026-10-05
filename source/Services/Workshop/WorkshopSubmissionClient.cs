@@ -211,10 +211,10 @@ namespace PlayniteAchievements.Services.Workshop
             switch (kind)
             {
                 case WorkshopItemKind.Colors: return "Colors";
-                case WorkshopItemKind.NotificationStyle: return "Notification style";
-                case WorkshopItemKind.ScreenshotFrame: return "Screenshot frame";
+                case WorkshopItemKind.NotificationStyle: return "Notifications";
+                case WorkshopItemKind.ScreenshotFrame: return "Frames";
                 case WorkshopItemKind.ShowcasePage: return "Showcase page";
-                case WorkshopItemKind.UnlockSounds: return "Unlock sound pack";
+                case WorkshopItemKind.UnlockSounds: return "Sounds";
                 case WorkshopItemKind.Bundle: return "Bundle";
                 default: return "Per-game custom data";
             }
