@@ -247,7 +247,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
             var hasKindStyle = scopeStyle.HasKindStyle(kind);
             KindStylePanel.Visibility = Visibility.Visible;
-            KindStyleHeader.Text = GetKindDisplayName(kind);
             KindStyleCheckBox.Content = string.Format(
                 L("LOCPlayAch_Settings_Style_Kind_Customize"),
                 GetKindDisplayName(kind));
