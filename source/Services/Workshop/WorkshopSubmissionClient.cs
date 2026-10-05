@@ -141,9 +141,9 @@ namespace PlayniteAchievements.Services.Workshop
             return key;
         }
 
-        public Task<WorkshopSubmissionReceipt> SubmitAsync(WorkshopSubmission submission, string submitterHash, string packageKey, string previewKey, string pluginVersion, CancellationToken cancel)
+        public Task<WorkshopSubmissionReceipt> SubmitAsync(WorkshopSubmission submission, string submitterHash, string packageKey, string previewKey, string pluginVersion, CancellationToken cancel, string coverKey = null)
 
-            => Task.Run(() => SubmitCoreAsync(submission, submitterHash, packageKey, previewKey, pluginVersion, cancel), cancel);
+            => Task.Run(() => SubmitCoreAsync(submission, submitterHash, packageKey, previewKey, coverKey, pluginVersion, cancel), cancel);
 
 
         private async Task<WorkshopSubmissionReceipt> SubmitCoreAsync(
@@ -151,6 +151,7 @@ namespace PlayniteAchievements.Services.Workshop
             string submitterHash,
             string packageKey,
             string previewKey,
+            string coverKey,
             string pluginVersion,
             CancellationToken cancel)
         {
@@ -173,6 +174,7 @@ namespace PlayniteAchievements.Services.Workshop
                 submitterHash,
                 packageKey,
                 previewKey,
+                coverKey,
                 pluginVersion
             }, cancel).ConfigureAwait(false);
 
