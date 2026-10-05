@@ -52,6 +52,18 @@
                 </Grid>
             </DataTemplate>
 
+            <!-- The published image's status cell: the capstone badge only, never the sharer's
+                 unlocked or locked state. -->
+            <DataTemplate x:Key="NeutralStatusTemplate">
+                <Image Source="{DynamicResource BadgeRarityCompleted}"
+                       Width="18"
+                       Height="18"
+                       Stretch="Uniform"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
+            </DataTemplate>
+
             <!-- Package only: badge | the package's entry | category | capstone. -->
             <DataTemplate x:Key="PackageRowTemplate" DataType="{x:Type preview:GameDataPreviewRow}">
                 <Grid Height="{x:Static preview:GameDataPreviewControl.RowHeight}">

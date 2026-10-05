@@ -114,8 +114,9 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         }
 
         /// <summary>
-        /// True for the published preview image: no controls, changed rows after the install,
-        /// default settings and a fixed column set, and the note that addresses the viewing user
+        /// True for the published preview image: no controls, the rows the package touches after
+        /// the install, default settings, a fixed column set with a status cell that shows only
+        /// the capstone badge, and the note that addresses the viewing user
         /// ("not in your library") hidden, since it describes the sharer's machine.
         /// </summary>
         public bool NeutralRender
@@ -259,8 +260,12 @@ namespace PlayniteAchievements.Views.Workshop.Preview
 
             if (compared)
             {
+                // The published image lists what the package touches in its after-install state;
+                // shared from the game it was made on, the install itself changes nothing there.
                 _changedApiNames = new HashSet<string>(
-                    diff.Rows.Select(row => row?.ApiName).Where(apiName => apiName != null),
+                    NeutralRender
+                        ? diff.PackageTouchedApiNames
+                        : diff.Rows.Select(row => row?.ApiName).Where(apiName => apiName != null),
                     StringComparer.OrdinalIgnoreCase);
                 ConfigureGrid(AfterGrid);
                 if (!NeutralRender)
@@ -313,9 +318,18 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 var dataGrid = grid.AchievementsDataGrid;
                 foreach (var column in dataGrid.Columns)
                 {
-                    column.Visibility = NeutralColumns.Contains(ColumnVisibilityHelper.GetColumnKey(column) ?? string.Empty)
+                    var key = ColumnVisibilityHelper.GetColumnKey(column) ?? string.Empty;
+                    column.Visibility = NeutralColumns.Contains(key)
                         ? Visibility.Visible
                         : Visibility.Collapsed;
+
+                    // The status cell shows the capstone badge only: no check mark or padlock,
+                    // so the image says nothing about the sharer's progress.
+                    if (string.Equals(key, "Status", StringComparison.OrdinalIgnoreCase) &&
+                        column is DataGridTemplateColumn statusColumn)
+                    {
+                        statusColumn.CellTemplate = (DataTemplate)FindResource("NeutralStatusTemplate");
+                    }
                 }
 
                 // Every row is realized for the render, and no scroll bar is drawn beside them.
@@ -386,6 +400,13 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             var wanted = showUnchanged
                 ? items
                 : items.Where(item => _changedApiNames.Contains(item.ApiName ?? string.Empty)).ToList();
+            if (NeutralRender && wanted.Count == 0)
+            {
+                // A package that touches no single achievement (an order or category order only)
+                // shows the game's first rows in their after-install order.
+                wanted = items;
+            }
+
             var limit = MaxRows > 0 ? Math.Min(MaxRows, wanted.Count) : wanted.Count;
             _shownItems = wanted.Take(limit).ToList();
 
