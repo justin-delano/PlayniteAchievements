@@ -71,6 +71,7 @@ namespace PlayniteAchievements.Views.Workshop
             CandidateLabel.Text = candidate.Label;
             NameBox.Text = candidate.DefaultName ?? string.Empty;
             AuthorBox.Text = registry.DisplayName ?? string.Empty;
+            CoverBox.Text = DefaultCoverPath(plugin, candidate, logger) ?? string.Empty;
 
             // The standardized preview image is rendered once the dialog is up (OnLoaded) and
             // always submitted with the package; it is not chosen by hand.
@@ -195,6 +196,49 @@ namespace PlayniteAchievements.Views.Workshop
             {
                 StatusText.Text = string.Empty;
             }
+        }
+
+        /// <summary>
+        /// For game data, the Playnite game's own artwork as a starting cover: its background
+        /// image, else its cover image, when that is a local file within the size limit. Null
+        /// for other kinds or when the game has no usable artwork.
+        /// </summary>
+        private static string DefaultCoverPath(PlayniteAchievementsPlugin plugin, WorkshopShareCandidate candidate, ILogger logger)
+        {
+            if (candidate.Kind != WorkshopItemKind.GameCustomData || candidate.GameId == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var database = plugin.PlayniteApi?.Database;
+                var game = database?.Games?.Get(candidate.GameId.Value);
+                if (game == null)
+                {
+                    return null;
+                }
+
+                foreach (var image in new[] { game.BackgroundImage, game.CoverImage })
+                {
+                    if (string.IsNullOrWhiteSpace(image) || image.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var path = database.GetFullFilePath(image);
+                    if (!string.IsNullOrWhiteSpace(path) && File.Exists(path) && new FileInfo(path).Length <= MaxCoverBytes)
+                    {
+                        return path;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Debug(ex, "Could not resolve the game's artwork as a Workshop cover image.");
+            }
+
+            return null;
         }
 
         private void ClearCover_Click(object sender, RoutedEventArgs e)
