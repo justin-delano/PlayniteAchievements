@@ -140,6 +140,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private string _errorMessage;
         private double _progressFraction;
         private Guid? _focusGameId;
+        private readonly System.Windows.Threading.Dispatcher _dispatcher;
+        private bool _registryRefreshQueued;
+        private bool _applyingRegistryChange;
 
         public WorkshopViewModel(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId, WorkshopItemKind? focusKind = null)
         {
@@ -151,6 +154,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
             _undo = plugin.WorkshopUndo;
             _matcher = plugin.CreateWorkshopGameMatcher();
             _focusGameId = focusGameId;
+            _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            _registry.Changed += Registry_Changed;
 
             KindOptions = new List<WorkshopKindOption>
             {
@@ -1168,8 +1173,54 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
+        /// <summary>
+        /// Another list (Browse and Installed are separate view models over one registry), the
+        /// update path, or a share changed what is recorded: re-check every row once on the UI
+        /// thread, so Installed and My submissions follow without reopening the window. Changes
+        /// made while this list is itself re-checking (a stale record it forgets) are ignored.
+        /// </summary>
+        private void Registry_Changed(object sender, EventArgs e)
+        {
+            if (_applyingRegistryChange || _registryRefreshQueued || _lifetime.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _registryRefreshQueued = true;
+            _dispatcher.BeginInvoke(
+                new Action(RefreshFromRegistry),
+                System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        private void RefreshFromRegistry()
+        {
+            _registryRefreshQueued = false;
+            if (_lifetime.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _applyingRegistryChange = true;
+            try
+            {
+                foreach (var row in Items.ToList())
+                {
+                    ApplyLocalState(row);
+                }
+            }
+            finally
+            {
+                _applyingRegistryChange = false;
+            }
+
+            RebuildInstalledList();
+            ReloadLocalState();
+            ItemsView.Refresh();
+        }
+
         public void Dispose()
         {
+            _registry.Changed -= Registry_Changed;
             DeleteCachedDownload();
             _lifetime.Cancel();
             _lifetime.Dispose();
