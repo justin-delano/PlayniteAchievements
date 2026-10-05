@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -97,7 +98,7 @@ namespace PlayniteAchievements.Services.Workshop
                 var cached = CachePathFor(url, ".md");
                 if (cached != null && File.Exists(cached))
                 {
-                    return File.ReadAllText(cached);
+                    return StripImageBlock(File.ReadAllText(cached));
                 }
 
                 var text = await _http.GetStringAsync(url).ConfigureAwait(false);
@@ -107,13 +108,47 @@ namespace PlayniteAchievements.Services.Workshop
                     File.WriteAllText(cached, text);
                 }
 
-                return text;
+                return StripImageBlock(text);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"Failed fetching Workshop README for {item.Id}.");
                 return null;
             }
+        }
+
+        private static readonly Regex ImageBlock = new Regex(
+            @"<!--\s*workshop:images\s*-->.*?<!--\s*/workshop:images\s*-->",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        private static readonly Regex LeadingBlankLines = new Regex(@"\A(?:[ \t]*\r?\n)+", RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// The README text without the Workshop's image block (the cover and preview images the
+        /// repository puts between <c>&lt;!-- workshop:images --&gt;</c> markers), markers and
+        /// the blank lines around it included; the pane shows those images itself. Text around a
+        /// block in the middle stays one blank line apart, in the text's own line ending.
+        /// </summary>
+        public static string StripImageBlock(string readme)
+        {
+            if (string.IsNullOrEmpty(readme))
+            {
+                return readme;
+            }
+
+            var newline = readme.Contains("\r\n") ? "\r\n" : "\n";
+            var text = readme;
+            Match match;
+            while ((match = ImageBlock.Match(text)).Success)
+            {
+                var before = text.Substring(0, match.Index).TrimEnd();
+                var after = LeadingBlankLines.Replace(text.Substring(match.Index + match.Length).TrimStart(' ', '\t'), string.Empty);
+                text = before.Length == 0 || after.Length == 0
+                    ? before + after
+                    : before + newline + newline + after;
+            }
+
+            return text;
         }
 
         /// <summary>
