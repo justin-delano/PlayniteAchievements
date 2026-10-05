@@ -14,9 +14,9 @@ using PlayniteAchievements.Views.Helpers;
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
     /// <summary>
-    /// Workshop settings: the Presets page. One list over every saved preset (notification
-    /// styles, frames, color sets, sound packs), each a package file in its store, with Export
-    /// and Delete. Applying stays on the card that owns the kind.
+    /// Workshop settings: the Presets page. One list over every saved preset (colors,
+    /// notifications, frames, sounds), grouped by kind, each a package file in its store, with
+    /// Export and Delete. Applying stays on the card that owns the kind.
     /// </summary>
     public partial class WorkshopPresetsSection : UserControl
     {
@@ -82,10 +82,14 @@ namespace PlayniteAchievements.Views.Settings.Workshop
             }
 
             var selectedPath = Selected?.FilePath;
-            PresetList.ItemsSource = rows
+            // Grouped by kind for the section headers in the list; sorted first so the groups
+            // and the rows inside them come out in order.
+            var view = new System.Windows.Data.ListCollectionView(rows
                 .OrderBy(row => row.KindLabel, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(row => row.Name, StringComparer.CurrentCultureIgnoreCase)
-                .ToList();
+                .ToList());
+            view.GroupDescriptions.Add(new System.Windows.Data.PropertyGroupDescription(nameof(PresetRow.KindLabel)));
+            PresetList.ItemsSource = view;
             PresetList.SelectedItem = selectedPath == null
                 ? null
                 : rows.FirstOrDefault(row => string.Equals(row.FilePath, selectedPath, StringComparison.OrdinalIgnoreCase));

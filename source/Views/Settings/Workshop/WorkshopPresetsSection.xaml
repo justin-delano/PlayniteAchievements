@@ -13,19 +13,10 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- ListView and its column headers have no themed implicit style, so the preset
-                 list sets its own brushes; without them the rows render in default black. -->
-            <Style x:Key="PresetHeaderStyle" TargetType="GridViewColumnHeader">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Panel}"/>
-                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
-                <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                <Setter Property="Padding" Value="8,4"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            </Style>
-            <Style x:Key="PresetRowStyle" TargetType="ListViewItem">
-                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-                <Setter Property="Padding" Value="4,3"/>
+            <!-- Rows use the plugin's themed ListBox item (hover and selection brushes from the
+                 grid tokens), with room to breathe. -->
+            <Style x:Key="PresetRowStyle" TargetType="ListBoxItem" BasedOn="{StaticResource PlayAch.ListBoxItem.BaseStyle}">
+                <Setter Property="Padding" Value="12,7"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -67,25 +58,42 @@
                             Click="Refresh_Click"/>
                 </WrapPanel>
                 <Grid Grid.Row="4">
-                    <ListView x:Name="PresetList"
-                              Background="{DynamicResource PlayAch.Brush.Panel}"
-                              Foreground="{DynamicResource PlayAch.Brush.Text}"
-                              BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                              ItemContainerStyle="{StaticResource PresetRowStyle}"
-                              SelectionMode="Single"
-                              SelectionChanged="PresetList_SelectionChanged"
-                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                        <ListView.View>
-                            <GridView ColumnHeaderContainerStyle="{StaticResource PresetHeaderStyle}">
-                                <GridViewColumn Header="{DynamicResource LOCPlayAch_Common_Kind}"
-                                                DisplayMemberBinding="{Binding KindLabel}"
-                                                Width="180"/>
-                                <GridViewColumn Header="{DynamicResource LOCPlayAch_Column_Name}"
-                                                DisplayMemberBinding="{Binding Name}"
-                                                Width="360"/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                    <!-- Presets grouped under their kind (Colors, Notifications, Frames, Sounds),
+                         one selectable row each; Export and Delete act on the selected row. -->
+                    <Border BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                            Background="{DynamicResource PlayAch.Brush.Surface}"
+                            CornerRadius="4">
+                        <ListBox x:Name="PresetList"
+                                 Style="{StaticResource PlayAch.ListBox.BaseStyle}"
+                                 ItemContainerStyle="{StaticResource PresetRowStyle}"
+                                 SelectionMode="Single"
+                                 SelectionChanged="PresetList_SelectionChanged"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                    BorderThickness="0,0,0,1"
+                                                    Padding="12,10,12,6">
+                                                <TextBlock Text="{Binding Name}"
+                                                           Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                                           FontWeight="SemiBold"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListBox.GroupStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
                     <TextBlock x:Name="EmptyText"
                                Text="{DynamicResource LOCPlayAch_Workshop_NoPresets}"
                                Style="{StaticResource MutedTextStyle}"
