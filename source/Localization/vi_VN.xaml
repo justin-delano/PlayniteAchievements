@@ -726,7 +726,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportApplyStyle">Áp dụng kiểu giao diện từ tệp này cho nền tảng đã chọn?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportInstallToastTemplate">Tệp này bao gồm mẫu thông báo tùy chỉnh. Cài đặt mẫu cho lựa chọn hiện tại? Mẫu này sẽ thay thế mọi mẫu thông báo tùy chỉnh đã đặt cho phạm vi đó.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportInstallFrameTemplate">Tệp này bao gồm mẫu khung tùy chỉnh. Cài đặt mẫu cho lựa chọn hiện tại? Mẫu này sẽ thay thế mọi mẫu khung tùy chỉnh đã đặt cho phạm vi đó.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportUnsupportedFile">Chỉ các tệp .pastyle, .panotif và .paframe được hỗ trợ.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportUnsupportedFile">Chỉ hỗ trợ các tệp .pastyle, .panotif và .paframe.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportMissingManifest">Gói này không chứa tệp kê khai kiểu thông báo.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportNotPackage">Tệp này không phải là gói kiểu hiển thị. Hãy nhập tệp .pastyle, .panotif hoặc .paframe gốc mà bạn đã xuất, không phải tệp được giải nén từ đó.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Presets_Hint">Các thiết lập sẵn lưu giao diện của thẻ hiển thị ở trên, bao gồm hình ảnh và mọi mẫu tùy chỉnh. Áp dụng cài đặt sẽ thay thế phần tương ứng trong lựa chọn hiện tại.</sys:String>
@@ -756,35 +756,35 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_Style_VignetteBottom">Bên dưới</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_VignetteStrength">Cường độ</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ThemePreviewUnavailable">Không thể hiển thị mẫu thông báo của giao diện đang hoạt động. Mẫu có thể tham chiếu đến các tài nguyên hiện không khả dụng.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SampleUnlock">Example unlock</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_FirePluginStyle">Plugin</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SampleUnlock">Mở khóa mẫu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_FirePluginStyle">Phần bổ trợ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FireTheme">Chủ đề</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_UseThemeTemplate">Sử dụng thiết kế chủ đề của tôi khi khả dùng</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_SourceSummary">Đang hiển thị {0} với {1}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Global">the global style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Platform">the {0} style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Game">this game's style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Plugin">the plugin's look</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Theme">your theme's look</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Global">kiểu chung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Platform">kiểu {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceScope_Game">kiểu của trò chơi này</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Plugin">giao diện của phần bổ trợ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Theme">giao diện chủ đề của bạn</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_SourceLook_Imported">một mẫu được nhập</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_TextLines">Text lines</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_TextLinesHint">Drag to reorder. A blank size uses the theme default.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_FontFamily">Font family</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadow">Text shadow</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ImageShadow">Image shadow</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOpacity">Opacity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOffset">Offset</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_FontThemeDefault">Theme default</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">Header text</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">Leave blank to use the localized default. {0} is the friend's name.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_TextLines">Các dòng văn bản</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_TextLinesHint">Kéo để sắp xếp lại. Để trống kích thước để sử dụng kích thước mặc định của chủ đề.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_FontFamily">Họ phông chữ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadow">Đổ bóng văn bản</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ImageShadow">Đổ bóng hình ảnh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOpacity">Độ mờ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOffset">Độ lệch</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_FontThemeDefault">Chủ đề mặc định</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">Văn bản tiêu đề</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">Để trống để sử dụng giá trị mặc định được bản địa hóa. {0} là tên của bạn bè.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderUnlock">Thành tựu đã mở khoá</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Bạn bè đã mở khoá</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100% Completion</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">Friend completed the game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">Hoàn thành 100%</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">Bạn bè đã hoàn thành trò chơi</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderProgress">Tiến trình thành tựu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFormatInvalid">The friend header must include {0} for the friend's name.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImage">Background image</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImageHint">Image shown behind the notification; animated formats play. Frames have no background.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFormatInvalid">Phần tiêu đề bạn bè phải bao gồm {0} để hiển thị tên của bạn bè.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImage">Ảnh nền</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImageHint">Hình ảnh hiển thị phía sau thông báo; các định dạng ảnh động sẽ được phát. Các khung hình không có nền.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImages">Hình ảnh huy hiệu</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImagesHint">Replace the rarity and completion badges.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">Unlock recordings</sys:String>
@@ -805,7 +805,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_RecordingAudioSourceFull">Full system audio</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingAudioSourceGame">Chỉ âm thanh trò chơi</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingIncludeMicrophone">Bao gồm microphone</sys:String>
-    <sys:String x:Key="LOCPlayAch_Notification_RecordingUnavailable">Unlock recording was turned off for this session. Check the free disk space and the plugin log.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Notification_RecordingUnavailable">Ghi hình mở khoá thành tựu đã bị tắt trong phiên này. Hãy kiểm tra dung lượng đĩa trống và nhật ký của phần bổ trợ.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverrides">Cài đặt theo nền tảng</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverridesHint">&quot;Default&quot; follows the global settings on the Behavior and Captures pages. The master toggles always win.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Override_On">Bật</sys:String>
@@ -822,8 +822,8 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleFriend">Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CaptureButton">Press keys...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">Press a shortcut...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_CategoryModeHelp">The category grouping shortcut works when the active window has an achievement grid with a category toggle.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_Description">Configure shortcuts for opening achievement windows and the overview. Game-specific hotkeys use the running game first, then the selected game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_CategoryModeHelp">Phím tắt nhóm danh mục hoạt động khi cửa sổ đang hoạt động có lưới thành tựu kèm tùy chọn bật/tắt danh mục.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_Description">Cấu hình phím tắt để mở các cửa sổ thành tựu và trang tổng quan. Phím tắt dành riêng cho từng trò chơi sẽ ưu tiên trò chơi đang chạy, sau đó mới đến trò chơi được chọn.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_DuplicateShortcut">That shortcut is already assigned.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">Bật phím tắt thành tựu</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_EnableGlobal">Bật phím tắt cục bộ</sys:String>
@@ -835,7 +835,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">Global shortcut unavailable: {0}. Another app may already be using the same key.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Select one game or start a game before using achievement hotkeys.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Hotkeys</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Phím tắt</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Enable Tag Sync</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during refreshes.</sys:String>
@@ -867,7 +867,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Sign-In</sys:String>
 
     <!-- Provider: Game Jolt -->
-    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">Log in to Game Jolt in the browser window to read your unlocked trophies. Game Jolt achievements are only tracked for games added by the Game Jolt Library extension, or for games given a manual Game Jolt game ID in Manage Achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">Đăng nhập vào Game Jolt trong cửa sổ trình duyệt để đọc các cúp bạn đã mở khóa. Thành tựu trên Game Jolt chỉ được theo dõi đối với những trò chơi được thêm bằng tiện ích mở rộng Game Jolt Library hoặc những trò chơi đã được gán ID trò chơi Game Jolt theo cách thủ công trong mục Quản lý thành tựu.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">Note: Only your own unlocked trophies are read; Game Jolt does not expose achievements without signing in.</sys:String>
 
     <!-- Provider: Exophase -->
@@ -884,8 +884,8 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">Bật Zenless Zone Zero</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker Export Files</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">How to Get the JSON</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1">1. Open the {0} and log in.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">Cách lấy JSON</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1">1. Mở {0} và đăng nhập.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">StarDB achievement importer</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2">2. Download and run {0}, then follow its prompts until the export JSON is copied to your clipboard.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter">stardb-exporter</sys:String>
@@ -959,22 +959,22 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This platform is disabled. Enable it to track achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Enable this platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">Nền tảng này đã tắt. Hãy bật nó để theo dõi thành tựu.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Bật nền tảng này</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_StoresLaunchers">Stores &amp; Launchers</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ConsoleMobile">Console &amp; Mobile</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">Emulators &amp; Retro</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manual &amp; Aggregators</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Other</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ConsoleMobile">Máy chơi điện tử và Điện thoại</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">Trình giả lập và Retro</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Thủ công &amp; Dịch vụ tổng hợp</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Khác</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Sử dụng {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">Use Exophase for Steam friend ownership</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">Adds missing Steam games from the merged Exophase profile when refreshing Steam friend ownership. Requires Exophase to be enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">Thêm các trò chơi Steam còn thiếu từ hồ sơ Exophase đã hợp nhất khi làm mới trò chơi Steam bạn bè sở hữu. Yêu cầu bật Exophase.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGames">Include unowned games in refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_IncludeUnownedGamesHint">Allow Full refreshes to scan friend games you do not own. When disabled, the Full mode is hidden and friend refreshes only cover games in your library.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsSettings_ManualAdd">Add manual friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_ManualAdd">Thêm bạn bè thủ công</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeInvalid">Select at least two friends from different platforms to merge.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeSelected">Merge Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_IgnoreSelected">Ignore Selected</sys:String>
@@ -1013,13 +1013,13 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_PublicNote">Achievements must be set to public on the Lodestone to be tracked.</sys:String>
     <!-- FFXIV_CollectNote: {0} is a link whose text is the site name "FFXIV Collect". "Add" is that
          site's English-only button label; leave it, "FFXIV Collect", and "Lodestone" untranslated. -->
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CollectNote">Unlock data comes from {0}, which indexes characters on demand. Search for your character there and select Add if it is not listed yet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CollectNote">Dữ liệu mở khóa đến từ {0}, nơi lập chỉ mục các nhân vật theo yêu cầu. Hãy tìm nhân vật của bạn tại đó và chọn Add nếu nhân vật chưa được liệt kê.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">Checking character...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterNotFound">No matching character found for the name, world, and region.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Character found, but achievements are private on the Lodestone.</sys:String>
     <!-- FFXIV_NotOnCollect: "Add" is the English-only button label on ffxivcollect.com; leave it,
          the domain, "FFXIV Collect", and "Lodestone" untranslated. -->
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_NotOnCollect">Character found on the Lodestone but not on FFXIV Collect. Search for it at ffxivcollect.com and select Add, then try again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_NotOnCollect">Đã tìm thấy nhân vật trên Lodestone nhưng không tìm thấy trên FFXIV Collect. Hãy tìm nhân vật đó tại ffxivcollect.com và chọn Add, sau đó thử lại.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_LodestoneUnavailable">The Lodestone could not be reached to look up the character. Try again later.</sys:String>
 
     <!-- Provider: RetroAchievements -->
@@ -1042,10 +1042,10 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <!-- Provider: Guild Wars 2 -->
     <sys:String x:Key="LOCPlayAch_Settings_GW2_Help">Guild Wars 2 achievements are read from ArenaNet's official API, which needs a free API key tied to your Guild Wars 2 account:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep1">1. Open the {0} and sign in with your Guild Wars 2 account.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep2">2. Create a new key and tick progression. That is the only permission this plugin needs, and a key limited to it cannot read your wallet, inventory or trading post history.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep2">2. Tạo một khóa mới và tích chọn tiến trình. Đây là quyền duy nhất mà phần bổ trợ này cần; một khóa chỉ được cấp quyền này sẽ không thể đọc thông tin về ví, túi đồ hoặc lịch sử Chợ giao dịch của bạn.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep3">3. Copy the key into the box below, then click Check.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_NoDatesNote">Guild Wars 2 does not record when an achievement was earned and publishes no completion rates, so Guild Wars 2 achievements show no unlock date and no rarity.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_ApiKey_Help">The key is a long hyphenated code. It is stored in the plugin settings in readable form and sent only to api.guildwars2.com. It is not your password, it can only read, and you can delete it at any time on the same page you created it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GW2_ApiKey_Help">Khóa là một mã dài gồm các nhóm ký tự được phân tách bằng dấu gạch ngang. Mã này được lưu ở dạng có thể đọc được trong phần cài đặt phần bổ trợ và chỉ được gửi đến api.guildwars2.com. Đây không phải là mật khẩu của bạn; mã chỉ có quyền đọc và bạn có thể xóa bất cứ lúc nào tại chính trang mà bạn đã tạo mã.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_MissingProgression">The key is valid but lacks the progression permission. Create a new key with progression ticked.</sys:String>
 
     <!-- Provider: Hypixel -->
