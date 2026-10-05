@@ -279,7 +279,8 @@ namespace PlayniteAchievements.Services.Workshop
         /// Packages, uploads, and submits. Returns the service's receipt and records it locally.
         /// <paramref name="prebuiltPackagePath"/>, when it names an existing file, is uploaded as
         /// the package instead of building the candidate again (the share dialog builds one for
-        /// its preview image).
+        /// its preview image). <paramref name="coverPath"/>, when it names an existing file, is
+        /// uploaded as the item's optional cover image.
         /// </summary>
         public async Task<WorkshopSubmissionReceipt> ShareAsync(
             WorkshopShareCandidate candidate,
@@ -287,7 +288,8 @@ namespace PlayniteAchievements.Services.Workshop
             string previewPath,
             IProgress<WorkshopShareProgress> progress,
             CancellationToken cancel,
-            string prebuiltPackagePath = null)
+            string prebuiltPackagePath = null,
+            string coverPath = null)
         {
             if (!_client.IsConfigured)
             {
@@ -319,6 +321,12 @@ namespace PlayniteAchievements.Services.Workshop
                     previewKey = await _client.UploadAsync(previewPath, ContentTypeFor(previewPath), null, cancel).ConfigureAwait(false);
                 }
 
+                string coverKey = null;
+                if (!submission.Remove && !string.IsNullOrWhiteSpace(coverPath) && File.Exists(coverPath))
+                {
+                    coverKey = await _client.UploadAsync(coverPath, ContentTypeFor(coverPath), null, cancel).ConfigureAwait(false);
+                }
+
                 progress?.Report(new WorkshopShareProgress { Phase = WorkshopSharePhase.Submitting });
                 submission.Kind = candidate.Kind;
                 var receipt = await _client.SubmitAsync(
@@ -327,7 +335,8 @@ namespace PlayniteAchievements.Services.Workshop
                     packageKey,
                     previewKey,
                     PluginManifest.Version,
-                    cancel).ConfigureAwait(false);
+                    cancel,
+                    coverKey).ConfigureAwait(false);
 
                 _registry.DisplayName = submission.Author;
                 _registry.RecordSubmission(new WorkshopSubmissionRecord
