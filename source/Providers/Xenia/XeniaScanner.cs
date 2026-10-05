@@ -74,8 +74,8 @@ namespace PlayniteAchievements.Providers.Xenia
                     onGameStarting,
                     async (game, token) =>
                     {
-                        var data = GetAchievementData(game);
-                        await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                        var data = GetAchievementData(game, out var gpdTitle);
+                        await EnrichRarityAsync(game, data, gpdTitle, rarityEnricher, token).ConfigureAwait(false);
                         return new ProviderRefreshExecutor.ProviderGameResult
                         {
                             Data = data
@@ -97,8 +97,13 @@ namespace PlayniteAchievements.Providers.Xenia
             }
         }
 
-        private GameAchievementData GetAchievementData(Game game)
+        /// <param name="gpdTitle">
+        /// The game's title as its GPD records it (the first non-empty one across account
+        /// folders), or null when no GPD carries one.
+        /// </param>
+        private GameAchievementData GetAchievementData(Game game, out string gpdTitle)
         {
+            gpdTitle = null;
             var accountDirectories = XeniaAccountResolver.ResolveAccountDirectories(game, _providerSettings, _playniteApi);
             if (!ResolveTitleID(game, accountDirectories, out var titleID))
             {
@@ -127,6 +132,9 @@ namespace PlayniteAchievements.Providers.Xenia
             else
             {
                 var gpdFiles = gpdPaths.Select(path => new GPDResolver().LoadGPD(path)).ToList();
+                gpdTitle = gpdFiles
+                    .Select(file => file.StringData?.Trim())
+                    .FirstOrDefault(title => !string.IsNullOrEmpty(title));
 
                 // Write icon data to icon cache; the first file carrying an icon id wins
                 var iconDirectory = $"{_pluginUserDataPath}\\icon_cache\\{game.Id}\\";
@@ -222,9 +230,11 @@ namespace PlayniteAchievements.Providers.Xenia
             return enricher;
         }
 
+        /// <param name="gpdTitle">The GPD's title, searched before the Playnite name.</param>
         private static async Task EnrichRarityAsync(
             Game game,
             GameAchievementData data,
+            string gpdTitle,
             ExophaseMetadataEnricher rarityEnricher,
             CancellationToken cancel)
         {
@@ -233,7 +243,13 @@ namespace PlayniteAchievements.Providers.Xenia
                 return;
             }
 
-            await rarityEnricher.EnrichAsync(game, data.Achievements, "xbox-360", "Xbox", cancel).ConfigureAwait(false);
+            await rarityEnricher.EnrichAsync(
+                game,
+                data.Achievements,
+                "xbox-360",
+                "Xbox",
+                cancel,
+                searchName: gpdTitle).ConfigureAwait(false);
         }
 
         /// <summary>
