@@ -282,14 +282,19 @@
                             <StackPanel x:Name="KindStylePanel"
                                         Visibility="Collapsed"
                                         Margin="0,0,0,10">
-                                <CheckBox x:Name="KindStyleCheckBox"
-                                          Click="KindStyleCheckBox_Click"/>
-                                <Button x:Name="ResetKindStyleButton"
-                                        Click="ResetKindStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Settings_Style_Kind_ResetToBase}"
-                                        HorizontalAlignment="Left"
-                                        Margin="0,8,0,0"
-                                        Visibility="Collapsed"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="KindStyleCheckBox"
+                                              VerticalAlignment="Center"
+                                              Click="KindStyleCheckBox_Click"/>
+                                    <Button x:Name="ResetKindStyleButton"
+                                            Click="ResetKindStyle_Click"
+                                            Content="&#xEFD1;"
+                                            ToolTip="{DynamicResource LOCPlayAch_Settings_Style_Kind_ResetToBase}"
+                                            Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
+                                            VerticalAlignment="Center"
+                                            Margin="8,0,0,0"
+                                            Visibility="Collapsed"/>
+                                </StackPanel>
                             </StackPanel>
 
                             <!-- Design: whether the live notification / saved frame (and the preview)
