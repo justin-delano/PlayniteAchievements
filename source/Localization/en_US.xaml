@@ -688,8 +688,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_Customize">Style "{0}" notifications separately</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_ResetToBase">Reset to Shared Style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_RevertConfirm">Drop the separate style for these notifications and follow the shared one again? The separate design is discarded.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ExportButton">Export Style</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportButton">Import Style</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShareHint">Export the current tab's style as a .panotif or .paframe file, or share it to the Workshop. Importing a file or installing from the Workshop adds it to the presets above. To share both surfaces together with colors and sounds, export a bundle from the Workshop tab.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportSurfaceMismatch">This file contains the {0} appearance, but {1} is currently selected. Import it anyway?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportConfirm">Import this notification style and replace the currently displayed appearance?</sys:String>
@@ -704,7 +702,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_Presets_Hint">Presets save the appearance of the tab shown above, including its images and any custom template. Applying one replaces that part of the current selection. Imported and Workshop styles land here first.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ResetToDefault">Reset to default</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ResetConfirm">Reset this surface to the default appearance? This clears your style changes and removes any custom template for it.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ExportDefaultTemplate">Export default template (.xaml)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ExportDefaultTemplate">Default template (.xaml)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Rarity_BadgeLabel">Rarity badge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Rarity_PercentLabel">Rarity percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Rarity_BadgeUnderIcon">Badge under icon</sys:String>
