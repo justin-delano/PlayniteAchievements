@@ -10,6 +10,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+// WinForms dialog: the WPF Microsoft.Win32 picker renders legacy-style on .NET Framework.
+using DialogResult = System.Windows.Forms.DialogResult;
+using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
 
 namespace PlayniteAchievements.Views.Workshop
 {
@@ -86,7 +89,13 @@ namespace PlayniteAchievements.Views.Workshop
 
         public event EventHandler RequestClose;
 
-        private static string RenderingPreviewText => ResourceProvider.GetString("LOCPlayAch_Workshop_Share_RenderingPreview");
+        /// <summary>The file filter of the cover image picker.</summary>
+        private const string CoverImageFilter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.webp)|*.png;*.jpg;*.jpeg;*.gif;*.webp";
+
+        /// <summary>The largest cover image the Workshop accepts.</summary>
+        private const long MaxCoverBytes = 5L * 1024 * 1024;
+
+        private static string RenderingPreviewText =>ResourceProvider.GetString("LOCPlayAch_Workshop_Share_RenderingPreview");
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -159,6 +168,38 @@ namespace PlayniteAchievements.Views.Workshop
         private void UpdateSubmitEnabled()
         {
             SubmitButton.IsEnabled = !_busy && !_rendering;
+        }
+
+        private void BrowseCover_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = CoverImageFilter,
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog() != DialogResult.OK)
+            {
+                return;
+            }
+
+            if (new FileInfo(dialog.FileName).Length > MaxCoverBytes)
+            {
+                StatusText.Text = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_CoverTooLarge");
+                return;
+            }
+
+            CoverBox.Text = dialog.FileName;
+            if (!_busy && string.Equals(StatusText.Text, ResourceProvider.GetString("LOCPlayAch_Workshop_Share_CoverTooLarge"), StringComparison.Ordinal))
+            {
+                StatusText.Text = string.Empty;
+            }
+        }
+
+        private void ClearCover_Click(object sender, RoutedEventArgs e)
+        {
+            CoverBox.Text = string.Empty;
         }
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
@@ -236,7 +277,8 @@ namespace PlayniteAchievements.Views.Workshop
                     _previewPath,
                     progress,
                     _cancel.Token,
-                    _packagePath);
+                    _packagePath,
+                    string.IsNullOrWhiteSpace(CoverBox.Text) ? null : CoverBox.Text);
 
                 Progress.Visibility = Visibility.Collapsed;
                 var message = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Submitted"), receipt.IssueUrl);

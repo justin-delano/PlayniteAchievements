@@ -55,6 +55,20 @@
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Readme}" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="ReadmeBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="90"/>
 
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        <Run Text="{DynamicResource LOCPlayAch_Workshop_Share_Cover}"/><Run Text=" ("/><Run Text="{DynamicResource LOCPlayAch_Workshop_Share_CoverHint}"/><Run Text=")"/>
+                    </TextBlock>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="CoverBox" IsReadOnly="True"/>
+                        <Button Grid.Column="1" Content="{DynamicResource LOCPlayAch_Button_Browse}" Margin="6,0,0,0" Click="BrowseCover_Click"/>
+                        <Button Grid.Column="2" Content="{DynamicResource LOCPlayAch_Button_Clear}" Margin="6,0,0,0" Click="ClearCover_Click"/>
+                    </Grid>
+
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_UpdateExisting}" Style="{StaticResource FieldLabel}"/>
                     <ComboBox x:Name="ExistingBox" IsEditable="True" DisplayMemberPath="Label" SelectedValuePath="ItemId"/>
 
