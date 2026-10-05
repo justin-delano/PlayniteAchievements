@@ -79,6 +79,26 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
+        /// <summary>
+        /// Raised after an install is recorded or forgotten, or a submission is recorded, on the
+        /// thread that made the change. Every Workshop list shares this registry, so a change made
+        /// from one (an install from Browse) reaches the others (Installed) through this event.
+        /// Linking submissions and updating their state stay silent: both run while a list loads.
+        /// </summary>
+        public event EventHandler Changed;
+
+        private void RaiseChanged()
+        {
+            try
+            {
+                Changed?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "A Workshop registry change handler failed.");
+            }
+        }
+
         public void RecordSubmission(WorkshopSubmissionRecord record)
         {
             if (record == null || record.IssueNumber <= 0)
@@ -93,6 +113,8 @@ namespace PlayniteAchievements.Services.Workshop
                 _submissions.Add(record);
                 SaveIdentity();
             }
+
+            RaiseChanged();
         }
 
         public void UpdateSubmissionState(int issueNumber, string state, string itemId = null)
@@ -219,19 +241,28 @@ namespace PlayniteAchievements.Services.Workshop
                 });
                 Save();
             }
+
+            RaiseChanged();
         }
 
         public void Forget(string id, Guid? playniteGameId = null)
         {
+            bool removed;
             lock (_sync)
             {
                 EnsureLoaded();
-                if (_items.RemoveAll(existing =>
-                        string.Equals(existing.Id, id, StringComparison.OrdinalIgnoreCase) &&
-                        (playniteGameId == null || existing.PlayniteGameId == playniteGameId)) > 0)
+                removed = _items.RemoveAll(existing =>
+                              string.Equals(existing.Id, id, StringComparison.OrdinalIgnoreCase) &&
+                              (playniteGameId == null || existing.PlayniteGameId == playniteGameId)) > 0;
+                if (removed)
                 {
                     Save();
                 }
+            }
+
+            if (removed)
+            {
+                RaiseChanged();
             }
         }
 
