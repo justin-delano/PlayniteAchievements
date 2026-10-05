@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.Services.Workshop.Preview;
 using System;
@@ -128,7 +129,12 @@ namespace PlayniteAchievements.Views.Workshop
 
                 _packagePath = packagePath;
                 var context = WorkshopPreviewContext.FromPlugin(_plugin);
-                var model = await Task.Run(() => WorkshopPreviewModelBuilder.Build(candidate.Kind, packagePath, context), cancel);
+                var plugin = _plugin;
+                var model = await Task.Run(() =>
+                {
+                    context.GameDataSource = BuildOwnGameSource(plugin, candidate, context);
+                    return WorkshopPreviewModelBuilder.Build(candidate.Kind, packagePath, context);
+                }, cancel);
                 if (_closed)
                 {
                     model.Dispose();
@@ -163,6 +169,45 @@ namespace PlayniteAchievements.Views.Workshop
 
                 UpdateSubmitEnabled();
             }
+        }
+
+        /// <summary>
+        /// For game data, the sharer's own game as the source the published image is rendered
+        /// from, so it shows the achievement grid; no baseline, and no personal progress. Null for
+        /// other kinds or when the game has no cached provider achievements, which renders the
+        /// package's own entries instead.
+        /// </summary>
+        private static GameCustomDataPreviewSource BuildOwnGameSource(
+            PlayniteAchievementsPlugin plugin,
+            WorkshopShareCandidate candidate,
+            WorkshopPreviewContext context)
+        {
+            if (candidate.Kind != WorkshopItemKind.GameCustomData || candidate.GameId == null)
+            {
+                return null;
+            }
+
+            var gameId = candidate.GameId.Value;
+            var dataService = plugin.AchievementDataService;
+            var raw = dataService?.GetRawGameAchievementData(gameId);
+            if (raw?.Achievements == null || raw.Achievements.Count == 0)
+            {
+                return null;
+            }
+
+            GameCustomDataFile current = null;
+            context.GameCustomDataStore?.TryLoad(gameId, out current);
+            return new GameCustomDataPreviewSource
+            {
+                GameId = gameId,
+                GameName = candidate.DefaultName,
+                RawData = raw,
+                CurrentData = dataService.GetGameAchievementData(gameId),
+                Current = current,
+                Persisted = plugin.Settings?.Persisted,
+                ManagedCustomIconService = plugin.ManagedCustomIconService,
+                HidePersonalProgress = true
+            };
         }
 
         // Submit waits for the rendered image; never while submitting.
