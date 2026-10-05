@@ -1617,7 +1617,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">Choose what each part of the bundle is built from: your current settings or a saved preset.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Presets_Hint">Every saved preset, downloaded or your own. Apply one from the card it belongs to.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_NoPresets">No saved presets.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Kind">Kind</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalStyle">Notification</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalFrame">Frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">Sounds</sys:String>
