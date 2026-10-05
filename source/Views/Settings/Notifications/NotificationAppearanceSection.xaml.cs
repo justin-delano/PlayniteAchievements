@@ -428,15 +428,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             CustomizeGameCheckBox.IsChecked = hasOverride;
             _suppressCustomizeEvents = false;
 
-            var providerName = !string.IsNullOrWhiteSpace(providerKey)
-                ? ProviderRegistry.GetLocalizedName(providerKey)
-                : L("LOCPlayAch_Common_Default");
-            GameInheritanceHint.Text = hasOverride
-                ? L("LOCPlayAch_ManageAchievements_Notifications_SnapshotHint")
-                : string.Format(
-                    L("LOCPlayAch_ManageAchievements_Notifications_InheritHint"),
-                    providerName);
-
             ApplyThemeStylingControls(hasOverride);
             Action<NotificationStyleSettings> persist = hasOverride
                 ? PersistGameStyle
@@ -538,7 +529,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 else
                 {
                     var result = _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        L("LOCPlayAch_Settings_Style_RevertConfirm"),
+                        L("LOCPlayAch_Settings_Style_StopSeparateConfirm"),
                         L("LOCPlayAch_Title_PluginName"),
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Question);
@@ -605,7 +596,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 else
                 {
                     var result = _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        L("LOCPlayAch_ManageAchievements_Notifications_RevertConfirm"),
+                        L("LOCPlayAch_Settings_Style_StopSeparateConfirm"),
                         L("LOCPlayAch_Title_PluginName"),
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Question);
@@ -1066,7 +1057,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         private bool ConfirmDropKindStyle()
         {
             return _plugin.PlayniteApi.Dialogs.ShowMessage(
-                L("LOCPlayAch_Settings_Style_Kind_RevertConfirm"),
+                L("LOCPlayAch_Settings_Style_StopSeparateConfirm"),
                 L("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question) == MessageBoxResult.Yes;
@@ -1348,9 +1339,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 {
                     var custom = resolver.ReadCustomTemplateXaml(isFrame, ScopeProviderKey, ScopeGameId);
                     if (custom != null &&
-                        Confirm(L(isFrame
-                            ? "LOCPlayAch_Settings_Style_ExportIncludeFrameTemplate"
-                            : "LOCPlayAch_Settings_Style_ExportIncludeToastTemplate")))
+                        Confirm(L("LOCPlayAch_Settings_Style_ExportIncludeTemplate")))
                     {
                         templateXaml = custom;
                     }
@@ -1487,11 +1476,15 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                     // The package carries one or both templates: let the user pick any combination
                     // of the available parts to apply.
                     applyStyle = contents.HasStyle &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ImportApplyStyle"));
+                        Confirm(L("LOCPlayAch_Settings_Style_ImportConfirm"));
                     installToast = contents.HasToastTemplate &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ImportInstallToastTemplate"));
+                        Confirm(string.Format(
+                            L("LOCPlayAch_Settings_Style_ImportInstallTemplate"),
+                            L("LOCPlayAch_Settings_Style_ToastTab")));
                     installFrame = contents.HasFrameTemplate &&
-                        Confirm(L("LOCPlayAch_Settings_Style_ImportInstallFrameTemplate"));
+                        Confirm(string.Format(
+                            L("LOCPlayAch_Settings_Style_ImportInstallTemplate"),
+                            L("LOCPlayAch_Settings_FrameHeader")));
                     if (!applyStyle && !installToast && !installFrame)
                     {
                         return;

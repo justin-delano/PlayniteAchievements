@@ -279,10 +279,6 @@
                                 <CheckBox x:Name="CustomizeGameCheckBox"
                                           Content="{DynamicResource LOCPlayAch_ManageAchievements_Notifications_Customize}"
                                           Click="CustomizeGameCheckBox_Click"/>
-                                <TextBlock x:Name="GameInheritanceHint"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           TextWrapping="Wrap"
-                                           Margin="0,6,0,0"/>
                             </StackPanel>
 
                             <!-- Per-kind styling. With one of the special kinds selected in the sample
