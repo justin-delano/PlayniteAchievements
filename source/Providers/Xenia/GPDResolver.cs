@@ -209,12 +209,12 @@ namespace PlayniteAchievements.Providers.Xenia
                         title.last_played = (Int64)ReverseEndianness(BitConverter.ToUInt64(entry.data, index));
                         index += 8;
 
-                        title.title = Encoding.UTF8.GetString(entry.data, index, entry.data.Length - index);
+                        title.title = DecodeXdbfString(entry.data, index, entry.data.Length - index);
                         file.Titles.Add(title);
                         break;
 
                     case 5: // String data
-                        file.StringData = Encoding.UTF8.GetString(entry.data);
+                        file.StringData = DecodeXdbfString(entry.data, 0, entry.data.Length);
                         break;
 
                     case 6: // Achievement security
@@ -419,7 +419,7 @@ namespace PlayniteAchievements.Providers.Xenia
                             return false;
                         }
 
-                        title = Encoding.UTF8.GetString(data);
+                        title = DecodeXdbfString(data, 0, data.Length);
                         return true;
                     }
 
@@ -431,6 +431,23 @@ namespace PlayniteAchievements.Providers.Xenia
                 title = null;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Decodes an XDBF string: UTF-16 big-endian, ending at the first NUL character, the same
+        /// encoding as the achievement strings in section 1. Returns "" for empty input.
+        /// </summary>
+        internal static string DecodeXdbfString(byte[] data, int offset, int count)
+        {
+            if (data == null || offset < 0 || count <= 0 || offset >= data.Length)
+            {
+                return string.Empty;
+            }
+
+            count = Math.Min(count, data.Length - offset) & ~1;
+            var text = Encoding.BigEndianUnicode.GetString(data, offset, count);
+            var terminator = text.IndexOf('\0');
+            return terminator >= 0 ? text.Substring(0, terminator) : text;
         }
 
         private static ushort ReadUInt16BigEndian(BinaryReader reader)
