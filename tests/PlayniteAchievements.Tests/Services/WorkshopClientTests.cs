@@ -212,5 +212,41 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsNull(WorkshopClient.SumAssetDownloads(@"{ ""message"": ""Not Found"" }"));
             Assert.IsNull(WorkshopClient.SumAssetDownloads(""));
         }
+
+        [TestMethod]
+        public void StripImageBlock_RemovesALeadingBlockAndItsBlankLines_LF()
+        {
+            var readme = "<!-- workshop:images -->\n![Cover](cover.png)\n![Preview](preview.png)\n<!-- /workshop:images -->\n\n# Neon\n\nGlow.\n";
+
+            Assert.AreEqual("# Neon\n\nGlow.\n", WorkshopClient.StripImageBlock(readme));
+        }
+
+        [TestMethod]
+        public void StripImageBlock_RemovesALeadingBlockAndItsBlankLines_CRLF()
+        {
+            var readme = "\r\n<!-- workshop:images -->\r\n![Preview](preview.png)\r\n<!-- /workshop:images -->\r\n\r\n\r\n# Neon\r\n\r\nGlow.\r\n";
+
+            Assert.AreEqual("# Neon\r\n\r\nGlow.\r\n", WorkshopClient.StripImageBlock(readme));
+        }
+
+        [TestMethod]
+        public void StripImageBlock_KeepsTheTextAroundABlockInTheMiddleOneBlankLineApart()
+        {
+            var lf = "Intro.\n\n<!-- workshop:images -->\n![Cover](cover.png)\n<!-- /workshop:images -->\n\nRest.";
+            var crlf = lf.Replace("\n", "\r\n");
+
+            Assert.AreEqual("Intro.\n\nRest.", WorkshopClient.StripImageBlock(lf));
+            Assert.AreEqual("Intro.\r\n\r\nRest.", WorkshopClient.StripImageBlock(crlf));
+        }
+
+        [TestMethod]
+        public void StripImageBlock_LeavesTextWithoutABlockUnchanged()
+        {
+            const string readme = "# Neon\r\n\r\n<!-- an ordinary comment -->\r\nGlow.\r\n";
+
+            Assert.AreEqual(readme, WorkshopClient.StripImageBlock(readme));
+            Assert.IsNull(WorkshopClient.StripImageBlock(null));
+            Assert.AreEqual(string.Empty, WorkshopClient.StripImageBlock(string.Empty));
+        }
     }
 }
