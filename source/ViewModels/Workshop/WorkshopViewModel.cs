@@ -733,6 +733,42 @@ namespace PlayniteAchievements.ViewModels.Workshop
         /// <summary>Asks the window to confirm a question; defaults to yes when unset.</summary>
         public Func<string, bool> Confirm { get; set; }
 
+        /// <summary>
+        /// Asks how game data meets what the game already has, or null when the user cancels.
+        /// An update keeps the edits made since the earlier install, as before. An install or
+        /// reinstall onto a game with custom data offers Merge (what the user set stays, the
+        /// package fills the rest) or Replace; onto a game without any, it just confirms.
+        /// </summary>
+        private WorkshopGameDataInstallMode? ChooseGameDataMode(WorkshopItemViewModel row, Guid gameId, string gameName)
+        {
+            if (row.HasUpdate)
+            {
+                var updateQuestion = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_InstallConfirmGameData"), row.Name, gameName);
+                return Confirm == null || Confirm(updateQuestion) ? WorkshopGameDataInstallMode.KeepEditsSinceInstall : (WorkshopGameDataInstallMode?)null;
+            }
+
+            var hasExistingData = _plugin.GameCustomDataStore?.HasPortableData(gameId) ?? false;
+            if (hasExistingData && ChooseMergeOrReplace != null)
+            {
+                var choiceQuestion = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_InstallChoiceGameData"), row.Name, gameName);
+                return ChooseMergeOrReplace(choiceQuestion);
+            }
+
+            var question = string.Format(
+                ResourceProvider.GetString(row.IsReinstall
+                    ? "LOCPlayAch_Workshop_ReinstallConfirmGameData"
+                    : "LOCPlayAch_Workshop_InstallConfirmGameData"),
+                row.Name,
+                gameName);
+            return Confirm == null || Confirm(question) ? WorkshopGameDataInstallMode.Replace : (WorkshopGameDataInstallMode?)null;
+        }
+
+        /// <summary>
+        /// Asks Merge, Replace or Cancel for game data going onto a game that already has custom
+        /// data; returns null on Cancel. Set by the hosting view.
+        /// </summary>
+        public Func<string, WorkshopGameDataInstallMode?> ChooseMergeOrReplace { get; set; }
+
         public async Task InstallAsync(WorkshopItemViewModel row)
         {
             if (row == null || IsBusy || !row.CanInstall)
@@ -768,19 +804,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     }
 
                     var gameName = _plugin.PlayniteApi?.Database?.Games?.Get(gameId.Value)?.Name ?? row.GameName;
-                    var question = string.Format(
-                        ResourceProvider.GetString(row.IsReinstall
-                            ? "LOCPlayAch_Workshop_ReinstallConfirmGameData"
-                            : "LOCPlayAch_Workshop_InstallConfirmGameData"),
-                        row.Name,
-                        gameName);
-                    if (Confirm != null && !Confirm(question))
+                    var mode = ChooseGameDataMode(row, gameId.Value, gameName);
+                    if (mode == null)
                     {
                         return;
                     }
 
                     request.TargetGameId = gameId;
-                    request.Fresh = row.IsReinstall;
+                    request.GameDataMode = mode.Value;
                 }
 
                 // The install consumes its own copy, so the cached download stays for another
