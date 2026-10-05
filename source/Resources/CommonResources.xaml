@@ -1342,6 +1342,20 @@
 
     <Style x:Key="ToolbarButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.ToolbarButtonStyle}"/>
 
+    <!-- Icon-only toolbar button: an IcoFont glyph as the content and the label in the tooltip,
+         which a disabled button still shows. One definition so the Manage Achievements editor
+         toolbar and the notification appearance toolbar render their glyphs identically. -->
+    <Style x:Key="PlayAch.Button.ToolbarIconStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
+        <Setter Property="MinHeight" Value="30"/>
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Icon}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+    </Style>
+
     <Style x:Key="PlayAch.SectionHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
         <Setter Property="FontSize" Value="{StaticResource PlayAch.FontSize.SectionHeader}"/>
         <Setter Property="FontWeight" Value="Bold"/>
