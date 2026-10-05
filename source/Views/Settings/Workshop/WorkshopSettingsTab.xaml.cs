@@ -9,12 +9,12 @@ using PlayniteAchievements.Views.Workshop;
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
     /// <summary>
-    /// Workshop settings tab: everything the community Workshop offers in one place, as five
-    /// left-nav pages. Browse and Installed host the same control the scoped Workshop window
-    /// uses, one pane each; Bundles packs and unpacks the global look; Presets lists every
-    /// saved preset across kinds; Account holds the sharer identity and the endpoint overrides.
-    /// Pages are created lazily when first selected, so the index is fetched only when Browse
-    /// or Installed is opened.
+    /// Workshop settings tab: everything the community Workshop offers in one place, as six
+    /// left-nav pages. Browse, Installed and My submissions host the same control the scoped
+    /// Workshop window uses, one pane each; Bundles packs and unpacks the global look; Presets
+    /// lists every saved preset across kinds; Account holds the sharer identity and the endpoint
+    /// overrides. Pages are created lazily when first selected, so the index is fetched only
+    /// when one of the Workshop panes is opened.
     /// </summary>
     public partial class WorkshopSettingsTab : UserControl, IDisposable
     {
@@ -22,6 +22,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
 
         private WorkshopControl _browse;
         private WorkshopControl _installed;
+        private WorkshopControl _submissions;
         private WorkshopBundlesSection _bundles;
         private WorkshopPresetsSection _presets;
         private WorkshopAccountSection _account;
@@ -55,6 +56,12 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     viewFactory: () => _installed =
                         new WorkshopControl(plugin, logger, null, null, WorkshopPane.Installed)),
                 new SettingsNavigationItem(
+                    "Submissions",
+                    ResourceProvider.GetString("LOCPlayAch_Workshop_MySubmissions"),
+                    iconGlyph: "",
+                    viewFactory: () => _submissions =
+                        new WorkshopControl(plugin, logger, null, null, WorkshopPane.Submissions)),
+                new SettingsNavigationItem(
                     "Bundles",
                     ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Bundle"),
                     iconGlyph: "",
@@ -82,6 +89,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         {
             _browse?.Cleanup();
             _installed?.Cleanup();
+            _submissions?.Cleanup();
         }
     }
 }
