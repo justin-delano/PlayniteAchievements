@@ -56,23 +56,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string Label { get; }
     }
 
-    /// <summary>A "Revert to before ..." row.</summary>
-    public sealed class WorkshopUndoViewModel
-    {
-        public WorkshopUndoViewModel(WorkshopUndoEntry entry)
-        {
-            Entry = entry;
-            Label = string.Format(
-                ResourceProvider.GetString("LOCPlayAch_Workshop_RevertTo"),
-                entry.ItemName,
-                entry.CreatedUtc.ToLocalTime().ToString("g"));
-        }
-
-        public WorkshopUndoEntry Entry { get; }
-
-        public string Label { get; }
-    }
-
     public sealed class WorkshopSubmissionViewModel : ObservableObject
     {
         private string _stateLabel;
@@ -114,8 +97,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
     /// <summary>
     /// The Workshop window: loads the index, filters and sorts it, resolves local state per item
-    /// (installed, update available, matching library game), and drives install, revert, and
-    /// sharing. All collection work happens on the UI thread; network and disk work is awaited.
+    /// (installed, update available, matching library game), and drives install and the
+    /// submissions list. All collection work happens on the UI thread; network and disk work is awaited.
     /// </summary>
     public sealed class WorkshopViewModel : ObservableObject, IDisposable
     {
@@ -124,7 +107,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private readonly WorkshopClient _client;
         private readonly WorkshopInstalledRegistry _registry;
         private readonly WorkshopInstaller _installer;
-        private readonly WorkshopUndoStore _undo;
         private readonly WorkshopGameMatcher _matcher;
         private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
         private readonly ConcurrentDictionary<string, WorkshopGameMatch> _matches = new ConcurrentDictionary<string, WorkshopGameMatch>(StringComparer.OrdinalIgnoreCase);
@@ -151,7 +133,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             _client = plugin.WorkshopClient;
             _registry = plugin.WorkshopRegistry;
             _installer = plugin.WorkshopInstaller;
-            _undo = plugin.WorkshopUndo;
             _matcher = plugin.CreateWorkshopGameMatcher();
             _focusGameId = focusGameId;
             _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
@@ -195,7 +176,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             PreviewCommand = new AsyncCommand(async parameter => await PreviewAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
             OpenFolderCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopItemViewModel ?? SelectedItem)?.FolderUrl));
             ReportCommand = new RelayCommand(parameter => Report(parameter as WorkshopItemViewModel ?? SelectedItem));
-            RevertCommand = new RelayCommand(parameter => Revert(parameter as WorkshopUndoViewModel), _ => !IsBusy);
             OpenSubmissionCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopSubmissionViewModel)?.Url));
             RefreshSubmissionsCommand = new AsyncCommand(async _ => await RefreshSubmissionStatesAsync());
 
@@ -205,7 +185,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public ObservableCollection<WorkshopItemViewModel> Items { get; } = new ObservableCollection<WorkshopItemViewModel>();
         public ICollectionView ItemsView { get; }
         public ObservableCollection<WorkshopItemViewModel> InstalledItems { get; } = new ObservableCollection<WorkshopItemViewModel>();
-        public ObservableCollection<WorkshopUndoViewModel> UndoEntries { get; } = new ObservableCollection<WorkshopUndoViewModel>();
         public ObservableCollection<WorkshopSubmissionViewModel> Submissions { get; } = new ObservableCollection<WorkshopSubmissionViewModel>();
         public IReadOnlyList<WorkshopKindOption> KindOptions { get; }
 
@@ -221,7 +200,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public AsyncCommand PreviewCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
         public RelayCommand ReportCommand { get; }
-        public RelayCommand RevertCommand { get; }
         public RelayCommand OpenSubmissionCommand { get; }
         public AsyncCommand RefreshSubmissionsCommand { get; }
 
@@ -309,7 +287,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 {
                     InstallCommand.RaiseCanExecuteChanged();
                     PreviewCommand.RaiseCanExecuteChanged();
-                    RevertCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -347,8 +324,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             get => _progressFraction;
             private set => SetValue(ref _progressFraction, value);
         }
-
-        public bool HasUndoEntries => UndoEntries.Count > 0;
 
         public bool HasSubmissions => Submissions.Count > 0;
 
@@ -481,14 +456,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         private void ReloadLocalState()
         {
-            UndoEntries.Clear();
-            foreach (var entry in _undo.List())
-            {
-                UndoEntries.Add(new WorkshopUndoViewModel(entry));
-            }
-
-            OnPropertyChanged(nameof(HasUndoEntries));
-
             Submissions.Clear();
             foreach (var record in _registry.Submissions)
             {
@@ -1084,30 +1051,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             if (install)
             {
                 await InstallAsync(row);
-            }
-        }
-
-        private void Revert(WorkshopUndoViewModel entry)
-        {
-            if (entry == null || IsBusy)
-            {
-                return;
-            }
-
-            IsBusy = true;
-            try
-            {
-                _installer.Revert(entry.Entry.Id);
-                ReloadLocalState();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Failed reverting Workshop snapshot {entry.Entry.Id}.");
-                ErrorMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message);
-            }
-            finally
-            {
-                IsBusy = false;
             }
         }
 
