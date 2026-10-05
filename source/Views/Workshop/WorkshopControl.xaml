@@ -293,9 +293,8 @@
                     </Grid>
                 </TabItem>
 
-                <!-- Installed: the same list-and-detail shape as Browse, with the two short
-                     lists (undoable page installs, this install's submissions) as cards under
-                     the detail pane. -->
+                <!-- Installed: the same list-and-detail shape as Browse, with this install's
+                     submissions as a card under the detail pane. -->
                 <TabItem Header="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}">
                     <Grid Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
@@ -336,53 +335,7 @@
                             </Border>
 
                             <Grid Grid.Row="1" Margin="0,10,0,0" MaxHeight="240">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0"
-                                        Margin="0,0,5,0"
-                                        Padding="12"
-                                        Background="{DynamicResource PlayAch.Brush.Panel}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                        CornerRadius="4">
-                                    <DockPanel>
-                                        <TextBlock DockPanel.Dock="Top"
-                                                   Text="{DynamicResource LOCPlayAch_Workshop_RecentInstalls}"
-                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                   FontWeight="SemiBold"
-                                                   Margin="0,0,0,8"/>
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                            <ItemsControl ItemsSource="{Binding UndoEntries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="{x:Type vm:WorkshopUndoViewModel}">
-                                                        <Grid Margin="0,0,0,6">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBlock Text="{Binding Label}"
-                                                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                                                       VerticalAlignment="Center"
-                                                                       TextTrimming="CharacterEllipsis"/>
-                                                            <Button Grid.Column="1"
-                                                                    Content="{DynamicResource LOCPlayAch_Workshop_Revert}"
-                                                                    Margin="8,0,0,0"
-                                                                    Command="{Binding DataContext.RevertCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding}"/>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </DockPanel>
-                                </Border>
-
-                                <Border Grid.Column="1"
-                                        Margin="5,0,0,0"
-                                        Padding="12"
+                                <Border Padding="12"
                                         Background="{DynamicResource PlayAch.Brush.Panel}"
                                         BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                         BorderThickness="{StaticResource PlayAch.Thickness.Border}"
