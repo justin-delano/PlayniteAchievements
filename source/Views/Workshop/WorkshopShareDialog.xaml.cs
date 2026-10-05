@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 // WinForms dialog: the WPF Microsoft.Win32 picker renders legacy-style on .NET Framework.
 using DialogResult = System.Windows.Forms.DialogResult;
 using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
@@ -289,6 +290,43 @@ namespace PlayniteAchievements.Views.Workshop
         private void ClearCover_Click(object sender, RoutedEventArgs e)
         {
             CoverBox.Text = string.Empty;
+        }
+
+        /// <summary>
+        /// Shows the chosen cover under its picker. The file is read fully into memory so it is
+        /// not held open; an image WPF cannot decode (WebP without a codec) shows nothing but is
+        /// still submitted.
+        /// </summary>
+        private void CoverBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (CoverImage == null || CoverImageFrame == null)
+            {
+                return;
+            }
+
+            var path = CoverBox.Text;
+            BitmapImage image = null;
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            {
+                try
+                {
+                    image = new BitmapImage();
+                    image.BeginInit();
+                    image.CacheOption = BitmapCacheOption.OnLoad;
+                    image.DecodePixelHeight = 320;
+                    image.UriSource = new Uri(path, UriKind.Absolute);
+                    image.EndInit();
+                    image.Freeze();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Could not show the cover image {path}.");
+                    image = null;
+                }
+            }
+
+            CoverImage.Source = image;
+            CoverImageFrame.Visibility = image != null ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private async void Submit_Click(object sender, RoutedEventArgs e)

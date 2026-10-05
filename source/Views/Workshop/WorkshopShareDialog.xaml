@@ -14,6 +14,7 @@
             <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                 <Setter Property="Margin" Value="0,10,0,4"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -64,22 +65,29 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="CoverBox" IsReadOnly="True"/>
+                        <TextBox x:Name="CoverBox" IsReadOnly="True" TextChanged="CoverBox_TextChanged"/>
                         <Button Grid.Column="1" Content="{DynamicResource LOCPlayAch_Button_Browse}" Margin="6,0,0,0" Click="BrowseCover_Click"/>
                         <Button Grid.Column="2" Content="{DynamicResource LOCPlayAch_Button_Clear}" Margin="6,0,0,0" Click="ClearCover_Click"/>
                     </Grid>
+                    <!-- The chosen cover itself, so the sharer sees what listings will show. -->
+                    <Border x:Name="CoverImageFrame"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Left"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                            Visibility="Collapsed">
+                        <Image x:Name="CoverImage" MaxHeight="160" MaxWidth="480" Stretch="Uniform"/>
+                    </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_UpdateExisting}" Style="{StaticResource FieldLabel}"/>
                     <ComboBox x:Name="ExistingBox" IsEditable="True" DisplayMemberPath="Label" SelectedValuePath="ItemId"/>
 
-                    <CheckBox x:Name="RightsBox"
-                              Content="{DynamicResource LOCPlayAch_Workshop_Share_Rights}"
-                              Margin="0,14,0,0">
-                        <CheckBox.Resources>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="TextWrapping" Value="Wrap"/>
-                            </Style>
-                        </CheckBox.Resources>
+                    <!-- An explicit TextBlock: string content goes through the checkbox template's
+                         content presenter, which does not wrap. -->
+                    <CheckBox x:Name="RightsBox" Margin="0,14,0,0" VerticalContentAlignment="Top">
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Rights}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   TextWrapping="Wrap"/>
                     </CheckBox>
 
                     <TextBlock x:Name="StatusText"
