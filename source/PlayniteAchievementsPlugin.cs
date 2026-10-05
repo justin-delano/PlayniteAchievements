@@ -95,7 +95,6 @@ namespace PlayniteAchievements
         private Services.Workshop.BundlePortableStore _bundlePortableStore;
         private Services.Workshop.ColorPackPortableStore _colorPackPortableStore;
         private Services.Workshop.WorkshopInstalledRegistry _workshopRegistry;
-        private Services.Workshop.WorkshopUndoStore _workshopUndo;
         private Services.Workshop.WorkshopInstaller _workshopInstaller;
         private Services.Workshop.WorkshopClient _workshopClient;
         private Services.Workshop.WorkshopSubmissionClient _workshopSubmissionClient;
@@ -232,12 +231,9 @@ namespace PlayniteAchievements
         public Services.Workshop.WorkshopInstalledRegistry WorkshopRegistry =>
             _workshopRegistry ?? (_workshopRegistry =
                 new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));
-        public Services.Workshop.WorkshopUndoStore WorkshopUndo =>
-            _workshopUndo ?? (_workshopUndo =
-                new Services.Workshop.WorkshopUndoStore(GetPluginUserDataPath(), _logger));
         public Services.Workshop.WorkshopInstaller WorkshopInstaller =>
             _workshopInstaller ?? (_workshopInstaller =
-                new Services.Workshop.WorkshopInstaller(this, WorkshopRegistry, WorkshopUndo, _logger));
+                new Services.Workshop.WorkshopInstaller(this, WorkshopRegistry, _logger));
         public Services.Workshop.WorkshopClient WorkshopClient =>
             _workshopClient ?? (_workshopClient = new Services.Workshop.WorkshopClient(
                 () => _settingsViewModel?.Settings?.Persisted?.WorkshopIndexUrl,
