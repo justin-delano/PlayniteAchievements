@@ -136,6 +136,14 @@ namespace PlayniteAchievements.Services.Workshop.Preview
         /// </summary>
         public IReadOnlyList<AchievementPreviewRow> UnchangedRows { get; internal set; } = Array.Empty<AchievementPreviewRow>();
 
+        /// <summary>
+        /// The API names of every achievement the package itself touches (overrides, icons,
+        /// categories, notes, capstones, filters, custom achievements), whether or not the install
+        /// changes them. The published image lists these rows, since a package shared from the
+        /// game it was made on changes nothing there.
+        /// </summary>
+        public IReadOnlyCollection<string> PackageTouchedApiNames { get; internal set; } = Array.Empty<string>();
+
         /// <summary>How many compared achievements the install leaves as they are.</summary>
         public int UnchangedCount { get; internal set; }
 
