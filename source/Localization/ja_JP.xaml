@@ -37,11 +37,11 @@
     <sys:String x:Key="LOCPlayAch_Common_General">一般</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">非表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Import">インポート</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">API Key</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">API キー</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">カテゴリー</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart; the options follow the label -->
     <sys:String x:Key="LOCPlayAch_Common_Label_Granularity">Granularity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Granularity_Day">Day</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Day">日</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Week">Week</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Month">Month</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Level">レベル</sys:String>
@@ -206,7 +206,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Battle.net</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Apple">Apple</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Custom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Custom">カスタム</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_EA">EA</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
@@ -449,7 +449,7 @@ This game's achievements come from a manual link, so clearing deletes the link a
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries">統計から除外済み</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_AchievementOrder">並べ替え</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Category">カテゴリー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Custom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Custom">カスタム</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_FilterPlaceholder">カテゴリーをフィルター...</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ToggleToolTip">Group achievements by category</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ExpandAll">すべて展開</sys:String>
@@ -1218,7 +1218,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_InProgress">進捗あり</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">アクティビティ</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_OwnershipSelectorPlaceholder">Ownership</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_CustomizationSelectorPlaceholder">Customization</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_CustomizationSelectorPlaceholder">カスタマイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">ゲームを検索</sys:String>
     <!-- Filter_Hidden: filter label for hidden (secret) achievements, not hidden games -->
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">隠し</sys:String>
@@ -1432,7 +1432,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Showcase_DropUnavailable">This widget cannot be placed here</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AddPage">Add page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DuplicatePage">Duplicate page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_CopySuffix">Copy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_CopySuffix">コピー</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_RenamePage">Rename page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ExportPage">Export page</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImportPage">Import page</sys:String>
@@ -1464,8 +1464,8 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Profile_DefaultName">実績ショーケース</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileName">Display name</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileSubtitle">Subtitle</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileAvatar">Avatar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileBackground">Background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileAvatar">アバター</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileBackground">背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileProviderHint">Leave blank to use your provider profile</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFiles">Image files</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AllFiles">すべてのファイル</sys:String>
@@ -1512,7 +1512,7 @@ Continue?</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Cards</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreHistory">Score over time</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">Both</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">両方</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Collection">Collection</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Prestige">Prestige</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileMedals">Medals</sys:String>
