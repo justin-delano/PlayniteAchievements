@@ -35,6 +35,7 @@ namespace PlayniteAchievements.Services.Workshop.Preview
             var entries = BuildPackageEntries(package);
             var diff = new GameCustomDataPreviewDiff();
             FillSummary(diff, package, entries);
+            diff.PackageTouchedApiNames = BuildTouchedApiNames(package, entries);
 
             if (source == null)
             {
@@ -190,6 +191,7 @@ namespace PlayniteAchievements.Services.Workshop.Preview
             GameCustomDataPreviewSource source)
         {
             var data = CopyForHydration(source.RawData, source.GameId);
+
             var resolved = GameCustomDataLookup.BuildResolvedFromRecord(predicted, source.Persisted);
             data.Game = source.CurrentData?.Game;
             data.ExcludedByUser = resolved.ExcludedFromRefreshes;
@@ -208,6 +210,19 @@ namespace PlayniteAchievements.Services.Workshop.Preview
                 () => predicted.AchievementUnlockedIconOverrides,
                 () => predicted.AchievementLockedIconOverrides);
             data.Achievements ??= new List<AchievementDetail>();
+
+            // After hydration, so custom achievements projected from the record are covered too.
+            if (source.HidePersonalProgress)
+            {
+                foreach (var achievement in data.Achievements.Where(achievement => achievement != null))
+                {
+                    achievement.UnlockTimeUtc = null;
+                    achievement.Unlocked = true;
+                    achievement.ProgressNum = null;
+                    achievement.ProgressDenom = null;
+                }
+            }
+
             return data;
         }
 
@@ -645,6 +660,37 @@ namespace PlayniteAchievements.Services.Workshop.Preview
                 entry.State.LockedIcon = path;
                 entry.Changes |= AchievementPreviewChange.LockedIcon;
             }
+        }
+
+        /// <summary>
+        /// The package's entries plus the per-achievement keys of the schema-7 maps the entries
+        /// do not read (category, category type, note, manual capstone).
+        /// </summary>
+        private static HashSet<string> BuildTouchedApiNames(
+            GameCustomDataPortablePackage package,
+            IEnumerable<PackageEntry> entries)
+        {
+            var touched = new HashSet<string>(entries.Select(entry => entry.ApiName), StringComparer.OrdinalIgnoreCase);
+            var manifest = package.Shape == GameCustomDataPackageShape.Manifest ? package.Manifest : null;
+            if (manifest == null)
+            {
+                return touched;
+            }
+
+            var keys = (manifest.AchievementCategoryOverrides?.Keys ?? Enumerable.Empty<string>())
+                .Concat(manifest.AchievementCategoryTypeOverrides?.Keys ?? Enumerable.Empty<string>())
+                .Concat(manifest.AchievementNotes?.Keys ?? Enumerable.Empty<string>())
+                .Concat(new[] { manifest.ManualCapstoneApiName });
+            foreach (var key in keys)
+            {
+                var apiName = Normalize(key);
+                if (apiName != null)
+                {
+                    touched.Add(apiName);
+                }
+            }
+
+            return touched;
         }
 
         private static void FillSummary(
