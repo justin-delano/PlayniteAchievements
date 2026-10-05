@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
 using AchievementDataGridControl = PlayniteAchievements.Views.Controls.AchievementDataGridControl;
@@ -80,6 +81,24 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             "Status", "Icon", "Achievement", "CategoryType", "CategoryLabel", "Trophy", "Rarity", "Points"
         };
 
+        // Shown in the published image whatever the rows hold; the rest of the fixed set is shown
+        // only when some drawn row has a value for it.
+        private static readonly HashSet<string> NeutralAlwaysShownColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Status", "Icon", "Achievement"
+        };
+
+        // Icon and badge columns of the published image, centered; every other column is text and
+        // aligned left, header and cells, so the columns line up whatever the sharer's grid
+        // alignment settings are.
+        private static readonly HashSet<string> NeutralCenteredColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Status", "Icon", "Trophy"
+        };
+
+        /// <summary>The widest a fitted text column of the published image gets; longer text wraps.</summary>
+        private const double NeutralFittedColumnMaxWidth = 220;
+
         public static readonly DependencyProperty MaxRowsProperty = DependencyProperty.Register(
             nameof(MaxRows), typeof(int), typeof(GameDataPreviewControl),
             new PropertyMetadata(0, (d, e) => ((GameDataPreviewControl)d).RefreshRows()));
@@ -96,6 +115,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         private List<AchievementDisplayItem> _afterItems;
         private List<AchievementDisplayItem> _beforeItems;
         private List<AchievementDisplayItem> _shownItems = new List<AchievementDisplayItem>();
+        private Style _neutralHeaderStyle;
 
         public GameDataPreviewControl()
         {
@@ -167,6 +187,11 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 return;
             }
 
+            if (NeutralRender)
+            {
+                FitColumnsToContent(dataGrid);
+            }
+
             var visible = dataGrid.Columns.Where(column => column.Visibility == Visibility.Visible).ToList();
             var stars = visible.Where(column => column.Width.IsStar).ToList();
             if (stars.Count == 0)
@@ -184,6 +209,130 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             {
                 var share = Math.Floor(remaining * column.Width.Value / totalStars);
                 column.Width = new DataGridLength(Math.Max(column.MinWidth, share), DataGridLengthUnitType.Pixel);
+            }
+        }
+
+        /// <summary>
+        /// Sizes each visible column of the published image other than Status, Icon and
+        /// Achievement to the wider of its header and its widest laid-out cell, up to
+        /// <see cref="NeutralFittedColumnMaxWidth"/>, so no header is clipped and no column is
+        /// wider than what it shows. Achievement keeps its star width and takes what is left.
+        /// </summary>
+        private static void FitColumnsToContent(DataGrid dataGrid)
+        {
+            var unbounded = new Size(double.PositiveInfinity, double.PositiveInfinity);
+            var headers = FindDescendants<DataGridColumnHeader>(dataGrid)
+                .Where(header => header.Column != null)
+                .ToList();
+            foreach (var column in dataGrid.Columns)
+            {
+                var key = ColumnVisibilityHelper.GetColumnKey(column) ?? string.Empty;
+                if (column.Visibility != Visibility.Visible || NeutralAlwaysShownColumns.Contains(key))
+                {
+                    continue;
+                }
+
+                var widest = 0.0;
+                foreach (var header in headers.Where(header => ReferenceEquals(header.Column, column)))
+                {
+                    header.Measure(unbounded);
+                    widest = Math.Max(widest, header.DesiredSize.Width);
+                    header.InvalidateMeasure();
+                }
+
+                foreach (var item in dataGrid.Items)
+                {
+                    var cell = FindAncestor<DataGridCell>(column.GetCellContent(item));
+                    if (cell == null)
+                    {
+                        continue;
+                    }
+
+                    cell.Measure(unbounded);
+                    widest = Math.Max(widest, cell.DesiredSize.Width);
+                    cell.InvalidateMeasure();
+                }
+
+                if (widest <= 0)
+                {
+                    continue;
+                }
+
+                var fitted = Math.Ceiling(Math.Min(NeutralFittedColumnMaxWidth, widest)) + 1;
+                column.MaxWidth = Math.Max(column.MaxWidth, fitted);
+                column.MinWidth = Math.Min(column.MinWidth, fitted);
+                column.Width = new DataGridLength(fitted, DataGridLengthUnitType.Pixel);
+            }
+        }
+
+        private static T FindAncestor<T>(DependencyObject element) where T : DependencyObject
+        {
+            var current = element;
+            while (current != null && !(current is T))
+            {
+                current = VisualTreeHelper.GetParent(current) ?? LogicalTreeHelper.GetParent(current);
+            }
+
+            return current as T;
+        }
+
+        private static IEnumerable<T> FindDescendants<T>(DependencyObject parent) where T : DependencyObject
+        {
+            var count = VisualTreeHelper.GetChildrenCount(parent);
+            for (var i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T match)
+                {
+                    yield return match;
+                }
+
+                foreach (var descendant in FindDescendants<T>(child))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Collapses each column of the published image's fixed set, other than Status, Icon and
+        /// Achievement, that no drawn row has a value for.
+        /// </summary>
+        private static void ApplyNeutralColumnVisibility(DataGrid dataGrid, IReadOnlyList<AchievementDisplayItem> items)
+        {
+            foreach (var column in dataGrid.Columns)
+            {
+                var key = ColumnVisibilityHelper.GetColumnKey(column) ?? string.Empty;
+                if (!NeutralColumns.Contains(key))
+                {
+                    continue;
+                }
+
+                column.Visibility = NeutralAlwaysShownColumns.Contains(key) || items.Any(item => HasNeutralCellValue(key, item))
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>Whether <paramref name="item"/> shows anything in the published image's column <paramref name="key"/>.</summary>
+        private static bool HasNeutralCellValue(string key, AchievementDisplayItem item)
+        {
+            switch (key)
+            {
+                case "CategoryType":
+                    return !string.IsNullOrWhiteSpace(item.CategoryTypeDisplay);
+                case "CategoryLabel":
+                    return !string.IsNullOrWhiteSpace(item.CategoryLabelDisplay);
+                case "Trophy":
+                    return item.HasTrophyType;
+                case "Points":
+                    return !string.IsNullOrWhiteSpace(item.PointsTextResolved);
+                case "Rarity":
+                    // An achievement without rarity data reads as Common; a grid of those alone
+                    // says nothing.
+                    return item.HasRarityPercent || item.Rarity != RarityTier.Common;
+                default:
+                    return true;
             }
         }
 
@@ -316,12 +465,24 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 // set below is what the render lays out.
                 grid.ApplyTemplate();
                 var dataGrid = grid.AchievementsDataGrid;
+
+                // The sharer's grid alignment settings stay out of the image: the behavior that
+                // applies them is switched off and every column gets a fixed alignment.
+                DataGridAlignmentBehavior.SetIsEnabled(dataGrid, false);
                 foreach (var column in dataGrid.Columns)
                 {
                     var key = ColumnVisibilityHelper.GetColumnKey(column) ?? string.Empty;
                     column.Visibility = NeutralColumns.Contains(key)
                         ? Visibility.Visible
                         : Visibility.Collapsed;
+
+                    var horizontal = NeutralCenteredColumns.Contains(key) ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+                    DataGridAlignmentBehavior.SetHeaderHorizontalAlignment(column, horizontal);
+                    DataGridAlignmentBehavior.SetCellHorizontalAlignment(column, horizontal);
+                    DataGridAlignmentBehavior.SetCellTextAlignment(
+                        column,
+                        horizontal == HorizontalAlignment.Center ? TextAlignment.Center : TextAlignment.Left);
+                    DataGridAlignmentBehavior.SetCellVerticalAlignment(column, VerticalAlignment.Center);
 
                     // The status cell shows the capstone badge only: no check mark or padlock,
                     // so the image says nothing about the sharer's progress.
@@ -331,6 +492,21 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                         statusColumn.CellTemplate = (DataTemplate)FindResource("NeutralStatusTemplate");
                     }
                 }
+
+                // The table's outline: a border around the grid and a header row on a surface of
+                // its own above the row separators the grid already draws.
+                grid.BorderThickness = new Thickness(1);
+                grid.SetResourceReference(BorderBrushProperty, "PlayAch.Brush.Border");
+                if (_neutralHeaderStyle == null)
+                {
+                    _neutralHeaderStyle = new Style(typeof(DataGridColumnHeader), dataGrid.ColumnHeaderStyle);
+                    _neutralHeaderStyle.Setters.Add(new Setter(
+                        BackgroundProperty,
+                        new DynamicResourceExtension("PlayAch.Brush.ControlSurface")));
+                    _neutralHeaderStyle.Seal();
+                }
+
+                dataGrid.ColumnHeaderStyle = _neutralHeaderStyle;
 
                 // Every row is realized for the render, and no scroll bar is drawn beside them.
                 dataGrid.EnableRowVirtualization = false;
@@ -415,6 +591,11 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 ? new HashSet<AchievementDisplayItem>(_shownItems.Where(item => _changedApiNames.Contains(item.ApiName ?? string.Empty)))
                 : null;
             grid.ItemsSource = _shownItems;
+            if (NeutralRender)
+            {
+                ApplyNeutralColumnVisibility(grid.AchievementsDataGrid, _shownItems);
+            }
+
             return wanted.Count - limit;
         }
 
