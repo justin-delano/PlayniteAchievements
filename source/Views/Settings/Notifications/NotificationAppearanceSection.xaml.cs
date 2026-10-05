@@ -259,9 +259,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             ResetKindStyleButton.Visibility = hasKindStyle && scopeEditable
                 ? Visibility.Visible
                 : Visibility.Collapsed;
-            KindStyleHint.Text = hasKindStyle
-                ? L("LOCPlayAch_Settings_Style_Kind_CustomHint")
-                : L("LOCPlayAch_Settings_Style_Kind_FollowHint");
 
             return hasKindStyle ? scopeStyle.ResolveKind(kind) : scopeStyle;
         }
@@ -377,6 +374,9 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 style = custom ?? persisted.NotificationStyle;
 
                 PlatformSelectorPanel.Visibility = Visibility.Visible;
+                CustomizeCheckBox.Content = string.Format(
+                    L("LOCPlayAch_Settings_Style_Kind_Customize"),
+                    option.DisplayName);
                 CustomizeCheckBox.Visibility = Visibility.Visible;
                 _suppressCustomizeEvents = true;
                 CustomizeCheckBox.IsChecked = editable;
@@ -468,38 +468,19 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         }
 
         /// <summary>
-        /// Sets the line under each surface's theme checkbox naming the look the preview uses
-        /// right now: the plugin's, the active theme's, or an imported template. Recomputed on
-        /// every selection, toggle, import, and revert so it always matches the preview. The
-        /// scope needs no line of its own; the platform dropdown and the scope column show it.
+        /// Splits the preview row for the active tab: the toast card keeps its own width and the
+        /// scope column takes the rest, while the frame strip has no natural width, so it takes
+        /// the rest and the scope column sizes to its content.
         /// </summary>
-        private void RefreshLookText()
+        private void ApplyPreviewColumns()
         {
-            if (ToastLookText == null || FrameLookText == null)
-            {
-                return;
-            }
-
-            ToastLookText.Text = BuildLookText(isFrame: false, _currentToastUseThemeStyling);
-            FrameLookText.Text = BuildLookText(isFrame: true, _currentFrameUseThemeStyling);
-        }
-
-        private string BuildLookText(bool isFrame, bool useThemeStyling)
-        {
-            if (useThemeStyling && _toastTemplateResolver != null &&
-                _toastTemplateResolver.ThemeProvidesTemplate(NotificationTemplatePreviewSource.ActiveTheme, isFrame))
-            {
-                return L("LOCPlayAch_Settings_Style_SourceLook_Theme");
-            }
-
-            if (_toastTemplateResolver != null &&
-                !string.IsNullOrWhiteSpace(
-                    _toastTemplateResolver.ResolveCustomTemplatePath(isFrame, ScopeProviderKey, ScopeGameId)))
-            {
-                return L("LOCPlayAch_Settings_Style_SourceLook_Imported");
-            }
-
-            return L("LOCPlayAch_Settings_Style_SourceLook_Plugin");
+            var frame = FrameTabItem?.IsSelected == true;
+            PreviewColumn.Width = frame
+                ? new GridLength(1, GridUnitType.Star)
+                : GridLength.Auto;
+            ScopeColumn.Width = frame
+                ? GridLength.Auto
+                : new GridLength(1, GridUnitType.Star);
         }
 
         /// <summary>
@@ -842,15 +823,12 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
         private void UpdateMockupsCore()
         {
-            // Mockups (and the look lines) are visual-only; while the control is not in the
-            // visual tree, the Loaded handler's rebuild covers every change made in the meantime.
+            // Mockups are visual-only; while the control is not in the visual tree, the Loaded
+            // handler's rebuild covers every change made in the meantime.
             if (!IsLoaded)
             {
                 return;
             }
-
-            // The look lines need no mockup hosts, so refresh them before the host guard.
-            RefreshLookText();
 
             var persisted = _settings?.Persisted;
             if (persisted == null || ToastMockupHost == null || FrameMockupHost == null ||
@@ -1843,6 +1821,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             }
 
             RefreshPresetOptions();
+            ApplyPreviewColumns();
 
             // Each tab carries its own sample dropdown, so the tab switch can change the kind
             // being styled along with the surface.

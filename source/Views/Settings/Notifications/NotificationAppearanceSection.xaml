@@ -192,10 +192,13 @@
                     </Grid>
 
                     <!-- Preview on the left, the shared scope column on the right. -->
+                    <!-- Column widths follow the tab (ApplyPreviewColumns): the toast card keeps its
+                         own width and the scope column takes the rest; the frame strip takes the
+                         rest and the scope column sizes to its content. -->
                     <Grid Grid.Row="1" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="280"/>
+                            <ColumnDefinition x:Name="PreviewColumn" Width="Auto"/>
+                            <ColumnDefinition x:Name="ScopeColumn" Width="*" MinWidth="240"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Device-pixel snapping for this card comes from the section root, not
@@ -248,7 +251,7 @@
 
                         <!-- Scope column: every decision about which style the preview and the
                              editor below show, top to bottom from widest to narrowest scope. -->
-                        <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                        <StackPanel Grid.Column="1" Margin="24,0,0,0">
                             <!-- Platform scope. In game mode the game's own override takes its place. -->
                             <StackPanel x:Name="PlatformSelectorPanel"
                                         Margin="0,0,0,16">
@@ -257,7 +260,6 @@
                                            Style="{StaticResource SubSectionHeaderStyle}"
                                            Margin="0,0,0,6"/>
                                 <CheckBox x:Name="CustomizeCheckBox"
-                                          Content="{DynamicResource LOCPlayAch_Settings_Style_CustomizeForPlatform}"
                                           Click="CustomizeCheckBox_Click"
                                           Visibility="Collapsed"/>
                                 <TextBlock x:Name="FollowDefaultHint"
@@ -301,15 +303,11 @@
                                         HorizontalAlignment="Left"
                                         Margin="0,8,0,0"
                                         Visibility="Collapsed"/>
-                                <TextBlock x:Name="KindStyleHint"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           TextWrapping="Wrap"
-                                           Margin="0,6,0,0"/>
                             </StackPanel>
 
                             <!-- Design: whether the live notification / saved frame (and the preview)
                                  use the theme's design or the plugin's. Each surface persists its
-                                 own flag, so each has its own checkbox and look line. -->
+                                 own flag, so each has its own checkbox. -->
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_FireTheme}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
                                        Margin="0,0,0,6"/>
@@ -321,16 +319,6 @@
                                       Content="{DynamicResource LOCPlayAch_Settings_Style_UseThemeTemplate}"
                                       Click="ThemeStylingCheckBox_Click"
                                       Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}"/>
-                            <TextBlock x:Name="ToastLookText"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,6,0,0"
-                                       Visibility="{Binding IsSelected, ElementName=ToastTabItem, Converter={StaticResource BoolToVis}}"/>
-                            <TextBlock x:Name="FrameLookText"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,6,0,0"
-                                       Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
