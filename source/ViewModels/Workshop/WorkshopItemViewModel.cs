@@ -14,6 +14,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
     public sealed class WorkshopItemViewModel : ObservableObject
     {
         private string _previewPath;
+        private string _coverPath;
         private string _readme;
         private bool _isInstalled;
         private bool _hasUpdate;
@@ -75,10 +76,22 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string PreviewPath
         {
             get => _previewPath;
-            set => SetValue(ref _previewPath, value, nameof(PreviewPath), nameof(HasPreview));
+            set => SetValue(ref _previewPath, value, nameof(PreviewPath), nameof(HasPreview), nameof(ThumbnailPath));
         }
 
         public bool HasPreview => !string.IsNullOrWhiteSpace(_previewPath);
+
+        /// <summary>The sharer's optional cover image as a cached local file; null until fetched or when the item has none.</summary>
+        public string CoverPath
+        {
+            get => _coverPath;
+            set => SetValue(ref _coverPath, value, nameof(CoverPath), nameof(HasCover), nameof(ThumbnailPath));
+        }
+
+        public bool HasCover => !string.IsNullOrWhiteSpace(_coverPath);
+
+        /// <summary>The list thumbnail: the cover when the item has one, otherwise the preview.</summary>
+        public string ThumbnailPath => HasCover ? _coverPath : _previewPath;
 
         public string Readme
         {
