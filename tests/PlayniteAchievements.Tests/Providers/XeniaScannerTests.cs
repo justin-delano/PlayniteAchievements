@@ -493,12 +493,41 @@ namespace PlayniteAchievements.Providers.Tests
                 WriteFakeGpdWithTitleString(gpdPath, "Test Game");
 
                 Assert.IsTrue(GPDResolver.TryReadTitleString(gpdPath, out var title));
-                Assert.AreEqual("Test Game", title.Replace("\0", ""));
+                Assert.AreEqual("Test Game", title);
             }
             finally
             {
                 DeleteDirectory(tempDir);
             }
+        }
+
+        [TestMethod]
+        public void TryReadTitleString_DecodesNonAsciiTitle()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gpdPath = Path.Combine(tempDir, "4D5307E6.gpd");
+                WriteFakeGpdWithTitleString(gpdPath, "Pok\u00E9mon\u2122 \u30DD\u30B1\u30E2\u30F3");
+
+                Assert.IsTrue(GPDResolver.TryReadTitleString(gpdPath, out var title));
+                Assert.AreEqual("Pok\u00E9mon\u2122 \u30DD\u30B1\u30E2\u30F3", title);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void DecodeXdbfString_StopsAtTerminatorAndIgnoresOddTrailingByte()
+        {
+            var bytes = Encoding.BigEndianUnicode.GetBytes("Halo 3\0garbage").Concat(new byte[] { 0x41 }).ToArray();
+
+            Assert.AreEqual("Halo 3", GPDResolver.DecodeXdbfString(bytes, 0, bytes.Length));
+            Assert.AreEqual(string.Empty, GPDResolver.DecodeXdbfString(null, 0, 4));
+            Assert.AreEqual(string.Empty, GPDResolver.DecodeXdbfString(bytes, 0, 0));
         }
 
         [TestMethod]
