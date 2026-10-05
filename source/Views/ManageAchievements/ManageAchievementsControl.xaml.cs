@@ -55,6 +55,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
         private System.Windows.Threading.DispatcherTimer _iconOverridesChangedDebounce;
         private readonly HashSet<string> _pendingIconOverrideApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _pendingIconOverridesFromEditor;
+        private bool _pendingIconOverridesEditorRowsStale;
         private bool _selfWriteMarkerClearQueued;
         private bool _librarySuspensionHeld;
         private ManageAchievementsEditorViewModel _editorViewModel;
@@ -1017,7 +1018,18 @@ namespace PlayniteAchievements.Views.ManageAchievements
         /// </summary>
         private void EditorViewModel_IconOverridesSaved(object sender, IconOverridesSavedEventArgs e)
         {
-            _pendingIconOverridesFromEditor = true;
+            // A reset reloaded the editor's rows before the provider icons were written back, so
+            // the flush must not suppress the editor's refresh; it wins over an icon edit queued
+            // in the same debounce window.
+            if (e?.EditorRowsStale == true)
+            {
+                _pendingIconOverridesEditorRowsStale = true;
+            }
+            else
+            {
+                _pendingIconOverridesFromEditor = true;
+            }
+
             HandleIconOverridesSaved(sender, e);
         }
 
@@ -1061,10 +1073,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
             var changedApiNames = _pendingIconOverrideApiNames.ToList();
             _pendingIconOverrideApiNames.Clear();
 
+            var editorRowsStale = _pendingIconOverridesEditorRowsStale;
+            _pendingIconOverridesEditorRowsStale = false;
             if (_pendingIconOverridesFromEditor)
             {
                 _pendingIconOverridesFromEditor = false;
-                if (_editorViewModel != null)
+                if (_editorViewModel != null && !editorRowsStale)
                 {
                     _editorViewModel.SuppressExternalRefresh = true;
                 }
