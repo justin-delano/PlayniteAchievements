@@ -33,12 +33,27 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>For per-game data, the library game to install onto.</summary>
         public Guid? TargetGameId { get; set; }
 
+        /// <summary>For per-game data, how the package meets the custom data the game already has.</summary>
+        public WorkshopGameDataInstallMode GameDataMode { get; set; } = WorkshopGameDataInstallMode.KeepEditsSinceInstall;
+    }
+
+    /// <summary>How installed per-game data meets the custom data a game already has.</summary>
+    public enum WorkshopGameDataInstallMode
+    {
         /// <summary>
-        /// For per-game data, apply the package as a fresh install: the game's custom data is
-        /// replaced by the package, without the merge that keeps edits made since an earlier
-        /// install. Reinstall sets it; Update leaves it off.
+        /// Update: changes made since the earlier install of this item are kept, and everything
+        /// else follows the package.
         /// </summary>
-        public bool Fresh { get; set; }
+        KeepEditsSinceInstall,
+
+        /// <summary>The game's custom data is replaced by the package.</summary>
+        Replace,
+
+        /// <summary>
+        /// Everything the game already has is kept, and the package only fills in what is not
+        /// set; existing icon files are kept wherever the merged data still uses them.
+        /// </summary>
+        MergeKeepingExisting
     }
 
     public sealed class WorkshopInstallResult
@@ -396,10 +411,29 @@ namespace PlayniteAchievements.Services.Workshop
             // An update onto data the user has edited since the last install: the baseline is what
             // that install left behind, so the merge below can tell their edits from the rest, and
             // icons they swapped in place are set aside before the import rewrites the slots.
+            // A merge onto data the user had before this item treats all of it as theirs: an empty
+            // baseline makes every value they set count as an edit, and every icon file on disk is
+            // set aside. A replace keeps nothing.
             var record = _registry.Find(request.Item.Id, gameId);
-            var baseline = !request.Fresh && !isCustomAchievementsPackage && previous != null ? _baselines.Load(record) : null;
             var iconDirectory = _plugin.ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D"));
-            var editedIcons = baseline != null ? SnapshotEditedIcons(iconDirectory, record) : null;
+            GameCustomDataFile baseline = null;
+            EditedIconSet editedIcons = null;
+            if (!isCustomAchievementsPackage && previous != null)
+            {
+                switch (request.GameDataMode)
+                {
+                    case WorkshopGameDataInstallMode.MergeKeepingExisting:
+                        baseline = new GameCustomDataFile();
+                        editedIcons = SnapshotEditedIcons(iconDirectory, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+                        break;
+                    case WorkshopGameDataInstallMode.KeepEditsSinceInstall:
+                        baseline = _baselines.Load(record);
+                        editedIcons = baseline != null && !string.IsNullOrEmpty(record?.BaselineFile)
+                            ? SnapshotEditedIcons(iconDirectory, _baselines.LoadIconHashes(record))
+                            : null;
+                        break;
+                }
+            }
 
             try
             {
@@ -508,15 +542,13 @@ namespace PlayniteAchievements.Services.Workshop
             public List<string> RelativePaths { get; } = new List<string>();
         }
 
-        private EditedIconSet SnapshotEditedIcons(string iconDirectory, WorkshopInstalledItem record)
+        /// <summary>
+        /// Copies aside every icon file whose content differs from <paramref name="baselineHashes"/>
+        /// (all of them, for an empty map), so the import cannot lose them.
+        /// </summary>
+        private EditedIconSet SnapshotEditedIcons(string iconDirectory, IReadOnlyDictionary<string, string> baselineHashes)
         {
-            if (string.IsNullOrEmpty(iconDirectory) || !Directory.Exists(iconDirectory) || string.IsNullOrEmpty(record?.BaselineFile))
-            {
-                return null;
-            }
-
-            var baselineHashes = _baselines.LoadIconHashes(record);
-            if (baselineHashes == null)
+            if (string.IsNullOrEmpty(iconDirectory) || !Directory.Exists(iconDirectory) || baselineHashes == null)
             {
                 return null;
             }
