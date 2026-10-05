@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.Workshop"
              xmlns:workshop="clr-namespace:PlayniteAchievements.Services.Workshop"
              mc:Ignorable="d"
@@ -32,10 +33,20 @@
                             BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                             BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                             CornerRadius="3">
-                        <Image helpers:AsyncImage.Uri="{Binding ThumbnailPath}"
-                               helpers:AsyncImage.DecodePixel="144"
-                               Stretch="UniformToFill"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Grid>
+                            <Image helpers:AsyncImage.Uri="{Binding ThumbnailPath}"
+                                   helpers:AsyncImage.DecodePixel="144"
+                                   Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <controls:GlyphIcon Glyph="{Binding KindGlyph}"
+                                                FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                                Size="24"
+                                                Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Visibility="{Binding HasThumbnail, Converter={StaticResource InverseBoolToVis}}"/>
+                        </Grid>
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Name}"
@@ -87,6 +98,21 @@
             <DataTemplate x:Key="WorkshopItemDetailTemplate" DataType="{x:Type vm:WorkshopItemViewModel}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="16">
+                        <Border Background="{DynamicResource PlayAch.Brush.Surface}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                CornerRadius="4"
+                                Height="140"
+                                Margin="0,0,0,12"
+                                Visibility="{Binding HasThumbnail, Converter={StaticResource InverseBoolToVis}}">
+                            <controls:GlyphIcon Glyph="{Binding KindGlyph}"
+                                                FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                                Size="56"
+                                                Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"/>
+                        </Border>
                         <Border Background="{DynamicResource PlayAch.Brush.Surface}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                 BorderThickness="{StaticResource PlayAch.Thickness.Border}"
