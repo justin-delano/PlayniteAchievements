@@ -419,6 +419,108 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void SharedFromItsOwnGame_ChangesNothing_ButListsWhatThePackageTouches()
+        {
+            GameCustomDataFile Record() => new GameCustomDataFile
+            {
+                PlayniteGameId = GameId,
+                AchievementOverrides = Overrides(("a1", new AchievementOverride { DisplayName = "Renamed", Category = "DLC" })),
+                CapstonesMaterialized = true,
+                Capstones = new List<CapstoneAssignment> { new CapstoneAssignment { ApiName = "a3" } }
+            };
+            var manifest = new GameCustomDataPortableFile
+            {
+                AchievementOverrides = Record().AchievementOverrides,
+                CapstonesMaterialized = true,
+                Capstones = Record().Capstones
+            };
+
+            var diff = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(manifest), Source(Record()));
+            var packageOnly = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(manifest), source: null);
+
+            Assert.AreEqual(0, diff.Rows.Count);
+            CollectionAssert.AreEquivalent(new[] { "a1", "a3" }, diff.PackageTouchedApiNames.ToList());
+            CollectionAssert.AreEquivalent(new[] { "a1", "a3" }, packageOnly.PackageTouchedApiNames.ToList());
+            var after = diff.AfterData.Achievements;
+            Assert.AreEqual("Renamed", after.Single(achievement => achievement.ApiName == "a1").DisplayName);
+            Assert.IsTrue(after.Single(achievement => achievement.ApiName == "a3").IsCapstone);
+        }
+
+        [TestMethod]
+        public void PackageTouchedApiNames_IncludeCustomAchievementsAndIcons()
+        {
+            var manifest = new GameCustomDataPortableFile
+            {
+                AchievementUnlockedIconOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["a2"] = WriteFile("a2.png", 1, 2, 3)
+                },
+                CustomAchievements = new List<CustomAchievementDefinition>
+                {
+                    new CustomAchievementDefinition { Id = "bonus", DisplayName = "Bonus" }
+                }
+            };
+
+            var diff = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(manifest), Source(current: null));
+
+            CollectionAssert.AreEquivalent(
+                new[] { "a2", CustomAchievementProjectionService.BuildApiName("bonus") },
+                diff.PackageTouchedApiNames.ToList());
+        }
+
+        [TestMethod]
+        public void HidePersonalProgress_BuildsEveryAfterRowUnlockedWithNoTimeOrProgress()
+        {
+            var source = Source(current: null);
+            var unlockedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+            foreach (var data in new[] { source.RawData, source.CurrentData })
+            {
+                data.Achievements[0].UnlockTimeUtc = unlockedAt;
+                data.Achievements[1].ProgressNum = 3;
+                data.Achievements[1].ProgressDenom = 10;
+            }
+
+            source.HidePersonalProgress = true;
+            var manifest = new GameCustomDataPortableFile
+            {
+                AchievementOverrides = Overrides(("a1", new AchievementOverride { DisplayName = "Renamed" })),
+                CustomAchievements = new List<CustomAchievementDefinition>
+                {
+                    new CustomAchievementDefinition { Id = "bonus", DisplayName = "Bonus" }
+                }
+            };
+
+            var diff = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(manifest), source);
+
+            Assert.AreEqual(4, diff.AfterData.Achievements.Count);
+            Assert.IsTrue(diff.AfterData.Achievements.All(achievement =>
+                achievement.Unlocked &&
+                achievement.UnlockTimeUtc == null &&
+                achievement.ProgressNum == null &&
+                achievement.ProgressDenom == null));
+            Assert.AreEqual(unlockedAt, source.RawData.Achievements[0].UnlockTimeUtc);
+            Assert.IsFalse(source.RawData.Achievements[2].Unlocked);
+            Assert.AreEqual(unlockedAt, diff.BeforeData.Achievements[0].UnlockTimeUtc);
+        }
+
+        [TestMethod]
+        public void WithoutHidePersonalProgress_AfterRowsKeepTheUnlockState()
+        {
+            var source = Source(current: null);
+            var unlockedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+            source.RawData.Achievements[0].UnlockTimeUtc = unlockedAt;
+
+            var diff = GameCustomDataPreviewDiffBuilder.Build(ManifestPackage(new GameCustomDataPortableFile
+            {
+                AchievementOverrides = Overrides(("a1", new AchievementOverride { DisplayName = "Renamed" }))
+            }), source);
+
+            var after = diff.AfterData.Achievements;
+            Assert.AreEqual(unlockedAt, after.Single(achievement => achievement.ApiName == "a1").UnlockTimeUtc);
+            Assert.IsFalse(after.Single(achievement => achievement.ApiName == "a2").Unlocked);
+        }
+
+        [TestMethod]
         public void PreviewState_RaisesPropertyChangedWhenAnIconIsSwapped()
         {
             var state = new AchievementPreviewState { UnlockedIcon = "path" };
