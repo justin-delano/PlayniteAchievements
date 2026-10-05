@@ -58,8 +58,6 @@ namespace PlayniteAchievements.Services.Workshop
 
     public sealed class WorkshopInstallResult
     {
-        public string UndoSnapshotId { get; set; }
-
         public Guid? GameId { get; set; }
 
         public List<string> Warnings { get; } = new List<string>();
@@ -78,26 +76,23 @@ namespace PlayniteAchievements.Services.Workshop
     /// Installs a downloaded Workshop package. Looks (color sets, notification styles, frames,
     /// sound packs and bundles) are saved as presets under the item's name and applied only when
     /// the user picks them from a preset list, so installing never overwrites the current look.
-    /// Showcase pages and game data apply directly, after snapshotting what they replace so the
-    /// install can be reverted. Runs on the UI thread: the showcase refresh needs it.
+    /// Showcase pages and game data apply directly. Runs on the UI thread: the showcase refresh
+    /// needs it.
     /// </summary>
     public sealed class WorkshopInstaller
     {
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly WorkshopInstalledRegistry _registry;
-        private readonly WorkshopUndoStore _undo;
         private readonly WorkshopBaselineStore _baselines;
         private readonly ILogger _logger;
 
         public WorkshopInstaller(
             PlayniteAchievementsPlugin plugin,
             WorkshopInstalledRegistry registry,
-            WorkshopUndoStore undo,
             ILogger logger = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
-            _undo = undo ?? throw new ArgumentNullException(nameof(undo));
             _logger = logger;
             _baselines = new WorkshopBaselineStore(Path.Combine(_registry.Directory, "baselines"), logger);
         }
@@ -143,26 +138,6 @@ namespace PlayniteAchievements.Services.Workshop
 
             _registry.Record(request.Item, result.GameId, result.ContentHash, result.BaselineFile);
             return result;
-        }
-
-        /// <summary>Restores a snapshot taken before an install and re-applies the live resources.</summary>
-        public void Revert(string snapshotId)
-        {
-            var persisted = _plugin.Settings?.Persisted;
-            if (persisted == null)
-            {
-                return;
-            }
-
-            var restored = _undo.Restore(snapshotId, persisted);
-            if (restored == WorkshopSettingsSlices.None)
-            {
-                return;
-            }
-
-            _plugin.PersistSettingsForUi();
-            AfterSettingsChanged(restored, persisted);
-            _undo.Delete(snapshotId);
         }
 
         /// <summary>Which bundle parts a Workshop item offers, as the installer's flags.</summary>
@@ -372,8 +347,6 @@ namespace PlayniteAchievements.Services.Workshop
             var portable = ShowcasePagePortableStore.Read(request.PackagePath);
             try
             {
-                result.UndoSnapshotId = _undo.Snapshot(persisted, WorkshopSettingsSlices.Showcase, request.Item.Id, request.Item.Name);
-
                 var layout = persisted.Showcase;
                 ShowcasePagePortableStore.ApplyPortable(
                     layout,
@@ -612,37 +585,6 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         // ---- shared --------------------------------------------------------------------------
-
-        /// <summary>Pushes changed settings slices into the live application resources and services.</summary>
-        private void AfterSettingsChanged(WorkshopSettingsSlices slices, PersistedSettings persisted)
-        {
-            if (slices.HasFlag(WorkshopSettingsSlices.Colors))
-            {
-                var resources = Application.Current?.Resources;
-                if (resources != null)
-                {
-                    PlayAchResourceService.Apply(resources, persisted.ResourceOverrides, persisted);
-                    RarityAppearanceHelper.ApplyBadgeApplicationResources(persisted);
-                }
-            }
-
-            if (slices.HasFlag(WorkshopSettingsSlices.Sounds))
-            {
-                try
-                {
-                    _plugin.UnlockSounds?.ApplySettings();
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "Re-applying unlock sounds after a Workshop change failed.");
-                }
-            }
-
-            if (slices.HasFlag(WorkshopSettingsSlices.Showcase))
-            {
-                ShowcaseConfigurationEvents.RaiseChanged();
-            }
-        }
 
         private AchievementToastTemplateResolver CreateTemplateResolver()
         {
