@@ -3024,7 +3024,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 // The cleared records took their icon overrides with them and the store pruned the
                 // files, but the cached rows still name those files. Announcing the reset rows
                 // puts the provider's own art back in the cache, as clearing an icon edit does.
-                RaiseIconOverridesSaved(targets);
+                RaiseIconOverridesSaved(targets, editorRowsStale: true);
 
                 // Reverting drops each reverted row's own capstone and leaves the rest of the set
                 // alone, so reverting one achievement cannot clear a capstone elsewhere. Cleared
@@ -5589,7 +5589,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// Announces the provider rows whose icon this edit moved. Authored rows keep their icons on
         /// their own definition and reach the cache through the save, so they are left out.
         /// </summary>
-        private void RaiseIconOverridesSaved(IReadOnlyList<AchievementEditorRow> changedRows)
+        private void RaiseIconOverridesSaved(IReadOnlyList<AchievementEditorRow> changedRows, bool editorRowsStale = false)
         {
             if (changedRows == null || changedRows.Count == 0)
             {
@@ -5607,7 +5607,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            IconOverridesSaved?.Invoke(this, new IconOverridesSavedEventArgs(apiNames));
+            IconOverridesSaved?.Invoke(this, new IconOverridesSavedEventArgs(apiNames, editorRowsStale));
         }
 
         private static string ReadIcon(AchievementEditorRow row, AchievementIconVariant variant) =>
