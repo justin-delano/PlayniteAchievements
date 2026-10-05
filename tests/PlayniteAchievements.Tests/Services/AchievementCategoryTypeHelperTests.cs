@@ -10,6 +10,21 @@ namespace PlayniteAchievements.Tests.Services
     public class AchievementCategoryTypeHelperTests
     {
         [TestMethod]
+        public void OverrideOrNull_DropsAnOverrideEqualToTheProviderType()
+        {
+            Assert.IsNull(AchievementCategoryTypeHelper.OverrideOrNull("Default", null), "Default on an untyped row is no override");
+            Assert.IsNull(AchievementCategoryTypeHelper.OverrideOrNull(null, null));
+            Assert.IsNull(AchievementCategoryTypeHelper.OverrideOrNull("progression", "Progression"));
+        }
+
+        [TestMethod]
+        public void OverrideOrNull_KeepsAnOverrideThatDiffersFromTheProvider()
+        {
+            Assert.AreEqual("Default", AchievementCategoryTypeHelper.OverrideOrNull("Default", "Progression"), "unticking the provider's type is a real override");
+            Assert.AreEqual("Progression", AchievementCategoryTypeHelper.OverrideOrNull("Progression", null));
+        }
+
+        [TestMethod]
         public void Normalize_CanonicalizesHardcoreAndSoftcoreAliases()
         {
             Assert.AreEqual("Hardcore", AchievementCategoryTypeHelper.Normalize("hardcore"));
