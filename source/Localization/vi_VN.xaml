@@ -171,7 +171,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Owned">Đã sở hữu</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">Ảnh chụp màn hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">Ghi hình</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Captures">Đã ghi hình</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Captures">Bản ghi hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Ảnh danh mục</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Dùng cho bản tóm tắt trò chơi</sys:String>
 
@@ -285,7 +285,7 @@ Dữ liệu sẽ được nạp lại vào lần làm mới bạn bè tiếp the
 
 Hành động này sẽ xoá liên kết thủ công đồng thời xoá thời gian mở khoá của nó và dữ liệu được lưu trong bộ nhớ đệm của trò chơi này.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Xem thành tựu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ViewCaptures">Xem cột mốc hoàn thành</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ViewCaptures">Xem Bản ghi hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewFriendsAchievements">Xem thành tựu của bạn bè</sys:String>
 
     <!-- ================================================================= -->
@@ -1016,7 +1016,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CollectNote">Dữ liệu mở khóa đến từ {0}, nơi lập chỉ mục các nhân vật theo yêu cầu. Hãy tìm nhân vật của bạn tại đó và chọn Add nếu nhân vật chưa được liệt kê.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">Đang kiểm tra nhân vật...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterNotFound">Không tìm thấy nhân vật phù hợp với tên, thế giới và khu vực đã nhập.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Đã tìm thấy nhân vật, nhưng thành tích trên Lodestone đang ở chế độ riêng tư.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Đã tìm thấy nhân vật, nhưng thành tựu trên Lodestone đang ở chế độ riêng tư.</sys:String>
     <!-- FFXIV_NotOnCollect: "Add" is the English-only button label on ffxivcollect.com; leave it,
          the domain, "FFXIV Collect", and "Lodestone" untranslated. -->
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_NotOnCollect">Đã tìm thấy nhân vật trên Lodestone nhưng không tìm thấy trên FFXIV Collect. Hãy tìm nhân vật đó tại ffxivcollect.com và chọn Add, sau đó thử lại.</sys:String>
@@ -1027,7 +1027,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Khóa API Web</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Tìm khóa của bạn trong bảng điều khiển RetroAchievements:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Hiển thị điểm</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio tính điểm dựa trên độ hiếm, vì vậy các thành tích khó hơn sẽ có giá trị cao hơn.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio tính điểm dựa trên độ hiếm, vì vậy các thành tựu khó hơn sẽ có giá trị cao hơn.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Điểm tiêu chuẩn</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (Theo tỷ lệ)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">Bật tính năng so khớp tên gần đúng</sys:String>
@@ -1285,15 +1285,15 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateLabel">Chuyển đổi chủ đề</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationCustom">Chuyển đổi tuỳ chỉnh</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">Chuyển đổi toàn bộ</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Limited Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Chuyển đổi giới hạn</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">Di sản</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Modern</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Hiện đại</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">Không tìm thấy chủ đề nào có bản sao lưu để khôi phục.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">Không tìm thấy chủ đề nào cần chuyển đổi. Các chủ đề có tham chiếu đến SuccessStory sẽ xuất hiện tại đây.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RestartRequired">Khởi động lại Playnite để áp dụng các thay đổi giao diện.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Revert">Khôi phục chủ đề</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Khôi phục</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_Title">Theme Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Title">Chuyển đổi chủ đề</sys:String>
 
     <!-- ================================================================= -->
     <!-- 14 First-Time Landing -->
@@ -1303,30 +1303,30 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Đã tìm thấy dữ liệu thành tựu hiện có của bạn</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">Chúng tôi đã tìm thấy dữ liệu thành tựu hiện có của bạn. Hãy chuyển đến mục thành tựu để bắt đầu theo dõi.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Chào mừng bạn quay trở lại</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Language">Achievement Language</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Your credentials are configured. Begin your first refresh to track achievements across your library.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your platforms.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Language">Ngôn ngữ thành tựu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Thông tin đăng nhập của bạn đã được thiết lập. Hãy bắt đầu lần làm mới đầu tiên để theo dõi thành tựu trong toàn bộ thư viện của bạn.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">Để theo dõi thành tựu của bạn, đăng nhập vào một trong các nền tảng của bạn.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Tuỳ chỉnh tài khoản của bạn</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Mở cài đặt phần bổ trợ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">Platform Status</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">Checking</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">Setup</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_Checking">Checking...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">Ready to Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">Trạng thái nền tảng</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">Đang kiểm tra</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">Thiết lập</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_Checking">Đang kiểm tra...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Cấu hình trong phần cài đặt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">Sẵn sàng làm mới</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Title">Chào mừng bạn đến với Thành tựu Playnite!</sys:String>
 
     <!-- ================================================================= -->
     <!-- 15 Tagging -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Tag_PrefixFormat">[PA] {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_HasAchievements">Has Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_NoAchievements">No Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_HasAchievements">Có thành tựu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_NoAchievements">Không có thành tựu</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Customized">Đã tuỳ biến</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_NotCustomized">Không được tuỳ biến</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Remove all Playnite Achievements tags from all games?</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Removing tags...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Syncing tags...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Xóa tất cả thẻ Thành tựu Playnite khỏi mọi trò chơi?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Đang xoá thẻ...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Đang đồng bộ thẻ...</sys:String>
 
     <!-- ================================================================= -->
     <!-- 16 Rarity Sections and Time -->
@@ -1335,9 +1335,9 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <sys:String x:Key="LOCPlayAch_Rarity_Rare">Hiếm</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_UltraRare">Cực hiếm</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_Uncommon">Không phổ biến</sys:String>
-    <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
-    <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Sync &amp; Updates</sys:String>
-    <sys:String x:Key="LOCPlayAch_Section_Timeline">Achievements Over Time</sys:String>
+    <sys:String x:Key="LOCPlayAch_Section_Notifications">Thông báo</sys:String>
+    <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Động bộ và Cập nhật</sys:String>
+    <sys:String x:Key="LOCPlayAch_Section_Timeline">Thành tựu toàn thời gian</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_14D">14N</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_1M">1Th</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_1Y">1N</sys:String>
@@ -1353,7 +1353,7 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <!-- 17 Errors and Notifications -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">Chưa xác thực nền tảng nào. Hãy thiết lập ít nhất một nền tảng trong phần cài đặt trước khi làm mới.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Periodic refresh check failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Làm mới định kỳ thất bại.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Làm mới định kỳ thất bại.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Làm mới thất bại</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Làm mới thất bại: {0}</sys:String>
@@ -1362,11 +1362,11 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Thành tựu đã mở khoá</sys:String>
     <!-- Toast_AchievementProgress: heading of the incremental-progress toast for a locked achievement -->
-    <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">Achievement progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">Tiến độ thành tựu</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
     <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} đã mở khoá</sys:String>
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
-    <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Congratulations!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Chúc mừng!</sys:String>
     <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
     <sys:String x:Key="LOCPlayAch_Toast_GameComplete">Trò chơi đã hoàn thành!</sys:String>
     <!-- Toast_CompletedTheGame: suffix of a friend's game-completion heading; the template
@@ -1386,7 +1386,7 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Thành tựu ẩn</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens"> (Thành tựu ẩn)</sys:String>
     <!-- Captures: the unlock-capture gallery viewer (screenshot variants and video clips) -->
-    <sys:String x:Key="LOCPlayAch_Captures_Empty">No captures of this type.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Captures_Empty">Không có bản ghi hình của loại này.</sys:String>
     <sys:String x:Key="LOCPlayAch_Captures_Fullscreen">Toàn màn hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Captures_VariantVideo">Video</sys:String>
     <sys:String x:Key="LOCPlayAch_Captures_VideoError">Không thể phát đoạn phim này. Có thể thiếu các thành phần của Windows Media Player.</sys:String>
@@ -1401,10 +1401,10 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <!-- Riot_ChallengeCategory_*: the five top-level League of Legends challenge categories, which
          Riot's game data exposes only as untranslated codes -->
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Collection">Bộ sưu tập</sys:String>
-    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Expertise">Expertise</sys:String>
-    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Imagination">Imagination</sys:String>
-    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Teamwork">Teamwork &amp; Strategy</sys:String>
-    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Veterancy">Veterancy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Expertise">Chuyên gia</sys:String>
+    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Imagination">Sáng tạo</sys:String>
+    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Teamwork">Đồng đội và chiến thuật</sys:String>
+    <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Veterancy">Kì cựu</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Nhấp chuột phải để Hiện/Ẩn</sys:String>
 
     <!-- ================================================================= -->
