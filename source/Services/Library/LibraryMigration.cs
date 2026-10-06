@@ -28,6 +28,9 @@ namespace PlayniteAchievements.Services.Library
 
         public string BaselineFile { get; set; }
 
+        /// <summary>The item version that went onto the game.</summary>
+        public string Version { get; set; }
+
         public DateTime InstalledUtc { get; set; }
     }
 
@@ -152,6 +155,7 @@ namespace PlayniteAchievements.Services.Library
                         WorkshopItemId = record.Id,
                         PlayniteGameId = record.PlayniteGameId.Value,
                         BaselineFile = record.BaselineFile,
+                        Version = record.Version,
                         InstalledUtc = record.InstalledUtc
                     });
                 }
@@ -193,6 +197,40 @@ namespace PlayniteAchievements.Services.Library
             }
 
             return plan;
+        }
+
+        /// <summary>
+        /// Gives every game a recorded game-data install went onto a <c>gamedata:&lt;id&gt;</c>
+        /// link that carries the install's baseline, unless the game already has a link. Returns
+        /// how many links were added.
+        /// </summary>
+        public static int LinkGameDataInstalls(LibraryMigrationPlan plan, LibraryStore store, GameLinkStore gameLinks)
+        {
+            if (plan == null || store == null || gameLinks == null)
+            {
+                return 0;
+            }
+
+            var added = 0;
+            foreach (var install in plan.GameDataInstalls.OrderBy(install => install.InstalledUtc))
+            {
+                var key = LibraryTargetKeys.GameData(install.PlayniteGameId);
+                if (gameLinks.Get(key) != null)
+                {
+                    continue;
+                }
+
+                gameLinks.Set(key, new Models.Settings.LibraryLink
+                {
+                    LibraryItemId = install.LibraryItemId,
+                    AppliedVersion = install.Version ?? store.Find(install.LibraryItemId)?.Version,
+                    BaselineFile = install.BaselineFile,
+                    AppliedUtc = install.InstalledUtc
+                });
+                added++;
+            }
+
+            return added;
         }
 
         private static void PlanLookPart(
@@ -244,6 +282,7 @@ namespace PlayniteAchievements.Services.Library
                 Part = part,
                 Version = record.Version,
                 ContentHash = candidate.ContentHash,
+                PublishedHash = candidate.ContentHash,
                 FileLength = candidate.FileLength,
                 FileWriteUtc = candidate.FileWriteUtc,
                 AddedUtc = existing?.AddedUtc ?? (record.InstalledUtc == default(DateTime) ? candidate.AddedUtc : record.InstalledUtc)
