@@ -376,43 +376,48 @@ namespace PlayniteAchievements.Services.Workshop
         // ---- showcase page -------------------------------------------------------------------
 
         /// <summary>
-        /// Adds the page package to the library and, unless a page that follows the item is still
-        /// there, creates the page and links it. A page that follows the item takes a new version
-        /// when it is applied again.
+        /// Adds the page package to the library. Pages that follow the item take the new version
+        /// (merged, or as published for a reinstall that asks for it); with none, the package
+        /// becomes a new page that follows the item.
         /// </summary>
         private void InstallShowcasePage(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
         {
+            var libraryId = Library.LibraryItem.WorkshopId(request.Item.Id);
+            var write = _plugin.LibraryUpdateService.WriteWorkshopPart(
+                WorkshopLibraryItem(request.Item, Library.LibraryItemKind.ShowcasePage, libraryId, part: null),
+                request.PackagePath,
+                new Library.DirectoryPackageFolder(
+                    Path.Combine(_plugin.GetPluginUserDataPath(), Library.LibraryStore.ShowcaseFolderName),
+                    ShowcasePagePortableStore.PackageFileExtension));
+            result.LibraryItemIds.Add(write.Item.Id);
+
+            var layout = persisted.Showcase;
+            var followingPages = persisted.LibraryLinks
+                .Where(pair => string.Equals(pair.Value?.LibraryItemId, libraryId, StringComparison.OrdinalIgnoreCase))
+                .Select(pair => pair.Key)
+                .Where(key => layout?.Pages?.Any(page => !string.IsNullOrWhiteSpace(page?.PageId)
+                    && string.Equals(Library.LibraryTargetKeys.Showcase(page.PageId), key, StringComparison.OrdinalIgnoreCase)) == true)
+                .ToList();
+            if (followingPages.Count > 0)
+            {
+                var report = _plugin.LibraryUpdateService.MergeIntoTargets(write.Item.Id, request.FollowerMode ?? Library.LibraryApplyMode.Merge);
+                result.UpdatedTargets += report.UpdatedTargets.Count;
+                result.KeptEdits += report.KeptEdits;
+                result.PendingTargets += report.PendingTargets.Count;
+                return;
+            }
+
             var portable = ShowcasePagePortableStore.Read(request.PackagePath);
             try
             {
-                var libraryId = Library.LibraryItem.WorkshopId(request.Item.Id);
-                var write = _plugin.LibraryUpdateService.WriteWorkshopPart(
-                    WorkshopLibraryItem(request.Item, Library.LibraryItemKind.ShowcasePage, libraryId, part: null),
-                    request.PackagePath,
-                    new Library.DirectoryPackageFolder(
-                        Path.Combine(_plugin.GetPluginUserDataPath(), Library.LibraryStore.ShowcaseFolderName),
-                        ShowcasePagePortableStore.PackageFileExtension));
-                result.LibraryItemIds.Add(write.Item.Id);
-
-                var layout = persisted.Showcase;
-                var followingPages = persisted.LibraryLinks
-                    .Where(pair => string.Equals(pair.Value?.LibraryItemId, libraryId, StringComparison.OrdinalIgnoreCase))
-                    .Select(pair => pair.Key)
-                    .Where(key => layout?.Pages?.Any(page => !string.IsNullOrWhiteSpace(page?.PageId)
-                        && string.Equals(Library.LibraryTargetKeys.Showcase(page.PageId), key, StringComparison.OrdinalIgnoreCase)) == true)
-                    .ToList();
-                if (followingPages.Count > 0)
-                {
-                    result.PendingTargets += followingPages.Count;
-                    return;
-                }
-
+                var idMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var page = ShowcasePagePortableStore.ApplyPortable(
                     layout,
                     persisted.GridOptions,
                     portable,
                     insertAfterPageId: null,
-                    storeImage: extracted => _plugin.ShowcaseImageStore?.Import(extracted));
+                    storeImage: extracted => _plugin.ShowcaseImageStore?.Import(extracted),
+                    idMap: idMap);
 
                 // The same post-edit sequence the showcase editor runs after an import.
                 ShowcaseLayoutService.Normalize(layout);
@@ -420,12 +425,11 @@ namespace PlayniteAchievements.Services.Workshop
                 ShowcaseGridSurfaces.PruneOrphaned(persisted.GridOptions, layout);
                 if (!string.IsNullOrWhiteSpace(page?.PageId))
                 {
-                    persisted.SetLibraryLink(Library.LibraryTargetKeys.Showcase(page.PageId), new LibraryLink
-                    {
-                        LibraryItemId = libraryId,
-                        AppliedVersion = write.Item.Version,
-                        AppliedUtc = DateTime.UtcNow
-                    });
+                    // The new page follows the item; its link pairs the package's widgets with the page's.
+                    var adapter = _plugin.ShowcaseLibraryTargets.AdapterFor(page.PageId);
+                    persisted.SetLibraryLink(
+                        adapter.TargetKey,
+                        _plugin.LibraryApplyService.Link(adapter, write.Item, persisted, idMap));
                 }
 
                 _plugin.PersistSettingsForUi();
