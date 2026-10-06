@@ -142,7 +142,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public bool IsInLibrary => Kind != WorkshopItemKind.GameCustomData || !string.IsNullOrWhiteSpace(_localGameName);
 
         /// <summary>True when this extension is too old to import the item.</summary>
-        public bool RequiresNewerPlugin => WorkshopInstalledRegistry.IsNewer(Item.MinPluginVersion, PluginManifest.Version);
+        public bool RequiresNewerPlugin => WorkshopIdentityStore.IsNewer(Item.MinPluginVersion, PluginManifest.Version);
 
         public string RequiresNewerPluginText =>
             string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_RequiresNewerPlugin"), Item.MinPluginVersion);
