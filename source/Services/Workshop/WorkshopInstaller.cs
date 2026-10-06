@@ -98,19 +98,19 @@ namespace PlayniteAchievements.Services.Workshop
     public sealed class WorkshopInstaller
     {
         private readonly PlayniteAchievementsPlugin _plugin;
-        private readonly WorkshopInstalledRegistry _registry;
+        private readonly WorkshopIdentityStore _identity;
         private readonly WorkshopBaselineStore _baselines;
         private readonly ILogger _logger;
 
         public WorkshopInstaller(
             PlayniteAchievementsPlugin plugin,
-            WorkshopInstalledRegistry registry,
+            WorkshopIdentityStore identity,
             ILogger logger = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
-            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _identity = identity ?? throw new ArgumentNullException(nameof(identity));
             _logger = logger;
-            _baselines = new WorkshopBaselineStore(Path.Combine(_registry.Directory, "baselines"), logger);
+            _baselines = new WorkshopBaselineStore(Path.Combine(_identity.Directory, "baselines"), logger);
         }
 
         /// <summary>The baselines game-data updates merge against; read by the Workshop preview.</summary>
