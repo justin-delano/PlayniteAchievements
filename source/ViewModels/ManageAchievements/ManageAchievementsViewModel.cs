@@ -31,7 +31,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels.ManageAchievements
 {
-    public sealed class ManageAchievementsViewModel : PlayniteAchievements.Common.ObservableObject
+    public sealed partial class ManageAchievementsViewModel : PlayniteAchievements.Common.ObservableObject
     {
         private const string ProviderOverrideNoneKey = "None";
 
@@ -206,6 +206,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 SetValue(ref _selectedTab, value);
+                QueueSidebarScopeRefresh();
             }
         }
 
@@ -662,28 +663,29 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         // through the sidebar's right-click menu, which hides it for every game.
 
         public bool SidebarCapstonesVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Capstones) && OverviewSummary.Capstones.IsVisible;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Capstones) && SidebarSummary.Capstones.IsVisible;
 
         public bool SidebarRarityVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Rarity) && OverviewSummary.HasRarity;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Rarity) && SidebarSummary.HasRarity;
 
         public bool SidebarTrophiesVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Trophies) && OverviewSummary.HasTrophies;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Trophies) && SidebarSummary.HasTrophies;
 
         public bool SidebarPointsVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Points) && OverviewSummary.Points.IsVisible;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Points) && SidebarSummary.Points.IsVisible;
 
         public bool SidebarGoalsVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Goals) && OverviewSummary.Goals.IsVisible;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Goals) && SidebarSummary.Goals.IsVisible;
 
         public bool SidebarCategorizedVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Categorized) && OverviewSummary.Categorized.IsVisible;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Categorized) && SidebarSummary.Categorized.IsVisible &&
+            !IsSidebarCategoryScoped;
 
         public bool SidebarFilteredVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Filtered) && OverviewSummary.Filtered.IsVisible;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Filtered) && SidebarSummary.Filtered.IsVisible;
 
         public bool SidebarNotesVisible =>
-            IsSidebarStatGroupShown(ManageSidebarStatGroups.Notes) && OverviewSummary.Notes.IsVisible;
+            IsSidebarStatGroupShown(ManageSidebarStatGroups.Notes) && SidebarSummary.Notes.IsVisible;
 
         public bool SidebarOtherStatsVisible =>
             SidebarPointsVisible || SidebarGoalsVisible || SidebarCategorizedVisible ||
@@ -907,6 +909,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
                 var currentCustomData = TryLoadStoredCustomData(_plugin?.GameCustomDataStore);
                 OverviewSummary = BuildOverviewSummary(list, currentCustomData);
+                _sidebarSourceAchievements = list;
                 IsExcluded = isExcluded;
                 IsExcludedFromSummaries = GameCustomDataLookup.IsExcludedFromSummaries(_gameId, _settings?.Persisted);
                 SetValue(
@@ -922,6 +925,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     new AchievementPageLinkContext(game, gameData, rawGameData, manualLink));
 
                 RefreshCustomDataState();
+                RebuildSidebarStats();
 
                 if (!HasAchievementData && ManageAchievementsTabs.RequireAchievementData.Contains(SelectedTab))
                 {

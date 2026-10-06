@@ -358,6 +358,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
         }
 
+        /// <summary>
+        /// The ticked categories, in the order the filter lists them. Changes are announced
+        /// through <see cref="SelectedCategoryLabelFilterText"/>.
+        /// </summary>
+        public IReadOnlyCollection<string> SelectedCategoryLabelFilters =>
+            CategoryLabelFilterOptions
+                .Where(label => _selectedCategoryLabelFilters.Contains(label))
+                .ToList();
+
         public bool IsCategoryLabelFilterSelected(string value)
         {
             if (string.IsNullOrWhiteSpace(value))

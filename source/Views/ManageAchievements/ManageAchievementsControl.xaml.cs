@@ -867,8 +867,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _editorViewModel.AssignmentsChanged += EditorViewModel_CustomizationPersisted;
             _editorViewModel.IconOverridesSaved += EditorViewModel_IconOverridesSaved;
             _editorViewModel.CapstoneChanged += CustomViewModel_CapstoneChanged;
+            _editorViewModel.CategoryFilterSelectionChanged += EditorViewModel_CategoryFilterSelectionChanged;
             _editorControl = new ManageAchievementsEditorTab(_editorViewModel);
             EditorHost.Content = _editorControl;
+            _viewModel.RegisterSidebarCategoryScopeSource(
+                ManageAchievementsTab.Editor,
+                () => _editorViewModel?.SelectedCategoryFilterLabels);
 
             Common.LeakWatch.Track("ManageAchievementsEditorViewModel", _editorViewModel);
             Common.LeakWatch.Track("ManageAchievementsEditorTab", _editorControl);
@@ -893,6 +897,16 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _editorRefreshPending = false;
         }
 
+        private void EditorViewModel_CategoryFilterSelectionChanged(object sender, EventArgs e)
+        {
+            _viewModel?.NotifySidebarCategoryScopeChanged(ManageAchievementsTab.Editor);
+        }
+
+        private void CategoryControl_SidebarCategoryScopeChanged(object sender, EventArgs e)
+        {
+            _viewModel?.NotifySidebarCategoryScopeChanged(ManageAchievementsTab.Category);
+        }
+
         private void CleanupEditor()
         {
             if (_iconOverridesChangedDebounce?.IsEnabled == true)
@@ -911,11 +925,13 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _editorViewModel.AssignmentsChanged -= EditorViewModel_CustomizationPersisted;
                 _editorViewModel.IconOverridesSaved -= EditorViewModel_IconOverridesSaved;
                 _editorViewModel.CapstoneChanged -= CustomViewModel_CapstoneChanged;
+                _editorViewModel.CategoryFilterSelectionChanged -= EditorViewModel_CategoryFilterSelectionChanged;
                 _editorViewModel.Detach();
             }
 
             _editorControl = null;
             _editorViewModel = null;
+            _viewModel?.RegisterSidebarCategoryScopeSource(ManageAchievementsTab.Editor, null);
 
             if (EditorHost != null)
             {
@@ -943,6 +959,10 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _categoryViewModel.DeferredLibraryRefreshRequired += CategoryViewModel_DeferredLibraryRefreshRequired;
             _categoryControl = new ManageAchievementsCategoryTab(_categoryViewModel);
             CategoryHost.Content = _categoryControl;
+            _categoryControl.SidebarCategoryScopeChanged += CategoryControl_SidebarCategoryScopeChanged;
+            _viewModel.RegisterSidebarCategoryScopeSource(
+                ManageAchievementsTab.Category,
+                () => _categoryControl?.GetSidebarCategoryScope());
             Common.LeakWatch.Track("ManageAchievementsCategoryTab", _categoryControl);
             Common.LeakWatch.Track("ManageAchievementsCategoryTabViewModel", _categoryViewModel);
         }
@@ -1228,8 +1248,14 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _categoryViewModel.DeferredLibraryRefreshRequired -= CategoryViewModel_DeferredLibraryRefreshRequired;
             }
 
+            if (_categoryControl != null)
+            {
+                _categoryControl.SidebarCategoryScopeChanged -= CategoryControl_SidebarCategoryScopeChanged;
+            }
+
             _categoryControl = null;
             _categoryViewModel = null;
+            _viewModel?.RegisterSidebarCategoryScopeSource(ManageAchievementsTab.Category, null);
 
             if (CategoryHost != null)
             {

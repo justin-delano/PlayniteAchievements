@@ -39,6 +39,14 @@ namespace PlayniteAchievements.Views.ManageAchievements
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            CategoryManagerDataGrid.SelectionChanged += (_, __) => RaiseSidebarCategoryScopeChanged();
+            viewModel.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(ManageAchievementsCategoryViewModel.SelectedCategoryLabelFilterText))
+                {
+                    RaiseSidebarCategoryScopeChanged();
+                }
+            };
 
             // Live sorting repositions only the rows whose sorted-column value changed (via a
             // Move, not a Reset), and does nothing while no column sort is active. This keeps
@@ -1311,6 +1319,31 @@ namespace PlayniteAchievements.Views.ManageAchievements
                     CategoryManagerDataGrid.SelectedItems.Add(row);
                 }
             }
+        }
+
+        /// <summary>Raised when the categories this tab scopes the sidebar to may have changed.</summary>
+        public event EventHandler SidebarCategoryScopeChanged;
+
+        /// <summary>
+        /// The categories this tab scopes the sidebar to: the selected category rows, or the
+        /// Category filter's ticks when no row is selected.
+        /// </summary>
+        public IReadOnlyCollection<string> GetSidebarCategoryScope()
+        {
+            var selectedLabels = CategoryManagerDataGrid?.SelectedItems
+                ?.OfType<ManageAchievementsCategoryMetadataItem>()
+                .OrderBy(item => ViewModel?.CategoryRows.IndexOf(item) ?? 0)
+                .Select(item => item.CategoryLabel)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .ToList();
+            return selectedLabels?.Count > 0
+                ? selectedLabels
+                : ViewModel?.SelectedCategoryLabelFilters ?? Array.Empty<string>();
+        }
+
+        private void RaiseSidebarCategoryScopeChanged()
+        {
+            SidebarCategoryScopeChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private static string L(string key)

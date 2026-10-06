@@ -6053,6 +6053,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </remarks>
         public GridMultiSelectFilter CategoryFilter { get; }
 
+        /// <summary>The ticked categories, in the order the category filter lists them.</summary>
+        public IReadOnlyCollection<string> SelectedCategoryFilterLabels =>
+            _categoryFilterOptions
+                .Where(option => _selectedCategoryFilters.Contains(option))
+                .ToList();
+
+        /// <summary>Raised when the ticked categories change, so the sidebar can follow them.</summary>
+        public event EventHandler CategoryFilterSelectionChanged;
+
         public GridMultiSelectFilter TypeFilter { get; }
 
         public GridMultiSelectFilter CustomizationFilter { get; }
@@ -6074,7 +6083,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     ResourceProvider.GetString("LOCPlayAch_Common_Label_Category")),
                 () => _categoryFilterOptions,
                 option => _selectedCategoryFilters.Contains(option),
-                (option, isSelected) => ToggleFilter(_selectedCategoryFilters, option, isSelected),
+                (option, isSelected) =>
+                {
+                    ToggleFilter(_selectedCategoryFilters, option, isSelected);
+                    CategoryFilterSelectionChanged?.Invoke(this, EventArgs.Empty);
+                },
                 getDisplayLabel: CategoryPathHelper.GetLeafName)
             {
                 RendersCategoryTree = true,
@@ -6270,6 +6283,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (removed.Count > 0)
             {
                 NotifyFilterChanged();
+                CategoryFilterSelectionChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
