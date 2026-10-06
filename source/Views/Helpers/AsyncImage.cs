@@ -276,15 +276,11 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            // XamlAnimatedGif stops the animator when its Image unloads, but OnUnloaded deliberately
-            // leaves the wrapper attached (clearing it would flash on a visibility toggle). So a
-            // reloaded element carries an animation that is attached and stopped — which every restart
-            // guard reads as "already running", leaving the GIF on whichever frame it stopped on. The
-            // decoder, its stream and its bitmap all survived the unload, so resuming the clock is the
-            // whole fix; rebuilding would tear down a working decoder for nothing.
+            // OnUnloaded leaves the GIF attached (clearing it would flash on a visibility toggle) and
+            // only takes it out of playback, so a reload just counts it back in.
             if (GetNativeGifAnimation(d) is NativeGifAnimation reloaded)
             {
-                reloaded.Resume();
+                reloaded.SetOffscreen(!(d is FrameworkElement reloadedElement) || !reloadedElement.IsVisible);
                 return;
             }
 
@@ -348,7 +344,16 @@ namespace PlayniteAchievements.Views.Helpers
 
         private static void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (!(sender is FrameworkElement fe) || !fe.IsLoaded)
+            if (!(sender is FrameworkElement fe))
+            {
+                return;
+            }
+
+            // A hidden GIF keeps its frame and position but stops counting toward playback, so a
+            // collapsed panel or an inactive tab costs no decoding.
+            GetNativeGifAnimation(fe)?.SetOffscreen(!fe.IsLoaded || !fe.IsVisible);
+
+            if (!fe.IsLoaded)
             {
                 return;
             }
@@ -360,9 +365,6 @@ namespace PlayniteAchievements.Views.Helpers
                 // subsequent hide, leaving a static frame). Only (re)start when nothing is running.
                 if (GetActiveAnimationSource(fe) != null)
                 {
-                    // Attached does not imply running: an unload in between stopped the animator
-                    // (see OnLoaded). Resume rather than rebuild, and no-op when it never stopped.
-                    GetNativeGifAnimation(fe)?.Resume();
                     return;
                 }
 
@@ -370,11 +372,9 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            // The element (or its window) was hidden — e.g. the toast's focus-hiding loop toggling
-            // window visibility while a game is foreground. Cancel a pending async load so a late
-            // static frame cannot overwrite the animation, but leave any running animation in
-            // place: its timeline keeps advancing and resumes rendering when the element reappears,
-            // instead of restarting from scratch on every focus flip.
+            // The element (or its window) was hidden. Cancel a pending async load so a late static
+            // frame cannot overwrite the animation, but leave any attached animation in place: it
+            // continues from its frame when the element reappears instead of restarting.
             CancelPendingLoad(fe);
         }
 
@@ -473,6 +473,18 @@ namespace PlayniteAchievements.Views.Helpers
 
                 var decode = ResolveDecodePixel(d);
                 SetLastRequestedDecodePixel(d, decode);
+                var applyGray = GetGray(d) || AnimatedImageHelper.HasGrayPrefix(uriString);
+                var image = d as System.Windows.Controls.Image;
+
+                // A GIF already on disk plays straight from its file: the player shows its own
+                // first frame, so no static still is decoded or cached for it. The still is only
+                // loaded if playback fails (OnNativeGifFailed).
+                if (image != null &&
+                    await TryStartNativeGifAsync(image, uriString, fallback: null, applyGray, cts.Token))
+                {
+                    LogGifPath(uriString, "native");
+                    return;
+                }
 
                 // Resume on the UI thread: StartLoadAsync is only entered from dispatcher
                 // contexts, and the whole tail below (ApplySource, animation start, finally
@@ -483,12 +495,10 @@ namespace PlayniteAchievements.Views.Helpers
                     return;
                 }
 
-                // XamlAnimatedGif clears Image.Source while it initializes. Do not first publish
-                // the static frame for a GIF and create a visible static -> blank -> live flash;
-                // keep it blank until the live bitmap is attached, retaining bmp only as the
-                // corrupt/unsupported fallback.
-                var applyGray = GetGray(d) || AnimatedImageHelper.HasGrayPrefix(uriString);
-                if (d is System.Windows.Controls.Image image)
+                // A remote GIF reaches disk through the load above, so it can play natively now.
+                // Do not publish the still first: keep it blank until the live bitmap is attached,
+                // retaining bmp only as the corrupt/unsupported fallback.
+                if (image != null)
                 {
                     if (await TryStartNativeGifAsync(image, uriString, bmp, applyGray, cts.Token))
                     {
@@ -616,12 +626,26 @@ namespace PlayniteAchievements.Views.Helpers
                 animation.Start();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
                 if (animation != null)
                 {
                     animation.Failed -= OnNativeGifFailed;
                     animation.Dispose();
+                }
+
+                // Without a still in hand the caller loads one itself, so an unreadable GIF just
+                // takes the normal image path.
+                if (fallback == null && !(ex is OperationCanceledException))
+                {
+                    if (ReferenceEquals(GetNativeGifAnimation(image), animation))
+                    {
+                        SetNativeGifAnimation(image, null);
+                        SetActiveAnimationSource(image, null);
+                    }
+
+                    Logger?.Debug(ex, $"Native GIF playback unavailable for '{uriString}'.");
+                    return false;
                 }
 
                 image.Source = fallback;
@@ -643,6 +667,42 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 SetNativeGifAnimation(image, null);
                 SetActiveAnimationSource(image, null);
+            }
+
+            if (image.Source == null)
+            {
+                _ = ApplyStaticFallbackAsync(image, animation.SourceIdentity);
+            }
+        }
+
+        /// <summary>
+        /// Loads the still for a GIF whose playback failed after it started without one. Applied
+        /// only if the element still shows nothing for the same source.
+        /// </summary>
+        private static async Task ApplyStaticFallbackAsync(
+            System.Windows.Controls.Image image, string uriString)
+        {
+            var service = PlayniteAchievementsPlugin.Instance?.ImageService;
+            if (service == null || string.IsNullOrWhiteSpace(uriString))
+            {
+                return;
+            }
+
+            var identity = GetLastEffectiveSourceIdentity(image);
+            try
+            {
+                var bmp = await service.GetAsync(uriString, GetLastRequestedDecodePixel(image), CancellationToken.None);
+                if (bmp != null &&
+                    image.Source == null &&
+                    GetNativeGifAnimation(image) == null &&
+                    Equals(identity, GetLastEffectiveSourceIdentity(image)))
+                {
+                    ApplySource(image, bmp);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.Debug(ex, $"GIF still fallback failed for '{uriString}'.");
             }
         }
 

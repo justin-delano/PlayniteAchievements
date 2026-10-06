@@ -25,7 +25,7 @@
               Margin="{Binding ToastGlowMargin}">
             <!-- One loaded Image owns background decoding. Its Source is a stable mutable bitmap
                  for GIFs; the single background brush below consumes that object. It remains in
-                 the visual tree at zero size because XamlAnimatedGif stops an unloaded Image. -->
+                 the visual tree at zero size because an unloaded Image stops its GIF. -->
             <Image x:Name="ToastBackgroundSourceHost"
                    Width="0"
                    Height="0"

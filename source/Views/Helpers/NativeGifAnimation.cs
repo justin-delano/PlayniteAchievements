@@ -1,3 +1,4 @@
+using PlayniteAchievements.Views.Helpers.Gif;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,31 +7,35 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using XamlAnimatedGif;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views.Helpers
 {
     /// <summary>
-    /// Owns one XamlAnimatedGif decoder attached to an Image. The decoder renders the GIF at its
-    /// native dimensions into one stable WriteableBitmap and reads compressed frame data on demand.
+    /// Attaches one Image to the shared <see cref="GifPlayer"/> for its file. Every Image showing
+    /// the same file on the same UI thread displays one bitmap, decoded once at the GIF's native
+    /// size. The player runs while any attached Image is active: started, not paused for a
+    /// notification slide, and loaded and visible.
     /// </summary>
     internal sealed class NativeGifAnimation : IDisposable
     {
         private readonly Image _image;
-        private readonly NativeGifPayloadCache.Lease _payloadLease;
-        private readonly MemoryStream _stream;
+        private readonly GifPlayerCache.Lease _lease;
         private readonly ImageSource _fallback;
         private readonly bool _applyGray;
         private readonly Action<Exception> _onError;
         private readonly Action _onSourceReady;
+        private bool _started;
+        private bool _paused;
+        private bool _offscreen;
+        private bool _counted;
         private bool _disposed;
 
         private NativeGifAnimation(
             Image image,
             string sourceIdentity,
-            NativeGifPayloadCache.Lease payloadLease,
+            GifPlayerCache.Lease lease,
             ImageSource fallback,
             bool applyGray,
             Action<Exception> onError,
@@ -38,8 +43,7 @@ namespace PlayniteAchievements.Views.Helpers
         {
             _image = image ?? throw new ArgumentNullException(nameof(image));
             SourceIdentity = sourceIdentity;
-            _payloadLease = payloadLease ?? throw new ArgumentNullException(nameof(payloadLease));
-            _stream = payloadLease.OpenRead();
+            _lease = lease ?? throw new ArgumentNullException(nameof(lease));
             _fallback = fallback;
             _applyGray = applyGray;
             _onError = onError;
@@ -62,8 +66,8 @@ namespace PlayniteAchievements.Views.Helpers
             Action<Exception> onError = null,
             Action onSourceReady = null)
         {
-            var lease = await NativeGifPayloadCache
-                .AcquireAsync(localPath, cancellationToken)
+            var lease = await GifPlayerCache
+                .AcquireAsync(localPath, image.Dispatcher, cancellationToken)
                 .ConfigureAwait(true);
 
             try
@@ -92,64 +96,51 @@ namespace PlayniteAchievements.Views.Helpers
                 throw new ObjectDisposedException(nameof(NativeGifAnimation));
             }
 
-            AnimationBehavior.AddLoadedHandler(_image, OnAnimationLoaded);
-            AnimationBehavior.AddErrorHandler(_image, OnAnimationError);
-            // false is XamlAnimatedGif's default. Setting it redundantly invokes its SourceChanged
-            // callback and performs an extra clear/reinitialization before SourceStream is set.
-            AnimationBehavior.SetRepeatBehavior(_image, RepeatBehavior.Forever);
-            AnimationBehavior.SetAutoStart(_image, true);
-            AnimationBehavior.SetSourceStream(_image, _stream);
+            var player = _lease.Player;
+            player.Failed += OnPlayerFailed;
+            _image.Source = _applyGray ? player.GetGrayscaleView() : player.Bitmap;
+            _started = true;
+            _offscreen = !_image.IsLoaded || !_image.IsVisible;
+            UpdateActivity();
+            _onSourceReady?.Invoke();
         }
 
         /// <summary>
-        /// Suspends frame advances for the notification slide's span (each advance decodes and
-        /// WritePixels on the UI thread). A no-op until the decoder finishes loading — a GIF that
-        /// becomes ready mid-slide simply starts then, bounded by the slide.
+        /// Holds this Image out of playback for the notification slide's span. The shared player
+        /// keeps running if another Image on the same file is still active.
         /// </summary>
         internal void Pause()
         {
-            if (!_disposed)
-            {
-                AnimationBehavior.GetAnimator(_image)?.Pause();
-            }
+            _paused = true;
+            UpdateActivity();
         }
 
         internal void Resume()
         {
-            if (!_disposed)
+            _paused = false;
+            UpdateActivity();
+        }
+
+        /// <summary>Unloaded or hidden Images stop counting toward playback; they keep their frame.</summary>
+        internal void SetOffscreen(bool offscreen)
+        {
+            _offscreen = offscreen;
+            UpdateActivity();
+        }
+
+        private void UpdateActivity()
+        {
+            var active = _started && !_disposed && !_paused && !_offscreen;
+            if (active != _counted)
             {
-                AnimationBehavior.GetAnimator(_image)?.Play();
+                _counted = active;
+                _lease.Player.SetViewerActive(active);
             }
         }
 
-        private void OnAnimationLoaded(object sender, RoutedEventArgs e)
+        private void OnPlayerFailed(Exception exception)
         {
-            if (_disposed || !ReferenceEquals(sender, _image))
-            {
-                return;
-            }
-
-            try
-            {
-                if (_applyGray && _image.Source is BitmapSource bitmap)
-                {
-                    _image.Source = CreateGrayscaleView(bitmap);
-                }
-
-                _onSourceReady?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                Fail(ex);
-            }
-        }
-
-        private void OnAnimationError(DependencyObject sender, AnimationErrorEventArgs e)
-        {
-            if (!_disposed && ReferenceEquals(sender, _image))
-            {
-                Fail(e?.Exception ?? new InvalidOperationException("GIF animation failed."));
-            }
+            Fail(exception ?? new InvalidOperationException("GIF animation failed."));
         }
 
         private void Fail(Exception exception)
@@ -199,27 +190,146 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             _disposed = true;
-            AnimationBehavior.RemoveLoadedHandler(_image, OnAnimationLoaded);
-            AnimationBehavior.RemoveErrorHandler(_image, OnAnimationError);
-
-            try
+            UpdateActivity();
+            if (_started)
             {
-                // Clearing the behavior disposes its Animator and cancels its render loop.
-                AnimationBehavior.SetSourceStream(_image, null);
-            }
-            catch
-            {
+                _lease.Player.Failed -= OnPlayerFailed;
             }
 
-            try { _stream.Dispose(); } catch { }
-            _payloadLease.Dispose();
+            _lease.Dispose();
         }
     }
 
     /// <summary>
-    /// Shares immutable compressed GIF bytes between active visuals. Each decoder receives its own
-    /// seekable MemoryStream over the same array, so decoders never contend for a stream position
-    /// and the original managed image file remains replaceable while it is on screen.
+    /// Shares one <see cref="GifPlayer"/> per file per UI thread. The player's bitmap belongs to
+    /// the dispatcher that created it, so Images on another UI thread get their own player. The
+    /// last lease released disposes the player.
+    /// </summary>
+    internal static class GifPlayerCache
+    {
+        internal sealed class Entry
+        {
+            internal string Key;
+            internal Task<GifPlayer> CreateTask;
+            internal NativeGifPayloadCache.Lease Payload;
+            internal int LeaseCount;
+        }
+
+        internal sealed class Lease : IDisposable
+        {
+            private Entry _entry;
+
+            internal Lease(Entry entry, GifPlayer player)
+            {
+                _entry = entry;
+                Player = player;
+            }
+
+            internal GifPlayer Player { get; }
+
+            public void Dispose()
+            {
+                var entry = Interlocked.Exchange(ref _entry, null);
+                if (entry != null)
+                {
+                    Release(entry);
+                }
+            }
+        }
+
+        private static readonly object Sync = new object();
+        private static readonly Dictionary<string, Entry> Entries =
+            new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Must be called on <paramref name="dispatcher"/>'s thread.</summary>
+        internal static async Task<Lease> AcquireAsync(
+            string localPath, Dispatcher dispatcher, CancellationToken cancellationToken)
+        {
+            var payload = await NativeGifPayloadCache
+                .AcquireAsync(localPath, cancellationToken)
+                .ConfigureAwait(true);
+
+            var key = string.Concat(payload.Key, "\u001f", dispatcher.Thread.ManagedThreadId.ToString());
+            Entry entry;
+            var created = false;
+            lock (Sync)
+            {
+                if (!Entries.TryGetValue(key, out entry))
+                {
+                    entry = new Entry
+                    {
+                        Key = key,
+                        Payload = payload,
+                        CreateTask = GifPlayer.CreateAsync(payload.PayloadReference, dispatcher)
+                    };
+                    Entries[key] = entry;
+                    created = true;
+                }
+
+                entry.LeaseCount++;
+            }
+
+            if (!created)
+            {
+                payload.Dispose();
+            }
+
+            try
+            {
+                var player = await entry.CreateTask.ConfigureAwait(true);
+                cancellationToken.ThrowIfCancellationRequested();
+                return new Lease(entry, player);
+            }
+            catch
+            {
+                Release(entry);
+                throw;
+            }
+        }
+
+        private static void Release(Entry entry)
+        {
+            lock (Sync)
+            {
+                entry.LeaseCount--;
+                if (entry.LeaseCount > 0)
+                {
+                    return;
+                }
+
+                if (Entries.TryGetValue(entry.Key, out var current) && ReferenceEquals(current, entry))
+                {
+                    Entries.Remove(entry.Key);
+                }
+            }
+
+            entry.Payload.Dispose();
+            entry.CreateTask.ContinueWith(
+                task =>
+                {
+                    if (task.Status == TaskStatus.RanToCompletion)
+                    {
+                        task.Result.Dispose();
+                    }
+                },
+                TaskScheduler.Default);
+        }
+
+        internal static int ActiveEntryCount
+        {
+            get
+            {
+                lock (Sync)
+                {
+                    return Entries.Count;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Shares immutable compressed GIF bytes between active players. The file is read once into
+    /// memory, so the original managed image file remains replaceable while it is on screen.
     /// </summary>
     internal static class NativeGifPayloadCache
     {
@@ -239,9 +349,11 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 _entry = entry;
                 _bytes = bytes;
+                Key = entry.Key;
             }
 
-            internal MemoryStream OpenRead() => new MemoryStream(_bytes, writable: false);
+            /// <summary>The file's identity: full path, length and last write time.</summary>
+            internal string Key { get; }
 
             internal byte[] PayloadReference => _bytes;
 
