@@ -211,7 +211,7 @@ namespace PlayniteAchievements
         public ShowcaseImageStore ShowcaseImageStore => _showcaseImageStore;
         public NotificationStylePortableStore NotificationStylePortableStore =>
             _notificationStylePortableStore ?? (_notificationStylePortableStore =
-                new NotificationStylePortableStore(_notificationImageStore, _logger));
+                new NotificationStylePortableStore());
         public NotificationStylePresetStore NotificationStylePresetStore =>
             _notificationStylePresetStore ?? (_notificationStylePresetStore =
                 new NotificationStylePresetStore(NotificationStylePortableStore, GetPluginUserDataPath()));
