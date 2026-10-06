@@ -1,15 +1,16 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Tests.TestInfrastructure;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.Helpers.Gif;
 using System;
+using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using XamlAnimatedGif;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Tests.Views
 {
@@ -97,56 +98,150 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
-        public void StreamingDecoder_KeepsReportedGifDimensionsAndEveryFrame()
+        public void PlayerCache_SharesOnePlayerPerFileAndDisposesItWithTheLastLease()
         {
-            // Regression for the user-reported 1727x289, 315-frame background. Each encoded frame
-            // is only 1x1, so this fixture proves logical-canvas resolution and temporal frame count
-            // without allocating hundreds of full-canvas source bitmaps in the test itself.
+            var path = GifFixture.WriteTempGif(GifFixture.BuildSparseGif(64, 32, 3));
+            try
+            {
+                RunOnDispatcher(async dispatcher =>
+                {
+                    var first = await GifPlayerCache.AcquireAsync(path, dispatcher, CancellationToken.None);
+                    var second = await GifPlayerCache.AcquireAsync(path, dispatcher, CancellationToken.None);
+
+                    Assert.AreSame(first.Player, second.Player);
+                    Assert.AreEqual(64, first.Player.Bitmap.PixelWidth);
+                    Assert.AreEqual(32, first.Player.Bitmap.PixelHeight);
+                    Assert.AreEqual(1, GifPlayerCache.ActiveEntryCount);
+
+                    first.Dispose();
+                    Assert.AreEqual(1, GifPlayerCache.ActiveEntryCount);
+                    second.Dispose();
+                    Assert.AreEqual(0, GifPlayerCache.ActiveEntryCount);
+                    Assert.AreEqual(0, NativeGifPayloadCache.ActiveEntryCount);
+                });
+            }
+            finally
+            {
+                DeleteTempPayload(path);
+            }
+        }
+
+        [TestMethod]
+        public void PlayerCache_UnreadableFileFailsWithoutLeavingAnEntry()
+        {
+            var path = CreateTempGifPayload(new byte[] { 1, 2, 3, 4 });
+            try
+            {
+                RunOnDispatcher(async dispatcher =>
+                {
+                    await AssertEx.ThrowsAsync<InvalidDataException>(
+                        () => GifPlayerCache.AcquireAsync(path, dispatcher, CancellationToken.None));
+                    Assert.AreEqual(0, GifPlayerCache.ActiveEntryCount);
+                    Assert.AreEqual(0, NativeGifPayloadCache.ActiveEntryCount);
+                });
+            }
+            finally
+            {
+                DeleteTempPayload(path);
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void Player_AdvancesOnlyWhileAViewerIsActive()
+        {
+            var bytes = GifFixture.BuildSparseGif(8, 8, 4);
+            RunOnDispatcher(async dispatcher =>
+            {
+                var player = await GifPlayer.CreateAsync(bytes, dispatcher);
+                var presents = 0;
+                player.Bitmap.Changed += (sender, e) => presents++;
+
+                await Task.Delay(300);
+                Assert.AreEqual(0, presents, "A player without viewers presented frames.");
+
+                player.SetViewerActive(true);
+                await Task.Delay(1000);
+                player.SetViewerActive(false);
+                var whilePlaying = presents;
+
+                // 40 ms frames for one second is 25; allow for a loaded test machine.
+                Assert.IsTrue(whilePlaying >= 15 && whilePlaying <= 27, $"Presented {whilePlaying} frames in 1 s.");
+
+                await Task.Delay(300);
+                Assert.IsTrue(presents <= whilePlaying + 1, "The player kept presenting after its viewer left.");
+                player.Dispose();
+            });
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void FrameClock_DeadlinesDoNotDrift()
+        {
+            // 50 frames at 20 ms, each deadline derived from the previous one, as the player does.
+            const int frames = 50;
+            var interval = GifFrameClock.FromMilliseconds(20);
+            var done = new ManualResetEventSlim();
+            var start = GifFrameClock.Now;
+            var deadline = start;
+            var fired = 0;
+            var early = false;
+
+            void Tick()
+            {
+                if (GifFrameClock.Now < deadline)
+                {
+                    early = true;
+                }
+
+                if (++fired == frames)
+                {
+                    done.Set();
+                    return;
+                }
+
+                deadline += interval;
+                GifFrameClock.Schedule(deadline, Tick);
+            }
+
+            deadline += interval;
+            GifFrameClock.Schedule(deadline, Tick);
+            Assert.IsTrue(done.Wait(5000), "The clock stopped firing.");
+
+            var elapsedMs = (GifFrameClock.Now - start) * 1000.0 / Stopwatch.Frequency;
+            Assert.IsFalse(early, "A callback ran before its deadline.");
+            Assert.IsTrue(elapsedMs >= 1000 && elapsedMs < 1060, $"50 frames of 20 ms took {elapsedMs:F1} ms.");
+        }
+
+        private static void RunOnDispatcher(Func<Dispatcher, Task> body)
+        {
             LocalizationAssemblyInitializer.RunOnSta(() =>
             {
-                using (var stream = new MemoryStream(GifFixture.BuildSparseGif(1727, 289, 315), writable: false))
-                {
-                    var imageAnimatorType = typeof(AnimationBehavior).Assembly
-                        .GetType("XamlAnimatedGif.ImageAnimator", throwOnError: true);
-                    var create = imageAnimatorType.GetMethod(
-                        "CreateAsync",
-                        BindingFlags.Public | BindingFlags.Static,
-                        binder: null,
-                        types: new[]
-                        {
-                            typeof(Stream),
-                            typeof(System.Windows.Media.Animation.RepeatBehavior),
-                            typeof(System.Windows.Controls.Image),
-                            typeof(bool)
-                        },
-                        modifiers: null);
-                    Assert.IsNotNull(create);
-
-                    var task = (Task)create.Invoke(null, new object[]
-                    {
-                        stream,
-                        System.Windows.Media.Animation.RepeatBehavior.Forever,
-                        new System.Windows.Controls.Image(),
-                        false
-                    });
-                    task.GetAwaiter().GetResult();
-                    var animator = (Animator)task.GetType().GetProperty("Result").GetValue(task);
-                    try
-                    {
-                        Assert.AreEqual(315, animator.FrameCount);
-                        var bitmapProperty = typeof(Animator).GetProperty(
-                            "Bitmap",
-                            BindingFlags.Instance | BindingFlags.NonPublic);
-                        var bitmap = (BitmapSource)bitmapProperty.GetValue(animator);
-                        Assert.AreEqual(1727, bitmap.PixelWidth);
-                        Assert.AreEqual(289, bitmap.PixelHeight);
-                    }
-                    finally
-                    {
-                        animator.Dispose();
-                    }
-                }
+                var dispatcher = Dispatcher.CurrentDispatcher;
+                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(dispatcher));
+                var task = body(dispatcher);
+                var frame = new DispatcherFrame();
+                task.ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+                Dispatcher.PushFrame(frame);
+                task.GetAwaiter().GetResult();
             });
+        }
+
+        private static class AssertEx
+        {
+            internal static async Task ThrowsAsync<TException>(Func<Task> action) where TException : Exception
+            {
+                try
+                {
+                    await action();
+                }
+                catch (TException)
+                {
+                    return;
+                }
+
+                Assert.Fail($"Expected {typeof(TException).Name}.");
+            }
         }
 
         private static string CreateTempGifPayload(byte[] bytes) => GifFixture.WriteTempGif(bytes);
