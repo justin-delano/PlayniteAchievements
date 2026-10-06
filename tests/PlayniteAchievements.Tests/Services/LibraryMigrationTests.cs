@@ -254,7 +254,7 @@ namespace PlayniteAchievements.Services.Tests
             var links = new GameLinkStore(store.LibraryDirectory);
             links.Set(LibraryTargetKeys.GameData(second), new LibraryLink { LibraryItemId = "other" });
 
-            var plan = LibraryMigration.Run(store, new WorkshopInstalledRegistry(_root));
+            var plan = LibraryMigration.Run(store, new WorkshopIdentityStore(_root));
             var added = LibraryMigration.LinkGameDataInstalls(plan, store, links);
 
             Assert.AreEqual(1, added);
@@ -278,14 +278,14 @@ namespace PlayniteAchievements.Services.Tests
 
         private LibraryMigrationPlan Run()
         {
-            return LibraryMigration.Run(Store(), new WorkshopInstalledRegistry(_root));
+            return LibraryMigration.Run(Store(), new WorkshopIdentityStore(_root));
         }
 
         private LibraryStore Store() => new LibraryStore(_root);
 
         private void WriteRegistry(params WorkshopInstalledItem[] records)
         {
-            var directory = Path.Combine(_root, WorkshopInstalledRegistry.DirectoryName);
+            var directory = Path.Combine(_root, WorkshopIdentityStore.DirectoryName);
             Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, "installed.json"), JsonConvert.SerializeObject(records.ToList()));
         }
