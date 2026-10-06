@@ -1801,9 +1801,9 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
-        /// Indexes the preset folders into the library and brings what installed.json records
-        /// into it, off the UI thread. Idempotent, so it runs at every startup and picks up
-        /// Workshop installs made since the last one.
+        /// Indexes the preset folders into the library, off the UI thread, at every startup. The
+        /// first run after an update from a version before the library also brings what
+        /// installed.json records into it, then retires that file.
         /// </summary>
         private void StartLibraryMigration()
         {
@@ -1836,6 +1836,12 @@ namespace PlayniteAchievements
                     if (linked > 0)
                     {
                         _logger?.Info($"[Library] Linked {linked} game(s) to the Workshop game data installed on them.");
+                    }
+
+                    // Everything installed.json recorded is in the library now; it is read no more.
+                    if (registry.RetireLegacyInstalls())
+                    {
+                        _logger?.Info("[Library] Retired installed.json; the library holds its installs.");
                     }
                 }
                 catch (Exception ex)
