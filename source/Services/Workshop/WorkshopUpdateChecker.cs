@@ -9,9 +9,9 @@ using Playnite.SDK;
 namespace PlayniteAchievements.Services.Workshop
 {
     /// <summary>
-    /// Looks for newer versions of installed Workshop items on a slow clock: a few minutes after
-    /// startup, then hourly. One index fetch per tick, nothing when nothing is installed, and a
-    /// single Playnite notification that opens the Workshop tab; the same item version is never
+    /// Looks for newer versions of the library's Workshop items on a slow clock: a few minutes
+    /// after startup, then hourly. One index fetch per tick, nothing when the library holds no
+    /// Workshop item, and a single Playnite notification that opens the Library page; the same item version is never
     /// announced twice in a session. The first tick also resolves the system proxy for the
     /// Workshop host off the UI thread, which is the slow step .NET Framework otherwise runs
     /// synchronously inside the first request.
@@ -71,18 +71,21 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        /// <summary>The ids of installed items the index has a newer version of.</summary>
-        public static IReadOnlyList<WorkshopItem> FindUpdates(WorkshopIndexFile index, IReadOnlyList<WorkshopInstalledItem> installed)
+        /// <summary>The index items that are newer than the Workshop items in the library.</summary>
+        public static IReadOnlyList<WorkshopItem> FindUpdates(WorkshopIndexFile index, IEnumerable<Library.LibraryItem> library)
         {
-            if (index?.Items == null || installed == null || installed.Count == 0)
+            var workshopItems = (library ?? Enumerable.Empty<Library.LibraryItem>())
+                .Where(item => item != null && item.IsWorkshop && !string.IsNullOrWhiteSpace(item.WorkshopItemId))
+                .ToList();
+            if (index?.Items == null || workshopItems.Count == 0)
             {
                 return Array.Empty<WorkshopItem>();
             }
 
             return index.Items
-                .Where(item => item != null && installed.Any(record =>
-                    string.Equals(record.Id, item.Id, StringComparison.OrdinalIgnoreCase)
-                    && WorkshopInstalledRegistry.IsNewer(item.Version, record.Version)))
+                .Where(item => item != null && workshopItems.Any(owned =>
+                    string.Equals(owned.WorkshopItemId, item.Id, StringComparison.OrdinalIgnoreCase)
+                    && WorkshopInstalledRegistry.IsNewer(item.Version, owned.Version)))
                 .ToList();
         }
 
@@ -98,14 +101,14 @@ namespace PlayniteAchievements.Services.Workshop
                 var client = _plugin.WorkshopClient;
                 WarmProxy(client.IndexUrl);
 
-                var installed = _plugin.WorkshopRegistry.Items;
-                if (installed.Count == 0)
+                var library = _plugin.LibraryStore.Items;
+                if (!library.Any(item => item.IsWorkshop))
                 {
                     return;
                 }
 
                 var index = await client.FetchIndexAsync(CancellationToken.None).ConfigureAwait(false);
-                var updates = FindUpdates(index, installed);
+                var updates = FindUpdates(index, library);
                 if (updates.Count == 0)
                 {
                     return;
@@ -125,7 +128,7 @@ namespace PlayniteAchievements.Services.Workshop
                         NotificationId,
                         message,
                         NotificationType.Info,
-                        () => _plugin.OpenWorkshopSettings()));
+                        () => _plugin.OpenWorkshopSettings(Views.Settings.Workshop.WorkshopSettingsTab.LibraryPageKey)));
                 }
 
                 if (dispatcher != null && !dispatcher.CheckAccess())
