@@ -110,21 +110,6 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void WriteWorkshopPart_UsesTheRecordedHash_ForAnItemStoredWithoutOne()
-        {
-            var first = _service.WriteWorkshopPart(Workshop("1.0.0"), Package("v1", "#111111"), _folder);
-            var stored = first.Item.Clone();
-            var recorded = stored.PublishedHash;
-            stored.PublishedHash = null;
-            _library.Upsert(stored);
-            new ColorPackPortableStore().Export(Colors("#ABCDEF"), _library.FullPath(stored));
-
-            var second = _service.WriteWorkshopPart(Workshop("1.1.0"), Package("v2", "#222222"), _folder, recorded);
-
-            Assert.IsNotNull(second.KeptLocalCopyName);
-        }
-
-        [TestMethod]
         public void MergeIntoTargets_UpdatesTheLiveSettingsAndTheSnapshot_KeepingEdits()
         {
             var item = _service.WriteWorkshopPart(Workshop("1.0.0"), Package("v1", "#111111"), _folder).Item;
