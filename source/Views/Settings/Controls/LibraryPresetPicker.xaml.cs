@@ -100,9 +100,34 @@ namespace PlayniteAchievements.Views.Settings.Controls
         public void ExportCurrent(string path) => _export?.Invoke(path);
     }
 
+    /// <summary>
+    /// A ready-made entry a card lists ahead of the library items (the built-in color palettes):
+    /// applied through the card, never followed, and shown as selected while
+    /// <see cref="IsCurrent"/> holds.
+    /// </summary>
+    internal sealed class LibraryPickerBuiltIn
+    {
+        public string Label { get; set; }
+
+        /// <summary>Small color swatches drawn before the label; empty for none.</summary>
+        public IReadOnlyList<System.Windows.Media.Brush> Swatches { get; set; }
+
+        /// <summary>Writes the entry onto the target and ends any link the target had.</summary>
+        public Action Apply { get; set; }
+
+        /// <summary>Whether the target's current values are this entry's.</summary>
+        public Func<bool> IsCurrent { get; set; }
+    }
+
     /// <summary>What a settings card hands the <see cref="LibraryPresetPicker"/>.</summary>
     internal sealed class LibraryPresetPickerOptions
     {
+        /// <summary>Entries listed first, in their own order, before the library items by name.</summary>
+        public IReadOnlyList<LibraryPickerBuiltIn> BuiltIns { get; set; }
+
+        /// <summary>Color swatches for a library item of the card's kind; null or empty for none.</summary>
+        public Func<LibraryItem, IReadOnlyList<System.Windows.Media.Brush>> ItemSwatches { get; set; }
+
         public PlayniteAchievementsPlugin Plugin { get; set; }
 
         public PlayniteAchievementsSettings Settings { get; set; }
@@ -176,11 +201,13 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
         private sealed class Choice
         {
-            public Choice(string label, string detail, LibraryItem item)
+            public Choice(string label, string detail, LibraryItem item, LibraryPickerBuiltIn builtIn, IReadOnlyList<System.Windows.Media.Brush> swatches)
             {
                 Label = label;
                 Detail = detail;
                 Item = item;
+                BuiltIn = builtIn;
+                Swatches = swatches ?? Array.Empty<System.Windows.Media.Brush>();
             }
 
             public string Label { get; }
@@ -188,6 +215,12 @@ namespace PlayniteAchievements.Views.Settings.Controls
             public string Detail { get; }
 
             public LibraryItem Item { get; }
+
+            public LibraryPickerBuiltIn BuiltIn { get; }
+
+            public IReadOnlyList<System.Windows.Media.Brush> Swatches { get; }
+
+            public bool HasSwatches => Swatches.Count > 0;
 
             public override string ToString() => Label;
         }
@@ -334,12 +367,15 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 _state = LibraryLinkState.Unlinked;
             }
 
-            // One list by name, the user's own presets and Workshop items alike; a Workshop item
-            // shows its version, which is what update tracking compares.
-            // The preset the target follows is preselected; with none, nothing is.
-            var choices = items
-                .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                .Select(item => new Choice(item.Name, item.IsWorkshop ? item.Version : null, item))
+            // One list: the card's built-in entries in their own order, then the library items by
+            // name, the user's own presets and Workshop items alike; a Workshop item shows its
+            // version, which is what update tracking compares. The preset the target follows is
+            // preselected; with none, a built-in entry whose values are current, else nothing.
+            var choices = (_options.BuiltIns ?? Array.Empty<LibraryPickerBuiltIn>())
+                .Select(builtIn => new Choice(builtIn.Label, null, null, builtIn, builtIn.Swatches))
+                .Concat(items
+                    .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                    .Select(item => new Choice(item.Name, item.IsWorkshop ? item.Version : null, item, null, SwatchesOf(item))))
                 .ToList();
 
             _suppressSelection = true;
@@ -348,7 +384,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 PresetSelector.ItemsSource = choices;
                 PresetSelector.SelectedItem = _state.IsFollowing
                     ? choices.FirstOrDefault(choice => SameId(choice.Item, _state.Item))
-                    : null;
+                    : choices.FirstOrDefault(choice => choice.BuiltIn != null && IsCurrent(choice.BuiltIn));
             }
             finally
             {
@@ -356,6 +392,32 @@ namespace PlayniteAchievements.Views.Settings.Controls
             }
 
             UpdateButtons();
+        }
+
+        private IReadOnlyList<System.Windows.Media.Brush> SwatchesOf(LibraryItem item)
+        {
+            try
+            {
+                return _options?.ItemSwatches?.Invoke(item);
+            }
+            catch (Exception ex)
+            {
+                _options?.Logger?.Debug(ex, $"Failed reading the swatches of {item?.Name}.");
+                return null;
+            }
+        }
+
+        private bool IsCurrent(LibraryPickerBuiltIn builtIn)
+        {
+            try
+            {
+                return builtIn.IsCurrent?.Invoke() == true;
+            }
+            catch (Exception ex)
+            {
+                _options?.Logger?.Debug(ex, $"Failed comparing the current values with {builtIn.Label}.");
+                return false;
+            }
         }
 
         private void TrackNestedValue()
@@ -434,6 +496,21 @@ namespace PlayniteAchievements.Views.Settings.Controls
         /// </summary>
         private void ApplySelected()
         {
+            var builtIn = SelectedChoice?.BuiltIn;
+            if (builtIn != null)
+            {
+                if (!_state.IsFollowing && IsCurrent(builtIn))
+                {
+                    return;
+                }
+
+                Execute(
+                    () => builtIn.Apply?.Invoke(),
+                    $"Failed applying {builtIn.Label}.",
+                    targetChanged: true);
+                return;
+            }
+
             var item = SelectedChoice?.Item;
             var target = _target;
             if (item == null || target == null || (_state.IsFollowing && SameId(item, _state.Item)))

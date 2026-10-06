@@ -47,6 +47,28 @@
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <DockPanel LastChildFill="True">
+                            <!-- Color swatches (a built-in palette, a color set), when the entry has any. -->
+                            <ItemsControl DockPanel.Dock="Left"
+                                          ItemsSource="{Binding Swatches}"
+                                          Margin="0,0,8,0"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding HasSwatches, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="16"
+                                                Height="16"
+                                                Margin="0,0,1,0"
+                                                Background="{Binding}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <TextBlock DockPanel.Dock="Right"
                                        Text="{Binding Detail}"
                                        Style="{StaticResource MutedTextStyle}"
