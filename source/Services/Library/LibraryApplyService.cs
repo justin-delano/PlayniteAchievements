@@ -36,22 +36,46 @@ namespace PlayniteAchievements.Services.Library
 
         // ---- generic targets ------------------------------------------------------------------
 
-        /// <summary>Writes the item onto the target as published and returns the new link.</summary>
-        public LibraryLink Apply<TTarget>(ILibraryAdapter<TTarget> adapter, LibraryItem item, TTarget target)
+        /// <summary>
+        /// Writes the item onto the target as published and returns the new link.
+        /// <paramref name="previous"/>, the target's link to the same item, keeps the target's
+        /// own ids for the parts it already has.
+        /// </summary>
+        public LibraryLink Apply<TTarget>(ILibraryAdapter<TTarget> adapter, LibraryItem item, TTarget target, LibraryLink previous = null)
         {
             var path = RequirePackage(adapter, item);
-            adapter.ApplyReplace(path, target);
-            return RecordLink(adapter, item, target, path);
+            IReadOnlyDictionary<string, string> idMap = null;
+            if (adapter is ILibraryIdMapAdapter<TTarget> mapped)
+            {
+                idMap = mapped.ApplyReplace(path, target, SameItem(previous, item) ? previous.IdMap : null);
+            }
+            else
+            {
+                adapter.ApplyReplace(path, target);
+            }
+
+            return RecordLink(adapter, item, target, path, idMap);
         }
 
         /// <summary>
         /// Links the target to the item without writing it, for a target the item was just saved
-        /// from: the target already holds the item's values.
+        /// from or created from: the target already holds the item's values.
+        /// <paramref name="idMap"/> pairs the package's parts with the target's when they have
+        /// ids of their own; without it they are taken to keep their ids.
         /// </summary>
-        public LibraryLink Link<TTarget>(ILibraryAdapter<TTarget> adapter, LibraryItem item, TTarget target)
+        public LibraryLink Link<TTarget>(
+            ILibraryAdapter<TTarget> adapter,
+            LibraryItem item,
+            TTarget target,
+            IReadOnlyDictionary<string, string> idMap = null)
         {
             var path = RequirePackage(adapter, item);
-            return RecordLink(adapter, item, target, path);
+            if (idMap == null && adapter is ILibraryIdMapAdapter<TTarget> mapped)
+            {
+                idMap = mapped.IdentityMap(path);
+            }
+
+            return RecordLink(adapter, item, target, path, idMap);
         }
 
         /// <summary>
@@ -68,17 +92,30 @@ namespace PlayniteAchievements.Services.Library
         {
             var path = RequirePackage(adapter, item);
             var baseline = link == null ? null : _baselines.Read(link.BaselineFile);
+            var mapped = adapter as ILibraryIdMapAdapter<TTarget>;
+            IReadOnlyDictionary<string, string> idMap = null;
+            keptEdits = 0;
             if (baseline == null)
             {
-                keptEdits = 0;
-                adapter.ApplyReplace(path, target);
+                if (mapped != null)
+                {
+                    idMap = mapped.ApplyReplace(path, target, link?.IdMap);
+                }
+                else
+                {
+                    adapter.ApplyReplace(path, target);
+                }
+            }
+            else if (mapped != null)
+            {
+                idMap = mapped.ApplyMerged(path, target, baseline, link.IdMap, out keptEdits);
             }
             else
             {
                 adapter.ApplyMerged(path, target, baseline, out keptEdits);
             }
 
-            return RecordLink(adapter, item, target, path);
+            return RecordLink(adapter, item, target, path, idMap);
         }
 
         /// <summary>How the target stands against the item <paramref name="link"/> names.</summary>
@@ -119,7 +156,7 @@ namespace PlayniteAchievements.Services.Library
         public void ApplyToSettings(ISettingsLibraryAdapter adapter, LibraryItem item, PersistedSettings settings)
         {
             RequireSettings(settings);
-            settings.SetLibraryLink(adapter.TargetKey, Apply(adapter, item, settings));
+            settings.SetLibraryLink(adapter.TargetKey, Apply(adapter, item, settings, settings.GetLibraryLink(adapter.TargetKey)));
         }
 
         /// <summary>Links the settings target to an item saved from it, without writing values.</summary>
@@ -213,7 +250,12 @@ namespace PlayniteAchievements.Services.Library
             return item != null && item.Kind == adapter.Kind ? item : null;
         }
 
-        private LibraryLink RecordLink<TTarget>(ILibraryAdapter<TTarget> adapter, LibraryItem item, TTarget target, string packagePath)
+        private LibraryLink RecordLink<TTarget>(
+            ILibraryAdapter<TTarget> adapter,
+            LibraryItem item,
+            TTarget target,
+            string packagePath,
+            IReadOnlyDictionary<string, string> idMap)
         {
             var projection = adapter.Project(target, adapter.OwnedKeys(packagePath));
             var baseline = _baselines.Write(projection);
@@ -223,8 +265,17 @@ namespace PlayniteAchievements.Services.Library
                 AppliedVersion = item.Version,
                 BaselineFile = baseline.File,
                 BaselineHash = baseline.Hash,
-                AppliedUtc = _utcNow()
+                AppliedUtc = _utcNow(),
+                IdMap = idMap == null
+                    ? null
+                    : idMap.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)
             };
+        }
+
+        private static bool SameItem(LibraryLink link, LibraryItem item)
+        {
+            return link != null && item != null
+                   && string.Equals(link.LibraryItemId, item.Id, StringComparison.OrdinalIgnoreCase);
         }
 
         private string RequirePackage<TTarget>(ILibraryAdapter<TTarget> adapter, LibraryItem item)
