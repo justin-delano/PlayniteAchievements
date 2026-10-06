@@ -1,7 +1,10 @@
 using System.Linq;
+using System.Windows;
 using System.Windows.Media;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Tests.ViewModels
@@ -218,6 +221,74 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.AreEqual(10, card.Segments.Count);
             Assert.IsTrue(card.Segments.All(segment => ReferenceEquals(segment.Fill, card.AccentTrackBrush)));
+        }
+
+        [TestMethod]
+        public void Accents_FollowTheRarityColorSettings()
+        {
+            ApplyColors(new RarityColorSettings { Rare = "#123456" });
+            try
+            {
+                var card = new ScoreCardViewModel(ScoreCardType.Collection);
+
+                card.Apply(12345, 42, 67, "Gold3", useUniformRarityBadges: false);
+
+                Assert.AreEqual(Color.FromRgb(0x12, 0x34, 0x56), SolidColor(card.AccentBrush));
+                Assert.AreEqual(Color.FromArgb(0x3A, 0x12, 0x34, 0x56), SolidColor(card.AccentTrackBrush));
+                Assert.AreEqual(Color.FromArgb(0x24, 0x12, 0x34, 0x56), SolidColor(card.AccentBackgroundBrush));
+            }
+            finally
+            {
+                ApplyColors(null);
+            }
+        }
+
+        [TestMethod]
+        public void Accents_OfAMasterRankSweepTheCompletedColors()
+        {
+            ApplyColors(new RarityColorSettings { CompletedStart = "#FF0000", CompletedEnd = "#0000FF" });
+            try
+            {
+                var card = new ScoreCardViewModel(ScoreCardType.Collection);
+
+                card.ApplyFromScore(PassLength, useUniformRarityBadges: false);
+
+                Assert.AreEqual("ScoreBadgeCompletedGame", card.BadgeIconKey);
+                var first = SolidColor(card.Segments[0].Fill);
+                var beforeLast = SolidColor(card.Segments[card.Segments.Count - 2].Fill);
+                Assert.IsTrue(first.R > first.B, "first segment leans to the start color");
+                Assert.IsTrue(beforeLast.B > beforeLast.R, "late segments lean to the end color");
+            }
+            finally
+            {
+                ApplyColors(null);
+            }
+        }
+
+        [TestMethod]
+        public void RefreshBadgeStyle_RaisesTheBadgeAndAccentsWhenOnlyColorsChanged()
+        {
+            var card = new ScoreCardViewModel(ScoreCardType.Collection);
+            card.Apply(12345, 42, 67, "Gold3", useUniformRarityBadges: false);
+            var raised = new System.Collections.Generic.List<string>();
+            card.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+            card.RefreshBadgeStyle(useUniformRarityBadges: false);
+
+            CollectionAssert.Contains(raised, nameof(ScoreCardViewModel.BadgeIconKey));
+            CollectionAssert.Contains(raised, nameof(ScoreCardViewModel.AccentBrush));
+        }
+
+        private static void ApplyColors(RarityColorSettings colors)
+        {
+            var settings = colors == null ? null : new PersistedSettings { RarityColors = colors };
+            RarityAppearanceHelper.ApplyBadgeApplicationResources(new ResourceDictionary(), settings);
+        }
+
+        private static Color SolidColor(Brush brush)
+        {
+            Assert.IsInstanceOfType(brush, typeof(SolidColorBrush));
+            return ((SolidColorBrush)brush).Color;
         }
     }
 }
