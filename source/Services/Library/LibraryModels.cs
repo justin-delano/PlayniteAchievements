@@ -72,6 +72,15 @@ namespace PlayniteAchievements.Services.Library
         /// <summary>Lowercase hex SHA-256 of the preset file, or null when there is no file.</summary>
         public string ContentHash { get; set; }
 
+        /// <summary>
+        /// For a Workshop item, the hash of the preset file as the Workshop wrote it. A file that
+        /// no longer has it was edited in place, and an update keeps that file as a local item.
+        /// </summary>
+        public string PublishedHash { get; set; }
+
+        /// <summary>For a Workshop item, the author the Workshop index names.</summary>
+        public string Author { get; set; }
+
         /// <summary>Length of the preset file when <see cref="ContentHash"/> was computed.</summary>
         public long? FileLength { get; set; }
 
