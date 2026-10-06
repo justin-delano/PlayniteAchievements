@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Services.Library
     /// its kind still has the hash the install recorded for that part; a preset the user changed
     /// since stays a local item. Showcase pages and game data, which were applied rather than
     /// saved as presets, become Workshop items without a package. Planning is pure; running it
-    /// is idempotent, so it runs at every startup and also picks up installs made since.
+    /// is idempotent, and the file is retired once its installs are in the library.
     /// </summary>
     public static class LibraryMigration
     {
@@ -165,8 +165,10 @@ namespace PlayniteAchievements.Services.Library
         }
 
         /// <summary>
-        /// Plans against the reconciled library and applies the plan. Safe to run at every
-        /// startup: a second run finds nothing left to do.
+        /// Indexes the preset folders and brings the installs <c>installed.json</c> still records
+        /// into the library. A second run finds nothing left to do; once the caller has linked the
+        /// game-data installs, it retires the file
+        /// (<see cref="WorkshopInstalledRegistry.RetireLegacyInstalls"/>), after which runs only reconcile.
         /// </summary>
         public static LibraryMigrationPlan Run(LibraryStore store, WorkshopInstalledRegistry registry)
         {
@@ -177,7 +179,7 @@ namespace PlayniteAchievements.Services.Library
 
             var createdIndex = !store.IndexExists;
             store.Reconcile();
-            var plan = Plan(registry?.Items, store.Items);
+            var plan = Plan(registry?.ReadLegacyInstalls(), store.Items);
             plan.CreatedIndex = createdIndex;
             foreach (var step in plan.Steps)
             {
