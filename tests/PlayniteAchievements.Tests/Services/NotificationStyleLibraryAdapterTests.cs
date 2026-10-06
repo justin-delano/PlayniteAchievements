@@ -187,6 +187,20 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Update_InstallsATemplateTheNewVersionAdds()
+        {
+            var item = WriteItem("1.0.0", Style(showHeader: false, background: null), null);
+            var adapter = Global(false);
+            _apply.ApplyToSettings(adapter, item, _live);
+
+            WriteItem("1.1.0", Style(showHeader: false, background: null), TemplateV2);
+            _apply.UpdateSettings(adapter, _live, out var kept);
+
+            Assert.AreEqual(0, kept);
+            Assert.AreEqual(TemplateV2, _templates.Read(false, null, Guid.Empty));
+        }
+
+        [TestMethod]
         public void Replace_RemovesTheTemplate_WhenTheItemHasNone()
         {
             _templates.Write(false, null, Guid.Empty, TemplateV1);
