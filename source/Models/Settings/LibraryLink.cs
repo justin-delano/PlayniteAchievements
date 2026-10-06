@@ -27,9 +27,19 @@ namespace PlayniteAchievements.Models.Settings
 
         public DateTime AppliedUtc { get; set; }
 
+        /// <summary>
+        /// For a target that gives the parts of the item ids of its own (a showcase page's
+        /// widgets), the id each part has in the item's package mapped to the id it has on the
+        /// target, so the next update pairs them up; null for other targets.
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public Dictionary<string, string> IdMap { get; set; }
+
         public LibraryLink Clone()
         {
-            return (LibraryLink)MemberwiseClone();
+            var clone = (LibraryLink)MemberwiseClone();
+            clone.IdMap = IdMap == null ? null : new Dictionary<string, string>(IdMap, StringComparer.OrdinalIgnoreCase);
+            return clone;
         }
 
         /// <summary>
