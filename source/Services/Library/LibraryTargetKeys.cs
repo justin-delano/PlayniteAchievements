@@ -28,6 +28,19 @@ namespace PlayniteAchievements.Services.Library
 
         public static string Showcase(string pageId) => ShowcasePrefix + RequireToken(pageId, nameof(pageId));
 
+        /// <summary>The page of a showcase page key.</summary>
+        public static bool TryGetShowcasePageId(string targetKey, out string pageId)
+        {
+            pageId = null;
+            if (string.IsNullOrWhiteSpace(targetKey) || !targetKey.StartsWith(ShowcasePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            pageId = targetKey.Substring(ShowcasePrefix.Length).Trim();
+            return pageId.Length > 0;
+        }
+
         public static string ToastGame(Guid gameId) => ToastPrefix + GameSegment + GameToken(gameId);
 
         public static string FrameGame(Guid gameId) => FramePrefix + GameSegment + GameToken(gameId);
