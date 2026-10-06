@@ -1,5 +1,7 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Views.Controls
@@ -44,6 +46,23 @@ namespace PlayniteAchievements.Views.Controls
         public ScoreCardControl()
         {
             InitializeComponent();
+
+            // Every host's card recolors from here when the badge appearance settings change. The
+            // static event roots its handlers, so the hook lives only while the card is loaded.
+            Loaded += (_, __) =>
+            {
+                RarityAppearanceHelper.AppearanceChanged -= OnAppearanceChanged;
+                RarityAppearanceHelper.AppearanceChanged += OnAppearanceChanged;
+            };
+            Unloaded += (_, __) => RarityAppearanceHelper.AppearanceChanged -= OnAppearanceChanged;
+        }
+
+        private void OnAppearanceChanged(object sender, EventArgs e)
+        {
+            var card = ScoreCard;
+            card?.RefreshBadgeStyle(
+                PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.UseUniformRarityBadges
+                ?? card.UseUniformRarityBadges);
         }
 
         public ScoreCardViewModel ScoreCard
