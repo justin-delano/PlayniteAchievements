@@ -167,6 +167,38 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsFalse(_apply.GetSettingsState(_targets.AdapterFor(page.PageId), _live).IsEdited);
         }
 
+        [TestMethod]
+        public void Update_OfALinkWithoutBaselineOrIdMap_KeepsTheUsersOwnWidgetOptions_AndRecordsBoth()
+        {
+            var page = Install("1.0.0");
+            var key = LibraryTargetKeys.Showcase(page.PageId);
+            // A link as installs made before links kept a baseline and an id map wrote it.
+            _live.SetLibraryLink(key, new LibraryLink { LibraryItemId = "ws:trophies", AppliedVersion = "1.0.0" });
+            var recent = Local(page, ShowcaseWidgetKind.RecentAchievements);
+            var pie = Local(page, ShowcaseWidgetKind.Pie);
+            ShowcaseWidgetOptions.SetPinCollectionId(recent, "my-pins");
+            recent.Options["ControlBar.Achievements"] = "{\"SearchText\":\"zelda\"}";
+            pie.CustomTitle = "Mine";
+
+            _authorRecent.SetOption("MaxPerGame", 9);
+            WritePackage("1.1.0");
+            var report = _updates.MergeIntoTargets("ws:trophies", LibraryApplyMode.Merge);
+
+            CollectionAssert.AreEqual(new[] { key }, report.UpdatedTargets);
+            Assert.AreSame(recent, Local(page, ShowcaseWidgetKind.RecentAchievements), "the widget keeps its id on the page");
+            Assert.AreSame(pie, Local(page, ShowcaseWidgetKind.Pie));
+            Assert.AreEqual("my-pins", ShowcaseWidgetOptions.GetPinCollectionId(recent));
+            Assert.AreEqual("{\"SearchText\":\"zelda\"}", recent.Options["ControlBar.Achievements"]);
+            Assert.AreEqual(9, recent.GetOption("MaxPerGame", 0), "the item is applied as published");
+            Assert.AreEqual("Rarity", pie.CustomTitle, "without a baseline nothing tells an edit apart, so the published title is taken");
+
+            var link = _live.GetLibraryLink(key);
+            Assert.IsFalse(string.IsNullOrEmpty(link.BaselineFile));
+            Assert.AreEqual(recent.InstanceId, link.IdMap[_authorRecent.InstanceId]);
+            Assert.AreEqual(pie.InstanceId, link.IdMap[_authorPie.InstanceId]);
+            Assert.IsFalse(_apply.GetSettingsState(_targets.AdapterFor(page.PageId), _live).IsEdited);
+        }
+
         // ---- helpers ----------------------------------------------------------------------------
 
         private List<ShowcaseBlockSettings> AuthorBlocks()
