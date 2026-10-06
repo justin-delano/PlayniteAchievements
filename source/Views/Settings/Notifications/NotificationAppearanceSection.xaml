@@ -368,10 +368,6 @@
                                         ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
                                         Margin="0,0,8,8"/>
                             </WrapPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_Presets_Hint}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,2,0,0"/>
                         </StackPanel>
                     </Border>
 
