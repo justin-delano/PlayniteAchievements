@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Services.Workshop
     /// are only read, by the library's one-time migration (<see cref="ReadLegacyInstalls"/>),
     /// which retires the file afterwards (<see cref="RetireLegacyInstalls"/>).
     /// </summary>
-    public sealed class WorkshopInstalledRegistry
+    public sealed class WorkshopIdentityStore
     {
         public const string DirectoryName = "workshop";
         private const string InstalledFileName = "installed.json";
@@ -87,7 +87,7 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>
         /// Raised after a submission is recorded, on the thread that recorded it. Every Workshop
-        /// list shares this registry, so a share made from one reaches the others through this
+        /// list shares this store, so a share made from one reaches the others through this
         /// event. Linking submissions and updating their state stay silent: both run while a list
         /// loads.
         /// </summary>
@@ -101,7 +101,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, "A Workshop registry change handler failed.");
+                _logger?.Warn(ex, "A Workshop identity change handler failed.");
             }
         }
 
@@ -186,7 +186,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        public WorkshopInstalledRegistry(string pluginUserDataPath, ILogger logger = null)
+        public WorkshopIdentityStore(string pluginUserDataPath, ILogger logger = null)
         {
             _directory = string.IsNullOrWhiteSpace(pluginUserDataPath)
                 ? null
