@@ -173,12 +173,18 @@
                                     </TextBlock>
                                 </controls:WidthFollowingDecorator>
                             </Grid>
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding SidebarCompletionSummary}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontWeight="SemiBold"
-                                       Margin="12,0,0,0"
-                                       HorizontalAlignment="Right" />
+                            <!-- The hidden copy holds the widest value the game can show, so a
+                                 scoped count with fewer digits cannot narrow the sidebar and
+                                 re-lay-out the tab beside it on every category click. -->
+                            <Grid Grid.Column="1" Margin="12,0,0,0">
+                                <TextBlock Text="{Binding SidebarCompletionWidthReservationText}"
+                                           FontWeight="SemiBold"
+                                           Visibility="Hidden" />
+                                <TextBlock Text="{Binding SidebarCompletionSummary}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Right" />
+                            </Grid>
                         </Grid>
                         <ProgressBar Value="{Binding SidebarCompletionPercentValue, Mode=OneWay}"
                                      Maximum="100"
