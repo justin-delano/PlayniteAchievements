@@ -629,24 +629,27 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
         private void Execute(Action action, string failure, bool targetChanged)
         {
-            var done = false;
-            try
+            using (PerfScope.Start(_options.Logger, "PresetPicker.Execute", context: _target?.Kind.ToString()))
             {
-                action();
-                done = true;
-            }
-            catch (Exception ex)
-            {
-                _options.Logger?.Error(ex, failure);
-                ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
-            }
+                var done = false;
+                try
+                {
+                    action();
+                    done = true;
+                }
+                catch (Exception ex)
+                {
+                    _options.Logger?.Error(ex, failure);
+                    ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+                }
 
-            if (targetChanged && done)
-            {
-                _options.TargetChanged?.Invoke();
-            }
+                if (targetChanged && done)
+                {
+                    _options.TargetChanged?.Invoke();
+                }
 
-            Refresh(reconcile: false);
+                Refresh(reconcile: false);
+            }
         }
 
         private static LibraryItem WorkshopItemNamed(LibraryStore library, LibraryItemKind kind, string sanitizedName)
