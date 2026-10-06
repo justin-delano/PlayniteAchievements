@@ -10,47 +10,67 @@ namespace PlayniteAchievements.Services.Tests
     public class WorkshopInstalledRegistryTests
     {
         [TestMethod]
-        public void Record_Find_Forget_RoundTripThroughDisk()
+        public void ReadLegacyInstalls_ReadsInstalledJson_PerGameRecordsIncluded()
         {
             WithTemp(dir =>
             {
-                var registry = new WorkshopInstalledRegistry(dir);
-                var item = new WorkshopItem { Id = "bundles/neon", Kind = WorkshopItemKind.Bundle, Name = "Neon", Version = "1.0.0" };
-                registry.Record(item);
+                var game = Guid.NewGuid();
+                WriteInstalled(dir, "[" +
+                    "{\"Id\":\"bundles/neon\",\"Kind\":\"Bundle\",\"Name\":\"Neon\",\"Version\":\"1.0.0\",\"ContentHash\":\"colors=abc\"}," +
+                    "{\"Id\":\"game-data/steam-1/pack\",\"Kind\":\"GameCustomData\",\"Name\":\"Pack\",\"Version\":\"1.0.0\",\"PlayniteGameId\":\"" + game + "\",\"BaselineFile\":\"baseline.json\"}," +
+                    "{\"Name\":\"no id\"}" +
+                    "]");
 
-                var reloaded = new WorkshopInstalledRegistry(dir);
-                var found = reloaded.Find("bundles/neon");
-                Assert.IsNotNull(found);
-                Assert.AreEqual("1.0.0", found.Version);
-                Assert.AreEqual(WorkshopItemKind.Bundle, found.Kind);
+                var installs = new WorkshopInstalledRegistry(dir).ReadLegacyInstalls();
 
-                item.Version = "1.1.0";
-                reloaded.Record(item);
-                Assert.AreEqual(1, reloaded.Items.Count, "re-recording replaces the earlier record");
-                Assert.AreEqual("1.1.0", reloaded.Find("bundles/neon").Version);
-
-                reloaded.Forget("bundles/neon");
-                Assert.IsNull(new WorkshopInstalledRegistry(dir).Find("bundles/neon"));
+                Assert.AreEqual(2, installs.Count, "a record without an id is skipped");
+                Assert.AreEqual("colors=abc", installs[0].ContentHash);
+                Assert.AreEqual(WorkshopItemKind.Bundle, installs[0].Kind);
+                Assert.AreEqual(game, installs[1].PlayniteGameId);
+                Assert.AreEqual("baseline.json", installs[1].BaselineFile);
             });
         }
 
         [TestMethod]
-        public void Find_ReturnsContentHashAndBaselineFile()
+        public void ReadLegacyInstalls_IsEmptyWithoutAFileOrForAnUnreadableOne()
+        {
+            WithTemp(dir =>
+            {
+                Assert.AreEqual(0, new WorkshopInstalledRegistry(dir).ReadLegacyInstalls().Count);
+
+                WriteInstalled(dir, "not json");
+                Assert.AreEqual(0, new WorkshopInstalledRegistry(dir).ReadLegacyInstalls().Count);
+            });
+        }
+
+        [TestMethod]
+        public void RetireLegacyInstalls_KeepsTheFileAsABackup_AndItIsReadNoMore()
+        {
+            WithTemp(dir =>
+            {
+                WriteInstalled(dir, "[{\"Id\":\"colors/neon\",\"Kind\":\"Colors\",\"Version\":\"1.0.0\"}]");
+                var registry = new WorkshopInstalledRegistry(dir);
+
+                Assert.IsTrue(registry.RetireLegacyInstalls());
+
+                Assert.AreEqual(0, registry.ReadLegacyInstalls().Count);
+                Assert.IsTrue(File.Exists(Path.Combine(dir, WorkshopInstalledRegistry.DirectoryName, "installed.migrated.json")));
+                Assert.IsFalse(registry.RetireLegacyInstalls(), "nothing is left to retire");
+            });
+        }
+
+        [TestMethod]
+        public void Changed_IsRaisedForASubmission()
         {
             WithTemp(dir =>
             {
                 var registry = new WorkshopInstalledRegistry(dir);
-                var item = new WorkshopItem { Id = "game-data/steam-1/pack", Kind = WorkshopItemKind.GameCustomData, Name = "Pack", Version = "1.0.0" };
-                var game = Guid.NewGuid();
-                registry.Record(item, game, "icons=abc;data=def", Path.Combine(dir, "baseline.json"));
+                var raised = 0;
+                registry.Changed += (_, __) => raised++;
 
-                var found = registry.Find(item.Id, game);
-                Assert.AreEqual("icons=abc;data=def", found.ContentHash);
-                Assert.AreEqual(Path.Combine(dir, "baseline.json"), found.BaselineFile);
+                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
 
-                var reloaded = new WorkshopInstalledRegistry(dir).Find(item.Id);
-                Assert.AreEqual("icons=abc;data=def", reloaded.ContentHash, "the hash survives a reload");
-                Assert.AreEqual(Path.Combine(dir, "baseline.json"), reloaded.BaselineFile, "the baseline path survives a reload");
+                Assert.AreEqual(1, raised, "a submission is announced");
             });
         }
 
@@ -69,47 +89,11 @@ namespace PlayniteAchievements.Services.Tests
             });
         }
 
-        [TestMethod]
-        public void Changed_IsRaisedForRecordForgetAndSubmissions_ButNotForAMissingForget()
+        private static void WriteInstalled(string dir, string json)
         {
-            WithTemp(dir =>
-            {
-                var registry = new WorkshopInstalledRegistry(dir);
-                var raised = 0;
-                registry.Changed += (_, __) => raised++;
-                var item = new WorkshopItem { Id = "colors/neon", Kind = WorkshopItemKind.Colors, Name = "Neon", Version = "1.0.0" };
-
-                registry.Record(item);
-                Assert.AreEqual(1, raised, "an install is announced");
-
-                registry.Forget("colors/missing");
-                Assert.AreEqual(1, raised, "forgetting nothing is not a change");
-
-                registry.Forget(item.Id);
-                Assert.AreEqual(2, raised, "a forgotten install is announced");
-
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
-                Assert.AreEqual(3, raised, "a submission is announced");
-            });
-        }
-
-        [TestMethod]
-        public void GameData_IsRecordedPerGame()
-        {
-            WithTemp(dir =>
-            {
-                var registry = new WorkshopInstalledRegistry(dir);
-                var item = new WorkshopItem { Id = "game-data/steam-440/icons", Kind = WorkshopItemKind.GameCustomData, Name = "Icons", Version = "1.0.0" };
-                var a = Guid.NewGuid();
-                var b = Guid.NewGuid();
-                registry.Record(item, a);
-                registry.Record(item, b);
-
-                Assert.AreEqual(2, registry.Items.Count);
-                Assert.IsNotNull(registry.Find(item.Id, a));
-                Assert.IsNotNull(registry.Find(item.Id, b));
-                Assert.IsNotNull(registry.Find(item.Id), "a game-agnostic lookup still finds the item");
-            });
+            var directory = Path.Combine(dir, WorkshopInstalledRegistry.DirectoryName);
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "installed.json"), json);
         }
 
         [TestMethod]
