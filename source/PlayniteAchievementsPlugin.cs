@@ -94,7 +94,7 @@ namespace PlayniteAchievements
         private Services.Sound.UnlockSoundPortableStore _unlockSoundPortableStore;
         private Services.Workshop.BundlePortableStore _bundlePortableStore;
         private Services.Workshop.ColorPackPortableStore _colorPackPortableStore;
-        private Services.Workshop.WorkshopInstalledRegistry _workshopRegistry;
+        private Services.Workshop.WorkshopIdentityStore _workshopIdentityStore;
         private Services.Library.LibraryStore _libraryStore;
         private Services.Library.LibraryApplyService _libraryApplyService;
         private Services.Library.ColorsLibraryAdapter _colorsLibraryAdapter;
@@ -237,9 +237,9 @@ namespace PlayniteAchievements
         public Services.Workshop.BundlePortableStore BundlePortableStore =>
             _bundlePortableStore ?? (_bundlePortableStore =
                 new Services.Workshop.BundlePortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, ColorPackPortableStore, _logger));
-        public Services.Workshop.WorkshopInstalledRegistry WorkshopRegistry =>
-            _workshopRegistry ?? (_workshopRegistry =
-                new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));
+        public Services.Workshop.WorkshopIdentityStore WorkshopIdentityStore =>
+            _workshopIdentityStore ?? (_workshopIdentityStore =
+                new Services.Workshop.WorkshopIdentityStore(GetPluginUserDataPath(), _logger));
         /// <summary>The library index over the preset folders (UserData\library\library.json).</summary>
         public Services.Library.LibraryStore LibraryStore
         {
@@ -434,18 +434,18 @@ namespace PlayniteAchievements
 
         public Services.Workshop.WorkshopInstaller WorkshopInstaller =>
             _workshopInstaller ?? (_workshopInstaller =
-                new Services.Workshop.WorkshopInstaller(this, WorkshopRegistry, _logger));
+                new Services.Workshop.WorkshopInstaller(this, WorkshopIdentityStore, _logger));
         public Services.Workshop.WorkshopClient WorkshopClient =>
             _workshopClient ?? (_workshopClient = new Services.Workshop.WorkshopClient(
                 () => _settingsViewModel?.Settings?.Persisted?.WorkshopIndexUrl,
-                System.IO.Path.Combine(GetPluginUserDataPath(), Services.Workshop.WorkshopInstalledRegistry.DirectoryName, "cache"),
+                System.IO.Path.Combine(GetPluginUserDataPath(), Services.Workshop.WorkshopIdentityStore.DirectoryName, "cache"),
                 _logger));
         public Services.Workshop.WorkshopSubmissionClient WorkshopSubmissionClient =>
             _workshopSubmissionClient ?? (_workshopSubmissionClient = new Services.Workshop.WorkshopSubmissionClient(
                 () => _settingsViewModel?.Settings?.Persisted?.WorkshopServiceUrl));
         public Services.Workshop.WorkshopShareService WorkshopShareService =>
             _workshopShareService ?? (_workshopShareService =
-                new Services.Workshop.WorkshopShareService(this, WorkshopSubmissionClient, WorkshopRegistry, _logger));
+                new Services.Workshop.WorkshopShareService(this, WorkshopSubmissionClient, WorkshopIdentityStore, _logger));
         public Services.Workshop.WorkshopGameMatcher CreateWorkshopGameMatcher() =>
             new Services.Workshop.WorkshopGameMatcher(
                 () => _achievementDataService?.GetAllCachedGameDataForLookup(),
@@ -1808,12 +1808,12 @@ namespace PlayniteAchievements
         private void StartLibraryMigration()
         {
             Services.Library.LibraryStore store;
-            Services.Workshop.WorkshopInstalledRegistry registry;
+            Services.Workshop.WorkshopIdentityStore identity;
             Services.Library.GameLinkStore gameLinks;
             try
             {
                 store = LibraryStore;
-                registry = WorkshopRegistry;
+                identity = WorkshopIdentityStore;
                 gameLinks = GameLinkStore;
             }
             catch (Exception ex)
@@ -1826,7 +1826,7 @@ namespace PlayniteAchievements
             {
                 try
                 {
-                    var plan = Services.Library.LibraryMigration.Run(store, registry);
+                    var plan = Services.Library.LibraryMigration.Run(store, identity);
                     if (plan.CreatedIndex || plan.Steps.Count > 0)
                     {
                         _logger?.Info($"[Library] Indexed the preset folders; {plan.Steps.Count} Workshop install change(s) brought into the library.");
@@ -1839,7 +1839,7 @@ namespace PlayniteAchievements
                     }
 
                     // Everything installed.json recorded is in the library now; it is read no more.
-                    if (registry.RetireLegacyInstalls())
+                    if (identity.RetireLegacyInstalls())
                     {
                         _logger?.Info("[Library] Retired installed.json; the library holds its installs.");
                     }
