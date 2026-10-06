@@ -1867,19 +1867,6 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 }
 
                 var exists = store.PresetExists(isFrame, name);
-                if (!exists &&
-                    store.CountPresets(isFrame) >= NotificationStylePresetStore.MaxPresetCount)
-                {
-                    _plugin.PlayniteApi?.Dialogs?.ShowMessage(
-                        string.Format(
-                            L("LOCPlayAch_Presets_MaxReached"),
-                            NotificationStylePresetStore.MaxPresetCount),
-                        L("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return;
-                }
-
                 if (exists &&
                     !Confirm(string.Format(L("LOCPlayAch_Presets_OverwriteConfirm"), name)))
                 {
