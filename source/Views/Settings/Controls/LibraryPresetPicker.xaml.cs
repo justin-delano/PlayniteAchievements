@@ -2,11 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Playnite.SDK;
@@ -45,8 +42,8 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
     /// <summary>
     /// The preset row of a settings card whose target follows a library item: a dropdown of the
-    /// kind's library items (My presets, Workshop, and Custom while the target follows none of
-    /// them), Save and Delete, the card's own buttons, and a status line with Update, Reset and
+    /// kind's library items in one list (the user's own and Workshop ones alike, plus Custom while
+    /// the target follows none of them), Save and Delete, the card's own buttons, and a status line with Update, Reset and
     /// Stop following. Choosing an item applies it through <see cref="LibraryApplyService"/> to
     /// the live settings, so inside the settings window Cancel undoes the value and the link
     /// together. Deleting a preset removes a file, which no Cancel brings back, so its links go
@@ -60,7 +57,6 @@ namespace PlayniteAchievements.Views.Settings.Controls
             typeof(LibraryPresetPicker),
             new PropertyMetadata(null));
 
-        private static readonly Regex Placeholder = new Regex(@"\{(\d+)\}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private LibraryPresetPickerOptions _options;
         private PersistedSettingsSubscription _persistedSubscription;
@@ -83,15 +79,12 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
         private sealed class Choice
         {
-            public Choice(string group, string label, string detail, LibraryItem item)
+            public Choice(string label, string detail, LibraryItem item)
             {
-                Group = group;
                 Label = label;
                 Detail = detail;
                 Item = item;
             }
-
-            public string Group { get; }
 
             public string Label { get; }
 
@@ -195,100 +188,28 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 _state = LibraryLinkState.Unlinked;
             }
 
-            var choices = new List<Choice>();
-            if (!_state.IsFollowing)
-            {
-                choices.Add(new Choice(string.Empty, L("LOCPlayAch_Common_Custom"), null, null));
-            }
-
-            var mine = L("LOCPlayAch_Library_MyPresets");
-            choices.AddRange(items
-                .Where(item => !item.IsWorkshop)
+            // One list by name, the user's own presets and Workshop items alike; a Workshop item
+            // shows its version, which is what update tracking compares.
+            // The preset the target follows is preselected; with none, nothing is, as before.
+            var choices = items
                 .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                .Select(item => new Choice(mine, item.Name, null, item)));
-
-            var workshop = L("LOCPlayAch_Workshop_Title");
-            choices.AddRange(items
-                .Where(item => item.IsWorkshop)
-                .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                .Select(item => new Choice(workshop, item.Name, item.Version, item)));
-
-            var view = new ListCollectionView(choices);
-            view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(Choice.Group)));
+                .Select(item => new Choice(item.Name, item.IsWorkshop ? item.Version : null, item))
+                .ToList();
 
             _suppressSelection = true;
             try
             {
-                PresetSelector.ItemsSource = view;
+                PresetSelector.ItemsSource = choices;
                 PresetSelector.SelectedItem = _state.IsFollowing
                     ? choices.FirstOrDefault(choice => SameId(choice.Item, _state.Item))
-                    : choices.FirstOrDefault(choice => choice.Item == null);
+                    : null;
             }
             finally
             {
                 _suppressSelection = false;
             }
 
-            DeleteButton.IsEnabled = SelectedChoice?.Item != null;
-            RefreshStatus();
-        }
-
-        private void RefreshStatus()
-        {
-            StatusText.Inlines.Clear();
-            if (_state.IsFollowing)
-            {
-                var item = _state.Item;
-                if (item.IsWorkshop)
-                {
-                    AppendFormatted(L("LOCPlayAch_Library_Following"), item.Name, _state.Link.AppliedVersion ?? string.Empty);
-                }
-                else
-                {
-                    AppendFormatted(L("LOCPlayAch_Library_FollowingLocal"), item.Name);
-                }
-
-                if (_state.IsEdited)
-                {
-                    StatusText.Inlines.Add(new Run(" · " + L("LOCPlayAch_Library_Edited")));
-                }
-
-                if (_state.IsUpdateAvailable)
-                {
-                    StatusText.Inlines.Add(new Run(" · " + L("LOCPlayAch_Workshop_UpdateAvailable")));
-                }
-            }
-            else
-            {
-                AppendFormatted(L("LOCPlayAch_Library_NotFollowing"), L("LOCPlayAch_Common_Custom"));
-            }
-
-            UpdateButton.Visibility = _state.IsFollowing && _state.IsUpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
-            ResetButton.Visibility = _state.IsFollowing && _state.IsEdited ? Visibility.Visible : Visibility.Collapsed;
-            StopFollowingButton.Visibility = _state.Link != null ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        /// <summary>Writes a localized format into the status line with its first argument (the name) in bold.</summary>
-        private void AppendFormatted(string format, params string[] args)
-        {
-            var position = 0;
-            foreach (Match match in Placeholder.Matches(format ?? string.Empty))
-            {
-                if (match.Index > position)
-                {
-                    StatusText.Inlines.Add(new Run(format.Substring(position, match.Index - position)));
-                }
-
-                var index = int.Parse(match.Groups[1].Value);
-                var value = index < args.Length ? args[index] ?? string.Empty : string.Empty;
-                StatusText.Inlines.Add(index == 0 ? (Inline)new Bold(new Run(value)) : new Run(value));
-                position = match.Index + match.Length;
-            }
-
-            if (format != null && position < format.Length)
-            {
-                StatusText.Inlines.Add(new Run(format.Substring(position)));
-            }
+            UpdateButtons();
         }
 
         private void TrackNestedValue()
@@ -331,9 +252,25 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 return;
             }
 
+            UpdateButtons();
+        }
+
+        private void UpdateButtons()
+        {
+            var hasItem = SelectedChoice?.Item != null;
+            ApplyButton.IsEnabled = hasItem;
+            DeleteButton.IsEnabled = hasItem;
+        }
+
+        /// <summary>
+        /// Applies the selected preset to the target and follows it. Applying the preset the
+        /// target already follows applies it again as published.
+        /// </summary>
+        private void Apply_Click(object sender, RoutedEventArgs e)
+        {
+            Keyboard.ClearFocus();
             var item = SelectedChoice?.Item;
-            DeleteButton.IsEnabled = item != null;
-            if (item == null || (_state.IsFollowing && SameId(item, _state.Item)))
+            if (item == null || _options == null)
             {
                 return;
             }
@@ -342,38 +279,6 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 () => _options.Plugin.LibraryApplyService.ApplyToSettings(_options.Adapter, item, Persisted),
                 $"Failed applying the {_options.Adapter.Kind} preset {item.Name}.",
                 targetChanged: true);
-        }
-
-        private void Update_Click(object sender, RoutedEventArgs e)
-        {
-            Keyboard.ClearFocus();
-            var kept = 0;
-            var updated = Execute(
-                () => _options.Plugin.LibraryApplyService.UpdateSettings(_options.Adapter, Persisted, out kept),
-                $"Failed updating the {_options.Adapter.Kind} preset.",
-                targetChanged: true);
-            if (updated && kept > 0)
-            {
-                ShowMessage(string.Format(L("LOCPlayAch_Workshop_UpdateKeptEdits"), kept), MessageBoxImage.Information);
-            }
-        }
-
-        private void Reset_Click(object sender, RoutedEventArgs e)
-        {
-            Keyboard.ClearFocus();
-            Execute(
-                () => _options.Plugin.LibraryApplyService.ResetSettings(_options.Adapter, Persisted),
-                $"Failed resetting the {_options.Adapter.Kind} preset.",
-                targetChanged: true);
-        }
-
-        private void StopFollowing_Click(object sender, RoutedEventArgs e)
-        {
-            Keyboard.ClearFocus();
-            Execute(
-                () => LibraryApplyService.StopFollowing(_options.Adapter, Persisted),
-                $"Failed to stop following the {_options.Adapter.Kind} preset.",
-                targetChanged: false);
         }
 
         /// <summary>
