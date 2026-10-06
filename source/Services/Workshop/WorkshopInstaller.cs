@@ -594,18 +594,14 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>
         /// The baseline a game-data update onto <paramref name="gameId"/> merges against: the one
-        /// the game's link to the item carries, or for an install made before the library, the
-        /// one installed.json recorded. Null when there is none.
+        /// the game's link to the item carries. Null when the game does not follow the item.
         /// </summary>
         internal string GameDataBaselineFile(string workshopItemId, Guid gameId)
         {
             var link = _plugin.GameLinkStore.Get(Library.LibraryTargetKeys.GameData(gameId));
-            if (link != null && string.Equals(link.LibraryItemId, Library.LibraryItem.WorkshopId(workshopItemId), StringComparison.OrdinalIgnoreCase))
-            {
-                return link.BaselineFile;
-            }
-
-            return _registry.Find(workshopItemId, gameId)?.BaselineFile;
+            return link != null && string.Equals(link.LibraryItemId, Library.LibraryItem.WorkshopId(workshopItemId), StringComparison.OrdinalIgnoreCase)
+                ? link.BaselineFile
+                : null;
         }
 
         // ---- update baselines ----------------------------------------------------------------
