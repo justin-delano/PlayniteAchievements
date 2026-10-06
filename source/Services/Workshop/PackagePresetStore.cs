@@ -30,27 +30,22 @@ namespace PlayniteAchievements.Services.Workshop
     /// </summary>
     public sealed class PackagePresetStore
     {
-        public const int MaxPresetCount = 50;
         public const int MaxNameLength = 64;
 
         private readonly string _directory;
         private readonly string _extension;
         private readonly Action<string> _validate;
-        private readonly Func<string, bool> _countsTowardCap;
 
         /// <param name="pluginUserDataPath">The plugin's user data folder.</param>
         /// <param name="folderName">The folder under it that holds this store's presets.</param>
         /// <param name="extension">The package extension, including the dot.</param>
         /// <param name="validate">Throws when a package is not valid for this store; runs before
         /// a file is copied in so a bad file never becomes a preset.</param>
-        /// <param name="countsTowardCap">Whether a preset file counts toward
-        /// <see cref="MaxPresetCount"/>; null counts every file. Workshop items do not count.</param>
         public PackagePresetStore(
             string pluginUserDataPath,
             string folderName,
             string extension,
-            Action<string> validate,
-            Func<string, bool> countsTowardCap = null)
+            Action<string> validate)
         {
             if (string.IsNullOrWhiteSpace(pluginUserDataPath))
             {
@@ -70,7 +65,6 @@ namespace PlayniteAchievements.Services.Workshop
             _directory = Path.Combine(pluginUserDataPath, folderName);
             _extension = extension;
             _validate = validate ?? (_ => { });
-            _countsTowardCap = countsTowardCap;
         }
 
         public string DirectoryPath => _directory;
@@ -89,10 +83,7 @@ namespace PlayniteAchievements.Services.Workshop
                 .ToList();
         }
 
-        /// <summary>How many presets count toward <see cref="MaxPresetCount"/>.</summary>
-        public int Count() => _countsTowardCap == null
-            ? List().Count
-            : List().Count(preset => _countsTowardCap(preset.FilePath));
+        public int Count() => List().Count;
 
         public bool Exists(string name)
         {
@@ -177,7 +168,6 @@ namespace PlayniteAchievements.Services.Workshop
 
             _validate(packagePath);
             var destination = PathFor(sanitized);
-            EnsureRoom(destination);
             Directory.CreateDirectory(_directory);
             File.Copy(packagePath, destination, overwrite: true);
             return new PackagePresetInfo(sanitized, destination);
@@ -196,7 +186,6 @@ namespace PlayniteAchievements.Services.Workshop
 
             var sanitized = RequireName(name);
             var destination = PathFor(sanitized);
-            EnsureRoom(destination);
             Directory.CreateDirectory(_directory);
             write(destination);
             return new PackagePresetInfo(sanitized, destination);
@@ -224,14 +213,6 @@ namespace PlayniteAchievements.Services.Workshop
             }
 
             return sanitized;
-        }
-
-        private void EnsureRoom(string destination)
-        {
-            if (!File.Exists(destination) && Count() >= MaxPresetCount)
-            {
-                throw new InvalidOperationException($"You can save up to {MaxPresetCount} presets.");
-            }
         }
 
         private string PathFor(string sanitizedName) => Path.Combine(_directory, sanitizedName + _extension);
