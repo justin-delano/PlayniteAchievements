@@ -99,6 +99,7 @@ namespace PlayniteAchievements
         private Services.Library.LibraryApplyService _libraryApplyService;
         private Services.Library.ColorsLibraryAdapter _colorsLibraryAdapter;
         private Services.Library.SoundsLibraryAdapter _soundsLibraryAdapter;
+        private Services.Library.NotificationLibraryTargets _notificationLibraryTargets;
         private Services.Library.GameLinkStore _gameLinkStore;
         private Services.Library.LibraryUpdateService _libraryUpdateService;
         private int _droppedLibraryItemsQueued;
@@ -269,7 +270,8 @@ namespace PlayniteAchievements
                 new Services.Library.ISettingsLibraryAdapter[] { ColorsLibraryAdapter, SoundsLibraryAdapter },
                 () => _settingsViewModel?.Settings?.Persisted,
                 update => ApplyLibrarySettingsChange(update, includeEditSnapshot: true),
-                update => ApplyLibrarySettingsChange(update, includeEditSnapshot: false)));
+                update => ApplyLibrarySettingsChange(update, includeEditSnapshot: false),
+                new Services.Library.ILibraryTargetResolver[] { NotificationLibraryTargets }));
         /// <summary>Applies library items to their targets and keeps the links and baselines.</summary>
         public Services.Library.LibraryApplyService LibraryApplyService =>
             _libraryApplyService ?? (_libraryApplyService = new Services.Library.LibraryApplyService(
@@ -292,6 +294,48 @@ namespace PlayniteAchievements
                     _settingsViewModel?.Settings?.Persisted?.UnlockSounds,
                     _settingsViewModel?.EditSnapshotPersisted?.UnlockSounds
                 }));
+
+        /// <summary>
+        /// The notification and frame scopes (global, platform, game) as library targets. Their
+        /// slot images are pruned against the live settings, the edit snapshot and every game.
+        /// </summary>
+        public Services.Library.NotificationLibraryTargets NotificationLibraryTargets
+        {
+            get
+            {
+                if (_notificationLibraryTargets == null)
+                {
+                    var templates = new Services.Library.ResolverTemplateFiles(new AchievementToastTemplateResolver(
+                        PlayniteApi,
+                        _logger,
+                        customTemplatesDirectory: AchievementToastTemplateResolver.GetCustomTemplatesDirectory(GetPluginUserDataPath())));
+                    Services.Library.NotificationStyleLibraryAdapter Adapter(bool isFrame) =>
+                        new Services.Library.NotificationStyleLibraryAdapter(
+                            isFrame,
+                            NotificationStylePortableStore,
+                            _notificationImageStore,
+                            templates,
+                            PruneNotificationImages,
+                            (ex, message) => _logger?.Warn(ex, message));
+                    _notificationLibraryTargets = new Services.Library.NotificationLibraryTargets(
+                        Adapter(isFrame: false),
+                        Adapter(isFrame: true),
+                        () => _gameCustomDataStore,
+                        () => _settingsViewModel?.Settings?.Persisted,
+                        gameId => _achievementDataService?.GetGameAchievementData(gameId)?.EffectiveProviderKey);
+                }
+
+                return _notificationLibraryTargets;
+            }
+        }
+
+        /// <summary>Removes notification slot images that neither the live settings, the edit snapshot nor any game refers to.</summary>
+        private void PruneNotificationImages()
+        {
+            _notificationImageStore?.PruneOrphans(
+                new[] { _settingsViewModel?.Settings?.Persisted, _settingsViewModel?.EditSnapshotPersisted },
+                _gameCustomDataStore?.LoadAll());
+        }
 
         /// <summary>
         /// Applies <paramref name="update"/> to the live settings and, while the settings window
