@@ -28,7 +28,10 @@ namespace PlayniteAchievements.Models.Settings
         Blank = 0,
         Showcase = 1,
         Analytics = 2,
-        Collection = 3
+        Collection = 3,
+        UpNext = 4,
+        TrophyCase = 5,
+        Library = 6
     }
 
     public enum ShowcaseScoreMode
@@ -38,12 +41,50 @@ namespace PlayniteAchievements.Models.Settings
         Prestige = 2
     }
 
+    /// <summary>
+    /// Which score cards carry the score-over-time line under them. Shares the vocabulary of
+    /// <see cref="ShowcaseScoreMode"/> so the two options in the Scores widget editor read as a
+    /// pair, with None added because the chart, unlike the cards, can be off entirely.
+    /// </summary>
+    public enum ShowcaseScoreHistoryMode
+    {
+        Dual = 0,
+        Collection = 1,
+        Prestige = 2,
+        None = 3
+    }
+
     public enum ShowcasePieMode
     {
         CompletedGames = 0,
         Provider = 1,
         Rarity = 2,
         Trophy = 3
+    }
+
+    /// <summary>
+    /// Which counts the profile medal row shows. Trophy replaces the rarity tiers and the
+    /// completions medal outright rather than adding to them, so a PlayStation-shaped library
+    /// reads as trophies and nothing else; Both shows the rarity row followed by the grades.
+    /// </summary>
+    /// <summary>How the profile card arranges its avatar, text, medals and stat strip.</summary>
+    public enum ShowcaseProfileLayout
+    {
+        /// <summary>Avatar beside the text, everything left-aligned.</summary>
+        Left = 0,
+
+        /// <summary>The same blocks, unchanged, centered across the card.</summary>
+        Centered = 1,
+
+        /// <summary>Avatar stacked above the text, every line centered.</summary>
+        Stacked = 2
+    }
+
+    public enum ShowcaseProfileMedalMode
+    {
+        Rarity = 0,
+        Trophy = 1,
+        Both = 2
     }
 
     public enum ShowcasePointsGrouping
@@ -57,7 +98,48 @@ namespace PlayniteAchievements.Models.Settings
         Recent = 0,
         Rarest = 1,
         Pinned = 2,
-        Capstones = 3
+        Capstones = 3,
+
+        /// <summary>
+        /// Locked achievements worth hunting next. Unlike every other source these rows are not in
+        /// the overview snapshot's unlocked-only achievement list; they come from the bounded
+        /// candidate pool the overview builder hydrates per game.
+        /// </summary>
+        UnlockNext = 4
+    }
+
+    /// <summary>
+    /// How the Unlock Next mosaic ranks the locked achievements it offers. The criterion runs
+    /// during selection rather than as a re-arrangement afterwards, so it decides which
+    /// achievements make the cut, not just the order they appear in.
+    /// </summary>
+    /// <summary>How Finish Next ranks the unfinished games (mosaic and grid alike).</summary>
+    public enum FinishNextCriterion
+    {
+        /// <summary>Highest completion percentage first.</summary>
+        ClosestToCompletion = 0,
+
+        /// <summary>Fewest achievements left first.</summary>
+        FewestRemaining = 1,
+
+        /// <summary>
+        /// The games whose remaining achievements are the most commonly earned first, by the
+        /// rarity tiers still locked.
+        /// </summary>
+        EasiestRemaining = 2
+    }
+
+    // 0 was NextInLine; a stored "NextInLine" no longer parses and falls back to the default.
+    public enum UnlockNextCriterion
+    {
+        /// <summary>Highest global unlock percentage first: what most players already have.</summary>
+        Easiest = 1,
+
+        /// <summary>
+        /// The games closest to being finished first, each game's most commonly earned locked
+        /// achievements first within it.
+        /// </summary>
+        ClosestToCompletion = 2
     }
 
     public enum ShowcaseScreenshotVariant
@@ -85,8 +167,15 @@ namespace PlayniteAchievements.Models.Settings
     /// <summary>Row source for the collapsed Achievements Grid widget.</summary>
     public enum ShowcaseAchievementGridSource
     {
+        /// <summary>Every unlocked achievement. Locked rows never mix in (not even pinned goals).</summary>
         All = 0,
-        Pinned = 1
+        Pinned = 1,
+
+        /// <summary>
+        /// Locked achievements worth hunting next, from the same bounded candidate pool and options
+        /// as the Unlock Next mosaic.
+        /// </summary>
+        UnlockNext = 2
     }
 
     /// <summary>Row source for the collapsed Game Summaries Grid widget.</summary>
@@ -94,7 +183,10 @@ namespace PlayniteAchievements.Models.Settings
     {
         Library = 0,
         Pinned = 1,
-        PlayniteFavorites = 2
+        PlayniteFavorites = 2,
+
+        /// <summary>The unfinished games closest to done, as the Finish Next game mosaic ranks them.</summary>
+        FinishNext = 3
     }
 
     public enum ShowcaseImageFitMode
@@ -103,12 +195,30 @@ namespace PlayniteAchievements.Models.Settings
         Fill = 1
     }
 
+    /// <summary>
+    /// Which side of the Screenshot Slideshow carries the achievement info panel, or Off when the
+    /// widget shows the image alone.
+    /// </summary>
+    public enum ShowcaseInfoPanelPosition
+    {
+        Off = 0,
+        Left = 1,
+        Right = 2,
+        Bottom = 3
+    }
+
     public enum ShowcaseGameMosaicSource
     {
         Completed = 0,
         All = 1,
         Pinned = 2,
-        PlayniteFavorites = 3
+        PlayniteFavorites = 3,
+
+        /// <summary>
+        /// The unfinished games closest to being finished: the games counterpart of
+        /// <see cref="ShowcaseMosaicSource.UnlockNext"/>, and the inverse of Completed.
+        /// </summary>
+        FinishNext = 4
     }
 
     public sealed class ShowcaseProfileSettings
@@ -121,6 +231,13 @@ namespace PlayniteAchievements.Models.Settings
 
         public string BackgroundPath { get; set; }
 
+        /// <summary>
+        /// The platform profile links, in display order. Null means the user never edited them,
+        /// and the profile shows a link for every enabled provider that knows the signed-in
+        /// user's name; once saved the list is exactly what shows (empty shows none).
+        /// </summary>
+        public List<ShowcaseProfileLink> Links { get; set; }
+
         public ShowcaseProfileSettings Clone()
         {
             return new ShowcaseProfileSettings
@@ -128,7 +245,32 @@ namespace PlayniteAchievements.Models.Settings
                 DisplayName = DisplayName,
                 Subtitle = Subtitle,
                 AvatarPath = AvatarPath,
-                BackgroundPath = BackgroundPath
+                BackgroundPath = BackgroundPath,
+                Links = Links?
+                    .Where(link => link != null)
+                    .Select(link => link.Clone())
+                    .ToList()
+            };
+        }
+    }
+
+    /// <summary>
+    /// One profile link on the profile widget: the platform whose icon it shows, and either the
+    /// user's name on that platform (turned into the page address by the platform's provider) or
+    /// a full link used as-is. A blank value falls back to the signed-in user's stored name.
+    /// </summary>
+    public sealed class ShowcaseProfileLink
+    {
+        public string ProviderKey { get; set; }
+
+        public string Value { get; set; }
+
+        public ShowcaseProfileLink Clone()
+        {
+            return new ShowcaseProfileLink
+            {
+                ProviderKey = ProviderKey,
+                Value = Value
             };
         }
     }
@@ -213,6 +355,14 @@ namespace PlayniteAchievements.Models.Settings
         public Dictionary<string, string> Options { get; set; } =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// The profile card's manual data for a <see cref="ShowcaseWidgetKind.Profile"/> widget:
+        /// name, subtitle, avatar, background and links. Per instance, so a duplicated page's
+        /// profile card is edited independently of the original. Null for every other kind.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public ShowcaseProfileSettings Profile { get; set; }
+
         public ShowcaseWidgetInstanceSettings Clone()
         {
             return new ShowcaseWidgetInstanceSettings
@@ -222,7 +372,8 @@ namespace PlayniteAchievements.Models.Settings
                 CustomTitle = CustomTitle,
                 Options = Options != null
                     ? new Dictionary<string, string>(Options, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                Profile = Profile?.Clone()
             };
         }
 
@@ -306,15 +457,26 @@ namespace PlayniteAchievements.Models.Settings
             new List<ShowcaseBlockSettings>();
 
         /// <summary>
-        /// The page's grid dimension (3..5, normalized by ShowcaseLayoutService). Every page
-        /// is created on the 5x5 lattice; templates are authored directly in its coordinates.
+        /// The page's row count (normalized by ShowcaseLayoutService into its track-count
+        /// bounds). 0 means unset: <see cref="GridSize"/> or the default fills it in.
         /// </summary>
-        public int GridSize { get; set; } = 5;
+        public int RowCount { get; set; }
+
+        /// <summary>The page's column count; 0 means unset, as for <see cref="RowCount"/>.</summary>
+        public int ColumnCount { get; set; }
+
+        /// <summary>
+        /// Legacy square grid dimension, kept only so older layouts still deserialize.
+        /// <c>ShowcaseLayoutService.Normalize</c> seeds unset row and column counts from it and
+        /// then clears it.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? GridSize { get; set; }
 
         /// <summary>Star weights for the grid's rows; null means equal shares.</summary>
         public List<double> RowWeights { get; set; }
 
-        /// <summary>Star weights for the grid's columns; null means equal thirds.</summary>
+        /// <summary>Star weights for the grid's columns; null means equal shares.</summary>
         public List<double> ColumnWeights { get; set; }
 
         public ShowcasePageSettings Clone()
@@ -323,6 +485,8 @@ namespace PlayniteAchievements.Models.Settings
             {
                 PageId = PageId,
                 Name = Name,
+                RowCount = RowCount,
+                ColumnCount = ColumnCount,
                 GridSize = GridSize,
                 Blocks = (Blocks ?? new List<ShowcaseBlockSettings>())
                     .Where(block => block != null)
@@ -383,8 +547,13 @@ namespace PlayniteAchievements.Models.Settings
                 }
             };
 
-        public ShowcaseProfileSettings Profile { get; set; } =
-            new ShowcaseProfileSettings();
+        /// <summary>
+        /// Legacy layout-wide profile data, kept only so older settings still deserialize.
+        /// <c>ShowcaseLayoutService.Normalize</c> moves it onto every profile widget that has no
+        /// <see cref="ShowcaseWidgetInstanceSettings.Profile"/> of its own and then clears it.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public ShowcaseProfileSettings Profile { get; set; }
 
         public Dictionary<string, ShowcaseWidgetInstanceSettings> StartPageInstances { get; set; } =
             new Dictionary<string, ShowcaseWidgetInstanceSettings>(StringComparer.OrdinalIgnoreCase);
@@ -414,7 +583,7 @@ namespace PlayniteAchievements.Models.Settings
                     .Where(collection => collection != null)
                     .Select(collection => collection.Clone())
                     .ToList(),
-                Profile = Profile?.Clone() ?? new ShowcaseProfileSettings(),
+                Profile = Profile?.Clone(),
                 StartPageInstances = (StartPageInstances ??
                     new Dictionary<string, ShowcaseWidgetInstanceSettings>(StringComparer.OrdinalIgnoreCase))
                     .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && pair.Value != null)

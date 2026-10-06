@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
@@ -15,6 +15,7 @@ using PlayniteAchievements.Services.Captures;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
@@ -28,6 +29,20 @@ namespace PlayniteAchievements.Views.Showcase
         private static readonly string PlayGlyph = char.ConvertFromUtf32(0xE768);
         private static readonly string PauseGlyph = char.ConvertFromUtf32(0xE769);
         private static readonly string FullscreenGlyph = char.ConvertFromUtf32(0xE740);
+
+        // The info panel takes a share of the widget's width, clamped so it neither shrinks below
+        // readability nor eats a wide tile, and gives up entirely on a tile too narrow to leave
+        // the image usable.
+        private const double InfoPanelWidthRatio = 0.32;
+        private const double InfoPanelMinWidth = 160;
+        private const double InfoPanelMaxWidth = 280;
+        private const double InfoPanelMinWidgetWidth = 420;
+        // The bottom strip sizes itself to its details; these only bound how much of the widget it
+        // may take before it starts scrolling instead of growing.
+        private const double InfoPanelHeightRatio = 0.3;
+        private const double InfoPanelMinHeight = 120;
+        private const double InfoPanelMaxHeight = 220;
+        private const double InfoPanelMinWidgetHeight = 300;
 
         private readonly ShowcaseWidgetInstanceSettings _settings;
         private readonly Image _image;
@@ -54,6 +69,16 @@ namespace PlayniteAchievements.Views.Showcase
         private ShowcaseImageFitMode? _loadedFit;
         private ShowcaseSlideshowSource? _loadedSource;
         private string _loadedCollectionId;
+        private ShowcaseInfoPanelPosition? _loadedInfoPanel;
+        private DockPanel _mediaPair;
+        private Border _mediaFrame;
+        private ScreenshotInfoPanel _infoPanel;
+        private IReadOnlyList<AchievementDisplayItem> _rowsSource;
+        private Dictionary<string, AchievementDisplayItem> _rowsByKey;
+        private int _indexVersion;
+        private int _indexedVersion = -1;
+        private bool _indexBuildInFlight;
+        private object _rowsVersion;
 
         public ScreenshotSlideshowControl(ShowcaseWidgetInstanceSettings settings)
         {
@@ -110,6 +135,7 @@ namespace PlayniteAchievements.Views.Showcase
             Content = Build();
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            SizeChanged += OnSizeChanged;
         }
 
         /// <summary>True when this control was built for the given widget instance, so a
@@ -132,6 +158,16 @@ namespace PlayniteAchievements.Views.Showcase
                 _timer.Interval = interval;
             }
 
+            // The info panel is pure presentation, so a change relays out and refills it rather
+            // than reloading the playlist. Handled before the reload paths below because those
+            // return early, and a scoped slideshow takes one on every single re-apply.
+            if (ShowcaseWidgetOptions.GetInfoPanelPosition(_settings) != _loadedInfoPanel)
+            {
+                ApplyInfoPanelLayout();
+                EnsureInfoPanelIndex();
+                UpdateInfoPanelContent();
+            }
+
             // A scoped slideshow reloads on every re-apply so pin-collection membership changes
             // are picked up; the reload's same-set fast path keeps an unchanged scope invisible.
             var source = ShowcaseWidgetOptions.GetSlideshowSource(_settings);
@@ -152,6 +188,26 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 ShowCurrent();
             }
+        }
+
+        /// <summary>
+        /// Achievement rows the info panel resolves captures against. <paramref name="rowsVersion"/>
+        /// is the snapshot that owns them: the Overview's delta updates that snapshot's row list in
+        /// place and hands out a new snapshot object, so the list reference alone never changed and
+        /// the index kept pointing at replaced rows. The previous index keeps serving until the
+        /// rebuilt one lands, so an update never blanks the panel.
+        /// </summary>
+        public void SetAchievementRows(IReadOnlyList<AchievementDisplayItem> rows, object rowsVersion)
+        {
+            if (ReferenceEquals(_rowsVersion, rowsVersion) && ReferenceEquals(_rowsSource, rows))
+            {
+                return;
+            }
+
+            _rowsSource = rows;
+            _rowsVersion = rowsVersion;
+            _indexVersion++;
+            EnsureInfoPanelIndex();
         }
 
         /// <summary>
@@ -212,14 +268,21 @@ namespace PlayniteAchievements.Views.Showcase
                 ClipToBounds = true,
                 Cursor = Cursors.Hand
             };
+            _mediaFrame = mediaFrame;
             mediaFrame.SetResourceReference(Border.BorderBrushProperty, "PlayAch.Brush.Border");
+            // One click opens fullscreen, as the hand cursor promises (it used to take a double
+            // click). A click on the transport buttons is theirs, not the frame's.
             mediaFrame.MouseLeftButtonUp += (_, args) =>
             {
-                if (args.ClickCount > 1)
+                if (args.Handled ||
+                    Views.Helpers.VisualTreeHelpers.FindVisualParent<System.Windows.Controls.Primitives.ButtonBase>(
+                        args.OriginalSource as DependencyObject) != null)
                 {
-                    OpenFullscreen();
-                    args.Handled = true;
+                    return;
                 }
+
+                OpenFullscreen();
+                args.Handled = true;
             };
             // The pause/fullscreen transport only shows while the pointer is over the image, so
             // the idle slideshow stays chrome-free.
@@ -233,14 +296,24 @@ namespace PlayniteAchievements.Views.Showcase
                 _mediaHovered = false;
                 UpdateChromeVisibility();
             };
-            Grid.SetColumn(mediaFrame, 1);
-            mediaRow.Children.Add(mediaFrame);
+            // The image and the info panel share the centre column so the prev/next arrows keep
+            // flanking the pair rather than the image alone. A DockPanel gives all three panel
+            // positions for free; the image is the last child so it fills whatever is left.
+            // Which side the panel takes, and whether it takes one at all, is settled by
+            // ApplyInfoPanelLayout.
+            _infoPanel = new ScreenshotInfoPanel { Visibility = Visibility.Collapsed };
+            _mediaPair = new DockPanel { LastChildFill = true };
+            _mediaPair.Children.Add(_infoPanel);
+            _mediaPair.Children.Add(mediaFrame);
+            Grid.SetColumn(_mediaPair, 1);
+            mediaRow.Children.Add(_mediaPair);
             Grid.SetColumn(_next, 2);
             mediaRow.Children.Add(_next);
             root.Children.Add(mediaRow);
 
             Grid.SetRow(_captionBar, 1);
             root.Children.Add(_captionBar);
+            ApplyInfoPanelLayout();
             return root;
         }
 
@@ -332,10 +405,21 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             UpdateChromeVisibility();
+            ApplyInfoPanelLayout();
+            EnsureInfoPanelIndex();
             _ = ReloadAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) => Dispose();
+
+        private void OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Height matters too: a bottom-docked panel is sized against it.
+            if (e.WidthChanged || e.HeightChanged)
+            {
+                ApplyInfoPanelLayout();
+            }
+        }
 
         private void UpdateChromeVisibility()
         {
@@ -421,18 +505,6 @@ namespace PlayniteAchievements.Views.Showcase
             return (stems.Keys.ToList(), stems);
         }
 
-        private static string GetCaptureFolderName(string filePath)
-        {
-            try
-            {
-                return Path.GetFileName(Path.GetDirectoryName(filePath)) ?? string.Empty;
-            }
-            catch (ArgumentException)
-            {
-                return string.Empty;
-            }
-        }
-
         private async Task ReloadAsync()
         {
             var captureLibrary = _captureLibrary;
@@ -481,7 +553,9 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 items = items
                     .Where(item =>
-                        scope.Stems.TryGetValue(GetCaptureFolderName(item.FilePath), out var stems) &&
+                        scope.Stems.TryGetValue(
+                            CaptureAchievementIndex.GetCaptureFolderName(item.FilePath),
+                            out var stems) &&
                         stems.Contains(item.AchievementStem ?? string.Empty))
                     .ToList();
             }
@@ -656,7 +730,173 @@ namespace PlayniteAchievements.Views.Showcase
             _caption.Text = (current.AchievementStem ?? string.Empty).Replace('_', ' ');
             _position.Text = $"{_index + 1} / {_items.Count}";
             _status.Visibility = Visibility.Collapsed;
+            UpdateInfoPanelContent();
             UpdateChromeVisibility();
+        }
+
+        /// <summary>
+        /// Places the info panel, sizes it against the current width, and collapses it on a tile
+        /// too narrow to spare the room. The caption's achievement name is suppressed whenever the
+        /// panel is showing one, so the two never duplicate each other.
+        /// </summary>
+        private void ApplyInfoPanelLayout()
+        {
+            var position = ShowcaseWidgetOptions.GetInfoPanelPosition(_settings);
+            _loadedInfoPanel = position;
+            if (_mediaPair == null || _infoPanel == null)
+            {
+                return;
+            }
+
+            var bottom = position == ShowcaseInfoPanelPosition.Bottom;
+            var showPanel = position != ShowcaseInfoPanelPosition.Off && HasRoomForInfoPanel(bottom);
+            _infoPanel.Visibility = showPanel ? Visibility.Visible : Visibility.Collapsed;
+            _caption.Visibility = showPanel ? Visibility.Collapsed : Visibility.Visible;
+
+            switch (position)
+            {
+                case ShowcaseInfoPanelPosition.Left:
+                    DockPanel.SetDock(_infoPanel, Dock.Left);
+                    break;
+                case ShowcaseInfoPanelPosition.Bottom:
+                    DockPanel.SetDock(_infoPanel, Dock.Bottom);
+                    break;
+                default:
+                    DockPanel.SetDock(_infoPanel, Dock.Right);
+                    break;
+            }
+
+            // Each axis is sized only where it is the docking one; the other stretches.
+            // A side panel is pinned to a width because a column of fields has no natural one,
+            // while the strip takes the height its details actually need, capped, so the image
+            // keeps whatever they do not use instead of sitting above dead space.
+            _infoPanel.Width = bottom || !showPanel
+                ? double.NaN
+                : ResolveInfoPanelWidth();
+            _infoPanel.Height = double.NaN;
+            _infoPanel.MaxHeight = bottom && showPanel
+                ? ResolveInfoPanelMaxHeight()
+                : double.PositiveInfinity;
+
+            // A strip reads across in two columns; a side panel reads down in one.
+            _infoPanel.SetWideLayout(bottom);
+        }
+
+        /// <summary>
+        /// Whether the widget can spare the room for the info panel. Before the first layout pass
+        /// the size is unknown, which reads as no room: staying collapsed avoids showing a panel
+        /// that the following pass would immediately take away.
+        /// </summary>
+        private bool HasRoomForInfoPanel(bool bottom)
+        {
+            if (ActualWidth < InfoPanelMinWidgetWidth)
+            {
+                return false;
+            }
+
+            // The strip needs the height as well; the side positions only need the width.
+            return !bottom || ActualHeight >= InfoPanelMinWidgetHeight;
+        }
+
+        /// <summary>Info panel width for the current widget width.</summary>
+        private double ResolveInfoPanelWidth() =>
+            Math.Max(
+                InfoPanelMinWidth,
+                Math.Min(InfoPanelMaxWidth, ActualWidth * InfoPanelWidthRatio));
+
+        /// <summary>
+        /// The most height a bottom-docked panel may claim. It is a ceiling rather than a size:
+        /// the strip sizes to its content and only scrolls once the details exceed this.
+        /// </summary>
+        private double ResolveInfoPanelMaxHeight() =>
+            Math.Max(
+                InfoPanelMinHeight,
+                Math.Min(InfoPanelMaxHeight, ActualHeight * InfoPanelHeightRatio));
+
+        /// <summary>
+        /// Builds the capture-to-achievement index off the UI thread, and only while the info panel
+        /// is actually showing, so an Off panel costs nothing.
+        /// </summary>
+        private void EnsureInfoPanelIndex()
+        {
+            if (ShowcaseWidgetOptions.GetInfoPanelPosition(_settings) == ShowcaseInfoPanelPosition.Off ||
+                (_rowsByKey != null && _indexedVersion == _indexVersion) ||
+                // One build at a time: a burst of delta updates would otherwise index the whole
+                // library once per update in parallel. The finishing build starts the latest one.
+                _indexBuildInFlight)
+            {
+                return;
+            }
+
+            // Copied here, on the UI thread that mutates the live list, so the background build
+            // never enumerates it mid-update.
+            var rows = _rowsSource?.ToArray();
+            if (rows == null || rows.Length == 0)
+            {
+                return;
+            }
+
+            var version = _indexVersion;
+            _indexBuildInFlight = true;
+            Task.Run(() => CaptureAchievementIndex.Build(
+                    rows,
+                    row => row.GameName,
+                    row => row.DisplayName))
+                .ContinueWith(
+                    task =>
+                    {
+                        _indexBuildInFlight = false;
+                        if (task.Status != TaskStatus.RanToCompletion)
+                        {
+                            return;
+                        }
+
+                        if (version != _indexVersion)
+                        {
+                            // Superseded while building: index the current rows instead.
+                            EnsureInfoPanelIndex();
+                            return;
+                        }
+
+                        _rowsByKey = task.Result;
+                        _indexedVersion = version;
+                        UpdateInfoPanelContent();
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.FromCurrentSynchronizationContext());
+        }
+
+        /// <summary>
+        /// Points the info panel at the achievement behind the current capture. An unmatched
+        /// capture (a renamed achievement, a game that left the library) falls back to a row
+        /// carrying only the name and game recovered from the file path, and the panel's own
+        /// per-field visibility drops the rows it cannot fill.
+        /// </summary>
+        private void UpdateInfoPanelContent()
+        {
+            if (_infoPanel == null ||
+                ShowcaseWidgetOptions.GetInfoPanelPosition(_settings) == ShowcaseInfoPanelPosition.Off)
+            {
+                return;
+            }
+
+            var current = Current;
+            if (current == null)
+            {
+                _infoPanel.DataContext = null;
+                return;
+            }
+
+            AchievementDisplayItem row = null;
+            _rowsByKey?.TryGetValue(
+                CaptureAchievementIndex.KeyForCapture(current.FilePath, current.AchievementStem),
+                out row);
+            _infoPanel.DataContext = row ?? new AchievementDisplayItem
+            {
+                DisplayName = (current.AchievementStem ?? string.Empty).Replace('_', ' '),
+                GameName = CaptureAchievementIndex.GetCaptureFolderName(current.FilePath)
+            };
         }
     }
 }

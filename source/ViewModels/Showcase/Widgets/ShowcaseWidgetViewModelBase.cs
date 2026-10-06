@@ -8,7 +8,6 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
-using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -41,6 +40,56 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         }
 
         protected abstract void Refresh();
+
+        /// <summary>
+        /// The widget host's body inset per density. A widget whose host drops the inset (the
+        /// full-bleed profile) reapplies it to its own foreground.
+        /// </summary>
+        public static double GetBodyInset(WidgetViewportDensity density) =>
+            density == WidgetViewportDensity.Compact
+                ? 6
+                : density == WidgetViewportDensity.Expanded ? 10 : 8;
+    }
+
+    /// <summary>
+    /// Base for the mosaic widgets. A refresh re-reads the layout options, then runs the tile
+    /// pass; a control-bar filter change runs only the tile pass. The projection hands over the
+    /// whole source, so the tile pass filters first and applies the Count cap after.
+    /// </summary>
+    public abstract class ShowcaseMosaicWidgetViewModelBase : ShowcaseWidgetViewModelBase
+    {
+        private bool _showControlBar;
+        private GridControlBarViewModel _controlBar;
+
+        /// <summary>Search/filter bar shown when the widget's Show Control Bar option is on.</summary>
+        public GridControlBarViewModel ControlBar
+        {
+            get => _controlBar;
+            protected set => SetValue(ref _controlBar, value);
+        }
+
+        public bool ShowControlBar
+        {
+            get => _showControlBar;
+            private set => SetValue(ref _showControlBar, value);
+        }
+
+        protected sealed override void Refresh()
+        {
+            ShowControlBar = ShowcaseWidgetOptions.GetMosaicShowControlBar(Projection?.Instance);
+            RefreshLayout();
+            RefreshTiles();
+        }
+
+        /// <summary>Re-reads the widget's size, spacing and appearance options.</summary>
+        protected abstract void RefreshLayout();
+
+        /// <summary>
+        /// Filters the projected source through the widget instance's control bar state (which
+        /// stays in effect while the bar is hidden), caps it at Count, sorts, and syncs the tiles
+        /// in place.
+        /// </summary>
+        protected abstract void RefreshTiles();
     }
 
     /// <summary>
@@ -149,6 +198,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         /// <summary>Sort hook applied between the filter and the MaxRows cap; identity by default.</summary>
         protected virtual IEnumerable<TItem> OrderItems(IEnumerable<TItem> items) => items;
 
+        /// <summary>
+        /// Last step before the rows reach the grid, after the filter, sort and cap: identity by
+        /// default. Must return the same objects for the same inputs, or every refresh resets the grid.
+        /// </summary>
+        protected virtual IEnumerable<TItem> ScopeVisibleItems(IEnumerable<TItem> visible) => visible;
+
         /// <summary>The grid-options members whose edits require re-running <see cref="RefreshItems"/>.</summary>
         protected virtual bool ShouldRefreshItemsFor(string propertyName)
         {
@@ -171,9 +226,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         protected void RefreshItems()
         {
             var items = SelectItems(Projection) ?? Array.Empty<TItem>();
-            var visible = DisplayGridRowLimitHelper.Limit(
+            var visible = ScopeVisibleItems(DisplayGridRowLimitHelper.Limit(
                 OrderItems(FilterItems(items)),
-                (GridOptions as GridCommonOptions)?.MaxRows);
+                (GridOptions as GridCommonOptions)?.MaxRows)).ToList();
 
             // Replacing the collection resets the grid, which rebuilds every row (and re-resolves
             // its art). The projection hands back the same row objects when nothing changed, so
@@ -203,62 +258,34 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     }
 
     /// <summary>
-    /// Grid widget base for achievement rows: contributes a search box that filters by game
-    /// and achievement name before the MaxRows cap.
+    /// Grid widget base for achievement rows: contributes the cross-game achievement control bar
+    /// (search plus provider/platform filter) applied before the MaxRows cap.
     /// </summary>
     public abstract class ShowcaseAchievementGridWidgetViewModelBase
         : ShowcaseGridWidgetViewModelBase<AchievementDisplayItem>
     {
-        private readonly SearchTextIndex<AchievementDisplayItem> _searchIndex =
-            new SearchTextIndex<AchievementDisplayItem>(item =>
-                SearchTextBuilder.ForRecentAchievement(item?.GameName, item?.DisplayName));
-        private string _searchText = string.Empty;
+        // The widget instance's shared adapter, so the filters survive view model swaps.
+        private readonly ShowcaseControlBarSlot<CrossGameAchievementControlBarAdapter> _controlBarSlot;
 
         protected ShowcaseAchievementGridWidgetViewModelBase()
         {
-            ControlBar = new GridControlBarViewModel
-            {
-                Search = new GridSearchControl(
-                    this,
-                    nameof(SearchText),
-                    () => SearchText,
-                    value => SearchText = value,
-                    ResourceProvider.GetString("LOCPlayAch_Filter_Achievements"),
-                    () => SearchText = string.Empty)
-            };
-        }
-
-        public string SearchText
-        {
-            get => _searchText;
-            set
-            {
-                var normalized = value ?? string.Empty;
-                if (string.Equals(_searchText, normalized, StringComparison.Ordinal))
-                {
-                    return;
-                }
-
-                _searchText = normalized;
-                OnPropertyChanged(nameof(SearchText));
-                RefreshItems();
-            }
+            _controlBarSlot = new ShowcaseControlBarSlot<CrossGameAchievementControlBarAdapter>(RefreshItems);
         }
 
         protected override IEnumerable<AchievementDisplayItem> FilterItems(
             IEnumerable<AchievementDisplayItem> items)
         {
-            var query = SearchQuery.From(SearchText);
-            if (!query.HasValue)
+            if (_controlBarSlot.Bind(Projection?.Instance?.InstanceId))
             {
-                return items;
+                ControlBar = _controlBarSlot.Adapter.ControlBar;
             }
 
+            var adapter = _controlBarSlot.Adapter;
             var list = (items ?? Enumerable.Empty<AchievementDisplayItem>())
                 .Where(item => item != null)
                 .ToList();
-            _searchIndex.Rebuild(list);
-            return list.Where(item => _searchIndex.Matches(item, query));
+            adapter.UpdateGames(Projection?.Snapshot?.GameSummaries);
+            return adapter.Apply(list);
         }
 
         /// <summary>
@@ -303,6 +330,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 propertyName == nameof(AchievementGridOptions.SortMode) ||
                 propertyName == nameof(AchievementGridOptions.SortDescending);
         }
+
+        private readonly WidgetRevealScope _reveals = new WidgetRevealScope();
+
+        // This grid's own copies of any revealable rows, so a reveal stays in this widget.
+        protected override IEnumerable<AchievementDisplayItem> ScopeVisibleItems(
+            IEnumerable<AchievementDisplayItem> visible) => _reveals.Map(visible);
     }
 
     /// <summary>
@@ -312,22 +345,28 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     public abstract class ShowcaseGameGridWidgetViewModelBase
         : ShowcaseGridWidgetViewModelBase<GameSummaryItem>
     {
-        private readonly GameSummaryGridControlBarAdapter _controlBarAdapter =
-            new GameSummaryGridControlBarAdapter();
+        // The widget instance's shared adapter, so the filters survive view model swaps.
+        private readonly ShowcaseControlBarSlot<GameSummaryGridControlBarAdapter> _controlBarSlot;
 
         protected ShowcaseGameGridWidgetViewModelBase()
         {
-            _controlBarAdapter.FilterChanged += (_, __) => RefreshItems();
-            ControlBar = _controlBarAdapter.ControlBar;
+            _controlBarSlot = new ShowcaseControlBarSlot<GameSummaryGridControlBarAdapter>(RefreshItems);
         }
 
         protected override IEnumerable<GameSummaryItem> FilterItems(IEnumerable<GameSummaryItem> items)
         {
+            if (_controlBarSlot.Bind(Projection?.Instance?.InstanceId))
+            {
+                ControlBar = _controlBarSlot.Adapter.ControlBar;
+            }
+
+            var adapter = _controlBarSlot.Adapter;
             var list = (items ?? Enumerable.Empty<GameSummaryItem>())
                 .Where(item => item != null)
                 .ToList();
-            _controlBarAdapter.UpdateOptions(list);
-            return _controlBarAdapter.Apply(list);
+            // The dropdown lists the whole library's platforms, not only the ones shown now.
+            adapter.UpdateOptions(Projection?.Snapshot?.GameSummaries);
+            return adapter.Apply(list);
         }
 
         /// <summary>Sort fallback when the surface record is unavailable.</summary>

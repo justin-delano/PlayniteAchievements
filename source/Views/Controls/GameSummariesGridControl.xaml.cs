@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
@@ -25,6 +27,8 @@ namespace PlayniteAchievements.Views.Controls
         private bool _isAttached;
         private PersistedSettingsSubscription _persistedSubscription;
         private GameSummaryGridOptions _subscribedShowcaseOptions;
+        private INotifyCollectionChanged _watchedRows;
+        private bool _tailSlackPending;
         private const double DefaultCoverColumnWidth = 96;
         private const double DefaultPlatformColumnWidth = 44;
         private const double DefaultCapturesColumnWidth = 56;
@@ -274,13 +278,16 @@ namespace PlayniteAchievements.Views.Controls
         /// category-mode list turns this on; the drill header and every game-summary surface leave
         /// it off, and the host also drops it while a name search or column sort suspends
         /// collapsing so the glyphs revert to plain beads there.
+        ///
+        /// Re-runs the realized rows because the last one carries the scroll slack the bottom
+        /// glyph needs (see <see cref="ApplyTailToggleSlack"/>), which this flag turns on and off.
         /// </summary>
         public static readonly DependencyProperty ShowCategoryCollapseTogglesProperty =
             DependencyProperty.Register(
                 nameof(ShowCategoryCollapseToggles),
                 typeof(bool),
                 typeof(GameSummariesGridControl),
-                new PropertyMetadata(false));
+                new PropertyMetadata(false, OnRowSizingChanged));
 
         public bool ShowCategoryCollapseToggles
         {
@@ -388,7 +395,7 @@ namespace PlayniteAchievements.Views.Controls
                 nameof(SoftGlowTiers),
                 typeof(RaritySelection),
                 typeof(GameSummariesGridControl),
-                new PropertyMetadata(RaritySelection.All | RaritySelection.Completed));
+                new PropertyMetadata(RaritySelectionExtensions.DefaultSoftGlowTiers));
 
         public RaritySelection SoftGlowTiers
         {
@@ -467,6 +474,24 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(ShowNameAboveProgressProperty);
             private set => SetValue(ShowNameAboveProgressProperty, value);
+        }
+
+        public static readonly DependencyProperty PreferTrophyBadgesProperty =
+            DependencyProperty.Register(
+                nameof(PreferTrophyBadges),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(true));
+
+        /// <summary>
+        /// Whether a game that has trophies shows trophy badges in place of its rarity badges.
+        /// Resolved from the global setting; consumed by the footer's ProgressBadgeStrip, which
+        /// pairs it with each row's own HasTrophyTypes.
+        /// </summary>
+        public bool PreferTrophyBadges
+        {
+            get => (bool)GetValue(PreferTrophyBadgesProperty);
+            private set => SetValue(PreferTrophyBadgesProperty, value);
         }
 
         public static readonly DependencyProperty ShowRarityBadgesBelowProgressProperty =
@@ -631,13 +656,31 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
+            // Loaded runs in the dispatcher pass after the first layout, so this cost lands
+            // outside the host's Showcase.Widget.Layout scope; it is timed separately.
+            using var perf = Common.PerfScope.Start(
+                Logger,
+                "GameGrid.Loaded",
+                thresholdMs: 10,
+                context: $"key={ColumnSettingsKey} items={GameSummariesGrid.Items.Count}");
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
+            // The category list mutates its visible-rows collection in place as subtrees collapse
+            // and expand, so the row that used to be last is not re-prepared when the tail moves
+            // and would keep - or lack - the slack under the bottom glyph. Watching the item
+            // collection re-applies it whichever way the rows changed.
+            if (_watchedRows == null)
+            {
+                _watchedRows = GameSummariesGrid.Items;
+                _watchedRows.CollectionChanged += OnRowsCollectionChanged;
+            }
+
             MirrorAppearanceResources();
             ApplyCategoryHeaderOverride();
 
             UpdateLastPlayedDateMode(settings);
             UpdateColorRarityColumnsByRarity(settings);
+            UpdatePreferTrophyBadges(settings);
             UpdateShowNameAboveProgress(settings);
             UpdateShowRarityBadgesBelowProgress(settings);
             UpdateShowcaseOptionsSubscription(settings);
@@ -669,6 +712,18 @@ namespace PlayniteAchievements.Views.Controls
                 GameSummariesGrid,
                 () => GetHeaderAlignmentsByKey(settings));
 
+            EnsureColumnPersistence(settings);
+            _columnPersistence.Attach();
+            _isAttached = true;
+        }
+
+        private void EnsureColumnPersistence(PlayniteAchievementsSettings settings)
+        {
+            if (_columnPersistence != null)
+            {
+                return;
+            }
+
             _columnPersistence = new DataGridColumnLayoutService(
                 GameSummariesGrid,
                 Logger,
@@ -690,11 +745,40 @@ namespace PlayniteAchievements.Views.Controls
                 setHeaderHorizontalAlignments: map => SetHeaderAlignmentsByKey(settings, map),
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GameSummariesGrid),
-                isRuntimeDefaultWidth: IsRuntimeDefaultWidth);
+                isRuntimeDefaultWidth: IsRuntimeDefaultWidth,
+                getLocks: () => GetSurfaceSettings(settings)?.GetLocks(),
+                setLocks: map => GetSurfaceSettings(settings)?.SetLocks(map));
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
             ApplyFriendColumnRestrictions();
-            _columnPersistence.Attach();
-            _isAttached = true;
+        }
+
+        // Applies the persisted column order, visibility, and widths before the first measure.
+        // Loaded (and with it Attach) only runs after the first layout pass, so without this the
+        // first rows are laid out with all thirteen columns visible and the star columns clamped
+        // to MinWidth, then rebuilt once Attach collapses the hidden ones. Runs whenever the
+        // settings key changes before attach and again from OnApplyTemplate as the last chance
+        // before rows realize; both are idempotent and cheap.
+        private void PrepareColumnsForFirstMeasure()
+        {
+            if (_isAttached || GameSummariesGrid == null)
+            {
+                return;
+            }
+
+            var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            EnsureColumnPersistence(settings);
+            _columnPersistence.PrepareColumns();
+        }
+
+        public override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+            PrepareColumnsForFirstMeasure();
         }
 
         private static void OnShowColumnHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -752,6 +836,28 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        /// <summary>
+        /// Re-applies the tail slack after the rows change, once the containers for whatever was
+        /// added exist. Coalesced: a collapse pass can raise a long run of single-row changes, and
+        /// each sweep walks every row.
+        /// </summary>
+        private void OnRowsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (!ShowCategoryCollapseToggles || _tailSlackPending || Dispatcher == null)
+            {
+                return;
+            }
+
+            _tailSlackPending = true;
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    _tailSlackPending = false;
+                    UpdateRealizedRowHeights();
+                }),
+                DispatcherPriority.Loaded);
+        }
+
         private static void OnRowSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is GameSummariesGridControl control)
@@ -763,6 +869,7 @@ namespace PlayniteAchievements.Views.Controls
         private void GameSummariesGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             ApplyFixedRowHeight(e.Row);
+            ApplyTailToggleSlack(e.Row);
         }
 
         private void UpdateRealizedRowHeights()
@@ -777,8 +884,40 @@ namespace PlayniteAchievements.Views.Controls
                 if (GameSummariesGrid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
                 {
                     ApplyFixedRowHeight(row);
+                    ApplyTailToggleSlack(row);
                 }
             }
+        }
+
+        /// <summary>
+        /// Scroll room under the last row, so a collapse toggle sitting on the grid's bottom edge
+        /// stays reachable.
+        ///
+        /// The glyph is centred on a row boundary, and the last row has no row beneath it to paint
+        /// it, so that row draws its own circle past its bottom edge. Scrolled to the end, that
+        /// edge is where the panel stops clipping, and the glyph lands outside it. A bottom margin
+        /// on the last row counts toward the scroll extent while leaving the row itself its normal
+        /// height, so the final stretch of scrolling uncovers the glyph rather than stopping flush
+        /// against it. Only the surface that shows the toggles pays for it; every other grid
+        /// clears the margin back to the row style's own.
+        /// </summary>
+        private void ApplyTailToggleSlack(DataGridRow row)
+        {
+            if (row == null || GameSummariesGrid == null)
+            {
+                return;
+            }
+
+            var isTail = ShowCategoryCollapseToggles &&
+                row.GetIndex() == GameSummariesGrid.Items.Count - 1;
+            if (isTail)
+            {
+                row.Margin = new Thickness(
+                    0d, 0d, 0d, CategoryTreeGuideMetrics.BoundaryToggleOverhang);
+                return;
+            }
+
+            row.ClearValue(FrameworkElement.MarginProperty);
         }
 
         private void ApplyFixedRowHeight(DataGridRow row)
@@ -1010,6 +1149,14 @@ namespace PlayniteAchievements.Views.Controls
                         columns.HeaderAlignments = map;
                     }
                 },
+                GetLocks = () => columns?.Locked,
+                SetLocks = map =>
+                {
+                    if (columns != null)
+                    {
+                        columns.Locked = map;
+                    }
+                },
                 GetLastPlayedDateMode = () => showcaseOptions?.LastPlayedDateMode ??
                     ResolveLastPlayedDateMode(persisted, surface),
                 GetColorRarityColumnsByRarity = () => showcaseOptions?.ColorRarityColumnsByRarity ??
@@ -1227,6 +1374,8 @@ namespace PlayniteAchievements.Views.Controls
             public Action<Dictionary<string, GridVerticalAlignment>> SetVerticalAlignments { get; set; }
             public Func<Dictionary<string, GridAlignment>> GetHeaderAlignments { get; set; }
             public Action<Dictionary<string, GridAlignment>> SetHeaderAlignments { get; set; }
+            public Func<Dictionary<string, bool>> GetLocks { get; set; }
+            public Action<Dictionary<string, bool>> SetLocks { get; set; }
             public Func<DateDisplayMode> GetLastPlayedDateMode { get; set; }
             public Func<bool> GetColorRarityColumnsByRarity { get; set; }
             public Func<bool> GetShowNameAboveProgress { get; set; }
@@ -1357,6 +1506,18 @@ namespace PlayniteAchievements.Views.Controls
                    surface == GridSurface.DesktopThemeCategory;
         }
 
+        private const string CapturesColumnKey = "Captures";
+
+        private static bool IsFriendSurface(GridSurface surface)
+        {
+            return surface == GridSurface.FriendsOverview ||
+                   surface == GridSurface.FriendsOverviewSelectedFriend ||
+                   surface == GridSurface.ViewFriendsAchievements ||
+                   surface == GridSurface.ViewFriendsAchievementsSelectedFriend ||
+                   surface == GridSurface.FriendsOverviewCategory ||
+                   surface == GridSurface.ViewFriendsAchievementsCategory;
+        }
+
         // Keep the friend columns out of every grid except Friends Overview: collapse them so
         // they never render and exclude them from the column visibility menu so they cannot be toggled on.
         private void ApplyFriendColumnRestrictions()
@@ -1367,6 +1528,15 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             var surface = ResolveSurface();
+
+            // Captures are the user's own screenshots and clips of their own unlocks; a friend's
+            // game row has none to open, so the column is dropped from every friend surface.
+            if (IsFriendSurface(surface))
+            {
+                _columnPersistence.ForcedCollapsedKeys.Add(CapturesColumnKey);
+                _columnPersistence.ExcludedVisibilityKeys.Add(CapturesColumnKey);
+            }
+
             if (surface == GridSurface.FriendsOverview || surface == GridSurface.ViewFriendsAchievements)
             {
                 foreach (var key in AggregateFriendExcludedColumnKeys)
@@ -1422,6 +1592,7 @@ namespace PlayniteAchievements.Views.Controls
                 e.PropertyName.EndsWith(nameof(GameSummaryGridOptions.ColorRarityColumnsByRarity), StringComparison.Ordinal))
             {
                 UpdateColorRarityColumnsByRarity(PlayniteAchievementsPlugin.Instance?.Settings);
+                UpdatePreferTrophyBadges(PlayniteAchievementsPlugin.Instance?.Settings);
             }
 
             // Matches the per-surface flat compatibility names for both the game-summary and
@@ -1448,6 +1619,16 @@ namespace PlayniteAchievements.Views.Controls
             {
                 LastPlayedDateMode = surfaceSettings.GetLastPlayedDateMode();
             }
+        }
+
+        /// <summary>
+        /// The global choice of which badges the progress footer shows. Trophy data used to
+        /// take over from rarity with nothing exposed to turn it off.
+        /// </summary>
+        private void UpdatePreferTrophyBadges(PlayniteAchievementsSettings settings)
+        {
+            PreferTrophyBadges =
+                settings?.Persisted?.ProgressBadgeSource != ProgressBadgeSource.Rarity;
         }
 
         private void UpdateColorRarityColumnsByRarity(PlayniteAchievementsSettings settings)
@@ -1538,6 +1719,15 @@ namespace PlayniteAchievements.Views.Controls
             control.UpdateColorRarityColumnsByRarity(settings);
             control.UpdateShowNameAboveProgress(settings);
             control.UpdateShowRarityBadgesBelowProgress(settings);
+            if (!control._isAttached && control._columnPersistence != null)
+            {
+                // The surface restrictions were resolved for the previous key; a pre-attach
+                // service is cheap to rebuild for the new one.
+                control._columnPersistence.Dispose();
+                control._columnPersistence = null;
+            }
+
+            control.PrepareColumnsForFirstMeasure();
         }
 
         private static bool IsLegacyImageColumnRuntimeDefaultWidth(string key, double width)
@@ -1845,6 +2035,13 @@ namespace PlayniteAchievements.Views.Controls
                 _subscribedShowcaseOptions.PropertyChanged -= OnShowcaseOptionsChanged;
                 _subscribedShowcaseOptions = null;
             }
+
+            if (_watchedRows != null)
+            {
+                _watchedRows.CollectionChanged -= OnRowsCollectionChanged;
+                _watchedRows = null;
+            }
+
             RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GameSummariesGrid, null);
             DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(GameSummariesGrid, null);

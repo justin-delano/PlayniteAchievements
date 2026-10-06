@@ -49,7 +49,7 @@ namespace PlayniteAchievements.Tests.Models
             };
             instance.SetOption("RangeDays", days);
 
-            Assert.AreEqual(expected, ShowcaseTimelineOptions.GetRange(instance));
+            Assert.AreEqual(TimeWindow.FromPreset(expected), ShowcaseTimelineOptions.GetWindow(instance));
         }
 
         [TestMethod]
@@ -61,10 +61,51 @@ namespace PlayniteAchievements.Tests.Models
             };
             instance.SetOption("RangeDays", 30);
 
-            ShowcaseTimelineOptions.SetRange(instance, TimelineRange.OneYear);
+            ShowcaseTimelineOptions.SetWindow(instance, TimeWindow.FromPreset(TimelineRange.OneYear));
 
-            Assert.AreEqual(TimelineRange.OneYear, ShowcaseTimelineOptions.GetRange(instance));
+            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), ShowcaseTimelineOptions.GetWindow(instance));
             Assert.IsFalse(instance.Options.ContainsKey("RangeDays"));
+        }
+
+        [TestMethod]
+        public void TimeWindow_ReadsLegacyPresetNameAndRoundTripsCustomRanges()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Timeline };
+            instance.Options["TimelineRange"] = "OneYear";
+            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), ShowcaseTimelineOptions.GetWindow(instance));
+
+            var custom = TimeWindow.Custom(new System.DateTime(2024, 1, 1), null);
+            instance.SetOption("RangeDays", 30);
+            ShowcaseTimelineOptions.SetWindow(instance, custom);
+
+            Assert.AreEqual(custom, ShowcaseTimelineOptions.GetWindow(instance));
+            Assert.AreEqual("Custom:2024-01-01..", instance.Options["TimelineRange"]);
+            Assert.IsFalse(instance.Options.ContainsKey("RangeDays"));
+        }
+
+        [TestMethod]
+        public void TimelineGranularity_DefaultsToAutoAndPersists()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Timeline };
+            Assert.AreEqual(TimelineGranularity.Auto, ShowcaseTimelineOptions.GetGranularity(instance));
+
+            ShowcaseTimelineOptions.SetGranularity(instance, TimelineGranularity.Week);
+
+            Assert.AreEqual(TimelineGranularity.Week, ShowcaseTimelineOptions.GetGranularity(instance));
+        }
+
+        [TestMethod]
+        public void LastPlayedTimeWindow_DefaultsToOneMonthAndAcceptsCustomRanges()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.IconMosaic };
+            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneMonth), ShowcaseWidgetOptions.GetLastPlayedTimeWindow(instance));
+
+            ShowcaseWidgetOptions.SetLastPlayedTimeWindow(instance, TimeWindow.FromPreset(TimelineRange.All));
+            Assert.AreEqual(TimeWindow.All, ShowcaseWidgetOptions.GetLastPlayedTimeWindow(instance));
+
+            var custom = TimeWindow.Custom(new System.DateTime(2025, 3, 1), new System.DateTime(2025, 3, 31));
+            ShowcaseWidgetOptions.SetLastPlayedTimeWindow(instance, custom);
+            Assert.AreEqual(custom, ShowcaseWidgetOptions.GetLastPlayedTimeWindow(instance));
         }
 
         [TestMethod]
@@ -76,7 +117,16 @@ namespace PlayniteAchievements.Tests.Models
             instance.SetOption("Count", -5);
             instance.SetOption("IntervalSeconds", 1000);
 
+            instance.SetOption("ScoreHistory", 999);
+
             Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(instance));
+            // A layout saved before the option existed, or with a junk value, keeps both charts.
+            Assert.AreEqual(
+                ShowcaseScoreHistoryMode.Dual,
+                ShowcaseWidgetOptions.GetScoreHistoryMode(new ShowcaseWidgetInstanceSettings()));
+            Assert.AreEqual(
+                ShowcaseScoreHistoryMode.Dual,
+                ShowcaseWidgetOptions.GetScoreHistoryMode(instance));
             Assert.AreEqual(25, ShowcaseWidgetOptions.GetTopN(instance));
             Assert.AreEqual(1, ShowcaseWidgetOptions.GetMosaicCount(instance));
             Assert.AreEqual(300, ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(instance));
@@ -120,10 +170,13 @@ namespace PlayniteAchievements.Tests.Models
 
             var scores = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.Scores);
             Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(scores));
-            Assert.AreEqual(TimelineRange.ThreeMonths, ShowcaseTimelineOptions.GetRange(scores));
+            Assert.AreEqual(
+                ShowcaseScoreHistoryMode.Dual,
+                ShowcaseWidgetOptions.GetScoreHistoryMode(scores));
+            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.ThreeMonths), ShowcaseTimelineOptions.GetWindow(scores));
 
             var calendar = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.ActivityCalendar);
-            Assert.AreEqual(TimelineRange.OneYear, ShowcaseTimelineOptions.GetRange(calendar));
+            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), ShowcaseTimelineOptions.GetWindow(calendar));
             Assert.IsTrue(ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.ActivityCalendar).AllowMultipleInstances);
         }
 
@@ -293,9 +346,31 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(ShowcaseScreenshotVariant.All,
                 ShowcaseWidgetOptions.GetScreenshotVariant(instance));
             Assert.AreEqual(8, ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(instance));
-            Assert.AreEqual(ShowcaseImageFitMode.Fill,
+            Assert.AreEqual(ShowcaseImageFitMode.Fit,
                 ShowcaseWidgetOptions.GetImageFitMode(instance));
             Assert.IsTrue(ShowcaseWidgetOptions.GetShuffle(instance));
+            Assert.AreEqual(ShowcaseInfoPanelPosition.Off,
+                ShowcaseWidgetOptions.GetInfoPanelPosition(instance));
+        }
+
+        [TestMethod]
+        public void WidgetOptions_InfoPanelDefaultsOffAndRejectsJunk()
+        {
+            // A layout saved before the option existed shows the image alone.
+            Assert.AreEqual(
+                ShowcaseInfoPanelPosition.Off,
+                ShowcaseWidgetOptions.GetInfoPanelPosition(new ShowcaseWidgetInstanceSettings()));
+
+            var instance = new ShowcaseWidgetInstanceSettings();
+            instance.SetOption("InfoPanel", 999);
+            Assert.AreEqual(
+                ShowcaseInfoPanelPosition.Off,
+                ShowcaseWidgetOptions.GetInfoPanelPosition(instance));
+
+            ShowcaseWidgetOptions.SetInfoPanelPosition(instance, ShowcaseInfoPanelPosition.Right);
+            Assert.AreEqual(
+                ShowcaseInfoPanelPosition.Right,
+                ShowcaseWidgetOptions.GetInfoPanelPosition(instance));
         }
     }
 }

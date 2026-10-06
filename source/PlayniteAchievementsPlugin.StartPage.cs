@@ -30,6 +30,10 @@ namespace PlayniteAchievements
         private System.Threading.Timer _startPageInvalidateTimer;
         private const int StartPageInvalidateDelayMs = 2000;
 
+        private readonly object _retentionDiagnosticsSync = new object();
+        private System.Threading.Timer _retentionDiagnosticsTimer;
+        private string _pendingRetentionPoint;
+
         public StartPageExtensionArgs GetAvailableStartPageViews()
         {
             EnsureAchievementResourcesLoaded();
@@ -99,9 +103,36 @@ namespace PlayniteAchievements
                 viewId,
                 instanceId,
                 definition.ShowcaseWidgetKind.Value);
-            return new ShowcaseWidgetOptionsControl(
+            if (settings.Kind != ShowcaseWidgetKind.Profile)
+            {
+                return new ShowcaseWidgetOptionsControl(
+                    settings,
+                    PersistSettingsForUi);
+            }
+
+            // The profile card's identity (name, avatar, links) sits above its display options,
+            // as in the Showcase widget dialog; both persist on each edit.
+            var profile = settings.Profile ?? (settings.Profile = new ShowcaseProfileSettings());
+            var panel = new StackPanel { Margin = new Thickness(16) };
+            panel.Children.Add(new ShowcaseProfileSettingsEditor(profile, () =>
+            {
+                PersistSettingsForUi();
+                ShowcaseConfigurationEvents.RaiseChanged();
+            }));
+            panel.Children.Add(new ShowcaseWidgetOptionsControl(
                 settings,
-                PersistSettingsForUi);
+                PersistSettingsForUi,
+                margin: new Thickness(0),
+                loadStyles: false));
+            var host = new UserControl { Content = panel };
+            host.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri(
+                    "pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml",
+                    UriKind.Absolute)
+            });
+            Common.FormattingCulture.Apply(host);
+            return host;
         }
 
         public void OnViewRemoved(string viewId, Guid instanceId)
@@ -123,12 +154,18 @@ namespace PlayniteAchievements
             DependencyObject menuSource)
         {
             var menu = BuildStartPageBaseRowContextMenu(data, resourceOwner);
-            AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
+            var appendedAchievementOptions = AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
                 menu,
                 data,
                 resourceOwner,
                 onChanged,
                 menuSource);
+            if (!appendedAchievementOptions)
+            {
+                // Game rows get no achievement options, which is where display settings are
+                // appended for achievement rows; add the entry here so every grid row has it.
+                GridDisplaySettingsMenuBuilder.Append(menu, resourceOwner, menuSource);
+            }
 
             return menu.Items.Count > 0 ? menu : null;
         }
@@ -213,23 +250,63 @@ namespace PlayniteAchievements
         /// </summary>
         internal void ScheduleRetentionDiagnostics(string point, int delaySeconds)
         {
-            if (!Common.MemoryDiagnostics.Enabled)
+            // RetentionReportEnabled, not Enabled: this schedules two blocking gen2 collections
+            // plus a full cache-and-LeakWatch census, so a timing-only build must not arm it.
+            if (!Common.MemoryDiagnostics.RetentionReportEnabled)
             {
                 return;
             }
 
-            Task.Run(async () =>
+            // Trailing-edge coalescer, the same shape as ScheduleStartPageInvalidate. This is
+            // scheduled off every cache invalidation, and a burst of them -- one per custom-data
+            // edit -- used to queue one independent delayed task each, so the forced collections
+            // arrived as a storm one delay later. Collapsing the burst into a single report is
+            // what the report wanted anyway: it measures the resting state after things settle.
+            var delayMs = Math.Max(1, delaySeconds) * 1000;
+            lock (_retentionDiagnosticsSync)
             {
-                try
+                // Last writer wins. When a deliberate one-shot point ("manage.closed",
+                // "overview.closed") collides with a refresh.settled burst, that point is the
+                // later and more interesting event, so naming the report after it is correct.
+                _pendingRetentionPoint = point;
+
+                if (_retentionDiagnosticsTimer == null)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds))).ConfigureAwait(false);
-                    LogRetentionDiagnostics(point);
+                    _retentionDiagnosticsTimer = new System.Threading.Timer(
+                        _ => FlushRetentionDiagnostics(),
+                        null,
+                        delayMs,
+                        System.Threading.Timeout.Infinite);
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger?.Debug(ex, "Retention diagnostics failed.");
+                    _retentionDiagnosticsTimer.Change(delayMs, System.Threading.Timeout.Infinite);
                 }
-            });
+            }
+        }
+
+        private void FlushRetentionDiagnostics()
+        {
+            string point;
+            lock (_retentionDiagnosticsSync)
+            {
+                point = _pendingRetentionPoint;
+                _pendingRetentionPoint = null;
+            }
+
+            if (point == null)
+            {
+                return;
+            }
+
+            try
+            {
+                LogRetentionDiagnostics(point);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Retention diagnostics failed.");
+            }
         }
 
         private void LogRetentionDiagnostics(string point)
@@ -321,12 +398,35 @@ namespace PlayniteAchievements
                 detail.Append(
                     "appearanceSubs=" +
                     Models.Achievements.RarityAppearanceHelper.AppearanceChangedSubscriberCount + " ");
+                // Broken down by owning type: these handlers are instance methods on visual
+                // elements, so a stranded one roots its whole ancestor chain and DataContext. The
+                // count alone cannot say which type to go and look at.
+                detail.Append(
+                    "appearanceSubsBy=" +
+                    Models.Achievements.RarityAppearanceHelper.DescribeAppearanceChangedSubscribers() + " ");
                 detail.Append(
                     "raySubs=" + Views.Helpers.RayAnimationDriver.SubscriberCount + " ");
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "Failed to read appearance subscriber count.");
+            }
+
+            // What each live surface is holding, reported by the surface itself. The caches above
+            // are the ones this file can reach; a reported session grew the managed heap by
+            // 790 MB with every one of them flat, so the surfaces that could not be reached were
+            // exactly where the retained memory had to be.
+            try
+            {
+                var probes = Common.RetentionProbes.Describe();
+                if (!string.IsNullOrWhiteSpace(probes))
+                {
+                    detail.Append(probes + " ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to read retention probes.");
             }
 
             // Live instance counts come last: they are the discriminator when every cache
@@ -391,6 +491,13 @@ namespace PlayniteAchievements
             {
                 _startPageInvalidateTimer?.Dispose();
                 _startPageInvalidateTimer = null;
+            }
+
+            lock (_retentionDiagnosticsSync)
+            {
+                _retentionDiagnosticsTimer?.Dispose();
+                _retentionDiagnosticsTimer = null;
+                _pendingRetentionPoint = null;
             }
 
             try
@@ -505,33 +612,17 @@ namespace PlayniteAchievements
             var game = PlayniteApi?.Database?.Games?.Get(gameId);
             if (game != null)
             {
-                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ClearData",
-                    () => ClearSingleGameData(game)));
-
-                var excludedFromSummaries = IsGameExcludedFromSummaries(gameId);
-                menu.Items.Add(CreateStartPageMenuItem(
+                // Same Maintenance grouping as the Overview's game rows.
+                menu.Items.Add(GameRowContextMenuBuilder.CreateMaintenanceMenu(
                     resourceOwner,
-                    excludedFromSummaries
-                        ? "LOCPlayAch_Common_Action_IncludeInSummaries"
-                        : "LOCPlayAch_Common_Action_ExcludeFromSummaries",
-                    () => ToggleExcludedFromSummaries(new[] { game })));
-
-                var excludedFromRefreshes = IsGameExcluded(gameId);
-                menu.Items.Add(CreateStartPageMenuItem(
-                    resourceOwner,
-                    excludedFromRefreshes
-                        ? "LOCPlayAch_Menu_IncludeInRefreshes"
-                        : "LOCPlayAch_Menu_ExcludeFromRefreshes",
+                    IsGameExcludedFromSummaries(gameId),
+                    IsGameExcluded(gameId),
+                    () => ClearSingleGameData(game),
+                    () => ToggleExcludedFromSummaries(new[] { game }),
                     () => ToggleExcludedFromRefreshes(
                         new[] { game },
                         clearDataWhenExcluding: false,
-                        confirmWhenClearingData: false)));
-
-                menu.Items.Add(CreateStartPageMenuItem(
-                    resourceOwner,
-                    excludedFromRefreshes
-                        ? "LOCPlayAch_Menu_IncludeInRefreshesAndRefresh"
-                        : "LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData",
+                        confirmWhenClearingData: false),
                     () => ToggleExcludedFromRefreshesAndRefresh(new[] { game })));
             }
         }
@@ -541,7 +632,7 @@ namespace PlayniteAchievements
             return GameRowContextMenuBuilder.CreateOpenMenu(
                 resourceOwner,
                 gameId,
-                () => OpenStartPageGameInLibrary(gameId),
+                () => OpenGameInLibrary(gameId),
                 PlayniteApi,
                 _logger);
         }
@@ -561,7 +652,8 @@ namespace PlayniteAchievements
             return item;
         }
 
-        private void OpenStartPageGameInLibrary(Guid gameId)
+        /// <summary>Restores the main window and selects the game in the library view.</summary>
+        internal void OpenGameInLibrary(Guid gameId)
         {
             if (gameId == Guid.Empty)
             {

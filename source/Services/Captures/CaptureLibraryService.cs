@@ -438,7 +438,10 @@ namespace PlayniteAchievements.Services.Captures
 
         private void CaptureFileChanged(object sender, FileSystemEventArgs e)
         {
-            if (!IsCaptureFile(e?.FullPath) || IsReservedTestCapture(sender, e?.FullPath))
+            // A rename away from the capture shape still removes a capture, so either end counts.
+            var isCapture = IsCaptureFile(e?.FullPath) ||
+                (e is RenamedEventArgs renamed && IsCaptureFile(renamed.OldFullPath));
+            if (!isCapture || IsReservedTestCapture(sender, e?.FullPath))
             {
                 return;
             }
@@ -522,10 +525,14 @@ namespace PlayniteAchievements.Services.Captures
 
                 using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
+                    // None, not OnLoad: the dimensions below come from the header, so decoding the
+                    // pixels would buy nothing. The validation cache is per-session, so on a cold
+                    // start this runs over every capture in the library before the first slide can
+                    // be shown, and OnLoad made that a full decode of each one.
                     var decoder = BitmapDecoder.Create(
                         stream,
                         BitmapCreateOptions.PreservePixelFormat,
-                        BitmapCacheOption.OnLoad);
+                        BitmapCacheOption.None);
                     var readable = decoder.Frames.Count > 0 &&
                         decoder.Frames[0].PixelWidth > 0 &&
                         decoder.Frames[0].PixelHeight > 0;
@@ -620,12 +627,10 @@ namespace PlayniteAchievements.Services.Captures
                 .Any(IsCaptureFile);
         }
 
-        private static bool IsCaptureFile(string path)
-        {
-            var ext = Path.GetExtension(path);
-            return string.Equals(ext, ".png", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(ext, ".mp4", StringComparison.OrdinalIgnoreCase);
-        }
+        // Same shape test the scan applies, so a folder or watcher event holding only other tools'
+        // screenshots never reads as a capture.
+        private static bool IsCaptureFile(string path) =>
+            CaptureFileNameParser.HasCaptureSignature(path);
 
         private static bool IsReservedTestCapture(object sender, string path)
         {

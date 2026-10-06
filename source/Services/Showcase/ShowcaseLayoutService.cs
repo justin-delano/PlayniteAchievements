@@ -6,22 +6,25 @@ using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.Showcase
 {
-    public static class ShowcaseLayoutService
+    public static partial class ShowcaseLayoutService
     {
-        /// <summary>The default (and minimum) page grid dimension; pages are always created 3x3.</summary>
-        public const int GridSize = 3;
+        /// <summary>The fewest rows or columns a page can have.</summary>
+        public const int MinTrackCount = 1;
 
-        /// <summary>The finest page grid the editor offers.</summary>
-        public const int MaxGridSize = 5;
+        /// <summary>The most rows or columns a page can have.</summary>
+        public const int MaxTrackCount = 10;
 
-        /// <summary>Clamps a persisted page grid dimension into [GridSize, MaxGridSize].</summary>
-        public static int NormalizeGridSize(int gridSize)
+        /// <summary>Rows and columns of a new page, and of a persisted page that records neither.</summary>
+        public const int DefaultTrackCount = 5;
+
+        /// <summary>Clamps a persisted row or column count into [MinTrackCount, MaxTrackCount].</summary>
+        public static int NormalizeTrackCount(int count)
         {
-            return Math.Max(GridSize, Math.Min(MaxGridSize, gridSize));
+            return Math.Max(MinTrackCount, Math.Min(MaxTrackCount, count));
         }
 
         /// <summary>Track weight bounds: no row or column can collapse or dominate the page.</summary>
-        public const double MinTrackWeight = 0.4;
+        public const double MinTrackWeight = 0.05;
         public const double MaxTrackWeight = 3.0;
 
         /// <summary>
@@ -31,11 +34,11 @@ namespace PlayniteAchievements.Services.Showcase
         /// </summary>
         public static double[] NormalizeTrackWeights(
             IReadOnlyList<double> weights,
-            int gridSize = GridSize)
+            int count)
         {
-            gridSize = NormalizeGridSize(gridSize);
-            var result = new double[gridSize];
-            for (var index = 0; index < gridSize; index++)
+            count = NormalizeTrackCount(count);
+            var result = new double[count];
+            for (var index = 0; index < count; index++)
             {
                 var value = weights != null && index < weights.Count ? weights[index] : 1d;
                 if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
@@ -50,9 +53,9 @@ namespace PlayniteAchievements.Services.Showcase
         }
 
         /// <summary>Normalized copy of a persisted weight list; null stays null (equal shares).</summary>
-        private static List<double> NormalizeTrackWeightList(List<double> weights, int gridSize)
+        private static List<double> NormalizeTrackWeightList(List<double> weights, int count)
         {
-            return weights == null ? null : new List<double>(NormalizeTrackWeights(weights, gridSize));
+            return weights == null ? null : new List<double>(NormalizeTrackWeights(weights, count));
         }
 
         public static ShowcaseSettings CreateDefault(
@@ -139,10 +142,16 @@ namespace PlayniteAchievements.Services.Showcase
             return true;
         }
 
+        /// <summary>
+        /// Inserts a copy of the page after it. Widgets are cloned under new instance ids and
+        /// keep their pin collection; with <paramref name="gridOptions"/>, grid widgets also keep
+        /// their column settings.
+        /// </summary>
         public static ShowcasePageSettings DuplicatePage(
             ShowcaseSettings settings,
             string pageId,
-            string copySuffix = null)
+            string copySuffix = null,
+            GridOptionsCatalog gridOptions = null)
         {
             Normalize(settings);
             var source = FindPage(settings, pageId);
@@ -151,14 +160,88 @@ namespace PlayniteAchievements.Services.Showcase
                 return null;
             }
 
-            var duplicate = source.Clone();
-            duplicate.PageId = NewId();
-            duplicate.Name = MakeUniquePageName(
+            return InsertPageCopy(
                 settings,
-                $"{source.Name} {(string.IsNullOrWhiteSpace(copySuffix) ? "Copy" : copySuffix.Trim())}");
+                source,
+                $"{source.Name} {(string.IsNullOrWhiteSpace(copySuffix) ? "Copy" : copySuffix.Trim())}",
+                widgetInstanceId => FindWidget(settings, widgetInstanceId),
+                settings.Pages.IndexOf(source) + 1,
+                (sourceWidget, copy) => ShowcaseGridSurfaces.CopySurface(gridOptions, sourceWidget, copy));
+        }
+
+        /// <summary>
+        /// Inserts a page that came from outside this layout (an imported file) after
+        /// <paramref name="insertAfterPageId"/>, or last when that page is not found. Every id is
+        /// regenerated so the page never collides with existing ones, widgets of unknown kinds
+        /// are dropped (their blocks stay empty), and pin-capable widgets point at this layout's
+        /// default collections. <paramref name="onWidgetImported"/> receives each source widget
+        /// with its imported copy so callers can carry per-instance data across the id change.
+        /// </summary>
+        public static ShowcasePageSettings ImportPage(
+            ShowcaseSettings settings,
+            ShowcasePageSettings page,
+            IEnumerable<ShowcaseWidgetInstanceSettings> widgets,
+            string insertAfterPageId = null,
+            Action<ShowcaseWidgetInstanceSettings, ShowcaseWidgetInstanceSettings> onWidgetImported = null)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            if (page == null)
+            {
+                return null;
+            }
+
+            Normalize(settings);
+            var sourceWidgets = new Dictionary<string, ShowcaseWidgetInstanceSettings>(
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var widget in widgets ?? Array.Empty<ShowcaseWidgetInstanceSettings>())
+            {
+                if (widget != null &&
+                    !string.IsNullOrWhiteSpace(widget.InstanceId) &&
+                    Enum.IsDefined(typeof(ShowcaseWidgetKind), widget.Kind) &&
+                    !sourceWidgets.ContainsKey(widget.InstanceId.Trim()))
+                {
+                    sourceWidgets[widget.InstanceId.Trim()] = widget;
+                }
+            }
+
+            var anchor = FindPage(settings, insertAfterPageId);
+            return InsertPageCopy(
+                settings,
+                page,
+                page.Name,
+                widgetInstanceId => sourceWidgets.TryGetValue(widgetInstanceId.Trim(), out var widget)
+                    ? widget
+                    : null,
+                anchor == null ? settings.Pages.Count : settings.Pages.IndexOf(anchor) + 1,
+                (sourceWidget, copy) =>
+                {
+                    ShowcaseWidgetOptions.SetPinCollectionId(copy, null);
+                    SeedPinCollectionSelection(settings, copy);
+                    onWidgetImported?.Invoke(sourceWidget, copy);
+                });
+        }
+
+        // Clones the page and every widget its blocks reference under fresh ids. A widget that
+        // fills several blocks is cloned once; blocks whose widget cannot be resolved are left
+        // empty.
+        private static ShowcasePageSettings InsertPageCopy(
+            ShowcaseSettings settings,
+            ShowcasePageSettings source,
+            string preferredName,
+            Func<string, ShowcaseWidgetInstanceSettings> resolveWidget,
+            int insertIndex,
+            Action<ShowcaseWidgetInstanceSettings, ShowcaseWidgetInstanceSettings> onWidgetCopied)
+        {
+            var copy = source.Clone();
+            copy.PageId = NewId();
+            copy.Name = MakeUniquePageName(settings, preferredName);
 
             var widgetIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var block in duplicate.Blocks)
+            foreach (var block in copy.Blocks)
             {
                 block.BlockId = NewId();
                 if (string.IsNullOrWhiteSpace(block.WidgetInstanceId))
@@ -168,7 +251,7 @@ namespace PlayniteAchievements.Services.Showcase
 
                 if (!widgetIdMap.TryGetValue(block.WidgetInstanceId, out var newWidgetId))
                 {
-                    var sourceWidget = FindWidget(settings, block.WidgetInstanceId);
+                    var sourceWidget = resolveWidget(block.WidgetInstanceId);
                     if (sourceWidget == null)
                     {
                         block.WidgetInstanceId = null;
@@ -179,15 +262,15 @@ namespace PlayniteAchievements.Services.Showcase
                     widgetCopy.InstanceId = newWidgetId = NewId();
                     settings.WidgetInstances.Add(widgetCopy);
                     widgetIdMap[block.WidgetInstanceId] = newWidgetId;
+                    onWidgetCopied?.Invoke(sourceWidget, widgetCopy);
                 }
 
                 block.WidgetInstanceId = newWidgetId;
             }
 
-            var sourceIndex = settings.Pages.IndexOf(source);
-            settings.Pages.Insert(Math.Min(settings.Pages.Count, sourceIndex + 1), duplicate);
-            settings.LastSelectedPageId = duplicate.PageId;
-            return duplicate;
+            settings.Pages.Insert(Math.Max(0, Math.Min(settings.Pages.Count, insertIndex)), copy);
+            settings.LastSelectedPageId = copy.PageId;
+            return copy;
         }
 
         public static bool DeletePage(ShowcaseSettings settings, string pageId)
@@ -474,7 +557,7 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             SortBlocks(page);
-            return IsValidPartition(page.Blocks, page.GridSize);
+            return IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount);
         }
 
         public static bool PlaceWidget(
@@ -654,6 +737,7 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             settings.LayoutVersion = ShowcaseSettings.CurrentLayoutVersion;
+            MigrateLegacyProfile(settings);
             settings.WidgetInstances = NormalizeWidgets(settings.WidgetInstances);
             var widgetIds = new HashSet<string>(
                 settings.WidgetInstances.Select(widget => widget.InstanceId),
@@ -685,10 +769,10 @@ namespace PlayniteAchievements.Services.Showcase
                 page.Name = string.IsNullOrWhiteSpace(page.Name)
                     ? $"Page {pageIndex + 1}"
                     : page.Name.Trim();
-                page.GridSize = NormalizeGridSize(page.GridSize);
-                page.Blocks = NormalizeBlocks(page.Blocks, blockIds, page.GridSize);
-                page.RowWeights = NormalizeTrackWeightList(page.RowWeights, page.GridSize);
-                page.ColumnWeights = NormalizeTrackWeightList(page.ColumnWeights, page.GridSize);
+                NormalizeTrackCounts(page);
+                page.Blocks = NormalizeBlocks(page.Blocks, blockIds, page.RowCount, page.ColumnCount);
+                page.RowWeights = NormalizeTrackWeightList(page.RowWeights, page.RowCount);
+                page.ColumnWeights = NormalizeTrackWeightList(page.ColumnWeights, page.ColumnCount);
 
                 var singletonKinds = new HashSet<ShowcaseWidgetKind>();
                 foreach (var block in page.Blocks)
@@ -732,16 +816,61 @@ namespace PlayniteAchievements.Services.Showcase
             settings.GamePinCollections = NormalizeGameCollections(
                 settings.GamePinCollections,
                 settings.DefaultGamePinCollectionId);
-            settings.Profile = settings.Profile ?? new ShowcaseProfileSettings();
             settings.StartPageInstances = NormalizeStartPageInstances(settings.StartPageInstances);
+        }
+
+        // Profile data used to live once on the layout; it now lives on each profile widget.
+        // A layout saved by an older version still carries the shared object, which seeds every
+        // profile widget that has none of its own, then goes away so it can never reseed a card
+        // the user has since edited.
+        private static void MigrateLegacyProfile(ShowcaseSettings settings)
+        {
+            var legacy = settings.Profile;
+            if (legacy == null)
+            {
+                return;
+            }
+
+            var widgets = (settings.WidgetInstances ?? new List<ShowcaseWidgetInstanceSettings>())
+                .Concat(settings.StartPageInstances?.Values ?? Enumerable.Empty<ShowcaseWidgetInstanceSettings>());
+            foreach (var widget in widgets)
+            {
+                if (widget != null && widget.Kind == ShowcaseWidgetKind.Profile && widget.Profile == null)
+                {
+                    widget.Profile = legacy.Clone();
+                }
+            }
+
+            settings.Profile = null;
+        }
+
+        // Pages used to be square, recording one GridSize for both axes. An unset count takes
+        // that legacy value (or the default when the page records neither), and the legacy
+        // field then goes away so it can never override a count the user has since changed.
+        private static void NormalizeTrackCounts(ShowcasePageSettings page)
+        {
+            var legacy = page.GridSize ?? DefaultTrackCount;
+            page.RowCount = NormalizeTrackCount(page.RowCount > 0 ? page.RowCount : legacy);
+            page.ColumnCount = NormalizeTrackCount(page.ColumnCount > 0 ? page.ColumnCount : legacy);
+            page.GridSize = null;
+        }
+
+        // A profile widget always carries a profile object; no other kind carries one.
+        private static void NormalizeProfile(ShowcaseWidgetInstanceSettings widget)
+        {
+            widget.Profile = widget.Kind == ShowcaseWidgetKind.Profile
+                ? widget.Profile ?? new ShowcaseProfileSettings()
+                : null;
         }
 
         public static bool IsValidPartition(
             IEnumerable<ShowcaseBlockSettings> blocks,
-            int gridSize = GridSize)
+            int rows,
+            int columns)
         {
-            gridSize = NormalizeGridSize(gridSize);
-            var cells = new bool[gridSize, gridSize];
+            rows = NormalizeTrackCount(rows);
+            columns = NormalizeTrackCount(columns);
+            var cells = new bool[rows, columns];
             if (blocks == null)
             {
                 return false;
@@ -749,7 +878,7 @@ namespace PlayniteAchievements.Services.Showcase
 
             foreach (var block in blocks)
             {
-                if (!IsValidBlock(block, gridSize))
+                if (!IsValidBlock(block, rows, columns))
                 {
                     return false;
                 }
@@ -768,9 +897,9 @@ namespace PlayniteAchievements.Services.Showcase
                 }
             }
 
-            for (var row = 0; row < gridSize; row++)
+            for (var row = 0; row < rows; row++)
             {
-                for (var column = 0; column < gridSize; column++)
+                for (var column = 0; column < columns; column++)
                 {
                     if (!cells[row, column])
                     {
@@ -794,7 +923,8 @@ namespace PlayniteAchievements.Services.Showcase
                 Name = MakeUniquePageName(
                     settings,
                     string.IsNullOrWhiteSpace(name) ? GetDefaultPageName(template) : name.Trim()),
-                GridSize = MaxGridSize
+                RowCount = DefaultTrackCount,
+                ColumnCount = DefaultTrackCount
             };
 
             // Templates are authored directly on the 5x5 lattice with equal tracks (null
@@ -834,6 +964,8 @@ namespace PlayniteAchievements.Services.Showcase
                     AddBlock(settings, page, 2, 3, 1, 2, ShowcaseWidgetKind.Statistics);
                     AddBlock(settings, page, 3, 3, 2, 2, ShowcaseWidgetKind.Pie);
                     break;
+                // The add-page presets below draw only on library data, never on pin
+                // collections, so a new page is full on its first open.
                 case ShowcasePageTemplate.Collection:
                     AddBlock(
                         settings,
@@ -845,7 +977,7 @@ namespace PlayniteAchievements.Services.Showcase
                         ShowcaseWidgetKind.RecentAchievements,
                         widget => ShowcaseWidgetOptions.SetAchievementGridSource(
                             widget,
-                            ShowcaseAchievementGridSource.Pinned));
+                            ShowcaseAchievementGridSource.All));
                     AddBlock(
                         settings,
                         page,
@@ -856,7 +988,7 @@ namespace PlayniteAchievements.Services.Showcase
                         ShowcaseWidgetKind.GameSummaries,
                         widget => ShowcaseWidgetOptions.SetGameGridSource(
                             widget,
-                            ShowcaseGameGridSource.Pinned));
+                            ShowcaseGameGridSource.Library));
                     AddBlock(
                         settings,
                         page,
@@ -865,14 +997,90 @@ namespace PlayniteAchievements.Services.Showcase
                         2,
                         5,
                         ShowcaseWidgetKind.IconMosaic,
-                        widget => ShowcaseWidgetOptions.SetMosaicContent(
+                        widget => ConfigureGameMosaic(widget, ShowcaseGameMosaicSource.All));
+                    break;
+                case ShowcasePageTemplate.UpNext:
+                    AddBlock(
+                        settings,
+                        page,
+                        0,
+                        0,
+                        3,
+                        3,
+                        ShowcaseWidgetKind.RecentAchievements,
+                        widget => ShowcaseWidgetOptions.SetAchievementGridSource(
                             widget,
-                            ShowcaseMosaicContent.Games));
+                            ShowcaseAchievementGridSource.UnlockNext));
+                    AddBlock(
+                        settings,
+                        page,
+                        0,
+                        3,
+                        3,
+                        2,
+                        ShowcaseWidgetKind.GameSummaries,
+                        widget => ShowcaseWidgetOptions.SetGameGridSource(
+                            widget,
+                            ShowcaseGameGridSource.FinishNext));
+                    AddBlock(
+                        settings,
+                        page,
+                        3,
+                        0,
+                        2,
+                        3,
+                        ShowcaseWidgetKind.IconMosaic,
+                        widget => ConfigureAchievementMosaic(widget, ShowcaseMosaicSource.UnlockNext));
+                    AddBlock(settings, page, 3, 3, 2, 2, ShowcaseWidgetKind.Pie);
+                    break;
+                case ShowcasePageTemplate.TrophyCase:
+                    AddBlock(settings, page, 0, 0, 2, 3, ShowcaseWidgetKind.Profile);
+                    AddScoreBlock(settings, page, 0, 3, 2, 2, true, true);
+                    AddBlock(
+                        settings,
+                        page,
+                        2,
+                        0,
+                        3,
+                        3,
+                        ShowcaseWidgetKind.IconMosaic,
+                        widget => ConfigureAchievementMosaic(widget, ShowcaseMosaicSource.Rarest));
+                    AddBlock(
+                        settings,
+                        page,
+                        2,
+                        3,
+                        3,
+                        2,
+                        ShowcaseWidgetKind.Pie,
+                        widget => ShowcaseWidgetOptions.SetPieMode(widget, ShowcasePieMode.Rarity));
+                    break;
+                case ShowcasePageTemplate.Library:
+                    AddBlock(settings, page, 0, 0, 3, 3, ShowcaseWidgetKind.GameSummaries);
+                    AddBlock(
+                        settings,
+                        page,
+                        0,
+                        3,
+                        3,
+                        2,
+                        ShowcaseWidgetKind.IconMosaic,
+                        widget => ConfigureGameMosaic(widget, ShowcaseGameMosaicSource.All));
+                    AddBlock(
+                        settings,
+                        page,
+                        3,
+                        0,
+                        2,
+                        2,
+                        ShowcaseWidgetKind.Pie,
+                        widget => ShowcaseWidgetOptions.SetPieMode(widget, ShowcasePieMode.Provider));
+                    AddBlock(settings, page, 3, 2, 2, 3, ShowcaseWidgetKind.Statistics);
                     break;
                 default:
-                    for (var row = 0; row < MaxGridSize; row++)
+                    for (var row = 0; row < page.RowCount; row++)
                     {
-                        for (var column = 0; column < MaxGridSize; column++)
+                        for (var column = 0; column < page.ColumnCount; column++)
                         {
                             page.Blocks.Add(NewBlock(row, column, 1, 1, null));
                         }
@@ -883,6 +1091,28 @@ namespace PlayniteAchievements.Services.Showcase
 
             SortBlocks(page);
             return page;
+        }
+
+        // A preset's mosaics fill their block: the default count of 24 leaves most of a large
+        // block empty, and extra tiles past the block's area only scroll.
+        private const int PresetMosaicCount = 120;
+
+        private static void ConfigureAchievementMosaic(
+            ShowcaseWidgetInstanceSettings widget,
+            ShowcaseMosaicSource source)
+        {
+            ShowcaseWidgetOptions.SetMosaicContent(widget, ShowcaseMosaicContent.Achievements);
+            ShowcaseWidgetOptions.SetMosaicSource(widget, source);
+            ShowcaseWidgetOptions.SetMosaicCount(widget, PresetMosaicCount);
+        }
+
+        private static void ConfigureGameMosaic(
+            ShowcaseWidgetInstanceSettings widget,
+            ShowcaseGameMosaicSource source)
+        {
+            ShowcaseWidgetOptions.SetMosaicContent(widget, ShowcaseMosaicContent.Games);
+            ShowcaseWidgetOptions.SetGameMosaicSource(widget, source);
+            ShowcaseWidgetOptions.SetGameMosaicCount(widget, PresetMosaicCount);
         }
 
         private static void AddScoreBlock(
@@ -994,6 +1224,7 @@ namespace PlayniteAchievements.Services.Showcase
                 widget.Options = widget.Options != null
                     ? new Dictionary<string, string>(widget.Options, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                NormalizeProfile(widget);
                 result.Add(widget);
             }
 
@@ -1003,14 +1234,16 @@ namespace PlayniteAchievements.Services.Showcase
         private static List<ShowcaseBlockSettings> NormalizeBlocks(
             IEnumerable<ShowcaseBlockSettings> blocks,
             HashSet<string> blockIds,
-            int gridSize = GridSize)
+            int rows,
+            int columns)
         {
-            gridSize = NormalizeGridSize(gridSize);
+            rows = NormalizeTrackCount(rows);
+            columns = NormalizeTrackCount(columns);
             var result = new List<ShowcaseBlockSettings>();
-            var occupied = new bool[gridSize, gridSize];
+            var occupied = new bool[rows, columns];
             foreach (var block in blocks ?? Array.Empty<ShowcaseBlockSettings>())
             {
-                if (!IsValidBlock(block, gridSize) || Overlaps(occupied, block))
+                if (!IsValidBlock(block, rows, columns) || Overlaps(occupied, block))
                 {
                     continue;
                 }
@@ -1020,9 +1253,9 @@ namespace PlayniteAchievements.Services.Showcase
                 result.Add(block);
             }
 
-            for (var row = 0; row < gridSize; row++)
+            for (var row = 0; row < rows; row++)
             {
-                for (var column = 0; column < gridSize; column++)
+                for (var column = 0; column < columns; column++)
                 {
                     if (occupied[row, column])
                     {
@@ -1209,21 +1442,22 @@ namespace PlayniteAchievements.Services.Showcase
                 pair.Value.Options = pair.Value.Options != null
                     ? new Dictionary<string, string>(pair.Value.Options, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                NormalizeProfile(pair.Value);
                 result[pair.Key.Trim()] = pair.Value;
             }
 
             return result;
         }
 
-        private static bool IsValidBlock(ShowcaseBlockSettings block, int gridSize = GridSize)
+        private static bool IsValidBlock(ShowcaseBlockSettings block, int rows, int columns)
         {
             return block != null &&
                    block.Row >= 0 &&
                    block.Column >= 0 &&
                    block.RowSpan > 0 &&
                    block.ColumnSpan > 0 &&
-                   block.Row + block.RowSpan <= gridSize &&
-                   block.Column + block.ColumnSpan <= gridSize;
+                   block.Row + block.RowSpan <= rows &&
+                   block.Column + block.ColumnSpan <= columns;
         }
 
         private static IReadOnlyList<ShowcaseBlockSettings> GetMergeClosureCore(
@@ -1417,6 +1651,12 @@ namespace PlayniteAchievements.Services.Showcase
                     return "Analytics";
                 case ShowcasePageTemplate.Collection:
                     return "Collection";
+                case ShowcasePageTemplate.UpNext:
+                    return "Up Next";
+                case ShowcasePageTemplate.TrophyCase:
+                    return "Trophy Case";
+                case ShowcasePageTemplate.Library:
+                    return "Library";
                 case ShowcasePageTemplate.Blank:
                     return "New Page";
                 default:

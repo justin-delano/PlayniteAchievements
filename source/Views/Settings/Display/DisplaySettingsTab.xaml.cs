@@ -11,18 +11,19 @@ using PlayniteAchievements.Views.Settings.Navigation;
 namespace PlayniteAchievements.Views.Settings.Display
 {
     /// <summary>
-    /// Display settings tab: a grouped master-detail navigation over the Display sections, the
-    /// per-control theme pages, and the theme migration pages. Sections are created lazily when
-    /// first selected.
+    /// Display settings tab: a master-detail navigation over the Display sections. Sections are
+    /// created lazily when first selected. The per-control theme preview pages live on the Themes
+    /// tab; theme migration appears on both, driven by one shared controller.
     /// </summary>
     public partial class DisplaySettingsTab : UserControl, IDisposable
     {
         private ObservableCollection<SettingsNavigationItem> _navigationItems;
 
         private DisplayGeneralSection _generalSection;
-        private AppearanceSection _appearanceSection;
-        private ThemeControlPreviewState _previewState;
-        private ThemeMigrationController _themeMigrationController;
+        private SpoilersSection _spoilersSection;
+        private ColorsSection _colorsSection;
+        private MigrationThemePage _migrationPage;
+        private readonly Action _onDisplaySettingsReset;
 
         public DisplaySettingsTab()
         {
@@ -33,18 +34,17 @@ namespace PlayniteAchievements.Views.Settings.Display
             PlayniteAchievementsSettings settings,
             PlayniteAchievementsPlugin plugin,
             ILogger logger,
-            Func<Window, string, string> pickColor)
+            Func<Window, string, string> pickColor,
+            ThemeMigrationController themeMigrationController,
+            Action onDisplaySettingsReset)
             : this()
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (plugin == null) throw new ArgumentNullException(nameof(plugin));
             if (pickColor == null) throw new ArgumentNullException(nameof(pickColor));
+            if (themeMigrationController == null) throw new ArgumentNullException(nameof(themeMigrationController));
 
-            _previewState = new ThemeControlPreviewState(settings);
-            _themeMigrationController = new ThemeMigrationController(settings, plugin, logger);
-
-            var themeControlsGroup = ResourceProvider.GetString("LOCPlayAch_Settings_Display_ThemeIntegration");
-            var themeMigrationGroup = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title");
+            _onDisplaySettingsReset = onDisplaySettingsReset;
 
             // Per-grid display options are edited from each grid's own "Display settings" menu,
             // so this tab carries only the settings that are not tied to a single grid.
@@ -53,86 +53,28 @@ namespace PlayniteAchievements.Views.Settings.Display
                 new SettingsNavigationItem(
                     "General",
                     ResourceProvider.GetString("LOCPlayAch_Common_General"),
-                    iconGlyph: "",
+                    iconGlyph: "\uE713",
                     viewFactory: () => _generalSection =
                         new DisplayGeneralSection(settings, plugin, logger, OnDisplaySettingsReset)),
                 new SettingsNavigationItem(
-                    "Appearance",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Appearance"),
-                    iconGlyph: "",
-                    viewFactory: () => _appearanceSection =
-                        new AppearanceSection(settings, plugin.ProviderRegistry, pickColor)),
+                    "Colors",
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Display_Colors"),
+                    iconGlyph: "\uE790",
+                    viewFactory: () => _colorsSection =
+                        new ColorsSection(settings, plugin.ProviderRegistry, pickColor)),
                 new SettingsNavigationItem(
-                    "Overview",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Display_OverviewLayout"),
-                    iconGlyph: "",
-                    viewFactory: () => new OverviewDisplaySection()),
-                new SettingsNavigationItem(
-                    "DataGrid",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_AchievementDataGridPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new DataGridThemePage(_previewState)),
-                new SettingsNavigationItem(
-                    "CompactList",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_CompactListPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new CompactListThemePage(settings, _previewState)),
-                new SettingsNavigationItem(
-                    "CompactUnlockedList",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_CompactUnlockedListPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new CompactUnlockedListThemePage(settings, _previewState)),
-                new SettingsNavigationItem(
-                    "CompactLockedList",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_CompactLockedListPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new CompactLockedListThemePage(settings, _previewState)),
-                new SettingsNavigationItem(
-                    "ProgressBar",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_ProgressBarPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new ProgressBarThemePage(_previewState)),
-                new SettingsNavigationItem(
-                    "Stats",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_StatsPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new StatsThemePage(_previewState)),
-                new SettingsNavigationItem(
-                    "Button",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_ButtonPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new ButtonThemePage(_previewState)),
-                new SettingsNavigationItem(
-                    "ViewItem",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_ViewItemPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new ViewItemThemePage(_previewState)),
-                new SettingsNavigationItem(
-                    "PieChart",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_PieChartPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new PieChartThemePage(_previewState)),
-                new SettingsNavigationItem(
-                    "BarChart",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_BarChartPreview"),
-                    groupName: themeControlsGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new BarChartThemePage(_previewState)),
+                    "Spoilers",
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Spoilers"),
+                    iconGlyph: "\uED1A",
+                    viewFactory: () => _spoilersSection =
+                        new SpoilersSection(settings, plugin, logger)),
+                // Deliberately also listed on the Themes tab. Both entries bind the same
+                // controller, so acting in either place is reflected in the other.
                 new SettingsNavigationItem(
                     "Migration",
                     ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title"),
-                    groupName: themeMigrationGroup,
-                    iconGlyph: "",
-                    viewFactory: () => new MigrationThemePage(_themeMigrationController))
+                    iconGlyph: "\uE8AB",
+                    viewFactory: () => _migrationPage = new MigrationThemePage(themeMigrationController))
             };
 
             MasterDetail.ItemsSource = _navigationItems;
@@ -159,15 +101,17 @@ namespace PlayniteAchievements.Views.Settings.Display
         /// </summary>
         private void OnDisplaySettingsReset()
         {
-            _appearanceSection?.RefreshAppearanceEditorFromPersisted();
-            _previewState?.RefreshMockPreviews();
+            _colorsSection?.RefreshAppearanceEditorFromPersisted();
+            _spoilersSection?.RefreshVisibilityPreview();
+            _onDisplaySettingsReset?.Invoke();
         }
 
         public void Dispose()
         {
             _generalSection?.Dispose();
-            _appearanceSection?.Dispose();
-            _previewState?.Dispose();
+            _spoilersSection?.Dispose();
+            _colorsSection?.Dispose();
+            _migrationPage?.Detach();
         }
     }
 }

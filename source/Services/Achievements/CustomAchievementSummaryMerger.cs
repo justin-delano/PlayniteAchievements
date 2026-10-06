@@ -72,6 +72,8 @@ namespace PlayniteAchievements.Services.Achievements
                     continue;
                 }
 
+                ApplyUserOverrides(visible, customData);
+
                 if (!gamesByGameId.TryGetValue(gameId, out var game))
                 {
                     game = new CachedGameSummaryData
@@ -91,27 +93,22 @@ namespace PlayniteAchievements.Services.Achievements
                     gamesByGameId[gameId] = game;
                 }
 
-                var hasUnlockedCapstone = false;
+                var platinumApiNames = new List<string>();
                 foreach (var achievement in visible)
                 {
-                    Accumulate(game, achievement);
+                    Accumulate(game, achievement, platinumApiNames);
                     if (!achievement.Unlocked)
                     {
                         continue;
                     }
 
-                    hasUnlockedCapstone |= achievement.IsCapstone;
-                    var unlockDate = achievement.UnlockTimeUtc?.Date;
-                    if (unlockDate.HasValue)
+                    if (achievement.UnlockTimeUtc.HasValue)
                     {
-                        Increment(summaryData.GlobalUnlockCountsByDate, unlockDate.Value);
-                        if (!summaryData.UnlockCountsByDateByGame.TryGetValue(gameId, out var gameCounts))
-                        {
-                            gameCounts = new Dictionary<DateTime, int>();
-                            summaryData.UnlockCountsByDateByGame[gameId] = gameCounts;
-                        }
-
-                        Increment(gameCounts, unlockDate.Value);
+                        Overview.UnlockDayCounts.Add(
+                            summaryData.GlobalUnlockCountsByDate,
+                            summaryData.UnlockCountsByDateByGame,
+                            gameId,
+                            achievement.UnlockTimeUtc.Value);
                     }
 
                     var recentUnlock = CreateRecentUnlock(game, achievement);
@@ -126,10 +123,16 @@ namespace PlayniteAchievements.Services.Achievements
                     addedRecent = true;
                 }
 
+                AppendPlatinumApiNames(game, platinumApiNames);
+
                 game.HasAchievements = true;
-                game.IsCompleted = game.IsCompleted ||
-                                   hasUnlockedCapstone ||
-                                   (game.TotalAchievements > 0 && game.UnlockedAchievements >= game.TotalAchievements);
+                // Finishing takes every capstone, not any one of them, and the custom ones the
+                // query never saw are now part of that count. Recomputed rather than OR-ed into
+                // what the query decided, since a custom capstone can leave a game unfinished
+                // that its provider achievements alone had finished.
+                game.IsCompleted =
+                    (game.TotalAchievements > 0 && game.UnlockedAchievements >= game.TotalAchievements) ||
+                    (game.CapstoneTotal > 0 && game.CapstoneUnlocked >= game.CapstoneTotal);
             }
 
             if (!addedRecent)
@@ -139,14 +142,15 @@ namespace PlayniteAchievements.Services.Achievements
 
             // The reader returns recent unlocks newest first and trims to the requested limit;
             // re-apply that after appending so the merged list keeps the same contract.
-            summaryData.RecentUnlocks = summaryData.RecentUnlocks
-                .OrderByDescending(recent => recent?.UnlockTimeUtc ?? DateTime.MinValue)
-                .ToList();
+            //
+            // RecentUnlockOrder rather than a sort on the timestamp alone: the per-game patcher
+            // rebuilds this order from row fields, and a timestamp-only sort leaves ties in
+            // input order, which a patch cannot reproduce. All three producers share one
+            // comparer so a patched summary equals a full rebuild.
+            summaryData.RecentUnlocks = RecentUnlockOrder.Sorted(summaryData.RecentUnlocks);
             if (recentAchievementDetailLimit == 0)
             {
-                summaryData.Achievements = summaryData.Achievements
-                    .OrderByDescending(item => item?.UnlockTimeUtc ?? DateTime.MinValue)
-                    .ToList();
+                summaryData.Achievements = RecentUnlockOrder.Sorted(summaryData.Achievements);
             }
             if (recentAchievementDetailLimit > 0 && summaryData.RecentUnlocks.Count > recentAchievementDetailLimit)
             {
@@ -155,9 +159,98 @@ namespace PlayniteAchievements.Services.Achievements
             }
         }
 
-        private static void Accumulate(CachedGameSummaryData game, AchievementDetail achievement)
+        /// <summary>
+        /// Packs the custom platinums onto the row beside the ones the query found, so the stored
+        /// capstone overlay sees every platinum the game has rather than only its provider ones.
+        /// </summary>
+        private static void AppendPlatinumApiNames(CachedGameSummaryData game, List<string> apiNames)
+        {
+            if (apiNames.Count == 0)
+            {
+                return;
+            }
+
+            var packed = string.Join(CachedGameSummaryData.PlatinumApiNameSeparator, apiNames);
+            game.PlatinumApiNames = string.IsNullOrEmpty(game.PlatinumApiNames)
+                ? packed
+                : game.PlatinumApiNames + CachedGameSummaryData.PlatinumApiNameSeparator + packed;
+        }
+
+        private static bool IsPlatinum(AchievementDetail achievement)
+        {
+            return string.Equals(
+                (achievement.TrophyType ?? string.Empty).Trim(),
+                "platinum",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// The user's per-achievement overrides, applied before anything is summed. The projected
+        /// details are fresh copies, so this is safe; without it the game's points, trophy counts
+        /// and timeline used the definition's values while each row showed the override. The rows
+        /// get the same record again in the summary customization, which sets the same values.
+        /// </summary>
+        private static void ApplyUserOverrides(IEnumerable<AchievementDetail> achievements, GameCustomDataFile customData)
+        {
+            if (customData?.AchievementOverrides == null || customData.AchievementOverrides.Count == 0)
+            {
+                return;
+            }
+
+            var overrides = new Dictionary<string, AchievementOverride>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in customData.AchievementOverrides)
+            {
+                if (!string.IsNullOrWhiteSpace(pair.Key) && pair.Value != null)
+                {
+                    overrides[pair.Key.Trim()] = pair.Value;
+                }
+            }
+
+            var hasManualLink = customData.ManualLink != null;
+            foreach (var achievement in achievements)
+            {
+                var apiName = achievement?.ApiName?.Trim();
+                if (!string.IsNullOrEmpty(apiName) && overrides.TryGetValue(apiName, out var entry))
+                {
+                    AchievementOverrideApplier.Apply(achievement, entry, hasManualLink);
+                }
+            }
+        }
+
+        private static void Accumulate(
+            CachedGameSummaryData game,
+            AchievementDetail achievement,
+            List<string> platinumApiNames)
         {
             game.TotalAchievements++;
+
+            // The capstone counts and the platinum identity are carried the same way the summary
+            // query carries them for stored achievements, so a custom capstone counts toward the
+            // finish badge and a custom platinum can stand in for it.
+            var isPlatinum = IsPlatinum(achievement);
+            if (isPlatinum && !string.IsNullOrWhiteSpace(achievement.ApiName))
+            {
+                platinumApiNames.Add(achievement.ApiName.Trim());
+            }
+
+            if (achievement.IsCapstone)
+            {
+                game.CapstoneTotal++;
+                if (achievement.Unlocked)
+                {
+                    game.CapstoneUnlocked++;
+                }
+
+                if (!isPlatinum)
+                {
+                    game.CapstonesNotPlatinum++;
+                }
+            }
+            else if (isPlatinum)
+            {
+                game.PlatinumsNotCapstone++;
+            }
+
             game.CollectionScoreTotal = AddClamped(game.CollectionScoreTotal, AchievementScoreCalculator.GetCollectionValue(achievement.Rarity));
             game.PrestigeScoreTotal = AddClamped(game.PrestigeScoreTotal, AchievementScoreCalculator.GetPrestigeValue(achievement.GlobalPercentUnlocked, achievement.Rarity));
             AddRarity(game, achievement.Rarity, possible: true);
@@ -249,12 +342,6 @@ namespace PlayniteAchievements.Services.Achievements
                 ProgressNum = achievement.ProgressNum,
                 ProgressDenom = achievement.ProgressDenom
             };
-        }
-
-        private static void Increment(IDictionary<DateTime, int> counts, DateTime date)
-        {
-            counts.TryGetValue(date, out var current);
-            counts[date] = AddClamped(current, 1);
         }
 
         private static int AddClamped(int current, int value)

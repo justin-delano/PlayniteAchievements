@@ -16,14 +16,18 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
+                <helpers:SharedResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:RarityPercentToTextConverter x:Key="RarityPercentToTextConverter"/>
             <converters:WholePercentToTextConverter x:Key="WholePercentToText"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <!-- The transparent background is what makes the whole tile hoverable. An Image hit-tests
+         only the pixels it actually draws, so with Stretch="Uniform" a non-square icon leaves
+         dead letterbox bands, and a tile whose icon is still loading or never resolved has no
+         hit-test surface at all - in both cases the tooltip simply never appears. -->
     <Grid x:Name="RootGrid"
+          Background="Transparent"
           Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
           Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
           ClipToBounds="False"
@@ -110,6 +114,7 @@
               SnapsToDevicePixels="True">
             <!-- Rays glow style: arrows riding the icon's own silhouette, replacing the soft halo. -->
             <controls:RarityRayBurst Rarity="{Binding Rarity}"
+                                     HasRarityData="{Binding HasRarityPercent}"
                                      SubjectUri="{Binding DisplayIcon, Mode=OneWay}">
                 <controls:RarityRayBurst.Style>
                     <Style TargetType="controls:RarityRayBurst">
@@ -117,15 +122,13 @@
                         <Style.Triggers>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                             </MultiDataTrigger>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="IsActive" Value="True"/>
@@ -160,8 +163,7 @@
                         <Style.Triggers>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding UseLargeRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="False"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
@@ -172,24 +174,31 @@
                                         <MultiBinding Converter="{StaticResource RarityGlowForTiers}" ConverterParameter="8">
                                             <Binding Path="Rarity"/>
                                             <Binding Path="SoftGlowTiers" RelativeSource="{RelativeSource AncestorType=controls:AchievementCompactItemControl}"/>
+                                            <Binding Path="HasRarityPercent"/>
                                         </MultiBinding>
                                     </Setter.Value>
                                 </Setter>
                             </MultiDataTrigger>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding UseLargeRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource RarityGlowForTiers}" ConverterParameter="20">
+                                            <Binding Path="Rarity"/>
+                                            <Binding Path="SoftGlowTiers" RelativeSource="{RelativeSource AncestorType=controls:AchievementCompactItemControl}"/>
+                                            <Binding Path="HasRarityPercent"/>
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
                             </MultiDataTrigger>
                             <!-- Hardcore achievements use a solid border instead of the soft glow. -->
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
                                     <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
@@ -199,8 +208,7 @@
                             <!-- Fade in/out pulse on the cached glow layer when AnimateRarityGlows is on. -->
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding AnimateRarityGlows, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="helpers:RarityGlowPulse.IsActive" Value="True"/>
@@ -228,8 +236,7 @@
                         <Style.Triggers>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Setter Property="Effect">
@@ -237,6 +244,7 @@
                                         <MultiBinding Converter="{StaticResource RarityGlowForTiers}" ConverterParameter="3">
                                             <Binding Path="Rarity"/>
                                             <Binding Path="RayGlowTiers" RelativeSource="{RelativeSource AncestorType=controls:AchievementCompactItemControl}"/>
+                                            <Binding Path="HasRarityPercent"/>
                                         </MultiBinding>
                                     </Setter.Value>
                                 </Setter>
@@ -244,8 +252,7 @@
                             <!-- Hardcore keeps its solid border instead. -->
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
                                     <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
@@ -279,8 +286,7 @@
                         <Style.Triggers>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
+                                    <Condition Binding="{Binding RarityGlowEligible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                     <Condition Binding="{Binding IsHardcore}" Value="True"/>
                                     <Condition Binding="{Binding ShowHardcoreBorder, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
@@ -301,26 +307,15 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding HasRarityPercent}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityBar}" Value="True"/>
+                                    <Condition Binding="{Binding RarityBarVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementCompactItemControl}}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
                             </MultiDataTrigger>
                         </Style.Triggers>
                 </Style>
             </Grid.Style>
-            <ProgressBar Height="10"
-                         Maximum="100"
-                         Value="{Binding RarityPercentValue, Mode=OneWay}"
-                         Background="{StaticResource PlayAch.Brush.Overlay.Shade.80}"
-                         Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                         BorderThickness="0"/>
-            <TextBlock Text="{Binding RarityPercentValue, Mode=OneWay, Converter={StaticResource RarityPercentToTextConverter}}"
-                       Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       FontSize="8"
-                       FontWeight="SemiBold"
-                       Foreground="White"/>
+            <ProgressBar Style="{StaticResource PlayAch.ProgressBar.RarityBar}"
+                         Value="{Binding RarityPercentValue, Mode=OneWay}"/>
         </Grid>
     </Grid>
 </UserControl>

@@ -21,13 +21,40 @@ namespace PlayniteAchievements.Tests.Models
                 var page = ShowcaseLayoutService.AddPage(settings, template);
 
                 Assert.IsTrue(
-                    ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize),
+                    ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount),
                     template.ToString());
                 Assert.IsFalse(page.Blocks
                     .Where(block => !string.IsNullOrWhiteSpace(block.WidgetInstanceId))
                     .Select(block => settings.WidgetInstances.Single(widget =>
                         widget.InstanceId == block.WidgetInstanceId))
                     .Any(widget => widget.Kind == ShowcaseWidgetKind.Timeline), template.ToString());
+            }
+        }
+
+        [TestMethod]
+        public void AddPagePresets_FillEveryBlockWithoutPinnedSources()
+        {
+            foreach (var template in new[]
+                     {
+                         ShowcasePageTemplate.Analytics,
+                         ShowcasePageTemplate.Collection,
+                         ShowcasePageTemplate.UpNext,
+                         ShowcasePageTemplate.TrophyCase,
+                         ShowcasePageTemplate.Library
+                     })
+            {
+                var settings = new ShowcaseSettings();
+                var page = ShowcaseLayoutService.AddPage(settings, template);
+                var widgets = page.Blocks
+                    .Select(block => settings.WidgetInstances.SingleOrDefault(widget =>
+                        widget.InstanceId == block.WidgetInstanceId))
+                    .ToList();
+
+                Assert.IsTrue(widgets.All(widget => widget != null), $"{template} leaves a block empty");
+                Assert.IsFalse(
+                    widgets.SelectMany(widget => widget.Options.Values).Contains("Pinned"),
+                    $"{template} shows a pin collection");
+                Assert.AreEqual(25, page.Blocks.Sum(block => block.RowSpan * block.ColumnSpan), template.ToString());
             }
         }
 
@@ -60,7 +87,7 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(5, collection.Pages.Single().Blocks.Count);
             Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(
                 collection.Pages.Single().Blocks,
-                collection.Pages.Single().GridSize));
+                collection.Pages.Single().RowCount, collection.Pages.Single().ColumnCount));
 
             var none = ShowcaseLayoutService.CreateDefault(false, false);
             var scoreBlock = none.Pages.Single().Blocks.Single(block =>
@@ -79,7 +106,7 @@ namespace PlayniteAchievements.Tests.Models
             // so placing another widget on the right yields two occupied blocks.
             Assert.IsTrue(ShowcaseLayoutService.TrySplit(
                 settings, page.PageId, profileBlock.BlockId, vertical: true, gridLine: 2));
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
 
             var left = page.Blocks.Single(block => block.Row == 0 && block.Column == 0);
             var right = page.Blocks.Single(block => block.Row == 0 && block.Column == 2);
@@ -91,7 +118,7 @@ namespace PlayniteAchievements.Tests.Models
             ShowcaseLayoutService.DeleteWidget(settings, extra.InstanceId);
             Assert.IsTrue(ShowcaseLayoutService.TryMerge(
                 settings, page.PageId, left.BlockId, right.BlockId));
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
         }
 
         [TestMethod]
@@ -123,7 +150,7 @@ namespace PlayniteAchievements.Tests.Models
                 block.Row == 0 && block.Column == 0).WidgetInstanceId);
             Assert.AreEqual(scoreId, page.Blocks.Single(block =>
                 block.Row == 0 && block.Column == 1).WidgetInstanceId);
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
         }
 
         [TestMethod]
@@ -151,7 +178,7 @@ namespace PlayniteAchievements.Tests.Models
 
             Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(
                 settings.Pages.Single().Blocks,
-                settings.Pages.Single().GridSize));
+                settings.Pages.Single().RowCount, settings.Pages.Single().ColumnCount));
             Assert.AreEqual(6, settings.Pages.Single().Blocks.Count);
         }
 
@@ -160,10 +187,10 @@ namespace PlayniteAchievements.Tests.Models
         {
             CollectionAssert.AreEqual(
                 new[] { 1d, 1d, 1d },
-                ShowcaseLayoutService.NormalizeTrackWeights(null));
+                ShowcaseLayoutService.NormalizeTrackWeights(null, 3));
             CollectionAssert.AreEqual(
                 new[] { 1d, 1d, 1d },
-                ShowcaseLayoutService.NormalizeTrackWeights(new double[0]));
+                ShowcaseLayoutService.NormalizeTrackWeights(new double[0], 3));
             CollectionAssert.AreEqual(
                 new[]
                 {
@@ -171,10 +198,10 @@ namespace PlayniteAchievements.Tests.Models
                     ShowcaseLayoutService.MaxTrackWeight,
                     1d
                 },
-                ShowcaseLayoutService.NormalizeTrackWeights(new[] { 0.1, 99d, double.NaN }));
+                ShowcaseLayoutService.NormalizeTrackWeights(new[] { 0.01, 99d, double.NaN }, 3));
             CollectionAssert.AreEqual(
                 new[] { 0.5, 1.5, 1d },
-                ShowcaseLayoutService.NormalizeTrackWeights(new[] { 0.5, 1.5, 1d }));
+                ShowcaseLayoutService.NormalizeTrackWeights(new[] { 0.5, 1.5, 1d }, 3));
         }
 
         [TestMethod]
@@ -182,7 +209,7 @@ namespace PlayniteAchievements.Tests.Models
         {
             var settings = ShowcaseLayoutService.CreateDefault();
             var page = settings.Pages.Single();
-            page.RowWeights = new System.Collections.Generic.List<double> { 0.1, 2d };
+            page.RowWeights = new System.Collections.Generic.List<double> { 0.01, 2d };
             Assert.IsNull(page.ColumnWeights);
 
             ShowcaseLayoutService.Normalize(settings);
@@ -245,7 +272,7 @@ namespace PlayniteAchievements.Tests.Models
                 block.Row == 0 && block.Column == 0).WidgetInstanceId);
             Assert.IsFalse(settings.WidgetInstances.Any(widget =>
                 widget.InstanceId == remove.InstanceId));
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
         }
 
         [TestMethod]
@@ -293,7 +320,7 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(survivor.InstanceId, merged.WidgetInstanceId);
             Assert.IsFalse(settings.WidgetInstances.Any(widget => widget.InstanceId == first.InstanceId));
             Assert.IsFalse(settings.WidgetInstances.Any(widget => widget.InstanceId == second.InstanceId));
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
         }
 
         [TestMethod]
@@ -431,19 +458,110 @@ namespace PlayniteAchievements.Tests.Models
                 ApiName = "first",
                 LastKnownAchievementName = "First"
             });
-            settings.Profile.DisplayName = "Player";
+            var profileWidget = settings.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Profile);
+            profileWidget.Profile.DisplayName = "Player";
+            profileWidget.Profile.Links = new List<ShowcaseProfileLink>
+            {
+                new ShowcaseProfileLink { ProviderKey = "Steam", Value = "player" }
+            };
 
             var clone = settings.Clone();
             clone.Pages[0].Name = "Changed";
             clone.WidgetInstances[0].SetOption("Mode", "Changed");
             clone.GamePinCollections[0].GameIds.Clear();
             clone.AchievementPinCollections[0].Pins[0].ApiName = "changed";
-            clone.Profile.DisplayName = "Changed";
+            var clonedProfile = clone.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Profile).Profile;
+            clonedProfile.DisplayName = "Changed";
+            clonedProfile.Links[0].Value = "changed";
 
             Assert.AreEqual("Showcase", settings.Pages[0].Name);
             Assert.AreEqual(1, settings.GamePinCollections[0].GameIds.Count);
             Assert.AreEqual("first", settings.AchievementPinCollections[0].Pins[0].ApiName);
-            Assert.AreEqual("Player", settings.Profile.DisplayName);
+            Assert.AreEqual("Player", profileWidget.Profile.DisplayName);
+            Assert.AreEqual("player", profileWidget.Profile.Links[0].Value);
+        }
+
+        [TestMethod]
+        public void Normalize_MovesLegacyProfileOntoProfileWidgetsAndClearsIt()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var pageProfile = settings.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Profile);
+            pageProfile.Profile = null;
+            var edited = ShowcaseLayoutService.CreateWidget(settings, ShowcaseWidgetKind.Profile);
+            edited.Profile = new ShowcaseProfileSettings { DisplayName = "Mine" };
+            settings.StartPageInstances["start:1"] = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.Profile
+            };
+            settings.StartPageInstances["start:2"] = new ShowcaseWidgetInstanceSettings
+            {
+                Kind = ShowcaseWidgetKind.Pie
+            };
+            settings.Profile = new ShowcaseProfileSettings
+            {
+                DisplayName = "Legacy",
+                BackgroundPath = @"C:\art\banner.png"
+            };
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            Assert.IsNull(settings.Profile, "legacy object is consumed");
+            Assert.AreEqual("Legacy", pageProfile.Profile.DisplayName);
+            Assert.AreEqual(@"C:\art\banner.png", pageProfile.Profile.BackgroundPath);
+            Assert.AreEqual("Legacy", settings.StartPageInstances["start:1"].Profile.DisplayName);
+            Assert.AreEqual("Mine", edited.Profile.DisplayName, "a card with its own data keeps it");
+            Assert.IsNull(settings.StartPageInstances["start:2"].Profile, "only profile widgets carry one");
+            Assert.AreNotSame(pageProfile.Profile, settings.StartPageInstances["start:1"].Profile);
+
+            settings.Profile = new ShowcaseProfileSettings { DisplayName = "Again" };
+            pageProfile.Profile.DisplayName = "Edited";
+            ShowcaseLayoutService.Normalize(settings);
+            Assert.AreEqual("Edited", pageProfile.Profile.DisplayName, "never reseeds an existing card");
+        }
+
+        [TestMethod]
+        public void Normalize_GivesEveryProfileWidgetItsOwnProfileObject()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var profile = settings.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Profile);
+            profile.Profile = null;
+            var pie = settings.WidgetInstances.First(widget => widget.Kind != ShowcaseWidgetKind.Profile);
+            pie.Profile = new ShowcaseProfileSettings { DisplayName = "Stray" };
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            Assert.IsNotNull(profile.Profile);
+            Assert.IsNull(pie.Profile);
+        }
+
+        [TestMethod]
+        public void DuplicatePage_ProfileEditOnCopyLeavesOriginalUnchanged()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var page = settings.Pages.Single();
+            var original = settings.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Profile);
+            original.Profile.DisplayName = "Original";
+            original.Profile.BackgroundPath = @"C:\art\one.png";
+            original.Profile.Links = new List<ShowcaseProfileLink>
+            {
+                new ShowcaseProfileLink { ProviderKey = "Steam", Value = "one" }
+            };
+
+            var copy = ShowcaseLayoutService.DuplicatePage(settings, page.PageId);
+            var copied = copy.Blocks
+                .Where(block => block.WidgetInstanceId != null)
+                .Select(block => settings.WidgetInstances.Single(widget => widget.InstanceId == block.WidgetInstanceId))
+                .Single(widget => widget.Kind == ShowcaseWidgetKind.Profile);
+
+            Assert.AreNotSame(original, copied);
+            Assert.AreEqual("Original", copied.Profile.DisplayName, "the copy starts from the original");
+            copied.Profile.DisplayName = "Copy";
+            copied.Profile.BackgroundPath = @"C:\art\two.png";
+            copied.Profile.Links[0].Value = "two";
+
+            Assert.AreEqual("Original", original.Profile.DisplayName);
+            Assert.AreEqual(@"C:\art\one.png", original.Profile.BackgroundPath);
+            Assert.AreEqual("one", original.Profile.Links[0].Value);
         }
 
         [TestMethod]
@@ -466,7 +584,7 @@ namespace PlayniteAchievements.Tests.Models
                 ShowcasePageTemplate.Collection));
             Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(
                 settings.Pages[0].Blocks,
-                settings.Pages[0].GridSize));
+                settings.Pages[0].RowCount, settings.Pages[0].ColumnCount));
             Assert.IsFalse(settings.Pages[0].Blocks
                 .Where(block => !string.IsNullOrWhiteSpace(block.WidgetInstanceId))
                 .Select(block => settings.WidgetInstances.Single(widget =>
@@ -506,14 +624,14 @@ namespace PlayniteAchievements.Tests.Models
                 page.PageId,
                 topLeft.BlockId,
                 middleLeft.BlockId));
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
             Assert.IsTrue(ShowcaseLayoutService.TrySplit(
                 settings,
                 page.PageId,
                 topLeft.BlockId,
                 vertical: false,
                 gridLine: 1));
-            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.GridSize));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
         }
 
         [TestMethod]

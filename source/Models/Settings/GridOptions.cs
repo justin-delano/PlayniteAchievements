@@ -42,6 +42,11 @@ namespace PlayniteAchievements.Models.Settings
             public const string ViewFriendsAchievements = "ViewFriendsAchievements";
         }
 
+        public static class ManageAchievements
+        {
+            public const string Editor = "ManageAchievementsEditor";
+        }
+
         public static class CategorySummaries
         {
             public const string ViewAchievements = "ViewAchievements";
@@ -60,6 +65,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, GridAlignment> _cellAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridVerticalAlignment> _cellVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _headerAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, bool> _locked = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<string, bool> Visibility
         {
@@ -97,6 +103,17 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _headerAlignments, NormalizeAlignments(value));
         }
 
+        /// <summary>
+        /// Columns whose width is fixed: the header menu's lock. A locked column keeps its
+        /// pixel width from <see cref="Widths"/> while the other columns absorb resizes, and
+        /// neither of its boundaries can be dragged.
+        /// </summary>
+        public Dictionary<string, bool> Locked
+        {
+            get => _locked;
+            set => SetValue(ref _locked, NormalizeVisibility(value));
+        }
+
         public GridColumnLayoutOptions Clone()
         {
             return new GridColumnLayoutOptions
@@ -106,7 +123,8 @@ namespace PlayniteAchievements.Models.Settings
                 Order = Order,
                 CellAlignments = CellAlignments,
                 CellVerticalAlignments = CellVerticalAlignments,
-                HeaderAlignments = HeaderAlignments
+                HeaderAlignments = HeaderAlignments,
+                Locked = Locked
             };
         }
 
@@ -489,9 +507,32 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 
+    /// <summary>
+    /// Column layout for an editing grid in the Manage Achievements window.
+    /// </summary>
+    /// <remarks>
+    /// A family of its own rather than an <see cref="AchievementGridOptions"/> surface: the render
+    /// grids already use the bare column names (Icon, Status, Note, Rarity, Trophy, Points) at
+    /// their own widths, so sharing a surface would make hiding a column in the editor hide one in
+    /// a render grid. Only the inherited <see cref="GridCommonOptions.Columns"/> is used; the
+    /// editor has no control bar, row-height chrome or sort mode of its own.
+    /// </remarks>
+    public sealed class ManageAchievementsGridOptions : GridCommonOptions
+    {
+        public ManageAchievementsGridOptions Clone()
+        {
+            var clone = new ManageAchievementsGridOptions();
+            CopyCommonTo(clone);
+            return clone;
+        }
+    }
+
     public sealed class CategorySummaryGridOptions : PlayniteAchievements.Common.ObservableObject
     {
-        private GridColumnLayoutOptions _columns = GridColumnLayoutOptions.CreateWithProgressRightAlignment();
+        // Deserialization target: the load populates this instance in place, so a value seeded
+        // here would come back on every load after the user removed it. The Progress=Right default
+        // is applied by GridOptionsCatalog.CreateDefaultCategorySummaries instead.
+        private GridColumnLayoutOptions _columns = new GridColumnLayoutOptions();
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
         private bool _useCoverImages;
@@ -502,8 +543,8 @@ namespace PlayniteAchievements.Models.Settings
 
         public GridColumnLayoutOptions Columns
         {
-            get => _columns ?? (_columns = GridColumnLayoutOptions.CreateWithProgressRightAlignment());
-            set => SetValue(ref _columns, value ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment());
+            get => _columns ?? (_columns = new GridColumnLayoutOptions());
+            set => SetValue(ref _columns, value ?? new GridColumnLayoutOptions());
         }
 
         public bool ShowColumnHeaders
@@ -559,7 +600,7 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new CategorySummaryGridOptions
             {
-                Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment(),
+                Columns = Columns?.Clone() ?? new GridColumnLayoutOptions(),
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,
                 UseCoverImages = UseCoverImages,
@@ -577,6 +618,7 @@ namespace PlayniteAchievements.Models.Settings
         internal const string GameSummariesKindName = "GameSummaries";
         internal const string FriendSummariesKindName = "FriendSummaries";
         internal const string CategorySummariesKindName = "CategorySummaries";
+        internal const string ManageAchievementsKindName = "ManageAchievements";
 
         public const int DefaultShowcaseRecentMaxRows = 15;
         public const int DefaultShowcaseGameSummariesMaxRows = 50;
@@ -589,6 +631,8 @@ namespace PlayniteAchievements.Models.Settings
             new Dictionary<string, FriendSummaryGridOptions>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, CategorySummaryGridOptions> _categorySummaries =
             new Dictionary<string, CategorySummaryGridOptions>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, ManageAchievementsGridOptions> _manageAchievements =
+            new Dictionary<string, ManageAchievementsGridOptions>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<PlayniteAchievements.Common.ObservableObject, PropertyChangedEventHandler> _optionSubscriptions =
             new Dictionary<PlayniteAchievements.Common.ObservableObject, PropertyChangedEventHandler>();
@@ -666,6 +710,35 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
+        public Dictionary<string, ManageAchievementsGridOptions> ManageAchievements
+        {
+            get
+            {
+                EnsureDefaults();
+                return _manageAchievements;
+            }
+            set
+            {
+                DetachOptions(_manageAchievements);
+                SetValue(ref _manageAchievements, Normalize(value, item => item?.Clone()));
+                EnsureDefaults();
+            }
+        }
+
+        public ManageAchievementsGridOptions GetManageAchievements(string id)
+        {
+            var key = string.IsNullOrWhiteSpace(id) ? GridOptionKeys.ManageAchievements.Editor : id;
+            EnsureDefaults();
+            if (!_manageAchievements.TryGetValue(key, out var options) || options == null)
+            {
+                options = new ManageAchievementsGridOptions();
+                _manageAchievements[key] = options;
+                AttachOptions(ManageAchievementsKindName, key, options);
+            }
+
+            return options;
+        }
+
         public AchievementGridOptions GetAchievement(string id)
         {
             var key = string.IsNullOrWhiteSpace(id) ? GridOptionKeys.Achievement.Default : id;
@@ -714,7 +787,7 @@ namespace PlayniteAchievements.Models.Settings
             EnsureDefaults();
             if (!_categorySummaries.TryGetValue(key, out var options) || options == null)
             {
-                options = new CategorySummaryGridOptions();
+                options = CreateDefaultCategorySummaries();
                 _categorySummaries[key] = options;
                 AttachOptions(CategorySummariesKindName, key, options);
             }
@@ -742,6 +815,40 @@ namespace PlayniteAchievements.Models.Settings
 
             DetachOptions(options);
             return _gameSummaries.Remove(id);
+        }
+
+        /// <summary>
+        /// Stores a clone of <paramref name="options"/> under the surface, replacing (and
+        /// detaching) any existing record so change notifications follow the new instance.
+        /// </summary>
+        public void SetAchievement(string id, AchievementGridOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(id) || options == null)
+            {
+                return;
+            }
+
+            RemoveAchievement(id);
+            var copy = options.Clone();
+            _achievement[id] = copy;
+            AttachOptions(AchievementKindName, id, copy);
+        }
+
+        /// <summary>
+        /// Stores a clone of <paramref name="options"/> under the surface, replacing (and
+        /// detaching) any existing record so change notifications follow the new instance.
+        /// </summary>
+        public void SetGameSummaries(string id, GameSummaryGridOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(id) || options == null)
+            {
+                return;
+            }
+
+            RemoveGameSummaries(id);
+            var copy = options.Clone();
+            _gameSummaries[id] = copy;
+            AttachOptions(GameSummariesKindName, id, copy);
         }
 
         /// <summary>
@@ -797,7 +904,8 @@ namespace PlayniteAchievements.Models.Settings
                 Achievement = Achievement,
                 GameSummaries = GameSummaries,
                 FriendSummaries = FriendSummaries,
-                CategorySummaries = CategorySummaries
+                CategorySummaries = CategorySummaries,
+                ManageAchievements = ManageAchievements
             };
         }
 
@@ -969,11 +1077,13 @@ namespace PlayniteAchievements.Models.Settings
             Ensure(_friendSummaries, GridOptionKeys.FriendSummaries.FriendsOverview, () => CreateDefaultFriendSummaries(GridOptionKeys.FriendSummaries.FriendsOverview));
             Ensure(_friendSummaries, GridOptionKeys.FriendSummaries.ViewFriendsAchievements, () => CreateDefaultFriendSummaries(GridOptionKeys.FriendSummaries.ViewFriendsAchievements));
 
-            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.ViewAchievements, () => new CategorySummaryGridOptions());
-            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.OverviewSelectedGame, () => new CategorySummaryGridOptions());
-            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.FriendsOverview, () => new CategorySummaryGridOptions());
-            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.ViewFriendsAchievements, () => new CategorySummaryGridOptions());
-            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.DesktopTheme, () => new CategorySummaryGridOptions());
+            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.ViewAchievements, CreateDefaultCategorySummaries);
+            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.OverviewSelectedGame, CreateDefaultCategorySummaries);
+            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.FriendsOverview, CreateDefaultCategorySummaries);
+            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.ViewFriendsAchievements, CreateDefaultCategorySummaries);
+            Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.DesktopTheme, CreateDefaultCategorySummaries);
+
+            Ensure(_manageAchievements, GridOptionKeys.ManageAchievements.Editor, () => new ManageAchievementsGridOptions());
 
             RefreshOptionSubscriptions();
         }
@@ -990,8 +1100,9 @@ namespace PlayniteAchievements.Models.Settings
             AttachOptionsAll(GameSummariesKindName, _gameSummaries);
             AttachOptionsAll(FriendSummariesKindName, _friendSummaries);
             AttachOptionsAll(CategorySummariesKindName, _categorySummaries);
+            AttachOptionsAll(ManageAchievementsKindName, _manageAchievements);
 
-            var liveCount = _achievement.Count + _gameSummaries.Count + _friendSummaries.Count + _categorySummaries.Count;
+            var liveCount = _achievement.Count + _gameSummaries.Count + _friendSummaries.Count + _categorySummaries.Count + _manageAchievements.Count;
             if (_optionSubscriptions.Count > liveCount)
             {
                 PruneStaleSubscriptions();
@@ -1044,6 +1155,7 @@ namespace PlayniteAchievements.Models.Settings
             foreach (var value in _gameSummaries.Values) { live.Add(value); }
             foreach (var value in _friendSummaries.Values) { live.Add(value); }
             foreach (var value in _categorySummaries.Values) { live.Add(value); }
+            foreach (var value in _manageAchievements.Values) { live.Add(value); }
 
             foreach (var stale in _optionSubscriptions.Keys.Where(key => !live.Contains(key)).ToList())
             {
@@ -1111,6 +1223,14 @@ namespace PlayniteAchievements.Models.Settings
         private static FriendSummaryGridOptions CreateDefaultFriendSummaries(string key)
         {
             return new FriendSummaryGridOptions();
+        }
+
+        private static CategorySummaryGridOptions CreateDefaultCategorySummaries()
+        {
+            return new CategorySummaryGridOptions
+            {
+                Columns = GridColumnLayoutOptions.CreateWithProgressRightAlignment()
+            };
         }
 
         private static void Ensure<T>(Dictionary<string, T> dictionary, string key, Func<T> factory)

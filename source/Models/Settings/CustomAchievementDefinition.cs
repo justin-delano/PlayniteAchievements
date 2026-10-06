@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -40,6 +40,24 @@ namespace PlayniteAchievements.Models.Settings
 
         public int? ProgressDenom { get; set; }
 
+        /// <summary>
+        /// True for the achievement the editor's Auto Capstone authored to stand for finishing the
+        /// game. It marks the one achievement whose rarity and unlock the plugin keeps in step with
+        /// the achievements it stands for, so a refresh knows which one to maintain and a second
+        /// press of the button updates it rather than authoring another.
+        /// </summary>
+        public bool IsAutoCapstone { get; set; }
+
+        /// <summary>
+        /// True when an auto capstone stands for the whole game rather than for the category it is
+        /// filed in. Where it is filed says nothing about its scope: a whole-game capstone on a game
+        /// whose achievements span several categories is filed in the default one, and reading the
+        /// scope off the filing would narrow it to that category. False for a category capstone,
+        /// and for every auto capstone authored before this was stored, which keep standing for
+        /// wherever they are filed.
+        /// </summary>
+        public bool IsWholeGameAutoCapstone { get; set; }
+
         public CustomAchievementDefinition Clone()
         {
             return new CustomAchievementDefinition
@@ -61,7 +79,9 @@ namespace PlayniteAchievements.Models.Settings
                 Rarity = Rarity,
                 GlobalPercentUnlocked = GlobalPercentUnlocked,
                 ProgressNum = ProgressNum,
-                ProgressDenom = ProgressDenom
+                ProgressDenom = ProgressDenom,
+                IsAutoCapstone = IsAutoCapstone,
+                IsWholeGameAutoCapstone = IsWholeGameAutoCapstone
             };
         }
     }

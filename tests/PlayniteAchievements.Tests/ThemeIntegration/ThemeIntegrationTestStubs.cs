@@ -94,6 +94,19 @@ namespace PlayniteAchievements.Models.Achievements
             tier = RarityTier.Common;
             return false;
         }
+
+        /// <summary>
+        /// Mirrors the production shape table in PercentRarityHelper, which the test host cannot
+        /// link because it pulls in WPF imaging. AchievementRank delegates to this rather than
+        /// carrying its own copy, so the mapping is asserted here once.
+        /// </summary>
+        public static string ToIconKey(this RarityTier tier, bool useUniformRarityBadges = false) => tier switch
+        {
+            RarityTier.UltraRare => "BadgePlatinumHexagon",
+            RarityTier.Rare => useUniformRarityBadges ? "BadgeGoldHexagon" : "BadgeGoldPentagon",
+            RarityTier.Uncommon => useUniformRarityBadges ? "BadgeSilverHexagon" : "BadgeSilverSquare",
+            _ => useUniformRarityBadges ? "BadgeBronzeHexagon" : "BadgeBronzeTriangle"
+        };
     }
 
     public static class PercentRarityHelper
@@ -118,7 +131,7 @@ namespace PlayniteAchievements.Models.Achievements
         }
     }
 
-    public sealed class AchievementDetail
+    public sealed class AchievementDetail : IAchievementOverrideTarget
     {
         public string ApiName { get; set; }
 
@@ -351,8 +364,42 @@ namespace PlayniteAchievements.ViewModels
 {
     public class AchievementDisplayItem
     {
+        // Mirrors the real snapshot's shape so the linked ModernThemeBindings source compiles
+        // against it. The six reveal toggles default true, as the real one does.
         public sealed class AppearanceSettingsSnapshot
         {
+            public bool ShowHiddenIcon { get; set; }
+
+            public bool ShowHiddenTitle { get; set; }
+
+            public bool ShowHiddenDescription { get; set; }
+
+            public bool ShowHiddenSuffix { get; set; }
+
+            public bool ShowLockedIcon { get; set; }
+
+            public bool ShowLockedTitle { get; set; } = true;
+
+            public bool ShowLockedDescription { get; set; } = true;
+
+            public bool ShowHiddenTrophy { get; set; } = true;
+
+            public bool ShowHiddenPoints { get; set; } = true;
+
+            public bool ShowLockedTrophy { get; set; } = true;
+
+            public bool ShowLockedPoints { get; set; } = true;
+
+            public bool UseSeparateLockedIconsWhenAvailable { get; set; }
+
+            public bool ShowRarityBar { get; set; }
+
+            public bool ShowFriendSpoilers { get; set; }
+
+            public AppearanceSettingsSnapshot Clone()
+            {
+                return (AppearanceSettingsSnapshot)MemberwiseClone();
+            }
         }
 
         public PlayniteAchievements.Models.Achievements.AchievementDetail Source { get; set; }
@@ -666,19 +713,14 @@ namespace PlayniteAchievements.ViewModels
             PlayniteAchievements.Models.Achievements.AchievementDetail source,
             string gameName,
             Guid? playniteGameId,
-            bool showHiddenIcon,
-            bool showHiddenTitle,
-            bool showHiddenDescription,
-            bool showHiddenSuffix,
-            bool showLockedIcon,
-            bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityBar = true,
+            AppearanceSettingsSnapshot appearance,
             string sortingName = null,
             string gameIconPath = null,
             string gameCoverPath = null,
             int categoryOrderIndex = int.MaxValue,
             string categoryArtPath = null)
         {
+            var resolved = appearance ?? new AppearanceSettingsSnapshot();
             Source = source;
             DisplayName = source?.DisplayName;
             Description = source?.Description;
@@ -706,13 +748,13 @@ namespace PlayniteAchievements.ViewModels
             ProgressNum = source?.ProgressNum;
             ProgressDenom = source?.ProgressDenom;
             AchievementNote = source?.AchievementNote;
-            ShowHiddenIcon = showHiddenIcon;
-            ShowHiddenTitle = showHiddenTitle;
-            ShowHiddenDescription = showHiddenDescription;
-            ShowHiddenSuffix = showHiddenSuffix;
-            ShowLockedIcon = showLockedIcon;
-            UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
-            ShowRarityBar = showRarityBar;
+            ShowHiddenIcon = resolved.ShowHiddenIcon;
+            ShowHiddenTitle = resolved.ShowHiddenTitle;
+            ShowHiddenDescription = resolved.ShowHiddenDescription;
+            ShowHiddenSuffix = resolved.ShowHiddenSuffix;
+            ShowLockedIcon = resolved.ShowLockedIcon;
+            UseSeparateLockedIconsWhenAvailable = resolved.UseSeparateLockedIconsWhenAvailable;
+            ShowRarityBar = resolved.ShowRarityBar;
             GameIconPath = gameIconPath;
             GameCoverPath = gameCoverPath;
             CategoryOrderIndex = categoryOrderIndex;

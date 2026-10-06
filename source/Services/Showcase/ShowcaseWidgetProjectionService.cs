@@ -44,6 +44,10 @@ namespace PlayniteAchievements.Services.Showcase
         /// <summary>0 = no unlocks; 1..4 = percentile bucket among the window's active days,
         /// with the busiest day always 4.</summary>
         public int Intensity { get; set; }
+
+        /// <summary>The achievements unlocked on this local day in unlock order, or null when
+        /// none; the rows are the snapshot's own instances, shared across windows.</summary>
+        public IReadOnlyList<AchievementDisplayItem> Unlocks { get; set; }
     }
 
     public sealed class ShowcaseActivityCalendar
@@ -171,14 +175,33 @@ namespace PlayniteAchievements.Services.Showcase
 
             public DailyScoreDeltas ScoreDeltas;
 
+            /// <summary>Unlocked rows grouped by local unlock day, each day in unlock order.</summary>
+            public Dictionary<DateTime, IReadOnlyList<AchievementDisplayItem>> UnlocksByDay;
+
             public IReadOnlyList<AchievementDisplayItem> AllAchievementRows;
 
             public readonly Dictionary<string, IReadOnlyList<AchievementDisplayItem>> PinRows =
                 new Dictionary<string, IReadOnlyList<AchievementDisplayItem>>(StringComparer.Ordinal);
+
+            /// <summary>Unlock Next candidates still locked, with their game summary attached.</summary>
+            public IReadOnlyList<UnlockNextCandidate> UnlockNextPool;
         }
 
-        private static string WindowKey(TimelineRange range, DateTime endDate) =>
-            ((int)range).ToString(CultureInfo.InvariantCulture) + "@" + endDate.Ticks.ToString(CultureInfo.InvariantCulture);
+        /// <summary>
+        /// A locked candidate paired with the summary of the game it belongs to, so the window
+        /// filter and the completion ranking do not re-scan the library per achievement.
+        /// </summary>
+        private sealed class UnlockNextCandidate
+        {
+            public AchievementDisplayItem Achievement;
+
+            public GameSummaryItem Game;
+
+            public double CompletionFraction;
+        }
+
+        private static string WindowKey(TimeWindow window, DateTime today) =>
+            (window ?? ShowcaseTimelineOptions.DefaultWindow).ToKey() + "@" + today.Date.Ticks.ToString(CultureInfo.InvariantCulture);
 
         public static ShowcaseWidgetProjection Build(
             OverviewDataSnapshot snapshot,
@@ -195,7 +218,7 @@ namespace PlayniteAchievements.Services.Showcase
             {
                 Instance = instance,
                 Snapshot = snapshot,
-                Profile = settings.Profile ?? new ShowcaseProfileSettings()
+                Profile = instance.Profile ?? new ShowcaseProfileSettings()
             };
 
             AchievementGridOptions achievementOptions = null;
@@ -220,7 +243,7 @@ namespace PlayniteAchievements.Services.Showcase
                 case ShowcaseWidgetKind.Profile:
                     result.Statistics = GetStatistics(snapshot, now ?? DateTime.Now);
                     result.ResolvedProfile = ShowcaseProfileResolver.Resolve(
-                        settings.Profile,
+                        instance.Profile,
                         snapshot.CurrentUserIdentities);
                     break;
                 case ShowcaseWidgetKind.Statistics:
@@ -240,7 +263,7 @@ namespace PlayniteAchievements.Services.Showcase
                                 settings,
                                 ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
                         }
-                        result.Games = ResolveGameMosaic(snapshot, settings, instance);
+                        result.Games = ResolveGameMosaic(snapshot, settings, instance, int.MaxValue);
                         break;
                     }
 
@@ -250,24 +273,28 @@ namespace PlayniteAchievements.Services.Showcase
                             settings,
                             ShowcaseWidgetOptions.GetPinCollectionId(instance))?.CollectionId;
                     }
-                    result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance);
+                    result.MosaicAchievements = ResolveMosaic(snapshot, settings, instance, int.MaxValue);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
-                    // The collapsed Achievements Grid: every achievement by default, or a pin
-                    // collection's rows with reorder support.
-                    if (ShowcaseWidgetOptions.GetAchievementGridSource(instance) ==
-                        ShowcaseAchievementGridSource.Pinned)
+                    // The collapsed Achievements Grid: every unlocked achievement by default, a pin
+                    // collection's rows with reorder support, or the Unlock Next candidates.
+                    switch (ShowcaseWidgetOptions.GetAchievementGridSource(instance))
                     {
-                        var gridPins = ShowcasePinService.ResolveAchievementCollection(
-                            settings,
-                            ShowcaseWidgetOptions.GetPinCollectionId(instance));
-                        result.ResolvedPinCollectionId = gridPins?.CollectionId;
-                        result.Achievements = ResolvePinnedAchievements(snapshot, gridPins?.Pins);
-                        result.AchievementRows = ResolvePinRowsCached(snapshot, result.Achievements);
-                    }
-                    else
-                    {
-                        result.AchievementRows = ResolveAllAchievements(snapshot);
+                        case ShowcaseAchievementGridSource.Pinned:
+                            var gridPins = ShowcasePinService.ResolveAchievementCollection(
+                                settings,
+                                ShowcaseWidgetOptions.GetPinCollectionId(instance));
+                            result.ResolvedPinCollectionId = gridPins?.CollectionId;
+                            result.Achievements = ResolvePinnedAchievements(snapshot, gridPins?.Pins);
+                            result.AchievementRows = ResolvePinRowsCached(snapshot, result.Achievements);
+                            break;
+                        case ShowcaseAchievementGridSource.UnlockNext:
+                            // Uncapped here: the grid's MaxRows applies after its search filter.
+                            result.AchievementRows = ResolveUnlockNext(snapshot, instance, int.MaxValue, now);
+                            break;
+                        default:
+                            result.AchievementRows = ResolveAllAchievements(snapshot);
+                            break;
                     }
 
                     break;
@@ -288,6 +315,9 @@ namespace PlayniteAchievements.Services.Showcase
                         case ShowcaseGameGridSource.PlayniteFavorites:
                             result.Games = ResolvePlayniteFavorites(snapshot?.GameSummaries);
                             break;
+                        case ShowcaseGameGridSource.FinishNext:
+                            result.Games = ResolveFinishNextGames(snapshot?.GameSummaries, instance, now).ToList();
+                            break;
                         default:
                             result.Games = ResolveGameSummaries(snapshot, instance);
                             break;
@@ -301,11 +331,10 @@ namespace PlayniteAchievements.Services.Showcase
                     result.ScoreHistory = GetScoreHistory(snapshot, instance, (now ?? DateTime.Now).Date);
                     break;
                 case ShowcaseWidgetKind.Timeline:
-                    var endDate = (now ?? DateTime.Now).Date;
-                    var sourceCounts = NormalizeDailyCounts(snapshot);
-                    var startDate = ResolveWindowStart(instance, endDate, sourceCounts);
-                    result.Timeline = EnumerateDailyWindow(startDate, endDate, sourceCounts)
-                        .ToDictionary(day => day.Date, day => day.Count);
+                    // The chart view model resolves the instance's window itself (the same
+                    // TimeWindow the options hold), so the projection hands over the per-day
+                    // counts unwindowed rather than clipping them a second time here.
+                    result.Timeline = NormalizeDailyCounts(snapshot);
                     break;
             }
 
@@ -335,7 +364,7 @@ namespace PlayniteAchievements.Services.Showcase
             DateTime endDate)
         {
             var cache = DerivedCache.GetOrCreateValue(snapshot);
-            var key = WindowKey(ShowcaseTimelineOptions.GetRange(instance), endDate);
+            var key = WindowKey(ShowcaseTimelineOptions.GetWindow(instance), endDate);
             if (!cache.ScoreHistory.TryGetValue(key, out var history))
             {
                 history = BuildScoreHistory(snapshot, instance, endDate);
@@ -351,7 +380,7 @@ namespace PlayniteAchievements.Services.Showcase
             DateTime endDate)
         {
             var cache = DerivedCache.GetOrCreateValue(snapshot);
-            var key = WindowKey(ShowcaseTimelineOptions.GetRange(instance), endDate);
+            var key = WindowKey(ShowcaseTimelineOptions.GetWindow(instance), endDate);
             if (!cache.ActivityCalendars.TryGetValue(key, out var calendar))
             {
                 calendar = BuildActivityCalendar(snapshot, instance, endDate);
@@ -369,14 +398,17 @@ namespace PlayniteAchievements.Services.Showcase
                 .ToDictionary(group => group.Key, group => group.Sum(pair => Math.Max(0, pair.Value)));
         }
 
-        /// <summary>Start of the instance's configured range, never past the end date.</summary>
-        private static DateTime ResolveWindowStart(
+        /// <summary>
+        /// The instance's window resolved against <paramref name="today"/>: presets roll back from
+        /// today, a custom range keeps its own bounds, and an open start falls back to the earliest
+        /// counted day. This is the one resolver shared with the chart view models.
+        /// </summary>
+        private static DayRange ResolveDayRange(
             ShowcaseWidgetInstanceSettings instance,
-            DateTime endDate,
+            DateTime today,
             IReadOnlyDictionary<DateTime, int> counts)
         {
-            var start = GetTimelineStartDate(ShowcaseTimelineOptions.GetRange(instance), endDate, counts);
-            return start > endDate ? endDate : start;
+            return ShowcaseTimelineOptions.GetWindow(instance).Resolve(today, UnlockDayCounts.Earliest(counts));
         }
 
         /// <summary>Every day from start to end inclusive, with missing days reported as zero.</summary>
@@ -391,32 +423,6 @@ namespace PlayniteAchievements.Services.Showcase
                 var date = start.AddDays(offset);
                 counts.TryGetValue(date, out var count);
                 yield return (date, count);
-            }
-        }
-
-        private static DateTime GetTimelineStartDate(
-            TimelineRange range,
-            DateTime endDate,
-            IReadOnlyDictionary<DateTime, int> counts)
-        {
-            switch (range)
-            {
-                case TimelineRange.SevenDays:
-                    return endDate.AddDays(-6);
-                case TimelineRange.FourteenDays:
-                    return endDate.AddDays(-13);
-                case TimelineRange.OneMonth:
-                    return endDate.AddMonths(-1).AddDays(1);
-                case TimelineRange.ThreeMonths:
-                    return endDate.AddMonths(-3).AddDays(1);
-                case TimelineRange.OneYear:
-                    return endDate.AddYears(-1).AddDays(1);
-                case TimelineRange.All:
-                    return counts != null && counts.Count > 0
-                        ? counts.Keys.Min().Date
-                        : endDate;
-                default:
-                    return endDate.AddMonths(-3).AddDays(1);
             }
         }
 
@@ -486,10 +492,11 @@ namespace PlayniteAchievements.Services.Showcase
             return new List<ShowcaseStatistic>
             {
                 Stat("unlocked", "LOCPlayAch_Common_Unlocked", snapshot.TotalUnlocked),
+                Stat("locked", "LOCPlayAch_Common_Locked", snapshot.TotalLocked),
                 Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", snapshot.GlobalProgressionPercent),
                 Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", snapshot.TotalGames),
                 Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", playedGames),
-                Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", snapshot.CompletedGames),
+                Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", snapshot.Completions),
                 Stat("playtime", "LOCPlayAch_Common_Label_Playtime", totalPlaytime),
                 Stat(
                     "activeDayRate",
@@ -650,23 +657,42 @@ namespace PlayniteAchievements.Services.Showcase
         {
             return (items ?? Array.Empty<ShowcaseAchievementItem>())
                 .Where(item => item != null)
-                .Select(item => item.IsMissing
-                    ? new AchievementDisplayItem
-                    {
-                        PlayniteGameId = item.Pin?.GameId,
-                        ApiName = item.Pin?.ApiName,
-                        DisplayName = item.Pin?.LastKnownAchievementName,
-                        GameName = item.Pin?.LastKnownGameName
-                    }
-                    : item.Achievement)
+                .Select(item => item.IsMissing ? CreatePlaceholderRow(item.Pin) : item.Achievement)
                 .ToList();
         }
 
         /// <summary>
-        /// Every achievement in the snapshot, unlocked-recent-first with the locked tail last,
-        /// so the grid's Default sort reads as newest unlocks. Cached per snapshot because the
-        /// full library is sorted once, not per dashboard rebuild; the MaxRows cap applies in
-        /// the widget view model after its search filter.
+        /// A pin with no matching row (its achievement was renamed, filtered, or its game is gone).
+        /// It is not a locked achievement, only an unresolved one, so it shows its last-known name
+        /// unmasked: with the default appearance its blank detail read as locked, and the spoiler
+        /// settings covered its icon, name and description as if it were a hidden achievement.
+        /// </summary>
+        private static AchievementDisplayItem CreatePlaceholderRow(PinnedAchievementReference pin)
+        {
+            var row = new AchievementDisplayItem
+            {
+                PlayniteGameId = pin?.GameId,
+                ApiName = pin?.ApiName,
+                DisplayName = pin?.LastKnownAchievementName,
+                GameName = pin?.LastKnownGameName
+            };
+            row.ApplyAppearanceSettings(new AchievementDisplayItem.AppearanceSettingsSnapshot
+            {
+                ShowHiddenIcon = true,
+                ShowHiddenTitle = true,
+                ShowHiddenDescription = true,
+                ShowLockedIcon = true
+            });
+            return row;
+        }
+
+        /// <summary>
+        /// Every unlocked achievement in the snapshot, newest unlock first, so the grid's Default
+        /// sort reads as newest unlocks. The snapshot also carries locked pinned goals (hydrated for
+        /// the pinned widgets); they stay out of this source, where they read as spoiler-covered
+        /// rows among the unlocks. Cached per snapshot because the full library is sorted once, not
+        /// per dashboard rebuild; the MaxRows cap applies in the widget view model after its search
+        /// filter.
         /// </summary>
         public static IReadOnlyList<AchievementDisplayItem> ResolveAllAchievements(
             OverviewDataSnapshot snapshot)
@@ -680,13 +706,81 @@ namespace PlayniteAchievements.Services.Showcase
             if (cache.AllAchievementRows == null)
             {
                 cache.AllAchievementRows = (snapshot.Achievements ?? new List<AchievementDisplayItem>())
-                    .Where(item => item != null)
-                    .OrderByDescending(item => item.Unlocked)
-                    .ThenByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue)
+                    .Where(item => item != null && item.Unlocked)
+                    .OrderByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue)
                     .ToList();
             }
 
             return cache.AllAchievementRows;
+        }
+
+        /// <summary>
+        /// The unfinished games closest to done within the instance's last-played window, shared
+        /// by the Finish Next mosaic and grid sources. Unfinished by achievement count rather than
+        /// IsCompleted, which is capstone based: a game can hold its capstone and still have
+        /// achievements left.
+        /// </summary>
+        public static IEnumerable<GameSummaryItem> ResolveFinishNextGames(
+            IEnumerable<GameSummaryItem> summaries,
+            ShowcaseWidgetInstanceSettings instance,
+            DateTime? now = null)
+        {
+            var cutoff = ResolveLastPlayedBounds(instance, now);
+            var includeUnplayed = ShowcaseWidgetOptions.GetFinishNextIncludeUnplayed(instance);
+            var minimumFraction = ShowcaseWidgetOptions.GetFinishNextMinimumProgress(instance) / 100d;
+            var maxRemaining = ShowcaseWidgetOptions.GetFinishNextMaxRemaining(instance);
+            var eligible = (summaries ?? Enumerable.Empty<GameSummaryItem>())
+                .Where(game => game != null &&
+                    game.TotalAchievements > 0 &&
+                    game.UnlockedAchievements < game.TotalAchievements &&
+                    (IsWithinWindow(game, cutoff) || (includeUnplayed && game.LastPlayed == null)) &&
+                    CompletionFraction(game) >= minimumFraction &&
+                    (maxRemaining == 0 || Remaining(game) <= maxRemaining));
+
+            IOrderedEnumerable<GameSummaryItem> ranked;
+            switch (ShowcaseWidgetOptions.GetFinishNextCriterion(instance))
+            {
+                case FinishNextCriterion.FewestRemaining:
+                    ranked = eligible
+                        .OrderBy(Remaining)
+                        .ThenByDescending(CompletionFraction);
+                    break;
+                case FinishNextCriterion.EasiestRemaining:
+                    ranked = eligible
+                        .OrderByDescending(RemainingEase)
+                        .ThenBy(Remaining);
+                    break;
+                default:
+                    ranked = eligible
+                        .OrderByDescending(CompletionFraction)
+                        .ThenBy(Remaining);
+                    break;
+            }
+
+            return ranked.ThenByDescending(game => game.LastPlayed ?? DateTime.MinValue);
+        }
+
+        private static int Remaining(GameSummaryItem game) =>
+            Math.Max(0, game.TotalAchievements - game.UnlockedAchievements);
+
+        /// <summary>
+        /// How commonly earned a game's remaining achievements are, 0 (all ultra rare) to 1 (all
+        /// common), from the locked count in each rarity tier. A game with no tier data sits in the
+        /// middle rather than first or last.
+        /// </summary>
+        private static double RemainingEase(GameSummaryItem game)
+        {
+            var common = Math.Max(0, game.TotalCommonPossible - game.CommonCount);
+            var uncommon = Math.Max(0, game.TotalUncommonPossible - game.UncommonCount);
+            var rare = Math.Max(0, game.TotalRarePossible - game.RareCount);
+            var ultraRare = Math.Max(0, game.TotalUltraRarePossible - game.UltraRareCount);
+            var total = common + uncommon + rare + ultraRare;
+            if (total == 0)
+            {
+                return 0.5;
+            }
+
+            return (common + (uncommon * 2d / 3d) + (rare / 3d)) / total;
         }
 
         /// <summary>Playnite-favorite games, alphabetical.</summary>
@@ -730,10 +824,21 @@ namespace PlayniteAchievements.Services.Showcase
         public static IReadOnlyList<GameSummaryItem> ResolveGameMosaic(
             OverviewDataSnapshot snapshot,
             ShowcaseSettings settings,
-            ShowcaseWidgetInstanceSettings instance)
+            ShowcaseWidgetInstanceSettings instance) =>
+            ResolveGameMosaic(snapshot, settings, instance, ShowcaseWidgetOptions.GetGameMosaicCount(instance));
+
+        /// <summary>
+        /// The game mosaic's source rows in source order, capped at <paramref name="count"/>. The
+        /// widget projection passes no cap so the control-bar filter reaches the whole source,
+        /// and the widget applies the Count option after filtering.
+        /// </summary>
+        public static IReadOnlyList<GameSummaryItem> ResolveGameMosaic(
+            OverviewDataSnapshot snapshot,
+            ShowcaseSettings settings,
+            ShowcaseWidgetInstanceSettings instance,
+            int count)
         {
             var summaries = snapshot?.GameSummaries ?? new List<GameSummaryItem>();
-            var count = ShowcaseWidgetOptions.GetGameMosaicCount(instance);
             IEnumerable<GameSummaryItem> games;
             switch (ShowcaseWidgetOptions.GetGameMosaicSource(instance))
             {
@@ -754,6 +859,9 @@ namespace PlayniteAchievements.Services.Showcase
                         .Where(game => game?.IsFavorite == true)
                         .OrderBy(game => game.GameName, StringComparer.CurrentCultureIgnoreCase);
                     break;
+                case ShowcaseGameMosaicSource.FinishNext:
+                    games = ResolveFinishNextGames(summaries, instance);
+                    break;
                 default:
                     games = summaries
                         .Where(game => game?.IsCompleted == true)
@@ -769,9 +877,11 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseWidgetInstanceSettings instance,
             DateTime endDate)
         {
-            endDate = endDate.Date;
             var counts = NormalizeDailyCounts(snapshot);
-            var start = ResolveWindowStart(instance, endDate, counts);
+            var range = ResolveDayRange(instance, endDate.Date, counts);
+            var start = range.Start;
+            // A custom window with a fixed end stops the calendar there rather than at today.
+            endDate = range.End;
             // Weeks render as Sunday-first columns, so the window starts on a Sunday.
             while (start.DayOfWeek != DayOfWeek.Sunday)
             {
@@ -782,16 +892,19 @@ namespace PlayniteAchievements.Services.Showcase
             var max = 0;
             var total = 0;
             var activeDays = 0;
+            var unlocksByDay = GetUnlocksByDay(snapshot);
             foreach (var day in EnumerateDailyWindow(start, endDate, counts))
             {
                 max = Math.Max(max, day.Count);
                 total += day.Count;
+                IReadOnlyList<AchievementDisplayItem> unlocks = null;
                 if (day.Count > 0)
                 {
                     activeDays++;
+                    unlocksByDay.TryGetValue(day.Date, out unlocks);
                 }
 
-                days.Add(new ShowcaseActivityDay { Date = day.Date, Count = day.Count });
+                days.Add(new ShowcaseActivityDay { Date = day.Date, Count = day.Count, Unlocks = unlocks });
             }
 
             var activeCounts = days
@@ -821,6 +934,56 @@ namespace PlayniteAchievements.Services.Showcase
                 TotalCount = total,
                 ActiveDayCount = activeDays
             };
+        }
+
+        /// <summary>
+        /// The snapshot's unlocked rows grouped by local unlock day, folded once per snapshot the
+        /// way the score deltas are. A calendar cell hands its day's list to the day popup, so the
+        /// lists hold the snapshot's own row instances and die with the snapshot; undated unlocks
+        /// have no day and are left out, matching the day counts.
+        /// </summary>
+        private static Dictionary<DateTime, IReadOnlyList<AchievementDisplayItem>> GetUnlocksByDay(
+            OverviewDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return new Dictionary<DateTime, IReadOnlyList<AchievementDisplayItem>>();
+            }
+
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            if (cache.UnlocksByDay != null)
+            {
+                return cache.UnlocksByDay;
+            }
+
+            var grouped = new Dictionary<DateTime, List<AchievementDisplayItem>>();
+            foreach (var item in snapshot.Achievements ?? new List<AchievementDisplayItem>())
+            {
+                if (item?.Unlocked != true || !item.UnlockTimeUtc.HasValue)
+                {
+                    continue;
+                }
+
+                var day = UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value);
+                if (!grouped.TryGetValue(day, out var rows))
+                {
+                    rows = new List<AchievementDisplayItem>();
+                    grouped[day] = rows;
+                }
+
+                rows.Add(item);
+            }
+
+            var index = new Dictionary<DateTime, IReadOnlyList<AchievementDisplayItem>>(grouped.Count);
+            foreach (var pair in grouped)
+            {
+                // Chronological within the day, so the list reads as the day's activity.
+                pair.Value.Sort((left, right) => left.UnlockTimeUtc.Value.CompareTo(right.UnlockTimeUtc.Value));
+                index[pair.Key] = pair.Value;
+            }
+
+            cache.UnlocksByDay = index;
+            return index;
         }
 
         /// <summary>
@@ -901,7 +1064,7 @@ namespace PlayniteAchievements.Services.Showcase
                 deltas.SawUnlocked = true;
                 if (item.UnlockTimeUtc.HasValue)
                 {
-                    var day = item.UnlockTimeUtc.Value.Date;
+                    var day = UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value);
                     deltas.Collection.TryGetValue(day, out var collection);
                     deltas.Collection[day] = collection + item.CollectionScore;
                     deltas.Prestige.TryGetValue(day, out var prestige);
@@ -937,7 +1100,10 @@ namespace PlayniteAchievements.Services.Showcase
 
             var dailyCollection = deltas.Collection;
             var dailyPrestige = deltas.Prestige;
-            var start = ResolveWindowStart(instance, endDate, dailyCollection);
+            var earliestDay = dailyCollection.Count > 0 ? dailyCollection.Keys.Min() : (DateTime?)null;
+            var range = ShowcaseTimelineOptions.GetWindow(instance).Resolve(endDate, earliestDay);
+            var start = range.Start;
+            endDate = range.End;
 
             // Unlocks before the window still count toward the running totals, so the first
             // point starts from the score already earned rather than from zero.
@@ -980,10 +1146,22 @@ namespace PlayniteAchievements.Services.Showcase
         public static IReadOnlyList<AchievementDisplayItem> ResolveMosaic(
             OverviewDataSnapshot snapshot,
             ShowcaseSettings settings,
-            ShowcaseWidgetInstanceSettings instance)
+            ShowcaseWidgetInstanceSettings instance) =>
+            ResolveMosaic(snapshot, settings, instance, ShowcaseWidgetOptions.GetMosaicCount(instance));
+
+        /// <summary>
+        /// The achievement mosaic's source rows in source order, capped at <paramref name="count"/>.
+        /// The widget projection passes no cap so the control-bar filter reaches the whole source,
+        /// and the widget applies the Count option after filtering. Unlock Next walks its ranking
+        /// greedily, so a later cap keeps the same rows a capped call returns.
+        /// </summary>
+        public static IReadOnlyList<AchievementDisplayItem> ResolveMosaic(
+            OverviewDataSnapshot snapshot,
+            ShowcaseSettings settings,
+            ShowcaseWidgetInstanceSettings instance,
+            int count)
         {
             var source = ShowcaseWidgetOptions.GetMosaicSource(instance);
-            var count = ShowcaseWidgetOptions.GetMosaicCount(instance);
             IEnumerable<AchievementDisplayItem> achievements;
             switch (source)
             {
@@ -1003,6 +1181,11 @@ namespace PlayniteAchievements.Services.Showcase
                         .Where(item => item?.Unlocked == true && item.IsCapstone)
                         .OrderByDescending(item => item.UnlockTimeUtc);
                     break;
+                case ShowcaseMosaicSource.UnlockNext:
+                    // Selection, not re-arrangement: the criterion decides which locked
+                    // achievements make the cut, so it runs here and the widget's generic sort
+                    // is hidden for this source.
+                    return ResolveUnlockNext(snapshot, instance, count);
                 case ShowcaseMosaicSource.Pinned:
                     achievements = ResolvePinnedAchievements(
                             snapshot,
@@ -1020,6 +1203,213 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             return achievements.Take(count).ToList();
+        }
+
+        /// <summary>
+        /// Locked achievements to hunt next, narrowed out of the snapshot's bounded candidate pool
+        /// by the widget's window and hidden-achievement choice, ranked by its criterion, then
+        /// capped per game. The pool itself is config-independent, so every option edit is answered here
+        /// without rebuilding the snapshot.
+        /// </summary>
+        public static IReadOnlyList<AchievementDisplayItem> ResolveUnlockNext(
+            OverviewDataSnapshot snapshot,
+            ShowcaseWidgetInstanceSettings instance,
+            int count,
+            DateTime? now = null)
+        {
+            var pool = ResolveUnlockNextPool(snapshot);
+            if (pool.Count == 0)
+            {
+                return new List<AchievementDisplayItem>();
+            }
+
+            var criterion = ShowcaseWidgetOptions.GetUnlockNextCriterion(instance);
+            var includeHidden = ShowcaseWidgetOptions.GetIncludeHiddenAchievements(instance);
+            var cutoff = ResolveLastPlayedBounds(instance, now);
+
+            var eligible = pool.Where(candidate =>
+                (includeHidden || !candidate.Achievement.Hidden) &&
+                IsWithinWindow(candidate.Game, cutoff));
+
+            // The per-game cap is a ceiling, not a quota: walking one ranked list means a game only
+            // appears when its achievements earn a slot, and no game is handed a hard achievement
+            // just so every game gets a tile.
+            var perGame = ShowcaseWidgetOptions.GetMaxPerGame(instance);
+            var takenPerGame = new Dictionary<Guid, int>();
+            var result = new List<AchievementDisplayItem>();
+            foreach (var candidate in Rank(eligible, criterion))
+            {
+                if (result.Count >= count)
+                {
+                    break;
+                }
+
+                var gameId = candidate.Achievement.PlayniteGameId ?? Guid.Empty;
+                takenPerGame.TryGetValue(gameId, out var taken);
+                if (taken >= perGame)
+                {
+                    continue;
+                }
+
+                takenPerGame[gameId] = taken + 1;
+                result.Add(candidate.Achievement);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// The snapshot's candidate pool, dropping anything unlocked since it was built (a delta
+        /// tick carries the pool forward rather than rehydrating it) and pairing each row with its
+        /// game summary. Cached per snapshot because it scans the library's unlocked rows once.
+        /// </summary>
+        private static IReadOnlyList<UnlockNextCandidate> ResolveUnlockNextPool(
+            OverviewDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return new List<UnlockNextCandidate>();
+            }
+
+            var cache = DerivedCache.GetOrCreateValue(snapshot);
+            if (cache.UnlockNextPool != null)
+            {
+                return cache.UnlockNextPool;
+            }
+
+            var candidates = snapshot.UnlockNextCandidates ?? new List<AchievementDisplayItem>();
+            if (candidates.Count == 0)
+            {
+                cache.UnlockNextPool = new List<UnlockNextCandidate>();
+                return cache.UnlockNextPool;
+            }
+
+            var summariesById = new Dictionary<Guid, GameSummaryItem>();
+            foreach (var summary in snapshot.GameSummaries ?? new List<GameSummaryItem>())
+            {
+                if (summary?.PlayniteGameId != null)
+                {
+                    summariesById[summary.PlayniteGameId.Value] = summary;
+                }
+            }
+
+            var unlockedSince = BuildUnlockedKeySet(snapshot, candidates);
+            var pool = new List<UnlockNextCandidate>(candidates.Count);
+            foreach (var achievement in candidates)
+            {
+                if (achievement == null ||
+                    achievement.Unlocked ||
+                    achievement.PlayniteGameId == null)
+                {
+                    continue;
+                }
+
+                if (unlockedSince.Contains(UnlockNextKey(
+                        achievement.PlayniteGameId.Value,
+                        achievement.ApiName)))
+                {
+                    continue;
+                }
+
+                summariesById.TryGetValue(achievement.PlayniteGameId.Value, out var summary);
+                pool.Add(new UnlockNextCandidate
+                {
+                    Achievement = achievement,
+                    Game = summary,
+                    CompletionFraction = CompletionFraction(summary)
+                });
+            }
+
+            cache.UnlockNextPool = pool;
+            return pool;
+        }
+
+        /// <summary>
+        /// Keys of pool achievements that the snapshot now reports as unlocked. Built from the
+        /// pool's own keys so the scan over the library's unlocked rows allocates nothing per row.
+        /// </summary>
+        private static HashSet<string> BuildUnlockedKeySet(
+            OverviewDataSnapshot snapshot,
+            IReadOnlyList<AchievementDisplayItem> candidates)
+        {
+            var poolKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in candidates)
+            {
+                if (candidate?.PlayniteGameId != null)
+                {
+                    poolKeys.Add(UnlockNextKey(candidate.PlayniteGameId.Value, candidate.ApiName));
+                }
+            }
+
+            var unlocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in snapshot.Achievements ?? new List<AchievementDisplayItem>())
+            {
+                if (item?.Unlocked != true || item.PlayniteGameId == null)
+                {
+                    continue;
+                }
+
+                var key = UnlockNextKey(item.PlayniteGameId.Value, item.ApiName);
+                if (poolKeys.Contains(key))
+                {
+                    unlocked.Add(key);
+                }
+            }
+
+            return unlocked;
+        }
+
+        private static string UnlockNextKey(Guid gameId, string apiName) =>
+            gameId.ToString("N") + "|" + (apiName ?? string.Empty);
+
+        /// <summary>
+        /// One ranked list across every game. Easiest leads with the most commonly earned;
+        /// Closest to completion leads with the games nearest done and, within a game, with its
+        /// most commonly earned leftovers rather than its hardest.
+        /// </summary>
+        private static IEnumerable<UnlockNextCandidate> Rank(
+            IEnumerable<UnlockNextCandidate> candidates,
+            UnlockNextCriterion criterion)
+        {
+            var ranked = criterion == UnlockNextCriterion.Easiest
+                ? candidates.OrderBy(candidate => 0)
+                : candidates.OrderByDescending(candidate => candidate.CompletionFraction);
+
+            // Achievements with no global percentage are not known to be easy, so they sort
+            // behind every achievement that has one rather than winning the slot.
+            return ranked
+                .ThenByDescending(candidate => candidate.Achievement.GlobalPercentUnlocked.HasValue)
+                .ThenByDescending(candidate => candidate.Achievement.GlobalPercentUnlocked ?? 0)
+                .ThenBy(candidate => candidate.Achievement.DefaultOrderIndex)
+                .ThenBy(candidate => candidate.Achievement.ApiName, StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// The local-day bounds a game's last-played day must fall inside to contribute; unbounded
+        /// for All. A custom window bounds both ends.
+        /// </summary>
+        private static DayBounds ResolveLastPlayedBounds(ShowcaseWidgetInstanceSettings instance, DateTime? now)
+        {
+            return ShowcaseWidgetOptions.GetLastPlayedTimeWindow(instance).ResolveBounds((now ?? DateTime.Now).Date);
+        }
+
+        private static bool IsWithinWindow(GameSummaryItem game, DayBounds bounds)
+        {
+            if (bounds.IsUnbounded)
+            {
+                return true;
+            }
+
+            // A game that was never played has no date to compare, so a window excludes it.
+            return game?.LastPlayed != null &&
+                bounds.Contains(Common.DateTimeUtilities.ToLocalDay(game.LastPlayed.Value));
+        }
+
+        private static double CompletionFraction(GameSummaryItem summary)
+        {
+            return summary == null || summary.TotalAchievements <= 0
+                ? 0
+                : (double)summary.UnlockedAchievements / summary.TotalAchievements;
         }
 
         private static IReadOnlyList<ShowcaseChartEntry> ApplyTopN(

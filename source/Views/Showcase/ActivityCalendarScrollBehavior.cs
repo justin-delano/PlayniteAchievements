@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views.Showcase
@@ -64,8 +65,12 @@ namespace PlayniteAchievements.Views.Showcase
         {
             // The calendar ends at today, so any extent width change (first layout, a new range,
             // a font size change) re-pins the view to the most recent weeks. User scrolling only
-            // changes the offset, never the extent, so it is left alone.
-            if (e.ExtentWidthChange != 0 && sender is ScrollViewer viewer)
+            // changes the offset, never the extent, so it is left alone. ScrollChanged bubbles, and
+            // the heatmap's day popup routes its list's own scroll changes through this viewer;
+            // only the viewer's own changes count.
+            if (e.ExtentWidthChange != 0 &&
+                sender is ScrollViewer viewer &&
+                ReferenceEquals(e.OriginalSource, viewer))
             {
                 viewer.ScrollToRightEnd();
             }
@@ -74,6 +79,13 @@ namespace PlayniteAchievements.Views.Showcase
         private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (!(sender is ScrollViewer viewer) || viewer.ScrollableWidth <= 0)
+            {
+                return;
+            }
+
+            // The heatmap's day popup routes its events through the heatmap and so through this
+            // viewer; a wheel over the popup's list belongs to that list, not the calendar.
+            if (!(e.OriginalSource is Visual source) || !viewer.IsAncestorOf(source))
             {
                 return;
             }

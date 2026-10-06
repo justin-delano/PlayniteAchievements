@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.Win32;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Views.Helpers;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
@@ -16,7 +13,6 @@ namespace PlayniteAchievements.Views.Showcase
 {
     public sealed class ShowcaseWidgetSettingsDialog : UserControl
     {
-        private const string ImagePatterns = "*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp";
         private const double DialogWidth = 460;
         private const double MinimumDialogHeight = 200;
         private const double FallbackDialogHeight = 520;
@@ -24,22 +20,15 @@ namespace PlayniteAchievements.Views.Showcase
 
         private readonly ShowcaseWidgetInstanceSettings _sourceWidget;
         private readonly ShowcaseWidgetInstanceSettings _workingWidget;
-        private readonly ShowcaseSettings _layout;
         private readonly ShowcaseProfileSettings _workingProfile;
         private TextBox _titleBox;
-        private TextBox _profileNameBox;
-        private TextBox _profileSubtitleBox;
-        private TextBox _avatarBox;
-        private TextBox _backgroundBox;
+        private ShowcaseProfileSettingsEditor _profileEditor;
 
-        private ShowcaseWidgetSettingsDialog(
-            ShowcaseWidgetInstanceSettings widget,
-            ShowcaseSettings layout)
+        private ShowcaseWidgetSettingsDialog(ShowcaseWidgetInstanceSettings widget)
         {
             _sourceWidget = widget ?? throw new ArgumentNullException(nameof(widget));
             _workingWidget = widget.Clone();
-            _layout = layout ?? throw new ArgumentNullException(nameof(layout));
-            _workingProfile = (layout.Profile ?? new ShowcaseProfileSettings()).Clone();
+            _workingProfile = (widget.Profile ?? new ShowcaseProfileSettings()).Clone();
             Resources.MergedDictionaries.Add(new ResourceDictionary
             {
                 Source = new Uri(
@@ -54,16 +43,14 @@ namespace PlayniteAchievements.Views.Showcase
 
         public bool Saved { get; private set; }
 
-        public static bool Show(
-            ShowcaseWidgetInstanceSettings widget,
-            ShowcaseSettings layout)
+        public static bool Show(ShowcaseWidgetInstanceSettings widget)
         {
-            if (widget == null || layout == null)
+            if (widget == null)
             {
                 return false;
             }
 
-            var editor = new ShowcaseWidgetSettingsDialog(widget, layout);
+            var editor = new ShowcaseWidgetSettingsDialog(widget);
             var title = string.Format(
                 FormattingCulture.Current,
                 Localize("LOCPlayAch_Showcase_WidgetSettingsTitle"),
@@ -113,14 +100,16 @@ namespace PlayniteAchievements.Views.Showcase
             scroll.Content = panel;
             root.Children.Add(scroll);
 
-            _titleBox = AddTextBox(
+            _titleBox = ShowcaseProfileSettingsEditor.AddTextBox(
                 panel,
                 Localize("LOCPlayAch_Showcase_CustomTitle"),
                 _workingWidget.CustomTitle);
 
             if (_workingWidget.Kind == ShowcaseWidgetKind.Profile)
             {
-                BuildProfileSettings(panel);
+                // Edits the clone; Save copies it back and Cancel discards it.
+                _profileEditor = new ShowcaseProfileSettingsEditor(_workingProfile);
+                panel.Children.Add(_profileEditor);
             }
 
             if (ShowcaseWidgetOptionsControl.HasOptions(_workingWidget.Kind))
@@ -159,180 +148,26 @@ namespace PlayniteAchievements.Views.Showcase
             return root;
         }
 
-        private void BuildProfileSettings(Panel panel)
-        {
-            var providerHint = new TextBlock
-            {
-                Text = Localize("LOCPlayAch_Showcase_ProfileProviderHint"),
-                FontStyle = FontStyles.Italic,
-                Opacity = 0.7,
-                TextWrapping = TextWrapping.Wrap
-            };
-            providerHint.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Sm");
-            providerHint.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
-            panel.Children.Add(providerHint);
-
-            _profileNameBox = AddTextBox(
-                panel,
-                Localize("LOCPlayAch_Showcase_ProfileName"),
-                _workingProfile.DisplayName);
-            _profileSubtitleBox = AddTextBox(
-                panel,
-                Localize("LOCPlayAch_Showcase_ProfileSubtitle"),
-                _workingProfile.Subtitle);
-            _avatarBox = AddImagePicker(
-                panel,
-                Localize("LOCPlayAch_Showcase_ProfileAvatar"),
-                _workingProfile.AvatarPath);
-            _backgroundBox = AddImagePicker(
-                panel,
-                Localize("LOCPlayAch_Showcase_ProfileBackground"),
-                _workingProfile.BackgroundPath);
-        }
-
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             _sourceWidget.CustomTitle = _titleBox.Text?.Trim();
             _sourceWidget.Options = new Dictionary<string, string>(
                 _workingWidget.Options ?? new Dictionary<string, string>(),
                 StringComparer.OrdinalIgnoreCase);
-            if (_sourceWidget.Kind == ShowcaseWidgetKind.Profile)
+            if (_sourceWidget.Kind == ShowcaseWidgetKind.Profile && _profileEditor != null)
             {
-                var profile = _layout.Profile ?? (_layout.Profile = new ShowcaseProfileSettings());
-                profile.DisplayName = _profileNameBox.Text?.Trim();
-                profile.Subtitle = _profileSubtitleBox.Text?.Trim();
-                profile.AvatarPath = ResolveManagedImage(
-                    _avatarBox.Text,
-                    _workingProfile.AvatarPath,
-                    "avatar");
-                profile.BackgroundPath = ResolveManagedImage(
-                    _backgroundBox.Text,
-                    _workingProfile.BackgroundPath,
-                    "background");
+                // Per widget, so the card on a duplicated page is edited on its own.
+                var profile = _sourceWidget.Profile ?? (_sourceWidget.Profile = new ShowcaseProfileSettings());
+                profile.DisplayName = _workingProfile.DisplayName;
+                profile.Subtitle = _workingProfile.Subtitle;
+                profile.AvatarPath = _workingProfile.AvatarPath;
+                profile.BackgroundPath = _workingProfile.BackgroundPath;
+                // Saving always stores the list, even empty: from then on the card shows exactly these.
+                profile.Links = _profileEditor.CollectProfileLinks();
             }
 
             Saved = true;
             Window.GetWindow(this)?.Close();
         }
-
-        private string ResolveManagedImage(string selectedPath, string originalPath, string slot)
-        {
-            var path = selectedPath?.Trim();
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return null;
-            }
-
-            if (string.Equals(path, originalPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return originalPath;
-            }
-
-            var plugin = PlayniteAchievementsPlugin.Instance;
-            var imported = ManagedShowcaseImageService.Import(
-                path,
-                plugin?.GetPluginUserDataPath(),
-                slot);
-            if (!string.IsNullOrWhiteSpace(imported))
-            {
-                plugin?.ImageService?.EvictByUriSegment(imported);
-            }
-
-            return imported ?? originalPath;
-        }
-
-        private static TextBox AddTextBox(
-            Panel panel,
-            string label,
-            string value)
-        {
-            var row = new Grid();
-            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var labelBlock = CreateLabel(label);
-            labelBlock.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
-            labelBlock.VerticalAlignment = VerticalAlignment.Center;
-            row.Children.Add(labelBlock);
-            var box = new TextBox
-            {
-                Text = value ?? string.Empty,
-                MinHeight = 30,
-                Padding = new Thickness(7, 4, 7, 4)
-            };
-            Grid.SetColumn(box, 1);
-            row.Children.Add(box);
-            panel.Children.Add(row);
-
-            return box;
-        }
-
-        private static TextBox AddImagePicker(Panel panel, string label, string value)
-        {
-            var row = new Grid();
-            row.SetResourceReference(MarginProperty, "PlayAch.Thickness.Bottom.Md");
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var labelBlock = CreateLabel(label);
-            labelBlock.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
-            labelBlock.VerticalAlignment = VerticalAlignment.Center;
-            row.Children.Add(labelBlock);
-            var box = new TextBox
-            {
-                Text = value ?? string.Empty,
-                IsReadOnly = true,
-                MinHeight = 30,
-                Padding = new Thickness(7, 4, 7, 4)
-            };
-            Grid.SetColumn(box, 1);
-            row.Children.Add(box);
-            var browse = new Button
-            {
-                Content = Localize("LOCPlayAch_Button_Browse"),
-                MinWidth = 82
-            };
-            browse.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");
-            browse.Click += (_, __) =>
-            {
-                var dialog = new OpenFileDialog
-                {
-                    Filter = $"{Localize("LOCPlayAch_Showcase_ImageFiles")} ({ImagePatterns})|{ImagePatterns}|{Localize("LOCPlayAch_Showcase_AllFiles")} (*.*)|*.*",
-                    CheckFileExists = true,
-                    Multiselect = false
-                };
-                if (dialog.ShowDialog() == true)
-                {
-                    box.Text = dialog.FileName;
-                }
-            };
-            Grid.SetColumn(browse, 2);
-            row.Children.Add(browse);
-            var clear = new Button
-            {
-                Content = Localize("LOCPlayAch_Button_Clear"),
-                MinWidth = 72
-            };
-            clear.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");
-            clear.Click += (_, __) => box.Text = string.Empty;
-            Grid.SetColumn(clear, 3);
-            row.Children.Add(clear);
-            panel.Children.Add(row);
-            return box;
-        }
-
-        private static TextBlock CreateLabel(string text)
-        {
-            var block = new TextBlock
-            {
-                Text = text,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 12, 0, 4)
-            };
-            block.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
-            return block;
-        }
-
     }
 }

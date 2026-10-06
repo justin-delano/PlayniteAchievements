@@ -40,7 +40,40 @@ namespace PlayniteAchievements.Common
         /// </summary>
         internal static readonly bool MemoryTracingEnabled = false;
 
-        public static bool Enabled => MemoryTracingEnabled || PerfScope.PerfTracingEnabled;
+        // Two gates, deliberately different -- and neither answers to PerfScope.PerfTracingEnabled.
+        //
+        // Enabled covers the [MemPerf] counter lines, the inline suffixes, the sampler, LeakWatch
+        // and RetentionProbes. It used to OR in PerfScope.PerfTracingEnabled so a tracing build
+        // reported memory alongside its timings, but that made a timing capture measure itself:
+        // LeakWatch.Track runs per editor row behind a global lock, and LeakWatch.TrackAll runs
+        // over whole library row sets inside the overview's per-edit delta, so arming it with the
+        // timings inflated the very numbers the timings were taken to read. Memory tracing is now
+        // its own opt-in, which is what the split below already established for the report.
+        //
+        // RetentionReportEnabled covers only the retention report, which forces two blocking gen2
+        // collections per call (see LogRetained). That is far too expensive to ride along with
+        // timing tracing: the report is scheduled off every cache invalidation, so a session spent
+        // editing custom data -- which invalidates per edit -- turned into a forced full collection
+        // every few seconds. One captured session took ~1838 of them on a ~350MB managed heap, and
+        // every one suspends every thread including the UI. It answers to MemoryTracingEnabled
+        // alone, which is what that flag's "too expensive to ship enabled" note always meant.
+
+#if TEST
+        /// <summary>
+        /// Test-only seam. The real switches are compile-time constants, so without this the
+        /// retention counters cannot be exercised at all. Does not exist outside the test
+        /// compilation, so production behaviour is unchanged.
+        /// </summary>
+        internal static bool? TestEnabledOverride;
+
+        public static bool Enabled => TestEnabledOverride ?? MemoryTracingEnabled;
+
+        public static bool RetentionReportEnabled => TestEnabledOverride ?? MemoryTracingEnabled;
+#else
+        public static bool Enabled => MemoryTracingEnabled;
+
+        public static bool RetentionReportEnabled => MemoryTracingEnabled;
+#endif
 
         /// <summary>
         /// Captures current process memory counters. Never throws; returns an invalid snapshot
@@ -79,10 +112,16 @@ namespace PlayniteAchievements.Common
         /// Logs a [MemPerf] line after forcing a full blocking collection, so the managed number
         /// reflects what is actually still rooted rather than uncollected garbage. Only for
         /// once-per-refresh retention reporting - never in a hot path.
+        /// <para>
+        /// Gated on <see cref="RetentionReportEnabled"/>, not <see cref="Enabled"/>: the two
+        /// collections below suspend every thread, so this must not ride along with timing
+        /// tracing. Callers that schedule it should check the same gate before building the
+        /// detail string, which is itself expensive.
+        /// </para>
         /// </summary>
         public static void LogRetained(ILogger logger, string point, string detail = null)
         {
-            if (!Enabled)
+            if (!RetentionReportEnabled)
             {
                 return;
             }
@@ -129,11 +168,18 @@ namespace PlayniteAchievements.Common
             var safePoint = string.IsNullOrWhiteSpace(point) ? "unknown" : point.Trim();
             var message = string.Format(
                 CultureInfo.InvariantCulture,
-                "[MemPerf] point={0} workingSetMb={1:F1} privateMb={2:F1} managedMb={3:F1} gen0={4} gen1={5} gen2={6}",
+                // nativeMb is privateMb minus managedMb: everything the process committed that
+                // the GC heap does not account for -- decoded bitmap backing stores, SQLite page
+                // caches, WPF's unmanaged side. It is derived rather than measured, but without it
+                // this line cannot distinguish a managed leak from a native one, and a reported
+                // session grew private bytes by ~300 MB while managedMb stayed flat, which read as
+                // "no leak" against every counter here.
+                "[MemPerf] point={0} workingSetMb={1:F1} privateMb={2:F1} managedMb={3:F1} nativeMb={4:F1} gen0={5} gen1={6} gen2={7}",
                 safePoint,
                 snapshot.WorkingSetBytes / BytesPerMb,
                 snapshot.PrivateBytes / BytesPerMb,
                 snapshot.ManagedBytes / BytesPerMb,
+                Math.Max(0, snapshot.PrivateBytes - snapshot.ManagedBytes) / BytesPerMb,
                 snapshot.Gen0,
                 snapshot.Gen1,
                 snapshot.Gen2);
@@ -142,9 +188,11 @@ namespace PlayniteAchievements.Common
             {
                 message += string.Format(
                     CultureInfo.InvariantCulture,
-                    " deltaWorkingSetMb={0:+0.0;-0.0;+0.0} deltaManagedMb={1:+0.0;-0.0;+0.0} deltaGen2={2:+0;-0;+0}",
+                    " deltaWorkingSetMb={0:+0.0;-0.0;+0.0} deltaManagedMb={1:+0.0;-0.0;+0.0} deltaNativeMb={2:+0.0;-0.0;+0.0} deltaGen2={3:+0;-0;+0}",
                     (snapshot.WorkingSetBytes - baseline.WorkingSetBytes) / BytesPerMb,
                     (snapshot.ManagedBytes - baseline.ManagedBytes) / BytesPerMb,
+                    ((snapshot.PrivateBytes - snapshot.ManagedBytes)
+                        - (baseline.PrivateBytes - baseline.ManagedBytes)) / BytesPerMb,
                     snapshot.Gen2 - baseline.Gen2);
             }
 

@@ -230,9 +230,156 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsTrue(summary.HasMoreRecentUnlocks);
             Assert.AreEqual(1, summary.RecentUnlocks.Count);
             Assert.AreEqual(CustomAchievementProjectionService.BuildApiName("solo"), summary.RecentUnlocks[0].ApiName, "newest unlock first");
-            Assert.AreEqual(1, summary.GlobalUnlockCountsByDate[unlockTime.Date]);
-            Assert.AreEqual(1, summary.GlobalUnlockCountsByDate[unlockTime.AddDays(1).Date]);
-            Assert.AreEqual(1, summary.UnlockCountsByDateByGame[existingGameId][unlockTime.Date]);
+            // Timeline keys are local calendar days, so the expected key goes through the same helper.
+            var unlockDay = PlayniteAchievements.Services.Overview.UnlockDayCounts.DayOf(unlockTime);
+            Assert.AreEqual(1, summary.GlobalUnlockCountsByDate[unlockDay]);
+            Assert.AreEqual(1, summary.GlobalUnlockCountsByDate[unlockDay.AddDays(1)]);
+            Assert.AreEqual(1, summary.UnlockCountsByDateByGame[existingGameId][unlockDay]);
+        }
+
+        [TestMethod]
+        public void CustomAchievementTotals_UseTheUsersOverrides()
+        {
+            var gameId = Guid.NewGuid();
+            var apiName = CustomAchievementProjectionService.BuildApiName("a");
+            var summary = new CachedSummaryData();
+            var customData = new Dictionary<Guid, GameCustomDataFile>
+            {
+                [gameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition
+                        {
+                            Id = "a",
+                            DisplayName = "A",
+                            Unlocked = true,
+                            UnlockTimeUtc = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+                            Points = 10,
+                            TrophyType = "bronze"
+                        }
+                    },
+                    AchievementOverrides = new Dictionary<string, AchievementOverride>
+                    {
+                        [apiName] = new AchievementOverride { Points = 50, TrophyType = "gold" }
+                    }
+                }
+            };
+
+            CustomAchievementSummaryMerger.Merge(
+                summary,
+                customData,
+                new HashSet<Guid>(),
+                recentAchievementDetailLimit: 0,
+                resolveGameName: _ => "Game",
+                managedCustomIconService: null);
+
+            var game = summary.Games.Single();
+            Assert.AreEqual(50, game.Points, "The game's points follow the override, as its row does.");
+            Assert.AreEqual(1, game.TrophyGoldTotal);
+            Assert.AreEqual(1, game.TrophyGoldCount);
+            Assert.AreEqual(0, game.TrophyBronzeTotal);
+        }
+
+        [TestMethod]
+        public void CustomCapstones_CountTowardTheFinishBadgeAndItsPlatinumIdentity()
+        {
+            var gameId = Guid.NewGuid();
+            var summary = new CachedSummaryData
+            {
+                Games = new List<CachedGameSummaryData>
+                {
+                    // What the summary query found: two ordinary stored achievements.
+                    new CachedGameSummaryData
+                    {
+                        PlayniteGameId = gameId,
+                        CacheKey = gameId.ToString("D"),
+                        TotalAchievements = 2,
+                        UnlockedAchievements = 2
+                    }
+                }
+            };
+
+            var customData = new Dictionary<Guid, GameCustomDataFile>
+            {
+                [gameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition
+                        {
+                            Id = "mastery",
+                            DisplayName = "Mastery",
+                            IsCapstone = true,
+                            Unlocked = false
+                        }
+                    }
+                }
+            };
+
+            CustomAchievementSummaryMerger.Merge(
+                summary,
+                customData,
+                new HashSet<Guid>(),
+                recentAchievementDetailLimit: 0,
+                resolveGameName: _ => "Game",
+                managedCustomIconService: null);
+
+            var game = summary.Games.Single();
+            Assert.AreEqual(1, game.CapstoneTotal, "A custom capstone is a capstone.");
+            Assert.AreEqual(0, game.CapstoneUnlocked);
+            Assert.IsFalse(
+                game.IsCompleted,
+                "Every stored achievement is unlocked, but the custom capstone that stands for the game is not.");
+            Assert.IsFalse(
+                game.CapstonesMatchPlatinums,
+                "A capstone that is not a platinum must not hand the finish badge to one.");
+        }
+
+        [TestMethod]
+        public void CustomPlatinumCapstone_KeepsTheFinishBadgeOnThePlatinum()
+        {
+            var gameId = Guid.NewGuid();
+            var summary = new CachedSummaryData();
+            var customData = new Dictionary<Guid, GameCustomDataFile>
+            {
+                [gameId] = new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition
+                        {
+                            Id = "plat",
+                            DisplayName = "Platinum",
+                            TrophyType = "Platinum",
+                            IsCapstone = true,
+                            Unlocked = true
+                        },
+                        new CustomAchievementDefinition { Id = "gold", DisplayName = "Gold", TrophyType = "Gold" }
+                    }
+                }
+            };
+
+            CustomAchievementSummaryMerger.Merge(
+                summary,
+                customData,
+                new HashSet<Guid>(),
+                recentAchievementDetailLimit: 0,
+                resolveGameName: _ => "Game",
+                managedCustomIconService: null);
+
+            var game = summary.Games.Single();
+            Assert.AreEqual(1, game.CapstoneTotal);
+            Assert.AreEqual(1, game.CapstoneUnlocked);
+            Assert.IsTrue(game.IsCompleted, "The only capstone is earned.");
+            Assert.IsTrue(game.CapstonesMatchPlatinums);
+            Assert.AreEqual(
+                CustomAchievementProjectionService.BuildApiName("plat"),
+                game.PlatinumApiNames,
+                "The overlay needs the custom platinum by name, not only as a count.");
         }
 
         [TestMethod]
@@ -244,7 +391,7 @@ namespace PlayniteAchievements.Services.Tests
             {
                 var store = new GameCustomDataStore(Path.Combine(tempDirectory, "store"));
                 var gameId = Guid.NewGuid();
-                var packagePath = Path.Combine(tempDirectory, "custom.pacustom");
+                var packagePath = Path.Combine(tempDirectory, "custom.pa");
                 store.ExportCustomAchievementsPackage(
                     gameId,
                     new List<CustomAchievementDefinition>
@@ -272,6 +419,19 @@ namespace PlayniteAchievements.Services.Tests
                     },
                     packagePath);
 
+                Assert.IsTrue(store.IsCustomAchievementsPackage(packagePath));
+                string csvText;
+                using (var archive = System.IO.Compression.ZipFile.OpenRead(packagePath))
+                using (var reader = new StreamReader(archive.GetEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
+                {
+                    csvText = reader.ReadToEnd();
+                }
+
+                StringAssert.DoesNotMatch(csvText, new System.Text.RegularExpressions.Regex(@"(?i)unlocked,|unlock time|2026-01-02|progress,"));
+                Assert.ThrowsException<InvalidOperationException>(
+                    () => store.ImportReplacePortable(gameId, packagePath),
+                    "A custom-achievements package must not replace the game's custom data.");
+
                 var result = store.ImportCustomAchievementsPackage(gameId, packagePath);
                 Assert.IsFalse(result.HasErrors, string.Join("; ", result.Errors));
                 Assert.AreEqual(2, result.Definitions.Count);
@@ -280,20 +440,21 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual("first-win", first.Id);
                 Assert.AreEqual("First, Win", first.DisplayName);
                 Assert.AreEqual("Uses a \"quote\"", first.Description);
-                Assert.IsTrue(first.Unlocked);
-                Assert.AreEqual(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc), first.UnlockTimeUtc);
+                Assert.IsFalse(first.Unlocked, "A package never carries unlock state.");
+                Assert.IsNull(first.UnlockTimeUtc);
                 Assert.AreEqual(10, first.Points);
                 Assert.AreEqual("gold", first.TrophyType);
                 Assert.IsTrue(first.Hidden);
                 Assert.AreEqual("Rare", first.Rarity);
                 Assert.AreEqual(12.5, first.GlobalPercentUnlocked);
-                Assert.AreEqual(1, first.ProgressNum);
+                Assert.IsNull(first.ProgressNum, "A package never carries progress.");
                 Assert.AreEqual(2, first.ProgressDenom);
                 Assert.IsNull(first.UnlockedIconPath);
                 Assert.AreEqual("second", result.Definitions[1].Id);
 
-                var templatePath = Path.Combine(tempDirectory, "template.pacustom");
+                var templatePath = Path.Combine(tempDirectory, "template.pa");
                 store.ExportCustomAchievementsPackage(gameId, new List<CustomAchievementDefinition>(), templatePath);
+                Assert.IsTrue(store.IsCustomAchievementsPackage(templatePath));
                 var templateResult = store.ImportCustomAchievementsPackage(gameId, templatePath);
                 Assert.AreEqual(0, templateResult.Definitions.Count);
                 Assert.IsTrue(templateResult.HasErrors, "A header-only template imports as no rows.");

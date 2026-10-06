@@ -83,6 +83,21 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(RayGlowTiersProperty, value);
         }
 
+        // False drops the card's surface fill and outline so the host's background shows
+        // through (start page widgets sit directly on the start page).
+        public static readonly DependencyProperty ShowCardChromeProperty =
+            DependencyProperty.Register(
+                nameof(ShowCardChrome),
+                typeof(bool),
+                typeof(ShowcaseWidgetControl),
+                new PropertyMetadata(true));
+
+        public bool ShowCardChrome
+        {
+            get => (bool)GetValue(ShowCardChromeProperty);
+            set => SetValue(ShowCardChromeProperty, value);
+        }
+
         public ShowcaseWidgetControl()
         {
             InitializeComponent();
@@ -182,6 +197,17 @@ namespace PlayniteAchievements.Views.Showcase
             control.RebuildBody();
         }
 
+        // PlayAch.Radius.Section (8) less PlayAch.Thickness.Border (1): the border's inner curve.
+        private const double InnerCornerRadius = 7;
+
+        private void OnRootContentSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            RootContent.Clip = new System.Windows.Media.RectangleGeometry(
+                new Rect(e.NewSize),
+                InnerCornerRadius,
+                InnerCornerRadius);
+        }
+
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             var next = WidgetViewportState.Classify(e.NewSize.Width, e.NewSize.Height);
@@ -204,23 +230,23 @@ namespace PlayniteAchievements.Views.Showcase
             if (string.IsNullOrWhiteSpace(custom))
             {
                 TitleText.Text = string.Empty;
-                GlyphText.Text = string.Empty;
                 HeaderBorder.Visibility = Visibility.Collapsed;
                 return;
             }
 
             TitleText.Text = custom;
-            GlyphText.Text = GetWidgetGlyph(_projection.Instance.Kind);
             HeaderBorder.Visibility = Visibility.Visible;
         }
 
         private void RebuildBody()
         {
-            BodyHost.Margin = _viewport.Density == WidgetViewportDensity.Compact
-                ? new Thickness(6)
-                : _viewport.Density == WidgetViewportDensity.Expanded
-                    ? new Thickness(10)
-                    : new Thickness(8);
+            // A full-bleed profile takes the whole card; its view model reapplies the same inset
+            // to the foreground so only the background reaches the edge.
+            var fullBleed = _projection?.Instance?.Kind == ShowcaseWidgetKind.Profile &&
+                            ShowcaseWidgetOptions.GetProfileFullBleed(_projection.Instance);
+            BodyHost.Margin = fullBleed
+                ? new Thickness(0)
+                : new Thickness(ShowcaseWidgetViewModelBase.GetBodyInset(_viewport.Density));
             if (_projection?.Instance == null)
             {
                 SetBodyContent(CreateEmptyText());
@@ -283,6 +309,9 @@ namespace PlayniteAchievements.Views.Showcase
                         SetBodyContent(slideshow);
                     }
 
+                    // Both branches, so a refresh reaches a reused control too: these rows are what
+                    // the info panel resolves captures against.
+                    slideshow.SetAchievementRows(_projection.Snapshot?.Achievements, _projection.Snapshot);
                     slideshow.SetEditHold(!IsHitTestVisible);
                     break;
                 case ShowcaseWidgetKind.RecentAchievements:
@@ -381,6 +410,19 @@ namespace PlayniteAchievements.Views.Showcase
             _bodyViewModel = null;
         }
 
+        /// <summary>
+        /// Shown by the host while the overview has no snapshot yet, so a fresh dashboard reads
+        /// as loading rather than as empty. Only a never-projected host takes it; the first
+        /// projection apply replaces it through RebuildBody.
+        /// </summary>
+        public void ShowLoadingPlaceholder()
+        {
+            if (BodyHost.Content == null && _projection == null)
+            {
+                SetBodyContent(CreateEmptyText(Localize("LOCPlayAch_Status_LoadingAchievements")));
+            }
+        }
+
         // Reuses (or lazily creates) the body view model for this control and feeds it the
         // current projection and viewport. Implicit templates in ShowcaseWidgetTemplates.xaml render
         // the returned view model. The type check replaces the view model when a collapsed kind's
@@ -427,8 +469,5 @@ namespace PlayniteAchievements.Views.Showcase
             block.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             return block;
         }
-
-        private static string GetWidgetGlyph(ShowcaseWidgetKind kind) =>
-            ShowcaseWidgetCatalog.Get(kind).GlyphKey;
     }
 }

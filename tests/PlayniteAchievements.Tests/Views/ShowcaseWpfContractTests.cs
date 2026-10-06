@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Tests.Views
     public class ShowcaseWpfContractTests
     {
         [TestMethod]
-        public void Overview_RegistersAlwaysAvailableThirdTabAndRemovesHeaderScores()
+        public void Overview_RegistersAlwaysAvailableThirdTabAndGatesHeaderScoresPerCard()
         {
             var xaml = ReadRepoFile("source", "Views", "OverviewControl.xaml");
             var code = ReadRepoFile("source", "Views", "OverviewControl.xaml.cs");
@@ -23,7 +23,12 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(
                 xaml,
                 "Visibility=\"{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}\"");
-            Assert.IsFalse(xaml.Contains("<controls:ScoreCardControl"));
+            StringAssert.Contains(
+                xaml,
+                "Visibility=\"{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}\"");
+            StringAssert.Contains(
+                xaml,
+                "Visibility=\"{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}\"");
             StringAssert.Contains(
                 code,
                 "_lastSelectedSubView == OverviewSubView.Friends");
@@ -123,8 +128,7 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(widgetXaml, "{DynamicResource PlayAch.Brush.Surface}");
             StringAssert.Contains(widgetXaml, "{DynamicResource PlayAch.Brush.Border}");
             StringAssert.Contains(widgetXaml, "{DynamicResource PlayAch.Brush.Text}");
-            StringAssert.Contains(widgetXaml, "{DynamicResource PlayAch.Brush.Accent}");
-            StringAssert.Contains(widgetXaml, "x:Name=\"GlyphText\"");
+            Assert.IsFalse(widgetXaml.Contains("x:Name=\"GlyphText\""));
             StringAssert.Contains(widgetXaml, "x:Name=\"HeaderBorder\"");
             StringAssert.Contains(widgetXaml, "Visibility=\"Collapsed\"");
             Assert.IsFalse(code.Contains("definition.DescriptionKey"));
@@ -139,6 +143,11 @@ namespace PlayniteAchievements.Tests.Views
                 "Views",
                 "Showcase",
                 "ShowcaseWidgetSettingsDialog.cs");
+            var profileEditor = ReadRepoFile(
+                "source",
+                "Views",
+                "Showcase",
+                "ShowcaseProfileSettingsEditor.cs");
             var localization = ReadRepoFile("source", "Localization", "en_US.xaml");
             var uiText = ReadRepoFile(
                 "source",
@@ -151,7 +160,7 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(plugin, "InvalidateStartPageData();");
             StringAssert.Contains(editor, "PlayniteUiProvider.CreateExtensionWindow");
             StringAssert.Contains(editor, "LOCPlayAch_Showcase_WidgetSettingsTitle");
-            StringAssert.Contains(editor, "LOCPlayAch_Button_Clear");
+            StringAssert.Contains(profileEditor, "LOCPlayAch_Button_Clear");
             StringAssert.Contains(localization, "LOCPlayAch_Showcase_MergeDeleteConfirm");
             StringAssert.Contains(localization, "LOCPlayAch_Showcase_Stat_CurrentStreak");
             StringAssert.Contains(uiText, "Localize(string key)");
@@ -179,10 +188,19 @@ namespace PlayniteAchievements.Tests.Views
             AssertEnumKeys<ShowcaseScreenshotVariant>(localization, "LOCPlayAch_Showcase_ScreenshotVariant_");
             AssertEnumKeys<ShowcaseSlideshowSource>(localization, "LOCPlayAch_Showcase_SlideshowSource_");
             AssertEnumKeys<ShowcaseMosaicContent>(localization, "LOCPlayAch_Showcase_MosaicContent_");
-            AssertEnumKeys<ShowcaseAchievementGridSource>(localization, "LOCPlayAch_Showcase_AchievementGridSource_");
-            AssertEnumKeys<ShowcaseGameGridSource>(localization, "LOCPlayAch_Showcase_GameGridSource_");
+            // Unlock Next and Finish Next reuse the mosaic's labels (ShowcaseUiText), which the
+            // MosaicSource and GameMosaicSource assertions cover.
+            AssertEnumKeys<ShowcaseAchievementGridSource>(
+                localization,
+                "LOCPlayAch_Showcase_AchievementGridSource_",
+                value => value != ShowcaseAchievementGridSource.UnlockNext);
+            AssertEnumKeys<ShowcaseGameGridSource>(
+                localization,
+                "LOCPlayAch_Showcase_GameGridSource_",
+                value => value != ShowcaseGameGridSource.FinishNext);
             AssertEnumKeys<ShowcaseImageFitMode>(localization, "LOCPlayAch_Showcase_ImageFit_");
             AssertEnumKeys<ShowcaseGameMosaicSource>(localization, "LOCPlayAch_Showcase_GameMosaicSource_");
+            AssertEnumKeys<UnlockNextCriterion>(localization, "LOCPlayAch_Showcase_UnlockNextCriterion_");
         }
 
         [TestMethod]
@@ -279,12 +297,13 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(itemCode, "ShowRarityGlowProperty");
             StringAssert.Contains(itemCode, "AnimateRarityGlowsProperty");
             StringAssert.Contains(itemCode, "UseLargeRarityGlowProperty");
-            StringAssert.Contains(itemXaml, "Converter={StaticResource PercentToRarityGlow}");
+            StringAssert.Contains(itemXaml, "Converter=\"{StaticResource RarityGlowForTiers}\" ConverterParameter=\"20\"");
             StringAssert.Contains(mosaicViewModel, "GetMosaicShowRarityGlow");
             StringAssert.Contains(mosaicViewModel, "AnimateRarityGlows");
             StringAssert.Contains(widgetTemplates, "AchievementCompactItemControl");
             StringAssert.Contains(widgetTemplates, "UseLargeRarityGlow=\"True\"");
-            StringAssert.Contains(widgetTemplates, "Margin=\"6\"");
+            // Tile spacing is a widget option now (6 by default), bound through the view model.
+            StringAssert.Contains(widgetTemplates, "Margin=\"{Binding DataContext.TileMargin");
         }
 
         [TestMethod]
@@ -420,11 +439,54 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(options, "ShowcaseAchievementGridSource.Pinned");
             StringAssert.Contains(options, "ShowcaseMosaicSource.Pinned");
             StringAssert.Contains(options, "ShowcaseGameMosaicSource.Pinned");
+
+            // Unlock Next ranks during selection, so its criterion replaces the generic sort rows
+            // instead of stacking with them.
+            StringAssert.Contains(options, "ShowcaseMosaicSource.UnlockNext");
+            StringAssert.Contains(options, "ShowcaseGameMosaicSource.FinishNext");
+            StringAssert.Contains(options, "ApplyUnlockNextVisibility");
+            StringAssert.Contains(options, "AddLastPlayedWindowChoice");
             StringAssert.Contains(templates, "PinCollectionId=\"{Binding PinCollectionId}\"");
             StringAssert.Contains(achievementGrid, "PinCollectionId");
             StringAssert.Contains(gameGrid, "PinCollectionId");
             StringAssert.Contains(achievementGrid, "ShowcasePinService.MoveAchievement");
             StringAssert.Contains(gameGrid, "ShowcasePinService.MoveGame");
+        }
+
+        // Per-instance controls merge the plugin dictionaries through the shared cache: a plain
+        // Source= merge re-parses the dictionary for every realized tile, widget host, and grid.
+        [TestMethod]
+        public void PerInstanceControls_MergeResourceDictionariesThroughTheSharedCache()
+        {
+            var files = new[]
+            {
+                new[] { "source", "Views", "Controls", "AchievementCompactItemControl.xaml" },
+                new[] { "source", "Views", "Showcase", "ShowcaseWidgetControl.xaml" },
+                new[] { "source", "Views", "Controls", "GridControlBarControl.xaml" },
+                new[] { "source", "Views", "Controls", "AchievementDataGridControl.xaml" },
+                new[] { "source", "Views", "Controls", "GameSummariesGridControl.xaml" },
+                new[] { "source", "Views", "Controls", "ScoreCardControl.xaml" },
+                new[] { "source", "Views", "Controls", "PieChartWithRadialIcons.xaml" },
+                new[] { "source", "Views", "Controls", "UnlockTimelineChart.xaml" },
+                new[] { "source", "Views", "Showcase", "ScreenshotInfoPanel.xaml" },
+                new[] { "source", "Views", "OverviewControl.xaml" },
+                new[] { "source", "Views", "StartPage", "StartPageShowcaseWidgetView.xaml" },
+                // Created once per Manage window each, but five owners of the same scoped
+                // dictionary: plain merges re-parsed CommonResources about thirty times per open.
+                new[] { "source", "Views", "ManageAchievements", "ManageAchievementsControl.xaml" },
+                new[] { "source", "Views", "ManageAchievements", "ManageAchievementsEditorTab.xaml" },
+                new[] { "source", "Views", "ManageAchievements", "ManageAchievementsCategoryTab.xaml" },
+                new[] { "source", "Views", "ManageAchievements", "ManageAchievementsManualTrackingTab.xaml" },
+                new[] { "source", "Views", "ManageAchievements", "ManageAchievementsOverviewTab.xaml" }
+            };
+
+            foreach (var parts in files)
+            {
+                var xaml = ReadRepoFile(parts);
+                var name = parts[parts.Length - 1];
+                StringAssert.Contains(xaml, "helpers:SharedResourceDictionary Source=", name);
+                Assert.IsFalse(xaml.Contains("<ResourceDictionary Source="), name);
+            }
         }
 
         private static void AssertEnumKeys<T>(

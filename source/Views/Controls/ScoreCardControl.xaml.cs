@@ -20,16 +20,23 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(ScoreCardControl),
                 new PropertyMetadata(false));
 
-        public static readonly DependencyProperty ShowNextLevelTextProperty =
+        public static readonly DependencyProperty FlatProperty =
             DependencyProperty.Register(
-                nameof(ShowNextLevelText),
+                nameof(Flat),
                 typeof(bool),
                 typeof(ScoreCardControl),
                 new PropertyMetadata(false));
 
-        public static readonly DependencyProperty FlatProperty =
+        public static readonly DependencyProperty CompactProperty =
             DependencyProperty.Register(
-                nameof(Flat),
+                nameof(Compact),
+                typeof(bool),
+                typeof(ScoreCardControl),
+                new PropertyMetadata(false));
+
+        public static readonly DependencyProperty BadgeOnlyProperty =
+            DependencyProperty.Register(
+                nameof(BadgeOnly),
                 typeof(bool),
                 typeof(ScoreCardControl),
                 new PropertyMetadata(false));
@@ -38,8 +45,6 @@ namespace PlayniteAchievements.Views.Controls
         {
             InitializeComponent();
         }
-
-        public event RoutedEventHandler InfoRequested;
 
         public ScoreCardViewModel ScoreCard
         {
@@ -53,13 +58,6 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(IsFeaturedProperty, value);
         }
 
-        /// <summary>Shows the points-until-next-level line inline under the progress bar.</summary>
-        public bool ShowNextLevelText
-        {
-            get => (bool)GetValue(ShowNextLevelTextProperty);
-            set => SetValue(ShowNextLevelTextProperty, value);
-        }
-
         /// <summary>
         /// Drops the card's own accent background and border for hosts that already provide
         /// chrome (showcase widget blocks).
@@ -70,10 +68,24 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(FlatProperty, value);
         }
 
-        private void ScoreInfoButton_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Folds the label into the tier line and moves the level caption into the tooltip, for
+        /// hosts with little vertical room (the Overview header).
+        /// </summary>
+        public bool Compact
         {
-            e.Handled = true;
-            InfoRequested?.Invoke(this, e);
+            get => (bool)GetValue(CompactProperty);
+            set => SetValue(CompactProperty, value);
+        }
+
+        /// <summary>
+        /// Shows only the badge (and mastery line), with the tier and points moved into the
+        /// tooltip, for hosts too narrow for the text.
+        /// </summary>
+        public bool BadgeOnly
+        {
+            get => (bool)GetValue(BadgeOnlyProperty);
+            set => SetValue(BadgeOnlyProperty, value);
         }
     }
 }

@@ -6,13 +6,16 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Controls;
 using static PlayniteAchievements.Services.Showcase.ShowcaseGeometry;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
@@ -21,6 +24,8 @@ namespace PlayniteAchievements.Views.Showcase
     public partial class ShowcaseControl : UserControl, IDisposable
     {
         private const string WidgetDragFormat = "PlayniteAchievements.Showcase.Widget";
+        private static readonly ILogger Logger =
+            Services.Logging.PluginLogger.GetLogger(nameof(ShowcaseControl));
         private readonly OverviewViewModel _overview;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Action _persist;
@@ -29,9 +34,29 @@ namespace PlayniteAchievements.Views.Showcase
         private bool _publishingConfigurationChange;
         private bool _disposed;
         private string _layoutSignature;
+        private string _builtPageId;
         private Point _dragStart;
         private string _selectedBlockId;
         private string _dragSourceBlockId;
+
+        // Undo history for structural layout edits. Snapshots are whole-layout clones taken at
+        // each settle point rather than per-operation deltas: every mutation already funnels
+        // through SaveAndPublish, so one hook there covers add, delete, paste, move, swap,
+        // split, merge, track resizes and the page operations without each site opting in.
+        // Session-scoped and edit-mode only; the layout is persisted as it changes, so undo
+        // rewinds saved state rather than uncommitted state.
+        private const int MaxHistoryDepth = 50;
+        private readonly LinkedList<ShowcaseSettings> _undoHistory = new LinkedList<ShowcaseSettings>();
+        private readonly Stack<ShowcaseSettings> _redoHistory = new Stack<ShowcaseSettings>();
+        private ShowcaseSettings _historyBaseline;
+        private bool _restoringHistory;
+
+        // Static so a widget copied on one page is pastable on another, and after the overview
+        // window is closed and reopened. A cut holds the live instance id instead of a clone so
+        // that cut-then-paste is a move: the widget keeps its identity, and with it the
+        // per-instance grid surface holding its columns and sort.
+        private static ShowcaseWidgetInstanceSettings _clipboardWidget;
+        private static string _cutInstanceId;
         private readonly Dictionary<string, BlockVisualState> _blockVisuals =
             new Dictionary<string, BlockVisualState>(StringComparer.OrdinalIgnoreCase);
         private readonly List<System.Windows.Controls.Primitives.Thumb> _trackGrippers =
@@ -42,6 +67,12 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly List<FrameworkElement> _layoutHandles = new List<FrameworkElement>();
         private readonly List<string> _mergePreviewBlockIds = new List<string>();
         private FrameworkElement _cutGhost;
+
+        // Hover previews of a cut or merge's resulting blocks: outlines only, created on hover
+        // and removed on leave, so they cost a couple of elements and never re-render a widget.
+        private readonly List<FrameworkElement> _layoutPreviewGhosts = new List<FrameworkElement>();
+        private readonly List<(Border Chrome, Visibility Previous)> _layoutPreviewHiddenChrome =
+            new List<(Border Chrome, Visibility Previous)>();
 
         // The selected empty block's in-block + button, hidden while an overlay copy takes
         // hit-test priority over the cut lines; restored on the next handle rebuild.
@@ -64,26 +95,85 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly System.Windows.Threading.DispatcherTimer _snapshotRefreshTimer;
         private bool _snapshotRefreshPending;
 
+        // Widget projections are applied one per Background dispatcher pass rather than all in
+        // one operation. A body apply is cheap by itself, but the layout pass it triggers
+        // inflates the widget's template, realizes grid rows and mosaic tiles, and plots its
+        // charts; nine of those in one operation held the UI thread for over a second on open.
+        // Draining one widget per pass lets input, rendering, and the next widget interleave.
+        // The queue is FIFO in enqueue order (visible blocks in reading order first), dedupes by
+        // host, and is emptied by a dashboard rebuild or dispose, which is the only generation
+        // tracking needed while this control is the sole producer.
+        private sealed class WidgetApplyRequest
+        {
+            public ShowcaseWidgetControl Host;
+
+            public ShowcaseWidgetInstanceSettings Widget;
+
+            // Set for a request raised for a visible block; null for a cached off-page host.
+            public string BlockId;
+
+            // True when only the snapshot moved (data refresh), false when the widget's own
+            // configuration changed and a re-projection is required regardless of the snapshot.
+            public bool SnapshotOnly;
+        }
+
+        private readonly Queue<WidgetApplyRequest> _applyQueue = new Queue<WidgetApplyRequest>();
+        private readonly HashSet<ShowcaseWidgetControl> _applyQueued = new HashSet<ShowcaseWidgetControl>();
+        private bool _applyDrainScheduled;
+        private int _applyDrainApplied;
+        private long _applyDrainStartedTicks;
+        private long _applyPassEndedTicks;
+
+        // Edit-mode size labels: each column's width along the top edge, each row's height along
+        // the left. Refreshed at most every TrackRulerInterval while the window resizes or a
+        // gripper drags, so they track live without re-reading layout on every mouse move.
+        private static readonly TimeSpan TrackRulerInterval = TimeSpan.FromMilliseconds(30);
+        private readonly System.Windows.Threading.DispatcherTimer _trackRulerTimer;
+        private readonly List<FrameworkElement> _trackRulers = new List<FrameworkElement>();
+        private readonly List<TextBox> _columnRulerTexts = new List<TextBox>();
+        private readonly List<TextBox> _rowRulerTexts = new List<TextBox>();
+
         internal ShowcaseControl(
             OverviewViewModel overview,
             PlayniteAchievementsSettings settings,
             Action persist,
             IPlayniteAPI api)
         {
+            using var perf = PerfScope.Start(Logger, "Showcase.Ctor", thresholdMs: 30);
             InitializeComponent();
             _overview = overview ?? throw new ArgumentNullException(nameof(overview));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _persist = persist ?? throw new ArgumentNullException(nameof(persist));
             _api = api;
+            // Widgets' control bar choices are saved in their own options across restarts.
+            PlayniteAchievements.ViewModels.Showcase.Widgets.ShowcaseControlBarStates.Store =
+                ShowcaseControlBarStateStore.Instance;
             _snapshotRefreshTimer = new System.Windows.Threading.DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(1000)
             };
             _snapshotRefreshTimer.Tick += SnapshotRefreshTimer_Tick;
+            // Render priority: the tick reads the tracks' ActualWidth/ActualHeight, which the
+            // layout pass after a resize or drag has settled by then.
+            _trackRulerTimer = new System.Windows.Threading.DispatcherTimer(
+                System.Windows.Threading.DispatcherPriority.Render)
+            {
+                Interval = TrackRulerInterval
+            };
+            _trackRulerTimer.Tick += TrackRulerTimer_Tick;
+            DashboardGrid.SizeChanged += (_, __) => ScheduleTrackRulerUpdate();
             _overview.SnapshotChanged += Overview_SnapshotChanged;
             ShowcaseConfigurationEvents.Changed += ShowcaseConfigurationEvents_Changed;
+            // Rolling windows (the Timeline, Scores, Activity Calendar and played-within filters)
+            // end at today; re-project after local midnight so they move with the calendar.
+            Common.LocalDayRollover.Subscribe(LocalDayRollover_DayChanged);
             EnsureLayout();
             Rebuild();
+        }
+
+        private void LocalDayRollover_DayChanged(object sender, DateTime today)
+        {
+            QueueSnapshotRefresh();
         }
 
         /// <summary>
@@ -128,9 +218,13 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            using var perf = PerfScope.Start(Logger, "Showcase.Dispose", thresholdMs: 20);
             ClearDragVisuals();
             _disposed = true;
+            ShowcaseControlBarStateStore.Instance.Flush();
             _snapshotRefreshTimer.Stop();
+            _trackRulerTimer.Stop();
+            ClearApplyQueue();
             // The cached widget bodies hold PersistedSettings-subscribed grids and slideshow
             // timers that only release in Dispose; drop them explicitly rather than relying
             // on Unloaded, which WPF does not guarantee.
@@ -142,6 +236,7 @@ namespace PlayniteAchievements.Views.Showcase
             _hostCache.Clear();
             _overview.SnapshotChanged -= Overview_SnapshotChanged;
             ShowcaseConfigurationEvents.Changed -= ShowcaseConfigurationEvents_Changed;
+            Common.LocalDayRollover.Unsubscribe(LocalDayRollover_DayChanged);
         }
 
         private ShowcaseSettings Layout => _settings.Persisted.Showcase;
@@ -191,26 +286,39 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            using var perf = PerfScope.Start(Logger, "Showcase.BuildDashboard", thresholdMs: 20);
             DashboardGrid.Children.Clear();
             _blockVisuals.Clear();
+            // Every visible block re-enqueues through CreateWidgetHost below; anything still
+            // queued targets containers this rebuild discards.
+            ClearApplyQueue();
             _trackGrippers.Clear();
+            _trackStrips.Clear();
+            _trackRulers.Clear();
+            _columnRulerTexts.Clear();
+            _rowRulerTexts.Clear();
             _layoutHandles.Clear();
             _cutGhost = null;
+            _layoutPreviewGhosts.Clear();
+            _layoutPreviewHiddenChrome.Clear();
             _suppressedAddButton = null;
             DashboardGrid.RowDefinitions.Clear();
             DashboardGrid.ColumnDefinitions.Clear();
-            var gridSize = PageGridSize;
-            var rowWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights, gridSize);
-            var columnWeights = ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.ColumnWeights, gridSize);
-            for (var index = 0; index < gridSize; index++)
+            var rowCount = PageRowCount;
+            var columnCount = PageColumnCount;
+            perf?.SetContext($"page={CurrentPage.PageId} blocks={CurrentPage.Blocks.Count} grid={rowCount}x{columnCount}");
+            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights, rowCount))
             {
                 DashboardGrid.RowDefinitions.Add(
-                    new RowDefinition { Height = new GridLength(rowWeights[index], GridUnitType.Star) });
-                DashboardGrid.ColumnDefinitions.Add(
-                    new ColumnDefinition { Width = new GridLength(columnWeights[index], GridUnitType.Star) });
+                    new RowDefinition { Height = new GridLength(weight, GridUnitType.Star) });
             }
 
-            var snapshot = _overview.LatestSnapshot ?? new OverviewDataSnapshot();
+            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.ColumnWeights, columnCount))
+            {
+                DashboardGrid.ColumnDefinitions.Add(
+                    new ColumnDefinition { Width = new GridLength(weight, GridUnitType.Star) });
+            }
+
             if (EditLayoutButton.IsChecked == true &&
                 !CurrentPage.Blocks.Any(block => string.Equals(
                     block.BlockId,
@@ -222,7 +330,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             foreach (var block in CurrentPage.Blocks)
             {
-                var container = CreateBlockContainer(block, snapshot);
+                var container = CreateBlockContainer(block);
                 Grid.SetRow(container, block.Row);
                 Grid.SetColumn(container, block.Column);
                 Grid.SetRowSpan(container, block.RowSpan);
@@ -230,8 +338,22 @@ namespace PlayniteAchievements.Views.Showcase
                 DashboardGrid.Children.Add(container);
             }
 
-            AddTrackGrippers();
+            // Grippers and rulers are edit-mode chrome: 4x(N-1) thumbs and 2N text boxes that a
+            // viewing dashboard only ever collapses. They are built when edit mode is entered
+            // (UpdateTrackGripperVisibility), so a plain open skips them.
+            if (EditLayoutButton.IsChecked == true)
+            {
+                AddTrackGrippers();
+            }
+
             UpdateLayoutHandles();
+            ApplyPendingCutVisual();
+
+            // A rebuild destroys the focused block container, and with it the keyboard focus
+            // the editor shortcuts need: PreviewKeyDown only fires while focus is inside this
+            // control. Without this, the first paste worked and every later one did nothing.
+            FocusSelectedBlock();
+            _builtPageId = CurrentPage.PageId;
             _layoutSignature = ComputeLayoutSignature();
         }
 
@@ -243,21 +365,294 @@ namespace PlayniteAchievements.Views.Showcase
         // column handles sit on the top and bottom edges, row handles on the left and right
         // edges. They hang half outside the grid, render above the block layer, and only
         // show in edit mode, so they never compete with block drag/split/merge gestures.
-        /// <summary>The current page's normalized grid dimension.</summary>
-        private int PageGridSize => ShowcaseLayoutService.NormalizeGridSize(CurrentPage?.GridSize ?? 0);
+        /// <summary>The current page's normalized row count.</summary>
+        private int PageRowCount => ShowcaseLayoutService.NormalizeTrackCount(CurrentPage?.RowCount ?? 0);
+
+        /// <summary>The current page's normalized column count.</summary>
+        private int PageColumnCount => ShowcaseLayoutService.NormalizeTrackCount(CurrentPage?.ColumnCount ?? 0);
+
+        private int PageTrackCount(bool vertical) => vertical ? PageColumnCount : PageRowCount;
 
         private void AddTrackGrippers()
         {
-            for (var boundary = 0; boundary < PageGridSize - 1; boundary++)
+            AddTrackStrips();
+            foreach (var vertical in new[] { true, false })
             {
-                DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary, nearEdge: true));
-                DashboardGrid.Children.Add(CreateTrackGripper(vertical: true, boundary, nearEdge: false));
-                DashboardGrid.Children.Add(CreateTrackGripper(vertical: false, boundary, nearEdge: true));
-                DashboardGrid.Children.Add(CreateTrackGripper(vertical: false, boundary, nearEdge: false));
+                for (var boundary = 0; boundary < PageTrackCount(vertical) - 1; boundary++)
+                {
+                    AddOverlay(CreateTrackGripper(vertical, boundary, nearEdge: true));
+                    AddOverlay(CreateTrackGripper(vertical, boundary, nearEdge: false));
+                }
             }
 
+            AddTrackRulers();
             UpdateTrackGripperVisibility();
         }
+
+        // How far the labels hang past the grid's top and left edges: the control's own 10px
+        // margin around the dashboard, so they sit outside the grid without resizing it and
+        // without reaching past this control's bounds into an ancestor's clip.
+        private const double TrackRulerOverhang = 10;
+
+        // One label per track, centred on it: columns above the top edge, rows (turned to read
+        // along the edge) left of the left edge. Centred rather than at the boundaries, so they
+        // never sit under the grippers. Each is an editable box: typing a size is the precise
+        // way to set a track, where a drag only lands within a pixel or two.
+        private void AddTrackRulers()
+        {
+            for (var index = 0; index < PageColumnCount; index++)
+            {
+                var column = CreateTrackRuler(vertical: true, index, out var columnBox);
+                Grid.SetRow(column, 0);
+                Grid.SetColumn(column, index);
+                column.HorizontalAlignment = HorizontalAlignment.Center;
+                column.VerticalAlignment = VerticalAlignment.Top;
+                column.Margin = new Thickness(0, -TrackRulerOverhang, 0, 0);
+                _columnRulerTexts.Add(columnBox);
+                AddOverlay(column);
+            }
+
+            for (var index = 0; index < PageRowCount; index++)
+            {
+                var row = CreateTrackRuler(vertical: false, index, out var rowBox);
+                Grid.SetRow(row, index);
+                Grid.SetColumn(row, 0);
+                row.HorizontalAlignment = HorizontalAlignment.Left;
+                row.VerticalAlignment = VerticalAlignment.Center;
+                row.Margin = new Thickness(-TrackRulerOverhang, 0, 0, 0);
+                row.LayoutTransform = new System.Windows.Media.RotateTransform(-90);
+                _rowRulerTexts.Add(rowBox);
+                AddOverlay(row);
+            }
+        }
+
+        // Every edit-mode element that is not a block goes through here: grippers, rulers, lattice
+        // and cut lines, chevrons, ghosts and previews. Hosted so its size never reaches the
+        // grid's tracks (see OverlayLayoutHost); RemoveOverlay takes the same element back out.
+        private void AddOverlay(FrameworkElement element)
+        {
+            DashboardGrid.Children.Add(OverlayLayoutHost.Wrap(element));
+        }
+
+        private void RemoveOverlay(UIElement element)
+        {
+            if (element != null)
+            {
+                DashboardGrid.Children.Remove(OverlayLayoutHost.HostOf(element));
+            }
+        }
+
+        // A bare text host rather than the theme's TextBox template, whose border, padding and
+        // minimum height would not fit the overhang.
+        private static readonly ControlTemplate TrackRulerBoxTemplate = CreateTrackRulerBoxTemplate();
+
+        // Marks a box whose Enter or Escape already settled the edit.
+        private static readonly object TrackRulerEditHandled = new object();
+
+        private static ControlTemplate CreateTrackRulerBoxTemplate()
+        {
+            var host = new FrameworkElementFactory(typeof(Decorator)) { Name = "PART_ContentHost" };
+            return new ControlTemplate(typeof(TextBox)) { VisualTree = host };
+        }
+
+        private FrameworkElement CreateTrackRuler(bool vertical, int index, out TextBox box)
+        {
+            // Caption text with no border, so the pill stays slim enough to sit mostly in the overhang.
+            var editor = new TextBox
+            {
+                Template = TrackRulerBoxTemplate,
+                BorderThickness = new Thickness(0),
+                Background = System.Windows.Media.Brushes.Transparent,
+                Padding = new Thickness(0),
+                MinWidth = 0,
+                MinHeight = 0,
+                TextAlignment = TextAlignment.Center,
+                Cursor = Cursors.IBeam,
+                AcceptsReturn = false
+            };
+            editor.SetResourceReference(TextBox.ForegroundProperty, "PlayAch.Brush.Text");
+            editor.SetResourceReference(TextBox.CaretBrushProperty, "PlayAch.Brush.Text");
+            editor.SetResourceReference(TextBox.FontSizeProperty, "PlayAch.FontSize.Caption");
+            editor.GotKeyboardFocus += (_, __) =>
+            {
+                // Just the number while editing; the unit comes back with the next refresh.
+                editor.Text = FormatTrackNumber(ReadTrackSize(vertical, index));
+                editor.SelectAll();
+            };
+            editor.PreviewMouseLeftButtonDown += (_, args) =>
+            {
+                if (!editor.IsKeyboardFocusWithin)
+                {
+                    editor.Focus();
+                    args.Handled = true;
+                }
+            };
+            editor.KeyDown += (_, args) =>
+            {
+                if (args.Key == Key.Enter)
+                {
+                    CommitTrackRulerEdit(vertical, index, editor.Text);
+                    // Losing focus below must not commit again: the layout has not caught up yet,
+                    // so a second pass would read the old size and apply the change twice.
+                    editor.Tag = TrackRulerEditHandled;
+                    args.Handled = true;
+                    Keyboard.ClearFocus();
+                    FocusSelectedBlock();
+                }
+                else if (args.Key == Key.Escape)
+                {
+                    editor.Tag = TrackRulerEditHandled;
+                    args.Handled = true;
+                    Keyboard.ClearFocus();
+                    FocusSelectedBlock();
+                }
+            };
+            editor.LostKeyboardFocus += (_, __) =>
+            {
+                if (ReferenceEquals(editor.Tag, TrackRulerEditHandled))
+                {
+                    editor.Tag = null;
+                    ScheduleTrackRulerUpdate();
+                    return;
+                }
+
+                CommitTrackRulerEdit(vertical, index, editor.Text);
+            };
+
+            var ruler = new Border
+            {
+                CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(4, 0, 4, 0),
+                Opacity = 0.9,
+                Child = editor
+            };
+            ruler.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.PopupSurface");
+            // Above the block layer, like the grippers.
+            Panel.SetZIndex(ruler, 41);
+            // The label sits on its track's edge strip, so it answers hover and right-click the
+            // same way instead of offering the text box's Cut/Copy/Paste menu.
+            editor.ContextMenuOpening += (_, args) => args.Handled = true;
+            AttachTrackMenu(ruler, vertical, index);
+            _trackRulers.Add(ruler);
+            box = editor;
+            return ruler;
+        }
+
+        private double ReadTrackSize(bool vertical, int index)
+        {
+            if (vertical)
+            {
+                return index < DashboardGrid.ColumnDefinitions.Count
+                    ? DashboardGrid.ColumnDefinitions[index].ActualWidth
+                    : 0;
+            }
+
+            return index < DashboardGrid.RowDefinitions.Count
+                ? DashboardGrid.RowDefinitions[index].ActualHeight
+                : 0;
+        }
+
+        // Moves the boundary after the track (before it, for the last track) by the difference, the
+        // same weight transfer a drag makes, so the neighbour absorbs it and the grid never changes
+        // size. The track clamps to its min/max weight like a drag does; the label then shows what
+        // it actually landed on.
+        private void CommitTrackRulerEdit(bool vertical, int index, string text)
+        {
+            if (_disposed || EditLayoutButton.IsChecked != true)
+            {
+                return;
+            }
+
+            var digits = new string((text ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (!int.TryParse(digits, out var target) || target <= 0)
+            {
+                ScheduleTrackRulerUpdate();
+                return;
+            }
+
+            if (MoveTrackToSize(vertical, index, target))
+            {
+                // Layout rounding can land the star-sized track a pixel off the typed size; once
+                // the layout has settled, correct by that remainder (a single pass, so a size the
+                // min/max weight clamp refuses cannot loop).
+                Dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        if (!_disposed && EditLayoutButton.IsChecked == true)
+                        {
+                            MoveTrackToSize(vertical, index, target);
+                            CommitTrackWeights();
+                            ScheduleTrackRulerUpdate();
+                        }
+                    }),
+                    System.Windows.Threading.DispatcherPriority.ContextIdle);
+                CommitTrackWeights();
+            }
+
+            ScheduleTrackRulerUpdate();
+        }
+
+        private bool MoveTrackToSize(bool vertical, int index, int target)
+        {
+            var count = vertical ? DashboardGrid.ColumnDefinitions.Count : DashboardGrid.RowDefinitions.Count;
+            var delta = target - Math.Round(ReadTrackSize(vertical, index));
+            if (count < 2 || index >= count || delta == 0)
+            {
+                return false;
+            }
+
+            if (index < count - 1)
+            {
+                AdjustTrackWeights(vertical, index, delta);
+            }
+            else
+            {
+                AdjustTrackWeights(vertical, index - 1, -delta);
+            }
+
+            return true;
+        }
+
+        // A throttle rather than a trailing debounce: during a drag the first change schedules a
+        // tick and later ones ride it, so the labels keep moving instead of waiting for a pause.
+        private void ScheduleTrackRulerUpdate()
+        {
+            if (!_disposed && EditLayoutButton.IsChecked == true && !_trackRulerTimer.IsEnabled)
+            {
+                _trackRulerTimer.Start();
+            }
+        }
+
+        private void TrackRulerTimer_Tick(object sender, EventArgs e)
+        {
+            _trackRulerTimer.Stop();
+            if (_disposed || EditLayoutButton.IsChecked != true)
+            {
+                return;
+            }
+
+            for (var index = 0; index < _columnRulerTexts.Count; index++)
+            {
+                UpdateTrackRulerText(_columnRulerTexts[index], ReadTrackSize(vertical: true, index));
+            }
+
+            for (var index = 0; index < _rowRulerTexts.Count; index++)
+            {
+                UpdateTrackRulerText(_rowRulerTexts[index], ReadTrackSize(vertical: false, index));
+            }
+        }
+
+        // A box being typed in keeps what the user typed.
+        private static void UpdateTrackRulerText(TextBox box, double size)
+        {
+            if (!box.IsKeyboardFocusWithin)
+            {
+                box.Text = FormatTrackNumber(size) + " px";
+            }
+        }
+
+        private static string FormatTrackNumber(double size) =>
+            Math.Round(size).ToString("0", PlayniteAchievements.Common.FormattingCulture.Current);
 
         private System.Windows.Controls.Primitives.Thumb CreateTrackGripper(
             bool vertical,
@@ -268,9 +663,10 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 Cursor = vertical ? Cursors.SizeWE : Cursors.SizeNS,
                 Focusable = false,
-                Template = CreateTrackGripperTemplate(vertical)
+                Template = vertical ? TrackGripperTemplateVertical : TrackGripperTemplateHorizontal
             };
-            var lastCell = PageGridSize - 1;
+            // The far edge of a column gripper is the last row, and of a row gripper the last column.
+            var lastCell = PageTrackCount(!vertical) - 1;
             var edgeOffset = TrackGripperSize / 2;
             if (vertical)
             {
@@ -310,6 +706,12 @@ namespace PlayniteAchievements.Views.Showcase
             return thumb;
         }
 
+        // Built once per orientation, like TrackRulerBoxTemplate: the template is identical for
+        // every gripper, and the accent brush inside it is a resource reference, so sharing it
+        // across thumbs and dashboards loses nothing.
+        private static readonly ControlTemplate TrackGripperTemplateVertical = CreateTrackGripperTemplate(vertical: true);
+        private static readonly ControlTemplate TrackGripperTemplateHorizontal = CreateTrackGripperTemplate(vertical: false);
+
         private static ControlTemplate CreateTrackGripperTemplate(bool vertical)
         {
             // Transparent pad for a comfortable grab target, with a small accent pill
@@ -334,10 +736,31 @@ namespace PlayniteAchievements.Views.Showcase
         private void UpdateTrackGripperVisibility()
         {
             var editing = EditLayoutButton.IsChecked == true;
+            // First entry into edit mode on this dashboard: build the chrome now. AddTrackGrippers
+            // re-enters here once the lists are populated (a one-track page has no grippers but
+            // still gets rulers, so both lists gate the re-entry).
+            if (editing && _blockVisuals.Count > 0 && _trackGrippers.Count == 0 && _trackRulers.Count == 0)
+            {
+                AddTrackGrippers();
+                return;
+            }
+
             foreach (var gripper in _trackGrippers)
             {
                 gripper.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
             }
+
+            foreach (var strip in _trackStrips)
+            {
+                strip.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            foreach (var ruler in _trackRulers)
+            {
+                ruler.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            ScheduleTrackRulerUpdate();
         }
 
         private void AdjustTrackWeights(bool vertical, int boundary, double pixelDelta)
@@ -369,6 +792,7 @@ namespace PlayniteAchievements.Views.Showcase
             weights[boundary] = first;
             weights[boundary + 1] = pairSum - first;
             ApplyTrackWeights(vertical, weights);
+            ScheduleTrackRulerUpdate();
         }
 
         private double[] ReadTrackWeights(bool vertical)
@@ -409,10 +833,11 @@ namespace PlayniteAchievements.Views.Showcase
         {
             CurrentPage.RowWeights = null;
             CurrentPage.ColumnWeights = null;
-            ApplyTrackWeights(vertical: false, ShowcaseLayoutService.NormalizeTrackWeights(null, PageGridSize));
-            ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(null, PageGridSize));
+            ApplyTrackWeights(vertical: false, ShowcaseLayoutService.NormalizeTrackWeights(null, PageRowCount));
+            ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(null, PageColumnCount));
             SaveAndPublish();
             _layoutSignature = ComputeLayoutSignature();
+            ScheduleTrackRulerUpdate();
         }
 
 
@@ -426,7 +851,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             foreach (var handle in _layoutHandles)
             {
-                DashboardGrid.Children.Remove(handle);
+                RemoveOverlay(handle);
             }
 
             _layoutHandles.Clear();
@@ -441,7 +866,14 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             var block = SelectedBlock;
-            if (EditLayoutButton.IsChecked != true || block == null)
+            if (EditLayoutButton.IsChecked != true)
+            {
+                return;
+            }
+
+            AddLatticeLines();
+
+            if (block == null)
             {
                 return;
             }
@@ -456,7 +888,7 @@ namespace PlayniteAchievements.Views.Showcase
                 AddLayoutHandle(CreateCutLine(block, vertical: false, line));
             }
 
-            AddMergeChevrons(block);
+            var chevrons = AddMergeChevrons(block);
 
             // An empty selected block's + button must win over the cut lines crossing it, but
             // it lives inside the block container (ZIndex 0) while cut lines are grid siblings
@@ -473,6 +905,7 @@ namespace PlayniteAchievements.Views.Showcase
                 Grid.SetColumnSpan(overlayAdd, block.ColumnSpan);
                 Panel.SetZIndex(overlayAdd, 44);
                 AddLayoutHandle(overlayAdd);
+                HideChevronsCoveredBy(overlayAdd, chevrons);
                 if (_blockVisuals.TryGetValue(block.BlockId, out var state) &&
                     state.AddButton != null)
                 {
@@ -482,10 +915,72 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
+        // The page-wide cell lattice, drawn only while editing. Blocks tile the grid and
+        // span whole cells, so the lattice is the only thing that shows where a block could be
+        // cut before one is selected. Deliberately quieter than the accent dashed cut lines and
+        // below them in ZIndex: this is orientation, not an affordance, and it never takes a hit.
+        private void AddLatticeLines()
+        {
+            for (var line = 1; line < PageColumnCount; line++)
+            {
+                AddLayoutHandle(CreateLatticeLine(vertical: true, line, PageRowCount));
+            }
+
+            for (var line = 1; line < PageRowCount; line++)
+            {
+                AddLayoutHandle(CreateLatticeLine(vertical: false, line, PageColumnCount));
+            }
+        }
+
+        // crossCount is the number of tracks the line runs across: rows for a vertical line.
+        private static System.Windows.Shapes.Rectangle CreateLatticeLine(
+            bool vertical,
+            int boundary,
+            int crossCount)
+        {
+            var line = new System.Windows.Shapes.Rectangle
+            {
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true,
+                Opacity = 0.5
+            };
+            // Accent rather than the border brush: PlayAch.Brush.Border follows the theme's
+            // NormalBorderBrush, which in several themes is too low-contrast to see as a
+            // hairline. Solid and thin still reads as secondary next to the dashed 2px cut lines.
+            line.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "PlayAch.Brush.Accent");
+
+            // Straddles the track edge by half its width so the line sits on the boundary
+            // rather than inside the cell before it.
+            if (vertical)
+            {
+                line.Width = 1;
+                line.HorizontalAlignment = HorizontalAlignment.Right;
+                line.VerticalAlignment = VerticalAlignment.Stretch;
+                line.Margin = new Thickness(0, 0, -0.5, 0);
+                Grid.SetColumn(line, boundary - 1);
+                Grid.SetRow(line, 0);
+                Grid.SetRowSpan(line, crossCount);
+            }
+            else
+            {
+                line.Height = 1;
+                line.HorizontalAlignment = HorizontalAlignment.Stretch;
+                line.VerticalAlignment = VerticalAlignment.Bottom;
+                line.Margin = new Thickness(0, 0, 0, -0.5);
+                Grid.SetRow(line, boundary - 1);
+                Grid.SetColumn(line, 0);
+                Grid.SetColumnSpan(line, crossCount);
+            }
+
+            // Below the cut lines (39) and grippers (40) so both keep visual and hit priority.
+            Panel.SetZIndex(line, 38);
+            return line;
+        }
+
         private void AddLayoutHandle(FrameworkElement handle)
         {
             _layoutHandles.Add(handle);
-            DashboardGrid.Children.Add(handle);
+            AddOverlay(handle);
         }
 
         private System.Windows.Controls.Primitives.Thumb CreateCutLine(
@@ -527,6 +1022,20 @@ namespace PlayniteAchievements.Views.Showcase
             // the gripper wins while the cut line stays grabbable along its remaining length.
             Panel.SetZIndex(thumb, 39);
             var pageId = CurrentPage.PageId;
+            thumb.MouseEnter += (_, __) =>
+            {
+                if (!thumb.IsDragging)
+                {
+                    ShowSplitPreview(block, vertical, boundary);
+                }
+            };
+            thumb.MouseLeave += (_, __) =>
+            {
+                if (!thumb.IsDragging)
+                {
+                    ClearLayoutPreview();
+                }
+            };
             thumb.DragStarted += (_, __) =>
             {
                 _cutCandidate = boundary;
@@ -555,11 +1064,13 @@ namespace PlayniteAchievements.Views.Showcase
                 {
                     _cutCandidate = best;
                     MoveCutGhost(vertical, best);
+                    ShowSplitPreview(block, vertical, best);
                 }
             };
             thumb.DragCompleted += (_, args) =>
             {
                 HideCutGhost();
+                ClearLayoutPreview();
                 thumb.Opacity = 1.0;
                 if (!args.Canceled)
                 {
@@ -759,7 +1270,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             Panel.SetZIndex(ghost, 45);
             _cutGhost = ghost;
-            DashboardGrid.Children.Add(ghost);
+            AddOverlay(ghost);
             MoveCutGhost(vertical, boundary);
         }
 
@@ -786,7 +1297,7 @@ namespace PlayniteAchievements.Views.Showcase
         {
             if (_cutGhost != null)
             {
-                DashboardGrid.Children.Remove(_cutGhost);
+                RemoveOverlay(_cutGhost);
                 _cutGhost = null;
             }
         }
@@ -794,15 +1305,51 @@ namespace PlayniteAchievements.Views.Showcase
         // A chevron per direction whose merge is geometrically legal (rectangular closure);
         // hover previews the closure with a glow, click commits through MergeSelectedWith
         // (which owns the multi-widget confirmation and survivor choice).
-        private void AddMergeChevrons(ShowcaseBlockSettings block)
+        private List<Button> AddMergeChevrons(ShowcaseBlockSettings block)
         {
-            AddMergeChevron(block, rowDirection: 0, columnDirection: -1, "LOCPlayAch_Showcase_MergeLeftLabel");
-            AddMergeChevron(block, rowDirection: -1, columnDirection: 0, "LOCPlayAch_Showcase_MergeUpLabel");
-            AddMergeChevron(block, rowDirection: 1, columnDirection: 0, "LOCPlayAch_Showcase_MergeDownLabel");
-            AddMergeChevron(block, rowDirection: 0, columnDirection: 1, "LOCPlayAch_Showcase_MergeRightLabel");
+            return new[]
+                {
+                    AddMergeChevron(block, rowDirection: 0, columnDirection: -1, "LOCPlayAch_Showcase_MergeLeftLabel"),
+                    AddMergeChevron(block, rowDirection: -1, columnDirection: 0, "LOCPlayAch_Showcase_MergeUpLabel"),
+                    AddMergeChevron(block, rowDirection: 1, columnDirection: 0, "LOCPlayAch_Showcase_MergeDownLabel"),
+                    AddMergeChevron(block, rowDirection: 0, columnDirection: 1, "LOCPlayAch_Showcase_MergeRightLabel")
+                }
+                .Where(chevron => chevron != null)
+                .ToList();
         }
 
-        private void AddMergeChevron(
+        // Where a chevron sits: this far in from the block's edge, centred along it.
+        private const double MergeChevronInset = 6;
+
+        // In a short or narrow empty block the centred + button reaches the chevrons on the edges
+        // across it, and being above them it takes their clicks. Those chevrons hide rather than
+        // show through the button's tint as inert, and come back when a resize gives them room.
+        // The + button's host spans the whole block, so its size is the block's.
+        private static void HideChevronsCoveredBy(Button add, IReadOnlyList<Button> chevrons)
+        {
+            if (chevrons.Count == 0 || !(add.Parent is FrameworkElement host))
+            {
+                return;
+            }
+
+            void Update()
+            {
+                foreach (var chevron in chevrons)
+                {
+                    // Left and right chevrons sit on vertical edges, so the block's width decides.
+                    var extent = chevron.HorizontalAlignment == HorizontalAlignment.Center
+                        ? host.ActualHeight
+                        : host.ActualWidth;
+                    var covered = extent / 2 - add.Width / 2 < MergeChevronInset + chevron.Width;
+                    chevron.Visibility = covered ? Visibility.Hidden : Visibility.Visible;
+                }
+            }
+
+            host.SizeChanged += (_, __) => Update();
+            Update();
+        }
+
+        private Button AddMergeChevron(
             ShowcaseBlockSettings block,
             int rowDirection,
             int columnDirection,
@@ -817,7 +1364,7 @@ namespace PlayniteAchievements.Views.Showcase
                     target.BlockId,
                     out _))
             {
-                return;
+                return null;
             }
 
             var chevron = new Button
@@ -839,8 +1386,8 @@ namespace PlayniteAchievements.Views.Showcase
                     ? HorizontalAlignment.Left
                     : HorizontalAlignment.Right;
                 chevron.Margin = columnDirection < 0
-                    ? new Thickness(6, 0, 0, 0)
-                    : new Thickness(0, 0, 6, 0);
+                    ? new Thickness(MergeChevronInset, 0, 0, 0)
+                    : new Thickness(0, 0, MergeChevronInset, 0);
                 Grid.SetColumn(chevron, columnDirection < 0 ? block.Column : block.Column + block.ColumnSpan - 1);
                 Grid.SetRow(chevron, block.Row);
                 Grid.SetRowSpan(chevron, block.RowSpan);
@@ -854,8 +1401,8 @@ namespace PlayniteAchievements.Views.Showcase
                     ? VerticalAlignment.Top
                     : VerticalAlignment.Bottom;
                 chevron.Margin = rowDirection < 0
-                    ? new Thickness(0, 6, 0, 0)
-                    : new Thickness(0, 0, 0, 6);
+                    ? new Thickness(0, MergeChevronInset, 0, 0)
+                    : new Thickness(0, 0, 0, MergeChevronInset);
                 Grid.SetRow(chevron, rowDirection < 0 ? block.Row : block.Row + block.RowSpan - 1);
                 Grid.SetColumn(chevron, block.Column);
                 Grid.SetColumnSpan(chevron, block.ColumnSpan);
@@ -868,6 +1415,7 @@ namespace PlayniteAchievements.Views.Showcase
             chevron.MouseLeave += (_, __) => ClearMergePreviewGlow();
             chevron.Click += (_, __) => MergeSelectedWith(targetBlockId);
             AddLayoutHandle(chevron);
+            return chevron;
         }
 
         private static ControlTemplate CreateMergeChevronTemplate(int rowDirection, int columnDirection)
@@ -926,6 +1474,9 @@ namespace PlayniteAchievements.Views.Showcase
         // Lights the closure that WOULD merge using each block's existing drop-glow layer.
         // Guarded by DragVisualKind.None on set and clear so a hover can never restyle or
         // clear live drag-and-drop visuals.
+        // The merge preview is the merged block's single outline, drawn in place of the members'
+        // own outlines (not on top of them, and without the per-block glow), so the page shows
+        // the one shape the click produces.
         private void ShowMergePreviewGlow(string firstBlockId, string secondBlockId)
         {
             ClearMergePreviewGlow();
@@ -939,30 +1490,143 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            foreach (var member in closure)
+            ShowMergePreview(closure);
+        }
+        // The closure's bounding rectangle is the merged block (TryGetMergePreview only returns
+        // rectangular closures).
+        private void ShowMergePreview(IReadOnlyList<ShowcaseBlockSettings> closure)
+        {
+            if (closure == null || closure.Count == 0)
             {
-                if (!_blockVisuals.TryGetValue(member.BlockId, out var state) ||
-                    state?.Glow == null ||
-                    state.DragVisual != DragVisualKind.None)
-                {
-                    continue;
-                }
+                return;
+            }
 
-                _mergePreviewBlockIds.Add(member.BlockId);
-                state.Glow.Visibility = Visibility.Visible;
-                var wash = new System.Windows.Media.Animation.DoubleAnimation(
-                    0,
-                    0.22,
-                    TimeSpan.FromMilliseconds(120));
-                state.Glow.BeginAnimation(
-                    OpacityProperty,
-                    wash,
-                    System.Windows.Media.Animation.HandoffBehavior.SnapshotAndReplace);
+            var row = closure.Min(member => member.Row);
+            var column = closure.Min(member => member.Column);
+            var rowEnd = closure.Max(member => member.Row + member.RowSpan);
+            var columnEnd = closure.Max(member => member.Column + member.ColumnSpan);
+            ShowLayoutPreview(
+                new[] { (row, column, rowEnd - row, columnEnd - column, BlockInset) },
+                closure.Select(member => member.BlockId));
+        }
+
+        // The container's inset on each side; two neighbouring blocks sit 2 x this apart.
+        private static readonly Thickness BlockInset = new Thickness(4);
+
+        // Extra room each half leaves at the cut side, so the preview's gap is clearly wider than
+        // the ordinary space between blocks and the new boundary reads at a glance (a still gap,
+        // not an animation). The outer edges keep the block's own inset.
+        private const double SplitPreviewGap = 8;
+
+        private void ShowSplitPreview(ShowcaseBlockSettings block, bool vertical, int boundary)
+        {
+            var cut = BlockInset.Left + SplitPreviewGap;
+            if (vertical)
+            {
+                ShowLayoutPreview(new[]
+                {
+                    (block.Row, block.Column, block.RowSpan, boundary - block.Column,
+                        new Thickness(BlockInset.Left, BlockInset.Top, cut, BlockInset.Bottom)),
+                    (block.Row, boundary, block.RowSpan, block.Column + block.ColumnSpan - boundary,
+                        new Thickness(cut, BlockInset.Top, BlockInset.Right, BlockInset.Bottom))
+                }, new[] { block.BlockId });
+            }
+            else
+            {
+                ShowLayoutPreview(new[]
+                {
+                    (block.Row, block.Column, boundary - block.Row, block.ColumnSpan,
+                        new Thickness(BlockInset.Left, BlockInset.Top, BlockInset.Right, cut)),
+                    (boundary, block.Column, block.Row + block.RowSpan - boundary, block.ColumnSpan,
+                        new Thickness(BlockInset.Left, cut, BlockInset.Right, BlockInset.Bottom))
+                }, new[] { block.BlockId });
             }
         }
 
+        // Each preview shape sits exactly where a real block would (the container's 4px inset,
+        // outline thickness and corner radius), in the accent outline over a faint wash, and the
+        // outlines of the blocks it replaces hide while it shows: the page reads as the result of
+        // the click rather than as extra borders on top of the current layout. Not hit-testable,
+        // so it never steals the hover that shows it.
+        private void ShowLayoutPreview(
+            IEnumerable<(int Row, int Column, int RowSpan, int ColumnSpan, Thickness Margin)> cells,
+            IEnumerable<string> replacedBlockIds)
+        {
+            ClearLayoutPreview();
+            foreach (var blockId in replacedBlockIds ?? Enumerable.Empty<string>())
+            {
+                if (blockId != null &&
+                    _blockVisuals.TryGetValue(blockId, out var state) &&
+                    state?.EditChrome != null &&
+                    state.DragVisual == DragVisualKind.None)
+                {
+                    _layoutPreviewHiddenChrome.Add((state.EditChrome, state.EditChrome.Visibility));
+                    state.EditChrome.Visibility = Visibility.Hidden;
+                }
+            }
+
+            foreach (var cell in cells)
+            {
+                AddLayoutPreviewGhost(cell, "PlayAch.Brush.Accent");
+            }
+        }
+
+        // One preview shape: an outline in the given brush over a faint wash of it. It is
+        // removed with the rest by ClearLayoutPreview.
+        private void AddLayoutPreviewGhost(
+            (int Row, int Column, int RowSpan, int ColumnSpan, Thickness Margin) cell,
+            string brushKey)
+        {
+            if (cell.RowSpan <= 0 || cell.ColumnSpan <= 0)
+            {
+                return;
+            }
+
+            var wash = new Border { Opacity = 0.06 };
+            wash.SetResourceReference(Border.BackgroundProperty, brushKey);
+            wash.SetResourceReference(Border.CornerRadiusProperty, "PlayAch.Radius.Section");
+            var outline = new Border { BorderThickness = new Thickness(2) };
+            outline.SetResourceReference(Border.BorderBrushProperty, brushKey);
+            outline.SetResourceReference(Border.CornerRadiusProperty, "PlayAch.Radius.Section");
+            var ghost = new Grid
+            {
+                Margin = cell.Margin,
+                IsHitTestVisible = false
+            };
+            ghost.Children.Add(wash);
+            ghost.Children.Add(outline);
+            Grid.SetRow(ghost, cell.Row);
+            Grid.SetColumn(ghost, cell.Column);
+            Grid.SetRowSpan(ghost, cell.RowSpan);
+            Grid.SetColumnSpan(ghost, cell.ColumnSpan);
+            // Above the blocks and the cut line, below the drag ghost line.
+            Panel.SetZIndex(ghost, 44);
+            _layoutPreviewGhosts.Add(ghost);
+            AddOverlay(ghost);
+        }
+
+        private void ClearLayoutPreview()
+        {
+            foreach (var ghost in _layoutPreviewGhosts)
+            {
+                RemoveOverlay(ghost);
+            }
+
+            _layoutPreviewGhosts.Clear();
+            foreach (var hidden in _layoutPreviewHiddenChrome)
+            {
+                // Only undo our own hide; a chrome refresh during the hover already set its own state.
+                if (hidden.Chrome.Visibility == Visibility.Hidden)
+                {
+                    hidden.Chrome.Visibility = hidden.Previous;
+                }
+            }
+
+            _layoutPreviewHiddenChrome.Clear();
+        }
         private void ClearMergePreviewGlow()
         {
+            ClearLayoutPreview();
             foreach (var blockId in _mergePreviewBlockIds)
             {
                 if (!_blockVisuals.TryGetValue(blockId, out var state) ||
@@ -1014,18 +1678,19 @@ namespace PlayniteAchievements.Views.Showcase
             // Grid size and track weights participate so an externally changed page layout
             // rebuilds; local gripper drags refresh the stored signature themselves after
             // applying in place.
-            builder.Append('#').Append(PageGridSize).Append('#');
-            AppendTrackWeights(builder, current.RowWeights);
+            builder.Append('#').Append(PageRowCount).Append('x').Append(PageColumnCount).Append('#');
+            AppendTrackWeights(builder, current.RowWeights, PageRowCount);
             builder.Append('/');
-            AppendTrackWeights(builder, current.ColumnWeights);
+            AppendTrackWeights(builder, current.ColumnWeights, PageColumnCount);
             return builder.ToString();
         }
 
         private void AppendTrackWeights(
             System.Text.StringBuilder builder,
-            List<double> weights)
+            List<double> weights,
+            int count)
         {
-            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(weights, PageGridSize))
+            foreach (var weight in ShowcaseLayoutService.NormalizeTrackWeights(weights, count))
             {
                 builder
                     .Append(weight.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))
@@ -1033,9 +1698,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        private FrameworkElement CreateBlockContainer(
-            ShowcaseBlockSettings block,
-            OverviewDataSnapshot snapshot)
+        private FrameworkElement CreateBlockContainer(ShowcaseBlockSettings block)
         {
             // The container never changes BorderThickness or Padding: edit-mode chrome is drawn
             // by an overlay layer so toggling edit mode cannot shift the widget layout.
@@ -1117,7 +1780,7 @@ namespace PlayniteAchievements.Views.Showcase
                 if (!string.IsNullOrWhiteSpace(current?.WidgetInstanceId))
                 {
                     ShowcaseLayoutService.DeleteWidget(Layout, current.WidgetInstanceId);
-                    SaveAndReassignWidgets();
+                    SaveAndApplyBlocks();
                 }
             };
             layers.Children.Add(deleteButton);
@@ -1181,6 +1844,11 @@ namespace PlayniteAchievements.Views.Showcase
             return border;
         }
 
+        private static Grid LayersOf(FrameworkElement container)
+        {
+            return (container as Border)?.Child as Grid;
+        }
+
         // Drops cached controls for widgets that no longer exist, so deleted widgets do not pin
         // their (grid-bearing) controls in memory.
         private void PruneHostCache()
@@ -1199,6 +1867,9 @@ namespace PlayniteAchievements.Views.Showcase
 
                 _hostCache.Remove(staleId);
             }
+
+            // Deleted widgets' control bar state goes with them.
+            PlayniteAchievements.ViewModels.Showcase.Widgets.ShowcaseControlBarStates.RemoveExcept(live);
         }
 
         // Reuses the cached control for this widget when there is one, otherwise builds a fresh
@@ -1229,25 +1900,254 @@ namespace PlayniteAchievements.Views.Showcase
             // selection work on every click. The widget menu rides on the block container so
             // it stays reachable with the body inert.
             host.IsHitTestVisible = EditLayoutButton.IsChecked != true;
-            var blockId = block.BlockId;
-            Dispatcher.BeginInvoke(
-                new Action(() =>
+            QueueWidgetApply(host, widget, block.BlockId, snapshotOnly: false);
+            return host;
+        }
+
+        private void QueueWidgetApply(
+            ShowcaseWidgetControl host,
+            ShowcaseWidgetInstanceSettings widget,
+            string blockId,
+            bool snapshotOnly)
+        {
+            if (_disposed || host == null || widget == null)
+            {
+                return;
+            }
+
+            // A data refresh that carries the snapshot this host already projected has nothing
+            // new for it. Every SnapshotChanged publishes a fresh snapshot instance, so
+            // reference identity is the data identity (the projection service's per-snapshot
+            // cache relies on the same fact). Configuration changes never take this exit.
+            if (snapshotOnly && IsProjectedFrom(host, _overview.LatestSnapshot))
+            {
+                return;
+            }
+
+            if (!_applyQueued.Add(host))
+            {
+                // Already waiting: keep its place, but a configuration change must not be
+                // downgraded to a snapshot-only request that a later guard could skip.
+                if (!snapshotOnly)
                 {
-                    if (_disposed ||
-                        !_blockVisuals.TryGetValue(blockId, out var current) ||
-                        !ReferenceEquals(current?.Host, host))
+                    foreach (var pending in _applyQueue)
                     {
-                        return;
+                        if (ReferenceEquals(pending.Host, host))
+                        {
+                            pending.SnapshotOnly = false;
+                            break;
+                        }
+                    }
+                }
+
+                return;
+            }
+
+            if (_applyQueue.Count == 0)
+            {
+                _applyDrainStartedTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+                _applyDrainApplied = 0;
+                // Tracing only: name the dispatcher operations that run between the widget
+                // passes (layout and render ticks, Loaded broadcasts, image completions).
+                DispatcherOperationProbe.Arm(Logger, "showcase-fill", TimeSpan.FromSeconds(3));
+            }
+
+            _applyQueue.Enqueue(new WidgetApplyRequest
+            {
+                Host = host,
+                Widget = widget,
+                BlockId = blockId,
+                SnapshotOnly = snapshotOnly
+            });
+            ScheduleApplyDrain();
+        }
+
+        private void ScheduleApplyDrain()
+        {
+            if (_applyDrainScheduled || _disposed || _applyQueue.Count == 0)
+            {
+                return;
+            }
+
+            _applyDrainScheduled = true;
+            Dispatcher.BeginInvoke(
+                new Action(DrainApplyQueue),
+                System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        // Applies at most one widget, then re-posts itself. The snapshot is read when the
+        // request runs, not when it was queued, so a widget reached after a newer snapshot
+        // landed projects the newer one and is not queued twice for it.
+        private void DrainApplyQueue()
+        {
+            _applyDrainScheduled = false;
+            if (_disposed)
+            {
+                ClearApplyQueue();
+                return;
+            }
+
+            try
+            {
+                while (_applyQueue.Count > 0)
+                {
+                    var request = _applyQueue.Dequeue();
+                    _applyQueued.Remove(request.Host);
+                    if (!IsLiveRequest(request))
+                    {
+                        continue;
                     }
 
-                    host.Apply(ShowcaseWidgetProjectionService.Build(
-                        _overview.LatestSnapshot ?? new OverviewDataSnapshot(),
-                        Layout,
-                        widget,
-                        gridOptions: _settings.Persisted?.GridOptions));
-                }),
-                System.Windows.Threading.DispatcherPriority.Background);
-            return host;
+                    var snapshot = _overview.LatestSnapshot;
+                    if (request.SnapshotOnly && IsProjectedFrom(request.Host, snapshot))
+                    {
+                        continue;
+                    }
+
+                    if (PerfScope.PerfTracingEnabled && _applyDrainApplied > 0)
+                    {
+                        // Wall time between the previous pass ending and this one starting:
+                        // render, Loaded broadcasts, image decodes and any other dispatcher work
+                        // the drain yielded to. Large gaps mean the cost is outside the scopes.
+                        var gapMs = (System.Diagnostics.Stopwatch.GetTimestamp() - _applyPassEndedTicks) * 1000L /
+                                    System.Diagnostics.Stopwatch.Frequency;
+                        if (gapMs >= 50)
+                        {
+                            Logger.Debug($"[Showcase] apply gap ms={gapMs} before kind={request.Widget.Kind}");
+                        }
+                    }
+
+                    ApplyWidgetProjection(request.Host, request.Widget, snapshot);
+                    _applyPassEndedTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+                    _applyDrainApplied++;
+                    break;
+                }
+            }
+            finally
+            {
+                if (_applyQueue.Count > 0)
+                {
+                    ScheduleApplyDrain();
+                }
+                else if (_applyDrainApplied > 0 && PerfScope.PerfTracingEnabled)
+                {
+                    var elapsedMs = (System.Diagnostics.Stopwatch.GetTimestamp() - _applyDrainStartedTicks) * 1000L /
+                                    System.Diagnostics.Stopwatch.Frequency;
+                    Logger.Debug($"[Showcase] apply drain done widgets={_applyDrainApplied} ms={elapsedMs}");
+                    _applyDrainApplied = 0;
+                }
+            }
+        }
+
+        // A request is stale once its host no longer backs the block it was raised for (a
+        // rebuild replaced the container) or, for an off-page host, once the cache dropped it.
+        private bool IsLiveRequest(WidgetApplyRequest request)
+        {
+            if (request.BlockId != null)
+            {
+                return _blockVisuals.TryGetValue(request.BlockId, out var state) &&
+                       ReferenceEquals(state?.Host, request.Host);
+            }
+
+            return !string.IsNullOrWhiteSpace(request.Widget?.InstanceId) &&
+                   _hostCache.TryGetValue(request.Widget.InstanceId, out var live) &&
+                   ReferenceEquals(live, request.Host);
+        }
+
+        private static bool IsProjectedFrom(ShowcaseWidgetControl host, OverviewDataSnapshot snapshot)
+        {
+            return snapshot != null && ReferenceEquals(host?.Projection?.Snapshot, snapshot);
+        }
+
+        private void ClearApplyQueue()
+        {
+            _applyQueue.Clear();
+            _applyQueued.Clear();
+        }
+
+        // The one place a widget host receives its projection. Apply only sets the Projection
+        // property; the body's template inflation, grid row and mosaic tile realization, and
+        // chart plotting all run in the layout pass that follows, so a scope around Apply alone
+        // would under-report. With tracing on, layout is forced here so the per-widget number
+        // covers the whole cost; shipped builds leave layout to the dispatcher as before.
+        //
+        // A null snapshot means the overview has not produced one yet (a fresh open, before
+        // RefreshViewAsync lands). Projecting against an empty stand-in would build a "No data"
+        // body per widget only for SnapshotChanged to rebuild every one of them moments later,
+        // so the host shows a loading caption instead and the snapshot pass does the first
+        // real projection.
+        private void ApplyWidgetProjection(
+            ShowcaseWidgetControl host,
+            ShowcaseWidgetInstanceSettings widget,
+            OverviewDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                host.ShowLoadingPlaceholder();
+                return;
+            }
+
+            var context = $"kind={widget?.Kind} id={widget?.InstanceId}";
+            ShowcaseWidgetProjection projection;
+            using (var build = PerfScope.Start(Logger, "Showcase.Widget.Build", thresholdMs: 10, context: context))
+            {
+                projection = ShowcaseWidgetProjectionService.Build(
+                    snapshot,
+                    Layout,
+                    widget,
+                    gridOptions: _settings.Persisted?.GridOptions);
+                build?.SetContext(context + " " + DescribeProjection(projection));
+            }
+
+            using (PerfScope.Start(Logger, "Showcase.Widget.Apply", thresholdMs: 10, context: context))
+            {
+                host.Apply(projection);
+            }
+
+            if (PerfScope.PerfTracingEnabled)
+            {
+                using (var layout = PerfScope.Start(Logger, "Showcase.Widget.Layout", thresholdMs: 10, context: context))
+                {
+                    host.UpdateLayout();
+                    layout?.SetContext(context + " " + DescribeRealizedRows(host));
+                }
+            }
+        }
+
+        // Tracing only: how many DataGrid rows the layout pass realized inside the host, so a
+        // slow grid widget can be read as per-row cost versus a virtualization failure.
+        private static string DescribeRealizedRows(ShowcaseWidgetControl host)
+        {
+            // The achievement grid control hosts several DataGrids (category list, drill, rows);
+            // the populated one is the one whose rows were realized.
+            var grid = Views.Helpers.VisualTreeHelpers.FindVisualChildren<DataGrid>(host)
+                .OrderByDescending(candidate => candidate.Items.Count)
+                .FirstOrDefault();
+            if (grid == null)
+            {
+                return string.Empty;
+            }
+
+            var realized = 0;
+            for (var index = 0; index < grid.Items.Count; index++)
+            {
+                if (grid.ItemContainerGenerator.ContainerFromIndex(index) != null)
+                {
+                    realized++;
+                }
+            }
+
+            return $"items={grid.Items.Count} realized={realized} gridHeight={grid.ActualHeight:0}";
+        }
+
+        private static string DescribeProjection(ShowcaseWidgetProjection projection)
+        {
+            return
+                $"rows={projection?.AchievementRows?.Count ?? 0} " +
+                $"mosaic={projection?.MosaicAchievements?.Count ?? 0} " +
+                $"games={projection?.Games?.Count ?? 0} " +
+                $"chart={projection?.ChartEntries?.Count ?? 0} " +
+                $"snapshot={projection?.Snapshot?.Achievements?.Count ?? 0}";
         }
 
         private Button CreateAddWidgetButton(ShowcaseBlockSettings block)
@@ -1334,7 +2234,7 @@ namespace PlayniteAchievements.Views.Showcase
                             return;
                         }
 
-                        SaveAndReassignWidgets();
+                        SaveAndApplyBlocks();
                     });
                 item.IsEnabled = !captured.SingleInstancePerPage ||
                     !CurrentPage.Blocks
@@ -1396,19 +2296,29 @@ namespace PlayniteAchievements.Views.Showcase
                     secondBlockId,
                     preferredWidgetInstanceId))
             {
-                SaveAndRebuild();
+                SaveAndApplyBlocks();
             }
         }
 
         private void Block_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStart = e.GetPosition(null);
-            if (EditLayoutButton.IsChecked == true &&
-                sender is Border border &&
-                border.Tag is ShowcaseBlockSettings block &&
-                !string.Equals(_selectedBlockId, block.BlockId, StringComparison.OrdinalIgnoreCase))
+            if (EditLayoutButton.IsChecked != true)
             {
-                SelectBlock(block);
+                return;
+            }
+
+            if (sender is Border border &&
+                border.Tag is ShowcaseBlockSettings block)
+            {
+                if (!string.Equals(_selectedBlockId, block.BlockId, StringComparison.OrdinalIgnoreCase))
+                {
+                    SelectBlock(block);
+                }
+
+                // Clicking a block is how focus comes back after it has been taken by a
+                // widget's own control, so the editor shortcuts keep working.
+                border.Focus();
             }
         }
 
@@ -1437,6 +2347,56 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             UpdateLayoutHandles();
+            Dispatcher.BeginInvoke(
+                new Action(ReportDashboardClip),
+                System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        // Diagnostic for the edit-mode overhang (grippers and rulers) being cut off: names every
+        // element from the dashboard grid up to the root that WPF is clipping after a selection
+        // change, with the sizes that decided it. Silent while nothing is clipped.
+        private void ReportDashboardClip()
+        {
+            if (_disposed || EditLayoutButton.IsChecked != true)
+            {
+                return;
+            }
+
+            var root = Window.GetWindow(this) as FrameworkElement ?? this;
+            var gripper = _trackGrippers.FirstOrDefault();
+            try
+            {
+                var gridBounds = DashboardGrid.TransformToAncestor(root)
+                    .TransformBounds(new Rect(DashboardGrid.RenderSize));
+                var gripperBounds = gripper == null
+                    ? Rect.Empty
+                    : gripper.TransformToAncestor(root).TransformBounds(new Rect(gripper.RenderSize));
+                Logger.Info(
+                    $"Dashboard geometry after selection: root {root.GetType().Name} {root.ActualWidth:0.##}x{root.ActualHeight:0.##}, " +
+                    $"grid {gridBounds}, first gripper {gripperBounds} visible={gripper?.IsVisible}, " +
+                    $"grid desired {DashboardGrid.DesiredSize.Width:0.##}x{DashboardGrid.DesiredSize.Height:0.##}");
+            }
+            catch (InvalidOperationException)
+            {
+                // Not connected to the root yet; the clip walk below still runs.
+            }
+
+            DependencyObject current = DashboardGrid;
+            while (current is FrameworkElement element)
+            {
+                var layoutClip = System.Windows.Controls.Primitives.LayoutInformation.GetLayoutClip(element);
+                if (layoutClip != null || element.Clip != null || element.ClipToBounds)
+                {
+                    Logger.Info(
+                        $"Dashboard overhang clipped by {element.GetType().Name} '{element.Name}': " +
+                        $"desired {element.DesiredSize.Width:0.##}x{element.DesiredSize.Height:0.##}, " +
+                        $"rendered {element.RenderSize.Width:0.##}x{element.RenderSize.Height:0.##}, " +
+                        $"layoutClip={(layoutClip == null ? "none" : layoutClip.Bounds.ToString())}, " +
+                        $"clip={(element.Clip == null ? "none" : "set")}, clipToBounds={element.ClipToBounds}");
+                }
+
+                current = VisualTreeHelper.GetParent(current) ?? LogicalTreeHelper.GetParent(current);
+            }
         }
 
         private void Block_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -1562,7 +2522,7 @@ namespace PlayniteAchievements.Views.Showcase
                 // Stop the target clock before the visuals change. The drag source's finally
                 // block also clears the states after WPF ends the operation.
                 ClearDragVisuals();
-                SaveAndReassignWidgets();
+                SaveAndApplyBlocks();
             }
 
             e.Handled = true;
@@ -1732,24 +2692,40 @@ namespace PlayniteAchievements.Views.Showcase
             SaveAndRebuild();
         }
 
-        // A widget move or swap keeps the block partition intact and only changes which widget each
-        // block hosts, so the existing widget controls are re-parented between block containers
+        // Widget moves and swaps, merges, and cuts all keep the page and its grid size, so the
+        // existing block containers are repositioned and the existing widget controls re-parented
         // instead of being recreated - rebuilding would re-inflate every data grid and chart on the
-        // page. Returns false (and leaves the visuals untouched) if anything about the page no
-        // longer lines up, so the caller can fall back to a full rebuild.
-        private bool TryReassignWidgetHostsInPlace()
+        // page. Only blocks that appeared get a new container, and only blocks that disappeared
+        // lose theirs. Returns false before touching anything when the page differs, so the caller
+        // can fall back to a full rebuild.
+        private bool TryApplyBlocksInPlace()
         {
             if (_disposed || _blockVisuals.Count == 0)
             {
                 return false;
             }
 
-            var blocks = CurrentPage.Blocks;
-            if (blocks.Count != _blockVisuals.Count ||
-                blocks.Any(block => !_blockVisuals.ContainsKey(block.BlockId)))
+            var rowCount = PageRowCount;
+            var columnCount = PageColumnCount;
+            if (!string.Equals(_builtPageId, CurrentPage?.PageId, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
+
+            // A row or column insert/delete changes the track counts. The blocks still map onto
+            // their containers by id, so only the definitions and the per-track edit chrome need
+            // rebuilding; a full rebuild would detach and re-lay-out every widget on the page.
+            if (DashboardGrid.RowDefinitions.Count != rowCount ||
+                DashboardGrid.ColumnDefinitions.Count != columnCount)
+            {
+                ResizeTrackDefinitions(rowCount, columnCount);
+            }
+
+            var blocks = CurrentPage.Blocks;
+            ApplyTrackWeights(vertical: false, ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.RowWeights, rowCount));
+            ApplyTrackWeights(vertical: true, ShowcaseLayoutService.NormalizeTrackWeights(CurrentPage.ColumnWeights, columnCount));
+            ClearMergePreviewGlow();
+            HideCutGhost();
 
             var hostsByInstanceId = new Dictionary<string, ShowcaseWidgetControl>(StringComparer.OrdinalIgnoreCase);
             foreach (var state in _blockVisuals.Values)
@@ -1758,6 +2734,53 @@ namespace PlayniteAchievements.Views.Showcase
                 {
                     hostsByInstanceId[state.Widget.InstanceId] = state.Host;
                 }
+            }
+
+            var liveIds = new HashSet<string>(blocks.Select(block => block.BlockId), StringComparer.OrdinalIgnoreCase);
+            foreach (var removedId in _blockVisuals.Keys.Where(id => !liveIds.Contains(id)).ToList())
+            {
+                var removed = _blockVisuals[removedId];
+                // Detach the content first so a surviving widget's control can move to its new block.
+                LayersOf(removed.Container)?.Children.Clear();
+                DashboardGrid.Children.Remove(removed.Container);
+                _blockVisuals.Remove(removedId);
+            }
+
+            if (EditLayoutButton.IsChecked == true && !liveIds.Contains(_selectedBlockId ?? string.Empty))
+            {
+                _selectedBlockId = blocks.FirstOrDefault()?.BlockId;
+            }
+
+            foreach (var block in blocks)
+            {
+                if (_blockVisuals.TryGetValue(block.BlockId, out var existing))
+                {
+                    existing.Block = block;
+                    existing.Container.Tag = block;
+                }
+                else
+                {
+                    // An empty shell: the assignment pass below installs its widget control or +.
+                    var created = CreateBlockContainer(
+                        new ShowcaseBlockSettings
+                        {
+                            BlockId = block.BlockId,
+                            Row = block.Row,
+                            Column = block.Column,
+                            RowSpan = block.RowSpan,
+                            ColumnSpan = block.ColumnSpan
+                        });
+                    created.Tag = block;
+                    _blockVisuals[block.BlockId].Block = block;
+                    // Below the ZIndex'd overlays either way; first keeps child order stable.
+                    DashboardGrid.Children.Insert(0, created);
+                }
+
+                var container = _blockVisuals[block.BlockId].Container;
+                Grid.SetRow(container, block.Row);
+                Grid.SetColumn(container, block.Column);
+                Grid.SetRowSpan(container, block.RowSpan);
+                Grid.SetColumnSpan(container, block.ColumnSpan);
             }
 
             var assignments = new List<(BlockVisualState State, ShowcaseWidgetInstanceSettings Widget, ShowcaseWidgetControl Host)>();
@@ -1780,7 +2803,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             foreach (var assignment in assignments)
             {
-                var layers = assignment.State.Container?.Child as Grid;
+                var layers = LayersOf(assignment.State.Container);
                 if (layers == null || layers.Children.Count == 0)
                 {
                     return false;
@@ -1822,6 +2845,9 @@ namespace PlayniteAchievements.Views.Showcase
                 RefreshBlockChrome(assignment.State);
             }
 
+            UpdateLayoutHandles();
+            ApplyPendingCutVisual();
+            FocusSelectedBlock();
             _layoutSignature = ComputeLayoutSignature();
             return true;
         }
@@ -1830,11 +2856,15 @@ namespace PlayniteAchievements.Views.Showcase
         // bouncing back in as an external change and rebuilding a second time.
         private void SaveAndPublish()
         {
+            RecordHistoryPoint();
             ShowcaseLayoutService.Normalize(Layout);
             ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
             ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
             PruneHostCache();
             _persist();
+            // Stored profile images are shared by content, so a file goes only once no widget
+            // (on any page or the start page) refers to it any more.
+            PlayniteAchievementsPlugin.Instance?.ShowcaseImageStore?.Prune(Layout);
             _publishingConfigurationChange = true;
             try
             {
@@ -1846,11 +2876,107 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        // Persists a widget add/move/swap/delete, keeping the built widget controls in place.
-        private void SaveAndReassignWidgets()
+        // Called at the head of every publish, when the baseline still holds the pre-mutation
+        // layout. That ordering is what lets one hook cover every structural edit.
+        private void RecordHistoryPoint()
+        {
+            if (_restoringHistory)
+            {
+                return;
+            }
+
+            if (_historyBaseline != null)
+            {
+                _undoHistory.AddLast(_historyBaseline);
+                while (_undoHistory.Count > MaxHistoryDepth)
+                {
+                    _undoHistory.RemoveFirst();
+                }
+            }
+
+            _redoHistory.Clear();
+            _historyBaseline = Layout.Clone();
+        }
+
+        private void Undo()
+        {
+            if (_undoHistory.Count == 0)
+            {
+                return;
+            }
+
+            var restore = _undoHistory.Last.Value;
+            _undoHistory.RemoveLast();
+            _redoHistory.Push(Layout.Clone());
+            RestoreLayout(restore);
+        }
+
+        private void Redo()
+        {
+            if (_redoHistory.Count == 0)
+            {
+                return;
+            }
+
+            var restore = _redoHistory.Pop();
+            _undoHistory.AddLast(Layout.Clone());
+            RestoreLayout(restore);
+        }
+
+        // Copies the layout members back into the live ShowcaseSettings instance rather than
+        // replacing it: Layout is a property over Persisted.Showcase and other surfaces hold
+        // that instance. Pin collections and the profile are left alone because they are not
+        // edited through the dashboard and are not part of what undo covers.
+        private void RestoreLayout(ShowcaseSettings snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            _restoringHistory = true;
+            try
+            {
+                var live = Layout;
+                live.LayoutVersion = snapshot.LayoutVersion;
+                live.LastSelectedPageId = snapshot.LastSelectedPageId;
+                live.Pages = (snapshot.Pages ?? new List<ShowcasePageSettings>())
+                    .Select(page => page.Clone())
+                    .ToList();
+                live.WidgetInstances = (snapshot.WidgetInstances ?? new List<ShowcaseWidgetInstanceSettings>())
+                    .Select(widget => widget.Clone())
+                    .ToList();
+
+                // The cut target may no longer exist in the restored layout.
+                if (FindWidget(_cutInstanceId) == null)
+                {
+                    _cutInstanceId = null;
+                }
+
+                if (FindWidget(SelectedBlock?.WidgetInstanceId) == null &&
+                    CurrentPage.Blocks.All(block => !string.Equals(
+                        block.BlockId,
+                        _selectedBlockId,
+                        StringComparison.OrdinalIgnoreCase)))
+                {
+                    _selectedBlockId = CurrentPage.Blocks.FirstOrDefault()?.BlockId;
+                }
+
+                _historyBaseline = Layout.Clone();
+                SaveAndPublish();
+                Rebuild();
+            }
+            finally
+            {
+                _restoringHistory = false;
+            }
+        }
+
+        // Persists a widget add/move/swap/delete, merge, or cut, keeping the built widget controls in place.
+        private void SaveAndApplyBlocks()
         {
             SaveAndPublish();
-            if (!TryReassignWidgetHostsInPlace())
+            if (!TryApplyBlocksInPlace())
             {
                 Rebuild();
             }
@@ -1869,6 +2995,13 @@ namespace PlayniteAchievements.Views.Showcase
             if (_blockVisuals.Count == 0)
             {
                 Rebuild();
+            }
+
+            // The baseline has to exist before the first edit, because RecordHistoryPoint
+            // pushes what it finds here as the state to undo back to.
+            if (_historyBaseline == null)
+            {
+                _historyBaseline = Layout.Clone();
             }
         }
 
@@ -1919,8 +3052,9 @@ namespace PlayniteAchievements.Views.Showcase
         // would re-run the drag wiring and recreate every control). The per-kind view models update
         // their bindings without discarding their visual tree.
         //
-        // includeCachedHosts re-projects the off-page hosts as well; see the comment on that loop
-        // for why only a snapshot change needs it.
+        // This only enqueues; the apply queue projects one widget per dispatcher pass, visible
+        // blocks first in reading order. includeCachedHosts re-projects the off-page hosts as
+        // well; see the comment on that loop for why only a snapshot change needs it.
         private void RefreshWidgetData(bool includeCachedHosts)
         {
             if (_disposed)
@@ -1934,20 +3068,18 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            var snapshot = _overview.LatestSnapshot ?? new OverviewDataSnapshot();
-            var applied = new HashSet<ShowcaseWidgetControl>();
-            foreach (var visual in _blockVisuals.Values)
+            var queued = new HashSet<ShowcaseWidgetControl>();
+            foreach (var block in CurrentPage.Blocks.OrderBy(block => block.Row).ThenBy(block => block.Column))
             {
-                if (visual?.Host != null && visual.Widget != null)
+                if (!_blockVisuals.TryGetValue(block.BlockId, out var visual) ||
+                    visual?.Host == null ||
+                    visual.Widget == null)
                 {
-                    visual.Host.Apply(
-                        ShowcaseWidgetProjectionService.Build(
-                            snapshot,
-                            Layout,
-                            visual.Widget,
-                            gridOptions: _settings.Persisted?.GridOptions));
-                    applied.Add(visual.Host);
+                    continue;
                 }
+
+                QueueWidgetApply(visual.Host, visual.Widget, block.BlockId, snapshotOnly: includeCachedHosts);
+                queued.Add(visual.Host);
             }
 
             // Re-project the cached hosts for the other pages too, but only when the snapshot
@@ -1974,19 +3106,14 @@ namespace PlayniteAchievements.Views.Showcase
             foreach (var entry in _hostCache)
             {
                 if (entry.Value == null ||
-                    applied.Contains(entry.Value) ||
+                    queued.Contains(entry.Value) ||
                     entry.Value.Projection == null ||
                     !widgetsById.TryGetValue(entry.Key, out var widget))
                 {
                     continue;
                 }
 
-                entry.Value.Apply(
-                    ShowcaseWidgetProjectionService.Build(
-                        snapshot,
-                        Layout,
-                        widget,
-                        gridOptions: _settings.Persisted?.GridOptions));
+                QueueWidgetApply(entry.Value, widget, blockId: null, snapshotOnly: true);
             }
         }
 
@@ -2010,6 +3137,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             EnsureLayout();
+            EnsureSnapshotCoversLayout();
             if (string.Equals(ComputeLayoutSignature(), _layoutSignature, StringComparison.Ordinal))
             {
                 RefreshWidgetData(includeCachedHosts: false);
@@ -2017,6 +3145,28 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             Rebuild();
+        }
+
+        // Every other widget option re-projects from the snapshot already in hand. Unlock Next is
+        // the exception: its locked achievements are not in the snapshot at all, and the overview
+        // builder only hydrates them when a widget asks. Switching a mosaic to that source is
+        // therefore the one option edit that needs the snapshot rebuilt.
+        //
+        // A new achievement pin is the same case: the snapshot only holds unlocked rows plus the
+        // locked pinned rows hydrated at build time, so a pin the build never saw would render as
+        // a bare placeholder until the next rebuild.
+        private void EnsureSnapshotCoversLayout()
+        {
+            var snapshot = _overview.LatestSnapshot;
+            var needsUnlockNextPool = ShowcaseWidgetOptions.RequiresUnlockNextPool(Layout) &&
+                                      snapshot?.UnlockNextPoolBuilt != true;
+            var needsPinHydration = snapshot != null && !snapshot.HasSeenAchievementPins(Layout);
+            if (!needsUnlockNextPool && !needsPinHydration)
+            {
+                return;
+            }
+
+            _ = _overview.RefreshViewAsync();
         }
 
         private void PageSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2030,6 +3180,91 @@ namespace PlayniteAchievements.Views.Showcase
         private void PreviousPageButton_Click(object sender, RoutedEventArgs e) => MovePage(-1);
 
         private void NextPageButton_Click(object sender, RoutedEventArgs e) => MovePage(1);
+
+        // Editor shortcuts. Scoped to this control rather than the window so they cannot
+        // compete with the data grids on the other overview tabs, and gated on edit mode so
+        // the dashboard stays inert while it is being read rather than arranged.
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (EditLayoutButton.IsChecked != true)
+            {
+                return;
+            }
+
+            // A text box (a track size label, a grid's search field) owns its own Escape and Ctrl
+            // shortcuts.
+            if (Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase)
+            {
+                return;
+            }
+
+            // Escape leaves edit mode, and being handled here it never reaches the window.
+            if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                EditLayoutButton.IsChecked = false;
+                e.Handled = true;
+                return;
+            }
+
+            if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control)
+            {
+                return;
+            }
+
+            switch (e.Key)
+            {
+                case Key.C:
+                    CopySelectedWidget();
+                    break;
+                case Key.X:
+                    CutSelectedWidget();
+                    break;
+                case Key.V:
+                    PasteWidget();
+                    break;
+                case Key.Z:
+                    if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                    {
+                        Redo();
+                    }
+                    else
+                    {
+                        Undo();
+                    }
+
+                    break;
+                case Key.Y:
+                    Redo();
+                    break;
+                default:
+                    return;
+            }
+
+            e.Handled = true;
+        }
+
+        // Nothing focuses the dashboard on its own, so the shortcuts would need a Tab press
+        // first. Focusing the selected block on entering edit mode also gives the keyboard a
+        // sensible starting point for arrowing between blocks.
+        private void FocusSelectedBlock()
+        {
+            if (EditLayoutButton.IsChecked != true)
+            {
+                return;
+            }
+
+            if (_selectedBlockId != null &&
+                _blockVisuals.TryGetValue(_selectedBlockId, out var state) &&
+                state?.Container != null &&
+                state.Container.Focus())
+            {
+                return;
+            }
+
+            // No block took it (an empty page, or a container not yet loaded), so hold focus
+            // on the control itself rather than letting it escape the dashboard.
+            Focus();
+        }
 
         private void EditLayoutButton_Changed(object sender, RoutedEventArgs e)
         {
@@ -2073,6 +3308,7 @@ namespace PlayniteAchievements.Views.Showcase
             // After the loop: the handle rebuild may suppress the selected empty block's own
             // + button in favor of the overlay copy, and the loop above resets visibility.
             UpdateLayoutHandles();
+            FocusSelectedBlock();
         }
 
         private ShowcaseBlockSettings SelectedBlock => CurrentPage.Blocks.FirstOrDefault(block =>
@@ -2131,7 +3367,7 @@ namespace PlayniteAchievements.Views.Showcase
                     StringComparison.OrdinalIgnoreCase))?.BlockId;
             }
 
-            SaveAndRebuild();
+            SaveAndApplyBlocks();
         }
 
         private List<ShowcaseBlockSettings> FindAdjacentBlocks(
@@ -2180,6 +3416,9 @@ namespace PlayniteAchievements.Views.Showcase
             add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Blank));
             add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Analytics));
             add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Collection));
+            add.Items.Add(PageTemplateItem(ShowcasePageTemplate.UpNext));
+            add.Items.Add(PageTemplateItem(ShowcasePageTemplate.TrophyCase));
+            add.Items.Add(PageTemplateItem(ShowcasePageTemplate.Library));
             menu.Items.Add(add);
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_DuplicatePage"),
@@ -2188,12 +3427,20 @@ namespace PlayniteAchievements.Views.Showcase
                     ShowcaseLayoutService.DuplicatePage(
                         Layout,
                         CurrentPage.PageId,
-                        Localize("LOCPlayAch_Showcase_CopySuffix"));
+                        Localize("LOCPlayAch_Showcase_CopySuffix"),
+                        _settings.Persisted?.GridOptions);
                     SaveAndRebuild();
                 }));
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_RenamePage"),
                 RenameCurrentPage));
+            menu.Items.Add(new Separator());
+            menu.Items.Add(MenuItem(
+                Localize("LOCPlayAch_Showcase_ExportPage"),
+                ExportCurrentPage));
+            menu.Items.Add(MenuItem(
+                Localize("LOCPlayAch_Showcase_ImportPage"),
+                ImportPageFromFile));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem(
                 Localize("LOCPlayAch_Showcase_MovePageLeft"),
@@ -2256,17 +3503,40 @@ namespace PlayniteAchievements.Views.Showcase
             var name = result?.Result == true ? result.SelectedString : null;
             if (!string.IsNullOrWhiteSpace(name))
             {
+                // A rename only shows in the page selector; the built blocks stay as they are.
                 ShowcaseLayoutService.RenamePage(Layout, CurrentPage.PageId, name);
-                SaveAndRebuild();
+                SaveAndPublish();
+                UpdatePageSelector();
+                _layoutSignature = ComputeLayoutSignature();
             }
         }
 
         private void OpenWidgetSettings(ShowcaseWidgetInstanceSettings widget)
         {
-            if (ShowcaseWidgetSettingsDialog.Show(widget, Layout))
+            if (ShowcaseWidgetSettingsDialog.Show(widget))
             {
-                SaveAndRebuild();
+                SaveAndPublish();
+                EnsureSnapshotCoversLayout();
+                ReprojectWidget(widget.InstanceId);
             }
+        }
+
+        // The settings dialog edits one widget's title, options, and profile, never its kind or
+        // placement, so only that widget's host needs a fresh projection; the rest of the page
+        // and its block containers stay as built.
+        private void ReprojectWidget(string instanceId)
+        {
+            var widget = Layout.WidgetInstances.FirstOrDefault(instance =>
+                string.Equals(instance?.InstanceId, instanceId, StringComparison.OrdinalIgnoreCase));
+            if (widget == null ||
+                !_hostCache.TryGetValue(widget.InstanceId, out var host) ||
+                host == null)
+            {
+                Rebuild();
+                return;
+            }
+
+            QueueWidgetApply(host, widget, blockId: null, snapshotOnly: false);
         }
 
         // Captures the current page as it renders on screen and saves it as a PNG the user
@@ -2340,6 +3610,112 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
+        // Writes the current page to a .pashowcase package: layout and appearance only, no pin
+        // collections or control-bar filter state, and of a profile card only its background.
+        private void ExportCurrentPage()
+        {
+            var page = CurrentPage;
+            if (page == null)
+            {
+                return;
+            }
+
+            string path;
+            using (var dialog = new System.Windows.Forms.SaveFileDialog
+            {
+                FileName = ShowcasePagePortableStore.SuggestFileName(page.Name),
+                Filter = "*" + ShowcasePagePortableStore.PackageFileExtension +
+                         "|*" + ShowcasePagePortableStore.PackageFileExtension,
+                DefaultExt = ShowcasePagePortableStore.PackageFileExtension.TrimStart('.'),
+                OverwritePrompt = true
+            })
+            {
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK ||
+                    string.IsNullOrWhiteSpace(dialog.FileName))
+                {
+                    return;
+                }
+
+                path = ShowcasePagePortableStore.NormalizeExportPath(dialog.FileName);
+            }
+
+            try
+            {
+                ShowcasePagePortableStore.Write(
+                    path,
+                    ShowcasePagePortableStore.BuildPortable(
+                        Layout,
+                        _settings.Persisted?.GridOptions,
+                        page.PageId));
+                _api?.Dialogs?.ShowMessage(
+                    Localize("LOCPlayAch_Status_Succeeded") + "\n" + path,
+                    Localize("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception exception)
+            {
+                Logger.Error(exception, "Failed exporting showcase page.");
+                ShowPortableFailure(exception);
+            }
+        }
+
+        // Adds the page from a .pashowcase package after the current page. The import goes
+        // through the normal save path, so it normalizes the page and can be undone.
+        private void ImportPageFromFile()
+        {
+            string path;
+            using (var dialog = new System.Windows.Forms.OpenFileDialog
+            {
+                Filter = "*" + ShowcasePagePortableStore.PackageFileExtension +
+                         "|*" + ShowcasePagePortableStore.PackageFileExtension +
+                         ";*" + ShowcasePagePortableStore.PackageFileExtension + ".zip",
+                CheckFileExists = true,
+                Multiselect = false
+            })
+            {
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK ||
+                    string.IsNullOrWhiteSpace(dialog.FileName))
+                {
+                    return;
+                }
+
+                path = dialog.FileName;
+            }
+
+            ShowcasePagePortableFile portable = null;
+            try
+            {
+                portable = ShowcasePagePortableStore.Read(path);
+                var imageStore = PlayniteAchievementsPlugin.Instance?.ShowcaseImageStore;
+                ShowcasePagePortableStore.ApplyPortable(
+                    Layout,
+                    _settings.Persisted?.GridOptions,
+                    portable,
+                    CurrentPage?.PageId,
+                    extracted => imageStore?.Import(extracted));
+                SaveAndRebuild();
+            }
+            catch (Exception exception)
+            {
+                Logger.Error(exception, "Failed importing showcase page.");
+                ShowPortableFailure(exception);
+            }
+            finally
+            {
+                ShowcasePagePortableStore.DeleteExtractedImages(portable);
+            }
+        }
+
+        private void ShowPortableFailure(Exception exception)
+        {
+            _api?.Dialogs?.ShowMessage(
+                string.Format(Localize("LOCPlayAch_Status_Failed"), exception.Message),
+                Localize("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+
         private void DeleteCurrentPage()
         {
             if (Layout.Pages.Count <= 1 ||
@@ -2352,10 +3728,188 @@ namespace PlayniteAchievements.Views.Showcase
             SaveAndRebuild();
         }
 
+        private void CopySelectedWidget()
+        {
+            var widget = FindWidget(SelectedBlock?.WidgetInstanceId);
+            if (widget == null)
+            {
+                return;
+            }
+
+            _clipboardWidget = widget.Clone();
+            SetPendingCut(null);
+        }
+
+        // Explorer-style: the widget stays put until a paste lands, so cut-then-paste can move
+        // the instance instead of destroying and recreating it.
+        private void CutSelectedWidget()
+        {
+            var widget = FindWidget(SelectedBlock?.WidgetInstanceId);
+            if (widget == null)
+            {
+                return;
+            }
+
+            _clipboardWidget = widget.Clone();
+            SetPendingCut(widget.InstanceId);
+        }
+
+        private void PasteWidget()
+        {
+            var block = SelectedBlock;
+            if (block == null)
+            {
+                return;
+            }
+
+            var cutWidget = FindWidget(_cutInstanceId);
+            if (cutWidget != null)
+            {
+                MoveCutWidgetInto(block, cutWidget);
+                return;
+            }
+
+            if (_clipboardWidget == null)
+            {
+                return;
+            }
+
+            var definition = ShowcaseWidgetCatalog.Get(_clipboardWidget.Kind);
+            if (definition != null &&
+                definition.SingleInstancePerPage &&
+                CurrentPage.Blocks
+                    .Where(candidate => !string.Equals(
+                        candidate.BlockId,
+                        block.BlockId,
+                        StringComparison.OrdinalIgnoreCase))
+                    .Select(candidate => FindWidget(candidate.WidgetInstanceId))
+                    .Any(candidate => candidate?.Kind == _clipboardWidget.Kind))
+            {
+                return;
+            }
+
+            if (!ConfirmReplacingWidgetIn(block))
+            {
+                return;
+            }
+
+            var copy = _clipboardWidget.Clone();
+            copy.InstanceId = Guid.NewGuid().ToString("N");
+            Layout.WidgetInstances.Add(copy);
+            if (!ShowcaseLayoutService.PlaceWidget(
+                    Layout,
+                    CurrentPage.PageId,
+                    block.BlockId,
+                    copy.InstanceId))
+            {
+                ShowcaseLayoutService.DeleteWidget(Layout, copy.InstanceId);
+                return;
+            }
+
+            CopyGridSurfaceOptions(_clipboardWidget, copy);
+            SelectBlockAfterPaste(block);
+            SaveAndApplyBlocks();
+        }
+
+        private void MoveCutWidgetInto(ShowcaseBlockSettings block, ShowcaseWidgetInstanceSettings cutWidget)
+        {
+            if (string.Equals(
+                block.WidgetInstanceId,
+                cutWidget.InstanceId,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                SetPendingCut(null);
+                return;
+            }
+
+            if (!ShowcaseLayoutService.CanPlaceWidget(
+                    Layout,
+                    CurrentPage.PageId,
+                    block.BlockId,
+                    cutWidget.InstanceId))
+            {
+                return;
+            }
+
+            // A move swaps rather than displaces, so nothing is destroyed and no confirmation
+            // is owed: the occupant lands in the block the cut widget came from.
+            if (!ShowcaseLayoutService.PlaceWidget(
+                    Layout,
+                    CurrentPage.PageId,
+                    block.BlockId,
+                    cutWidget.InstanceId))
+            {
+                return;
+            }
+
+            SetPendingCut(null);
+            SelectBlockAfterPaste(block);
+            SaveAndApplyBlocks();
+        }
+
+        // Pasting over an occupant orphans it, and the orphan sweep in SaveAndPublish then
+        // deletes it for good, so ask first.
+        private bool ConfirmReplacingWidgetIn(ShowcaseBlockSettings block)
+        {
+            return FindWidget(block?.WidgetInstanceId) == null ||
+                Confirm("LOCPlayAch_Showcase_PasteReplaceConfirm");
+        }
+
+        // A pasted grid widget keeps the columns, sort and row cap of the one it was copied
+        // from: those live in the catalog under a key built from the instance id, which the
+        // copy does not share.
+        private void CopyGridSurfaceOptions(
+            ShowcaseWidgetInstanceSettings source,
+            ShowcaseWidgetInstanceSettings copy)
+        {
+            ShowcaseGridSurfaces.CopySurface(_settings.Persisted?.GridOptions, source, copy);
+        }
+
+        private void SelectBlockAfterPaste(ShowcaseBlockSettings block)
+        {
+            _selectedBlockId = block?.BlockId;
+        }
+
+        // The pending cut is shown by fading its block, so a cut that is never pasted is
+        // visibly still there rather than silently armed.
+        private void SetPendingCut(string instanceId)
+        {
+            _cutInstanceId = instanceId;
+            ApplyPendingCutVisual();
+        }
+
+        // Re-applied after every rebuild: the block visuals are recreated at full opacity, and
+        // a cut that survived the rebuild would otherwise stop showing.
+        private void ApplyPendingCutVisual()
+        {
+            var instanceId = _cutInstanceId;
+            foreach (var state in _blockVisuals.Values)
+            {
+                if (state?.Container == null)
+                {
+                    continue;
+                }
+
+                var block = CurrentPage.Blocks.FirstOrDefault(candidate => string.Equals(
+                    candidate.BlockId,
+                    state.Block?.BlockId,
+                    StringComparison.OrdinalIgnoreCase));
+                var isCut = block != null &&
+                    !string.IsNullOrWhiteSpace(instanceId) &&
+                    string.Equals(block.WidgetInstanceId, instanceId, StringComparison.OrdinalIgnoreCase);
+                state.Container.Opacity = isCut ? 0.45 : 1.0;
+            }
+        }
+
         private bool Confirm(string messageKey)
         {
+            return ConfirmMessage(Localize(messageKey));
+        }
+
+        private bool ConfirmMessage(string message)
+        {
             return _api?.Dialogs?.ShowMessage(
-                       Localize(messageKey),
+                       message,
                        Localize("LOCPlayAch_Showcase_Title"),
                        MessageBoxButton.YesNo,
                        MessageBoxImage.Warning) == MessageBoxResult.Yes;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -31,6 +31,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.Notifications;
+using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Friends;
@@ -66,7 +67,7 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderRefreshOrder =
         {
-            "Manual", "FFXIV", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "EA", "GameJolt", "Riot", "Hoyoverse", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
+            "Manual", "FFXIV", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "EA", "GameJolt", "Riot", "GW2", "Hypixel", "Hoyoverse", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
@@ -85,6 +86,7 @@ namespace PlayniteAchievements
         private readonly ManagedCustomIconService _managedCustomIconService;
         private readonly NotificationImageStore _notificationImageStore;
         private readonly FallbackIconStore _fallbackIconStore;
+        private readonly ShowcaseImageStore _showcaseImageStore;
         private NotificationStylePortableStore _notificationStylePortableStore;
         private NotificationStylePresetStore _notificationStylePresetStore;
         private readonly NotificationPublisher _notifications;
@@ -93,6 +95,9 @@ namespace PlayniteAchievements
         private readonly Services.CustomProviders.CustomProviderStore _customProviderStore;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly SubscriptionCollection _eventSubscriptions = new SubscriptionCollection();
+
+        /// <summary>Last seen answer to "does any widget draw from the Unlock Next pool?".</summary>
+        private bool _unlockNextPoolRequired;
 
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly InGameAchievementMonitor _inGameMonitor;
@@ -130,8 +135,26 @@ namespace PlayniteAchievements
         // Tagging
         private readonly object _tagSyncGate = new object();
         private readonly HashSet<Guid> _pendingTagSyncIds = new HashSet<Guid>();
+
+        /// <summary>
+        /// Games whose change can only have moved the Customized tag, so they are reconciled
+        /// without the achievement load a full evaluation does.
+        /// </summary>
+        private readonly HashSet<Guid> _pendingCustomizationTagSyncIds = new HashSet<Guid>();
         private bool _tagSyncDrainRunning;
         private TagSyncService _tagSyncService;
+        private AutoCapstoneMaintainer _autoCapstoneMaintainer;
+        private AutoCapstoneGenerator _autoCapstoneGenerator;
+        private AutoCapstoneAuthoring _autoCapstoneAuthoring;
+        private AutoCapstoneTextService _autoCapstoneTextService;
+
+        /// <summary>
+        /// Games added to the library but not yet refreshed. Held until OnLibraryUpdated so the
+        /// refresh (and its tag-sync write) lands after Playnite's post-import metadata download;
+        /// a Tags field already holding a managed tag makes that download skip the field.
+        /// </summary>
+        private readonly object _pendingNewGamesGate = new object();
+        private readonly HashSet<Guid> _pendingNewGameIds = new HashSet<Guid>();
 
         public override Guid Id { get; } =
             Guid.Parse("e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b");
@@ -153,6 +176,8 @@ namespace PlayniteAchievements
         public IReadOnlyList<IDataProvider> Providers => _refreshService?.Providers;
         public RefreshRuntime RefreshRuntime => _refreshService;
         public AchievementOverridesService AchievementOverridesService => _achievementOverridesService;
+        public AutoCapstoneMaintainer AutoCapstoneMaintainer => _autoCapstoneMaintainer;
+        public AutoCapstoneAuthoring AutoCapstoneAuthoring => _autoCapstoneAuthoring;
         public AchievementMarkerToggle AchievementMarkerToggle => _achievementMarkerToggle;
         public AchievementDataService AchievementDataService => _achievementDataService;
         public MemoryImageService ImageService => _imageService;
@@ -163,6 +188,7 @@ namespace PlayniteAchievements
         public ICacheManager CacheManager => _cacheManager;
         public NotificationImageStore NotificationImageStore => _notificationImageStore;
         public FallbackIconStore FallbackIconStore => _fallbackIconStore;
+        public ShowcaseImageStore ShowcaseImageStore => _showcaseImageStore;
         public NotificationStylePortableStore NotificationStylePortableStore =>
             _notificationStylePortableStore ?? (_notificationStylePortableStore =
                 new NotificationStylePortableStore(_notificationImageStore, _logger));
@@ -272,10 +298,22 @@ namespace PlayniteAchievements
 
             try
             {
+                // Before the warm, so the warm caches the upgraded rows rather than rows this is
+                // about to replace. Reads already normalize every record to the current schema on
+                // the way out; this writes that result back, which is what stops the migration
+                // backup arming on every launch for a game the user has never edited.
+                using (PerfScope.StartStartup(_logger, "PluginCtor.CustomDataSchemaUpgrade", thresholdMs: 50))
+                {
+                    _gameCustomDataStore.UpgradeStoredRecordsToCurrentSchema();
+                }
+
                 using (PerfScope.StartStartup(_logger, "PluginCtor.CustomDataWarmup", thresholdMs: 50))
                 {
-                    var rows = _gameCustomDataStore.LoadAll();
-                    _logger?.Debug($"Preloaded {rows?.Count ?? 0} game custom-data rows.");
+                    // Counted, not loaded out. LoadAll deep-clones every stored record, and this
+                    // wanted a number -- so a user who has customized their whole library paid a
+                    // full copy of every record at startup, and it was discarded on the next line.
+                    var count = _gameCustomDataStore.QueryAll(rows => rows.Count());
+                    _logger?.Debug($"Preloaded {count} game custom-data rows.");
                 }
             }
             catch (Exception ex)
@@ -323,6 +361,25 @@ namespace PlayniteAchievements
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "Applying unlock sound settings failed.");
+            }
+        }
+
+        // Profile widget images picked before the content-addressed store existed (raw paths, or
+        // the old fixed avatar/background slots) are copied in once at startup; the rewritten
+        // paths are saved so the copy never repeats.
+        private void MigrateShowcaseImages()
+        {
+            try
+            {
+                var showcase = _settingsViewModel?.Settings?.Persisted?.Showcase;
+                if (showcase != null && _showcaseImageStore.MigrateAndPrune(showcase))
+                {
+                    SavePluginSettings(_settingsViewModel.Settings);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Migrating showcase images failed.");
             }
         }
 
@@ -458,7 +515,10 @@ namespace PlayniteAchievements
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
             // Initialize logging system first
-            PluginLogger.Initialize(GetPluginUserDataPath());
+            var pluginUserDataPath = GetPluginUserDataPath();
+            PluginLogger.Initialize(pluginUserDataPath);
+            // Before the first scope below, so a traced session covers startup too.
+            PerfScope.ConfigureTracing(pluginUserDataPath);
             _logger = PluginLogger.GetLogger(nameof(PlayniteAchievementsPlugin));
             _themeControlRegistry = new ThemeControlRegistry();
             _resourceService = new AchievementResourceService(_logger);
@@ -469,6 +529,25 @@ namespace PlayniteAchievements
 
                 Instance = this;
                 _logger.Info("PlayniteAchievementsPlugin initializing...");
+
+                // Stamps which build produced this log. Diagnostic packages are rebuilt far more
+                // often than the version changes, so several materially different builds share
+                // one file name -- and a capture was read against the wrong one because the only
+                // way to tell them apart was which tags happened to be missing. The assembly's
+                // own timestamp distinguishes builds packed minutes apart.
+                try
+                {
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    var built = System.IO.File.GetLastWriteTimeUtc(assembly.Location);
+                    _logger.Info(
+                        $"[Build] version={assembly.GetName().Version} " +
+                        $"builtUtc={built:yyyy-MM-dd HH:mm:ss} " +
+                        $"tracing={Common.PerfScope.PerfTracingEnabled}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Debug(ex, "Could not stamp the build into the log.");
+                }
 
                 // Phase 1: Load settings and chart plumbing used by theme controls.
                 using (PerfScope.StartStartup(_logger, "PluginCtor.SettingsLoad", thresholdMs: 50))
@@ -492,7 +571,6 @@ namespace PlayniteAchievements
                 Charting.For<PieSliceChartData>(pieSliceMapper);
 
                 var settings = _settingsViewModel.Settings;
-                var pluginUserDataPath = GetPluginUserDataPath();
                 _manualSourceRegistry = new ManualSourceRegistry(_logger, settings, PlayniteApi, pluginUserDataPath);
 
                 // User-defined custom providers resolve through static hooks so the registry and
@@ -531,12 +609,16 @@ namespace PlayniteAchievements
                             .ResolveCategoryArtDisplayPath(storedValue, gameId, displayMode);
                     _notificationImageStore = new NotificationImageStore(_diskImageService, _logger);
                     _fallbackIconStore = new FallbackIconStore(_diskImageService, _logger);
+                    _showcaseImageStore = new ShowcaseImageStore(pluginUserDataPath, _logger);
+                    MigrateShowcaseImages();
                     // Read through Settings.Persisted on every call: the settings dialog mutates the
                     // live instance and CancelEdit replaces it wholesale.
                     AchievementIconResolver.LockedFallbackPathAccessor =
                         () => Settings?.Persisted?.LockedFallbackIconPath;
                     AchievementIconResolver.HiddenFallbackPathAccessor =
                         () => Settings?.Persisted?.HiddenFallbackIconPath;
+                    ShowcaseProfileResolver.ProfileUrlBuilder = BuildProviderProfileUrl;
+                    ShowcaseProfileResolver.CurrentUserProfileNames = ReadCurrentUserProfileNames;
                     _imageService = new MemoryImageService(_logger, _diskImageService);
                     _rayTrackService = new RayTrackService(_logger, _imageService);
                     _gameCustomDataStore.AttachManagedCustomIconService(_managedCustomIconService);
@@ -559,9 +641,25 @@ namespace PlayniteAchievements
                         _eventSubscriptions.Add(() => _friendCacheManager.FriendCacheInvalidated -= FriendCacheManager_FriendCacheInvalidated);
                     }
 
-                    _cacheManager.CacheInvalidated += (_, __) =>
+                    _cacheManager.CacheInvalidated += (_, args) =>
                     {
-                        InvalidateStartPageData();
+                        // Scoped invalidations arrive in bursts -- one per custom-data edit --
+                        // and each start-page invalidation makes every live widget re-pull a
+                        // full library snapshot. Collapse the burst through the same coalescer
+                        // the CustomDataChanged path already uses. A full invalidation is a
+                        // bulk event, not a burst, so it still lands immediately.
+                        if (args?.IsFull == false)
+                        {
+                            ScheduleStartPageInvalidate();
+                        }
+                        else
+                        {
+                            InvalidateStartPageData();
+                        }
+
+                        // Deliberately unconditional: scoped invalidations also come from the
+                        // refresh pipeline's end-of-run raise, which includes friend-mode runs,
+                        // and this is two cheap Invalidate() calls.
                         InvalidateFriendDataCoordinators();
                         ScheduleRetentionDiagnostics();
                     };
@@ -592,7 +690,8 @@ namespace PlayniteAchievements
                     _achievementMarkerToggle = new AchievementMarkerToggle(
                         _achievementOverridesService,
                         () => _settingsViewModel?.Settings?.Persisted,
-                        () => _gameCustomDataStore);
+                        () => _gameCustomDataStore,
+                        gameId => _cacheManager?.LoadGameData(gameId.ToString()));
                     _achievementDataService = new AchievementDataService(
                         _cacheManager,
                         PlayniteApi,
@@ -626,6 +725,50 @@ namespace PlayniteAchievements
                         _refreshService,
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
+
+                    // The auto capstone stands for the achievements a refresh just rewrote, so it
+                    // is brought back into step here: what it derives only changes when provider
+                    // data does.
+                    _autoCapstoneMaintainer = new AutoCapstoneMaintainer(
+                        _gameCustomDataStore,
+                        _achievementOverridesService,
+                        gameId => _achievementDataService?.GetGameAchievementData(gameId),
+                        NotifyAchievementUnlocked,
+                        _logger);
+                    // One author for the editor's button and automatic generation alike.
+                    _autoCapstoneAuthoring = new AutoCapstoneAuthoring(
+                        _gameCustomDataStore,
+                        _achievementOverridesService,
+                        gameId => _achievementDataService?.GetGameAchievementData(gameId),
+                        () => _managedCustomIconService,
+                        () => AutoCapstoneText.Resolve(_settingsViewModel?.Settings?.Persisted),
+                        _logger);
+                    _autoCapstoneTextService = new AutoCapstoneTextService(
+                        _gameCustomDataStore,
+                        () => _settingsViewModel?.Settings?.Persisted,
+                        gameId => api.Database?.Games?.Get(gameId)?.Name
+                            ?? _achievementDataService?.GetGameAchievementData(gameId)?.GameName,
+                        GetPluginLocalizationDirectory(),
+                        _logger);
+                    _autoCapstoneGenerator = new AutoCapstoneGenerator(
+                        _gameCustomDataStore,
+                        _achievementOverridesService,
+                        _autoCapstoneAuthoring,
+                        () => _settingsViewModel?.Settings?.Persisted?.EnableAutoCapstoneGeneration == true,
+                        _logger);
+
+                    // Maintained first and in line, so a capstone this refresh finished is announced
+                    // before the refresh returns. Generation follows off the refresh's thread: a
+                    // capstone it authors is worked out at authoring and has nothing to announce.
+                    _refreshCoordinator.RefreshCompleted += gameIds =>
+                    {
+                        _autoCapstoneMaintainer?.Maintain(gameIds);
+                        if (_autoCapstoneGenerator != null && gameIds != null)
+                        {
+                            var ids = gameIds.ToList();
+                            _ = Task.Run(() => _autoCapstoneGenerator.GenerateAsync(ids));
+                        }
+                    };
                     _windowTracker = new ActiveGameWindowTracker(_logger);
                     var soundThemeResolver = new AchievementToastTemplateResolver(PlayniteApi, _logger);
                     var pluginInstallDirectory = GetPluginInstallDirectory();
@@ -694,6 +837,13 @@ namespace PlayniteAchievements
                         _refreshService,
                         (request, policy) => _refreshCoordinator.ExecuteAsync(request, policy),
                         NotifyAchievementUnlocked);
+
+                    // A running game's unlocks are announced by the monitor once its write or
+                    // refresh returns, so a capstone that write finished is held for the monitor
+                    // to send after the achievement that earned it.
+                    _autoCapstoneMaintainer.DefersAnnouncements = gameId => _inGameMonitor?.IsMonitoring(gameId) == true;
+                    _inGameMonitor.MaintainCapstones = gameId => _autoCapstoneMaintainer?.Maintain(gameId);
+                    _inGameMonitor.TakeCapstoneAnnouncements = _autoCapstoneMaintainer.TakePendingAnnouncements;
                     _backgroundUpdates = new BackgroundUpdater(_refreshCoordinator, _refreshService, _cacheManager, settings, _logger, _notifications, null);
 
                     // Create tag sync service
@@ -1132,7 +1282,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info(
-                    $"[Startup] Playnite Achievements {ReadManifestVersion() ?? "<unknown>"}; " +
+                    $"[Startup] Playnite Achievements {Common.PluginManifest.Version ?? "<unknown>"}; " +
                     $"playnite={PlayniteApi?.ApplicationInfo?.ApplicationVersion?.ToString() ?? "<unknown>"}, " +
                     $"mode={PlayniteApi?.ApplicationInfo?.Mode.ToString() ?? "<unknown>"}, " +
                     $"portable={PlayniteApi?.ApplicationInfo?.IsPortable.ToString() ?? "<unknown>"}.");
@@ -1143,43 +1293,16 @@ namespace PlayniteAchievements
             }
         }
 
-        /// <summary>
-        /// Reads <c>Version</c> from the manifest shipped next to the plugin assembly. The assembly
-        /// itself carries no meaningful version, so extension.yaml is the only source that matches
-        /// the number users see in Playnite's add-on list.
-        /// </summary>
-        private static string ReadManifestVersion()
-        {
-            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (string.IsNullOrWhiteSpace(assemblyDirectory))
-            {
-                return null;
-            }
-
-            var manifestPath = Path.Combine(assemblyDirectory, "extension.yaml");
-            if (!File.Exists(manifestPath))
-            {
-                return null;
-            }
-
-            foreach (var line in File.ReadAllLines(manifestPath))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("Version:", StringComparison.OrdinalIgnoreCase))
-                {
-                    var value = trimmed.Substring("Version:".Length).Trim().Trim('"', '\'');
-                    return string.IsNullOrWhiteSpace(value) ? null : value;
-                }
-            }
-
-            return null;
-        }
-
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             using (PerfScope.StartStartup(_logger, "OnApplicationStarted", thresholdMs: 50))
             {
                 _applicationStarted = true;
+
+                // Measures the symptom rather than a suspected cause: every other timing here is
+                // a scope around code someone already suspected, and a reported freeze was
+                // repeatedly not inside one.
+                Common.UiStallWatchdog.Start(_logger);
 
                 LogStartupBanner();
 
@@ -1271,6 +1394,10 @@ namespace PlayniteAchievements
                     _logger?.Error(ex, "Failed to re-localize notification header texts.");
                 }
 
+                // Bring auto capstones still on default text in line with a language or template
+                // change made since they were last applied.
+                StartAutoCapstoneTextApply();
+
                 _notificationImageStore?.PruneOrphans(
                     _settingsViewModel?.Settings?.Persisted,
                     _gameCustomDataStore?.LoadAll());
@@ -1281,6 +1408,182 @@ namespace PlayniteAchievements
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
                 RestartBackgroundUpdater();
+            }
+        }
+
+        /// <summary>
+        /// Asks, as the setting is switched on, whether the games already in the library should get
+        /// their auto capstones now rather than one at a time as each next refreshes.
+        /// </summary>
+        /// <remarks>
+        /// Runs on the tick, like tag sync does, so what it writes stays even if the settings are
+        /// then cancelled; turning the setting off never removes a capstone either.
+        /// </remarks>
+        private void OfferAutoCapstonesForExistingGames()
+        {
+            if (_autoCapstoneGenerator == null)
+            {
+                return;
+            }
+
+            var answer = PlayniteApi.Dialogs.ShowMessage(
+                ResourceProvider.GetString("LOCPlayAch_Settings_AutoCapstoneGeneration_ApplyToExisting"),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            var gameIds = PlayniteApi.Database.Games
+                .Where(game => game != null)
+                .Select(game => game.Id)
+                .ToList();
+
+            PlayniteApi.Dialogs.ActivateGlobalProgress(
+                async progress =>
+                {
+                    progress.ProgressMaxValue = gameIds.Count;
+                    try
+                    {
+                        await _autoCapstoneGenerator
+                            .GenerateAsync(
+                                gameIds,
+                                progress.CancelToken,
+                                (done, total) => progress.CurrentProgressValue = done)
+                            .ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Cancelled from the dialog: the games not reached get theirs as they
+                        // next refresh.
+                    }
+                },
+                new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Settings_AutoCapstoneGeneration_Progress"))
+                {
+                    Cancelable = true,
+                    IsIndeterminate = false
+                });
+        }
+
+        /// <summary>
+        /// Applies the auto capstone text templates in the background when they differ from the
+        /// ones last applied, which is how a language change reaches existing capstones.
+        /// </summary>
+        private void StartAutoCapstoneTextApply()
+        {
+            var service = _autoCapstoneTextService;
+            if (service == null || !AutoCapstoneTextService.NeedsApply(_settingsViewModel?.Settings?.Persisted))
+            {
+                return;
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var signature = service.Apply();
+                    dispatcher?.BeginInvoke(new Action(() => RecordAutoCapstoneTextApplied(signature)));
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Failed to apply auto capstone text templates.");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Asks, then rewrites every auto capstone still on default text with the current
+        /// templates, for the Editor settings' Apply button.
+        /// </summary>
+        /// <remarks>
+        /// Like tag sync, what it writes stays even if the settings are then cancelled; the
+        /// templates it applied are recorded in the edit snapshot too, so a Cancel that restores
+        /// the old templates is applied back at the next startup.
+        /// </remarks>
+        public void ApplyAutoCapstoneTextWithProgress()
+        {
+            var service = _autoCapstoneTextService;
+            if (service == null)
+            {
+                return;
+            }
+
+            var answer = PlayniteApi.Dialogs.ShowMessage(
+                ResourceProvider.GetString("LOCPlayAch_Settings_AutoCapstoneText_ApplyConfirm"),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            string signature = null;
+            PlayniteApi.Dialogs.ActivateGlobalProgress(
+                progress =>
+                {
+                    try
+                    {
+                        signature = service.Apply(
+                            progress.CancelToken,
+                            (done, total) =>
+                            {
+                                progress.ProgressMaxValue = total;
+                                progress.CurrentProgressValue = done;
+                            });
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Cancelled from the dialog: the rest are applied at the next startup.
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Error(ex, "Failed to apply auto capstone text templates.");
+                    }
+                },
+                new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Settings_AutoCapstoneText_Progress"))
+                {
+                    Cancelable = true,
+                    IsIndeterminate = false
+                });
+
+            if (signature != null)
+            {
+                RecordAutoCapstoneTextApplied(signature);
+            }
+        }
+
+        /// <summary>
+        /// Remembers a template the user set, in the live settings and any open edit snapshot, so
+        /// capstone text written with it still reads as default after a Cancel or a later change.
+        /// </summary>
+        public void RecordAutoCapstoneTemplate(string template)
+        {
+            _settingsViewModel?.UpdatePersistedIncludingEditSnapshot(
+                settings => AutoCapstoneText.RecordInHistory(settings, template));
+        }
+
+        /// <summary>
+        /// Records the templates now applied, and a template the user set, in both the live
+        /// settings and any open edit snapshot, since the text they wrote stays either way.
+        /// </summary>
+        private void RecordAutoCapstoneTextApplied(string signature)
+        {
+            _settingsViewModel?.UpdatePersistedIncludingEditSnapshot(settings =>
+            {
+                settings.AutoCapstoneAppliedTemplates = signature;
+                foreach (var field in AutoCapstoneText.Fields)
+                {
+                    AutoCapstoneText.RecordInHistory(settings, AutoCapstoneText.GetStored(settings, field));
+                }
+            });
+
+            if (_settingsViewModel?.IsEditSessionActive != true)
+            {
+                PersistSettingsForUi();
             }
         }
 
@@ -1307,6 +1610,12 @@ namespace PlayniteAchievements
                 e.PropertyName == nameof(PersistedSettings.InGameFriendBatchSize))
             {
                 ReconfigureInGameMonitor();
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.EnableAutoCapstoneGeneration) &&
+                _settingsViewModel?.Settings?.Persisted?.EnableAutoCapstoneGeneration == true)
+            {
+                OfferAutoCapstonesForExistingGames();
             }
 
             if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
@@ -1396,6 +1705,12 @@ namespace PlayniteAchievements
                    propertyName == nameof(PersistedSettings.ShowHiddenDescription) ||
                    propertyName == nameof(PersistedSettings.ShowHiddenSuffix) ||
                    propertyName == nameof(PersistedSettings.ShowLockedIcon) ||
+                   propertyName == nameof(PersistedSettings.ShowLockedTitle) ||
+                   propertyName == nameof(PersistedSettings.ShowLockedDescription) ||
+                   propertyName == nameof(PersistedSettings.ShowHiddenTrophy) ||
+                   propertyName == nameof(PersistedSettings.ShowHiddenPoints) ||
+                   propertyName == nameof(PersistedSettings.ShowLockedTrophy) ||
+                   propertyName == nameof(PersistedSettings.ShowLockedPoints) ||
                    propertyName == nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable) ||
                    propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds) ||
                    propertyName == nameof(PersistedSettings.LockedFallbackIconPath) ||
@@ -1450,6 +1765,8 @@ namespace PlayniteAchievements
         {
             _logger.Info("OnApplicationStopped called.");
             _applicationStarted = false;
+            // A control bar edit in the last second before exit is still waiting on its save.
+            Services.Showcase.ShowcaseControlBarStateStore.Instance.Flush();
             // Stop startup init if still running
             try
             {
@@ -1568,6 +1885,13 @@ namespace PlayniteAchievements
 
         private void SubscribePluginEventHandlers()
         {
+            // A widget switching to the Unlock Next source needs locked achievements the cached
+            // projection never hydrated, so that one option edit has to drop the cache. Widget
+            // options live in a nested string bag and raise no settings PropertyChanged, which is
+            // why this listens to the showcase's own change event instead.
+            ShowcaseConfigurationEvents.Changed += OnShowcaseConfigurationChanged;
+            _eventSubscriptions.Add(() => ShowcaseConfigurationEvents.Changed -= OnShowcaseConfigurationChanged);
+
             _refreshService.GameRefreshed += OnAchievementGameRefreshed;
             _eventSubscriptions.Add(() => _refreshService.GameRefreshed -= OnAchievementGameRefreshed);
             if (_customProviderStore != null)
@@ -1698,12 +2022,19 @@ namespace PlayniteAchievements
             {
                 Views.Converters.ProviderIconConverter.Invalidate("GeoCustom:" + e.Id + "|");
 
-                var affectedGameIds = _gameCustomDataStore.LoadAll()
-                    .Where(data => data != null &&
-                                   data.PlayniteGameId != Guid.Empty &&
-                                   string.Equals(data.CustomProviderId, e.Id, StringComparison.OrdinalIgnoreCase))
-                    .Select(data => data.PlayniteGameId)
-                    .ToList();
+                // Only the ids are wanted, so this reads the cached records instead of the
+                // deep-cloned copy LoadAll returns -- which would copy every customized game in
+                // the library to select a handful of Guids.
+                var affectedGameIds = _gameCustomDataStore.QueryAll(
+                    rows => rows
+                        .Where(data => data != null &&
+                                       data.PlayniteGameId != Guid.Empty &&
+                                       string.Equals(
+                                           data.CustomProviderId,
+                                           e.Id,
+                                           StringComparison.OrdinalIgnoreCase))
+                        .Select(data => data.PlayniteGameId)
+                        .ToList());
 
                 foreach (var gameId in affectedGameIds)
                 {
@@ -1725,25 +2056,50 @@ namespace PlayniteAchievements
 
         private void HandleCustomDataChanged(Guid gameId, bool affectsSummaryData)
         {
-            var persisted = _settingsViewModel?.Settings?.Persisted;
-            if (affectsSummaryData &&
-                _tagSyncService != null &&
-                persisted?.TaggingSettings?.EnableTagging == true)
+            // Runs on a pool thread 400ms after the last edit in a burst. Uninstrumented until
+            // now, which made everything it fans out into invisible in a log.
+            using (var scope = Common.PerfScope.Start(_logger, "Plugin.HandleCustomDataChanged", thresholdMs: 10))
             {
-                // Tags carry completion status, which only a summary-affecting change can move.
-                QueueTagSync(gameId);
+                scope?.SetContext("affectsSummary=" + affectsSummaryData);
+                HandleCustomDataChangedCore(gameId, affectsSummaryData);
+            }
+        }
+
+        private void HandleCustomDataChangedCore(Guid gameId, bool affectsSummaryData)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
+            {
+                // Any custom-data change at all, not just a summary-affecting one: completion
+                // only moves with the summary data, but the Customized tag reports whether the
+                // game carries customization of any kind, which a rename or a note moves while
+                // leaving every count alone. Those get the narrow sync, which skips the
+                // achievement load a full evaluation needs.
+                using (Common.PerfScope.Start(_logger, "Plugin.CustomDataChanged.QueueTagSync", thresholdMs: 10))
+                {
+                    QueueTagSync(gameId, fullEvaluation: affectsSummaryData);
+                }
             }
 
             try
             {
                 // The game's own theme surface still repaints - a category edit is visible there -
                 // but the whole-library theme lists are rebuilt only when something they read moved.
-                _themeIntegrationService?.NotifyCustomDataChanged(gameId, refreshLibraryState: affectsSummaryData);
+                using (var scope = Common.PerfScope.Start(_logger, "Plugin.CustomDataChanged.ThemeNotify", thresholdMs: 10))
+                {
+                    scope?.SetContext("refreshLibraryState=" + affectsSummaryData);
+                    _themeIntegrationService?.NotifyCustomDataChanged(gameId, refreshLibraryState: affectsSummaryData);
+                }
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={gameId}.");
             }
+
+            // The per-game friend comparison caches its snapshot until something invalidates it,
+            // and its rows carry this game's own category labels. Nothing else on this path
+            // reached it, so a category edit stayed out of that window even across a reopen.
+            _friendGameAchievementsDataCoordinator?.InvalidateGame(gameId);
 
             if (affectsSummaryData)
             {
@@ -1776,7 +2132,11 @@ namespace PlayniteAchievements
             }
         }
 
-        private void QueueTagSync(Guid gameId)
+        /// <param name="fullEvaluation">
+        /// False when the change can only have moved the Customized tag, which is reconciled
+        /// without loading the game's achievement data. A refresh defaults to a full evaluation.
+        /// </param>
+        private void QueueTagSync(Guid gameId, bool fullEvaluation = true)
         {
             if (gameId == Guid.Empty)
             {
@@ -1795,7 +2155,18 @@ namespace PlayniteAchievements
             // sees a few batched writes instead of one write per game.
             lock (_tagSyncGate)
             {
-                _pendingTagSyncIds.Add(gameId);
+                if (fullEvaluation)
+                {
+                    // A full sync covers the customization tag too, so it supersedes a narrow one
+                    // already queued for the same game.
+                    _pendingTagSyncIds.Add(gameId);
+                    _pendingCustomizationTagSyncIds.Remove(gameId);
+                }
+                else if (!_pendingTagSyncIds.Contains(gameId))
+                {
+                    _pendingCustomizationTagSyncIds.Add(gameId);
+                }
+
                 if (_tagSyncDrainRunning)
                 {
                     return;
@@ -1812,9 +2183,10 @@ namespace PlayniteAchievements
             while (true)
             {
                 List<Guid> batch;
+                List<Guid> customizationBatch;
                 lock (_tagSyncGate)
                 {
-                    if (_pendingTagSyncIds.Count == 0)
+                    if (_pendingTagSyncIds.Count == 0 && _pendingCustomizationTagSyncIds.Count == 0)
                     {
                         _tagSyncDrainRunning = false;
                         return;
@@ -1822,15 +2194,37 @@ namespace PlayniteAchievements
 
                     batch = _pendingTagSyncIds.ToList();
                     _pendingTagSyncIds.Clear();
+                    customizationBatch = _pendingCustomizationTagSyncIds.ToList();
+                    _pendingCustomizationTagSyncIds.Clear();
                 }
 
                 try
                 {
-                    tagSyncService.SyncTagsForGames(batch);
+                    // These write to the Playnite database, which makes Playnite re-render its
+                    // own library view and fire ItemUpdated back at this plugin.
+                    if (batch.Count > 0)
+                    {
+                        using (var scope = Common.PerfScope.Start(_logger, "TagSync.SyncTags", thresholdMs: 10))
+                        {
+                            scope?.SetContext("games=" + batch.Count);
+                            tagSyncService.SyncTagsForGames(batch);
+                        }
+                    }
+
+                    if (customizationBatch.Count > 0)
+                    {
+                        using (var scope = Common.PerfScope.Start(_logger, "TagSync.SyncCustomizationTags", thresholdMs: 10))
+                        {
+                            scope?.SetContext("games=" + customizationBatch.Count);
+                            tagSyncService.SyncCustomizationTagsForGames(customizationBatch);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"Failed queued tag sync for {batch.Count} game(s).");
+                    _logger?.Debug(
+                        ex,
+                        $"Failed queued tag sync for {batch.Count + customizationBatch.Count} game(s).");
                 }
             }
         }
@@ -1876,6 +2270,86 @@ namespace PlayniteAchievements
             return _themeControlRegistry.TryCreate(args.Name, out var control) ? control : null;
         }
 
+        // Showcase profile links: the providers own each platform's profile address and know the
+        // signed-in user's name from their settings.
+        private string BuildProviderProfileUrl(string providerKey, string user)
+        {
+            return _providerRegistry != null &&
+                   _providerRegistry.TryGetProvider(providerKey, out var provider) &&
+                   provider is IProfileLinkProvider links
+                ? links.BuildProfileUrl(user)
+                : null;
+        }
+
+        private IReadOnlyList<KeyValuePair<string, string>> ReadCurrentUserProfileNames()
+        {
+            var result = new List<KeyValuePair<string, string>>();
+            foreach (var provider in _providerRegistry?.GetAllProviders() ?? Array.Empty<IDataProvider>())
+            {
+                if (provider is IProfileLinkProvider links &&
+                    _providerRegistry.IsProviderEnabled(provider.ProviderKey))
+                {
+                    var name = links.GetCurrentUserProfileName();
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        result.Add(new KeyValuePair<string, string>(provider.ProviderKey, name.Trim()));
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Drops the cached library projection when the showcase starts needing the Unlock Next
+        /// candidate pool, or gains an achievement pin the cached projection never hydrated, so
+        /// the next build fills them in. Only the Unlock Next false-to-true flip matters; a widget
+        /// dropping the source leaves a harmless pool behind until the next rebuild.
+        /// </summary>
+        private void OnShowcaseConfigurationChanged(object sender, EventArgs e)
+        {
+            var showcase = Settings?.Persisted?.Showcase;
+            var required = ShowcaseWidgetOptions.RequiresUnlockNextPool(showcase);
+            var poolNewlyRequired = required && !_unlockNextPoolRequired;
+            _unlockNextPoolRequired = required;
+
+            // Only a change to the pin set can leave the projection missing a pin. Layout edits
+            // (merge, split, resize, widget options) leave the pins alone, and checking the
+            // projection on each of them counted any in-flight build as stale, restarting a
+            // whole-library rebuild on every click.
+            var pinKeys = CollectAchievementPinKeys(showcase);
+            var pinsChanged = !pinKeys.SetEquals(_lastAchievementPinKeys);
+            _lastAchievementPinKeys = pinKeys;
+            var pinsUnhydrated = pinsChanged &&
+                _libraryProjectionService?.OverviewMissesAchievementPins(showcase) == true;
+            if (!poolNewlyRequired && !pinsUnhydrated)
+            {
+                return;
+            }
+
+            _libraryProjectionService?.Invalidate();
+            ScheduleStartPageInvalidate();
+        }
+
+        private HashSet<string> _lastAchievementPinKeys = new HashSet<string>(StringComparer.Ordinal);
+
+        private static HashSet<string> CollectAchievementPinKeys(ShowcaseSettings showcase)
+        {
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var collection in showcase?.AchievementPinCollections ?? new List<PinnedAchievementCollection>())
+            {
+                foreach (var pin in collection?.Pins ?? new List<PinnedAchievementReference>())
+                {
+                    if (pin != null && pin.GameId != Guid.Empty && !string.IsNullOrWhiteSpace(pin.ApiName))
+                    {
+                        keys.Add(Services.Overview.OverviewDataSnapshot.AchievementPinKey(pin.GameId, pin.ApiName));
+                    }
+                }
+            }
+
+            return keys;
+        }
+
         // === Game selection wiring ===
 
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
@@ -1895,20 +2369,16 @@ namespace PlayniteAchievements
             var addedItems = e.AddedItems;
             if (addedItems != null)
             {
-                var addedGameIds = new List<Guid>();
-                foreach (var game in addedItems)
+                // Refreshed from OnLibraryUpdated, after the import's metadata download.
+                lock (_pendingNewGamesGate)
                 {
-                    if (game == null)
+                    foreach (var game in addedItems)
                     {
-                        continue;
+                        if (game != null && game.Id != Guid.Empty)
+                        {
+                            _pendingNewGameIds.Add(game.Id);
+                        }
                     }
-
-                    addedGameIds.Add(game.Id);
-                }
-
-                if (addedGameIds.Count > 0)
-                {
-                    _ = TriggerNewGamesRefreshAsync(addedGameIds);
                 }
             }
 
@@ -1927,15 +2397,125 @@ namespace PlayniteAchievements
             }
         }
 
+        public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
+        {
+            List<Guid> addedGameIds;
+            lock (_pendingNewGamesGate)
+            {
+                if (_pendingNewGameIds.Count == 0)
+                {
+                    return;
+                }
+
+                addedGameIds = _pendingNewGameIds.ToList();
+                _pendingNewGameIds.Clear();
+            }
+
+            // Games removed before the update finished have nothing to refresh.
+            var games = PlayniteApi?.Database?.Games;
+            if (games != null)
+            {
+                addedGameIds = addedGameIds.Where(id => games.Get(id) != null).ToList();
+            }
+
+            if (addedGameIds.Count > 0)
+            {
+                _ = TriggerNewGamesRefreshAsync(addedGameIds);
+            }
+        }
+
         private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
         {
             // A game's Playnite-owned fields (playtime, last played, cover, icon, metadata) changed;
-            // invalidate so the cached overview/start-page projection is rebuilt with fresh values.
-            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce; the
-            // start-page invalidation is coalesced too (playtime ticks fire this continuously
-            // while a game runs).
-            _libraryProjectionService?.Invalidate();
+            // invalidate so the cached overview/start-page projection picks up fresh values.
+            //
+            // Per game, so the rebuild waits for the library to go quiet. Playnite raises this for
+            // playtime ticks and for the plugin's own tag-sync writes, and the previous full
+            // invalidation warmed immediately every time -- a whole-library rebuild that holds the
+            // store's read connection for hundreds of milliseconds, behind which UI-thread reads
+            // queue. The cache is still dropped either way, so an on-demand consumer never sees
+            // stale values; only the precompute waits.
+            //
+            // But most of these updates move nothing the projection reads. Tag sync writes the
+            // Playnite database once per edited game, Playnite raises this back at us for that
+            // write, and the projection was then discarded for a change to Tags -- a field it
+            // does not project. So every custom-data edit threw away a whole-library projection
+            // a second time, on top of the one its own store event caused, and that projection
+            // was measured at ~1.5s to rebuild for 500 games.
+            if (!UpdateAffectsProjection(e))
+            {
+                return;
+            }
+
+            _libraryProjectionService?.InvalidateForGame();
             ScheduleStartPageInvalidate();
+        }
+
+        /// <summary>
+        /// Whether a Playnite game update moved any field the overview/start-page projection
+        /// reads. An update carrying no before/after pair is treated as affecting it, so an
+        /// unknown shape still invalidates rather than going stale.
+        /// </summary>
+        private static bool UpdateAffectsProjection(ItemUpdatedEventArgs<Game> e)
+        {
+            var updates = e?.UpdatedItems;
+            if (updates == null || updates.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (var update in updates)
+            {
+                var before = update?.OldData;
+                var after = update?.NewData;
+                if (before == null || after == null)
+                {
+                    return true;
+                }
+
+                // The fields GamePresentation projects, plus the ones the summary rows sort and
+                // group by. Tags, categories, descriptions and the rest are deliberately absent.
+                if (!string.Equals(before.Name, after.Name, StringComparison.Ordinal) ||
+                    !string.Equals(before.SortingName, after.SortingName, StringComparison.Ordinal) ||
+                    !string.Equals(before.Icon, after.Icon, StringComparison.Ordinal) ||
+                    !string.Equals(before.CoverImage, after.CoverImage, StringComparison.Ordinal) ||
+                    before.Favorite != after.Favorite ||
+                    before.Hidden != after.Hidden ||
+                    before.Playtime != after.Playtime ||
+                    before.LastActivity != after.LastActivity ||
+                    !NullableGuidListsMatch(before.PlatformIds, after.PlatformIds) ||
+                    !NullableGuidListsMatch(before.RegionIds, after.RegionIds))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool NullableGuidListsMatch(List<Guid> left, List<Guid> right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            var leftCount = left?.Count ?? 0;
+            var rightCount = right?.Count ?? 0;
+            if (leftCount != rightCount)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < leftCount; i++)
+            {
+                if (left[i] != right[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)
@@ -1983,8 +2563,12 @@ namespace PlayniteAchievements
             {
                 try
                 {
-                    _logger.Info($"Detected removed game '{game?.Name}' ({game?.GameId}); removing cached achievements and icons.");
+                    _logger.Info($"Detected removed game '{game?.Name}' ({game?.GameId}); removing cached achievements, icons and custom data.");
                     _cacheManager.RemoveGameCache(game.Id);
+
+                    // Custom achievements alone keep a synthetic row alive, and nothing can
+                    // reattach them: a re-added game gets a new id.
+                    _gameCustomDataStore?.Delete(game.Id);
                 }
                 catch (Exception ex)
                 {

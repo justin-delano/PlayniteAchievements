@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
 
@@ -24,6 +27,44 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public string CountText { get; }
     }
 
+    /// <summary>A clickable platform profile link, drawn as the provider's icon.</summary>
+    public sealed class ProfileLinkViewModel
+    {
+        private static readonly ILogger Logger = LogManager.GetLogger();
+
+        public ProfileLinkViewModel(string providerKey, string url)
+        {
+            Url = url;
+            ProviderRegistry.TryResolveProviderVisuals(providerKey, out var iconKey, out var colorHex);
+            IconKey = iconKey;
+            ColorHex = colorHex;
+            ToolTip = ProviderRegistry.GetLocalizedName(providerKey) + Environment.NewLine + url;
+            OpenCommand = new Common.RelayCommand(_ => Open());
+        }
+
+        public string IconKey { get; }
+
+        public string ColorHex { get; }
+
+        public string Url { get; }
+
+        public string ToolTip { get; }
+
+        public Common.RelayCommand OpenCommand { get; }
+
+        private void Open()
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = Url, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, $"Failed to open profile link: {Url}");
+            }
+        }
+    }
+
     /// <summary>A stat-strip tile: formatted value plus localized label.</summary>
     public sealed class ProfileStatViewModel
     {
@@ -40,9 +81,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
     /// <summary>
     /// Backs the Profile widget: avatar, display name, and background resolved from the
-    /// provider identity with manual overrides, plus a medal-count row (rarity, completed,
-    /// trophies) and a stat strip filling the instance's configured stat slots. Density only
-    /// scales the avatar; the same content shows at every size.
+    /// provider identity with manual overrides, plus a medal-count row (rarity tiers and
+    /// completions, or trophy grades) and a stat strip filling the instance's configured stat
+    /// slots. Density only scales the avatar; the same content shows at every size.
     /// </summary>
     public sealed class ProfileWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -59,12 +100,24 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private bool _showMedals;
         private bool _showStatStrip;
         private int _statColumns = 4;
+        private bool _isStacked;
+        private bool _isCenteredRow;
+        private bool _isFullBleed;
+        private Thickness _contentPadding;
+        private int _backgroundDecodePixel = 320;
+        private bool _showLinks;
+        private string _linksSignature;
 
         public BulkObservableCollection<ProfileMedalViewModel> Medals { get; } =
             new BulkObservableCollection<ProfileMedalViewModel>();
 
         public BulkObservableCollection<ProfileStatViewModel> Stats { get; } =
             new BulkObservableCollection<ProfileStatViewModel>();
+
+        public BulkObservableCollection<ProfileLinkViewModel> Links { get; } =
+            new BulkObservableCollection<ProfileLinkViewModel>();
+
+        public bool ShowLinks { get => _showLinks; private set => SetValue(ref _showLinks, value); }
 
         public string BackgroundPath { get => _backgroundPath; private set => SetValue(ref _backgroundPath, value); }
 
@@ -90,8 +143,51 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public bool ShowStatStrip { get => _showStatStrip; private set => SetValue(ref _showStatStrip, value); }
 
-        /// <summary>Strip columns: one per stat up to four, wrapping to extra rows past that.</summary>
+        /// <summary>Strip columns: one per stat up to four, balanced across rows past that.</summary>
         public int StatColumns { get => _statColumns; private set => SetValue(ref _statColumns, value); }
+
+        /// <summary>Stacked layout: avatar above the text, every line centered.</summary>
+        public bool IsStacked
+        {
+            get => _isStacked;
+            private set
+            {
+                if (SetValueAndReturn(ref _isStacked, value))
+                {
+                    OnPropertyChanged(nameof(TextAlignment));
+                    OnPropertyChanged(nameof(CenterStats));
+                }
+            }
+        }
+
+        /// <summary>Centered layout: the left layout's blocks, unchanged, centered across the card.</summary>
+        public bool IsCenteredRow
+        {
+            get => _isCenteredRow;
+            private set
+            {
+                if (SetValueAndReturn(ref _isCenteredRow, value))
+                {
+                    OnPropertyChanged(nameof(CenterStats));
+                }
+            }
+        }
+
+        /// <summary>Both centered layouts center a short last row of stats under the full rows.</summary>
+        public bool CenterStats => IsStacked || IsCenteredRow;
+
+        public TextAlignment TextAlignment => IsStacked ? TextAlignment.Center : TextAlignment.Left;
+
+        /// <summary>
+        /// The widget host drops its body inset for a full-bleed profile, so the background
+        /// reaches the card edge; <see cref="ContentPadding"/> then restores the inset for the
+        /// foreground alone.
+        /// </summary>
+        public bool IsFullBleed { get => _isFullBleed; private set => SetValue(ref _isFullBleed, value); }
+
+        public Thickness ContentPadding { get => _contentPadding; private set => SetValue(ref _contentPadding, value); }
+
+        public int BackgroundDecodePixel { get => _backgroundDecodePixel; private set => SetValue(ref _backgroundDecodePixel, value); }
 
         protected override void Refresh()
         {
@@ -103,6 +199,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
             BackgroundPath = resolved.BackgroundPath;
             HasBackground = !string.IsNullOrWhiteSpace(resolved.BackgroundPath);
+
+            var layout = ShowcaseWidgetOptions.GetProfileLayout(Projection?.Instance);
+            IsStacked = layout == ShowcaseProfileLayout.Stacked;
+            IsCenteredRow = layout == ShowcaseProfileLayout.Centered;
+            IsFullBleed = ShowcaseWidgetOptions.GetProfileFullBleed(Projection?.Instance);
+            ContentPadding = IsFullBleed ? new Thickness(GetBodyInset(Density)) : new Thickness(0);
+            BackgroundDecodePixel = IsFullBleed ? 640 : 320;
 
             AvatarPath = resolved.AvatarPath;
             HasAvatar = !string.IsNullOrWhiteSpace(resolved.AvatarPath);
@@ -119,22 +222,67 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             Subtitle = resolved.Subtitle;
             ShowSubtitle = !string.IsNullOrWhiteSpace(resolved.Subtitle);
 
-            Medals.ReplaceAll(BuildMedals(snapshot));
+            Medals.ReplaceAll(BuildMedals(
+                snapshot,
+                ShowcaseWidgetOptions.GetProfileMedalMode(Projection?.Instance)));
             ShowMedals = Medals.Count > 0;
+
+            RefreshLinks(ShowcaseWidgetOptions.GetProfileShowLinks(Projection?.Instance)
+                ? resolved.Links
+                : null);
 
             Stats.ReplaceAll(BuildStatStrip());
             ShowStatStrip = Stats.Count > 0;
-            StatColumns = Math.Max(1, Math.Min(4, Stats.Count));
+            // At most four per row, spread evenly across the rows: five stats read as 3 + 2
+            // rather than 4 + 1.
+            var statRows = Math.Max(1, (int)Math.Ceiling(Stats.Count / 4.0));
+            StatColumns = Math.Max(1, (int)Math.Ceiling(Stats.Count / (double)statRows));
         }
 
-        private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(OverviewDataSnapshot snapshot)
+        // Rebuilt only when the resolved links change, so an unrelated re-projection does not
+        // re-render the icons.
+        private void RefreshLinks(IReadOnlyList<ShowcaseProfileLinkProjection> links)
+        {
+            var list = (links ?? Array.Empty<ShowcaseProfileLinkProjection>())
+                .Where(link => link != null && !string.IsNullOrWhiteSpace(link.Url))
+                .ToList();
+            var signature = string.Join("\n", list.Select(link => link.ProviderKey + "|" + link.Url));
+            if (!string.Equals(signature, _linksSignature, StringComparison.Ordinal))
+            {
+                _linksSignature = signature;
+                Links.ReplaceAll(list.Select(link => new ProfileLinkViewModel(link.ProviderKey, link.Url)).ToList());
+            }
+
+            ShowLinks = Links.Count > 0;
+        }
+
+        private static IReadOnlyList<ProfileMedalViewModel> BuildMedals(
+            OverviewDataSnapshot snapshot,
+            ShowcaseProfileMedalMode mode)
         {
             var medals = new List<ProfileMedalViewModel>();
-            AddMedal(medals, "BadgeCompletedGame", snapshot.CompletedGames);
-            AddMedal(medals, "BadgeRarityUltraRare", snapshot.TotalUltraRare);
-            AddMedal(medals, "BadgeRarityRare", snapshot.TotalRare);
-            AddMedal(medals, "BadgeRarityUncommon", snapshot.TotalUncommon);
-            AddMedal(medals, "BadgeRarityCommon", snapshot.TotalCommon);
+            if (mode != ShowcaseProfileMedalMode.Trophy)
+            {
+                // Completions, not completed games: a game with several capstones is finished
+                // several times over, and the medal sits beside rarity counts that are all totals
+                // of things earned rather than counts of games.
+                AddMedal(medals, "BadgeCompletedGame", snapshot.Completions);
+                AddMedal(medals, "BadgeRarityUltraRare", snapshot.TotalUltraRare);
+                AddMedal(medals, "BadgeRarityRare", snapshot.TotalRare);
+                AddMedal(medals, "BadgeRarityUncommon", snapshot.TotalUncommon);
+                AddMedal(medals, "BadgeRarityCommon", snapshot.TotalCommon);
+            }
+
+            if (mode != ShowcaseProfileMedalMode.Rarity)
+            {
+                // Trophy grades alone skip the completions medal: they already carry the sense of
+                // a finished game through the platinum. Both keeps it from the rarity row.
+                AddMedal(medals, "TrophyPlatinum", snapshot.TotalPlatinum);
+                AddMedal(medals, "TrophyGold", snapshot.TotalGold);
+                AddMedal(medals, "TrophySilver", snapshot.TotalSilver);
+                AddMedal(medals, "TrophyBronze", snapshot.TotalBronze);
+            }
+
             return medals;
         }
 

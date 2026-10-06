@@ -124,6 +124,22 @@ namespace PlayniteAchievements.Services
 
         public event Action<Guid> ProgressApplied;
 
+        /// <summary>
+        /// Brings a game's auto capstones up to date after an in-game write, before its unlocks
+        /// are announced, so the 100% check reads the capstone as the write left it rather than
+        /// as a locked achievement still to earn.
+        /// </summary>
+        public Action<Guid> MaintainCapstones { get; set; }
+
+        /// <summary>
+        /// The capstone unlocks held back for a tracked game, sent after the achievement that
+        /// earned them and ahead of the game-complete notification.
+        /// </summary>
+        public Func<Guid, IReadOnlyList<AchievementUnlockedEventArgs>> TakeCapstoneAnnouncements { get; set; }
+
+        /// <summary>True while the monitor is tracking a running game.</summary>
+        public bool IsMonitoring(Guid gameId) => gameId != Guid.Empty && IsTracked(gameId);
+
         public InGameAchievementMonitor(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
@@ -167,6 +183,14 @@ namespace PlayniteAchievements.Services
 
             if (!ShouldPollGame(game, logReason: true))
             {
+                return;
+            }
+
+            // Checked before tracking so an exempt game neither runs the auth probe below nor is
+            // reported as having no authenticated provider.
+            if (IsPollingExempt(TryResolveProvider(game)))
+            {
+                _logger?.Info($"[InGameMonitor] Skipped: provider for '{game.Name}' does not change during play.");
                 return;
             }
 
@@ -325,6 +349,10 @@ namespace PlayniteAchievements.Services
 
             sessionCancellation?.Cancel();
             DisposeSubscriptions(subscriptions);
+
+            // A capstone held for this session and never sent belongs to it; left in place it
+            // would ride along with an unrelated unlock in a later session.
+            TakeCapstoneAnnouncements?.Invoke(game.Id);
             _logger?.Info($"[InGameMonitor] Stopped for {game.Name}.");
             cts?.Cancel();
             sessionCancellation?.Dispose();
@@ -393,6 +421,58 @@ namespace PlayniteAchievements.Services
                 {
                     Stop(state.Game);
                 }
+            }
+        }
+
+        private void RunCapstoneMaintenance(Guid gameId)
+        {
+            try
+            {
+                MaintainCapstones?.Invoke(gameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[InGameMonitor] Auto capstone maintenance failed for gameId={gameId}.");
+            }
+        }
+
+        /// <summary>
+        /// Sends the capstone unlocks held for a game, anchored like the unlocks they follow.
+        /// </summary>
+        /// <param name="emitted">
+        /// Whether this batch announced any of its own unlocks. When it did not -- they predate the
+        /// session, or the baseline was still being taken -- the capstone they finished is just as
+        /// old, and is dropped rather than announced on its own.
+        /// </param>
+        private void AnnounceHeldCapstones(
+            Guid gameId,
+            bool emitted,
+            DateTime observedUtc,
+            InGameUnlockAnchorPolicy anchorPolicy,
+            TimeSpan anchorBias)
+        {
+            var held = TakeCapstoneAnnouncements?.Invoke(gameId);
+            if (!emitted || held == null || held.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var args in held)
+            {
+                if (args == null)
+                {
+                    continue;
+                }
+
+                var videoAnchor = InGameUnlockAnchorSelector.Select(
+                    anchorPolicy,
+                    args.UnlockTimeUtc,
+                    observedUtc,
+                    anchorBias);
+                args.ObservedUtc = observedUtc;
+                args.VideoAnchorUtc = videoAnchor.Utc;
+                args.VideoAnchorSource = videoAnchor.Source;
+                _notifyUnlocked?.Invoke(args);
             }
         }
 
@@ -691,8 +771,7 @@ namespace PlayniteAchievements.Services
                     observedUtc = CaptureTimelineClock.UtcNow;
                 }
 
-                anchorPolicy = state.Registration?.UnlockAnchorPolicy ??
-                    InGameUnlockAnchorPolicy.ProviderReported;
+                anchorPolicy = InGameUnlockAnchorSelector.ResolvePolicy(state.Registration);
                 anchorBias = state.Registration?.UnlockAnchorBias ?? TimeSpan.Zero;
                 state.Schedule.Succeeded(
                     CaptureTimelineClock.UtcNow,
@@ -712,6 +791,7 @@ namespace PlayniteAchievements.Services
 
             if (write.Changed)
             {
+                RunCapstoneMaintenance(state.Game.Id);
                 ProgressApplied?.Invoke(state.Game.Id);
             }
 
@@ -733,6 +813,8 @@ namespace PlayniteAchievements.Services
                     anchorPolicy,
                     anchorBias);
             }
+
+            AnnounceHeldCapstones(state.Game.Id, emittableKeys.Count > 0, observedUtc, anchorPolicy, anchorBias);
 
             if (completion != null)
             {
@@ -921,18 +1003,15 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
-            IDataProvider provider;
-            try
+            var provider = TryResolveProvider(state.Game);
+            if (provider == null)
             {
-                provider = _refreshRuntime?.ResolveInGameProvider(state.Game);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[InGameMonitor] Provider resolution failed for {state.Game.Name}.");
-                provider = null;
+                return false;
             }
 
-            if (provider == null)
+            // A reconfigure can move a tracked game onto an exempt provider; returning false
+            // stops it there.
+            if (IsPollingExempt(provider))
             {
                 return false;
             }
@@ -1050,6 +1129,21 @@ namespace PlayniteAchievements.Services
             return true;
         }
 
+        private IDataProvider TryResolveProvider(Game game)
+        {
+            try
+            {
+                return _refreshRuntime?.ResolveInGameProvider(game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[InGameMonitor] Provider resolution failed for {game?.Name}.");
+                return null;
+            }
+        }
+
+        internal static bool IsPollingExempt(IDataProvider provider) => provider is IInGamePollingExempt;
+
         /// <summary>
         /// The prong set servicing a game. The refresh prong is always present; a fast source, when
         /// one registered, is layered on top of it.
@@ -1100,6 +1194,12 @@ namespace PlayniteAchievements.Services
                     }
                     return;
                 }
+
+                // The provider refresh below is the most expensive thing the monitor does during a
+                // session - it reaches auth preflight and the network - and unlike the fast prong it
+                // had no gate at all. Placed after the rebuild bookkeeping so only the refresh waits.
+                // Bounded like the fast prong, so a leaked gate cannot hold a fallback back for long.
+                await RenderQuietGate.WhenClearAsync(maxDeferMs: 800).ConfigureAwait(false);
 
                 foreach (var providerGroup in states
                     .Where(state => state.Provider != null)
@@ -1174,10 +1274,22 @@ namespace PlayniteAchievements.Services
                                 keys,
                                 timer.ElapsedMilliseconds,
                                 observedUtc,
-                                InGameUnlockAnchorPolicy.ProviderReported,
                                 // Refresh-prong unlocks carry the same provider stamps the fast
-                                // source reports, so a registered bias applies here too.
+                                // source reports, so both the resolved policy and a registered
+                                // bias apply here too. With no fast source to register, this
+                                // resolves to ProviderReported.
+                                InGameUnlockAnchorSelector.ResolvePolicy(state.Registration),
                                 state.Registration?.UnlockAnchorBias ?? TimeSpan.Zero);
+
+                        // The refresh above already brought the capstone up to date; its unlock
+                        // was held so it lands here, after the achievement that earned it.
+                        AnnounceHeldCapstones(
+                            state.Game.Id,
+                            keys.Count > 0,
+                            observedUtc,
+                            InGameUnlockAnchorSelector.ResolvePolicy(state.Registration),
+                            state.Registration?.UnlockAnchorBias ?? TimeSpan.Zero);
+
                         if (completion != null)
                         {
                             _notifyUnlocked?.Invoke(completion);
@@ -1209,6 +1321,10 @@ namespace PlayniteAchievements.Services
         {
             try
             {
+                // Friend refresh is network and cache work whose completions fan out to the same
+                // UI-thread subscribers as the progress prong, on the same bounded terms.
+                await RenderQuietGate.WhenClearAsync(maxDeferMs: 800).ConfigureAwait(false);
+
                 var completions = await RunFriendTickAsync(state, token).ConfigureAwait(false);
                 if (!IsTracked(state.Game.Id))
                 {

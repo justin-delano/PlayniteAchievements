@@ -15,6 +15,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
@@ -33,6 +34,7 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly ILogger Logger = LogManager.GetLogger();
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
+        private bool _wheelDiagnosticsAttached;
         private PersistedSettingsSubscription _persistedSubscription;
         private List<AchievementDisplayItem> _preSortItems;
         private const double DefaultStatusColumnWidth = 40;
@@ -54,6 +56,7 @@ namespace PlayniteAchievements.Views.Controls
         private const string GameColumnKey = "Game";
         private const string FriendAvatarColumnKey = "Avatar";
         private const string FriendColumnKey = "Friend";
+        private const string CapturesColumnKey = "Captures";
 
         private static readonly IReadOnlyDictionary<string, double> DefaultImageColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -81,6 +84,9 @@ namespace PlayniteAchievements.Views.Controls
             new Dictionary<string, IReadOnlyDictionary<string, bool>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Default"] = CreateAchievementVisibility(captures: true),
+                // The Spoilers settings preview: every column the reveal matrix can mask has to be
+                // on screen, including the two that are hidden by default everywhere else.
+                ["SpoilersPreview"] = CreateAchievementVisibility(trophy: true, points: true),
                 ["SingleGame"] = CreateAchievementVisibility(captures: true),
                 ["DesktopTheme"] = CreateAchievementVisibility(captures: true),
                 ["OverviewSelectedGameAchievements"] = CreateAchievementVisibility(captures: true),
@@ -464,7 +470,7 @@ namespace PlayniteAchievements.Views.Controls
         /// </summary>
         public static readonly DependencyProperty SoftGlowTiersProperty =
             DependencyProperty.Register(nameof(SoftGlowTiers), typeof(RaritySelection),
-                typeof(AchievementDataGridControl), new PropertyMetadata(RaritySelection.All));
+                typeof(AchievementDataGridControl), new PropertyMetadata(RaritySelectionExtensions.DefaultSoftGlowTiers));
 
         /// <summary>
         /// Gets or sets which rarity tiers show the soft halo in this grid.
@@ -2034,7 +2040,12 @@ namespace PlayniteAchievements.Views.Controls
 
                 if (!_isCategoryMode)
                 {
-                    RecomputeEffectiveAchievements();
+                    // The full view-state pass, not just the source swap: it also gives the
+                    // achievement pane its star height. The XAML row starts at 0 and the flat
+                    // path used to leave it there until Loaded, so the grid's first measure
+                    // realized one row at zero height and every real row was built in a second,
+                    // untimed pass right after. The category path below already does this.
+                    ApplyCategoryViewState();
                     return;
                 }
 
@@ -2542,6 +2553,16 @@ namespace PlayniteAchievements.Views.Controls
 
         private void ReattachColumnPersistence()
         {
+            if (!_isAttached)
+            {
+                // Before Loaded nothing is attached; rebuild the pre-measure column state for
+                // the new key so the first rows lay out with that surface's columns.
+                _columnPersistence?.Dispose();
+                _columnPersistence = null;
+                PrepareColumnsForFirstMeasure();
+                return;
+            }
+
             if (_columnPersistence == null)
             {
                 return;
@@ -2677,6 +2698,16 @@ namespace PlayniteAchievements.Views.Controls
             SetForcedColumnCollapsed(_columnPersistence, GameColumnKey, !ShowGameColumn);
             SetForcedColumnCollapsed(_columnPersistence, FriendAvatarColumnKey, !ShowFriendColumn);
             SetForcedColumnCollapsed(_columnPersistence, FriendColumnKey, !ShowFriendColumn);
+            // Captures are the user's own screenshots and clips of their own unlocks; a friend's
+            // row has none to open, so the column is dropped from every friend surface.
+            SetForcedColumnCollapsed(_columnPersistence, CapturesColumnKey, IsFriendSurface(ColumnSettingsKey));
+        }
+
+        private static bool IsFriendSurface(string columnSettingsKey)
+        {
+            return columnSettingsKey != null &&
+                   (columnSettingsKey.StartsWith("FriendsOverview", StringComparison.OrdinalIgnoreCase) ||
+                    columnSettingsKey.StartsWith("ViewFriendsAchievements", StringComparison.OrdinalIgnoreCase));
         }
 
         private static void SetForcedColumnCollapsed(
@@ -2708,6 +2739,78 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        /// <summary>
+        /// Reports what the wheel meets over this grid: whether the event arrives already claimed,
+        /// what height the grid was actually given, and whether its scroll viewer has anything to
+        /// scroll. A grid measured with unbounded height reports scrollable=0, leaves the wheel
+        /// alone, and the host page scrolls instead -- which reads as the grid ignoring the wheel.
+        /// Registered handledEventsToo so an upstream claim is still visible here. Silent unless
+        /// perf tracing is on.
+        /// </summary>
+        private void AttachWheelDiagnostics()
+        {
+            if (_wheelDiagnosticsAttached || AchievementsDataGrid == null)
+            {
+                return;
+            }
+
+            AchievementsDataGrid.AddHandler(
+                PreviewMouseWheelEvent,
+                new MouseWheelEventHandler(OnGridPreviewMouseWheelDiagnostics),
+                true);
+            _wheelDiagnosticsAttached = true;
+        }
+
+        private void OnGridPreviewMouseWheelDiagnostics(object sender, MouseWheelEventArgs e)
+        {
+            if (!PerfScope.PerfTracingEnabled)
+            {
+                return;
+            }
+
+            var grid = AchievementsDataGrid;
+            var scrollViewer = grid == null ? null : FindDescendantScrollViewer(grid);
+            var logger = PluginLogger.GetLogger(nameof(AchievementDataGridControl));
+            if (scrollViewer == null)
+            {
+                logger?.Debug($"[GridWheel] arrivedHandled={e.Handled}: no ScrollViewer beneath the grid.");
+                return;
+            }
+
+            logger?.Debug(
+                $"[GridWheel] arrivedHandled={e.Handled} key={ColumnSettingsKey} " +
+                $"gridHeight={grid.ActualHeight:F0} maxHeight={grid.MaxHeight:F0} " +
+                $"extent={scrollViewer.ExtentWidth:F0}x{scrollViewer.ExtentHeight:F0} " +
+                $"viewport={scrollViewer.ViewportWidth:F0}x{scrollViewer.ViewportHeight:F0} " +
+                $"scrollable={scrollViewer.ScrollableWidth:F0}x{scrollViewer.ScrollableHeight:F0} " +
+                $"canContentScroll={scrollViewer.CanContentScroll}");
+        }
+
+        private static ScrollViewer FindDescendantScrollViewer(DependencyObject parent)
+        {
+            if (parent == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is ScrollViewer scrollViewer)
+                {
+                    return scrollViewer;
+                }
+
+                var result = FindDescendantScrollViewer(child);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             UpdateColumnVisibility();
@@ -2716,6 +2819,7 @@ namespace PlayniteAchievements.Views.Controls
             UpdateUnlockDateMode();
             SyncModeToggle();
             ApplyCategoryViewState();
+            AttachWheelDiagnostics();
 
             if (_isAttached)
             {
@@ -2865,6 +2969,48 @@ namespace PlayniteAchievements.Views.Controls
                 AchievementsDataGrid,
                 () => GetHeaderAlignmentsByKey(settings));
 
+            EnsureColumnPersistence(settings);
+            UpdateColumnPersistenceContextOverrides();
+            UpdateColumnVisibility();
+
+            _columnPersistence.Attach();
+        }
+
+        // Applies the persisted column order, visibility, and widths before the first measure.
+        // Loaded (and with it Attach) only runs after the first layout pass, so without this the
+        // first rows are laid out with every XAML column visible and the star columns clamped to
+        // MinWidth, then rebuilt once Attach collapses the hidden ones. Idempotent and cheap.
+        private void PrepareColumnsForFirstMeasure()
+        {
+            if (_isAttached || AchievementsDataGrid == null)
+            {
+                return;
+            }
+
+            var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            EnsureColumnPersistence(settings);
+            UpdateColumnPersistenceContextOverrides();
+            _columnPersistence.PrepareColumns();
+        }
+
+        public override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+            PrepareColumnsForFirstMeasure();
+        }
+
+        private void EnsureColumnPersistence(PlayniteAchievementsSettings settings)
+        {
+            if (_columnPersistence != null)
+            {
+                return;
+            }
+
             _columnPersistence = new DataGridColumnLayoutService(
                 AchievementsDataGrid,
                 Logger,
@@ -2928,13 +3074,16 @@ namespace PlayniteAchievements.Views.Controls
                 },
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid),
-                isRuntimeDefaultWidth: IsLegacyImageColumnRuntimeDefaultWidth);
+                isRuntimeDefaultWidth: IsLegacyImageColumnRuntimeDefaultWidth,
+                getLocks: () => GetColumnLayoutOptions(settings)?.Locked,
+                setLocks: map =>
+                {
+                    if (AllowLayoutPersistence)
+                    {
+                        SetLocksByKey(settings, map);
+                    }
+                });
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
-
-            UpdateColumnPersistenceContextOverrides();
-            UpdateColumnVisibility();
-
-            _columnPersistence.Attach();
         }
 
         private Dictionary<string, double> GetMergedWidths(PlayniteAchievementsSettings settings)
@@ -3225,6 +3374,15 @@ namespace PlayniteAchievements.Views.Controls
             if (options != null)
             {
                 options.Widths = map;
+            }
+        }
+
+        private void SetLocksByKey(PlayniteAchievementsSettings settings, Dictionary<string, bool> map)
+        {
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
+            {
+                options.Locked = map;
             }
         }
 
