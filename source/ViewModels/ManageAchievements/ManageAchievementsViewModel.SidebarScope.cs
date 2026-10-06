@@ -67,6 +67,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
         }
 
+        /// <summary>
+        /// The completion value at its widest for this game: every achievement unlocked out of
+        /// all of them. A scoped value is a subset, so it never needs more room than this.
+        /// </summary>
+        public string SidebarCompletionWidthReservationText =>
+            $"{TotalAchievements} / {TotalAchievements} ({PercentFormatter.FormatWhole(100)})";
+
         public int SidebarCompletionPercentValue => AchievementCompletionPercentCalculator.ComputeRoundedPercent(
             _sidebarUnlockedAchievements,
             _sidebarTotalAchievements);
@@ -178,6 +185,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             OnPropertyChanged(nameof(IsSidebarCategoryScoped));
             OnPropertyChanged(nameof(SidebarCompletionSummary));
+            OnPropertyChanged(nameof(SidebarCompletionWidthReservationText));
             OnPropertyChanged(nameof(SidebarCompletionPercentValue));
             RaiseSidebarStatVisibility();
         }
