@@ -1122,7 +1122,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">PREVIEW</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Context_Settings">SETTINGS</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Palettes">Palettes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">Preset {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Badge colors</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColors">Platform colors</sys:String>
