@@ -99,6 +99,9 @@ namespace PlayniteAchievements
         private Services.Library.LibraryApplyService _libraryApplyService;
         private Services.Library.ColorsLibraryAdapter _colorsLibraryAdapter;
         private Services.Library.SoundsLibraryAdapter _soundsLibraryAdapter;
+        private Services.Library.GameLinkStore _gameLinkStore;
+        private Services.Library.LibraryUpdateService _libraryUpdateService;
+        private int _droppedLibraryItemsQueued;
         private Services.Workshop.WorkshopInstaller _workshopInstaller;
         private Services.Workshop.WorkshopClient _workshopClient;
         private Services.Workshop.WorkshopSubmissionClient _workshopSubmissionClient;
@@ -236,10 +239,37 @@ namespace PlayniteAchievements
             _workshopRegistry ?? (_workshopRegistry =
                 new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));
         /// <summary>The library index over the preset folders (UserData\library\library.json).</summary>
-        public Services.Library.LibraryStore LibraryStore =>
-            _libraryStore ?? (_libraryStore = new Services.Library.LibraryStore(
-                GetPluginUserDataPath(),
+        public Services.Library.LibraryStore LibraryStore
+        {
+            get
+            {
+                if (_libraryStore == null)
+                {
+                    _libraryStore = new Services.Library.LibraryStore(
+                        GetPluginUserDataPath(),
+                        (ex, message) => _logger?.Warn(ex, message));
+                    _libraryStore.Changed += LibraryStore_Changed;
+                }
+
+                return _libraryStore;
+            }
+        }
+
+        /// <summary>The links of per-game targets (UserData\library\links.json).</summary>
+        public Services.Library.GameLinkStore GameLinkStore =>
+            _gameLinkStore ?? (_gameLinkStore = new Services.Library.GameLinkStore(
+                LibraryStore.LibraryDirectory,
                 (ex, message) => _logger?.Warn(ex, message)));
+
+        /// <summary>Writes Workshop packages into the library and keeps the targets that follow library items in step.</summary>
+        public Services.Library.LibraryUpdateService LibraryUpdateService =>
+            _libraryUpdateService ?? (_libraryUpdateService = new Services.Library.LibraryUpdateService(
+                LibraryApplyService,
+                GameLinkStore,
+                new Services.Library.ISettingsLibraryAdapter[] { ColorsLibraryAdapter, SoundsLibraryAdapter },
+                () => _settingsViewModel?.Settings?.Persisted,
+                update => ApplyLibrarySettingsChange(update, includeEditSnapshot: true),
+                update => ApplyLibrarySettingsChange(update, includeEditSnapshot: false)));
         /// <summary>Applies library items to their targets and keeps the links and baselines.</summary>
         public Services.Library.LibraryApplyService LibraryApplyService =>
             _libraryApplyService ?? (_libraryApplyService = new Services.Library.LibraryApplyService(
@@ -257,7 +287,11 @@ namespace PlayniteAchievements
         public Services.Library.SoundsLibraryAdapter SoundsLibraryAdapter =>
             _soundsLibraryAdapter ?? (_soundsLibraryAdapter = new Services.Library.SoundsLibraryAdapter(
                 UnlockSoundPortableStore,
-                () => new[] { _settingsViewModel?.EditSnapshotPersisted?.UnlockSounds }));
+                () => new[]
+                {
+                    _settingsViewModel?.Settings?.Persisted?.UnlockSounds,
+                    _settingsViewModel?.EditSnapshotPersisted?.UnlockSounds
+                }));
 
         /// <summary>
         /// Applies <paramref name="update"/> to the live settings and, while the settings window
@@ -267,6 +301,63 @@ namespace PlayniteAchievements
         public void UpdateSettingsIncludingEditSnapshot(Action<PersistedSettings> update)
         {
             _settingsViewModel?.UpdatePersistedIncludingEditSnapshot(update);
+        }
+
+        /// <summary>
+        /// Applies a library change to the live settings (and the edit snapshot when
+        /// <paramref name="includeEditSnapshot"/>), and saves the settings when no settings window
+        /// is open to save them on OK.
+        /// </summary>
+        private void ApplyLibrarySettingsChange(Action<PersistedSettings> update, bool includeEditSnapshot)
+        {
+            if (update == null || _settingsViewModel?.Settings?.Persisted == null)
+            {
+                return;
+            }
+
+            if (includeEditSnapshot)
+            {
+                UpdateSettingsIncludingEditSnapshot(update);
+            }
+            else
+            {
+                update(_settingsViewModel.Settings.Persisted);
+            }
+
+            if (!_settingsViewModel.IsEditSessionActive)
+            {
+                PersistSettingsForUi();
+            }
+        }
+
+        /// <summary>
+        /// A reconcile may have dropped items whose files are gone; their links end once the UI
+        /// thread is free. Repeated changes coalesce into one pass.
+        /// </summary>
+        private void LibraryStore_Changed(object sender, EventArgs e)
+        {
+            var dispatcher = PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || System.Threading.Interlocked.Exchange(ref _droppedLibraryItemsQueued, 1) == 1)
+            {
+                return;
+            }
+
+            dispatcher.BeginInvoke(new Action(() =>
+            {
+                System.Threading.Interlocked.Exchange(ref _droppedLibraryItemsQueued, 0);
+                try
+                {
+                    var dropped = LibraryUpdateService.UnlinkDropped();
+                    if (dropped > 0)
+                    {
+                        _logger?.Info($"[Library] Ended the links to {dropped} item(s) whose files are gone.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, "Failed ending the links to dropped library items.");
+                }
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         public Services.Workshop.WorkshopInstaller WorkshopInstaller =>
@@ -1646,10 +1737,12 @@ namespace PlayniteAchievements
         {
             Services.Library.LibraryStore store;
             Services.Workshop.WorkshopInstalledRegistry registry;
+            Services.Library.GameLinkStore gameLinks;
             try
             {
                 store = LibraryStore;
                 registry = WorkshopRegistry;
+                gameLinks = GameLinkStore;
             }
             catch (Exception ex)
             {
@@ -1665,6 +1758,12 @@ namespace PlayniteAchievements
                     if (plan.CreatedIndex || plan.Steps.Count > 0)
                     {
                         _logger?.Info($"[Library] Indexed the preset folders; {plan.Steps.Count} Workshop install change(s) brought into the library.");
+                    }
+
+                    var linked = Services.Library.LibraryMigration.LinkGameDataInstalls(plan, store, gameLinks);
+                    if (linked > 0)
+                    {
+                        _logger?.Info($"[Library] Linked {linked} game(s) to the Workshop game data installed on them.");
                     }
                 }
                 catch (Exception ex)
