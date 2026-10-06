@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Services.Library
     {
         public List<LibraryMigrationStep> Steps { get; } = new List<LibraryMigrationStep>();
 
-        /// <summary>Every game-data install the registry records; the links to them move to the library later.</summary>
+        /// <summary>Every game-data install installed.json records; the links to them move to the library later.</summary>
         public List<LibraryGameDataInstall> GameDataInstalls { get; } = new List<LibraryGameDataInstall>();
 
         /// <summary>Local ids replaced by Workshop ids, so links held under the old id can follow.</summary>
@@ -168,9 +168,9 @@ namespace PlayniteAchievements.Services.Library
         /// Indexes the preset folders and brings the installs <c>installed.json</c> still records
         /// into the library. A second run finds nothing left to do; once the caller has linked the
         /// game-data installs, it retires the file
-        /// (<see cref="WorkshopInstalledRegistry.RetireLegacyInstalls"/>), after which runs only reconcile.
+        /// (<see cref="WorkshopIdentityStore.RetireLegacyInstalls"/>), after which runs only reconcile.
         /// </summary>
-        public static LibraryMigrationPlan Run(LibraryStore store, WorkshopInstalledRegistry registry)
+        public static LibraryMigrationPlan Run(LibraryStore store, WorkshopIdentityStore identity)
         {
             if (store == null)
             {
@@ -179,7 +179,7 @@ namespace PlayniteAchievements.Services.Library
 
             var createdIndex = !store.IndexExists;
             store.Reconcile();
-            var plan = Plan(registry?.ReadLegacyInstalls(), store.Items);
+            var plan = Plan(identity?.ReadLegacyInstalls(), store.Items);
             plan.CreatedIndex = createdIndex;
             foreach (var step in plan.Steps)
             {
@@ -319,7 +319,7 @@ namespace PlayniteAchievements.Services.Library
             var existing = Find(working, libraryId);
             if (existing != null)
             {
-                // An item with a stored package is kept up to date by installs, not by the registry.
+                // An item with a stored package is kept up to date by installs, not by installed.json.
                 if (string.IsNullOrEmpty(existing.RelativePath)
                     && !string.Equals(existing.Version, record.Version, StringComparison.Ordinal))
                 {
