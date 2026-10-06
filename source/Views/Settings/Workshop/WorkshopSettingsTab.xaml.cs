@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
@@ -9,22 +10,27 @@ using PlayniteAchievements.Views.Workshop;
 namespace PlayniteAchievements.Views.Settings.Workshop
 {
     /// <summary>
-    /// Workshop settings tab: everything the community Workshop offers in one place, as six
-    /// left-nav pages. Browse, Installed and My submissions host the same control the scoped
-    /// Workshop window uses, one pane each; Bundles packs and unpacks the global look; Presets
-    /// lists every saved preset across kinds; Account holds the sharer identity and the endpoint
-    /// overrides. Pages are created lazily when first selected, so the index is fetched only
-    /// when one of the Workshop panes is opened.
+    /// Workshop settings tab: everything the community Workshop offers in one place, as five
+    /// left-nav pages. Browse and My submissions host the same control the scoped Workshop
+    /// window uses, one pane each; Library lists every saved look and Workshop item with where
+    /// it is used; Bundles packs and unpacks the global look; Account holds the sharer identity
+    /// and the endpoint overrides. Pages are created lazily when first selected, so the index
+    /// is fetched only when one of the Workshop panes is opened.
     /// </summary>
     public partial class WorkshopSettingsTab : UserControl, IDisposable
     {
+        /// <summary>The key of the Library page, for <see cref="PendingPageKey"/>.</summary>
+        public const string LibraryPageKey = "Library";
+
+        /// <summary>A page to open on the next creation of the tab (set by the update notification); consumed once.</summary>
+        internal static string PendingPageKey { get; set; }
+
         private ObservableCollection<SettingsNavigationItem> _navigationItems;
 
         private WorkshopControl _browse;
-        private WorkshopControl _installed;
+        private LibraryControl _library;
         private WorkshopControl _submissions;
         private WorkshopBundlesSection _bundles;
-        private WorkshopPresetsSection _presets;
         private WorkshopAccountSection _account;
 
         public WorkshopSettingsTab()
@@ -50,11 +56,10 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     viewFactory: () => _browse =
                         new WorkshopControl(plugin, logger, null, null, WorkshopPane.Browse)),
                 new SettingsNavigationItem(
-                    "Installed",
-                    ResourceProvider.GetString("LOCPlayAch_Workshop_Tab_Installed"),
+                    LibraryPageKey,
+                    ResourceProvider.GetString("LOCPlayAch_Showcase_Template_Library"),
                     iconGlyph: "",
-                    viewFactory: () => _installed =
-                        new WorkshopControl(plugin, logger, null, null, WorkshopPane.Installed)),
+                    viewFactory: () => _library = new LibraryControl(plugin, logger)),
                 new SettingsNavigationItem(
                     "Submissions",
                     ResourceProvider.GetString("LOCPlayAch_Workshop_MySubmissions"),
@@ -68,12 +73,6 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                     viewFactory: () => _bundles =
                         new WorkshopBundlesSection(settings, plugin, logger)),
                 new SettingsNavigationItem(
-                    "Presets",
-                    ResourceProvider.GetString("LOCPlayAch_Presets_Header"),
-                    iconGlyph: "",
-                    viewFactory: () => _presets =
-                        new WorkshopPresetsSection(plugin, logger)),
-                new SettingsNavigationItem(
                     "Account",
                     ResourceProvider.GetString("LOCPlayAch_Workshop_Account"),
                     iconGlyph: "",
@@ -81,14 +80,17 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                         new WorkshopAccountSection(settings, plugin, logger))
             };
 
+            var pending = PendingPageKey;
+            PendingPageKey = null;
             MasterDetail.ItemsSource = _navigationItems;
-            MasterDetail.SelectedItem = _navigationItems[0];
+            MasterDetail.SelectedItem = _navigationItems.FirstOrDefault(item => string.Equals(item.Key, pending, StringComparison.Ordinal))
+                                        ?? _navigationItems[0];
         }
 
         public void Dispose()
         {
             _browse?.Cleanup();
-            _installed?.Cleanup();
+            _library?.Cleanup();
             _submissions?.Cleanup();
         }
     }
