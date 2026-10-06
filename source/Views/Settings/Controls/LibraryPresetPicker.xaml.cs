@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Library;
@@ -15,6 +17,89 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Controls
 {
+    /// <summary>
+    /// What a <see cref="LibraryPresetPicker"/> applies to and saves from: one target of one
+    /// library kind, such as the colors, or the notification look of one scope.
+    /// </summary>
+    internal interface ILibraryPickerTarget
+    {
+        LibraryItemKind Kind { get; }
+
+        /// <summary>The preset folder of the kind, where Save writes.</summary>
+        ILibraryPackageFolder Folder { get; }
+
+        /// <summary>How the target stands against the item it follows; unlinked when it follows none.</summary>
+        LibraryLinkState GetState();
+
+        /// <summary>Applies the item to the target (and, for a tracked target, follows it).</summary>
+        void Apply(LibraryItem item);
+
+        /// <summary>Follows an item just saved from the target.</summary>
+        void Link(LibraryItem item);
+
+        /// <summary>Writes the target's current values as a package at the given path.</summary>
+        void ExportCurrent(string path);
+    }
+
+    /// <summary>A picker target made of delegates, for a card whose target changes with its own selectors.</summary>
+    internal sealed class DelegatePickerTarget : ILibraryPickerTarget
+    {
+        public LibraryItemKind Kind { get; set; }
+
+        public ILibraryPackageFolder Folder { get; set; }
+
+        public Func<LibraryLinkState> State { get; set; }
+
+        public Action<LibraryItem> ApplyItem { get; set; }
+
+        public Action<LibraryItem> LinkItem { get; set; }
+
+        public Action<string> Export { get; set; }
+
+        public LibraryLinkState GetState() => State?.Invoke() ?? LibraryLinkState.Unlinked;
+
+        public void Apply(LibraryItem item) => ApplyItem?.Invoke(item);
+
+        public void Link(LibraryItem item) => LinkItem?.Invoke(item);
+
+        public void ExportCurrent(string path) => Export?.Invoke(path);
+    }
+
+    /// <summary>The single settings target of a kind (colors, sounds), applied to the live settings.</summary>
+    internal sealed class SettingsPickerTarget : ILibraryPickerTarget
+    {
+        private readonly PlayniteAchievementsPlugin _plugin;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly ISettingsLibraryAdapter _adapter;
+        private readonly Action<string> _export;
+
+        public SettingsPickerTarget(
+            PlayniteAchievementsPlugin plugin,
+            PlayniteAchievementsSettings settings,
+            ISettingsLibraryAdapter adapter,
+            ILibraryPackageFolder folder,
+            Action<string> export)
+        {
+            _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+            Folder = folder ?? throw new ArgumentNullException(nameof(folder));
+            _export = export;
+        }
+
+        public LibraryItemKind Kind => _adapter.Kind;
+
+        public ILibraryPackageFolder Folder { get; }
+
+        public LibraryLinkState GetState() => _plugin.LibraryApplyService.GetSettingsState(_adapter, _settings.Persisted);
+
+        public void Apply(LibraryItem item) => _plugin.LibraryApplyService.ApplyToSettings(_adapter, item, _settings.Persisted);
+
+        public void Link(LibraryItem item) => _plugin.LibraryApplyService.LinkSettings(_adapter, item, _settings.Persisted);
+
+        public void ExportCurrent(string path) => _export?.Invoke(path);
+    }
+
     /// <summary>What a settings card hands the <see cref="LibraryPresetPicker"/>.</summary>
     internal sealed class LibraryPresetPickerOptions
     {
@@ -22,13 +107,20 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
         public PlayniteAchievementsSettings Settings { get; set; }
 
-        /// <summary>The target the card edits.</summary>
+        /// <summary>
+        /// The target the picker acts on, asked again at every refresh; for a card whose target
+        /// changes with its own selectors. When null, the target is the settings target of
+        /// <see cref="Adapter"/>.
+        /// </summary>
+        public Func<ILibraryPickerTarget> Target { get; set; }
+
+        /// <summary>The settings target the card edits, when <see cref="Target"/> is null.</summary>
         public ISettingsLibraryAdapter Adapter { get; set; }
 
-        /// <summary>The preset folder of the adapter's kind.</summary>
+        /// <summary>The preset folder of the adapter's kind, when <see cref="Target"/> is null.</summary>
         public PackagePresetStore Presets { get; set; }
 
-        /// <summary>Writes the target's current values as a package at the given path.</summary>
+        /// <summary>Writes the target's current values as a package at the given path, when <see cref="Target"/> is null.</summary>
         public Action<string> ExportCurrent { get; set; }
 
         /// <summary>Runs after the picker changed the target's values, so the card can redraw and re-apply them.</summary>
@@ -42,12 +134,12 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
     /// <summary>
     /// The preset row of a settings card whose target follows a library item: a dropdown of the
-    /// kind's library items in one list (the user's own and Workshop ones alike, plus Custom while
-    /// the target follows none of them), Save and Delete, the card's own buttons, and a status line with Update, Reset and
-    /// Stop following. Choosing an item applies it through <see cref="LibraryApplyService"/> to
-    /// the live settings, so inside the settings window Cancel undoes the value and the link
-    /// together. Deleting a preset removes a file, which no Cancel brings back, so its links go
-    /// from the edit snapshot too.
+    /// kind's library items in one list (the user's own and Workshop ones alike), Save and Delete,
+    /// and the card's own buttons. Choosing an item applies it to the target, which then follows
+    /// it; the item it follows is the one shown, and nothing is shown while it follows none.
+    /// Inside the settings window Cancel undoes a settings target's value and link together.
+    /// Deleting a preset removes a file, which no Cancel brings back, so its links go from the
+    /// edit snapshot and the games too.
     /// </summary>
     public partial class LibraryPresetPicker : UserControl, IDisposable
     {
@@ -59,6 +151,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
 
         private LibraryPresetPickerOptions _options;
+        private ILibraryPickerTarget _fixedTarget;
         private PersistedSettingsSubscription _persistedSubscription;
         private INotifyPropertyChanged _nestedValue;
         private bool _suppressSelection;
@@ -66,6 +159,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
         // A choice made while the list was open, applied when it closes.
         private bool _applyOnClose;
         private bool _refreshPending;
+        private ILibraryPickerTarget _target;
         private LibraryLinkState _state = LibraryLinkState.Unlinked;
 
         public LibraryPresetPicker()
@@ -93,7 +187,6 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
             public string Detail { get; }
 
-            /// <summary>The library item, or null for the Custom entry.</summary>
             public LibraryItem Item { get; }
 
             public override string ToString() => Label;
@@ -102,9 +195,24 @@ namespace PlayniteAchievements.Views.Settings.Controls
         internal void Initialize(LibraryPresetPickerOptions options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            if (_options.Plugin == null || _options.Settings == null || _options.Adapter == null || _options.Presets == null)
+            if (_options.Plugin == null || _options.Settings == null)
             {
-                throw new ArgumentException("The picker needs the plugin, settings, adapter and preset store.", nameof(options));
+                throw new ArgumentException("The picker needs the plugin and the settings.", nameof(options));
+            }
+
+            if (_options.Target == null)
+            {
+                if (_options.Adapter == null || _options.Presets == null)
+                {
+                    throw new ArgumentException("The picker needs a target, or an adapter and its preset store.", nameof(options));
+                }
+
+                _fixedTarget = new SettingsPickerTarget(
+                    _options.Plugin,
+                    _options.Settings,
+                    _options.Adapter,
+                    new PackagePresetFolder(_options.Presets),
+                    _options.ExportCurrent);
             }
 
             _persistedSubscription = new PersistedSettingsSubscription(
@@ -114,7 +222,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
             Refresh(reconcile: false);
         }
 
-        /// <summary>Restates the list and the status once the dispatcher is idle; repeated calls coalesce.</summary>
+        /// <summary>Restates the list and the selection once the dispatcher is idle; repeated calls coalesce.</summary>
         public void ScheduleRefresh()
         {
             if (_refreshPending || _options == null)
@@ -130,47 +238,80 @@ namespace PlayniteAchievements.Views.Settings.Controls
             }));
         }
 
+        /// <summary>Restates the list and the selection now, for a card whose target just changed.</summary>
+        public void RefreshNow()
+        {
+            Refresh(reconcile: false);
+        }
+
         /// <summary>
         /// Adds a preset file the card copied into the preset folder (a file import) to the
         /// library as a local item, and shows it in the list.
         /// </summary>
         internal LibraryItem AddLocalPreset(PackagePresetInfo saved)
         {
-            if (saved == null || _options == null)
+            return saved == null || _fixedTarget == null ? null : AddLocalPreset(saved.FilePath, saved.Name, _fixedTarget.Kind);
+        }
+
+        /// <summary>Adds a preset file in the folder of <paramref name="kind"/> to the library as a local item.</summary>
+        internal LibraryItem AddLocalPreset(string filePath, string name, LibraryItemKind kind)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || _options == null)
             {
                 return null;
             }
 
             var library = _options.Plugin.LibraryStore;
-            var item = library.FindByPath(saved.FilePath) ?? new LibraryItem
+            var item = library.FindByPath(filePath) ?? new LibraryItem
             {
                 Id = LibraryItem.NewLocalId(),
-                Kind = _options.Adapter.Kind,
+                Kind = kind,
                 Origin = LibraryItemOrigin.Local
             };
-            item.Name = saved.Name;
-            item.RelativePath = saved.FilePath;
+            item.Name = name;
+            item.RelativePath = filePath;
             item.ContentHash = null;
             var stored = library.Upsert(item);
             Refresh(reconcile: false);
             return stored;
         }
 
-        // ---- list and status ------------------------------------------------------------------
-
-        private PersistedSettings Persisted => _options?.Settings?.Persisted;
+        // ---- list and selection ---------------------------------------------------------------
 
         private Choice SelectedChoice => PresetSelector?.SelectedItem as Choice;
 
+        private ILibraryPickerTarget CurrentTarget()
+        {
+            if (_options == null)
+            {
+                return null;
+            }
+
+            if (_options.Target == null)
+            {
+                return _fixedTarget;
+            }
+
+            try
+            {
+                return _options.Target();
+            }
+            catch (Exception ex)
+            {
+                _options.Logger?.Warn(ex, "Failed resolving the preset picker's target.");
+                return null;
+            }
+        }
+
         private void Refresh(bool reconcile)
         {
-            var persisted = Persisted;
-            if (_options == null || persisted == null)
+            if (_options == null || _options.Settings?.Persisted == null)
             {
                 return;
             }
 
             TrackNestedValue();
+            _target = CurrentTarget();
 
             var library = _options.Plugin.LibraryStore;
             List<LibraryItem> items;
@@ -181,19 +322,21 @@ namespace PlayniteAchievements.Views.Settings.Controls
                     library.Reconcile();
                 }
 
-                items = library.Items.Where(item => item.Kind == _options.Adapter.Kind).ToList();
-                _state = _options.Plugin.LibraryApplyService.GetSettingsState(_options.Adapter, persisted);
+                items = _target == null
+                    ? new List<LibraryItem>()
+                    : library.Items.Where(item => item.Kind == _target.Kind).ToList();
+                _state = _target?.GetState() ?? LibraryLinkState.Unlinked;
             }
             catch (Exception ex)
             {
-                _options.Logger?.Warn(ex, $"Failed reading the library for {_options.Adapter.Kind}.");
+                _options.Logger?.Warn(ex, $"Failed reading the library for {_target?.Kind}.");
                 items = new List<LibraryItem>();
                 _state = LibraryLinkState.Unlinked;
             }
 
             // One list by name, the user's own presets and Workshop items alike; a Workshop item
             // shows its version, which is what update tracking compares.
-            // The preset the target follows is preselected; with none, nothing is, as before.
+            // The preset the target follows is preselected; with none, nothing is.
             var choices = items
                 .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                 .Select(item => new Choice(item.Name, item.IsWorkshop ? item.Version : null, item))
@@ -292,14 +435,15 @@ namespace PlayniteAchievements.Views.Settings.Controls
         private void ApplySelected()
         {
             var item = SelectedChoice?.Item;
-            if (item == null || _options == null || (_state.IsFollowing && SameId(item, _state.Item)))
+            var target = _target;
+            if (item == null || target == null || (_state.IsFollowing && SameId(item, _state.Item)))
             {
                 return;
             }
 
             Execute(
-                () => _options.Plugin.LibraryApplyService.ApplyToSettings(_options.Adapter, item, Persisted),
-                $"Failed applying the {_options.Adapter.Kind} preset {item.Name}.",
+                () => target.Apply(item),
+                $"Failed applying the {target.Kind} preset {item.Name}.",
                 targetChanged: true);
         }
 
@@ -311,13 +455,15 @@ namespace PlayniteAchievements.Views.Settings.Controls
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
-            if (_options == null || Persisted == null)
+            var target = CurrentTarget();
+            if (_options == null || target == null)
             {
                 return;
             }
 
-            var presets = _options.Presets;
+            var folder = target.Folder;
             var library = _options.Plugin.LibraryStore;
+            var scratch = PortablePackage.CreateScratchDirectory("PresetSave");
             try
             {
                 var suggested = _state.IsFollowing && !_state.Item.IsWorkshop ? _state.Item.Name : null;
@@ -326,14 +472,14 @@ namespace PlayniteAchievements.Views.Settings.Controls
                     return;
                 }
 
-                var workshopNamed = WorkshopItemNamed(library, name);
-                var existing = presets.Find(name);
-                if (workshopNamed != null || (existing != null && library.FindByPath(existing.FilePath)?.IsWorkshop == true))
+                var workshopNamed = WorkshopItemNamed(library, target.Kind, name);
+                var existing = folder.Find(name);
+                if (workshopNamed != null || (existing != null && library.FindByPath(existing)?.IsWorkshop == true))
                 {
-                    var fork = presets.UniqueName(name);
+                    var fork = folder.UniqueName(name);
                     if (string.Equals(fork, name, StringComparison.OrdinalIgnoreCase))
                     {
-                        fork = presets.UniqueName(name + " (2)");
+                        fork = folder.UniqueName(name + " (2)");
                     }
 
                     ShowMessage(string.Format(L("LOCPlayAch_Library_SavedAsCopy"), name, fork), MessageBoxImage.Information);
@@ -341,28 +487,34 @@ namespace PlayniteAchievements.Views.Settings.Controls
                     existing = null;
                 }
 
-                if (existing != null && !Confirm(string.Format(L("LOCPlayAch_Presets_OverwriteConfirm"), existing.Name)))
+                if (existing != null && !Confirm(string.Format(L("LOCPlayAch_Presets_OverwriteConfirm"), folder.NameOf(existing))))
                 {
                     return;
                 }
 
-                var saved = presets.Save(name, path => _options.ExportCurrent(path));
-                var item = AddLocalPreset(saved);
+                var package = Path.Combine(scratch, "preset" + LibraryStore.ExtensionOf(target.Kind));
+                target.ExportCurrent(package);
+                var saved = folder.Save(name, package);
+                var item = AddLocalPreset(saved, folder.NameOf(saved), target.Kind);
                 if (item != null)
                 {
-                    _options.Plugin.LibraryApplyService.LinkSettings(_options.Adapter, item, Persisted);
+                    target.Link(item);
                 }
             }
             catch (Exception ex)
             {
-                _options.Logger?.Error(ex, $"Failed saving the {_options.Adapter.Kind} preset.");
+                _options.Logger?.Error(ex, $"Failed saving the {target.Kind} preset.");
                 ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+            finally
+            {
+                PortablePackage.TryDeleteDirectory(scratch);
             }
 
             Refresh(reconcile: false);
         }
 
-        /// <summary>Deletes the selected preset and ends every target's link to it, edit snapshot included.</summary>
+        /// <summary>Deletes the selected preset and ends every target's link to it, edit snapshot and games included.</summary>
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             Keyboard.ClearFocus();
@@ -381,30 +533,30 @@ namespace PlayniteAchievements.Views.Settings.Controls
             {
                 var library = _options.Plugin.LibraryStore;
                 var path = library.FullPath(item);
-                if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
                 {
-                    System.IO.File.Delete(path);
+                    File.Delete(path);
                 }
 
                 library.Remove(item.Id);
-                _options.Plugin.UpdateSettingsIncludingEditSnapshot(settings => LibraryApplyService.UnlinkItem(settings, item.Id));
-                LibraryApplyService.UnlinkItem(Persisted, item.Id);
+                _options.Plugin.LibraryUpdateService.UnlinkItem(item.Id);
             }
             catch (Exception ex)
             {
-                _options.Logger?.Error(ex, $"Failed deleting the {_options.Adapter.Kind} preset {item.Name}.");
+                _options.Logger?.Error(ex, $"Failed deleting the {item.Kind} preset {item.Name}.");
                 ShowMessage(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
             }
 
             Refresh(reconcile: false);
         }
 
-        private bool Execute(Func<bool> action, string failure, bool targetChanged)
+        private void Execute(Action action, string failure, bool targetChanged)
         {
             var done = false;
             try
             {
-                done = action();
+                action();
+                done = true;
             }
             catch (Exception ex)
             {
@@ -418,23 +570,13 @@ namespace PlayniteAchievements.Views.Settings.Controls
             }
 
             Refresh(reconcile: false);
-            return done;
         }
 
-        private void Execute(Action action, string failure, bool targetChanged)
-        {
-            Execute(() =>
-            {
-                action();
-                return true;
-            }, failure, targetChanged);
-        }
-
-        private LibraryItem WorkshopItemNamed(LibraryStore library, string sanitizedName)
+        private static LibraryItem WorkshopItemNamed(LibraryStore library, LibraryItemKind kind, string sanitizedName)
         {
             return library.Items.FirstOrDefault(item =>
                 item.IsWorkshop
-                && item.Kind == _options.Adapter.Kind
+                && item.Kind == kind
                 && string.Equals(PackagePresetStore.SanitizeName(item.Name), sanitizedName, StringComparison.OrdinalIgnoreCase));
         }
 
