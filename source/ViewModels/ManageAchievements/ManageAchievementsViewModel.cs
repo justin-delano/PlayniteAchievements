@@ -1276,9 +1276,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         /// <param name="mergeCustomAchievements">Receives a custom-achievements package's parsed
         /// definitions instead of the stored merge.</param>
+        /// <param name="mergeCsv">Receives a plain CSV's text, which can update every row the
+        /// caller shows. Without it a CSV is merged into the stored definitions like a package.</param>
         /// <param name="beforeReplace">Runs just before a whole-game package is written.</param>
         public void ImportPortable(
             Action<CustomAchievementTextImportResult> mergeCustomAchievements = null,
+            Action<string> mergeCsv = null,
             Action beforeReplace = null)
         {
             if (!HasGame)
@@ -1290,7 +1293,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var dialog = new OpenFileDialog
                 {
-                    Filter = "Playnite Achievements Portable (*.pa)|*.pa;*.pa.zip",
+                    Filter = "Playnite Achievements (*.pa, *.csv)|*.pa;*.pa.zip;*.csv",
                     CheckFileExists = true,
                     Multiselect = false
                 };
@@ -1304,6 +1307,21 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 if (store == null)
                 {
                     throw new InvalidOperationException("Game custom data store is not available.");
+                }
+
+                if (dialog.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    var text = File.ReadAllText(dialog.FileName);
+                    if (mergeCsv != null)
+                    {
+                        mergeCsv(text);
+                    }
+                    else
+                    {
+                        MergeCustomAchievementsIntoStore(store, new CustomAchievementTextImportService().Import(text));
+                    }
+
+                    return;
                 }
 
                 if (store.IsCustomAchievementsPackage(dialog.FileName))
