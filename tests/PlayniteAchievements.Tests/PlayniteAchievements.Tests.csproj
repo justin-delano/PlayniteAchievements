@@ -17,7 +17,6 @@
     <PackageReference Include="SharpCompress" Version="0.26.0" />
     <PackageReference Include="ZstdSharp.Port" Version="0.6.5" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="XamlAnimatedGif" Version="2.3.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -177,6 +176,11 @@
     <Compile Include="..\..\source\Services\Images\RayTrackBuilder.cs" Link="Source\Services\Images\RayTrackBuilder.cs" />
     <Compile Include="..\..\source\Services\Images\RayTrackService.cs" Link="Source\Services\Images\RayTrackService.cs" />
     <Compile Include="..\..\source\Views\Helpers\AnimatedImageHelper.cs" Link="Source\Views\Helpers\AnimatedImageHelper.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\GifCanvas.cs" Link="Source\Views\Helpers\Gif\GifCanvas.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\GifFrameClock.cs" Link="Source\Views\Helpers\Gif\GifFrameClock.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\GifImage.cs" Link="Source\Views\Helpers\Gif\GifImage.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\GifLzwDecoder.cs" Link="Source\Views\Helpers\Gif\GifLzwDecoder.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\GifPlayer.cs" Link="Source\Views\Helpers\Gif\GifPlayer.cs" />
     <Compile Include="..\..\source\Views\Helpers\NativeGifAnimation.cs" Link="Source\Views\Helpers\NativeGifAnimation.cs" />
     <Compile Include="..\..\source\Views\Helpers\SliderTrackValueMath.cs" Link="Source\Views\Helpers\SliderTrackValueMath.cs" />
     <Compile Include="..\..\source\Views\Helpers\SharedResourceDictionary.cs" Link="Source\Views\Helpers\SharedResourceDictionary.cs" />

@@ -499,7 +499,7 @@ namespace PlayniteAchievements.Services.Images
         {
             try
             {
-                var isAnimated = ImageFormats.IsAnimatedFile(uri);
+                var keepFullSize = KeepsFullSizeStill(uri);
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -508,7 +508,7 @@ namespace PlayniteAchievements.Services.Images
                 // This service is the caching layer, so the WPF cache is redundant here.
                 bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
 
-                if (!isAnimated && decodePixel > 0)
+                if (!keepFullSize && decodePixel > 0)
                 {
                     bitmap.DecodePixelWidth = decodePixel;
                 }
@@ -521,6 +521,17 @@ namespace PlayniteAchievements.Services.Images
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// True for an animated WebP, whose still must match the size its animation frames are
+        /// decoded at. A GIF's still is only a fallback, since GIFs play from their file at native
+        /// size, so it takes the requested decode size like any other image.
+        /// </summary>
+        private static bool KeepsFullSizeStill(string pathOrUri)
+        {
+            return ImageFormats.IsAnimatedFile(pathOrUri) &&
+                   !ImageFormats.IsGifExtension(ImageFormats.GetExtension(pathOrUri));
         }
 
         /// <summary>
@@ -553,7 +564,7 @@ namespace PlayniteAchievements.Services.Images
 
                 // Content-based here: the file exists, so a still WebP keeps its decode-time
                 // downscale instead of paying full resolution for a format that merely could animate.
-                var isAnimated = ImageFormats.IsAnimatedFile(cachePath);
+                var keepFullSize = KeepsFullSizeStill(cachePath);
 
                 return await Task.Run(() =>
                 {
@@ -561,7 +572,7 @@ namespace PlayniteAchievements.Services.Images
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
-                    if (!isAnimated && decodePixel > 0)
+                    if (!keepFullSize && decodePixel > 0)
                     {
                         bitmap.DecodePixelWidth = decodePixel;
                     }

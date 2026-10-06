@@ -16,8 +16,7 @@ namespace PlayniteAchievements.Services.Images
     /// </remarks>
     internal static class WebpAnimationInfo
     {
-        // A frame this short is treated as unset and replaced by the default. Matches the floor the
-        // GIF path applies, so both formats share one effective minimum.
+        // A frame this short is treated as unset and replaced by the default.
         private const int MinimumFrameDurationMilliseconds = 20;
         private const int DefaultFrameDurationMilliseconds = 100;
 
