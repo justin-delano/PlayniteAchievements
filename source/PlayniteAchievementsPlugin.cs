@@ -95,6 +95,7 @@ namespace PlayniteAchievements
         private Services.Workshop.BundlePortableStore _bundlePortableStore;
         private Services.Workshop.ColorPackPortableStore _colorPackPortableStore;
         private Services.Workshop.WorkshopInstalledRegistry _workshopRegistry;
+        private Services.Library.LibraryStore _libraryStore;
         private Services.Workshop.WorkshopInstaller _workshopInstaller;
         private Services.Workshop.WorkshopClient _workshopClient;
         private Services.Workshop.WorkshopSubmissionClient _workshopSubmissionClient;
@@ -231,6 +232,11 @@ namespace PlayniteAchievements
         public Services.Workshop.WorkshopInstalledRegistry WorkshopRegistry =>
             _workshopRegistry ?? (_workshopRegistry =
                 new Services.Workshop.WorkshopInstalledRegistry(GetPluginUserDataPath(), _logger));
+        /// <summary>The library index over the preset folders (UserData\library\library.json).</summary>
+        public Services.Library.LibraryStore LibraryStore =>
+            _libraryStore ?? (_libraryStore = new Services.Library.LibraryStore(
+                GetPluginUserDataPath(),
+                (ex, message) => _logger?.Warn(ex, message)));
         public Services.Workshop.WorkshopInstaller WorkshopInstaller =>
             _workshopInstaller ?? (_workshopInstaller =
                 new Services.Workshop.WorkshopInstaller(this, WorkshopRegistry, _logger));
@@ -1418,6 +1424,8 @@ namespace PlayniteAchievements
                 {
                     _logger?.Warn(ex, "Failed starting the Workshop update checker.");
                 }
+
+                StartLibraryMigration();
                 // The friends overview snapshot is intentionally NOT warmed here: it is built
                 // on demand by the first consumer (friends view or a theme friend binding) and
                 // released when the last consumer detaches, so it only occupies memory while
@@ -1593,6 +1601,43 @@ namespace PlayniteAchievements
                 catch (Exception ex)
                 {
                     _logger?.Error(ex, "Failed to apply auto capstone text templates.");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Indexes the preset folders into the library and brings what installed.json records
+        /// into it, off the UI thread. Idempotent, so it runs at every startup and picks up
+        /// Workshop installs made since the last one.
+        /// </summary>
+        private void StartLibraryMigration()
+        {
+            Services.Library.LibraryStore store;
+            Services.Workshop.WorkshopInstalledRegistry registry;
+            try
+            {
+                store = LibraryStore;
+                registry = WorkshopRegistry;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed opening the customization library.");
+                return;
+            }
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var plan = Services.Library.LibraryMigration.Run(store, registry);
+                    if (plan.CreatedIndex || plan.Steps.Count > 0)
+                    {
+                        _logger?.Info($"[Library] Indexed the preset folders; {plan.Steps.Count} Workshop install change(s) brought into the library.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, "Failed bringing Workshop installs into the customization library.");
                 }
             });
         }
