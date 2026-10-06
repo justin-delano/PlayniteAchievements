@@ -182,16 +182,16 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void ImportCustomAchievementsPackage_LegacyCsvWithUnlocks_ImportsLocked()
+        public void ImportCustomAchievementsPackage_CsvWithUnlocks_ImportsLocked()
         {
             WithStore((store, tempDir) =>
             {
-                var packagePath = Path.Combine(tempDir, "legacy-custom.pa");
+                var packagePath = Path.Combine(tempDir, "hand-written-custom.pa");
                 using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
                 using (var writer = new StreamWriter(archive.CreateEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
                 {
-                    writer.WriteLine("ID,Title,Description,Unlocked,Unlock Time (UTC),Points,Trophy Type,Hidden,Rarity,Global Percent,Progress,Progress Total,Unlocked Icon,Locked Icon");
-                    writer.WriteLine("c1,C1,,true,2026-01-02T03:04:05Z,10,,false,,,1,3,,");
+                    writer.WriteLine(CustomAchievementCsvFormat.Header + "," + CustomAchievementCsvFormat.IconHeader);
+                    writer.WriteLine("c1,C1,,10,,false,,,1,3,true,2026-01-02T03:04:05Z,,");
                 }
 
                 var result = store.ImportCustomAchievementsPackage(Guid.NewGuid(), packagePath);

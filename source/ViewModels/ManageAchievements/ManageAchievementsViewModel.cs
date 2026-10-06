@@ -1276,9 +1276,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         /// <param name="mergeCustomAchievements">Receives a custom-achievements package's parsed
         /// definitions instead of the stored merge.</param>
+        /// <param name="mergeCsv">Receives a plain CSV's text, which can update every row the
+        /// caller shows. Only the editor has the rows a CSV edits, so without it .csv is not
+        /// offered.</param>
         /// <param name="beforeReplace">Runs just before a whole-game package is written.</param>
         public void ImportPortable(
             Action<CustomAchievementTextImportResult> mergeCustomAchievements = null,
+            Action<string> mergeCsv = null,
             Action beforeReplace = null)
         {
             if (!HasGame)
@@ -1290,7 +1294,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var dialog = new OpenFileDialog
                 {
-                    Filter = "Playnite Achievements Portable (*.pa)|*.pa;*.pa.zip",
+                    Filter = mergeCsv != null
+                        ? "Playnite Achievements (*.pa, *.csv)|*.pa;*.pa.zip;*.csv"
+                        : "Playnite Achievements Portable (*.pa)|*.pa;*.pa.zip",
                     CheckFileExists = true,
                     Multiselect = false
                 };
@@ -1304,6 +1310,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 if (store == null)
                 {
                     throw new InvalidOperationException("Game custom data store is not available.");
+                }
+
+                if (mergeCsv != null && dialog.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    mergeCsv(File.ReadAllText(dialog.FileName));
+                    return;
                 }
 
                 if (store.IsCustomAchievementsPackage(dialog.FileName))
