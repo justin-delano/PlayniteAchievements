@@ -7,7 +7,7 @@ namespace PlayniteAchievements.Services.Tests
 {
     [TestClass]
     [DoNotParallelize]
-    public class WorkshopInstalledRegistryTests
+    public class WorkshopIdentityStoreTests
     {
         [TestMethod]
         public void ReadLegacyInstalls_ReadsInstalledJson_PerGameRecordsIncluded()
@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Services.Tests
                     "{\"Name\":\"no id\"}" +
                     "]");
 
-                var installs = new WorkshopInstalledRegistry(dir).ReadLegacyInstalls();
+                var installs = new WorkshopIdentityStore(dir).ReadLegacyInstalls();
 
                 Assert.AreEqual(2, installs.Count, "a record without an id is skipped");
                 Assert.AreEqual("colors=abc", installs[0].ContentHash);
@@ -36,10 +36,10 @@ namespace PlayniteAchievements.Services.Tests
         {
             WithTemp(dir =>
             {
-                Assert.AreEqual(0, new WorkshopInstalledRegistry(dir).ReadLegacyInstalls().Count);
+                Assert.AreEqual(0, new WorkshopIdentityStore(dir).ReadLegacyInstalls().Count);
 
                 WriteInstalled(dir, "not json");
-                Assert.AreEqual(0, new WorkshopInstalledRegistry(dir).ReadLegacyInstalls().Count);
+                Assert.AreEqual(0, new WorkshopIdentityStore(dir).ReadLegacyInstalls().Count);
             });
         }
 
@@ -49,13 +49,13 @@ namespace PlayniteAchievements.Services.Tests
             WithTemp(dir =>
             {
                 WriteInstalled(dir, "[{\"Id\":\"colors/neon\",\"Kind\":\"Colors\",\"Version\":\"1.0.0\"}]");
-                var registry = new WorkshopInstalledRegistry(dir);
+                var identity = new WorkshopIdentityStore(dir);
 
-                Assert.IsTrue(registry.RetireLegacyInstalls());
+                Assert.IsTrue(identity.RetireLegacyInstalls());
 
-                Assert.AreEqual(0, registry.ReadLegacyInstalls().Count);
-                Assert.IsTrue(File.Exists(Path.Combine(dir, WorkshopInstalledRegistry.DirectoryName, "installed.migrated.json")));
-                Assert.IsFalse(registry.RetireLegacyInstalls(), "nothing is left to retire");
+                Assert.AreEqual(0, identity.ReadLegacyInstalls().Count);
+                Assert.IsTrue(File.Exists(Path.Combine(dir, WorkshopIdentityStore.DirectoryName, "installed.migrated.json")));
+                Assert.IsFalse(identity.RetireLegacyInstalls(), "nothing is left to retire");
             });
         }
 
@@ -64,11 +64,11 @@ namespace PlayniteAchievements.Services.Tests
         {
             WithTemp(dir =>
             {
-                var registry = new WorkshopInstalledRegistry(dir);
+                var identity = new WorkshopIdentityStore(dir);
                 var raised = 0;
-                registry.Changed += (_, __) => raised++;
+                identity.Changed += (_, __) => raised++;
 
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
 
                 Assert.AreEqual(1, raised, "a submission is announced");
             });
@@ -79,19 +79,19 @@ namespace PlayniteAchievements.Services.Tests
         {
             WithTemp(dir =>
             {
-                var registry = new WorkshopInstalledRegistry(dir);
-                Assert.IsNull(registry.TryGetSubmitterHash());
-                Assert.IsNull(new WorkshopInstalledRegistry(dir).TryGetSubmitterHash(), "the lookup saved no key");
+                var identity = new WorkshopIdentityStore(dir);
+                Assert.IsNull(identity.TryGetSubmitterHash());
+                Assert.IsNull(new WorkshopIdentityStore(dir).TryGetSubmitterHash(), "the lookup saved no key");
 
-                var hash = registry.GetSubmitterHash();
-                Assert.AreEqual(hash, registry.TryGetSubmitterHash());
-                Assert.AreEqual(hash, new WorkshopInstalledRegistry(dir).TryGetSubmitterHash());
+                var hash = identity.GetSubmitterHash();
+                Assert.AreEqual(hash, identity.TryGetSubmitterHash());
+                Assert.AreEqual(hash, new WorkshopIdentityStore(dir).TryGetSubmitterHash());
             });
         }
 
         private static void WriteInstalled(string dir, string json)
         {
-            var directory = Path.Combine(dir, WorkshopInstalledRegistry.DirectoryName);
+            var directory = Path.Combine(dir, WorkshopIdentityStore.DirectoryName);
             Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, "installed.json"), json);
         }
@@ -99,11 +99,11 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void IsNewer_ComparesNumerically()
         {
-            Assert.IsTrue(WorkshopInstalledRegistry.IsNewer("1.10.0", "1.9.3"));
-            Assert.IsFalse(WorkshopInstalledRegistry.IsNewer("1.9.3", "1.10.0"));
-            Assert.IsFalse(WorkshopInstalledRegistry.IsNewer("1.0.0", "1.0.0"));
-            Assert.IsFalse(WorkshopInstalledRegistry.IsNewer("garbage", "1.0.0"));
-            Assert.IsTrue(WorkshopInstalledRegistry.IsNewer("4.1.0", "4.0.1"));
+            Assert.IsTrue(WorkshopIdentityStore.IsNewer("1.10.0", "1.9.3"));
+            Assert.IsFalse(WorkshopIdentityStore.IsNewer("1.9.3", "1.10.0"));
+            Assert.IsFalse(WorkshopIdentityStore.IsNewer("1.0.0", "1.0.0"));
+            Assert.IsFalse(WorkshopIdentityStore.IsNewer("garbage", "1.0.0"));
+            Assert.IsTrue(WorkshopIdentityStore.IsNewer("4.1.0", "4.0.1"));
         }
 
         [TestMethod]
@@ -111,18 +111,18 @@ namespace PlayniteAchievements.Services.Tests
         {
             WithTemp(dir =>
             {
-                var registry = new WorkshopInstalledRegistry(dir);
-                var key = registry.GetOrCreateSubmitterKey();
-                var hash = registry.GetSubmitterHash();
+                var identity = new WorkshopIdentityStore(dir);
+                var key = identity.GetOrCreateSubmitterKey();
+                var hash = identity.GetSubmitterHash();
                 Assert.AreEqual(64, key.Length);
                 Assert.AreEqual(64, hash.Length);
                 Assert.AreNotEqual(key, hash);
 
-                registry.DisplayName = "Someone";
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Bundle, SubmittedUtc = DateTime.UtcNow });
-                registry.UpdateSubmissionState(7, "in-review", "bundles/neon");
+                identity.DisplayName = "Someone";
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Bundle, SubmittedUtc = DateTime.UtcNow });
+                identity.UpdateSubmissionState(7, "in-review", "bundles/neon");
 
-                var reloaded = new WorkshopInstalledRegistry(dir);
+                var reloaded = new WorkshopIdentityStore(dir);
                 Assert.AreEqual(key, reloaded.GetOrCreateSubmitterKey(), "the key survives a restart");
                 Assert.AreEqual("Someone", reloaded.DisplayName);
                 Assert.AreEqual(1, reloaded.Submissions.Count);
@@ -136,20 +136,20 @@ namespace PlayniteAchievements.Services.Tests
         {
             WithTemp(dir =>
             {
-                var registry = new WorkshopInstalledRegistry(dir);
-                var original = registry.GetOrCreateSubmitterKey();
+                var identity = new WorkshopIdentityStore(dir);
+                var original = identity.GetOrCreateSubmitterKey();
                 var other = new string('a', 32) + new string('B', 32);
 
-                Assert.IsFalse(registry.TrySetSubmitterKey(null));
-                Assert.IsFalse(registry.TrySetSubmitterKey("not a key"));
-                Assert.IsFalse(registry.TrySetSubmitterKey(original.Substring(1)));
-                Assert.IsFalse(registry.TrySetSubmitterKey(new string('g', 64)));
-                Assert.AreEqual(original, registry.GetOrCreateSubmitterKey(), "rejected input leaves the key alone");
+                Assert.IsFalse(identity.TrySetSubmitterKey(null));
+                Assert.IsFalse(identity.TrySetSubmitterKey("not a key"));
+                Assert.IsFalse(identity.TrySetSubmitterKey(original.Substring(1)));
+                Assert.IsFalse(identity.TrySetSubmitterKey(new string('g', 64)));
+                Assert.AreEqual(original, identity.GetOrCreateSubmitterKey(), "rejected input leaves the key alone");
 
-                Assert.IsTrue(registry.IsValidSubmitterKey("  " + other + "  "));
-                Assert.IsTrue(registry.TrySetSubmitterKey("  " + other + "  "));
-                Assert.AreEqual(other.ToLowerInvariant(), registry.GetOrCreateSubmitterKey(), "stored lower-case and trimmed");
-                Assert.AreEqual(other.ToLowerInvariant(), new WorkshopInstalledRegistry(dir).GetOrCreateSubmitterKey(), "persisted");
+                Assert.IsTrue(identity.IsValidSubmitterKey("  " + other + "  "));
+                Assert.IsTrue(identity.TrySetSubmitterKey("  " + other + "  "));
+                Assert.AreEqual(other.ToLowerInvariant(), identity.GetOrCreateSubmitterKey(), "stored lower-case and trimmed");
+                Assert.AreEqual(other.ToLowerInvariant(), new WorkshopIdentityStore(dir).GetOrCreateSubmitterKey(), "persisted");
             });
         }
 
@@ -158,27 +158,27 @@ namespace PlayniteAchievements.Services.Tests
         {
             WithTemp(dir =>
             {
-                var registry = new WorkshopInstalledRegistry(dir);
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 1, Name = "Neon", Kind = WorkshopItemKind.Colors, SubmittedUtc = DateTime.UtcNow });
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 2, Name = "Neon", Kind = WorkshopItemKind.UnlockSounds, SubmittedUtc = DateTime.UtcNow });
-                registry.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 3, Name = "Other", Kind = WorkshopItemKind.Colors, ItemId = "colors/kept", SubmittedUtc = DateTime.UtcNow });
+                var identity = new WorkshopIdentityStore(dir);
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 1, Name = "Neon", Kind = WorkshopItemKind.Colors, SubmittedUtc = DateTime.UtcNow });
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 2, Name = "Neon", Kind = WorkshopItemKind.UnlockSounds, SubmittedUtc = DateTime.UtcNow });
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 3, Name = "Other", Kind = WorkshopItemKind.Colors, ItemId = "colors/kept", SubmittedUtc = DateTime.UtcNow });
 
-                registry.LinkSubmissions(new[]
+                identity.LinkSubmissions(new[]
                 {
                     new WorkshopItem { Id = "colors/neon", Kind = WorkshopItemKind.Colors, Name = "neon" },
                     new WorkshopItem { Id = "colors/other", Kind = WorkshopItemKind.Colors, Name = "Other" }
                 });
 
-                var reloaded = new WorkshopInstalledRegistry(dir);
+                var reloaded = new WorkshopIdentityStore(dir);
                 Assert.AreEqual("colors/neon", Find(reloaded, 1).ItemId, "same kind and name, case-insensitive");
                 Assert.IsNull(Find(reloaded, 2).ItemId, "a different kind is not linked");
                 Assert.AreEqual("colors/kept", Find(reloaded, 3).ItemId, "an existing id is left alone");
             });
         }
 
-        private static WorkshopSubmissionRecord Find(WorkshopInstalledRegistry registry, int issueNumber)
+        private static WorkshopSubmissionRecord Find(WorkshopIdentityStore identity, int issueNumber)
         {
-            foreach (var record in registry.Submissions)
+            foreach (var record in identity.Submissions)
             {
                 if (record.IssueNumber == issueNumber)
                 {
