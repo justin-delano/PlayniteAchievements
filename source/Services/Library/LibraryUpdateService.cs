@@ -173,12 +173,10 @@ namespace PlayniteAchievements.Services.Library
         /// the Workshop wrote it: that file then stays as a local item and the package lands under
         /// a free name. A first install never overwrites a preset of the same name.
         /// </summary>
-        /// <param name="fallbackPublishedHash">The written hash an older install recorded, for items stored before the library kept it.</param>
         public LibraryPartWrite WriteWorkshopPart(
             LibraryItem incoming,
             string packagePath,
-            ILibraryPackageFolder folder,
-            string fallbackPublishedHash = null)
+            ILibraryPackageFolder folder)
         {
             if (incoming == null || string.IsNullOrWhiteSpace(incoming.Id) || !incoming.IsWorkshop)
             {
@@ -197,7 +195,7 @@ namespace PlayniteAchievements.Services.Library
             string name;
             if (!string.IsNullOrEmpty(existingPath) && File.Exists(existingPath))
             {
-                var published = existing.PublishedHash ?? fallbackPublishedHash;
+                var published = existing.PublishedHash;
                 if (!string.IsNullOrEmpty(published)
                     && !string.Equals(LibraryStore.HashFile(existingPath), published, StringComparison.OrdinalIgnoreCase))
                 {
