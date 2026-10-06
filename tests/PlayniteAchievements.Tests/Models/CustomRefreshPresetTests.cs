@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Models.Tests
     public class CustomRefreshPresetTests
     {
         [TestMethod]
-        public void NormalizePresets_RemovesInvalidNames_DedupesAndCaps()
+        public void NormalizePresets_RemovesInvalidNames_DedupesAndKeepsEveryPreset()
         {
             var presets = new List<CustomRefreshPreset>
             {
@@ -32,9 +32,10 @@ namespace PlayniteAchievements.Models.Tests
                 });
             }
 
-            var normalized = CustomRefreshPreset.NormalizePresets(presets, CustomRefreshPreset.MaxPresetCount);
+            var normalized = CustomRefreshPreset.NormalizePresets(presets);
 
-            Assert.AreEqual(CustomRefreshPreset.MaxPresetCount, normalized.Count);
+            // No limit: every named, distinct preset is kept ("Alpha" once plus the 60 numbered).
+            Assert.AreEqual(61, normalized.Count);
             Assert.IsTrue(normalized.All(preset => !string.IsNullOrWhiteSpace(preset.Name)));
             Assert.AreEqual(
                 normalized.Count,
