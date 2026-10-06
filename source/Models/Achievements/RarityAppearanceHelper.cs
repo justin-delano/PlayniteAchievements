@@ -535,24 +535,25 @@ namespace PlayniteAchievements.Models.Achievements
             resources["PlayAch.Brush.Trophy.Gold"] = CreateSolidBrush(GetTrophyColor("TrophyGold", settings));
             resources["PlayAch.Brush.Trophy.Silver"] = CreateSolidBrush(GetTrophyColor("TrophySilver", settings));
             resources["PlayAch.Brush.Trophy.Bronze"] = CreateSolidBrush(GetTrophyColor("TrophyBronze", settings));
-            SetStaticScoreBadge(resources, "ScoreBadgeBronzeTriangle", "BadgeBronzeTriangle");
-            SetStaticScoreBadge(resources, "ScoreBadgeBronzeHexagon", "BadgeBronzeHexagon");
-            SetStaticScoreBadge(resources, "ScoreBadgeSilverSquare", "BadgeSilverSquare");
-            SetStaticScoreBadge(resources, "ScoreBadgeSilverHexagon", "BadgeSilverHexagon");
-            SetStaticScoreBadge(resources, "ScoreBadgeGoldPentagon", "BadgeGoldPentagon");
-            SetStaticScoreBadge(resources, "ScoreBadgeGoldHexagon", "BadgeGoldHexagon");
-            SetStaticScoreBadge(resources, "ScoreBadgePlatinumHexagon", "BadgePlatinumHexagon");
-            SetStaticScoreBadge(resources, "ScoreBadgeCompletedGame", "BadgeCompletedGame");
+            // Score card badges are the generated rarity badges under their own keys, so they take
+            // the configured colors, uniform shapes and trophy mode the same way.
+            SetScoreBadge(resources, "ScoreBadgeBronzeTriangle", "BadgeBronzeTriangle");
+            SetScoreBadge(resources, "ScoreBadgeBronzeHexagon", "BadgeBronzeHexagon");
+            SetScoreBadge(resources, "ScoreBadgeSilverSquare", "BadgeSilverSquare");
+            SetScoreBadge(resources, "ScoreBadgeSilverHexagon", "BadgeSilverHexagon");
+            SetScoreBadge(resources, "ScoreBadgeGoldPentagon", "BadgeGoldPentagon");
+            SetScoreBadge(resources, "ScoreBadgeGoldHexagon", "BadgeGoldHexagon");
+            SetScoreBadge(resources, "ScoreBadgePlatinumHexagon", "BadgePlatinumHexagon");
+            SetScoreBadge(resources, "ScoreBadgeCompletedGame", "BadgeCompletedGame");
 
             void SetGeneratedBadge(ResourceDictionary target, RarityTier tier, string badgeKey)
             {
                 target[badgeKey] = CreateBadgeImage(tier, GetGeometryKeyForBadge(badgeKey), settings);
             }
 
-            void SetStaticScoreBadge(ResourceDictionary target, string scoreBadgeKey, string defaultBadgeKey)
+            void SetScoreBadge(ResourceDictionary target, string scoreBadgeKey, string badgeKey)
             {
-                var image = TryGetDefaultImage(defaultBadgeKey);
-                if (image != null)
+                if (TryGetResource(target, badgeKey) is ImageSource image)
                 {
                     target[scoreBadgeKey] = image;
                 }
