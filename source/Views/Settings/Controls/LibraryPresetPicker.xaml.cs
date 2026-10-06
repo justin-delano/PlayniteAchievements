@@ -62,6 +62,9 @@ namespace PlayniteAchievements.Views.Settings.Controls
         private PersistedSettingsSubscription _persistedSubscription;
         private INotifyPropertyChanged _nestedValue;
         private bool _suppressSelection;
+
+        // A choice made while the list was open, applied when it closes.
+        private bool _applyOnClose;
         private bool _refreshPending;
         private LibraryLinkState _state = LibraryLinkState.Unlinked;
 
@@ -253,24 +256,43 @@ namespace PlayniteAchievements.Views.Settings.Controls
             }
 
             UpdateButtons();
+
+            // Picking applies. While the list is open, moving through it (arrow keys) only marks
+            // the choice; it is applied once the list closes, so browsing never applies each
+            // preset on the way.
+            if (PresetSelector.IsDropDownOpen)
+            {
+                _applyOnClose = true;
+                return;
+            }
+
+            ApplySelected();
+        }
+
+        private void PresetSelector_DropDownClosed(object sender, EventArgs e)
+        {
+            if (!_applyOnClose)
+            {
+                return;
+            }
+
+            _applyOnClose = false;
+            ApplySelected();
         }
 
         private void UpdateButtons()
         {
-            var hasItem = SelectedChoice?.Item != null;
-            ApplyButton.IsEnabled = hasItem;
-            DeleteButton.IsEnabled = hasItem;
+            DeleteButton.IsEnabled = SelectedChoice?.Item != null;
         }
 
         /// <summary>
-        /// Applies the selected preset to the target and follows it. Applying the preset the
-        /// target already follows applies it again as published.
+        /// Applies the selected preset to the target and follows it, unless the target already
+        /// follows it.
         /// </summary>
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private void ApplySelected()
         {
-            Keyboard.ClearFocus();
             var item = SelectedChoice?.Item;
-            if (item == null || _options == null)
+            if (item == null || _options == null || (_state.IsFollowing && SameId(item, _state.Item)))
             {
                 return;
             }

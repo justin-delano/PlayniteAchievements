@@ -19,13 +19,15 @@
 
     <StackPanel>
         <!-- The library items of this kind in one list, the user's own and Workshop ones
-             alike, in the card's original row: pick one and Apply it (the target then follows
-             it, untracked on screen), Save, Delete, and the card's own buttons. -->
+             alike, in the card's original row: picking one applies it (the target then follows
+             it; Cancel in the settings window undoes both), Save, Delete, and the card's own
+             buttons. -->
         <StackPanel Orientation="Horizontal">
             <ComboBox x:Name="PresetSelector"
                       MinWidth="240"
                       SelectionChanged="PresetSelector_SelectionChanged"
-                      DropDownOpened="PresetSelector_DropDownOpened">
+                      DropDownOpened="PresetSelector_DropDownOpened"
+                      DropDownClosed="PresetSelector_DropDownClosed">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <DockPanel LastChildFill="True">
@@ -42,13 +44,6 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-
-            <Button x:Name="ApplyButton"
-                    Content="{DynamicResource LOCPlayAch_Button_Apply}"
-                    Margin="8,0,0,0"
-                    MinWidth="58"
-                    IsEnabled="False"
-                    Click="Apply_Click"/>
 
             <Button Content="{DynamicResource LOCPlayAch_Presets_Save}"
                     Margin="8,0,0,0"
