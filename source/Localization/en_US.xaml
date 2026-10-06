@@ -99,7 +99,6 @@
     <sys:String x:Key="LOCPlayAch_DateRange_To">To</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Pair">{0} &#183; {1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Presets_ApplyConfirm">Apply preset &quot;{0}&quot;? This replaces the current style, including any custom template.</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_DeleteConfirm">Delete preset &quot;{0}&quot;?</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_Header">Presets</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_MaxReached">You can save up to {0} presets.</sys:String>
@@ -686,7 +685,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShareHint">Export this tab's style to a file or the Workshop. To share colors, sounds, notification and frame together, export a bundle from the Workshop tab.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportSurfaceMismatch">This file contains a {0} style, but the {1} tab is open. Import it anyway?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportConfirm">Apply this file's style to the current selection?</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportInstallTemplate">This file includes a custom template for the {0} tab. Install it? It replaces the current one.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportIncludeTemplate">Include your custom template in the file?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportUnsupportedFile">Only .panotif and .paframe files are supported.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportMissingManifest">The package does not contain a notification style manifest.</sys:String>
