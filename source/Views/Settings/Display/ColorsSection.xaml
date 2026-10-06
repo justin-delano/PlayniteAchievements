@@ -7,6 +7,7 @@
              xmlns:settings="clr-namespace:PlayniteAchievements.Models.Settings"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:settingsControls="clr-namespace:PlayniteAchievements.Views.Settings.Controls"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -86,48 +87,31 @@
                                         Click="ResetAllRarityColors_Click"/>
                               </StackPanel>
                             </controls:SettingRow>
-                            <!-- Saved color sets: .pacolors files under the plugin's data folder.
-                                 Imported files and Workshop installs land here; Apply copies one
-                                 onto the current colors. -->
+                            <!-- The color sets in the library (.pacolors files under the plugin's
+                                 data folder, saved here, imported or from the Workshop). Choosing
+                                 one applies it and follows it. -->
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Presets_Header}"
                                                  Margin="0">
-                              <StackPanel Orientation="Horizontal">
-                                <ComboBox x:Name="ColorSetPresetSelector"
-                                          MinWidth="240"
-                                          SelectionChanged="ColorSetPresetSelector_SelectionChanged"
-                                          DropDownOpened="ColorSetPresetSelector_DropDownOpened"/>
+                                <settingsControls:LibraryPresetPicker x:Name="ColorSetPresetPicker">
+                                    <settingsControls:LibraryPresetPicker.ExtraContent>
+                                        <StackPanel Orientation="Horizontal">
+                                            <!-- The colors alone (rarity, provider, resource overrides) as a
+                                                 .pacolors file: Export writes the current colors, Import adds
+                                                 a file to the library. -->
+                                            <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                                    Margin="16,0,0,0"
+                                                    MinWidth="58"
+                                                    Click="ExportColors_Click"/>
 
-                                <Button x:Name="ApplyColorSetPresetButton"
-                                        Content="{DynamicResource LOCPlayAch_Button_Apply}"
-                                        Margin="8,0,0,0"
-                                        MinWidth="58"
-                                        IsEnabled="False"
-                                        Click="ApplyColorSetPreset_Click"/>
-
-                                <Button Content="{DynamicResource LOCPlayAch_Presets_Save}"
-                                        Margin="8,0,0,0"
-                                        Click="SaveColorSetPreset_Click"/>
-
-                                <Button x:Name="DeleteColorSetPresetButton"
-                                        Content="{DynamicResource LOCPlayAch_Button_Delete}"
-                                        Margin="8,0,0,0"
-                                        IsEnabled="False"
-                                        Click="DeleteColorSetPreset_Click"/>
-
-                                <!-- The colors alone (rarity, provider, resource overrides) as a
-                                     .pacolors file: Export writes the current colors, Import adds
-                                     a file to the sets above. -->
-                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
-                                        Margin="16,0,0,0"
-                                        MinWidth="58"
-                                        Click="ExportColors_Click"/>
-
-                                <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
-                                        Margin="8,0,0,0"
-                                        MinWidth="58"
-                                        Click="ImportColors_Click"/>
-                              </StackPanel>
-                            </controls:SettingRow>                        </StackPanel>
+                                            <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                                    Margin="8,0,0,0"
+                                                    MinWidth="58"
+                                                    Click="ImportColors_Click"/>
+                                        </StackPanel>
+                                    </settingsControls:LibraryPresetPicker.ExtraContent>
+                                </settingsControls:LibraryPresetPicker>
+                            </controls:SettingRow>
+                        </StackPanel>
                     </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_BadgeColors}"

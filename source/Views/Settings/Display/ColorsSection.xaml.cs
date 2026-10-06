@@ -22,6 +22,7 @@ using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Settings;
 using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.Settings.Controls;
 
 namespace PlayniteAchievements.Views.Settings.Display
 {
@@ -48,7 +49,6 @@ namespace PlayniteAchievements.Views.Settings.Display
         public ColorsSection()
         {
             InitializeComponent();
-            RefreshColorSetPresetOptions();
         }
 
         internal ColorsSection(
@@ -68,6 +68,18 @@ namespace PlayniteAchievements.Views.Settings.Display
                 _settings,
                 OnPersistedPropertyChanged,
                 RefreshAppearanceEditorFromPersisted);
+
+            ColorSetPresetPicker.Initialize(new LibraryPresetPickerOptions
+            {
+                Plugin = plugin,
+                Settings = settings,
+                Adapter = plugin.ColorsLibraryAdapter,
+                Presets = plugin.ColorPresetStore,
+                ExportCurrent = path => plugin.ColorPackPortableStore.Export(_settings.Persisted, path),
+                TargetChanged = RefreshAppearanceEditorFromPersisted,
+                NestedValue = () => _settings.Persisted?.RarityColors,
+                Logger = logger
+            });
         }
 
         public ObservableCollection<ResourceAppearanceItem> ResourceAppearanceItems
@@ -332,8 +344,8 @@ namespace PlayniteAchievements.Views.Settings.Display
         }
 
         /// <summary>
-        /// Adds a .pacolors file to the saved color sets, named after the file. Applying it is
-        /// the job of the set list, so the current colors do not change here.
+        /// Adds a .pacolors file to the library as a local color set, named after the file.
+        /// Applying it is the job of the set list, so the current colors do not change here.
         /// </summary>
         private void ImportColorsFile_Click(object sender, RoutedEventArgs e)
         {
@@ -358,7 +370,7 @@ namespace PlayniteAchievements.Views.Settings.Display
                 }
 
                 var saved = presets.SaveFrom(presets.UniqueName(PackageStem(dialog.FileName)), dialog.FileName);
-                RefreshColorSetPresetOptions(saved.Name);
+                ColorSetPresetPicker.AddLocalPreset(saved);
                 ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"), saved.Name), MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -382,158 +394,6 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             return name;
         }
-
-        // ---- saved color sets ----------------------------------------------------------------
-
-        private PackagePresetInfo SelectedColorSetPreset => ColorSetPresetSelector?.SelectedItem as PackagePresetInfo;
-
-        private void RefreshColorSetPresetOptions(string selectName = null)
-        {
-            var store = _plugin?.ColorPresetStore;
-            if (ColorSetPresetSelector == null || store == null)
-            {
-                return;
-            }
-
-            var items = new List<object> { ResourceProvider.GetString("LOCPlayAch_Common_None") };
-            try
-            {
-                items.AddRange(store.List());
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Failed listing color set presets.");
-            }
-
-            ColorSetPresetSelector.ItemsSource = items;
-            ColorSetPresetSelector.SelectedItem = string.IsNullOrWhiteSpace(selectName)
-                ? items[0]
-                : items.OfType<PackagePresetInfo>().FirstOrDefault(preset =>
-                      string.Equals(preset.Name, selectName, StringComparison.OrdinalIgnoreCase)) ?? items[0];
-            RefreshColorSetPresetButtons();
-        }
-
-        private void RefreshColorSetPresetButtons()
-        {
-            if (ApplyColorSetPresetButton == null || DeleteColorSetPresetButton == null)
-            {
-                return;
-            }
-
-            ApplyColorSetPresetButton.IsEnabled = DeleteColorSetPresetButton.IsEnabled = SelectedColorSetPreset != null;
-        }
-
-        private void ColorSetPresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            RefreshColorSetPresetButtons();
-        }
-
-        /// <summary>Presets saved elsewhere (a Workshop install, another window) show up when the list opens.</summary>
-        private void ColorSetPresetSelector_DropDownOpened(object sender, EventArgs e)
-        {
-            RefreshColorSetPresetOptions(SelectedColorSetPreset?.Name);
-        }
-
-        /// <summary>Copies the selected set onto the current colors (rarity, platform, resources).</summary>
-        private void ApplyColorSetPreset_Click(object sender, RoutedEventArgs e)
-        {
-            var preset = SelectedColorSetPreset;
-            var persisted = _settings?.Persisted;
-            var store = _plugin?.ColorPackPortableStore;
-            if (preset == null || persisted == null || store == null)
-            {
-                return;
-            }
-
-            try
-            {
-                store.Import(preset.FilePath, persisted);
-                _plugin.PersistSettingsForUi();
-                RefreshAppearanceEditorFromPersisted();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed applying color set preset.");
-                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>Saves the current colors as a named set, replacing one of the same name after confirmation.</summary>
-        private void SaveColorSetPreset_Click(object sender, RoutedEventArgs e)
-        {
-            var persisted = _settings?.Persisted;
-            var presets = _plugin?.ColorPresetStore;
-            var store = _plugin?.ColorPackPortableStore;
-            if (persisted == null || presets == null || store == null)
-            {
-                return;
-            }
-
-            try
-            {
-                if (!PresetNamePrompt.TryAsk(_plugin, SelectedColorSetPreset?.Name, PackagePresetStore.SanitizeName, PackagePresetStore.MaxNameLength, out var name))
-                {
-                    return;
-                }
-
-                var exists = presets.Exists(name);
-                if (!exists && presets.Count() >= PackagePresetStore.MaxPresetCount)
-                {
-                    ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_MaxReached"), PackagePresetStore.MaxPresetCount), MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (exists && !Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_OverwriteConfirm"), name)))
-                {
-                    return;
-                }
-
-                var saved = presets.Save(name, path => store.Export(persisted, path));
-                RefreshColorSetPresetOptions(saved.Name);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed saving color set preset.");
-                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
-            }
-        }
-
-        private void DeleteColorSetPreset_Click(object sender, RoutedEventArgs e)
-        {
-            var preset = SelectedColorSetPreset;
-            var presets = _plugin?.ColorPresetStore;
-            if (preset == null || presets == null)
-            {
-                return;
-            }
-
-            if (!Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Presets_DeleteConfirm"), preset.Name)))
-            {
-                return;
-            }
-
-            try
-            {
-                presets.Delete(preset);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed deleting color set preset.");
-                ShowMessage(string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
-            }
-
-            RefreshColorSetPresetOptions();
-        }
-
-        private bool Confirm(string message)
-        {
-            return _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
-                       message,
-                       ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                       MessageBoxButton.YesNo,
-                       MessageBoxImage.Question) == MessageBoxResult.Yes;
-        }
-
 
         private AchievementToastTemplateResolver CreateTemplateResolver()
         {
@@ -917,6 +777,7 @@ namespace PlayniteAchievements.Views.Settings.Display
         public void Dispose()
         {
             _persistedSubscription?.Dispose();
+            ColorSetPresetPicker?.Dispose();
         }
     }
 }
