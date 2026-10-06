@@ -33,9 +33,9 @@ namespace PlayniteAchievements.Views.Settings.Workshop
 
             try
             {
-                var registry = _plugin.WorkshopRegistry;
-                NameBox.Text = registry.DisplayName ?? string.Empty;
-                KeyBox.Text = registry.GetOrCreateSubmitterKey();
+                var identity = _plugin.WorkshopIdentityStore;
+                NameBox.Text = identity.DisplayName ?? string.Empty;
+                KeyBox.Text = identity.GetOrCreateSubmitterKey();
             }
             catch (Exception ex)
             {
@@ -47,7 +47,7 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         {
             try
             {
-                _plugin.WorkshopRegistry.DisplayName = NameBox.Text;
+                _plugin.WorkshopIdentityStore.DisplayName = NameBox.Text;
             }
             catch (Exception ex)
             {
@@ -84,8 +84,8 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                 return;
             }
 
-            var registry = _plugin.WorkshopRegistry;
-            if (!registry.IsValidSubmitterKey(clipboard))
+            var identity = _plugin.WorkshopIdentityStore;
+            if (!identity.IsValidSubmitterKey(clipboard))
             {
                 ShowMessage(ResourceProvider.GetString("LOCPlayAch_Workshop_InvalidKey"), MessageBoxImage.Warning);
                 return;
@@ -108,8 +108,8 @@ namespace PlayniteAchievements.Views.Settings.Workshop
 
             try
             {
-                registry.TrySetSubmitterKey(clipboard);
-                KeyBox.Text = registry.GetOrCreateSubmitterKey();
+                identity.TrySetSubmitterKey(clipboard);
+                KeyBox.Text = identity.GetOrCreateSubmitterKey();
             }
             catch (Exception ex)
             {
