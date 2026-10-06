@@ -170,41 +170,19 @@ namespace PlayniteAchievements.Tests.Services
         }
 
         [TestMethod]
-        public void SaveFrom_RefusesANewPresetPastTheCap_ButStillReplacesAnExistingOne()
+        public void SaveFrom_HasNoPresetLimit_AndReplacesAnExistingOne()
         {
             var store = CreateStore();
             var source = WritePackage("a.patest");
-            for (var i = 0; i < PackagePresetStore.MaxPresetCount; i++)
+            for (var i = 0; i < 60; i++)
             {
                 store.SaveFrom("Preset " + i, source);
             }
 
-            Assert.ThrowsException<InvalidOperationException>(() => store.SaveFrom("One more", source));
             store.SaveFrom("Preset 0", WritePackage("b.patest", "replaced"));
 
-            Assert.AreEqual(PackagePresetStore.MaxPresetCount, store.Count());
+            Assert.AreEqual(60, store.Count());
             Assert.AreEqual("replaced", File.ReadAllText(store.Find("Preset 0").FilePath));
-        }
-
-        [TestMethod]
-        public void Cap_SkipsPresetsThePredicateExcludes()
-        {
-            var store = new PackagePresetStore(
-                _root,
-                "test_presets",
-                ".patest",
-                null,
-                path => !Path.GetFileName(path).StartsWith("Workshop", StringComparison.Ordinal));
-            var source = WritePackage("a.patest");
-            store.SaveFrom("Workshop item", source);
-            for (var i = 0; i < PackagePresetStore.MaxPresetCount - 1; i++)
-            {
-                store.SaveFrom("Preset " + i, source);
-            }
-
-            Assert.AreEqual(PackagePresetStore.MaxPresetCount - 1, store.Count());
-            store.SaveFrom("One more", source);
-            Assert.ThrowsException<InvalidOperationException>(() => store.SaveFrom("Past the cap", source));
         }
 
         [TestMethod]
