@@ -21,7 +21,6 @@
     <sys:String x:Key="LOCPlayAch_Common_Continue">Continue</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Back">Back</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Color">Color</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Delete">Delete</sys:String>
@@ -39,8 +38,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Import">Import</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_ApiKey">API Key</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Category">Category</sys:String>
-    <!-- Granularity: bar width of the unlocks-over-time chart; the options follow the label -->
-    <sys:String x:Key="LOCPlayAch_Common_Label_Granularity">Granularity</sys:String>
+    <!-- Granularity: bar width of the unlocks-over-time chart -->
     <sys:String x:Key="LOCPlayAch_Granularity_Day">Day</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Week">Week</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Month">Month</sys:String>
@@ -270,7 +268,6 @@
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetGoal">Set as Goal</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?&#10;&#10;This removes the manual link and deletes its unlock times and this game's cached data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
@@ -354,7 +351,6 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Unlocked Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filter</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Filter from Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">Note</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithNotes">With Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithoutNotes">Without Notes</sys:String>
@@ -410,8 +406,6 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net Game</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Enter a value for this override.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Select a valid game for this override.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Summary Exclusion</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Current Capstone: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">Current category capstone: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">Current game capstone: {0}</sys:String>
@@ -545,7 +539,6 @@
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsCustom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsInstalled">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Recent</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsSelectedGame">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsShared">Shared</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Missing</sys:String>
@@ -763,7 +756,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Override_On">On</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Override_Off">Off</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewButton">Preview frame on screen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FramePreviewHint">The frame only appears in saved screenshots and clips, never during play. Click, press Esc, or wait 10 seconds to close the preview.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewCapstone">Capstone Completion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewComplete">100% Completion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewFriend">Friend Unlock</sys:String>
