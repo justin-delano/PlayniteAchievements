@@ -198,11 +198,14 @@ namespace PlayniteAchievements.Services.Library
             return token is JObject || IsEmpty(token);
         }
 
+        // A JValue made from a null string has the String type and a null value; it is the same
+        // JSON null as one read from text.
         private static bool IsEmpty(JToken token)
         {
             return token == null
                    || token.Type == JTokenType.Null
                    || token.Type == JTokenType.Undefined
+                   || (token is JValue value && value.Value == null)
                    || (token is JContainer container && !container.HasValues);
         }
 
