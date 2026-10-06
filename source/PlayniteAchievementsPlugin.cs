@@ -1975,8 +1975,7 @@ namespace PlayniteAchievements
                 OfferAutoCapstonesForExistingGames();
             }
 
-            if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
-                e.PropertyName == nameof(PersistedSettings.RarityColors))
+            if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(e.PropertyName))
             {
                 RarityAppearanceHelper.ApplyBadgeApplicationResources(
                     _settingsViewModel?.Settings?.Persisted);
