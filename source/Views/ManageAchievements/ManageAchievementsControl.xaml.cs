@@ -861,8 +861,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 exportAllCustomData: _viewModel.ExportCustomCommand,
                 importFromWorkshop: _viewModel.ImportFromWorkshopCommand,
                 shareToWorkshop: _viewModel.ShareToWorkshopCommand,
-                importPortable: (mergeCustomAchievements, beforeReplace) =>
-                    _viewModel.ImportPortable(mergeCustomAchievements, beforeReplace));
+                importPortable: (mergeCustomAchievements, mergeCsv, beforeReplace) =>
+                    _viewModel.ImportPortable(mergeCustomAchievements, mergeCsv, beforeReplace));
             _editorViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;
             _editorViewModel.AssignmentsChanged += EditorViewModel_CustomizationPersisted;
             _editorViewModel.IconOverridesSaved += EditorViewModel_IconOverridesSaved;
