@@ -261,10 +261,9 @@ namespace PlayniteAchievements.Services.Tests
 
         private static NotificationStylePortableStore Portable(string tempDir)
         {
-            return new NotificationStylePortableStore(
-                new NotificationImageStore(new DiskImageService(logger: null, cacheRoot: tempDir), logger: null),
-                logger: null);
+            return new NotificationStylePortableStore();
         }
+
         private static NotificationStylePresetStore CreateStore(string tempDir)
         {
             return CreateStore(tempDir, out _);
@@ -274,9 +273,7 @@ namespace PlayniteAchievements.Services.Tests
             string tempDir,
             out NotificationStylePortableStore portableStore)
         {
-            var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
-            var imageStore = new NotificationImageStore(diskImageService, logger: null);
-            portableStore = new NotificationStylePortableStore(imageStore, logger: null);
+            portableStore = new NotificationStylePortableStore();
             return new NotificationStylePresetStore(portableStore, Path.Combine(tempDir, "data"));
         }
 
