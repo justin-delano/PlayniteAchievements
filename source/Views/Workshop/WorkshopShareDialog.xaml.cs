@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Views.Workshop
         private readonly ILogger _logger;
         private readonly WorkshopShareCandidate _candidate;
         private readonly WorkshopShareService _share;
-        private readonly WorkshopInstalledRegistry _registry;
+        private readonly WorkshopIdentityStore _identity;
         private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
         private string _previewScratch;
         private bool _busy;
@@ -61,18 +61,18 @@ namespace PlayniteAchievements.Views.Workshop
             ILogger logger,
             WorkshopShareCandidate candidate,
             WorkshopShareService share,
-            WorkshopInstalledRegistry registry)
+            WorkshopIdentityStore identity)
             : this()
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
             _candidate = candidate ?? throw new ArgumentNullException(nameof(candidate));
             _share = share ?? throw new ArgumentNullException(nameof(share));
-            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _identity = identity ?? throw new ArgumentNullException(nameof(identity));
 
             CandidateLabel.Text = candidate.Label;
             NameBox.Text = candidate.DefaultName ?? string.Empty;
-            AuthorBox.Text = registry.DisplayName ?? string.Empty;
+            AuthorBox.Text = identity.DisplayName ?? string.Empty;
             CoverBox.Text = DefaultCoverPath(plugin, candidate, logger) ?? string.Empty;
 
             // The standardized preview image is rendered once the dialog is up (OnLoaded) and
@@ -81,7 +81,7 @@ namespace PlayniteAchievements.Views.Workshop
             Loaded += OnLoaded;
 
             // Earlier submissions of the same kind whose Workshop id is known can be updated.
-            var options = registry.Submissions
+            var options = identity.Submissions
                 .Where(s => s.Kind == candidate.Kind && !string.IsNullOrWhiteSpace(s.ItemId))
                 .GroupBy(s => s.ItemId, StringComparer.OrdinalIgnoreCase)
                 .Select(g => new ExistingOption { ItemId = g.Key, Label = $"{g.First().Name} ({g.Key})" })
@@ -450,7 +450,7 @@ namespace PlayniteAchievements.Views.Workshop
                 }
 
                 var index = await client.FetchIndexAsync(_cancel.Token);
-                var owner = _registry.GetSubmitterHash();
+                var owner = _identity.GetSubmitterHash();
                 var owned = index.Items
                     .Where(item => item.Kind == _candidate.Kind && string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase))
                     .ToList();
@@ -459,7 +459,7 @@ namespace PlayniteAchievements.Views.Workshop
                     return;
                 }
 
-                _registry.LinkSubmissions(owned);
+                _identity.LinkSubmissions(owned);
                 foreach (var item in owned)
                 {
                     if (options.Any(option => string.Equals(option.ItemId, item.Id, StringComparison.OrdinalIgnoreCase)))
