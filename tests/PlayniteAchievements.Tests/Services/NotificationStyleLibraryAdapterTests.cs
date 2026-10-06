@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Services.Tests
             _root = Path.Combine(Path.GetTempPath(), "PlayAchStyleLibrary_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_root);
             _images = new NotificationImageStore(new DiskImageService(logger: null, cacheRoot: Path.Combine(_root, "icon_cache")), logger: null);
-            _portable = new NotificationStylePortableStore(_images, logger: null);
+            _portable = new NotificationStylePortableStore();
             _templates = new MemoryTemplates();
             _live = new PersistedSettings();
             _snapshot = new PersistedSettings();
