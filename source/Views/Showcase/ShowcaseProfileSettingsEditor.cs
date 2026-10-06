@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Showcase;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
@@ -21,7 +22,7 @@ namespace PlayniteAchievements.Views.Showcase
     /// </summary>
     internal sealed class ShowcaseProfileSettingsEditor : UserControl
     {
-        private const string ImagePatterns = "*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp";
+        private static string ImagePatterns => string.Join(";", ImageFormats.Selectable.Select(extension => "*" + extension));
 
         private readonly ShowcaseProfileSettings _profile;
         private readonly Action _onChanged;
