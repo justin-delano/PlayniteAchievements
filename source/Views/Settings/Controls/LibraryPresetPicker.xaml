@@ -1,0 +1,115 @@
+<UserControl x:Class="PlayniteAchievements.Views.Settings.Controls.LibraryPresetPicker"
+             x:Name="PickerRoot"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="80"
+             d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Hides a group header whose name is empty: the Custom entry has no group. -->
+            <Style x:Key="PickerGroupHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="6,6,6,2"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Name}" Value="">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <!-- The library items of this kind, grouped My presets and Workshop, plus Custom while
+             the target follows none of them. Choosing an item applies it and starts following. -->
+        <StackPanel Orientation="Horizontal">
+            <ComboBox x:Name="PresetSelector"
+                      MinWidth="240"
+                      SelectionChanged="PresetSelector_SelectionChanged"
+                      DropDownOpened="PresetSelector_DropDownOpened">
+                <ComboBox.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           Style="{StaticResource PickerGroupHeaderStyle}"/>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ComboBox.GroupStyle>
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding Detail}"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Margin="12,0,0,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Label}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Button Content="{DynamicResource LOCPlayAch_Presets_Save}"
+                    Margin="8,0,0,0"
+                    Click="Save_Click"/>
+
+            <Button x:Name="DeleteButton"
+                    Content="{DynamicResource LOCPlayAch_Button_Delete}"
+                    Margin="8,0,0,0"
+                    IsEnabled="False"
+                    Click="Delete_Click"/>
+
+            <!-- The owning card's own buttons (Export and Import menus). -->
+            <ContentPresenter Content="{Binding ExtraContent, ElementName=PickerRoot}"
+                              VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- What the target follows: the item and its version, whether it was edited since,
+             and whether a newer version is in the library. -->
+        <Border Margin="0,8,0,0"
+                Padding="10,6"
+                CornerRadius="4"
+                Background="{DynamicResource PlayAch.Brush.Surface}"
+                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                BorderThickness="{StaticResource PlayAch.Thickness.Border}">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button x:Name="UpdateButton"
+                            Content="{DynamicResource LOCPlayAch_Workshop_Update}"
+                            Margin="8,0,0,0"
+                            Visibility="Collapsed"
+                            Click="Update_Click"/>
+                    <Button x:Name="ResetButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Reset}"
+                            Margin="8,0,0,0"
+                            Visibility="Collapsed"
+                            Click="Reset_Click"/>
+                    <Button x:Name="StopFollowingButton"
+                            Content="{DynamicResource LOCPlayAch_Library_StopFollowing}"
+                            Margin="8,0,0,0"
+                            Visibility="Collapsed"
+                            Click="StopFollowing_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="StatusText"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
