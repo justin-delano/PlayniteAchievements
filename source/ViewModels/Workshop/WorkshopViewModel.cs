@@ -105,7 +105,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ILogger _logger;
         private readonly WorkshopClient _client;
-        private readonly WorkshopInstalledRegistry _registry;
+        private readonly WorkshopIdentityStore _identity;
         private readonly Services.Library.LibraryStore _library;
         private readonly WorkshopInstaller _installer;
         private readonly WorkshopGameMatcher _matcher;
@@ -124,22 +124,22 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private double _progressFraction;
         private Guid? _focusGameId;
         private readonly System.Windows.Threading.Dispatcher _dispatcher;
-        private bool _registryRefreshQueued;
-        private bool _applyingRegistryChange;
+        private bool _sourceRefreshQueued;
+        private bool _applyingSourceChange;
 
         public WorkshopViewModel(PlayniteAchievementsPlugin plugin, ILogger logger, Guid? focusGameId, WorkshopItemKind? focusKind = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
             _client = plugin.WorkshopClient;
-            _registry = plugin.WorkshopRegistry;
+            _identity = plugin.WorkshopIdentityStore;
             _library = plugin.LibraryStore;
             _installer = plugin.WorkshopInstaller;
             _matcher = plugin.CreateWorkshopGameMatcher();
             _focusGameId = focusGameId;
             _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-            _registry.Changed += Registry_Changed;
-            _library.Changed += Registry_Changed;
+            _identity.Changed += Source_Changed;
+            _library.Changed += Source_Changed;
 
             KindOptions = new List<WorkshopKindOption>
             {
@@ -205,7 +205,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public RelayCommand OpenSubmissionCommand { get; }
         public AsyncCommand RefreshSubmissionsCommand { get; }
 
-        public WorkshopInstalledRegistry Registry => _registry;
+        public WorkshopIdentityStore IdentityStore => _identity;
 
         public string SearchText
         {
@@ -364,10 +364,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     // The index marks every item with its publisher's hash. Records of a first
                     // submission learn their published id from this install's items here, as the
                     // share dialog links them, so My submissions can address the item.
-                    var owner = _registry.TryGetSubmitterHash();
+                    var owner = _identity.TryGetSubmitterHash();
                     if (owner != null)
                     {
-                        _registry.LinkSubmissions(index.Items.Where(item =>
+                        _identity.LinkSubmissions(index.Items.Where(item =>
                             !string.IsNullOrWhiteSpace(item.OwnerHash) &&
                             string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase)));
                     }
@@ -457,13 +457,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
             var owned = library[row.Id].ToList();
             row.IsInstalled = owned.Count > 0;
-            row.HasUpdate = owned.Any(item => WorkshopInstalledRegistry.IsNewer(row.Version, item.Version));
+            row.HasUpdate = owned.Any(item => WorkshopIdentityStore.IsNewer(row.Version, item.Version));
         }
 
         private void ReloadLocalState()
         {
             Submissions.Clear();
-            foreach (var record in _registry.Submissions)
+            foreach (var record in _identity.Submissions)
             {
                 Submissions.Add(new WorkshopSubmissionViewModel(record));
             }
@@ -1050,7 +1050,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 {
                     var status = await client.GetStatusAsync(submission.Record.IssueNumber, _lifetime.Token);
                     submission.State = WorkshopSubmissionViewModel.StateLabel(status.State);
-                    _registry.UpdateSubmissionState(submission.Record.IssueNumber, status.State);
+                    _identity.UpdateSubmissionState(submission.Record.IssueNumber, status.State);
                 }
                 catch (OperationCanceledException)
                 {
@@ -1108,28 +1108,28 @@ namespace PlayniteAchievements.ViewModels.Workshop
         /// share recorded a submission: re-check every row once on the UI thread, so "In library"
         /// and My submissions follow without reopening the window.
         /// </summary>
-        private void Registry_Changed(object sender, EventArgs e)
+        private void Source_Changed(object sender, EventArgs e)
         {
-            if (_applyingRegistryChange || _registryRefreshQueued || _lifetime.IsCancellationRequested)
+            if (_applyingSourceChange || _sourceRefreshQueued || _lifetime.IsCancellationRequested)
             {
                 return;
             }
 
-            _registryRefreshQueued = true;
+            _sourceRefreshQueued = true;
             _dispatcher.BeginInvoke(
-                new Action(RefreshFromRegistry),
+                new Action(RefreshFromSources),
                 System.Windows.Threading.DispatcherPriority.Background);
         }
 
-        private void RefreshFromRegistry()
+        private void RefreshFromSources()
         {
-            _registryRefreshQueued = false;
+            _sourceRefreshQueued = false;
             if (_lifetime.IsCancellationRequested)
             {
                 return;
             }
 
-            _applyingRegistryChange = true;
+            _applyingSourceChange = true;
             try
             {
                 var library = ReadLibrary();
@@ -1140,7 +1140,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
             finally
             {
-                _applyingRegistryChange = false;
+                _applyingSourceChange = false;
             }
 
             ReloadLocalState();
@@ -1149,8 +1149,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public void Dispose()
         {
-            _registry.Changed -= Registry_Changed;
-            _library.Changed -= Registry_Changed;
+            _identity.Changed -= Source_Changed;
+            _library.Changed -= Source_Changed;
             DeleteCachedDownload();
             _lifetime.Cancel();
             _lifetime.Dispose();
