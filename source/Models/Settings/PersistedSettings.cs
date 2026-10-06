@@ -3562,6 +3562,9 @@ namespace PlayniteAchievements.Models.Settings
             ProviderColorOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             ResourceOverrides = CreateDefaultResourceOverrides();
 
+            // The colors are the defaults now, not the library item they followed.
+            SetLibraryLink(Services.Library.LibraryTargetKeys.Colors, null);
+
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
             ShowOverviewPieCharts = defaults.ShowOverviewPieCharts;
