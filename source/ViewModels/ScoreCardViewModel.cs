@@ -28,21 +28,18 @@ namespace PlayniteAchievements.ViewModels
         private static readonly int MaxDisplayLevel =
             AchievementLevelCurveSettings.ModernDefault.MaxDisplayLevel;
 
-        private static readonly Brush BronzeScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xD6, 0x8A, 0x45));
-        private static readonly Brush SilverScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xD7, 0xE1, 0xEC));
-        private static readonly Brush GoldScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xD4, 0x57));
-        private static readonly Brush PlatinumScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0x84, 0xD8, 0xFF));
-        private static readonly Brush BronzeScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x26, 0xD6, 0x8A, 0x45));
-        private static readonly Brush SilverScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x24, 0xD7, 0xE1, 0xEC));
-        private static readonly Brush GoldScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x24, 0xFF, 0xD4, 0x57));
-        private static readonly Brush PlatinumScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x24, 0x84, 0xD8, 0xFF));
+        private const byte BackgroundAlpha = 0x24;
 
         // Unreached levels of the current rank. Heavier than the card's own background tint so the
         // bar still reads as ten cells when the card is drawn flat, without chrome behind it.
-        private static readonly Brush BronzeScoreTrackBrush = CreateFrozenBrush(Color.FromArgb(0x3A, 0xD6, 0x8A, 0x45));
-        private static readonly Brush SilverScoreTrackBrush = CreateFrozenBrush(Color.FromArgb(0x3A, 0xD7, 0xE1, 0xEC));
-        private static readonly Brush GoldScoreTrackBrush = CreateFrozenBrush(Color.FromArgb(0x3A, 0xFF, 0xD4, 0x57));
-        private static readonly Brush PlatinumScoreTrackBrush = CreateFrozenBrush(Color.FromArgb(0x3A, 0x84, 0xD8, 0xFF));
+        private const byte TrackAlpha = 0x3A;
+
+        // Resolved from the badge color settings on every apply and appearance change, and cached so
+        // the segments can share the accent instance.
+        private Brush _accentBrush;
+        private Brush _nextTierAccentBrush;
+        private Brush _accentBackgroundBrush;
+        private Brush _accentTrackBrush;
 
         private int _score;
         private int _level;
@@ -54,6 +51,7 @@ namespace PlayniteAchievements.ViewModels
         public ScoreCardViewModel(ScoreCardType scoreType)
         {
             ScoreType = scoreType;
+            ResolveAccentBrushes();
             UpdateSegments();
         }
 
@@ -159,13 +157,13 @@ namespace PlayniteAchievements.ViewModels
             Rank,
             UseUniformRarityBadges);
 
-        public Brush AccentBrush => GetScoreAccentBrush(Rank);
+        public Brush AccentBrush => _accentBrush;
 
-        public Brush NextTierAccentBrush => GetNextTierAccentBrush(_snapshot, Rank);
+        public Brush NextTierAccentBrush => _nextTierAccentBrush;
 
-        public Brush AccentBackgroundBrush => GetScoreAccentBackgroundBrush(Rank);
+        public Brush AccentBackgroundBrush => _accentBackgroundBrush;
 
-        public Brush AccentTrackBrush => GetScoreAccentTrackBrush(Rank);
+        public Brush AccentTrackBrush => _accentTrackBrush;
 
         public void Apply(
             int score,
@@ -194,6 +192,7 @@ namespace PlayniteAchievements.ViewModels
             _rank = rank;
             _useUniformRarityBadges = useUniformRarityBadges;
             _snapshot = AchievementLevelCalculator.CalculateModern(score);
+            ResolveAccentBrushes();
             UpdateSegments();
             RaiseAllPropertiesChanged();
         }
@@ -209,15 +208,21 @@ namespace PlayniteAchievements.ViewModels
                 useUniformRarityBadges);
         }
 
+        /// <summary>
+        /// Re-resolves the badge and accents from the current appearance settings. The badge key is
+        /// raised even when unchanged: the image behind it is regenerated on a recolor, and the
+        /// key-to-image converter only looks it up again when the binding re-reads.
+        /// </summary>
         public void RefreshBadgeStyle(bool useUniformRarityBadges)
         {
             if (_useUniformRarityBadges != useUniformRarityBadges)
             {
                 _useUniformRarityBadges = useUniformRarityBadges;
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
-                OnPropertyChanged(nameof(BadgeIconKey));
             }
 
+            OnPropertyChanged(nameof(BadgeIconKey));
+            ResolveAccentBrushes();
             UpdateSegments();
             OnPropertyChanged(nameof(AccentBrush));
             OnPropertyChanged(nameof(NextTierAccentBrush));
@@ -243,13 +248,21 @@ namespace PlayniteAchievements.ViewModels
                 Segments.Add(new ScoreSegmentViewModel());
             }
 
-            var accent = AccentBrush;
             var track = AccentTrackBrush;
             var completed = Math.Max(0, Math.Min(count, _snapshot?.LevelsCompletedInRank ?? 0));
             var partial = _snapshot?.IsMaxLevel == true ? 1d : _levelProgress / 100d;
 
+            // Master ranks sweep the completed gradient across the bar, one solid step per cell.
+            var isMaster = AchievementRankPresentation.IsMasterRank(Rank);
+            var sweepStart = isMaster ? RarityAppearanceHelper.GetCompletedStartColor() : default(Color);
+            var sweepEnd = isMaster ? RarityAppearanceHelper.GetCompletedEndColor() : default(Color);
+
             for (var i = 0; i < count; i++)
             {
+                var accent = isMaster
+                    ? CreateFrozenBrush(Lerp(sweepStart, sweepEnd, (i + 0.5d) / count))
+                    : AccentBrush;
+
                 if (i < completed)
                 {
                     Segments[i].Fill = accent;
@@ -450,59 +463,39 @@ namespace PlayniteAchievements.ViewModels
                 total.ToString("N0", FormattingCulture.Current));
         }
 
-        private static Brush GetScoreAccentBrush(string rank)
+        private void ResolveAccentBrushes()
         {
-            var tier = AchievementRankPresentation.GetRarityTier(rank);
-            switch (tier)
-            {
-                case RarityTier.UltraRare:
-                    return PlatinumScoreAccentBrush;
-                case RarityTier.Rare:
-                    return GoldScoreAccentBrush;
-                case RarityTier.Uncommon:
-                    return SilverScoreAccentBrush;
-                default:
-                    return BronzeScoreAccentBrush;
-            }
+            var accent = GetAccentColor(Rank);
+            _accentBrush = CreateFrozenBrush(accent);
+            _accentBackgroundBrush = CreateFrozenBrush(WithAlpha(accent, BackgroundAlpha));
+            _accentTrackBrush = CreateFrozenBrush(WithAlpha(accent, TrackAlpha));
+            _nextTierAccentBrush = CreateFrozenBrush(GetAccentColor(
+                string.IsNullOrWhiteSpace(_snapshot?.NextRank) ? Rank : _snapshot.NextRank));
         }
 
-        private static Brush GetNextTierAccentBrush(AchievementLevelSnapshot snapshot, string fallbackRank)
+        /// <summary>
+        /// The rank's color from the badge color settings: the completed-game color for Master
+        /// ranks, which wear the completed badge, and the rank's rarity tier color otherwise.
+        /// </summary>
+        private static Color GetAccentColor(string rank)
         {
-            return GetScoreAccentBrush(string.IsNullOrWhiteSpace(snapshot?.NextRank)
-                ? fallbackRank
-                : snapshot.NextRank);
+            return AchievementRankPresentation.IsMasterRank(rank)
+                ? RarityAppearanceHelper.GetCompletedColor()
+                : RarityAppearanceHelper.GetBaseColor(AchievementRankPresentation.GetRarityTier(rank));
         }
 
-        private static Brush GetScoreAccentBackgroundBrush(string rank)
+        private static Color WithAlpha(Color color, byte alpha)
         {
-            var tier = AchievementRankPresentation.GetRarityTier(rank);
-            switch (tier)
-            {
-                case RarityTier.UltraRare:
-                    return PlatinumScoreBackgroundBrush;
-                case RarityTier.Rare:
-                    return GoldScoreBackgroundBrush;
-                case RarityTier.Uncommon:
-                    return SilverScoreBackgroundBrush;
-                default:
-                    return BronzeScoreBackgroundBrush;
-            }
+            return Color.FromArgb(alpha, color.R, color.G, color.B);
         }
 
-        private static Brush GetScoreAccentTrackBrush(string rank)
+        private static Color Lerp(Color from, Color to, double amount)
         {
-            var tier = AchievementRankPresentation.GetRarityTier(rank);
-            switch (tier)
-            {
-                case RarityTier.UltraRare:
-                    return PlatinumScoreTrackBrush;
-                case RarityTier.Rare:
-                    return GoldScoreTrackBrush;
-                case RarityTier.Uncommon:
-                    return SilverScoreTrackBrush;
-                default:
-                    return BronzeScoreTrackBrush;
-            }
+            return Color.FromArgb(
+                (byte)Math.Round(from.A + ((to.A - from.A) * amount)),
+                (byte)Math.Round(from.R + ((to.R - from.R) * amount)),
+                (byte)Math.Round(from.G + ((to.G - from.G) * amount)),
+                (byte)Math.Round(from.B + ((to.B - from.B) * amount)));
         }
 
         private static Brush CreateFrozenBrush(Color color)
