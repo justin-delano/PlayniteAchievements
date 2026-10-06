@@ -22,11 +22,11 @@ namespace PlayniteAchievements.Services.Tests
     public class BundlePortableStoreTests
     {
         [TestMethod]
-        public async Task Export_AllParts_ThenImport_AppliesEachPartToFreshSettings()
+        public void Export_AllParts_ThenEachExtractedPartAppliesAsItsStandaloneKind()
         {
-            await WithTempAsync(async tempDir =>
+            WithTemp(tempDir =>
             {
-                var store = CreateStore(tempDir, out var soundStore);
+                var store = CreateStore(tempDir, out var soundStore, out var styleStore);
                 var source = new PersistedSettings();
                 source.RarityColors = new RarityColorSettings { Common = "#112233", UltraRare = "#AABBCCDD" };
                 source.ProviderColorOverrides = new Dictionary<string, string> { ["Steam"] = "#010203" };
@@ -59,30 +59,38 @@ namespace PlayniteAchievements.Services.Tests
 
                 Assert.AreEqual(BundleParts.All, store.Inspect(packagePath));
 
+                // A bundle install adds each part to the library; each applies as its standalone kind.
+                var parts = store.ExtractParts(packagePath, BundleParts.All, Path.Combine(tempDir, "parts"));
+                CollectionAssert.AreEquivalent(
+                    new[] { BundleParts.Colors, BundleParts.Sounds, BundleParts.Toast, BundleParts.Frame },
+                    parts.Keys.ToArray());
+
                 var target = new PersistedSettings();
                 target.UnlockSounds.Common = @"C:\keep\common.wav";
-                string installedToastXaml = null;
-                var applied = await store.ImportAsync(
-                    packagePath,
-                    BundleParts.All,
-                    target,
-                    (isFrame, xaml) => { if (!isFrame) installedToastXaml = xaml; },
-                    CancellationToken.None);
-
-                Assert.AreEqual(BundleParts.All, applied);
+                new ColorPackPortableStore().Import(parts[BundleParts.Colors], target);
                 Assert.AreEqual("#112233", target.RarityColors.Common);
                 Assert.AreEqual("#AABBCCDD", target.RarityColors.UltraRare);
                 Assert.AreEqual("#010203", target.ProviderColorOverrides["Steam"]);
                 Assert.AreEqual("#FF0000", target.ResourceOverrides["PlayAch.Brush.Text"].CustomValue);
                 Assert.AreEqual("15", target.ResourceOverrides["PlayAch.FontSize.Body"].CustomValue);
                 Assert.IsFalse(target.ResourceOverrides.ContainsKey("Not.A.Known.Key"), "unknown resource keys are dropped");
-                Assert.IsFalse(target.NotificationStyle.Toast.ShowHeader);
-                Assert.AreEqual("Bundled!", target.NotificationStyle.Toast.HeaderTexts.UnlockHeader);
-                Assert.IsFalse(target.NotificationStyle.Frame.ShowUnlockTime);
-                Assert.AreEqual("<x/>", installedToastXaml);
-                Assert.AreEqual(@"C:\keep\common.wav", target.UnlockSounds.Common, "tiers the pack does not carry are untouched");
-                Assert.IsTrue(soundStore.IsManagedPath(target.UnlockSounds.Rare));
-                Assert.IsTrue(File.Exists(target.UnlockSounds.Rare));
+
+                var sounds = target.UnlockSounds;
+                soundStore.Import(parts[BundleParts.Sounds], sounds);
+                Assert.AreEqual(@"C:\keep\common.wav", sounds.Common, "tiers the pack does not carry are untouched");
+                Assert.IsTrue(soundStore.IsManagedPath(sounds.Rare));
+                Assert.IsTrue(File.Exists(sounds.Rare));
+
+                var toast = styleStore.ReadForPreview(parts[BundleParts.Toast], Path.Combine(tempDir, "toast-scratch"));
+                Assert.IsTrue(toast.Contents.HasToastStyle);
+                Assert.IsFalse(toast.Style.Toast.ShowHeader);
+                Assert.AreEqual("Bundled!", toast.Style.Toast.HeaderTexts.UnlockHeader);
+                Assert.AreEqual("<x/>", toast.ToastTemplateXaml);
+
+                var frame = styleStore.ReadForPreview(parts[BundleParts.Frame], Path.Combine(tempDir, "frame-scratch"));
+                Assert.IsTrue(frame.Contents.HasFrameStyle);
+                Assert.IsFalse(frame.Style.Frame.ShowUnlockTime);
+                Assert.IsNull(frame.FrameTemplateXaml);
             });
         }
 
@@ -141,29 +149,6 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task Import_AppliesOnlySelectedParts()
-        {
-            await WithTempAsync(async tempDir =>
-            {
-                var store = CreateStore(tempDir, out _);
-                var source = new PersistedSettings();
-                source.RarityColors = new RarityColorSettings { Common = "#112233" };
-                source.NotificationStyle.Toast.HeaderTexts.UnlockHeader = "Bundled!";
-
-                var packagePath = Path.Combine(tempDir, "look.pabundle");
-                store.Export(packagePath, BundleParts.Colors | BundleParts.Toast, source);
-
-                var target = new PersistedSettings();
-                var originalHeader = target.NotificationStyle.Toast.HeaderTexts.UnlockHeader;
-                var applied = await store.ImportAsync(packagePath, BundleParts.Colors, target, null, CancellationToken.None);
-
-                Assert.AreEqual(BundleParts.Colors, applied);
-                Assert.AreEqual("#112233", target.RarityColors.Common);
-                Assert.AreEqual(originalHeader, target.NotificationStyle.Toast.HeaderTexts.UnlockHeader);
-            });
-        }
-
-        [TestMethod]
         public void Export_SoundsPartWithNothingCustom_IsDroppedNotFatal()
         {
             WithTemp(tempDir =>
@@ -210,9 +195,15 @@ namespace PlayniteAchievements.Services.Tests
 
         private static BundlePortableStore CreateStore(string tempDir, out UnlockSoundPortableStore soundStore)
         {
-            var diskImageService = new DiskImageService(logger: null, cacheRoot: Path.Combine(tempDir, "images"));
-            var imageStore = new NotificationImageStore(diskImageService, logger: null);
-            var styleStore = new NotificationStylePortableStore(imageStore, logger: null);
+            return CreateStore(tempDir, out soundStore, out _);
+        }
+
+        private static BundlePortableStore CreateStore(
+            string tempDir,
+            out UnlockSoundPortableStore soundStore,
+            out NotificationStylePortableStore styleStore)
+        {
+            styleStore = new NotificationStylePortableStore();
             soundStore = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
             return new BundlePortableStore(styleStore, soundStore, new ColorPackPortableStore());
         }

@@ -32,21 +32,21 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>The icon-hashes file that sits next to a baseline file.</summary>
         public static string IconHashesPath(string baselineFile) => baselineFile + ".icons.json";
 
-        /// <summary>The baseline an install recorded, or null when there is none or it cannot be read.</summary>
-        public GameCustomDataFile Load(WorkshopInstalledItem record)
+        /// <summary>The baseline in <paramref name="baselineFile"/>, or null when there is none or it cannot be read.</summary>
+        public GameCustomDataFile Load(string baselineFile)
         {
-            if (string.IsNullOrEmpty(record?.BaselineFile) || !File.Exists(record.BaselineFile))
+            if (string.IsNullOrEmpty(baselineFile) || !File.Exists(baselineFile))
             {
                 return null;
             }
 
             try
             {
-                return JsonConvert.DeserializeObject<GameCustomDataFile>(File.ReadAllText(record.BaselineFile));
+                return JsonConvert.DeserializeObject<GameCustomDataFile>(File.ReadAllText(baselineFile));
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Could not read the Workshop baseline for {record.Id}; the update replaces the data.");
+                _logger?.Warn(ex, $"Could not read the Workshop baseline {baselineFile}; the update replaces the data.");
                 return null;
             }
         }
@@ -79,16 +79,16 @@ namespace PlayniteAchievements.Services.Workshop
         /// game's icon folder. Null when the record has no baseline, the file is missing, or it
         /// cannot be read.
         /// </summary>
-        public Dictionary<string, string> LoadIconHashes(WorkshopInstalledItem record)
+        public Dictionary<string, string> LoadIconHashes(string baselineFile)
         {
-            if (string.IsNullOrEmpty(record?.BaselineFile))
+            if (string.IsNullOrEmpty(baselineFile))
             {
                 return null;
             }
 
             try
             {
-                var hashesPath = IconHashesPath(record.BaselineFile);
+                var hashesPath = IconHashesPath(baselineFile);
                 return File.Exists(hashesPath)
                     ? JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(hashesPath))
                     : null;

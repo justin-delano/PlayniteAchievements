@@ -138,6 +138,7 @@ namespace PlayniteAchievements.Models.Settings
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
             target.WorkshopIndexUrl = source.WorkshopIndexUrl;
             target.WorkshopServiceUrl = source.WorkshopServiceUrl;
+            target.LibraryLinks = LibraryLink.CloneAll(source.LibraryLinks);
             target.ScreenshotResolution = source.ScreenshotResolution;
             target.UnlockScreenshotCleanRarities = source.UnlockScreenshotCleanRarities;
             target.UnlockScreenshotCleanAlwaysCaptureCompletion = source.UnlockScreenshotCleanAlwaysCaptureCompletion;

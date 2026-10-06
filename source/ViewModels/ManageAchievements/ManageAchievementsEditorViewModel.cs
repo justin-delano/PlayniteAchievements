@@ -6075,7 +6075,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 () => GetSelectedFilterText(
                     _selectedCategoryFilters,
                     _categoryFilterOptions,
-                    ResourceProvider.GetString("LOCPlayAch_Common_Label_Category")),
+                    ResourceProvider.GetString("LOCPlayAch_Common_Label_Category"),
+                    AchievementCategoryTypeHelper.ToCategoryLeafDisplayText),
                 () => _categoryFilterOptions,
                 option => _selectedCategoryFilters.Contains(option),
                 (option, isSelected) =>

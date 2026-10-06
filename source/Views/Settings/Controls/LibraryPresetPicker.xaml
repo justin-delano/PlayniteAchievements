@@ -1,0 +1,108 @@
+<UserControl x:Class="PlayniteAchievements.Views.Settings.Controls.LibraryPresetPicker"
+             x:Name="PickerRoot"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="80"
+             d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- The button's glyph (its string Content) drawn as vector geometry with GlyphIcon:
+                 a font glyph rendered as text comes out soft at this size. -->
+            <DataTemplate x:Key="PickerGlyphContentTemplate">
+                <controls:GlyphIcon Glyph="{Binding}"
+                                    Size="16"
+                                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    SnapsToDevicePixels="True"/>
+            </DataTemplate>
+            <Style x:Key="PickerIconButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.ToolbarIconStyle}">
+                <Setter Property="Margin" Value="8,0,0,0"/>
+                <Setter Property="ContentTemplate" Value="{StaticResource PickerGlyphContentTemplate}"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <!-- The library items of this kind in one list, the user's own and Workshop ones
+             alike, in the card's original row: picking one applies it (the target then follows
+             it; Cancel in the settings window undoes both), Save, Delete, and the card's own
+             buttons. -->
+        <StackPanel Orientation="Horizontal">
+            <ComboBox x:Name="PresetSelector"
+                      MinWidth="240"
+                      SelectionChanged="PresetSelector_SelectionChanged"
+                      DropDownOpened="PresetSelector_DropDownOpened"
+                      DropDownClosed="PresetSelector_DropDownClosed">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel LastChildFill="True">
+                            <!-- Color swatches (a built-in palette, a color set), when the entry has any. -->
+                            <ItemsControl DockPanel.Dock="Left"
+                                          ItemsSource="{Binding Swatches}"
+                                          Margin="0,0,8,0"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding HasSwatches, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="16"
+                                                Height="16"
+                                                Margin="0,0,1,0"
+                                                Background="{Binding}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding Detail}"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Margin="12,0,0,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Label}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Button Content="&#xEE00;"
+                    Style="{StaticResource PickerIconButtonStyle}"
+                    ToolTip="{DynamicResource LOCPlayAch_Presets_Save}"
+                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Presets_Save}"
+                    VerticalAlignment="Center"
+                    Click="Save_Click"/>
+
+            <Button x:Name="DeleteButton"
+                    Content="&#xEE09;"
+                    Style="{StaticResource PickerIconButtonStyle}"
+                    ToolTip="{DynamicResource LOCPlayAch_Button_Delete}"
+                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Button_Delete}"
+                    ToolTipService.ShowOnDisabled="True"
+                    VerticalAlignment="Center"
+                    IsEnabled="False"
+                    Click="Delete_Click"/>
+
+            <!-- The owning card's own buttons (Export and Import menus). -->
+            <ContentPresenter Content="{Binding ExtraContent, ElementName=PickerRoot}"
+                              VerticalAlignment="Center"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

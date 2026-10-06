@@ -35,6 +35,12 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>For per-game data, how the package meets the custom data the game already has.</summary>
         public WorkshopGameDataInstallMode GameDataMode { get; set; } = WorkshopGameDataInstallMode.KeepEditsSinceInstall;
+
+        /// <summary>
+        /// For an update or a reinstall of looks, how the new package meets the targets that
+        /// follow the item; null for a first install, which only adds the item to the library.
+        /// </summary>
+        public Library.LibraryApplyMode? FollowerMode { get; set; }
     }
 
     /// <summary>How installed per-game data meets the custom data a game already has.</summary>
@@ -62,39 +68,49 @@ namespace PlayniteAchievements.Services.Workshop
 
         public List<string> Warnings { get; } = new List<string>();
 
-        /// <summary>The presets an install created, one per saved part; empty for kinds that apply directly.</summary>
+        /// <summary>The library names the install wrote, one per saved part; empty for game data.</summary>
         public List<string> PresetNames { get; } = new List<string>();
 
-        /// <summary>Hashes of the preset files this install wrote (part=hash;...), recorded so an update can tell a user edit from the original.</summary>
-        public string ContentHash { get; set; }
+        /// <summary>The library items the install wrote or recorded.</summary>
+        public List<string> LibraryItemIds { get; } = new List<string>();
 
         /// <summary>For game data, the baseline snapshot written for the next update to merge against.</summary>
         public string BaselineFile { get; set; }
+
+        /// <summary>Targets that now hold the new version.</summary>
+        public int UpdatedTargets { get; set; }
+
+        /// <summary>Values kept from the user's edits across those targets.</summary>
+        public int KeptEdits { get; set; }
+
+        /// <summary>Targets of kinds that take the new version when it is applied again.</summary>
+        public int PendingTargets { get; set; }
     }
 
     /// <summary>
-    /// Installs a downloaded Workshop package. Looks (color sets, notification styles, frames,
-    /// sound packs and bundles) are saved as presets under the item's name and applied only when
-    /// the user picks them from a preset list, so installing never overwrites the current look.
-    /// Showcase pages and game data apply directly. Runs on the UI thread: the showcase refresh
-    /// needs it.
+    /// Installs a downloaded Workshop package into the library. Looks (color sets, notification
+    /// styles, frames, sound packs and bundle parts) become library items under the item's name
+    /// and are applied from the owning card, so a first install never changes the current look;
+    /// an update or reinstall also brings the targets that follow the item along. Showcase pages
+    /// and game data are also applied on install, and their targets are linked. Runs on the UI
+    /// thread: the showcase refresh needs it.
     /// </summary>
     public sealed class WorkshopInstaller
     {
         private readonly PlayniteAchievementsPlugin _plugin;
-        private readonly WorkshopInstalledRegistry _registry;
+        private readonly WorkshopIdentityStore _identity;
         private readonly WorkshopBaselineStore _baselines;
         private readonly ILogger _logger;
 
         public WorkshopInstaller(
             PlayniteAchievementsPlugin plugin,
-            WorkshopInstalledRegistry registry,
+            WorkshopIdentityStore identity,
             ILogger logger = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
-            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _identity = identity ?? throw new ArgumentNullException(nameof(identity));
             _logger = logger;
-            _baselines = new WorkshopBaselineStore(Path.Combine(_registry.Directory, "baselines"), logger);
+            _baselines = new WorkshopBaselineStore(Path.Combine(_identity.Directory, "baselines"), logger);
         }
 
         /// <summary>The baselines game-data updates merge against; read by the Workshop preview.</summary>
@@ -136,8 +152,28 @@ namespace PlayniteAchievements.Services.Workshop
                     throw new InvalidOperationException($"Unknown Workshop item kind '{request.Item.Kind}'.");
             }
 
-            _registry.Record(request.Item, result.GameId, result.ContentHash, result.BaselineFile);
+            if (request.FollowerMode is Library.LibraryApplyMode mode && IsLook(request.Item.Kind))
+            {
+                var updates = _plugin.LibraryUpdateService;
+                foreach (var id in result.LibraryItemIds)
+                {
+                    var report = updates.MergeIntoTargets(id, mode);
+                    result.UpdatedTargets += report.UpdatedTargets.Count;
+                    result.KeptEdits += report.KeptEdits;
+                    result.PendingTargets += report.PendingTargets.Count;
+                }
+            }
+
             return result;
+        }
+
+        private static bool IsLook(WorkshopItemKind kind)
+        {
+            return kind == WorkshopItemKind.Colors
+                   || kind == WorkshopItemKind.UnlockSounds
+                   || kind == WorkshopItemKind.NotificationStyle
+                   || kind == WorkshopItemKind.ScreenshotFrame
+                   || kind == WorkshopItemKind.Bundle;
         }
 
         /// <summary>Which bundle parts a Workshop item offers, as the installer's flags.</summary>
@@ -169,7 +205,6 @@ namespace PlayniteAchievements.Services.Workshop
             CancellationToken cancel)
         {
             var contents = _plugin.NotificationStylePortableStore.InspectPackage(request.PackagePath);
-            var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var saved = false;
             foreach (var isFrame in new[] { false, true })
             {
@@ -178,7 +213,7 @@ namespace PlayniteAchievements.Services.Workshop
                     continue;
                 }
 
-                SaveStylePreset(request, result, isFrame, request.PackagePath, hashes);
+                SaveStylePart(request, result, isFrame, request.PackagePath);
                 saved = true;
             }
 
@@ -187,7 +222,6 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new InvalidOperationException("This package does not contain a notification or frame style.");
             }
 
-            result.ContentHash = JoinHashes(hashes);
             return Task.CompletedTask;
         }
 
@@ -195,18 +229,14 @@ namespace PlayniteAchievements.Services.Workshop
 
         private void InstallColors(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
         {
-            var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            SaveColorPreset(request, result, request.PackagePath, hashes);
-            result.ContentHash = JoinHashes(hashes);
+            SaveColorsPart(request, result, request.PackagePath);
         }
 
         // ---- sounds --------------------------------------------------------------------------
 
         private void InstallSounds(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
         {
-            var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            SaveSoundPreset(request, result, request.PackagePath, hashes);
-            result.ContentHash = JoinHashes(hashes);
+            SaveSoundsPart(request, result, request.PackagePath);
         }
 
         // ---- bundle --------------------------------------------------------------------------
@@ -225,31 +255,30 @@ namespace PlayniteAchievements.Services.Workshop
                 throw new InvalidOperationException("None of the selected bundle parts is in this package.");
             }
 
-            // Each part becomes a preset of its own kind under the bundle's name, so a bundle can
-            // be picked up piece by piece from the preset lists and never overwrites anything.
-            var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            // Each part becomes a library item of its own kind under the bundle's name, so a
+            // bundle can be picked up piece by piece from the cards and never overwrites anything.
             var scratch = PortablePackage.CreateScratchDirectory("WorkshopBundle");
             try
             {
                 var extracted = store.ExtractParts(request.PackagePath, parts, scratch);
                 if (extracted.TryGetValue(BundleParts.Colors, out var colorsPath))
                 {
-                    SaveColorPreset(request, result, colorsPath, hashes);
+                    SaveColorsPart(request, result, colorsPath);
                 }
 
                 if (extracted.TryGetValue(BundleParts.Sounds, out var soundsPath))
                 {
-                    SaveSoundPreset(request, result, soundsPath, hashes);
+                    SaveSoundsPart(request, result, soundsPath);
                 }
 
                 if (extracted.TryGetValue(BundleParts.Toast, out var toastPath))
                 {
-                    SaveStylePreset(request, result, isFrame: false, toastPath, hashes);
+                    SaveStylePart(request, result, isFrame: false, toastPath);
                 }
 
                 if (extracted.TryGetValue(BundleParts.Frame, out var framePath))
                 {
-                    SaveStylePreset(request, result, isFrame: true, framePath, hashes);
+                    SaveStylePart(request, result, isFrame: true, framePath);
                 }
             }
             finally
@@ -257,108 +286,138 @@ namespace PlayniteAchievements.Services.Workshop
                 PortablePackage.TryDeleteDirectory(scratch);
             }
 
-            result.ContentHash = JoinHashes(hashes);
             return Task.CompletedTask;
         }
 
-        // ---- preset saves that respect user edits -------------------------------------------
+        // ---- library parts -------------------------------------------------------------------
 
-        private void SaveColorPreset(WorkshopInstallRequest request, WorkshopInstallResult result, string packagePath, Dictionary<string, string> hashes)
+        private void SaveColorsPart(WorkshopInstallRequest request, WorkshopInstallResult result, string packagePath)
         {
-            var store = _plugin.ColorPresetStore;
-            var name = NameRespectingEdits(request, result, ColorsPart, store.Find(request.Item.Name)?.FilePath, () => store.UniqueName(request.Item.Name));
-            result.PresetNames.Add(store.SaveFrom(name, packagePath).Name);
-            hashes[ColorsPart] = HashFile(packagePath);
+            WritePart(request, result, ColorsPart, Library.LibraryItemKind.Colors, packagePath,
+                new Library.PackagePresetFolder(_plugin.ColorPresetStore));
         }
 
-        private void SaveSoundPreset(WorkshopInstallRequest request, WorkshopInstallResult result, string packagePath, Dictionary<string, string> hashes)
+        private void SaveSoundsPart(WorkshopInstallRequest request, WorkshopInstallResult result, string packagePath)
         {
-            var store = _plugin.UnlockSoundPresetStore;
-            var name = NameRespectingEdits(request, result, SoundsPart, store.Find(request.Item.Name)?.FilePath, () => store.UniqueName(request.Item.Name));
-            result.PresetNames.Add(store.SaveFrom(name, packagePath).Name);
-            hashes[SoundsPart] = HashFile(packagePath);
+            WritePart(request, result, SoundsPart, Library.LibraryItemKind.Sounds, packagePath,
+                new Library.PackagePresetFolder(_plugin.UnlockSoundPresetStore));
         }
 
-        private void SaveStylePreset(WorkshopInstallRequest request, WorkshopInstallResult result, bool isFrame, string packagePath, Dictionary<string, string> hashes)
+        private void SaveStylePart(WorkshopInstallRequest request, WorkshopInstallResult result, bool isFrame, string packagePath)
         {
-            var store = _plugin.NotificationStylePresetStore;
-            var wanted = NotificationStylePresetStore.SanitizeName(request.Item.Name);
-            var existing = store.ListPresets(isFrame)
-                .FirstOrDefault(preset => string.Equals(preset.Name, wanted, StringComparison.OrdinalIgnoreCase))?.FilePath;
-            var part = isFrame ? FramePart : ToastPart;
-            var name = NameRespectingEdits(request, result, part, existing, () => store.UniqueName(isFrame, request.Item.Name));
-            result.PresetNames.Add(store.SavePresetFromPackage(isFrame, name, packagePath).Name);
-            hashes[part] = HashFile(packagePath);
+            WritePart(
+                request,
+                result,
+                isFrame ? FramePart : ToastPart,
+                isFrame ? Library.LibraryItemKind.Frame : Library.LibraryItemKind.Toast,
+                packagePath,
+                new Library.NotificationStylePresetFolder(_plugin.NotificationStylePresetStore, isFrame));
         }
 
         /// <summary>
-        /// The item name, unless the preset of that name was changed by the user since this item
-        /// last wrote it (its hash no longer matches the recorded one): then the user's file stays
-        /// and the new version lands beside it under a fresh name, and the result says so.
+        /// Writes one part as its library item. An earlier copy the user edited in place stays as
+        /// a local item beside the new version, and the result says so.
         /// </summary>
-        private string NameRespectingEdits(WorkshopInstallRequest request, WorkshopInstallResult result, string part, string existingPath, Func<string> uniqueName)
+        private void WritePart(
+            WorkshopInstallRequest request,
+            WorkshopInstallResult result,
+            string part,
+            Library.LibraryItemKind kind,
+            string packagePath,
+            Library.ILibraryPackageFolder folder)
         {
-            if (string.IsNullOrEmpty(existingPath) || !File.Exists(existingPath))
+            var item = request.Item;
+            var write = _plugin.LibraryUpdateService.WriteWorkshopPart(
+                WorkshopLibraryItem(item, kind, Library.LibraryMigration.LibraryIdFor(item.Id, item.Kind, part), part),
+                packagePath,
+                folder);
+            result.PresetNames.Add(write.WrittenName);
+            result.LibraryItemIds.Add(write.Item.Id);
+            if (write.KeptLocalCopyName != null)
             {
-                return request.Item.Name;
+                result.Warnings.Add(string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Workshop_UpdateKeptPreset"),
+                    write.KeptLocalCopyName,
+                    write.WrittenName));
             }
-
-            var recorded = PartHash(_registry.Find(request.Item.Id)?.ContentHash, part);
-            if (recorded == null || string.Equals(HashFile(existingPath), recorded, StringComparison.OrdinalIgnoreCase))
-            {
-                return request.Item.Name;
-            }
-
-            var name = uniqueName();
-            result.Warnings.Add(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_UpdateKeptPreset"), request.Item.Name, name));
-            return name;
         }
 
-        private static string JoinHashes(Dictionary<string, string> hashes)
+        private static Library.LibraryItem WorkshopLibraryItem(WorkshopItem item, Library.LibraryItemKind kind, string libraryId, string part)
         {
-            return hashes.Count == 0 ? null : string.Join(";", hashes.Select(pair => pair.Key + "=" + pair.Value));
-        }
-
-        private static string PartHash(string joined, string part)
-        {
-            if (string.IsNullOrEmpty(joined))
+            return new Library.LibraryItem
             {
-                return null;
-            }
-
-            foreach (var entry in joined.Split(';'))
-            {
-                var separator = entry.IndexOf('=');
-                if (separator > 0 && string.Equals(entry.Substring(0, separator), part, StringComparison.OrdinalIgnoreCase))
-                {
-                    return entry.Substring(separator + 1);
-                }
-            }
-
-            return null;
+                Id = libraryId,
+                Kind = kind,
+                Name = item.Name,
+                Origin = Library.LibraryItemOrigin.Workshop,
+                WorkshopItemId = item.Id,
+                Part = part,
+                Version = item.Version,
+                Author = item.Author
+            };
         }
 
         private static string HashFile(string path) => WorkshopBaselineStore.HashFile(path);
 
         // ---- showcase page -------------------------------------------------------------------
 
+        /// <summary>
+        /// Adds the page package to the library. Pages that follow the item take the new version
+        /// (merged, or as published for a reinstall that asks for it); with none, the package
+        /// becomes a new page that follows the item.
+        /// </summary>
         private void InstallShowcasePage(WorkshopInstallRequest request, PersistedSettings persisted, WorkshopInstallResult result)
         {
+            var libraryId = Library.LibraryItem.WorkshopId(request.Item.Id);
+            var write = _plugin.LibraryUpdateService.WriteWorkshopPart(
+                WorkshopLibraryItem(request.Item, Library.LibraryItemKind.ShowcasePage, libraryId, part: null),
+                request.PackagePath,
+                new Library.DirectoryPackageFolder(
+                    Path.Combine(_plugin.GetPluginUserDataPath(), Library.LibraryStore.ShowcaseFolderName),
+                    ShowcasePagePortableStore.PackageFileExtension));
+            result.LibraryItemIds.Add(write.Item.Id);
+
+            var layout = persisted.Showcase;
+            var followingPages = persisted.LibraryLinks
+                .Where(pair => string.Equals(pair.Value?.LibraryItemId, libraryId, StringComparison.OrdinalIgnoreCase))
+                .Select(pair => pair.Key)
+                .Where(key => layout?.Pages?.Any(page => !string.IsNullOrWhiteSpace(page?.PageId)
+                    && string.Equals(Library.LibraryTargetKeys.Showcase(page.PageId), key, StringComparison.OrdinalIgnoreCase)) == true)
+                .ToList();
+            if (followingPages.Count > 0)
+            {
+                var report = _plugin.LibraryUpdateService.MergeIntoTargets(write.Item.Id, request.FollowerMode ?? Library.LibraryApplyMode.Merge);
+                result.UpdatedTargets += report.UpdatedTargets.Count;
+                result.KeptEdits += report.KeptEdits;
+                result.PendingTargets += report.PendingTargets.Count;
+                return;
+            }
+
             var portable = ShowcasePagePortableStore.Read(request.PackagePath);
             try
             {
-                var layout = persisted.Showcase;
-                ShowcasePagePortableStore.ApplyPortable(
+                var idMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var page = ShowcasePagePortableStore.ApplyPortable(
                     layout,
                     persisted.GridOptions,
                     portable,
                     insertAfterPageId: null,
-                    storeImage: extracted => _plugin.ShowcaseImageStore?.Import(extracted));
+                    storeImage: extracted => _plugin.ShowcaseImageStore?.Import(extracted),
+                    idMap: idMap);
 
                 // The same post-edit sequence the showcase editor runs after an import.
                 ShowcaseLayoutService.Normalize(layout);
                 ShowcaseLayoutService.PruneOrphanedWidgets(layout);
                 ShowcaseGridSurfaces.PruneOrphaned(persisted.GridOptions, layout);
+                if (!string.IsNullOrWhiteSpace(page?.PageId))
+                {
+                    // The new page follows the item; its link pairs the package's widgets with the page's.
+                    var adapter = _plugin.ShowcaseLibraryTargets.AdapterFor(page.PageId);
+                    persisted.SetLibraryLink(
+                        adapter.TargetKey,
+                        _plugin.LibraryApplyService.Link(adapter, write.Item, persisted, idMap));
+                }
+
                 _plugin.PersistSettingsForUi();
                 _plugin.ShowcaseImageStore?.Prune(layout);
                 ShowcaseConfigurationEvents.RaiseChanged();
@@ -387,7 +446,8 @@ namespace PlayniteAchievements.Services.Workshop
             // A merge onto data the user had before this item treats all of it as theirs: an empty
             // baseline makes every value they set count as an edit, and every icon file on disk is
             // set aside. A replace keeps nothing.
-            var record = _registry.Find(request.Item.Id, gameId);
+            var libraryId = Library.LibraryItem.WorkshopId(request.Item.Id);
+            var baselineFile = GameDataBaselineFile(request.Item.Id, gameId);
             var iconDirectory = _plugin.ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D"));
             GameCustomDataFile baseline = null;
             EditedIconSet editedIcons = null;
@@ -400,9 +460,9 @@ namespace PlayniteAchievements.Services.Workshop
                         editedIcons = SnapshotEditedIcons(iconDirectory, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
                         break;
                     case WorkshopGameDataInstallMode.KeepEditsSinceInstall:
-                        baseline = _baselines.Load(record);
-                        editedIcons = baseline != null && !string.IsNullOrEmpty(record?.BaselineFile)
-                            ? SnapshotEditedIcons(iconDirectory, _baselines.LoadIconHashes(record))
+                        baseline = _baselines.Load(baselineFile);
+                        editedIcons = baseline != null
+                            ? SnapshotEditedIcons(iconDirectory, _baselines.LoadIconHashes(baselineFile))
                             : null;
                         break;
                 }
@@ -463,8 +523,20 @@ namespace PlayniteAchievements.Services.Workshop
                 }
                 else
                 {
-                    result.BaselineFile = record?.BaselineFile;
+                    result.BaselineFile = baselineFile;
                 }
+
+                // The game follows the item: its link carries the baseline the next update merges against.
+                var stored = _plugin.LibraryUpdateService.RecordWorkshopItem(
+                    WorkshopLibraryItem(request.Item, Library.LibraryItemKind.GameData, libraryId, part: null));
+                result.LibraryItemIds.Add(stored.Id);
+                _plugin.GameLinkStore.Set(Library.LibraryTargetKeys.GameData(gameId), new LibraryLink
+                {
+                    LibraryItemId = libraryId,
+                    AppliedVersion = request.Item.Version,
+                    BaselineFile = result.BaselineFile,
+                    AppliedUtc = DateTime.UtcNow
+                });
 
                 var effects = CustomDataTransition.Analyze(previous, current);
 
@@ -504,6 +576,18 @@ namespace PlayniteAchievements.Services.Workshop
             }
 
             result.GameId = gameId;
+        }
+
+        /// <summary>
+        /// The baseline a game-data update onto <paramref name="gameId"/> merges against: the one
+        /// the game's link to the item carries. Null when the game does not follow the item.
+        /// </summary>
+        internal string GameDataBaselineFile(string workshopItemId, Guid gameId)
+        {
+            var link = _plugin.GameLinkStore.Get(Library.LibraryTargetKeys.GameData(gameId));
+            return link != null && string.Equals(link.LibraryItemId, Library.LibraryItem.WorkshopId(workshopItemId), StringComparison.OrdinalIgnoreCase)
+                ? link.BaselineFile
+                : null;
         }
 
         // ---- update baselines ----------------------------------------------------------------

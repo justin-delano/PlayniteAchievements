@@ -8,8 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services.Notifications
 {
@@ -84,9 +82,9 @@ namespace PlayniteAchievements.Services.Notifications
     /// look transfers intact: <c>.panotif</c> carries the toast surface and <c>.paframe</c> the
     /// screenshot frame (flagged in the manifest). A bundle (<c>.pabundle</c>) is how both
     /// travel together. Files with the retired <c>.pastyle</c> extension, which carried both
-    /// surfaces, are still read. Import re-materializes bundled images into managed storage
-    /// via <see cref="NotificationImageStore"/> so paths are always rewritten to the local
-    /// machine.
+    /// surfaces, are still read. Reading a package extracts its images to a scratch folder
+    /// (<see cref="ReadForPreview"/>); the manifest's own image paths are never trusted, and the
+    /// library adapter copies the images it takes into managed storage.
     /// </summary>
     public sealed class NotificationStylePortableStore
     {
@@ -149,8 +147,6 @@ namespace PlayniteAchievements.Services.Notifications
                 [NotificationImageSlot.FrameBadgeCompletion] = "frame_badge_completion"
             };
 
-        private readonly NotificationImageStore _imageStore;
-        private readonly ILogger _logger;
         // Null omitted (null == "use default" for these fields), but NOT DefaultValueHandling.Ignore:
         // the surface-style booleans default to true, so ignoring default values would silently drop
         // every explicit "false" and the importer would flip it back to true.
@@ -159,12 +155,6 @@ namespace PlayniteAchievements.Services.Notifications
             Formatting = Formatting.Indented,
             NullValueHandling = NullValueHandling.Ignore
         };
-
-        public NotificationStylePortableStore(NotificationImageStore imageStore, ILogger logger = null)
-        {
-            _imageStore = imageStore ?? throw new ArgumentNullException(nameof(imageStore));
-            _logger = logger;
-        }
 
         /// <summary>
         /// Writes both surfaces to one package, the shape the retired <c>.pastyle</c> files have.
@@ -223,7 +213,7 @@ namespace PlayniteAchievements.Services.Notifications
         /// kinds along with it, so a pack carries the whole look rather than one surface of it. A
         /// kind the pack does not carry is left as it is rather than being overwritten with the
         /// shared look. The pack's image paths must already point at managed storage (the result
-        /// of <see cref="ImportAsync(string, NotificationImageOwner, CancellationToken)"/>).
+        /// of <see cref="ReadForPreview"/> copied into managed storage).
         /// </summary>
         public static void ApplyPackSurfaces(
             NotificationStyleSettings target,
@@ -404,9 +394,9 @@ namespace PlayniteAchievements.Services.Notifications
 
         /// <summary>
         /// The style a package carries, read from its manifest alone: no images are
-        /// materialized, so bundled image paths stay package-relative. Enough for a preview
-        /// render of a preset or a composed theme part; applying a package still goes through
-        /// <see cref="ImportAsync"/>.
+        /// extracted, so bundled image paths stay package-relative. Enough for a preview render
+        /// of a preset, a composed theme part, or the parts a package owns; applying a package
+        /// reads it through <see cref="ReadForPreview"/>.
         /// </summary>
         public NotificationStyleSettings ReadStyle(string sourcePath)
         {
@@ -513,7 +503,7 @@ namespace PlayniteAchievements.Services.Notifications
         /// Reads everything a package carries for a preview render: the style with each bundled
         /// slot image extracted into <paramref name="scratchDirectory"/> and its path rewritten to
         /// that absolute file, the package contents, and the template XAML of each surface. Bundled
-        /// images go through the same traversal and decoder checks as <see cref="ImportAsync(string, NotificationImageOwner, CancellationToken)"/>;
+        /// images go through the traversal and decoder checks;
         /// as there, the manifest's own image paths are ignored and a slot without a bundled image
         /// is left empty. Nothing is written to managed image storage or settings. The caller owns
         /// <paramref name="scratchDirectory"/> and deletes it when the preview ends.
@@ -564,8 +554,7 @@ namespace PlayniteAchievements.Services.Notifications
         }
 
         /// <summary>
-        /// The preview counterpart of <see cref="MaterializeBundledImagesAsync"/>: each slot's
-        /// bundled entry (found and validated by <see cref="FindSlotEntry"/>) is extracted to
+        /// Each slot's bundled entry (found and validated by <see cref="FindSlotEntry"/>) is extracted to
         /// <c>&lt;scratchDirectory&gt;\&lt;entry stem&gt;&lt;ext&gt;</c> and the slot points at
         /// that file; a slot without an entry is cleared.
         /// </summary>
@@ -619,45 +608,6 @@ namespace PlayniteAchievements.Services.Notifications
                     return reader.ReadToEnd();
                 }
             }
-        }
-
-        /// <summary>
-        /// Reads a style package and returns a ready-to-apply style whose
-        /// image paths point into managed storage for the requested global/provider target.
-        /// Bundled images are re-materialized; the manifest's image paths are ignored so
-        /// machine-specific paths never leak in.
-        /// </summary>
-        public async Task<NotificationStyleSettings> ImportAsync(
-            string sourcePath,
-            string targetProviderKeyOrNull,
-            CancellationToken cancel)
-        {
-            return await ImportAsync(
-                sourcePath,
-                NotificationImageOwner.ForProvider(targetProviderKeyOrNull),
-                cancel).ConfigureAwait(false);
-        }
-
-        public async Task<NotificationStyleSettings> ImportAsync(
-            string sourcePath,
-            NotificationImageOwner targetOwner,
-            CancellationToken cancel)
-        {
-            if (string.IsNullOrWhiteSpace(sourcePath))
-            {
-                throw new ArgumentException("Source path is required.", nameof(sourcePath));
-            }
-
-            if (!IsPackagePath(sourcePath))
-            {
-                throw new InvalidOperationException(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportUnsupportedFile"));
-            }
-
-            return await ImportPackageAsync(
-                sourcePath,
-                targetOwner ?? NotificationImageOwner.Global,
-                cancel).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -742,133 +692,6 @@ namespace PlayniteAchievements.Services.Notifications
             }
 
             return value;
-        }
-
-        private async Task<NotificationStyleSettings> ImportPackageAsync(
-            string sourcePath,
-            NotificationImageOwner targetOwner,
-            CancellationToken cancel)
-        {
-            if (!File.Exists(sourcePath))
-            {
-                throw new FileNotFoundException("Package file not found.", sourcePath);
-            }
-
-            // The single chokepoint every import goes through, presets included.
-            if (!IsZipContent(sourcePath))
-            {
-                throw new InvalidOperationException(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportNotPackage"));
-            }
-
-            using (var archive = ZipFile.OpenRead(sourcePath))
-            {
-                var entriesByName = archive.Entries
-                    .Select(entry => new { Entry = entry, Name = NormalizeArchiveEntryName(entry.FullName) })
-                    .Where(item => !string.IsNullOrWhiteSpace(item.Entry.Name) &&
-                                   !string.IsNullOrWhiteSpace(item.Name))
-                    .GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(group => group.Key, group => group.First().Entry, StringComparer.OrdinalIgnoreCase);
-
-                if (!entriesByName.TryGetValue(ManifestEntryName, out var manifestEntry))
-                {
-                    throw new InvalidOperationException(
-                        ResourceProvider.GetString("LOCPlayAch_Settings_Style_ImportMissingManifest"));
-                }
-
-                NotificationStylePortableFile portable;
-                using (var reader = new StreamReader(manifestEntry.Open()))
-                {
-                    portable = JsonConvert.DeserializeObject<NotificationStylePortableFile>(reader.ReadToEnd());
-                }
-
-                var style = ExtractStyleOrThrow(portable);
-
-                var tempRoot = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "NotificationStyleImports");
-                Directory.CreateDirectory(tempRoot);
-                try
-                {
-                    await MaterializeBundledImagesAsync(
-                        style, NotificationKind.Base, entriesByName, targetOwner, tempRoot, cancel)
-                        .ConfigureAwait(false);
-
-                    // Each kind the pack carries lands in its own slot folder under the target
-                    // owner, so its image overrides survive the round trip.
-                    foreach (var pair in style.KindStyles)
-                    {
-                        if (pair.Value != null &&
-                            NotificationImageStore.TryParseNotificationKind(pair.Key, out var notificationKind))
-                        {
-                            await MaterializeBundledImagesAsync(
-                                pair.Value,
-                                notificationKind,
-                                entriesByName,
-                                targetOwner.ForNotificationKind(notificationKind),
-                                tempRoot,
-                                cancel).ConfigureAwait(false);
-                        }
-                    }
-                }
-                finally
-                {
-                    TryDeleteDirectory(tempRoot);
-                }
-
-                return style;
-            }
-        }
-
-        private async Task MaterializeBundledImagesAsync(
-            NotificationStyleSettings style,
-            NotificationKind notificationKind,
-            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
-            NotificationImageOwner targetOwner,
-            string tempRoot,
-            CancellationToken cancel)
-        {
-            foreach (var slot in NotificationImageSlotMap.Slots)
-            {
-                NotificationImageSlotMap.SetPath(style, slot, await MaterializeBundledSlotAsync(
-                    entriesByName,
-                    BuildEntryStem(notificationKind, slot),
-                    slot,
-                    targetOwner,
-                    tempRoot,
-                    cancel).ConfigureAwait(false));
-            }
-        }
-
-        private async Task<string> MaterializeBundledSlotAsync(
-            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
-            string entryStem,
-            NotificationImageSlot slot,
-            NotificationImageOwner targetOwner,
-            string tempRoot,
-            CancellationToken cancel)
-        {
-            var entry = FindSlotEntry(entriesByName, entryStem);
-            if (entry == null)
-            {
-                return null;
-            }
-
-            var tempPath = Path.Combine(tempRoot, Guid.NewGuid().ToString("N") + Path.GetExtension(entry.Name));
-            using (var source = entry.Open())
-            using (var destination = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                source.CopyTo(destination);
-            }
-
-            try
-            {
-                return await _imageStore
-                    .MaterializeAsync(tempPath, targetOwner, slot, cancel)
-                    .ConfigureAwait(false);
-            }
-            finally
-            {
-                TryDeleteFile(tempPath);
-            }
         }
 
         private static ZipArchiveEntry FindSlotEntry(
@@ -992,33 +815,6 @@ namespace PlayniteAchievements.Services.Notifications
         {
             var normalized = (value ?? string.Empty).Trim();
             return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
-        }
-
-        private void TryDeleteFile(string path)
-        {
-            try
-            {
-                File.Delete(path);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"Failed to delete temp notification style image: {path}");
-            }
-        }
-
-        private void TryDeleteDirectory(string path)
-        {
-            try
-            {
-                if (Directory.Exists(path))
-                {
-                    Directory.Delete(path, recursive: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"Failed to delete temp notification style import directory: {path}");
-            }
         }
 
     }

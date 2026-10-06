@@ -6,8 +6,9 @@ namespace PlayniteAchievements.Views.Helpers
 {
     /// <summary>
     /// The one "name this preset" dialog, shared by the notification, color set and sound pack
-    /// preset rows. Returns false when the user cancels or leaves nothing valid after
-    /// <paramref name="sanitize"/> has run.
+    /// preset rows and the Library page's Rename. Returns false when the user cancels or leaves
+    /// nothing valid after <paramref name="sanitize"/> has run. <paramref name="title"/> replaces
+    /// the Save Preset window title.
     /// </summary>
     internal static class PresetNamePrompt
     {
@@ -16,7 +17,8 @@ namespace PlayniteAchievements.Views.Helpers
             string defaultName,
             System.Func<string, string> sanitize,
             int maxNameLength,
-            out string presetName)
+            out string presetName,
+            string title = null)
         {
             presetName = null;
 
@@ -25,7 +27,7 @@ namespace PlayniteAchievements.Views.Helpers
                 defaultName ?? string.Empty);
 
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                ResourceProvider.GetString("LOCPlayAch_Presets_NameDialogTitle"),
+                title ?? ResourceProvider.GetString("LOCPlayAch_Presets_NameDialogTitle"),
                 inputDialog,
                 new WindowOptions
                 {

@@ -147,7 +147,7 @@ namespace PlayniteAchievements
             // caller's scratch folder for the life of this modal dialog.
             candidate.BundlePartFiles = bundlePartFiles;
 
-            var dialog = new Views.Workshop.WorkshopShareDialog(this, _logger, candidate, WorkshopShareService, WorkshopRegistry);
+            var dialog = new Views.Workshop.WorkshopShareDialog(this, _logger, candidate, WorkshopShareService, WorkshopIdentityStore);
             var window = Views.Helpers.PlayniteUiProvider.CreateExtensionWindow(
                 ResourceProvider.GetString("LOCPlayAch_Workshop_Share"),
                 dialog,
@@ -180,11 +180,13 @@ namespace PlayniteAchievements
         /// <summary>
         /// Opens the settings on the Workshop tab: the Playnite settings dialog on desktop, the
         /// managed popout in fullscreen. The tab is handed over through
-        /// <see cref="Views.SettingsControl.PendingTabKey"/> because neither opener takes one.
+        /// <see cref="Views.SettingsControl.PendingTabKey"/> because neither opener takes one;
+        /// <paramref name="pageKey"/> picks the Workshop page the same way.
         /// </summary>
-        internal void OpenWorkshopSettings()
+        internal void OpenWorkshopSettings(string pageKey = null)
         {
             Views.SettingsControl.PendingTabKey = "Workshop";
+            Views.Settings.Workshop.WorkshopSettingsTab.PendingPageKey = pageKey;
             if (IsFullscreenMode())
             {
                 OpenSettingsWindow();
