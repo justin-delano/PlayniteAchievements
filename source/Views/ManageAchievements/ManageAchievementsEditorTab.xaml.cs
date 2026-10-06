@@ -322,7 +322,14 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void ViewModel_FilterChanged(object sender, EventArgs e)
         {
-            CollectionViewSource.GetDefaultView(ViewModel?.AchievementRows)?.Refresh();
+            var logger = Services.Logging.PluginLogger.GetLogger(nameof(ManageAchievementsEditorTab));
+            // The refresh resets the grid, and the rows it realizes, the layout and the render all
+            // land after this returns; the probe names those operations.
+            Common.DispatcherOperationProbe.Arm(logger, "editor-filter", TimeSpan.FromSeconds(1.5));
+            using (Common.PerfScope.Start(logger, "Editor.FilterRefresh", thresholdMs: 0))
+            {
+                CollectionViewSource.GetDefaultView(ViewModel?.AchievementRows)?.Refresh();
+            }
         }
 
         private void ToggleDetailsPaneButton_Click(object sender, RoutedEventArgs e)
