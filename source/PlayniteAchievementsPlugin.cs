@@ -100,6 +100,7 @@ namespace PlayniteAchievements
         private Services.Library.ColorsLibraryAdapter _colorsLibraryAdapter;
         private Services.Library.SoundsLibraryAdapter _soundsLibraryAdapter;
         private Services.Library.NotificationLibraryTargets _notificationLibraryTargets;
+        private Services.Library.ShowcaseLibraryTargets _showcaseLibraryTargets;
         private Services.Library.GameLinkStore _gameLinkStore;
         private Services.Library.LibraryUpdateService _libraryUpdateService;
         private int _droppedLibraryItemsQueued;
@@ -271,7 +272,7 @@ namespace PlayniteAchievements
                 () => _settingsViewModel?.Settings?.Persisted,
                 update => ApplyLibrarySettingsChange(update, includeEditSnapshot: true),
                 update => ApplyLibrarySettingsChange(update, includeEditSnapshot: false),
-                new Services.Library.ILibraryTargetResolver[] { NotificationLibraryTargets }));
+                new Services.Library.ILibraryTargetResolver[] { NotificationLibraryTargets, ShowcaseLibraryTargets }));
         /// <summary>Applies library items to their targets and keeps the links and baselines.</summary>
         public Services.Library.LibraryApplyService LibraryApplyService =>
             _libraryApplyService ?? (_libraryApplyService = new Services.Library.LibraryApplyService(
@@ -327,6 +328,33 @@ namespace PlayniteAchievements
 
                 return _notificationLibraryTargets;
             }
+        }
+
+        /// <summary>The showcase pages as library targets.</summary>
+        public Services.Library.ShowcaseLibraryTargets ShowcaseLibraryTargets =>
+            _showcaseLibraryTargets ?? (_showcaseLibraryTargets = new Services.Library.ShowcaseLibraryTargets(
+                () => _settingsViewModel?.Settings?.Persisted,
+                path => _showcaseImageStore?.Import(path),
+                AfterShowcaseLibraryWrite));
+
+        /// <summary>
+        /// After a library item changed a page of the live layout: unused profile images go
+        /// (only outside a settings edit session, whose snapshot may still show them) and the
+        /// open showcase redraws.
+        /// </summary>
+        private void AfterShowcaseLibraryWrite(PersistedSettings settings)
+        {
+            if (settings == null || !ReferenceEquals(settings, _settingsViewModel?.Settings?.Persisted))
+            {
+                return;
+            }
+
+            if (_settingsViewModel?.IsEditSessionActive != true)
+            {
+                _showcaseImageStore?.Prune(settings.Showcase);
+            }
+
+            Services.Showcase.ShowcaseConfigurationEvents.RaiseChanged();
         }
 
         /// <summary>Removes notification slot images that neither the live settings, the edit snapshot nor any game refers to.</summary>
