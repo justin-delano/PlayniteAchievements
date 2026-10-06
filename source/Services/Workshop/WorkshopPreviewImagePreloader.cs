@@ -35,11 +35,6 @@ namespace PlayniteAchievements.Services.Workshop
         // A style package carries a handful of slot images; this bounds a malformed one.
         private const int MaxStyleImages = 64;
 
-        private static readonly HashSet<string> ImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"
-        };
-
         private readonly MemoryImageService _imageService;
 
         /// <param name="imageService">The plugin's image service; null decodes local files directly.</param>
@@ -137,7 +132,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
 
             var files = Directory.EnumerateFiles(scratch, "*", SearchOption.AllDirectories)
-                .Where(file => ImageExtensions.Contains(Path.GetExtension(file)))
+                .Where(ImageFormats.HasSupportedExtension)
                 .Take(MaxStyleImages)
                 .ToList();
             var background = model.Style?.ToastBackgroundImagePath;
