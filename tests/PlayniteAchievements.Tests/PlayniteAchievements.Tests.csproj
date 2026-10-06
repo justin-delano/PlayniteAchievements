@@ -661,6 +661,10 @@
     <Compile Include="..\..\source\Services\Library\LibraryTargetKeys.cs" Link="Source\Services\Library\LibraryTargetKeys.cs" />
     <Compile Include="..\..\source\Services\Library\GameLinkStore.cs" Link="Source\Services\Library\GameLinkStore.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryBaselineStore.cs" Link="Source\Services\Library\LibraryBaselineStore.cs" />
+    <Compile Include="..\..\source\Services\Library\ILibraryAdapter.cs" Link="Source\Services\Library\ILibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryApplyService.cs" Link="Source\Services\Library\LibraryApplyService.cs" />
+    <Compile Include="..\..\source\Services\Library\ColorsLibraryAdapter.cs" Link="Source\Services\Library\ColorsLibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\SoundsLibraryAdapter.cs" Link="Source\Services\Library\SoundsLibraryAdapter.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
