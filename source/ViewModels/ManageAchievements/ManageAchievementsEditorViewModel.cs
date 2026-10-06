@@ -34,7 +34,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels.ManageAchievements
 {
-    public sealed class ManageAchievementsEditorViewModel : ObservableObject
+    public sealed partial class ManageAchievementsEditorViewModel : ObservableObject
     {
         // The merged editor lists provider achievements alongside authored ones; the Custom tab
         // lists only authored ones. Everything else about the two surfaces is identical, so they
@@ -60,7 +60,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly System.Windows.Input.ICommand _exportAllCustomData;
         private readonly System.Windows.Input.ICommand _importFromWorkshop;
         private readonly System.Windows.Input.ICommand _shareToWorkshop;
-        private readonly Action<Action<CustomAchievementTextImportResult>, Action> _importPortable;
+        private readonly Action<Action<CustomAchievementTextImportResult>, Action<string>, Action> _importPortable;
         private bool _isRefreshingAssignments;
 
         private bool _isDetailsPaneExpanded = true;
@@ -143,7 +143,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             System.Windows.Input.ICommand exportAllCustomData = null,
             System.Windows.Input.ICommand importFromWorkshop = null,
             System.Windows.Input.ICommand shareToWorkshop = null,
-            Action<Action<CustomAchievementTextImportResult>, Action> importPortable = null)
+            Action<Action<CustomAchievementTextImportResult>, Action<string>, Action> importPortable = null)
         {
             _includeProviderAchievements = includeProviderAchievements;
             _gameId = gameId;
@@ -307,6 +307,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         private bool _isApplyingUndo;
 
+        /// <summary>
+        /// Set while a CSV import assigns its values, so the import is recorded as one step from
+        /// the writes it makes rather than as field edits.
+        /// </summary>
+        private bool _isImportingCsv;
+
         public RelayCommand UndoCommand { get; }
 
         public RelayCommand RedoCommand { get; }
@@ -387,7 +393,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private void MarkUndoIntent(EditorEditIntent intent, IEnumerable<string> apiNames = null)
         {
-            if (_isApplyingUndo)
+            // A CSV import names its gesture once; the cell edits it makes inside must not
+            // rename it, or the import would split into one step per field.
+            if (_isApplyingUndo || _isImportingCsv)
             {
                 return;
             }
@@ -496,6 +504,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             object newValue)
         {
             if (_isApplyingUndo ||
+                _isImportingCsv ||
                 row == null ||
                 string.IsNullOrWhiteSpace(row.OriginalApiName) ||
                 !UndoableRowFields.ContainsKey(propertyName ?? string.Empty))
@@ -3374,15 +3383,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _ = SaveAsync();
         }
 
-        // The game's one Import: a custom-achievements package merges into these rows, and a
-        // whole-game package replaces the custom data, which the history records as one step.
-        private void ImportFile()
-        {
-            _importPortable?.Invoke(
-                MergeImportedDefinitions,
-                () => MarkUndoIntent(EditorEditIntent.Atomic("Import", "LOCPlayAch_Common_Import")));
-        }
-
         private void ExportAllCustomData_CanExecuteChanged(object sender, EventArgs e)
         {
             ExportAllCustomDataCommand?.RaiseCanExecuteChanged();
@@ -3444,11 +3444,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private const string PortablePackageFilter =
             "Playnite Achievements Portable (*.pa)|*.pa";
-
-        private void ExportTemplate()
-        {
-            ExportPackage("custom-achievements-template.pa", Array.Empty<CustomAchievementDefinition>(), "custom achievement template");
-        }
 
         private void ExportAchievements()
         {
