@@ -44,7 +44,6 @@ namespace PlayniteAchievements.Services.Notifications
     /// </summary>
     public sealed class NotificationStylePresetStore
     {
-        public const int MaxPresetCount = 50;
         public const int MaxNameLength = 64;
 
         private const string PresetsFolderName = "notification_style_presets";
@@ -169,11 +168,6 @@ namespace PlayniteAchievements.Services.Notifications
             }
 
             var destination = GetPresetPath(isFrame, sanitized);
-            if (!File.Exists(destination) && CountPresets(isFrame) >= MaxPresetCount)
-            {
-                throw new InvalidOperationException($"You can save up to {MaxPresetCount} presets.");
-            }
-
             Directory.CreateDirectory(GetSurfaceDirectory(isFrame));
             File.Copy(packagePath, destination, overwrite: true);
             return new NotificationStylePresetInfo(sanitized, destination, isFrame);
