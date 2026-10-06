@@ -12,6 +12,8 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Images;
+using PlayniteAchievements.Services.Images.Webm;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Views.Helpers;
 
@@ -1770,6 +1772,11 @@ namespace PlayniteAchievements.ViewModels
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
                 return null;
+            }
+
+            if (ImageFormats.IsWebmExtension(ImageFormats.GetExtension(path)))
+            {
+                return WebmStill.TryDecode(path, 0);
             }
 
             try
