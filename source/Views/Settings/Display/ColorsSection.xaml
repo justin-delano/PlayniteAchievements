@@ -42,54 +42,10 @@
 
                     <Border Style="{StaticResource SettingGroupCardStyle}" Grid.IsSharedSizeScope="True">
                         <StackPanel>
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_Palettes}"
-                                                 Margin="0">
-                              <StackPanel Orientation="Horizontal">
-                                <ComboBox x:Name="RarityPalettePresetComboBox"
-                                          MinWidth="240"
-                                          ItemsSource="{Binding RarityPalettePresets, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <Border Width="16" Height="16" Margin="0,0,1,0"
-                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                                        Background="{Binding CommonBrush}"/>
-                                                <Border Width="16" Height="16" Margin="0,0,1,0"
-                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                                        Background="{Binding UncommonBrush}"/>
-                                                <Border Width="16" Height="16" Margin="0,0,1,0"
-                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                                        Background="{Binding RareBrush}"/>
-                                                <Border Width="16" Height="16"
-                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                                        Background="{Binding UltraRareBrush}"/>
-                                                <TextBlock Text="{Binding DisplayLabel}"
-                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                           VerticalAlignment="Center"
-                                                           Margin="8,0,0,0"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Apply}"
-                                        Margin="8,0,0,0"
-                                        MinWidth="58"
-                                        Click="ApplySelectedRarityPalettePreset_Click"/>
-
-                                <Button Content="{DynamicResource LOCPlayAch_Button_ResetAll}"
-                                        Margin="8,0,0,0"
-                                        MinWidth="78"
-                                        Click="ResetAllRarityColors_Click"/>
-                              </StackPanel>
-                            </controls:SettingRow>
-                            <!-- The color sets in the library (.pacolors files under the plugin's
-                                 data folder, saved here, imported or from the Workshop). Choosing
-                                 one applies it and follows it. -->
+                            <!-- One list: the built-in palettes (Default first) and the color sets in
+                                 the library (.pacolors files saved here, imported or from the
+                                 Workshop). Picking applies at once; a library set is then followed,
+                                 a built-in palette is not. -->
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Presets_Header}"
                                                  Margin="0">
                                 <settingsControls:LibraryPresetPicker x:Name="ColorSetPresetPicker">

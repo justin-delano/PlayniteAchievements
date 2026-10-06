@@ -17,6 +17,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Settings;
@@ -44,7 +45,6 @@ namespace PlayniteAchievements.Views.Settings.Display
         private ObservableCollection<CompletedBadgeAppearanceItem> _completedBadgeAppearanceItems;
         private ObservableCollection<TrophyAppearanceItem> _trophyAppearanceItems;
         private ObservableCollection<ProviderAppearanceItem> _providerAppearanceItems;
-        private ObservableCollection<RarityPalettePreset> _rarityPalettePresets;
 
         public ColorsSection()
         {
@@ -78,8 +78,63 @@ namespace PlayniteAchievements.Views.Settings.Display
                 ExportCurrent = path => plugin.ColorPackPortableStore.Export(_settings.Persisted, path),
                 TargetChanged = RefreshAppearanceEditorFromPersisted,
                 NestedValue = () => _settings.Persisted?.RarityColors,
+                BuiltIns = CreateRarityPalettePresets().Select(ToBuiltIn).ToList(),
+                ItemSwatches = ColorSetSwatches,
                 Logger = logger
             });
+        }
+
+        /// <summary>
+        /// A built-in palette as an entry of the one preset list: picking it writes its rarity
+        /// colors (and resource defaults) and ends any color set the colors followed.
+        /// </summary>
+        private LibraryPickerBuiltIn ToBuiltIn(RarityPalettePreset preset)
+        {
+            return new LibraryPickerBuiltIn
+            {
+                Label = preset.DisplayLabel,
+                Swatches = SwatchesOf(preset),
+                Apply = () =>
+                {
+                    ApplyRarityPalette(preset);
+                    LibraryApplyService.StopFollowing(_plugin.ColorsLibraryAdapter, _settings.Persisted);
+                },
+                IsCurrent = () => SameRarityColors(preset.Colors, _settings?.Persisted?.RarityColors)
+            };
+        }
+
+        private static IReadOnlyList<Brush> SwatchesOf(RarityPalettePreset preset)
+        {
+            return new[] { preset.CommonBrush, preset.UncommonBrush, preset.RareBrush, preset.UltraRareBrush };
+        }
+
+        // Swatches of a library color set, read from its file once per file version.
+        private readonly Dictionary<string, IReadOnlyList<Brush>> _colorSetSwatches =
+            new Dictionary<string, IReadOnlyList<Brush>>(StringComparer.OrdinalIgnoreCase);
+
+        private IReadOnlyList<Brush> ColorSetSwatches(LibraryItem item)
+        {
+            var path = _plugin?.LibraryStore?.FullPath(item);
+            if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+            {
+                return null;
+            }
+
+            var key = path + "|" + System.IO.File.GetLastWriteTimeUtc(path).Ticks;
+            if (!_colorSetSwatches.TryGetValue(key, out var swatches))
+            {
+                var colors = _plugin.ColorPackPortableStore.Read(path)?.RarityColors;
+                swatches = colors == null ? null : SwatchesOf(new RarityPalettePreset(item.Name, colors, null));
+                _colorSetSwatches[key] = swatches;
+            }
+
+            return swatches;
+        }
+
+        private static bool SameRarityColors(RarityColorSettings left, RarityColorSettings right)
+        {
+            return left != null && right != null
+                   && Newtonsoft.Json.JsonConvert.SerializeObject(left) == Newtonsoft.Json.JsonConvert.SerializeObject(right);
         }
 
         public ObservableCollection<ResourceAppearanceItem> ResourceAppearanceItems
@@ -138,18 +193,6 @@ namespace PlayniteAchievements.Views.Settings.Display
             }
         }
 
-        public ObservableCollection<RarityPalettePreset> RarityPalettePresets
-        {
-            get
-            {
-                if (_rarityPalettePresets == null)
-                {
-                    _rarityPalettePresets = new ObservableCollection<RarityPalettePreset>(CreateRarityPalettePresets());
-                }
-
-                return _rarityPalettePresets;
-            }
-        }
 
         public ObservableCollection<ProviderAppearanceItem> ProviderAppearanceItems
         {
@@ -276,19 +319,6 @@ namespace PlayniteAchievements.Views.Settings.Display
             persisted.ProviderColorOverrides =
                 new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             RefreshProviderAppearanceItems();
-        }
-
-        private void ApplySelectedRarityPalettePreset_Click(object sender, RoutedEventArgs e)
-        {
-            if (RarityPalettePresetComboBox?.SelectedItem is RarityPalettePreset preset)
-            {
-                ApplyRarityPalette(preset);
-            }
-        }
-
-        private void ResetAllRarityColors_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyRarityPalette(new RarityPalettePreset("Default", RarityColorSettings.CreateDefault(), null));
         }
 
         /// <summary>Writes the current colors (rarity, provider, resource overrides) to a .pacolors file.</summary>
