@@ -221,16 +221,14 @@ namespace PlayniteAchievements
                 GetPluginUserDataPath(),
                 "color_presets",
                 Services.Workshop.ColorPackPortableStore.PackageFileExtension,
-                path => ColorPackPortableStore.Read(path),
-                IsLocalPresetFile));
+                path => ColorPackPortableStore.Read(path)));
         /// <summary>Saved sound packs (.pasounds files), the presets behind the unlock sounds card.</summary>
         public Services.Workshop.PackagePresetStore UnlockSoundPresetStore =>
             _unlockSoundPresetStore ?? (_unlockSoundPresetStore = new Services.Workshop.PackagePresetStore(
                 GetPluginUserDataPath(),
                 "unlock_sound_presets",
                 Services.Sound.UnlockSoundPortableStore.PackageFileExtension,
-                path => UnlockSoundPortableStore.Inspect(path),
-                IsLocalPresetFile));
+                path => UnlockSoundPortableStore.Inspect(path)));
         public Services.Workshop.BundlePortableStore BundlePortableStore =>
             _bundlePortableStore ?? (_bundlePortableStore =
                 new Services.Workshop.BundlePortableStore(NotificationStylePortableStore, UnlockSoundPortableStore, ColorPackPortableStore, _logger));
@@ -260,23 +258,6 @@ namespace PlayniteAchievements
             _soundsLibraryAdapter ?? (_soundsLibraryAdapter = new Services.Library.SoundsLibraryAdapter(
                 UnlockSoundPortableStore,
                 () => new[] { _settingsViewModel?.EditSnapshotPersisted?.UnlockSounds }));
-
-        /// <summary>
-        /// Whether a preset file counts toward the preset cap: Workshop items in the library do
-        /// not. A file the library does not know yet counts.
-        /// </summary>
-        private bool IsLocalPresetFile(string path)
-        {
-            try
-            {
-                return LibraryStore.FindByPath(path)?.IsWorkshop != true;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Failed looking up a preset in the library.");
-                return true;
-            }
-        }
 
         /// <summary>
         /// Applies <paramref name="update"/> to the live settings and, while the settings window
