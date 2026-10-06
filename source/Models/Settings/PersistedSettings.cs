@@ -110,6 +110,8 @@ namespace PlayniteAchievements.Models.Settings
         private string _unlockScreenshotDirectory;
         private string _workshopIndexUrl;
         private string _workshopServiceUrl;
+        private Dictionary<string, LibraryLink> _libraryLinks =
+            new Dictionary<string, LibraryLink>(StringComparer.OrdinalIgnoreCase);
         private ScreenshotResolution _screenshotResolution = ScreenshotResolution.Native;
         private RaritySelection _unlockScreenshotCleanRarities = RaritySelection.All;
         private bool _unlockScreenshotCleanAlwaysCaptureCompletion = true;
@@ -1479,6 +1481,77 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _workshopServiceUrl;
             set => SetValue(ref _workshopServiceUrl, string.IsNullOrWhiteSpace(value) ? null : value.Trim());
+        }
+
+        /// <summary>
+        /// The library items that settings-backed targets follow, keyed by target key (colors,
+        /// sounds, toast:global, frame:provider:&lt;key&gt;, showcase:&lt;pageId&gt; and so on).
+        /// Kept here rather than in a file so that Cancel undoes a value and its link together.
+        /// Keys this version does not know are kept.
+        /// </summary>
+        public Dictionary<string, LibraryLink> LibraryLinks
+        {
+            get => _libraryLinks ??
+                   (_libraryLinks = new Dictionary<string, LibraryLink>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _libraryLinks, NormalizeLibraryLinks(value));
+        }
+
+        /// <summary>The link of a target, or null when the target follows no library item.</summary>
+        public LibraryLink GetLibraryLink(string targetKey)
+        {
+            return !string.IsNullOrWhiteSpace(targetKey) && LibraryLinks.TryGetValue(targetKey, out var link)
+                ? link
+                : null;
+        }
+
+        /// <summary>
+        /// Stores a copy of the link of a target, or removes it when <paramref name="link"/> is
+        /// null. Reassigns the dictionary so PropertyChanged is raised.
+        /// </summary>
+        public void SetLibraryLink(string targetKey, LibraryLink link)
+        {
+            if (string.IsNullOrWhiteSpace(targetKey))
+            {
+                return;
+            }
+
+            var links = new Dictionary<string, LibraryLink>(LibraryLinks, StringComparer.OrdinalIgnoreCase);
+            if (link == null)
+            {
+                if (!links.Remove(targetKey))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                links[targetKey] = link.Clone();
+            }
+
+            LibraryLinks = links;
+        }
+
+        /// <summary>
+        /// The links as stored: a case-insensitive dictionary without blank keys or empty links.
+        /// Every other key is kept, so links written by a newer version survive.
+        /// </summary>
+        private static Dictionary<string, LibraryLink> NormalizeLibraryLinks(IDictionary<string, LibraryLink> links)
+        {
+            var result = new Dictionary<string, LibraryLink>(StringComparer.OrdinalIgnoreCase);
+            if (links == null)
+            {
+                return result;
+            }
+
+            foreach (var pair in links)
+            {
+                if (!string.IsNullOrWhiteSpace(pair.Key) && pair.Value != null)
+                {
+                    result[pair.Key] = pair.Value;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -3247,6 +3320,7 @@ namespace PlayniteAchievements.Models.Settings
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
                 WorkshopIndexUrl = this.WorkshopIndexUrl,
                 WorkshopServiceUrl = this.WorkshopServiceUrl,
+                LibraryLinks = LibraryLink.CloneAll(this.LibraryLinks),
                 ScreenshotResolution = this.ScreenshotResolution,
                 UnlockScreenshotCleanRarities = this.UnlockScreenshotCleanRarities,
                 UnlockScreenshotCleanAlwaysCaptureCompletion = this.UnlockScreenshotCleanAlwaysCaptureCompletion,
