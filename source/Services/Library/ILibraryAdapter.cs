@@ -38,6 +38,27 @@ namespace PlayniteAchievements.Services.Library
         void ApplyMerged(string packagePath, TTarget target, JToken baseline, out int keptEdits);
     }
 
+    /// <summary>
+    /// An adapter whose target gives the parts of a package ids of its own (a showcase page's
+    /// widgets). The link keeps the map from package ids to target ids, so an update pairs each
+    /// part with the one it became. Both applies take the map the link holds (null when there is
+    /// none) and return the map after the apply.
+    /// </summary>
+    public interface ILibraryIdMapAdapter<in TTarget> : ILibraryAdapter<TTarget>
+    {
+        IReadOnlyDictionary<string, string> ApplyReplace(string packagePath, TTarget target, IReadOnlyDictionary<string, string> idMap);
+
+        IReadOnlyDictionary<string, string> ApplyMerged(
+            string packagePath,
+            TTarget target,
+            JToken baseline,
+            IReadOnlyDictionary<string, string> idMap,
+            out int keptEdits);
+
+        /// <summary>The map for a target the package was just made from, whose parts keep their ids.</summary>
+        IReadOnlyDictionary<string, string> IdentityMap(string packagePath);
+    }
+
     /// <summary>An adapter whose target lives in the settings, with the key its link is stored under.</summary>
     public interface ISettingsLibraryAdapter : ILibraryAdapter<PersistedSettings>
     {
