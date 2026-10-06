@@ -359,7 +359,7 @@ namespace PlayniteAchievements.Models
         private const string IncludeLocked = "IncludeLocked";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
-        private const string PinCollectionId = "PinCollectionId";
+        internal const string PinCollectionId = "PinCollectionId";
         private const string Content = "Content";
         private const string ProfileStats = "ProfileStats";
         private const string ProfileMedals = "ProfileMedals";
