@@ -156,7 +156,7 @@ namespace PlayniteAchievements.Services.Library
             var portable = ShowcasePagePortableStore.Read(packagePath);
             try
             {
-                var map = PairWidgets(portable, idMap, page);
+                var map = PairWidgets(portable, idMap ?? PairByPlacement(portable.Page, portable, page, layout), page);
                 var incoming = ProjectPackage(portable, map, out var incomingBackgrounds);
                 var current = Project(target);
                 var merged = replace ? incoming : MergeProjections(baseline, current, incoming, out keptEdits);
@@ -201,6 +201,45 @@ namespace PlayniteAchievements.Services.Library
                 else
                 {
                     map[id] = Guid.NewGuid().ToString("N");
+                }
+            }
+
+            return map;
+        }
+
+        /// <summary>
+        /// For a page whose link has no id map (made before links kept one), the package's widgets
+        /// paired with the page's widgets of the same kind in the same grid cell, so the widgets the
+        /// page already has keep their ids and with them the user's own options.
+        /// </summary>
+        private static Dictionary<string, string> PairByPlacement(
+            ShowcasePageSettings packagePage,
+            ShowcasePagePortableFile portable,
+            ShowcasePageSettings page,
+            ShowcaseSettings layout)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var packageKinds = (portable.Widgets ?? new List<ShowcaseWidgetInstanceSettings>())
+                .Where(widget => widget != null && !string.IsNullOrWhiteSpace(widget.InstanceId))
+                .GroupBy(widget => widget.InstanceId.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First().Kind, StringComparer.OrdinalIgnoreCase);
+            var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var block in packagePage?.Blocks ?? new List<ShowcaseBlockSettings>())
+            {
+                var exported = block?.WidgetInstanceId?.Trim();
+                if (string.IsNullOrEmpty(exported) || map.ContainsKey(exported) || !packageKinds.TryGetValue(exported, out var kind))
+                {
+                    continue;
+                }
+
+                var local = page.Blocks
+                    .Where(candidate => candidate.Row == block.Row && candidate.Column == block.Column)
+                    .Select(candidate => FindWidget(layout, candidate.WidgetInstanceId))
+                    .FirstOrDefault(widget => widget != null && widget.Kind == kind && !taken.Contains(widget.InstanceId));
+                if (local != null)
+                {
+                    taken.Add(local.InstanceId);
+                    map[exported] = local.InstanceId;
                 }
             }
 
