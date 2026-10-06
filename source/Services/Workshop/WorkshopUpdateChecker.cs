@@ -85,7 +85,7 @@ namespace PlayniteAchievements.Services.Workshop
             return index.Items
                 .Where(item => item != null && workshopItems.Any(owned =>
                     string.Equals(owned.WorkshopItemId, item.Id, StringComparison.OrdinalIgnoreCase)
-                    && WorkshopInstalledRegistry.IsNewer(item.Version, owned.Version)))
+                    && WorkshopIdentityStore.IsNewer(item.Version, owned.Version)))
                 .ToList();
         }
 
