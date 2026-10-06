@@ -330,8 +330,7 @@ namespace PlayniteAchievements.Services.Workshop
             var write = _plugin.LibraryUpdateService.WriteWorkshopPart(
                 WorkshopLibraryItem(item, kind, Library.LibraryMigration.LibraryIdFor(item.Id, item.Kind, part), part),
                 packagePath,
-                folder,
-                RecordedPartHash(item.Id, part));
+                folder);
             result.PresetNames.Add(write.WrittenName);
             result.LibraryItemIds.Add(write.Item.Id);
             if (write.KeptLocalCopyName != null)
@@ -356,19 +355,6 @@ namespace PlayniteAchievements.Services.Workshop
                 Version = item.Version,
                 Author = item.Author
             };
-        }
-
-        /// <summary>
-        /// The hash an install made before the library recorded it wrote for a part, from
-        /// installed.json, so an item migrated from there can still tell an edited file.
-        /// </summary>
-        private string RecordedPartHash(string workshopItemId, string part)
-        {
-            var recorded = _registry.Find(workshopItemId)?.ContentHash;
-            return Library.LibraryMigration.ParsePartHashes(recorded)
-                .Where(pair => string.Equals(pair.Key, part, StringComparison.OrdinalIgnoreCase))
-                .Select(pair => pair.Value)
-                .FirstOrDefault();
         }
 
         private static string HashFile(string path) => WorkshopBaselineStore.HashFile(path);
