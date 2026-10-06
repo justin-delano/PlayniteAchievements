@@ -28,17 +28,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
     public partial class ManageAchievementsEditorTab : UserControl, IFullscreenControllerNavigable
     {
         private static readonly Regex HttpUrlRegex = new Regex(@"https?://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly string[] SupportedImageExtensions =
-        {
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".bmp",
-            ".gif",
-            ".tif",
-            ".tiff"
-        };
-
         private const string DragDataFormat = "PlayniteAchievements.ManageAchievementsEditorRows";
 
         /// <summary>
@@ -1179,7 +1168,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             var dialog = new OpenFileDialog
             {
-                Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|All Files (*.*)|*.*",
+                Filter = ImageFormats.BuildOpenFileDialogFilter(includeAllFiles: true),
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -2104,7 +2093,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 }
 
                 var files = data.GetData(DataFormats.FileDrop) as string[];
-                imagePath = files?.FirstOrDefault(IsSupportedImageFile);
+                imagePath = files?.FirstOrDefault(ImageDropHelper.IsSupportedImageFile);
                 return !string.IsNullOrWhiteSpace(imagePath);
             }
             catch
@@ -2165,33 +2154,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
             catch
             {
                 return null;
-            }
-        }
-
-        private static bool IsSupportedImageFile(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-            {
-                return false;
-            }
-
-            var extension = Path.GetExtension(path) ?? string.Empty;
-            if (!SupportedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            try
-            {
-                using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
             }
         }
 
