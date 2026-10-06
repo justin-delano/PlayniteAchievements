@@ -654,6 +654,8 @@
     <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewModel.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewModel.cs" />
     <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewModelBuilder.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewModelBuilder.cs" />
     <Compile Include="..\..\source\Services\Library\JsonThreeWayMerge.cs" Link="Source\Services\Library\JsonThreeWayMerge.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryModels.cs" Link="Source\Services\Library\LibraryModels.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryStore.cs" Link="Source\Services\Library\LibraryStore.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
