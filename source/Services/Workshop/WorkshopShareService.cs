@@ -63,18 +63,18 @@ namespace PlayniteAchievements.Services.Workshop
     {
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly WorkshopSubmissionClient _client;
-        private readonly WorkshopInstalledRegistry _registry;
+        private readonly WorkshopIdentityStore _identity;
         private readonly ILogger _logger;
 
         public WorkshopShareService(
             PlayniteAchievementsPlugin plugin,
             WorkshopSubmissionClient client,
-            WorkshopInstalledRegistry registry,
+            WorkshopIdentityStore identity,
             ILogger logger = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _client = client ?? throw new ArgumentNullException(nameof(client));
-            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _identity = identity ?? throw new ArgumentNullException(nameof(identity));
             _logger = logger;
         }
 
@@ -331,15 +331,15 @@ namespace PlayniteAchievements.Services.Workshop
                 submission.Kind = candidate.Kind;
                 var receipt = await _client.SubmitAsync(
                     submission,
-                    _registry.GetSubmitterHash(),
+                    _identity.GetSubmitterHash(),
                     packageKey,
                     previewKey,
                     PluginManifest.Version,
                     cancel,
                     coverKey).ConfigureAwait(false);
 
-                _registry.DisplayName = submission.Author;
-                _registry.RecordSubmission(new WorkshopSubmissionRecord
+                _identity.DisplayName = submission.Author;
+                _identity.RecordSubmission(new WorkshopSubmissionRecord
                 {
                     IssueNumber = receipt.IssueNumber,
                     IssueUrl = receipt.IssueUrl,
