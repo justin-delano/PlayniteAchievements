@@ -36,6 +36,17 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ANullStringValue_IsTheSameAsAJsonNull()
+        {
+            var built = new JObject { ["layout"] = new JArray(new JObject { ["widget"] = (string)null }) };
+
+            Assert.IsTrue(JsonThreeWayMerge.SameValue(built, J("{ layout: [ { widget: null } ] }")));
+            var merged = JsonThreeWayMerge.Merge(J("{ layout: [ { widget: null } ] }"), built, J("{ layout: [ { widget: 'w' } ] }"), out var kept);
+            AssertJson("{ layout: [ { widget: 'w' } ] }", merged);
+            Assert.AreEqual(0, kept);
+        }
+
+        [TestMethod]
         public void NullIncoming_Throws()
         {
             Assert.ThrowsException<ArgumentNullException>(() => JsonThreeWayMerge.Merge(J("{}"), J("{}"), null, out _));
