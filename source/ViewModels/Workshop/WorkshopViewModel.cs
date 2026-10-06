@@ -106,6 +106,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private readonly ILogger _logger;
         private readonly WorkshopClient _client;
         private readonly WorkshopInstalledRegistry _registry;
+        private readonly Services.Library.LibraryStore _library;
         private readonly WorkshopInstaller _installer;
         private readonly WorkshopGameMatcher _matcher;
         private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
@@ -132,11 +133,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
             _logger = logger;
             _client = plugin.WorkshopClient;
             _registry = plugin.WorkshopRegistry;
+            _library = plugin.LibraryStore;
             _installer = plugin.WorkshopInstaller;
             _matcher = plugin.CreateWorkshopGameMatcher();
             _focusGameId = focusGameId;
             _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             _registry.Changed += Registry_Changed;
+            _library.Changed += Registry_Changed;
 
             KindOptions = new List<WorkshopKindOption>
             {
@@ -184,7 +187,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public ObservableCollection<WorkshopItemViewModel> Items { get; } = new ObservableCollection<WorkshopItemViewModel>();
         public ICollectionView ItemsView { get; }
-        public ObservableCollection<WorkshopItemViewModel> InstalledItems { get; } = new ObservableCollection<WorkshopItemViewModel>();
         public ObservableCollection<WorkshopSubmissionViewModel> Submissions { get; } = new ObservableCollection<WorkshopSubmissionViewModel>();
         public IReadOnlyList<WorkshopKindOption> KindOptions { get; }
 
@@ -327,8 +329,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public bool HasSubmissions => Submissions.Count > 0;
 
-        public bool HasNoInstalledItems => InstalledItems.Count == 0;
-
         // ---- loading -----------------------------------------------------------------------
 
         public async Task LoadAsync()
@@ -352,11 +352,12 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 var rows = await Task.Run(() =>
                 {
                     var built = new List<WorkshopItemViewModel>();
+                    var library = ReadLibrary();
                     foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         _lifetime.Token.ThrowIfCancellationRequested();
                         var row = new WorkshopItemViewModel(item);
-                        ApplyLocalState(row);
+                        ApplyLocalState(row, library);
                         built.Add(row);
                     }
 
@@ -381,7 +382,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 }
 
                 ApplySort();
-                RebuildInstalledList();
                 ReloadLocalState();
                 _ = PrefetchPreviewsAsync(rows);
 
@@ -418,9 +418,29 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
-        private void ApplyLocalState(WorkshopItemViewModel row)
+        /// <summary>The library's Workshop items by Workshop item id, read once per pass over the rows.</summary>
+        private ILookup<string, Services.Library.LibraryItem> ReadLibrary()
         {
-            WorkshopInstalledItem installed;
+            try
+            {
+                return _library.Items
+                    .Where(item => item.IsWorkshop && !string.IsNullOrWhiteSpace(item.WorkshopItemId))
+                    .ToLookup(item => item.WorkshopItemId, StringComparer.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed reading the library for the Workshop list.");
+                return Enumerable.Empty<Services.Library.LibraryItem>().ToLookup(item => item.WorkshopItemId, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        /// <summary>
+        /// Marks a row as in the library when any part of it is a library item, with an update
+        /// when the index carries a newer version than the library holds. Game data also learns
+        /// its matching library game.
+        /// </summary>
+        private void ApplyLocalState(WorkshopItemViewModel row, ILookup<string, Services.Library.LibraryItem> library)
+        {
             if (row.Kind == WorkshopItemKind.GameCustomData)
             {
                 var match = _matcher.Match(row.Item.Game?.Keys);
@@ -433,25 +453,11 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 {
                     row.LocalGameName = null;
                 }
-
-                installed = _registry.Find(row.Id, match?.PlayniteGameId) ?? _registry.Find(row.Id);
-            }
-            else
-            {
-                installed = _registry.Find(row.Id);
             }
 
-            // The registry remembers installs; it does not see presets deleted from a card or a
-            // game whose custom data was cleared. Check the thing itself and drop stale records,
-            // so Installed means present, not merely installed once.
-            if (installed != null && !IsStillPresent(row, installed))
-            {
-                _registry.Forget(row.Id, installed.PlayniteGameId);
-                installed = null;
-            }
-
-            row.IsInstalled = installed != null;
-            row.HasUpdate = installed != null && WorkshopInstalledRegistry.IsNewer(row.Version, installed.Version);
+            var owned = library[row.Id].ToList();
+            row.IsInstalled = owned.Count > 0;
+            row.HasUpdate = owned.Any(item => WorkshopInstalledRegistry.IsNewer(row.Version, item.Version));
         }
 
         private void ReloadLocalState()
@@ -463,61 +469,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
 
             OnPropertyChanged(nameof(HasSubmissions));
-        }
-
-        /// <summary>
-        /// Whether what an install created still exists: the preset named after the item for
-        /// looks (any part for a bundle), a showcase page by that name, or custom data on the
-        /// recorded game. Unknown kinds are taken as present.
-        /// </summary>
-        private bool IsStillPresent(WorkshopItemViewModel row, WorkshopInstalledItem installed)
-        {
-            try
-            {
-                var name = row.Name;
-                switch (row.Kind)
-                {
-                    case WorkshopItemKind.Colors:
-                        return _plugin.ColorPresetStore.Exists(name);
-                    case WorkshopItemKind.UnlockSounds:
-                        return _plugin.UnlockSoundPresetStore.Exists(name);
-                    case WorkshopItemKind.NotificationStyle:
-                        return _plugin.NotificationStylePresetStore.PresetExists(isFrame: false, name);
-                    case WorkshopItemKind.ScreenshotFrame:
-                        return _plugin.NotificationStylePresetStore.PresetExists(isFrame: true, name);
-                    case WorkshopItemKind.Bundle:
-                        return _plugin.ColorPresetStore.Exists(name)
-                               || _plugin.UnlockSoundPresetStore.Exists(name)
-                               || _plugin.NotificationStylePresetStore.PresetExists(isFrame: false, name)
-                               || _plugin.NotificationStylePresetStore.PresetExists(isFrame: true, name);
-                    case WorkshopItemKind.ShowcasePage:
-                        return _plugin.Settings?.Persisted?.Showcase?.Pages?.Any(page =>
-                                   string.Equals(page?.Name, name, StringComparison.OrdinalIgnoreCase)) ?? true;
-                    case WorkshopItemKind.GameCustomData:
-                        return !(installed.PlayniteGameId is Guid gameId)
-                               || (_plugin.GameCustomDataStore?.HasPortableData(gameId) ?? true);
-                    default:
-                        return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, $"Could not verify the installed state of {row.Id}.");
-                return true;
-            }
-        }
-
-        private void RebuildInstalledList()
-        {
-            InstalledItems.Clear();
-            foreach (var row in Items
-                .Where(row => row.IsInstalled && MatchesKind(row, FocusedKind))
-                .OrderBy(row => row.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                InstalledItems.Add(row);
-            }
-
-            OnPropertyChanged(nameof(HasNoInstalledItems));
         }
 
         /// <summary>
@@ -818,24 +769,21 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 var packagePath = request.PackagePath;
                 await Task.Run(() => File.Copy(downloaded, packagePath, overwrite: true), _lifetime.Token);
 
+                // An update brings the targets that follow the item along, keeping their edits.
+                var isUpdate = row.HasUpdate;
+                if (isUpdate && row.Kind != WorkshopItemKind.GameCustomData)
+                {
+                    request.FollowerMode = Services.Library.LibraryApplyMode.Merge;
+                }
+
                 StatusMessage = ResourceProvider.GetString("LOCPlayAch_Workshop_Installing");
                 var result = await _installer.InstallAsync(request, _lifetime.Token);
 
-                ApplyLocalState(row);
-                RebuildInstalledList();
+                ApplyLocalState(row, ReadLibrary());
                 ReloadLocalState();
                 ItemsView.Refresh();
 
-                var notes = new List<string>();
-                if (result.PresetNames.Count > 0)
-                {
-                    notes.Add(string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"),
-                        string.Join(", ", result.PresetNames.Distinct())));
-                }
-
-                notes.AddRange(result.Warnings);
-                StatusMessage = notes.Count > 0 ? string.Join("\n", notes) : null;
+                StatusMessage = DescribeInstall(result, isUpdate);
             }
             catch (OperationCanceledException)
             {
@@ -862,6 +810,44 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     _logger?.Debug(ex, "Failed cleaning the Workshop install scratch folder.");
                 }
             }
+        }
+
+        /// <summary>
+        /// The status line after an install: what went into the library, what the targets that
+        /// follow it kept, what takes the new version on the next apply, and any warnings. Null
+        /// when there is nothing to say.
+        /// </summary>
+        internal static string DescribeInstall(WorkshopInstallResult result, bool isUpdate)
+        {
+            if (result == null)
+            {
+                return null;
+            }
+
+            var notes = new List<string>();
+            var names = string.Join(", ", result.PresetNames.Distinct(StringComparer.OrdinalIgnoreCase));
+            if (names.Length > 0 && !isUpdate)
+            {
+                notes.Add(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_SavedAsPreset"), names));
+            }
+
+            if (result.KeptEdits > 0)
+            {
+                notes.Add(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_UpdateKeptEdits"), result.KeptEdits));
+            }
+
+            if (result.PendingTargets > 0)
+            {
+                notes.Add(ResourceProvider.GetString("LOCPlayAch_Library_UpdatesWhenApplied"));
+            }
+
+            notes.AddRange(result.Warnings);
+            if (notes.Count == 0 && isUpdate)
+            {
+                notes.Add(ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"));
+            }
+
+            return notes.Count > 0 ? string.Join("\n", notes) : null;
         }
 
         private Guid? ResolveTargetGame(WorkshopItemViewModel row)
@@ -996,6 +982,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 // Only an update keeps edits made since the last install; a reinstall applies the
                 // package fresh, so its preview compares without the baseline.
                 var keepsEdits = row.HasUpdate;
+                var baselineFile = target != null && keepsEdits ? _installer.GameDataBaselineFile(itemId, target.PlayniteGameId) : null;
 
                 model = await Task.Run(() =>
                 {
@@ -1011,7 +998,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                             RawData = dataService?.GetRawGameAchievementData(gameId),
                             CurrentData = dataService?.GetGameAchievementData(gameId),
                             Current = current,
-                            Baseline = keepsEdits ? baselines.Load(_registry.Find(itemId, gameId)) : null,
+                            Baseline = keepsEdits ? baselines.Load(baselineFile) : null,
                             Persisted = persisted,
                             ManagedCustomIconService = managedIcons
                         };
@@ -1117,10 +1104,9 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         /// <summary>
-        /// Another list (Browse and Installed are separate view models over one registry), the
-        /// update path, or a share changed what is recorded: re-check every row once on the UI
-        /// thread, so Installed and My submissions follow without reopening the window. Changes
-        /// made while this list is itself re-checking (a stale record it forgets) are ignored.
+        /// The library changed (an install, an update or a delete from the Library page) or a
+        /// share recorded a submission: re-check every row once on the UI thread, so "In library"
+        /// and My submissions follow without reopening the window.
         /// </summary>
         private void Registry_Changed(object sender, EventArgs e)
         {
@@ -1146,9 +1132,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
             _applyingRegistryChange = true;
             try
             {
+                var library = ReadLibrary();
                 foreach (var row in Items.ToList())
                 {
-                    ApplyLocalState(row);
+                    ApplyLocalState(row, library);
                 }
             }
             finally
@@ -1156,7 +1143,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 _applyingRegistryChange = false;
             }
 
-            RebuildInstalledList();
             ReloadLocalState();
             ItemsView.Refresh();
         }
@@ -1164,6 +1150,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public void Dispose()
         {
             _registry.Changed -= Registry_Changed;
+            _library.Changed -= Registry_Changed;
             DeleteCachedDownload();
             _lifetime.Cancel();
             _lifetime.Dispose();
