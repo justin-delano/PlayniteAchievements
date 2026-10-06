@@ -146,7 +146,7 @@ namespace PlayniteAchievements.ViewModels.Library
         public bool IsEdited => Uses.Any(use => use.Use.IsEdited);
 
         /// <summary>True when the Workshop has a newer version than the library holds.</summary>
-        public bool HasUpdate => _indexItem != null && WorkshopInstalledRegistry.IsNewer(_indexItem.Version, Item.Version);
+        public bool HasUpdate => _indexItem != null && WorkshopIdentityStore.IsNewer(_indexItem.Version, Item.Version);
 
         public string UpdateVersion => HasUpdate ? _indexItem.Version : null;
 
