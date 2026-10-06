@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Services.Tests
     public class NotificationStylePortableStoreTests
     {
         [TestMethod]
-        public async Task ExportPackage_AndImport_RoundTripsFieldsAndBundledImages()
+        public void ExportPackage_AndRead_RoundTripsFieldsAndBundledImages()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -67,7 +67,7 @@ namespace PlayniteAchievements.Services.Tests
                     }
                 }
 
-                var imported = await store.ImportAsync(packagePath, targetProviderKeyOrNull: null, CancellationToken.None);
+                var imported = Read(store, tempDir, packagePath);
 
                 Assert.IsFalse(imported.Toast.ShowHeader);
                 Assert.IsFalse(imported.Toast.ShowProviderIcon);
@@ -77,13 +77,8 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual(500d, imported.Toast.CardWidth);
                 Assert.AreEqual("Arial", imported.Toast.FontFamily);
                 Assert.AreEqual("Custom Unlock!", imported.Toast.HeaderTexts.UnlockHeader);
-
-                var expectedBackgroundSuffix = Path.Combine("notification_images", "global", "background.png");
-                var expectedCommonSuffix = Path.Combine("notification_images", "global", "badge_common.png");
-                Assert.IsTrue(imported.ToastBackgroundImagePath.EndsWith(expectedBackgroundSuffix, StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(imported.Toast.BadgeImages.CommonPath.EndsWith(expectedCommonSuffix, StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(File.Exists(imported.ToastBackgroundImagePath));
-                Assert.IsTrue(File.Exists(imported.Toast.BadgeImages.CommonPath));
+                AssertScratchFile(ScratchOf(tempDir), imported.ToastBackgroundImagePath, "background-bytes");
+                AssertScratchFile(ScratchOf(tempDir), imported.Toast.BadgeImages.CommonPath, "common-bytes");
             }
             finally
             {
@@ -92,7 +87,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ExportSurfacePackage_CarriesEachKindStyleAndItsOwnImages()
+        public void ExportSurfacePackage_CarriesEachKindStyleAndItsOwnImages()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -128,8 +123,7 @@ namespace PlayniteAchievements.Services.Tests
                     CollectionAssert.Contains(entryNames, "images/kind_capstone__badge_common.png");
                 }
 
-                var imported = await store.ImportAsync(
-                    packagePath, targetProviderKeyOrNull: null, CancellationToken.None);
+                var imported = Read(store, tempDir, packagePath);
 
                 Assert.AreEqual("Shared header", imported.Toast.HeaderTexts.UnlockHeader);
                 Assert.IsTrue(imported.HasKindStyle(NotificationKind.Capstone));
@@ -140,16 +134,10 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual(640d, importedCapstone.Toast.CardWidth);
                 Assert.IsFalse(imported.ResolveKind(NotificationKind.Rare).Toast.ShowIcon);
 
-                // The kind's image override lands in its own folder, not on the shared slot.
-                var sharedSuffix = Path.Combine("notification_images", "global", "badge_common.png");
-                var capstoneSuffix = Path.Combine(
-                    "notification_images", "global", "kinds", "capstone", "badge_common.png");
-                Assert.IsTrue(imported.Toast.BadgeImages.CommonPath.EndsWith(sharedSuffix, StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(importedCapstone.Toast.BadgeImages.CommonPath.EndsWith(capstoneSuffix, StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(File.Exists(imported.Toast.BadgeImages.CommonPath));
-                Assert.IsTrue(File.Exists(importedCapstone.Toast.BadgeImages.CommonPath));
-                Assert.AreEqual("shared-bytes", File.ReadAllText(imported.Toast.BadgeImages.CommonPath));
-                Assert.AreEqual("capstone-bytes", File.ReadAllText(importedCapstone.Toast.BadgeImages.CommonPath));
+                // The kind's image override comes from its own entry, not from the shared slot.
+                AssertScratchFile(ScratchOf(tempDir), imported.Toast.BadgeImages.CommonPath, "shared-bytes");
+                AssertScratchFile(ScratchOf(tempDir), importedCapstone.Toast.BadgeImages.CommonPath, "capstone-bytes");
+                Assert.AreNotEqual(imported.Toast.BadgeImages.CommonPath, importedCapstone.Toast.BadgeImages.CommonPath);
             }
             finally
             {
@@ -158,7 +146,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ExportSurfacePackage_Frame_RoundTripsOnlyTheFrameSurface()
+        public void ExportSurfacePackage_Frame_RoundTripsOnlyTheFrameSurface()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -202,13 +190,10 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsTrue(contents.HasFrameStyle);
                 Assert.IsFalse(contents.HasToastStyle);
 
-                var imported = await store.ImportAsync(packagePath, targetProviderKeyOrNull: null, CancellationToken.None);
+                var imported = Read(store, tempDir, packagePath);
                 Assert.IsFalse(imported.Frame.ShowUnlockTime);
                 Assert.AreEqual("Frame header", imported.Frame.HeaderTexts.UnlockHeader);
-
-                var expectedFrameCommonSuffix = Path.Combine("notification_images", "global", "frame_badge_common.png");
-                Assert.IsTrue(imported.Frame.BadgeImages.CommonPath.EndsWith(expectedFrameCommonSuffix, StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(File.Exists(imported.Frame.BadgeImages.CommonPath));
+                AssertScratchFile(ScratchOf(tempDir), imported.Frame.BadgeImages.CommonPath, "frame-common-bytes");
             }
             finally
             {
@@ -217,7 +202,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ExportSurfacePackage_NoImages_StillWritesPackageAndRoundTrips()
+        public void ExportSurfacePackage_NoImages_StillWritesPackageAndRoundTrips()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -236,7 +221,7 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsTrue(contents.HasToastStyle);
                 Assert.IsFalse(contents.HasFrameStyle);
 
-                var imported = await store.ImportAsync(filePath, targetProviderKeyOrNull: null, CancellationToken.None);
+                var imported = Read(store, tempDir, filePath);
                 Assert.IsFalse(imported.Toast.ShowHeader);
                 Assert.AreEqual("Zip Unlock!", imported.Toast.HeaderTexts.UnlockHeader);
             }
@@ -297,7 +282,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ExportPackage_ToBarePastylePath_RoundTripsImageFreeStyle()
+        public void ExportPackage_ToBarePastylePath_RoundTripsImageFreeStyle()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -312,7 +297,7 @@ namespace PlayniteAchievements.Services.Tests
                 var filePath = Path.Combine(tempDir, "share.pastyle");
                 store.ExportLegacyBothSurfacesPackage(style, filePath);
 
-                var imported = await store.ImportAsync(filePath, targetProviderKeyOrNull: null, CancellationToken.None);
+                var imported = Read(store, tempDir, filePath);
 
                 Assert.IsFalse(imported.Toast.ShowHeader);
                 Assert.AreEqual(22d, imported.Toast.TitleFontSize);
@@ -327,35 +312,25 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ImportPackage_ForGame_MaterializesImagesIntoIsolatedGameFolder()
+        public void ReadForPreview_LegacyBothSurfacesPackage_ExtractsTheBackground()
         {
             var tempDir = CreateTempDirectory();
             try
             {
                 var store = CreateStore(tempDir, out _);
                 var source = Path.Combine(tempDir, "background.png");
-                WritePngFile(source);
+                WritePlaceholderFile(source, "legacy-background");
 
                 var style = NotificationStyleSettings.CreateDefault();
                 style.ToastBackgroundImagePath = source;
                 var packagePath = Path.Combine(tempDir, "game-style.pastyle.zip");
                 store.ExportLegacyBothSurfacesPackage(style, packagePath);
 
-                var gameId = Guid.NewGuid();
-                var imported = await store.ImportAsync(
-                    packagePath,
-                    NotificationImageOwner.ForGame(gameId),
-                    CancellationToken.None);
+                var preview = store.ReadForPreview(packagePath, ScratchOf(tempDir));
 
-                var expectedSuffix = Path.Combine(
-                    "notification_images",
-                    "games",
-                    gameId.ToString("D"),
-                    "background.png");
-                Assert.IsTrue(imported.ToastBackgroundImagePath.EndsWith(
-                    expectedSuffix,
-                    StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(File.Exists(imported.ToastBackgroundImagePath));
+                Assert.IsTrue(preview.Contents.HasToastStyle);
+                Assert.IsTrue(preview.Contents.HasFrameStyle);
+                AssertScratchFile(ScratchOf(tempDir), preview.Style.ToastBackgroundImagePath, "legacy-background");
             }
             finally
             {
@@ -413,7 +388,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ImportAsync_ForeignKind_Throws()
+        public void ReadForPreview_ForeignKind_Throws()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -430,8 +405,8 @@ namespace PlayniteAchievements.Services.Tests
                     }
                 }
 
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
-                    store.ImportAsync(filePath, targetProviderKeyOrNull: null, CancellationToken.None));
+                Assert.ThrowsException<InvalidOperationException>(() => store.ReadForPreview(filePath, ScratchOf(tempDir)));
+                Assert.ThrowsException<InvalidOperationException>(() => store.InspectPackage(filePath));
             }
             finally
             {
@@ -440,7 +415,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task ImportPackage_TraversalEntry_Throws()
+        public void ReadForPreview_LegacyPackageTraversalEntry_Throws()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -466,8 +441,7 @@ namespace PlayniteAchievements.Services.Tests
                     }
                 }
 
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
-                    store.ImportAsync(packagePath, targetProviderKeyOrNull: null, CancellationToken.None));
+                Assert.ThrowsException<InvalidOperationException>(() => store.ReadForPreview(packagePath, ScratchOf(tempDir)));
             }
             finally
             {
@@ -581,7 +555,15 @@ namespace PlayniteAchievements.Services.Tests
         {
             var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
             imageStore = new NotificationImageStore(diskImageService, logger: null);
-            return new NotificationStylePortableStore(imageStore, logger: null);
+            return new NotificationStylePortableStore();
+        }
+
+        private static string ScratchOf(string tempDir) => Path.Combine(tempDir, "scratch");
+
+        /// <summary>The style a package carries, with its images extracted to the test's scratch folder.</summary>
+        private static NotificationStyleSettings Read(NotificationStylePortableStore store, string tempDir, string packagePath)
+        {
+            return store.ReadForPreview(packagePath, ScratchOf(tempDir)).Style;
         }
 
         private static void WritePlaceholderFile(string path, string content)
