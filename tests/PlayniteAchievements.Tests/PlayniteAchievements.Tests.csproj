@@ -647,7 +647,7 @@
     <Compile Include="..\..\source\Common\HttpClientFactory.cs" Link="Source\Common\HttpClientFactory.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopModels.cs" Link="Source\Services\Workshop\WorkshopModels.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopClient.cs" Link="Source\Services\Workshop\WorkshopClient.cs" />
-    <Compile Include="..\..\source\Services\Workshop\WorkshopInstalledRegistry.cs" Link="Source\Services\Workshop\WorkshopInstalledRegistry.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopIdentityStore.cs" Link="Source\Services\Workshop\WorkshopIdentityStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopBaselineStore.cs" Link="Source\Services\Workshop\WorkshopBaselineStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopGameMatcher.cs" Link="Source\Services\Workshop\WorkshopGameMatcher.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopSubmissionClient.cs" Link="Source\Services\Workshop\WorkshopSubmissionClient.cs" />
