@@ -341,12 +341,6 @@ namespace PlayniteAchievements.Views.Settings.Controls
                     existing = null;
                 }
 
-                if (existing == null && presets.Count() >= PackagePresetStore.MaxPresetCount)
-                {
-                    ShowMessage(string.Format(L("LOCPlayAch_Presets_MaxReached"), PackagePresetStore.MaxPresetCount), MessageBoxImage.Warning);
-                    return;
-                }
-
                 if (existing != null && !Confirm(string.Format(L("LOCPlayAch_Presets_OverwriteConfirm"), existing.Name)))
                 {
                     return;
