@@ -20,8 +20,20 @@
                 <Setter Property="Padding" Value="12,7"/>
             </Style>
 
+            <!-- The button's glyph (its string Content) drawn as vector geometry with GlyphIcon:
+                 a font glyph rendered as text comes out soft at this size. -->
+            <DataTemplate x:Key="LibraryGlyphContentTemplate">
+                <controls:GlyphIcon Glyph="{Binding}"
+                                    Size="16"
+                                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    SnapsToDevicePixels="True"/>
+            </DataTemplate>
             <Style x:Key="LibraryIconButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.ToolbarIconStyle}">
                 <Setter Property="Margin" Value="0,0,8,8"/>
+                <Setter Property="ContentTemplate" Value="{StaticResource LibraryGlyphContentTemplate}"/>
             </Style>
 
             <!-- A small rounded state tag (In use, Edited, Update); the brush comes from the tag's own setter. -->
@@ -142,6 +154,7 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="&#xEE0B;"
                                     Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
+                                    ContentTemplate="{StaticResource LibraryGlyphContentTemplate}"
                                     ToolTip="{DynamicResource LOCPlayAch_Button_Reset}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Button_Reset}"
                                     Margin="8,0,0,0"
