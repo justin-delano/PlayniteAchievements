@@ -1167,7 +1167,8 @@ namespace PlayniteAchievements.Services.Showcase
             return widget;
         }
 
-        private static void SeedPinCollectionSelection(
+        /// <summary>Points a pin-capable widget at the layout's default pin collection.</summary>
+        internal static void SeedPinCollectionSelection(
             ShowcaseSettings settings,
             ShowcaseWidgetInstanceSettings widget)
         {
