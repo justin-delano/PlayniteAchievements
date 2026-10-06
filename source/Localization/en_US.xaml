@@ -99,7 +99,6 @@
     <sys:String x:Key="LOCPlayAch_Format_Pair">{0} &#183; {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_DeleteConfirm">Delete preset &quot;{0}&quot;?</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_Header">Presets</sys:String>
-    <sys:String x:Key="LOCPlayAch_Presets_MaxReached">You can save up to {0} presets.</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_NameDialogHint">Enter a preset name (1-64 characters).</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_NameDialogTitle">Save Preset</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_NameInvalid">Preset name must be between 1 and {0} characters.</sys:String>
