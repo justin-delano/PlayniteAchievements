@@ -1,4 +1,6 @@
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,6 +19,21 @@ namespace PlayniteAchievements.Services
         public bool HasErrors => Errors.Count > 0;
     }
 
+    /// <summary>
+    /// The rows of an achievement CSV, each holding only the cells that were filled in.
+    /// </summary>
+    public sealed class CustomAchievementCsvParseResult
+    {
+        public List<CustomAchievementCsvRow> Rows { get; } = new List<CustomAchievementCsvRow>();
+
+        public List<string> Errors { get; } = new List<string>();
+
+        /// <summary>Header cells that name no known column, in file order.</summary>
+        public List<string> IgnoredColumns { get; } = new List<string>();
+
+        public bool HasErrors => Errors.Count > 0;
+    }
+
     public sealed class CustomAchievementTextImportService
     {
         private enum Field
@@ -25,17 +42,17 @@ namespace PlayniteAchievements.Services
             Id,
             DisplayName,
             Description,
-            Unlocked,
-            UnlockTimeUtc,
-            UnlockedIconPath,
-            LockedIconPath,
             Points,
             TrophyType,
             Hidden,
             Rarity,
-            GlobalPercentUnlocked,
+            Category,
             ProgressNum,
-            ProgressDenom
+            ProgressDenom,
+            Unlocked,
+            UnlockTime,
+            UnlockedIconPath,
+            LockedIconPath
         }
 
         private static readonly Dictionary<string, Field> HeaderAliases =
@@ -53,14 +70,6 @@ namespace PlayniteAchievements.Services
                 ["description"] = Field.Description,
                 ["desc"] = Field.Description,
                 ["details"] = Field.Description,
-                ["unlocked"] = Field.Unlocked,
-                ["earned"] = Field.Unlocked,
-                ["done"] = Field.Unlocked,
-                ["unlocktime"] = Field.UnlockTimeUtc,
-                ["unlocktimeutc"] = Field.UnlockTimeUtc,
-                ["unlockedat"] = Field.UnlockTimeUtc,
-                ["earnedat"] = Field.UnlockTimeUtc,
-                ["dateunlocked"] = Field.UnlockTimeUtc,
                 ["points"] = Field.Points,
                 ["score"] = Field.Points,
                 ["gamerscore"] = Field.Points,
@@ -69,91 +78,160 @@ namespace PlayniteAchievements.Services
                 ["hidden"] = Field.Hidden,
                 ["secret"] = Field.Hidden,
                 ["rarity"] = Field.Rarity,
-                ["percent"] = Field.GlobalPercentUnlocked,
-                ["globalpercent"] = Field.GlobalPercentUnlocked,
-                ["globalpercentunlocked"] = Field.GlobalPercentUnlocked,
-                ["percentunlocked"] = Field.GlobalPercentUnlocked,
+                ["category"] = Field.Category,
+                ["categorylabel"] = Field.Category,
                 ["progress"] = Field.ProgressNum,
                 ["progressnum"] = Field.ProgressNum,
                 ["current"] = Field.ProgressNum,
                 ["progressdenom"] = Field.ProgressDenom,
                 ["progresstotal"] = Field.ProgressDenom,
                 ["total"] = Field.ProgressDenom,
-                ["goal"] = Field.ProgressDenom,
-                ["icon"] = Field.UnlockedIconPath,
+                ["unlocked"] = Field.Unlocked,
+                ["earned"] = Field.Unlocked,
+                ["unlocktime"] = Field.UnlockTime,
+                ["unlockedat"] = Field.UnlockTime,
+                ["earnedat"] = Field.UnlockTime,
+                ["dateunlocked"] = Field.UnlockTime,
                 ["unlockedicon"] = Field.UnlockedIconPath,
-                ["unlockediconpath"] = Field.UnlockedIconPath,
-                ["lockedicon"] = Field.LockedIconPath,
-                ["lockediconpath"] = Field.LockedIconPath
+                ["lockedicon"] = Field.LockedIconPath
             };
 
-        public CustomAchievementTextImportResult Import(string text)
+        private const string TrophyTypeMessage = "is not bronze, silver, gold or platinum.";
+
+        private const string RarityMessage = "is not a percent from 0 to 100, or Common, Uncommon, Rare or Ultra Rare.";
+
+        /// <summary>
+        /// Reads every row, keeping only the cells that were filled in, and checks each value.
+        /// A row may leave Title blank when it names an ID, since it can be updating an existing
+        /// achievement; whether the ID is new is for the caller to decide.
+        /// </summary>
+        /// <param name="nowUtc">The clock an unlock time is checked against; the current time
+        /// when null.</param>
+        public CustomAchievementCsvParseResult Parse(string text, DateTime? nowUtc = null)
         {
-            var result = new CustomAchievementTextImportResult();
+            var result = new CustomAchievementCsvParseResult();
             var rows = ParseRows(text);
-            if (rows.Count == 0)
+            var headerIndex = rows.FindIndex(row => !IsEmptyRow(row));
+            if (headerIndex < 0)
             {
                 result.Errors.Add("No rows were found.");
                 return result;
             }
 
-            var header = rows[0];
-            var mapping = header
-                .Select(cell => ResolveField(cell))
-                .ToList();
-
-            if (!mapping.Contains(Field.DisplayName))
+            var header = rows[headerIndex];
+            var mapping = new List<Field>(header.Count);
+            var seen = new HashSet<Field>();
+            foreach (var cell in header)
             {
-                result.Errors.Add("A title/name/displayName column is required.");
+                var field = ResolveField(cell);
+                if (field == Field.Unknown)
+                {
+                    var name = NormalizeText(cell);
+                    if (name != null)
+                    {
+                        result.IgnoredColumns.Add(name);
+                    }
+                }
+                else if (!seen.Add(field))
+                {
+                    result.Errors.Add($"Column \"{NormalizeText(cell)}\" appears more than once.");
+                }
+
+                mapping.Add(field);
+            }
+
+            if (!seen.Contains(Field.Id) && !seen.Contains(Field.DisplayName))
+            {
+                result.Errors.Add("An ID or Title column is required.");
+            }
+
+            if (result.HasErrors)
+            {
                 return result;
             }
 
+            var latestUnlock = (nowUtc ?? DateTime.UtcNow).AddMinutes(1);
             var usedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (var rowIndex = 1; rowIndex < rows.Count; rowIndex++)
+            for (var rowIndex = headerIndex + 1; rowIndex < rows.Count; rowIndex++)
             {
-                var row = rows[rowIndex];
-                if (IsEmptyRow(row))
+                var cells = rows[rowIndex];
+                if (IsEmptyRow(cells))
                 {
                     continue;
                 }
 
-                var definition = new CustomAchievementDefinition();
+                var rowNumber = rowIndex + 1;
+                var row = new CustomAchievementCsvRow { RowNumber = rowNumber };
                 var rowErrorCount = result.Errors.Count;
-                for (var columnIndex = 0; columnIndex < row.Count && columnIndex < mapping.Count; columnIndex++)
+                for (var columnIndex = 0; columnIndex < cells.Count && columnIndex < mapping.Count; columnIndex++)
                 {
-                    ApplyField(
-                        result,
-                        definition,
-                        mapping[columnIndex],
-                        row[columnIndex],
-                        rowIndex + 1);
+                    ApplyField(result, row, mapping[columnIndex], NormalizeText(header[columnIndex]), cells[columnIndex], rowNumber);
                 }
 
-                definition.DisplayName = NormalizeText(definition.DisplayName);
-                if (string.IsNullOrWhiteSpace(definition.DisplayName))
+                if (row.Id == null && row.DisplayName == null)
                 {
-                    result.Errors.Add($"Row {rowIndex + 1}: title/name is required.");
+                    result.Errors.Add($"Row {rowNumber}: an ID or a Title is required.");
+                }
+
+                if (row.Id != null && !usedIds.Add(row.Id))
+                {
+                    result.Errors.Add($"Row {rowNumber}, ID: \"{row.Id}\" is used by an earlier row.");
+                }
+
+                if (row.Unlocked == false && row.UnlockTimeUtc.HasValue)
+                {
+                    result.Errors.Add($"Row {rowNumber}, Unlock Time: set while Unlocked is false.");
+                }
+
+                if (row.UnlockTimeUtc.HasValue && row.UnlockTimeUtc.Value > latestUnlock)
+                {
+                    result.Errors.Add($"Row {rowNumber}, Unlock Time: is in the future.");
+                }
+
+                if (row.ProgressNum.HasValue &&
+                    row.ProgressDenom.HasValue &&
+                    row.ProgressNum.Value > row.ProgressDenom.Value)
+                {
+                    result.Errors.Add($"Row {rowNumber}, Progress: is greater than Progress Total.");
+                }
+
+                if (result.Errors.Count == rowErrorCount)
+                {
+                    result.Rows.Add(row);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Reads a CSV as complete definitions, for a package whose rows are all new: every row
+        /// needs a Title, and a blank ID is generated from it.
+        /// </summary>
+        public CustomAchievementTextImportResult Import(string text)
+        {
+            var result = new CustomAchievementTextImportResult();
+            var parsed = Parse(text);
+            result.Errors.AddRange(parsed.Errors);
+            if (parsed.HasErrors)
+            {
+                return result;
+            }
+
+            var usedIds = new HashSet<string>(
+                parsed.Rows.Where(row => row.Id != null).Select(row => row.Id),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var row in parsed.Rows)
+            {
+                if (row.DisplayName == null)
+                {
+                    result.Errors.Add($"Row {row.RowNumber}, Title: is required.");
                     continue;
                 }
 
-                if (result.Errors.Count > rowErrorCount)
-                {
-                    continue;
-                }
-
-                definition.Id = CustomAchievementProjectionService.NormalizeId(definition.Id);
-                if (string.IsNullOrWhiteSpace(definition.Id))
-                {
-                    definition.Id = CustomAchievementProjectionService.GenerateId(definition.DisplayName, usedIds);
-                }
-
-                if (!usedIds.Add(definition.Id))
-                {
-                    result.Errors.Add($"Row {rowIndex + 1}: duplicate custom ID '{definition.Id}'.");
-                    continue;
-                }
-
-                result.Definitions.Add(definition);
+                var id = row.Id ?? CustomAchievementProjectionService.GenerateId(row.DisplayName, usedIds);
+                usedIds.Add(id);
+                result.Definitions.Add(ToDefinition(row, id));
             }
 
             if (result.Definitions.Count == 0 && !result.HasErrors)
@@ -162,6 +240,97 @@ namespace PlayniteAchievements.Services
             }
 
             return result;
+        }
+
+        /// <summary>A new authored achievement built from a row's cells.</summary>
+        public static CustomAchievementDefinition ToDefinition(CustomAchievementCsvRow row, string id)
+        {
+            return new CustomAchievementDefinition
+            {
+                Id = id,
+                DisplayName = row.DisplayName,
+                Description = row.Description,
+                Points = row.Points,
+                TrophyType = row.TrophyType,
+                Hidden = row.Hidden ?? false,
+                Rarity = row.RarityPercent.HasValue
+                    ? PercentRarityHelper.GetRarityTier(row.RarityPercent.Value).ToString()
+                    : row.RarityTier,
+                GlobalPercentUnlocked = row.RarityPercent,
+                Category = row.Category,
+                ProgressNum = row.ProgressNum,
+                ProgressDenom = row.ProgressDenom,
+                Unlocked = row.Unlocked ?? row.UnlockTimeUtc.HasValue,
+                UnlockTimeUtc = row.Unlocked == false ? null : row.UnlockTimeUtc,
+                UnlockedIconPath = row.UnlockedIconPath,
+                LockedIconPath = row.LockedIconPath
+            };
+        }
+
+        /// <summary>
+        /// Reads a rarity cell: a percent with or without a % sign, or a tier name in any case,
+        /// with spaces, dashes and underscores ignored.
+        /// </summary>
+        public static bool TryParseRarity(string value, out double? percent, out string tier)
+        {
+            percent = null;
+            tier = null;
+            var normalized = NormalizeText(value);
+            if (normalized == null)
+            {
+                return false;
+            }
+
+            var percentText = normalized.TrimEnd('%').Trim();
+            if (TryParseDouble(percentText, out var parsed))
+            {
+                if (parsed < 0 || parsed > 100)
+                {
+                    return false;
+                }
+
+                percent = parsed;
+                return true;
+            }
+
+            var compact = new string(normalized
+                .Where(c => c != ' ' && c != '-' && c != '_')
+                .ToArray());
+            // Matched by name, not Enum.TryParse, which also takes numbers and comma lists.
+            tier = Enum.GetNames(typeof(RarityTier))
+                .FirstOrDefault(name => string.Equals(name, compact, StringComparison.OrdinalIgnoreCase));
+            return tier != null;
+        }
+
+        /// <summary>Lowercase bronze, silver, gold or platinum, or null for anything else.</summary>
+        public static string NormalizeTrophyType(string value)
+        {
+            var normalized = NormalizeText(value)?.ToLowerInvariant();
+            switch (normalized)
+            {
+                case "bronze":
+                case "silver":
+                case "gold":
+                case "platinum":
+                    return normalized;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads a category cell written as its display path ("Parent &gt; Child") into the stored
+        /// path. Null for a blank cell.
+        /// </summary>
+        public static string ParseCategoryPath(string value)
+        {
+            var normalized = NormalizeText(value);
+            if (normalized == null)
+            {
+                return null;
+            }
+
+            return CategoryPathHelper.JoinRaw(normalized.Split('>'));
         }
 
         private static Field ResolveField(string header)
@@ -174,141 +343,139 @@ namespace PlayniteAchievements.Services
         }
 
         private static void ApplyField(
-            CustomAchievementTextImportResult result,
-            CustomAchievementDefinition definition,
+            CustomAchievementCsvParseResult result,
+            CustomAchievementCsvRow row,
             Field field,
+            string column,
             string rawValue,
             int rowNumber)
         {
             var value = NormalizeText(rawValue);
-            if (field == Field.Unknown || string.IsNullOrWhiteSpace(value))
+            if (field == Field.Unknown || value == null)
             {
                 return;
             }
 
+            void Error(string message) =>
+                result.Errors.Add($"Row {rowNumber}, {column}: \"{value}\" {message}");
+
             switch (field)
             {
                 case Field.Id:
-                    definition.Id = value;
+                    row.Id = CustomAchievementProjectionService.NormalizeId(value);
                     break;
                 case Field.DisplayName:
-                    definition.DisplayName = value;
+                    row.DisplayName = value;
                     break;
                 case Field.Description:
-                    definition.Description = value;
-                    break;
-                case Field.Unlocked:
-                    if (TryParseBoolean(value, out var unlocked))
-                    {
-                        definition.Unlocked = unlocked;
-                    }
-                    else
-                    {
-                        result.Errors.Add($"Row {rowNumber}: unlocked must be true/false, yes/no, or 1/0.");
-                    }
-                    break;
-                case Field.UnlockTimeUtc:
-                    if (TryParseDateTime(value, out var unlockedAt))
-                    {
-                        definition.UnlockTimeUtc = unlockedAt;
-                        definition.Unlocked = true;
-                    }
-                    else
-                    {
-                        result.Errors.Add($"Row {rowNumber}: unlock time is not a valid date/time.");
-                    }
-                    break;
-                case Field.UnlockedIconPath:
-                    definition.UnlockedIconPath = value;
-                    break;
-                case Field.LockedIconPath:
-                    definition.LockedIconPath = value;
+                    row.Description = value;
                     break;
                 case Field.Points:
-                    definition.Points = ParseNonNegativeInt(result, value, rowNumber, "points");
+                    if (TryParseInt(value, out var points) && points >= 0)
+                    {
+                        row.Points = points;
+                    }
+                    else
+                    {
+                        Error("is not a whole number of 0 or more.");
+                    }
                     break;
                 case Field.TrophyType:
-                    definition.TrophyType = value;
+                    row.TrophyType = NormalizeTrophyType(value);
+                    if (row.TrophyType == null)
+                    {
+                        Error(TrophyTypeMessage);
+                    }
                     break;
                 case Field.Hidden:
                     if (TryParseBoolean(value, out var hidden))
                     {
-                        definition.Hidden = hidden;
+                        row.Hidden = hidden;
                     }
                     else
                     {
-                        result.Errors.Add($"Row {rowNumber}: hidden must be true/false, yes/no, or 1/0.");
+                        Error("is not true or false.");
                     }
                     break;
                 case Field.Rarity:
-                    definition.Rarity = value;
+                    if (TryParseRarity(value, out var percent, out var tier))
+                    {
+                        row.RarityPercent = percent;
+                        row.RarityTier = tier;
+                    }
+                    else
+                    {
+                        Error(RarityMessage);
+                    }
                     break;
-                case Field.GlobalPercentUnlocked:
-                    definition.GlobalPercentUnlocked = ParsePercent(result, value, rowNumber);
+                case Field.Category:
+                    row.Category = ParseCategoryPath(value);
                     break;
                 case Field.ProgressNum:
-                    definition.ProgressNum = ParseNonNegativeInt(result, value, rowNumber, "progress");
+                    if (TryParseInt(value, out var progress) && progress >= 0)
+                    {
+                        row.ProgressNum = progress;
+                    }
+                    else
+                    {
+                        Error("is not a whole number of 0 or more.");
+                    }
                     break;
                 case Field.ProgressDenom:
-                    definition.ProgressDenom = ParsePositiveInt(result, value, rowNumber, "progress total");
+                    if (TryParseInt(value, out var total) && total > 0)
+                    {
+                        row.ProgressDenom = total;
+                    }
+                    else
+                    {
+                        Error("is not a whole number greater than 0.");
+                    }
+                    break;
+                case Field.Unlocked:
+                    if (TryParseBoolean(value, out var unlocked))
+                    {
+                        row.Unlocked = unlocked;
+                    }
+                    else
+                    {
+                        Error("is not true or false.");
+                    }
+                    break;
+                case Field.UnlockTime:
+                    if (TryParseUnlockTimeUtc(value, out var unlockTimeUtc))
+                    {
+                        row.UnlockTimeUtc = unlockTimeUtc;
+                    }
+                    else
+                    {
+                        Error("is not a date and time.");
+                    }
+                    break;
+                case Field.UnlockedIconPath:
+                    row.UnlockedIconPath = value;
+                    break;
+                case Field.LockedIconPath:
+                    row.LockedIconPath = value;
                     break;
             }
         }
 
-        private static int? ParseNonNegativeInt(
-            CustomAchievementTextImportResult result,
-            string value,
-            int rowNumber,
-            string label)
+        private static bool TryParseInt(string value, out int parsed)
         {
-            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) &&
-                parsed >= 0)
-            {
-                return parsed;
-            }
-
-            result.Errors.Add($"Row {rowNumber}: {label} must be a non-negative integer.");
-            return null;
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) ||
+                   int.TryParse(value, NumberStyles.Integer, CultureInfo.CurrentCulture, out parsed);
         }
 
-        private static int? ParsePositiveInt(
-            CustomAchievementTextImportResult result,
-            string value,
-            int rowNumber,
-            string label)
+        private static bool TryParseDouble(string value, out double parsed)
         {
-            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) &&
-                parsed > 0)
-            {
-                return parsed;
-            }
-
-            result.Errors.Add($"Row {rowNumber}: {label} must be a positive integer.");
-            return null;
-        }
-
-        private static double? ParsePercent(
-            CustomAchievementTextImportResult result,
-            string value,
-            int rowNumber)
-        {
-            var normalized = value.Trim().TrimEnd('%');
-            if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) &&
-                parsed >= 0 &&
-                parsed <= 100)
-            {
-                return parsed;
-            }
-
-            result.Errors.Add($"Row {rowNumber}: percent must be between 0 and 100.");
-            return null;
+            return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed) ||
+                   double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out parsed);
         }
 
         private static bool TryParseBoolean(string value, out bool parsed)
         {
             parsed = false;
-            var normalized = NormalizeHeader(value);
-            switch (normalized)
+            switch (NormalizeHeader(value))
             {
                 case "true":
                 case "yes":
@@ -323,7 +490,6 @@ namespace PlayniteAchievements.Services
                 case "n":
                 case "0":
                 case "locked":
-                case "notunlocked":
                     parsed = false;
                     return true;
                 default:
@@ -331,28 +497,18 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private static bool TryParseDateTime(string value, out DateTime utc)
+        /// <summary>
+        /// Reads an unlock time as local time unless it carries an offset or Z. The current
+        /// culture is tried first because a spreadsheet saves dates in the user's own format.
+        /// </summary>
+        private static bool TryParseUnlockTimeUtc(string value, out DateTime utc)
         {
-            utc = default;
-            if (DateTimeOffset.TryParse(
-                    value,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowWhiteSpaces,
-                    out var offset))
+            const DateTimeStyles styles =
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeLocal | DateTimeStyles.AllowWhiteSpaces;
+            if (DateTime.TryParse(value, CultureInfo.CurrentCulture, styles, out utc) ||
+                DateTime.TryParse(value, CultureInfo.InvariantCulture, styles, out utc))
             {
-                utc = offset.UtcDateTime;
-                return true;
-            }
-
-            if (DateTime.TryParse(
-                    value,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowWhiteSpaces,
-                    out var parsed))
-            {
-                utc = parsed.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(parsed, DateTimeKind.Utc)
-                    : parsed.ToUniversalTime();
+                utc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
                 return true;
             }
 
@@ -364,12 +520,21 @@ namespace PlayniteAchievements.Services
             return row == null || row.All(value => string.IsNullOrWhiteSpace(value));
         }
 
+        /// <summary>
+        /// Splits the text into records. Blank records are kept so a record's index stays its
+        /// spreadsheet row; only a trailing blank one is dropped.
+        /// </summary>
         private static List<List<string>> ParseRows(string text)
         {
             var rows = new List<List<string>>();
             if (string.IsNullOrWhiteSpace(text))
             {
                 return rows;
+            }
+
+            if (text[0] == '﻿')
+            {
+                text = text.Substring(1);
             }
 
             var delimiter = DetectDelimiter(text);
@@ -438,7 +603,7 @@ namespace PlayniteAchievements.Services
                 rows.Add(row);
             }
 
-            return rows.Where(rowValues => !IsEmptyRow(rowValues)).ToList();
+            return rows;
         }
 
         private static char DetectDelimiter(string text)
