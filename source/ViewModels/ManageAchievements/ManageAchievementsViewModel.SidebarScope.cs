@@ -133,6 +133,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private void RefreshSidebarScope()
         {
+            using var scope = PerfScope.Start(_logger, "Manage.SidebarScope.Refresh", thresholdMs: 0);
             IReadOnlyCollection<string> labels = null;
             if (_sidebarScopeSources.TryGetValue(SelectedTab, out var source))
             {
