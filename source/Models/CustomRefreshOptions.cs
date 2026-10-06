@@ -232,7 +232,6 @@ namespace PlayniteAchievements.Models
     /// </summary>
     public sealed class CustomRefreshPreset
     {
-        public const int MaxPresetCount = 50;
         public const int MaxNameLength = 64;
 
         public string Name { get; set; }
@@ -258,9 +257,8 @@ namespace PlayniteAchievements.Models
             return trimmed;
         }
 
-        public static IReadOnlyList<CustomRefreshPreset> NormalizePresets(
-            IEnumerable<CustomRefreshPreset> presets,
-            int maxCount = MaxPresetCount)
+        /// <summary>Drops nameless and duplicate-named presets; there is no limit on how many are kept.</summary>
+        public static IReadOnlyList<CustomRefreshPreset> NormalizePresets(IEnumerable<CustomRefreshPreset> presets)
         {
             var normalized = new List<CustomRefreshPreset>();
             if (presets == null)
@@ -268,15 +266,9 @@ namespace PlayniteAchievements.Models
                 return normalized;
             }
 
-            var countLimit = Math.Max(0, maxCount);
             var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var preset in presets)
             {
-                if (normalized.Count >= countLimit)
-                {
-                    break;
-                }
-
                 var name = SanitizeName(preset?.Name);
                 if (string.IsNullOrWhiteSpace(name) || !seenNames.Add(name))
                 {
