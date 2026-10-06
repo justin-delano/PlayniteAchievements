@@ -1020,7 +1020,7 @@ namespace PlayniteAchievements.Models.Settings
             set
             {
                 var normalized = new List<CustomRefreshPreset>(
-                    CustomRefreshPreset.NormalizePresets(value, CustomRefreshPreset.MaxPresetCount));
+                    CustomRefreshPreset.NormalizePresets(value));
                 SetValue(ref _customRefreshPresets, normalized);
             }
         }
@@ -3260,7 +3260,7 @@ namespace PlayniteAchievements.Models.Settings
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
                 DefaultOverviewRefreshMode = this.DefaultOverviewRefreshMode,
                 CustomRefreshPresets = this.CustomRefreshPresets != null
-                    ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
+                    ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets))
                     : new List<CustomRefreshPreset>(),
 
                 // Hotkey Settings
