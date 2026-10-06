@@ -34,6 +34,68 @@ namespace PlayniteAchievements.Services.Library
 
         public static string GameData(Guid gameId) => GameDataPrefix + GameToken(gameId);
 
+        /// <summary>
+        /// The key of a notification (<paramref name="isFrame"/> false) or frame scope: a game when
+        /// <paramref name="gameId"/> is set, else a platform when <paramref name="providerKey"/> is
+        /// set, else the global scope.
+        /// </summary>
+        public static string NotificationScope(bool isFrame, string providerKey, Guid gameId)
+        {
+            if (gameId != Guid.Empty)
+            {
+                return isFrame ? FrameGame(gameId) : ToastGame(gameId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(providerKey))
+            {
+                return isFrame ? FrameProvider(providerKey) : ToastProvider(providerKey);
+            }
+
+            return isFrame ? FrameGlobal : ToastGlobal;
+        }
+
+        /// <summary>Reads a notification or frame scope key back into its surface and scope.</summary>
+        public static bool TryParseNotificationScope(string targetKey, out bool isFrame, out string providerKey, out Guid gameId)
+        {
+            isFrame = false;
+            providerKey = null;
+            gameId = Guid.Empty;
+            if (string.IsNullOrWhiteSpace(targetKey))
+            {
+                return false;
+            }
+
+            string rest;
+            if (targetKey.StartsWith(ToastPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                rest = targetKey.Substring(ToastPrefix.Length);
+            }
+            else if (targetKey.StartsWith(FramePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                isFrame = true;
+                rest = targetKey.Substring(FramePrefix.Length);
+            }
+            else
+            {
+                return false;
+            }
+
+            if (string.Equals(rest, "global", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (rest.StartsWith(ProviderSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                providerKey = rest.Substring(ProviderSegment.Length).Trim();
+                return providerKey.Length > 0;
+            }
+
+            return rest.StartsWith(GameSegment, StringComparison.OrdinalIgnoreCase)
+                   && Guid.TryParse(rest.Substring(GameSegment.Length), out gameId)
+                   && gameId != Guid.Empty;
+        }
+
         /// <summary>True for a key whose link lives in the library's links file rather than in the settings.</summary>
         public static bool IsPerGame(string targetKey)
         {
