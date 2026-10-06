@@ -1560,7 +1560,6 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Workshop_Title">Workshop</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Tab_Browse">Browse</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Installed">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_Colors">Color sets</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_NotificationStyle">Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_ScreenshotFrame">Frames</sys:String>
@@ -1611,9 +1610,19 @@
     <sys:String x:Key="LOCPlayAch_Workshop_BundlesHint">A bundle packs your colors, sounds, notification and frame into one .pabundle file. Importing one adds each part to its preset list.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_CurrentSettings">Current settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">Choose what each part of the bundle is built from: your current settings or a saved preset.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Presets_Hint">Every saved preset, downloaded or your own. Apply one from the card it belongs to.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_NoPresets">No saved presets.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_SavedAsCopy">"{0}" is a Workshop item, so your preset was saved as "{1}".</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Hint">Your saved looks and everything added from the Workshop. Apply one from its settings card; it is then tracked, so updates keep what you changed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_InLibrary">In library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_InUse">In use</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Edited">Edited</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_UsedIn">Used in</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_NotApplied">Not applied anywhere. Apply it from its settings card.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Following">Following {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_StopFollowing">Stop following</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_UpdatesWhenApplied">Notifications, frames and showcase pages that use it take the new version when you apply it again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_ReinstallChoice">"{0}" is used in {1} places. Merge keeps what you changed there and takes the rest from the package; Replace applies the package as published.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_DeleteConfirm">Delete "{0}" from your library? Places that use it keep their current look.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Rename">Rename</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalStyle">Notification</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GlobalFrame">Frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">Sounds</sys:String>
