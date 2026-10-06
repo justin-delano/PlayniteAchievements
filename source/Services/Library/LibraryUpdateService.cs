@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Services.Library
         /// <summary>Values kept from the user's edits that differ from the package.</summary>
         public int KeptEdits { get; set; }
 
-        /// <summary>Followers of a kind without an adapter yet: they take the new version when it is applied again.</summary>
+        /// <summary>Followers without an adapter yet: they take the new version when it is applied again.</summary>
         public List<string> PendingTargets { get; } = new List<string>();
     }
 
@@ -78,37 +78,42 @@ namespace PlayniteAchievements.Services.Library
     /// <summary>
     /// Keeps library items and the targets that follow them in step: writes a Workshop part's new
     /// package into the library (an edited file stays as a local item), merges an item's current
-    /// version into its followers through the settings adapters, and ends links to items that
-    /// are gone. Settings-backed followers changed because of work on disk (a new package, a
-    /// deleted file) are written to the live settings and the settings edit snapshot together,
-    /// so a Cancel cannot bring back a link to something that changed underneath it.
+    /// version into its followers through their adapters, and ends links to items that are gone.
+    /// Settings-backed followers changed because of work on disk (a new package, a deleted file)
+    /// are written to the live settings and the settings edit snapshot together, so a Cancel
+    /// cannot bring back a link to something that changed underneath it; per-game followers are
+    /// written to the game and the per-game links.
     /// </summary>
     public sealed class LibraryUpdateService
     {
         private readonly LibraryApplyService _apply;
         private readonly GameLinkStore _gameLinks;
         private readonly IReadOnlyList<ISettingsLibraryAdapter> _adapters;
+        private readonly IReadOnlyList<ILibraryTargetResolver> _resolvers;
         private readonly Func<PersistedSettings> _live;
         private readonly Action<Action<PersistedSettings>> _updateIncludingSnapshot;
         private readonly Action<Action<PersistedSettings>> _updateLive;
 
         /// <param name="apply">The apply service over the library.</param>
         /// <param name="gameLinks">The per-game links.</param>
-        /// <param name="adapters">The settings-backed adapters, one per kind that has one.</param>
+        /// <param name="adapters">The settings-backed adapters of the kinds with a single target (colors, sounds).</param>
         /// <param name="live">The live settings.</param>
         /// <param name="updateIncludingSnapshot">Applies a change to the live settings and any open edit snapshot, and saves outside an edit session.</param>
         /// <param name="updateLive">Applies a change to the live settings only, and saves outside an edit session.</param>
+        /// <param name="resolvers">The targets of kinds with many of them (notification and frame scopes).</param>
         public LibraryUpdateService(
             LibraryApplyService apply,
             GameLinkStore gameLinks,
             IEnumerable<ISettingsLibraryAdapter> adapters,
             Func<PersistedSettings> live,
             Action<Action<PersistedSettings>> updateIncludingSnapshot,
-            Action<Action<PersistedSettings>> updateLive)
+            Action<Action<PersistedSettings>> updateLive,
+            IEnumerable<ILibraryTargetResolver> resolvers = null)
         {
             _apply = apply ?? throw new ArgumentNullException(nameof(apply));
             _gameLinks = gameLinks ?? throw new ArgumentNullException(nameof(gameLinks));
             _adapters = (adapters ?? Enumerable.Empty<ISettingsLibraryAdapter>()).Where(adapter => adapter != null).ToList();
+            _resolvers = (resolvers ?? Enumerable.Empty<ILibraryTargetResolver>()).Where(resolver => resolver != null).ToList();
             _live = live ?? throw new ArgumentNullException(nameof(live));
             _updateIncludingSnapshot = updateIncludingSnapshot ?? throw new ArgumentNullException(nameof(updateIncludingSnapshot));
             _updateLive = updateLive ?? throw new ArgumentNullException(nameof(updateLive));
@@ -118,10 +123,46 @@ namespace PlayniteAchievements.Services.Library
 
         public GameLinkStore GameLinks => _gameLinks;
 
-        /// <summary>The adapter of a kind, or null for kinds without one yet.</summary>
-        public ISettingsLibraryAdapter AdapterFor(LibraryItemKind kind)
+        /// <summary>The adapter of a settings-backed target, or null for targets without one yet.</summary>
+        public ISettingsLibraryAdapter SettingsAdapterFor(string targetKey)
         {
-            return _adapters.FirstOrDefault(adapter => adapter.Kind == kind);
+            if (string.IsNullOrWhiteSpace(targetKey) || LibraryTargetKeys.IsPerGame(targetKey))
+            {
+                return null;
+            }
+
+            return _adapters.FirstOrDefault(adapter => string.Equals(adapter.TargetKey, targetKey, StringComparison.OrdinalIgnoreCase))
+                   ?? _resolvers.Select(resolver => resolver.SettingsAdapter(targetKey)).FirstOrDefault(adapter => adapter != null);
+        }
+
+        /// <summary>The per-game target a key names, or null for targets without an adapter.</summary>
+        public ILibraryGameTarget GameTargetFor(string targetKey)
+        {
+            return LibraryTargetKeys.IsPerGame(targetKey)
+                ? _resolvers.Select(resolver => resolver.GameTarget(targetKey)).FirstOrDefault(target => target != null)
+                : null;
+        }
+
+        /// <summary>Applies the item to a per-game target as published and links it.</summary>
+        public void ApplyToGameTarget(string targetKey, LibraryItem item)
+        {
+            var target = GameTargetFor(targetKey) ?? throw new InvalidOperationException($"'{targetKey}' has no adapter.");
+            _gameLinks.Set(targetKey, target.Apply(_apply, item));
+        }
+
+        /// <summary>Links a per-game target to an item saved from it.</summary>
+        public void LinkGameTarget(string targetKey, LibraryItem item)
+        {
+            var target = GameTargetFor(targetKey) ?? throw new InvalidOperationException($"'{targetKey}' has no adapter.");
+            _gameLinks.Set(targetKey, target.Link(_apply, item));
+        }
+
+        /// <summary>How a per-game target stands against the item it follows.</summary>
+        public LibraryLinkState GetGameTargetState(string targetKey)
+        {
+            var target = GameTargetFor(targetKey);
+            var link = _gameLinks.Get(targetKey);
+            return target == null || link == null ? LibraryLinkState.Unlinked : target.GetState(_apply, link);
         }
 
         // ---- packages ---------------------------------------------------------------------------
@@ -213,9 +254,9 @@ namespace PlayniteAchievements.Services.Library
         // ---- followers --------------------------------------------------------------------------
 
         /// <summary>
-        /// Brings every follower of the item to its current version: settings targets of a kind
-        /// with an adapter are merged (or replaced) in the live settings and the edit snapshot;
-        /// followers of other kinds are reported as pending.
+        /// Brings every follower of the item to its current version: settings targets with an
+        /// adapter are merged (or replaced) in the live settings and the edit snapshot, per-game
+        /// targets with an adapter in the game; followers without one are reported as pending.
         /// </summary>
         public LibraryMergeReport MergeIntoTargets(string itemId, LibraryApplyMode mode)
         {
@@ -226,11 +267,28 @@ namespace PlayniteAchievements.Services.Library
                 return report;
             }
 
-            var adapter = AdapterFor(item.Kind);
-            if (adapter == null)
+            foreach (var key in TargetsOf(item.Id))
             {
-                report.PendingTargets.AddRange(TargetsOf(item.Id));
-                return report;
+                if (LibraryTargetKeys.IsPerGame(key))
+                {
+                    MergeIntoGameTarget(key, item, mode, report);
+                }
+                else
+                {
+                    MergeIntoSettingsTarget(key, item, mode, report);
+                }
+            }
+
+            return report;
+        }
+
+        private void MergeIntoSettingsTarget(string key, LibraryItem item, LibraryApplyMode mode, LibraryMergeReport report)
+        {
+            var adapter = SettingsAdapterFor(key);
+            if (adapter == null || adapter.Kind != item.Kind)
+            {
+                report.PendingTargets.Add(key);
+                return;
             }
 
             var updated = false;
@@ -260,10 +318,27 @@ namespace PlayniteAchievements.Services.Library
             if (updated)
             {
                 report.UpdatedTargets.Add(adapter.TargetKey);
-                report.KeptEdits = kept ?? 0;
+                report.KeptEdits += kept ?? 0;
+            }
+        }
+
+        private void MergeIntoGameTarget(string key, LibraryItem item, LibraryApplyMode mode, LibraryMergeReport report)
+        {
+            var target = GameTargetFor(key);
+            var link = _gameLinks.Get(key);
+            if (target == null || target.Kind != item.Kind || link == null || !SameId(link.LibraryItemId, item.Id))
+            {
+                report.PendingTargets.Add(key);
+                return;
             }
 
-            return report;
+            var kept = 0;
+            var updated = mode == LibraryApplyMode.Replace
+                ? target.Apply(_apply, item)
+                : target.Update(_apply, item, link, out kept);
+            _gameLinks.Set(key, updated);
+            report.UpdatedTargets.Add(key);
+            report.KeptEdits += kept;
         }
 
         /// <summary>The keys of every target that follows the item: live settings links and per-game links.</summary>
@@ -294,20 +369,37 @@ namespace PlayniteAchievements.Services.Library
             var live = _live();
             foreach (var key in TargetsOf(item.Id))
             {
-                var link = LibraryTargetKeys.IsPerGame(key) ? _gameLinks.Get(key) : live?.GetLibraryLink(key);
+                var perGame = LibraryTargetKeys.IsPerGame(key);
+                var link = perGame ? _gameLinks.Get(key) : live?.GetLibraryLink(key);
                 if (link == null)
                 {
                     continue;
                 }
 
-                var adapter = LibraryTargetKeys.IsPerGame(key) ? null : _adapters.FirstOrDefault(candidate =>
-                    candidate.Kind == item.Kind && string.Equals(candidate.TargetKey, key, StringComparison.OrdinalIgnoreCase));
-                if (adapter != null && live != null)
+                Func<LibraryLinkState> readState = null;
+                if (perGame)
+                {
+                    var target = GameTargetFor(key);
+                    if (target != null && target.Kind == item.Kind)
+                    {
+                        readState = () => target.GetState(_apply, link);
+                    }
+                }
+                else
+                {
+                    var adapter = SettingsAdapterFor(key);
+                    if (adapter != null && adapter.Kind == item.Kind && live != null)
+                    {
+                        readState = () => _apply.GetState(adapter, live, link);
+                    }
+                }
+
+                if (readState != null)
                 {
                     LibraryLinkState state;
                     try
                     {
-                        state = _apply.GetState(adapter, live, link);
+                        state = readState();
                     }
                     catch (Exception)
                     {
@@ -327,10 +419,24 @@ namespace PlayniteAchievements.Services.Library
             return uses;
         }
 
-        /// <summary>Applies the item a settings target follows again as published. False when the target has no adapter.</summary>
+        /// <summary>Applies the item a target follows again as published. False when the target has no adapter or follows nothing.</summary>
         public bool Reset(string targetKey)
         {
-            var adapter = _adapters.FirstOrDefault(candidate => string.Equals(candidate.TargetKey, targetKey, StringComparison.OrdinalIgnoreCase));
+            if (LibraryTargetKeys.IsPerGame(targetKey))
+            {
+                var target = GameTargetFor(targetKey);
+                var link = _gameLinks.Get(targetKey);
+                var item = link == null ? null : _apply.Library.Find(link.LibraryItemId);
+                if (target == null || item == null || item.Kind != target.Kind)
+                {
+                    return false;
+                }
+
+                _gameLinks.Set(targetKey, target.Apply(_apply, item));
+                return true;
+            }
+
+            var adapter = SettingsAdapterFor(targetKey);
             if (adapter == null)
             {
                 return false;
