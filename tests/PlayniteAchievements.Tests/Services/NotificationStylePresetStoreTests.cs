@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Services.Tests
                 style.Toast.HeaderTexts.UnlockHeader = "Preset Unlock!";
                 style.Frame.HeaderTexts.UnlockHeader = "Frame header";
 
-                store.SavePreset(isFrame: false, "My Toast", style, templateXamlOrNull: null);
+                Save(store, tempDir, isFrame: false, "My Toast", style, templateXamlOrNull: null);
 
                 var preset = store.ListPresets(isFrame: false).Single();
                 Assert.AreEqual("My Toast", preset.Name);
@@ -73,7 +73,7 @@ namespace PlayniteAchievements.Services.Tests
                 style.ToastBackgroundImagePath = backgroundSource;
                 style.Toast.HeaderTexts.UnlockHeader = "Should not travel";
 
-                store.SavePreset(isFrame: true, "My Frame", style, templateXamlOrNull: null);
+                Save(store, tempDir, isFrame: true, "My Frame", style, templateXamlOrNull: null);
 
                 var preset = store.ListPresets(isFrame: true).Single();
                 Assert.IsTrue(preset.IsFrame);
@@ -114,25 +114,25 @@ namespace PlayniteAchievements.Services.Tests
                 const string toastXaml = "<ResourceDictionary xmlns=\"toast\"><!--toast--></ResourceDictionary>";
                 const string frameXaml = "<ResourceDictionary xmlns=\"frame\"><!--frame--></ResourceDictionary>";
 
-                store.SavePreset(isFrame: false, "with-toast-template", style, toastXaml);
-                store.SavePreset(isFrame: true, "with-frame-template", style, frameXaml);
+                Save(store, tempDir, isFrame: false, "with-toast-template", style, toastXaml);
+                Save(store, tempDir, isFrame: true, "with-frame-template", style, frameXaml);
 
                 var toastPreset = store.ListPresets(isFrame: false).Single();
                 var toastContents = portableStore.InspectPackage(toastPreset.FilePath);
                 Assert.IsTrue(toastContents.HasToastTemplate);
                 Assert.IsFalse(toastContents.HasFrameTemplate);
-                Assert.AreEqual(toastXaml, store.ReadPresetTemplateXaml(toastPreset));
+                Assert.AreEqual(toastXaml, ReadTemplate(tempDir, toastPreset));
 
                 var framePreset = store.ListPresets(isFrame: true).Single();
                 var frameContents = portableStore.InspectPackage(framePreset.FilePath);
                 Assert.IsTrue(frameContents.HasFrameTemplate);
                 Assert.IsFalse(frameContents.HasToastTemplate);
-                Assert.AreEqual(frameXaml, store.ReadPresetTemplateXaml(framePreset));
+                Assert.AreEqual(frameXaml, ReadTemplate(tempDir, framePreset));
 
-                store.SavePreset(isFrame: false, "no-template", style, templateXamlOrNull: null);
+                Save(store, tempDir, isFrame: false, "no-template", style, templateXamlOrNull: null);
                 var bare = store.ListPresets(isFrame: false)
                     .Single(preset => preset.Name == "no-template");
-                Assert.IsNull(store.ReadPresetTemplateXaml(bare));
+                Assert.IsNull(ReadTemplate(tempDir, bare));
             }
             finally
             {
@@ -149,9 +149,9 @@ namespace PlayniteAchievements.Services.Tests
                 var store = CreateStore(tempDir);
                 var style = NotificationStyleSettings.CreateDefault();
 
-                store.SavePreset(isFrame: false, "beta", style, null);
-                store.SavePreset(isFrame: false, "Alpha", style, null);
-                store.SavePreset(isFrame: true, "frame-only", style, null);
+                Save(store, tempDir, isFrame: false, "beta", style, null);
+                Save(store, tempDir, isFrame: false, "Alpha", style, null);
+                Save(store, tempDir, isFrame: true, "frame-only", style, null);
 
                 var toastDir = Path.Combine(tempDir, "data", "notification_style_presets", "toast");
                 File.WriteAllText(Path.Combine(toastDir, "notes.txt"), "not a preset");
@@ -160,7 +160,7 @@ namespace PlayniteAchievements.Services.Tests
                 CollectionAssert.AreEqual(
                     new[] { "Alpha", "beta" },
                     toastPresets.Select(preset => preset.Name).ToArray());
-                Assert.AreEqual(1, store.CountPresets(isFrame: true));
+                Assert.AreEqual(1, store.ListPresets(isFrame: true).Count);
             }
             finally
             {
@@ -169,7 +169,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void SavePreset_SameName_Overwrites_AndPresetExistsIsCaseInsensitive()
+        public void SavingTheSameName_Overwrites()
         {
             var tempDir = CreateTempDirectory();
             try
@@ -177,16 +177,12 @@ namespace PlayniteAchievements.Services.Tests
                 var store = CreateStore(tempDir);
                 var style = NotificationStyleSettings.CreateDefault();
                 style.Toast.CardWidth = 300;
-                store.SavePreset(isFrame: false, "look", style, null);
-
-                Assert.IsTrue(store.PresetExists(isFrame: false, "look"));
-                Assert.IsTrue(store.PresetExists(isFrame: false, "LOOK"));
-                Assert.IsFalse(store.PresetExists(isFrame: true, "look"));
+                Save(store, tempDir, isFrame: false, "look", style, null);
 
                 style.Toast.CardWidth = 555;
-                store.SavePreset(isFrame: false, "look", style, null);
+                Save(store, tempDir, isFrame: false, "look", style, null);
 
-                Assert.AreEqual(1, store.CountPresets(isFrame: false));
+                Assert.AreEqual(1, store.ListPresets(isFrame: false).Count);
                 var manifest = ReadManifest(store.ListPresets(isFrame: false).Single().FilePath);
                 Assert.AreEqual(555d, manifest.Style.Toast.CardWidth);
             }
@@ -205,19 +201,19 @@ namespace PlayniteAchievements.Services.Tests
                 var store = CreateStore(tempDir);
                 var style = NotificationStyleSettings.CreateDefault();
                 style.Toast.CardWidth = 321;
-                store.SavePreset(isFrame: false, "look", style, null);
+                Save(store, tempDir, isFrame: false, "look", style, null);
                 var toastFile = store.ListPresets(isFrame: false).Single().FilePath;
 
                 var copy = store.SavePresetFromPackage(isFrame: false, "Workshop look", toastFile);
 
                 Assert.AreEqual("Workshop look", copy.Name);
                 Assert.IsFalse(copy.IsFrame);
-                Assert.AreEqual(2, store.CountPresets(isFrame: false));
+                Assert.AreEqual(2, store.ListPresets(isFrame: false).Count);
                 Assert.AreEqual(321d, ReadManifest(copy.FilePath).Style.Toast.CardWidth);
                 Assert.ThrowsException<InvalidOperationException>(
                     () => store.SavePresetFromPackage(isFrame: true, "frame", toastFile),
                     "a toast package is not a frame preset");
-                Assert.AreEqual(0, store.CountPresets(isFrame: true));
+                Assert.AreEqual(0, store.ListPresets(isFrame: true).Count);
 
                 Assert.AreEqual("look (2)", store.UniqueName(isFrame: false, "look"));
                 Assert.AreEqual("look", store.UniqueName(isFrame: true, "look"), "names are unique per surface");
@@ -243,89 +239,32 @@ namespace PlayniteAchievements.Services.Tests
                 NotificationStylePresetStore.SanitizeName(oversized).Length);
         }
 
-        [TestMethod]
-        public void DeletePreset_RemovesTheFile()
+
+        /// <summary>Saves a look the way the settings card does: exported to a package, then copied in as the preset.</summary>
+        private static NotificationStylePresetInfo Save(
+            NotificationStylePresetStore store,
+            string tempDir,
+            bool isFrame,
+            string name,
+            NotificationStyleSettings style,
+            string templateXamlOrNull)
         {
-            var tempDir = CreateTempDirectory();
-            try
-            {
-                var store = CreateStore(tempDir);
-                store.SavePreset(isFrame: false, "doomed", NotificationStyleSettings.CreateDefault(), null);
-                var preset = store.ListPresets(isFrame: false).Single();
-
-                store.DeletePreset(preset);
-
-                Assert.IsFalse(File.Exists(preset.FilePath));
-                Assert.AreEqual(0, store.CountPresets(isFrame: false));
-            }
-            finally
-            {
-                DeleteDirectory(tempDir);
-            }
+            var package = Path.Combine(tempDir, "exports", Guid.NewGuid().ToString("N") + NotificationStylePortableStore.SurfaceExtension(isFrame));
+            Portable(tempDir).ExportSurfacePackage(isFrame, style, package, templateXamlOrNull);
+            return store.SavePresetFromPackage(isFrame, name, package);
         }
 
-        [TestMethod]
-        public async Task LoadPresetStyleAsync_ToastPreset_MaterializesImagesIntoTargetOwner()
+        private static string ReadTemplate(string tempDir, NotificationStylePresetInfo preset)
         {
-            var tempDir = CreateTempDirectory();
-            try
-            {
-                var store = CreateStore(tempDir);
-                var backgroundSource = Path.Combine(tempDir, "bg.png");
-                WritePngFile(backgroundSource);
-
-                var style = NotificationStyleSettings.CreateDefault();
-                style.Toast.ShowHeader = false;
-                style.ToastBackgroundImagePath = backgroundSource;
-                store.SavePreset(isFrame: false, "imaged", style, null);
-                var preset = store.ListPresets(isFrame: false).Single();
-
-                var loaded = await store.LoadPresetStyleAsync(
-                    preset,
-                    NotificationImageOwner.ForProvider("steam"),
-                    CancellationToken.None);
-
-                Assert.IsFalse(loaded.Toast.ShowHeader);
-                var expectedSuffix = Path.Combine(
-                    "notification_images", "providers", "steam", "background.png");
-                Assert.IsTrue(loaded.ToastBackgroundImagePath.EndsWith(
-                    expectedSuffix, StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(File.Exists(loaded.ToastBackgroundImagePath));
-            }
-            finally
-            {
-                DeleteDirectory(tempDir);
-            }
+            return Portable(tempDir).ReadTemplateXaml(preset.FilePath, preset.IsFrame);
         }
 
-        [TestMethod]
-        public async Task LoadPresetStyleAsync_FramePreset_ReturnsNullImagePaths()
+        private static NotificationStylePortableStore Portable(string tempDir)
         {
-            var tempDir = CreateTempDirectory();
-            try
-            {
-                var store = CreateStore(tempDir);
-                var style = NotificationStyleSettings.CreateDefault();
-                style.Frame.ShowUnlockTime = false;
-                store.SavePreset(isFrame: true, "plain-frame", style, null);
-                var preset = store.ListPresets(isFrame: true).Single();
-
-                var loaded = await store.LoadPresetStyleAsync(
-                    preset,
-                    NotificationImageOwner.Global,
-                    CancellationToken.None);
-
-                Assert.IsFalse(loaded.Frame.ShowUnlockTime);
-                Assert.IsNull(loaded.ToastBackgroundImagePath);
-                Assert.IsNull(loaded.Toast.BadgeImages.CommonPath);
-                Assert.IsNull(loaded.Frame.BadgeImages.CommonPath);
-            }
-            finally
-            {
-                DeleteDirectory(tempDir);
-            }
+            return new NotificationStylePortableStore(
+                new NotificationImageStore(new DiskImageService(logger: null, cacheRoot: tempDir), logger: null),
+                logger: null);
         }
-
         private static NotificationStylePresetStore CreateStore(string tempDir)
         {
             return CreateStore(tempDir, out _);
