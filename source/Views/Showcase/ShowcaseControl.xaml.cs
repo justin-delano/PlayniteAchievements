@@ -3758,7 +3758,11 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            ShowcaseLayoutService.DeletePage(Layout, CurrentPage.PageId);
+            var pageId = CurrentPage.PageId;
+            ShowcaseLayoutService.DeletePage(Layout, pageId);
+
+            // A deleted page no longer follows the library item it came from.
+            _settings.Persisted.SetLibraryLink(Services.Library.LibraryTargetKeys.Showcase(pageId), null);
             SaveAndRebuild();
         }
 
