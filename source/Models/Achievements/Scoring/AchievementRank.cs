@@ -81,11 +81,22 @@ namespace PlayniteAchievements.Models.Achievements.Scoring
                 : FormatRank(AchievementRank.Bronze5);
         }
 
+        /// <summary>Master ranks wear the completed-game badge and colors rather than a tier's.</summary>
+        public static bool IsMasterRank(AchievementRank rank)
+        {
+            return rank.ToString().StartsWith("Master", StringComparison.Ordinal);
+        }
+
+        public static bool IsMasterRank(string rank)
+        {
+            return TryParseRank(rank, out var parsed) && IsMasterRank(parsed);
+        }
+
         public static string GetBadgeIconKey(
             AchievementRank rank,
             bool useUniformRarityBadges = false)
         {
-            if (rank.ToString().StartsWith("Master", StringComparison.Ordinal))
+            if (IsMasterRank(rank))
             {
                 return "BadgeCompletedGame";
             }
@@ -106,7 +117,7 @@ namespace PlayniteAchievements.Models.Achievements.Scoring
             AchievementRank rank,
             bool useUniformRarityBadges = false)
         {
-            if (rank.ToString().StartsWith("Master", StringComparison.Ordinal))
+            if (IsMasterRank(rank))
             {
                 return "ScoreBadgeCompletedGame";
             }
