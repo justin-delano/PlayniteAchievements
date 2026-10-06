@@ -636,8 +636,7 @@ namespace PlayniteAchievements.Views
         private void InitializePresets()
         {
             var normalizedPresets = CustomRefreshPreset.NormalizePresets(
-                _settings?.Persisted?.CustomRefreshPresets,
-                CustomRefreshPreset.MaxPresetCount);
+                _settings?.Persisted?.CustomRefreshPresets);
 
             PresetOptions.Clear();
             PresetOptions.Add(_placeholderPreset);
@@ -656,9 +655,7 @@ namespace PlayniteAchievements.Views
             var previousSelectedName = SelectedPreset?.Options != null
                 ? SelectedPreset.Name
                 : null;
-            var normalized = CustomRefreshPreset.NormalizePresets(
-                presets,
-                CustomRefreshPreset.MaxPresetCount);
+            var normalized = CustomRefreshPreset.NormalizePresets(presets);
 
             PresetOptions.Clear();
             PresetOptions.Add(_placeholderPreset);
@@ -692,8 +689,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var normalized = CustomRefreshPreset.NormalizePresets(
-                    PresetOptions.Where(preset => preset?.Options != null),
-                    CustomRefreshPreset.MaxPresetCount);
+                    PresetOptions.Where(preset => preset?.Options != null));
                 _settings.Persisted.CustomRefreshPresets = new List<CustomRefreshPreset>(normalized);
                 _persistSettingsForUi();
             }
@@ -1428,17 +1424,6 @@ namespace PlayniteAchievements.Views
                 .ToList();
             var existingPreset = savedPresets.FirstOrDefault(preset =>
                 string.Equals(preset.Name, presetName, StringComparison.OrdinalIgnoreCase));
-            if (existingPreset == null && savedPresets.Count >= CustomRefreshPreset.MaxPresetCount)
-            {
-                _api.Dialogs.ShowMessage(
-                    string.Format(
-                        L("LOCPlayAch_Presets_MaxReached"),
-                        CustomRefreshPreset.MaxPresetCount),
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
 
             if (existingPreset != null && !ConfirmDialog(
                 string.Format(
