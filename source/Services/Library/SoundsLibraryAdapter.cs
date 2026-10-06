@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models.Settings;
@@ -19,32 +17,10 @@ namespace PlayniteAchievements.Services.Library
     /// </summary>
     public sealed class SoundsLibraryAdapter : ISettingsLibraryAdapter
     {
-        private const string FileProperty = "file";
-        private const string HashPrefix = "sha256:";
-        private const string MissingPrefix = "missing:";
-
         private static readonly string[] AtomicPaths = { JsonThreeWayMerge.AnySegment };
-        private static readonly ConcurrentDictionary<string, CachedHash> HashCache =
-            new ConcurrentDictionary<string, CachedHash>(StringComparer.OrdinalIgnoreCase);
 
         private readonly UnlockSoundPortableStore _store;
         private readonly Func<IEnumerable<UnlockSoundSettings>> _alsoReferenced;
-
-        private sealed class CachedHash
-        {
-            public CachedHash(long length, DateTime writeUtc, string hash)
-            {
-                Length = length;
-                WriteUtc = writeUtc;
-                Hash = hash;
-            }
-
-            public long Length { get; }
-
-            public DateTime WriteUtc { get; }
-
-            public string Hash { get; }
-        }
 
         /// <param name="store">The portable store that imports packages into managed storage.</param>
         /// <param name="alsoReferenced">
@@ -141,10 +117,7 @@ namespace PlayniteAchievements.Services.Library
             var wanted = tiers == null ? UnlockSoundTierExtensions.All : tiers.Distinct().ToArray();
             foreach (var tier in UnlockSoundTierExtensions.All.Where(wanted.Contains))
             {
-                var path = sounds?.GetPath(tier);
-                result[tier.ToString()] = string.IsNullOrWhiteSpace(path)
-                    ? null
-                    : new JObject { [FileProperty] = FileToken(path) };
+                result[tier.ToString()] = LibraryFileTokens.FileValue(sounds?.GetPath(tier));
             }
 
             return result;
@@ -178,34 +151,6 @@ namespace PlayniteAchievements.Services.Library
             }
 
             return tiers;
-        }
-
-        /// <summary>The content hash of a sound file, cached by path, length and write time.</summary>
-        private static string FileToken(string path)
-        {
-            try
-            {
-                var info = new FileInfo(path);
-                if (!info.Exists)
-                {
-                    return MissingPrefix + path.Trim().ToLowerInvariant();
-                }
-
-                if (HashCache.TryGetValue(info.FullName, out var cached)
-                    && cached.Length == info.Length
-                    && cached.WriteUtc == info.LastWriteTimeUtc)
-                {
-                    return cached.Hash;
-                }
-
-                var hash = HashPrefix + LibraryStore.HashFile(info.FullName);
-                HashCache[info.FullName] = new CachedHash(info.Length, info.LastWriteTimeUtc, hash);
-                return hash;
-            }
-            catch (Exception)
-            {
-                return MissingPrefix + path.Trim().ToLowerInvariant();
-            }
         }
     }
 }
