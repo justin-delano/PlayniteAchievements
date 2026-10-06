@@ -210,9 +210,11 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         private void OnPersistedPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            // The plugin's settings handler applies the badge resources app-wide; only the
+            // editor previews need refreshing here.
             if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(e.PropertyName))
             {
-                ApplyRarityAppearanceOverrides();
+                RefreshRarityAppearanceItems();
             }
 
             if (e.PropertyName == nameof(PersistedSettings.ProviderColorOverrides))
@@ -455,7 +457,6 @@ namespace PlayniteAchievements.Views.Settings.Display
             persisted.ResourceOverrides = preset.ResourceBrushes != null
                 ? CreateResourceOverrideSettings(preset.ResourceBrushes)
                 : PersistedSettings.CreateDefaultResourceOverrides();
-            RefreshAppearanceEditorFromPersisted();
         }
 
         private static Dictionary<string, ResourceOverrideSetting> CreateResourceOverrideSettings(
@@ -674,10 +675,10 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             var items = RarityAppearanceItems;
             items.Clear();
-            items.Add(new RarityAppearanceItem(RarityTier.Common, persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new RarityAppearanceItem(RarityTier.Uncommon, persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new RarityAppearanceItem(RarityTier.Rare, persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new RarityAppearanceItem(RarityTier.UltraRare, persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new RarityAppearanceItem(RarityTier.Common, persisted, RefreshRarityAppearanceItems));
+            items.Add(new RarityAppearanceItem(RarityTier.Uncommon, persisted, RefreshRarityAppearanceItems));
+            items.Add(new RarityAppearanceItem(RarityTier.Rare, persisted, RefreshRarityAppearanceItems));
+            items.Add(new RarityAppearanceItem(RarityTier.UltraRare, persisted, RefreshRarityAppearanceItems));
         }
 
         private void RebuildCompletedBadgeAppearanceItems()
@@ -690,8 +691,8 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             var items = CompletedBadgeAppearanceItems;
             items.Clear();
-            items.Add(new CompletedBadgeAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_GradientStart"), true, persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new CompletedBadgeAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_GradientEnd"), false, persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new CompletedBadgeAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_GradientStart"), true, persisted, RefreshRarityAppearanceItems));
+            items.Add(new CompletedBadgeAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_GradientEnd"), false, persisted, RefreshRarityAppearanceItems));
         }
 
         private void RebuildTrophyAppearanceItems()
@@ -704,10 +705,10 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             var items = TrophyAppearanceItems;
             items.Clear();
-            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze"), "TrophyBronze", persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Silver"), "TrophySilver", persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Gold"), "TrophyGold", persisted, ApplyRarityAppearanceOverrides));
-            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Platinum"), "TrophyPlatinum", persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze"), "TrophyBronze", persisted, RefreshRarityAppearanceItems));
+            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Silver"), "TrophySilver", persisted, RefreshRarityAppearanceItems));
+            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Gold"), "TrophyGold", persisted, RefreshRarityAppearanceItems));
+            items.Add(new TrophyAppearanceItem(ResourceProvider.GetString("LOCPlayAch_Trophy_Platinum"), "TrophyPlatinum", persisted, RefreshRarityAppearanceItems));
         }
 
         private void RebuildProviderAppearanceItems()
@@ -731,7 +732,8 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         /// <summary>
         /// Rebuilds all appearance editor items from the current persisted settings and reapplies
-        /// resource and rarity overrides to the application resources.
+        /// resource overrides to the application resources. Badge resources are applied by the
+        /// plugin when the rarity settings change or the persisted instance is replaced.
         /// </summary>
         public void RefreshAppearanceEditorFromPersisted()
         {
@@ -741,7 +743,6 @@ namespace PlayniteAchievements.Views.Settings.Display
             RebuildTrophyAppearanceItems();
             RebuildProviderAppearanceItems();
             ApplyResourceAppearanceOverrides();
-            ApplyRarityAppearanceOverrides();
             RefreshProviderAppearanceItems();
         }
 
@@ -755,13 +756,6 @@ namespace PlayniteAchievements.Views.Settings.Display
                     _settings?.Persisted?.ResourceOverrides,
                     _settings?.Persisted);
             }
-        }
-
-        private void ApplyRarityAppearanceOverrides()
-        {
-            RarityAppearanceHelper.ApplyBadgeApplicationResources(
-                _settings?.Persisted);
-            RefreshRarityAppearanceItems();
         }
 
         private void RefreshRarityAppearanceItems()
