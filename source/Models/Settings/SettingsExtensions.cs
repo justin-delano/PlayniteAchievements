@@ -78,7 +78,7 @@ namespace PlayniteAchievements.Models.Settings
             target.RecentRefreshGamesCount = source.RecentRefreshGamesCount;
             target.DefaultOverviewRefreshMode = source.DefaultOverviewRefreshMode;
             target.CustomRefreshPresets = source.CustomRefreshPresets != null
-                ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(source.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
+                ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(source.CustomRefreshPresets))
                 : new List<CustomRefreshPreset>();
 
             // Hotkey Settings
