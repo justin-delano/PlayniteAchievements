@@ -8,7 +8,7 @@ namespace PlayniteAchievements.Views.Helpers.Gif
     /// changed. Every buffer is allocated up front (the restore-previous save area on first use),
     /// so steady-state playback allocates nothing. Not thread-safe: one owner renders at a time.
     /// </summary>
-    internal sealed class GifCanvas
+    internal sealed class GifCanvas : IFrameCanvas
     {
         private static readonly int[][] InterlacePasses =
         {
@@ -36,19 +36,30 @@ namespace PlayniteAchievements.Views.Helpers.Gif
 
         internal GifImage Image => _image;
 
+        public int Width => _image.Width;
+
+        public int Height => _image.Height;
+
+        public int FrameCount => _image.Frames.Length;
+
         /// <summary>Row-major Bgra32 pixels, <see cref="GifImage.Width"/> per row.</summary>
-        internal int[] Pixels => _pixels;
+        public int[] Pixels => _pixels;
 
         /// <summary>The canvas region the last <see cref="Render"/> changed.</summary>
-        internal Int32Rect DirtyRect { get; private set; } = Int32Rect.Empty;
+        public Int32Rect DirtyRect { get; private set; } = Int32Rect.Empty;
 
-        internal int RenderedIndex => _previousIndex;
+        public int RenderedIndex => _previousIndex;
+
+        public int GetDelayMs(int frameIndex)
+        {
+            return _image.Frames[frameIndex].DelayMs;
+        }
 
         /// <summary>
         /// Draws <paramref name="frameIndex"/>. Frames are expected in sequence; any index at or
         /// before the previous one restarts from a cleared canvas, which is how a loop begins.
         /// </summary>
-        internal void Render(int frameIndex)
+        public void Render(int frameIndex)
         {
             var frames = _image.Frames;
             var frame = frames[frameIndex];
@@ -234,6 +245,11 @@ namespace PlayniteAchievements.Views.Helpers.Gif
             var right = Math.Max(a.X + a.Width, b.X + b.Width);
             var bottom = Math.Max(a.Y + a.Height, b.Y + b.Height);
             return new Int32Rect(left, top, right - left, bottom - top);
+        }
+
+        /// <summary>Holds only managed buffers.</summary>
+        public void Dispose()
+        {
         }
     }
 }
