@@ -18,18 +18,18 @@ namespace PlayniteAchievements.Views.Workshop
     {
         Full,
         Browse,
-        Installed,
         Submissions
     }
 
     /// <summary>
-    /// The Workshop window: browse and install community items, see what is installed, and follow
+    /// The Workshop window: browse and install community items, the library they go into, and
     /// the items this install has shared.
     /// </summary>
     public partial class WorkshopControl : UserControl
     {
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ILogger _logger;
+        private LibraryControl _library;
         private bool _loadedOnce;
 
         public WorkshopControl()
@@ -58,13 +58,32 @@ namespace PlayniteAchievements.Views.Workshop
             {
                 // Hosted as one settings page: that tab alone, with the tab strip hidden. A
                 // collapsed TabItem still presents its content while it is the selected one.
-                Tabs.SelectedItem = pane == WorkshopPane.Browse
-                    ? BrowseTab
-                    : pane == WorkshopPane.Installed ? InstalledTab : SubmissionsTab;
+                Tabs.SelectedItem = pane == WorkshopPane.Browse ? BrowseTab : SubmissionsTab;
                 foreach (var item in Tabs.Items.OfType<TabItem>())
                 {
                     item.Visibility = Visibility.Collapsed;
                 }
+            }
+            else
+            {
+                // The window's Library tab; settings host the Library page on its own.
+                _library = new LibraryControl(plugin, logger, LibraryKindOf(focusGameId.HasValue ? WorkshopItemKind.GameCustomData : focusKind));
+                LibraryTab.Content = _library;
+            }
+        }
+
+        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles have none.</summary>
+        private static Services.Library.LibraryItemKind? LibraryKindOf(WorkshopItemKind? kind)
+        {
+            switch (kind)
+            {
+                case WorkshopItemKind.Colors: return Services.Library.LibraryItemKind.Colors;
+                case WorkshopItemKind.UnlockSounds: return Services.Library.LibraryItemKind.Sounds;
+                case WorkshopItemKind.NotificationStyle: return Services.Library.LibraryItemKind.Toast;
+                case WorkshopItemKind.ScreenshotFrame: return Services.Library.LibraryItemKind.Frame;
+                case WorkshopItemKind.ShowcasePage: return Services.Library.LibraryItemKind.ShowcasePage;
+                case WorkshopItemKind.GameCustomData: return Services.Library.LibraryItemKind.GameData;
+                default: return null;
             }
         }
 
@@ -89,6 +108,8 @@ namespace PlayniteAchievements.Views.Workshop
                 ViewModel.ItemsView.CollectionChanged -= ItemsView_CollectionChanged;
                 ViewModel.Dispose();
             }
+
+            _library?.Cleanup();
         }
 
         private void ItemsView_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
