@@ -272,19 +272,32 @@ namespace PlayniteAchievements.Services.Sound
         /// </summary>
         public void PruneUnreferenced(UnlockSoundSettings settings)
         {
+            PruneUnreferenced(new[] { settings });
+        }
+
+        /// <summary>
+        /// Deletes managed pack folders that no slot of any of <paramref name="settings"/> points
+        /// into, for callers that must also keep what another copy of the settings references
+        /// (the settings edit snapshot a Cancel restores).
+        /// </summary>
+        public void PruneUnreferenced(IEnumerable<UnlockSoundSettings> settings)
+        {
             if (_managedRoot == null || !Directory.Exists(_managedRoot))
             {
                 return;
             }
 
             var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var tier in UnlockSoundTierExtensions.All)
+            foreach (var sounds in settings ?? Enumerable.Empty<UnlockSoundSettings>())
             {
-                var path = settings?.GetPath(tier);
-                var directory = SafeDirectoryName(path);
-                if (directory != null)
+                foreach (var tier in UnlockSoundTierExtensions.All)
                 {
-                    referenced.Add(directory);
+                    var path = sounds?.GetPath(tier);
+                    var directory = SafeDirectoryName(path);
+                    if (directory != null)
+                    {
+                        referenced.Add(directory);
+                    }
                 }
             }
 

@@ -32,8 +32,7 @@ namespace PlayniteAchievements.Services.Tests
             _tempDir = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempDir);
 
-            var diskImageService = new DiskImageService(logger: null, cacheRoot: Path.Combine(_tempDir, "images"));
-            var styleStore = new NotificationStylePortableStore(new NotificationImageStore(diskImageService, logger: null), logger: null);
+            var styleStore = new NotificationStylePortableStore();
             var soundStore = new UnlockSoundPortableStore(Path.Combine(_tempDir, "userdata"));
             var colorStore = new ColorPackPortableStore();
             var gameStore = new GameCustomDataStore(Path.Combine(_tempDir, "store"));

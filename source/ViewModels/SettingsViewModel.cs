@@ -140,6 +140,12 @@ namespace PlayniteAchievements.ViewModels
         public bool IsEditSessionActive => _editingClone != null;
 
         /// <summary>
+        /// The persisted settings a Cancel would restore, or null outside an edit session; for
+        /// cleanup that must keep what the snapshot still references.
+        /// </summary>
+        public PersistedSettings EditSnapshotPersisted => _editingClone?.Persisted;
+
+        /// <summary>
         /// Applies <paramref name="update"/> to the live settings and, while a settings window is
         /// open, to its edit snapshot too, for bookkeeping that records work already done outside
         /// the settings (such as text written to the library) and so must survive a Cancel.

@@ -18,7 +18,7 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- One row of the browse and installed lists. -->
+            <!-- One row of the browse list. -->
             <DataTemplate x:Key="WorkshopItemRowTemplate" DataType="{x:Type vm:WorkshopItemViewModel}">
                 <Grid Margin="0,4">
                     <Grid.ColumnDefinitions>
@@ -86,7 +86,7 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Library_InLibrary}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}"/>
@@ -293,41 +293,8 @@
                     </Grid>
                 </TabItem>
 
-                <!-- Installed: the same list-and-detail shape as Browse. -->
-                <TabItem x:Name="InstalledTab" Header="{DynamicResource LOCPlayAch_Workshop_Tab_Installed}">
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="3*" MinWidth="320"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="4*" MinWidth="360"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Grid Grid.Column="0">
-                            <ListBox ItemsSource="{Binding InstalledItems}"
-                                     SelectedItem="{Binding SelectedItem}"
-                                     ItemTemplate="{StaticResource WorkshopItemRowTemplate}"
-                                     HorizontalContentAlignment="Stretch"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Empty}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       IsHitTestVisible="False"
-                                       Visibility="{Binding HasNoInstalledItems, Converter={StaticResource BoolToVis}}"/>
-                        </Grid>
-
-                        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
-
-                        <Border Grid.Column="2"
-                                Background="{DynamicResource PlayAch.Brush.Panel}"
-                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                CornerRadius="4">
-                            <ContentControl Content="{Binding SelectedItem}"
-                                            ContentTemplate="{StaticResource WorkshopItemDetailTemplate}"
-                                            Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}"/>
-                        </Border>
-                    </Grid>
-                </TabItem>
+                <!-- Library: the user's own presets and Workshop items, hosted from code-behind. -->
+                <TabItem x:Name="LibraryTab" Header="{DynamicResource LOCPlayAch_Showcase_Template_Library}"/>
 
                 <!-- My submissions: what this install has shared, with each item's review state. -->
                 <TabItem x:Name="SubmissionsTab" Header="{DynamicResource LOCPlayAch_Workshop_MySubmissions}">

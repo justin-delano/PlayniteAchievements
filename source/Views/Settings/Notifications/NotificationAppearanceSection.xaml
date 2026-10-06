@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:notifications="clr-namespace:PlayniteAchievements.Views.Settings.Notifications"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:settingsControls="clr-namespace:PlayniteAchievements.Views.Settings.Controls"
              mc:Ignorable="d"
              d:DesignHeight="700"
              d:DesignWidth="700">
@@ -15,14 +16,7 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <Style x:Key="ToolbarSeparatorStyle" TargetType="Border">
-                <Setter Property="Width" Value="1"/>
-                <Setter Property="Height" Value="20"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Border}"/>
-                <Setter Property="Margin" Value="4,0,12,8"/>
-            </Style>        </ResourceDictionary>
+        </ResourceDictionary>
     </UserControl.Resources>
     <!-- Two-band layout: the pinned band at the top holds the surface tabs with their toolbar
          (sample, platform, fire tests), the preview, and the scope column beside it; the presets
@@ -319,11 +313,12 @@
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
 
-                    <!-- Presets and sharing for the tab selected above: save the active surface's
-                         appearance (including images and any custom template) under a name, apply a
-                         saved preset to the current platform/game selection, or exchange styles as
-                         .panotif/.paframe files. Export also offers the default template as a loose
-                         .xaml starting point. The dropdown lists only presets for the active surface. -->
+                    <!-- Presets and sharing for the tab selected above: the library items of the
+                         active surface in one list (picking one applies it to the scope the selector
+                         names, which then follows it; the item it follows is the one shown), Save
+                         (the active surface with its images and any custom template) and Delete, and
+                         .panotif/.paframe files through Import and Export. Export also offers the
+                         default template as a loose .xaml starting point. -->
                     <Border Style="{StaticResource SectionBorderStyle}">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Presets_Header}"
@@ -331,47 +326,22 @@
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                             <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
-                            <WrapPanel>
-                                <ComboBox x:Name="PresetSelector"
-                                          MinWidth="200"
-                                          VerticalAlignment="Center"
-                                          Margin="0,0,8,8"
-                                          SelectionChanged="PresetSelector_SelectionChanged"
-                                          DropDownOpened="PresetSelector_DropDownOpened"/>
-                                <Button x:Name="ApplyPresetButton"
-                                        Click="ApplyPreset_Click"
-                                        Content="{DynamicResource LOCPlayAch_Button_Apply}"
-                                        IsEnabled="False"
-                                        Margin="0,0,8,8"/>
-                                <Button x:Name="SavePresetButton"
-                                        Click="SavePreset_Click"
-                                        Content="{DynamicResource LOCPlayAch_Presets_Save}"
-                                        Margin="0,0,8,8"/>
-                                <Button x:Name="DeletePresetButton"
-                                        Click="DeletePreset_Click"
-                                        Content="{DynamicResource LOCPlayAch_Button_Delete}"
-                                        IsEnabled="False"
-                                        Margin="0,0,8,8"/>
-
-                                <Border Style="{StaticResource ToolbarSeparatorStyle}"/>
-
-                                <!-- Share the selected surface's style as a .panotif/.paframe file or
-                                     import one onto the current platform selection. -->
-                                <Button x:Name="ImportStyleButton"
-                                        Click="ImportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_Common_Import}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
-                                        ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
-                                        Margin="0,0,8,8"/>
-                                <Button x:Name="ExportStyleButton"
-                                        Click="ExportStyle_Click"
-                                        Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
-                                        ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
-                                        Margin="0,0,8,8"/>
-                            </WrapPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_Presets_Hint}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,2,0,0"/>
+                            <settingsControls:LibraryPresetPicker x:Name="StylePresetPicker">
+                                <settingsControls:LibraryPresetPicker.ExtraContent>
+                                    <!-- Share the selected surface's style as a .panotif/.paframe file
+                                         or add one to the library. -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Click="ImportStyle_Click"
+                                                Content="{DynamicResource LOCPlayAch_Common_Import}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                                ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
+                                                Margin="16,0,0,0"/>
+                                        <Button Click="ExportStyle_Click"
+                                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Export}"
+                                                ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
+                                                Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </settingsControls:LibraryPresetPicker.ExtraContent>
+                            </settingsControls:LibraryPresetPicker>
                         </StackPanel>
                     </Border>
 

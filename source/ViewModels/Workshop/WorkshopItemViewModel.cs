@@ -119,6 +119,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             set => SetValue(ref _readme, value);
         }
 
+        /// <summary>True when the item is in the library.</summary>
         public bool IsInstalled
         {
             get => _isInstalled;
@@ -141,15 +142,15 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public bool IsInLibrary => Kind != WorkshopItemKind.GameCustomData || !string.IsNullOrWhiteSpace(_localGameName);
 
         /// <summary>True when this extension is too old to import the item.</summary>
-        public bool RequiresNewerPlugin => WorkshopInstalledRegistry.IsNewer(Item.MinPluginVersion, PluginManifest.Version);
+        public bool RequiresNewerPlugin => WorkshopIdentityStore.IsNewer(Item.MinPluginVersion, PluginManifest.Version);
 
         public string RequiresNewerPluginText =>
             string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_RequiresNewerPlugin"), Item.MinPluginVersion);
 
         /// <summary>
-        /// Installed game data at the published version: the action applies the package again
-        /// from scratch. Looks are left alone here, since a second install only adds a copy of
-        /// the preset.
+        /// Game data already in the library at the published version: the action applies the
+        /// package again, to the game picked for it. Looks in the library are reinstalled from the
+        /// Library page.
         /// </summary>
         public bool IsReinstall => IsInstalled && !HasUpdate && Kind == WorkshopItemKind.GameCustomData;
 
@@ -158,7 +159,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             : IsReinstall
                 ? ResourceProvider.GetString("LOCPlayAch_Workshop_Reinstall")
                 : IsInstalled
-                    ? ResourceProvider.GetString("LOCPlayAch_Workshop_Tab_Installed")
+                    ? ResourceProvider.GetString("LOCPlayAch_Library_InLibrary")
                     : ResourceProvider.GetString("LOCPlayAch_Workshop_Install");
 
         public bool CanInstall => !RequiresNewerPlugin && (!IsInstalled || HasUpdate || IsReinstall);

@@ -440,6 +440,7 @@
     <Compile Include="..\..\source\Models\Settings\FriendSettingsEntry.cs" Link="Source\Models\Settings\FriendSettingsEntry.cs" />
     <Compile Include="..\..\source\Models\Settings\ManageSidebarStatGroups.cs" Link="Source\Models\Settings\ManageSidebarStatGroups.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="Source\Models\Settings\PersistedSettings.cs" />
+    <Compile Include="..\..\source\Models\Settings\LibraryLink.cs" Link="Source\Models\Settings\LibraryLink.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.GridCompatibility.cs" Link="Source\Models\Settings\PersistedSettings.GridCompatibility.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.GridCompatibility.Notifications.cs" Link="Source\Models\Settings\PersistedSettings.GridCompatibility.Notifications.cs" />
     <Compile Include="..\..\source\Models\Settings\ProgressBadgeSource.cs" Link="Source\Models\Settings\ProgressBadgeSource.cs" />
@@ -646,7 +647,7 @@
     <Compile Include="..\..\source\Common\HttpClientFactory.cs" Link="Source\Common\HttpClientFactory.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopModels.cs" Link="Source\Services\Workshop\WorkshopModels.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopClient.cs" Link="Source\Services\Workshop\WorkshopClient.cs" />
-    <Compile Include="..\..\source\Services\Workshop\WorkshopInstalledRegistry.cs" Link="Source\Services\Workshop\WorkshopInstalledRegistry.cs" />
+    <Compile Include="..\..\source\Services\Workshop\WorkshopIdentityStore.cs" Link="Source\Services\Workshop\WorkshopIdentityStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopBaselineStore.cs" Link="Source\Services\Workshop\WorkshopBaselineStore.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopGameMatcher.cs" Link="Source\Services\Workshop\WorkshopGameMatcher.cs" />
     <Compile Include="..\..\source\Services\Workshop\WorkshopSubmissionClient.cs" Link="Source\Services\Workshop\WorkshopSubmissionClient.cs" />
@@ -657,6 +658,25 @@
     <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewContext.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewContext.cs" />
     <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewModel.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewModel.cs" />
     <Compile Include="..\..\source\Services\Workshop\Preview\WorkshopPreviewModelBuilder.cs" Link="Source\Services\Workshop\Preview\WorkshopPreviewModelBuilder.cs" />
+    <Compile Include="..\..\source\Services\Library\JsonThreeWayMerge.cs" Link="Source\Services\Library\JsonThreeWayMerge.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryModels.cs" Link="Source\Services\Library\LibraryModels.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryStore.cs" Link="Source\Services\Library\LibraryStore.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryMigration.cs" Link="Source\Services\Library\LibraryMigration.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryTargetKeys.cs" Link="Source\Services\Library\LibraryTargetKeys.cs" />
+    <Compile Include="..\..\source\Services\Library\GameLinkStore.cs" Link="Source\Services\Library\GameLinkStore.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryBaselineStore.cs" Link="Source\Services\Library\LibraryBaselineStore.cs" />
+    <Compile Include="..\..\source\Services\Library\ILibraryAdapter.cs" Link="Source\Services\Library\ILibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryApplyService.cs" Link="Source\Services\Library\LibraryApplyService.cs" />
+    <Compile Include="..\..\source\Services\Library\ColorsLibraryAdapter.cs" Link="Source\Services\Library\ColorsLibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\SoundsLibraryAdapter.cs" Link="Source\Services\Library\SoundsLibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\ILibraryPackageFolder.cs" Link="Source\Services\Library\ILibraryPackageFolder.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryUpdateService.cs" Link="Source\Services\Library\LibraryUpdateService.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryFileTokens.cs" Link="Source\Services\Library\LibraryFileTokens.cs" />
+    <Compile Include="..\..\source\Services\Library\ILibraryTargetResolver.cs" Link="Source\Services\Library\ILibraryTargetResolver.cs" />
+    <Compile Include="..\..\source\Services\Library\NotificationStyleLibraryAdapter.cs" Link="Source\Services\Library\NotificationStyleLibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\NotificationLibraryTargets.cs" Link="Source\Services\Library\NotificationLibraryTargets.cs" />
+    <Compile Include="..\..\source\Services\Library\ShowcaseLibraryAdapter.cs" Link="Source\Services\Library\ShowcaseLibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Notifications\NotificationStyleScope.cs" Link="Source\Services\Notifications\NotificationStyleScope.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />

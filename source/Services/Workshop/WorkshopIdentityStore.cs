@@ -8,7 +8,10 @@ using System.Security.Cryptography;
 
 namespace PlayniteAchievements.Services.Workshop
 {
-    /// <summary>One Workshop item this install has imported, for "Installed" and "Update available".</summary>
+    /// <summary>
+    /// One Workshop install as <c>installed.json</c> recorded it before the customization library
+    /// kept Workshop items; read only to bring those installs into the library.
+    /// </summary>
     public sealed class WorkshopInstalledItem
     {
         public string Id { get; set; }
@@ -40,21 +43,24 @@ namespace PlayniteAchievements.Services.Workshop
     }
 
     /// <summary>
-    /// Persists what was installed from the Workshop and the identity this install submits with:
-    /// a random submitter key whose SHA-256 the Workshop stores as the owner of anything this user
-    /// shares, so updates need no account. Both live in <c>UserData\workshop\</c>. The key is not
-    /// a secret worth more than the user's own submissions, so it is stored as plain JSON.
+    /// Persists the identity this install submits with: a random submitter key whose SHA-256 the
+    /// Workshop stores as the owner of anything this user shares, so updates need no account, and
+    /// the submissions made with it. Both live in <c>UserData\workshop\</c>. The key is not a
+    /// secret worth more than the user's own submissions, so it is stored as plain JSON. The
+    /// installs recorded in <c>installed.json</c> by versions before the customization library
+    /// are only read, by the library's one-time migration (<see cref="ReadLegacyInstalls"/>),
+    /// which retires the file afterwards (<see cref="RetireLegacyInstalls"/>).
     /// </summary>
-    public sealed class WorkshopInstalledRegistry
+    public sealed class WorkshopIdentityStore
     {
         public const string DirectoryName = "workshop";
         private const string InstalledFileName = "installed.json";
+        private const string RetiredInstalledFileName = "installed.migrated.json";
         private const string IdentityFileName = "identity.json";
 
         private readonly string _directory;
         private readonly ILogger _logger;
         private readonly object _sync = new object();
-        private List<WorkshopInstalledItem> _items;
         private string _submitterKey;
 
         private sealed class IdentityFile
@@ -80,10 +86,10 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>
-        /// Raised after an install is recorded or forgotten, or a submission is recorded, on the
-        /// thread that made the change. Every Workshop list shares this registry, so a change made
-        /// from one (an install from Browse) reaches the others (Installed) through this event.
-        /// Linking submissions and updating their state stay silent: both run while a list loads.
+        /// Raised after a submission is recorded, on the thread that recorded it. Every Workshop
+        /// list shares this store, so a share made from one reaches the others through this
+        /// event. Linking submissions and updating their state stay silent: both run while a list
+        /// loads.
         /// </summary>
         public event EventHandler Changed;
 
@@ -95,7 +101,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, "A Workshop registry change handler failed.");
+                _logger?.Warn(ex, "A Workshop identity change handler failed.");
             }
         }
 
@@ -180,7 +186,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
-        public WorkshopInstalledRegistry(string pluginUserDataPath, ILogger logger = null)
+        public WorkshopIdentityStore(string pluginUserDataPath, ILogger logger = null)
         {
             _directory = string.IsNullOrWhiteSpace(pluginUserDataPath)
                 ? null
@@ -190,79 +196,59 @@ namespace PlayniteAchievements.Services.Workshop
 
         public string Directory => _directory;
 
-        public IReadOnlyList<WorkshopInstalledItem> Items
+        /// <summary>
+        /// The installs <c>installed.json</c> records, written by versions before the
+        /// customization library; empty when there is no such file or it cannot be read.
+        /// </summary>
+        public IReadOnlyList<WorkshopInstalledItem> ReadLegacyInstalls()
         {
-            get
+            var path = _directory == null ? null : Path.Combine(_directory, InstalledFileName);
+            if (path == null || !File.Exists(path))
             {
-                lock (_sync)
+                return new List<WorkshopInstalledItem>();
+            }
+
+            try
+            {
+                var loaded = JsonConvert.DeserializeObject<List<WorkshopInstalledItem>>(File.ReadAllText(path));
+                return (loaded ?? new List<WorkshopInstalledItem>())
+                    .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Id))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed reading the Workshop installs recorded before the library.");
+                return new List<WorkshopInstalledItem>();
+            }
+        }
+
+        /// <summary>
+        /// Renames <c>installed.json</c> to <c>installed.migrated.json</c> once the library holds
+        /// its installs, so it is read no more and stays as a backup. True when a file was renamed.
+        /// </summary>
+        public bool RetireLegacyInstalls()
+        {
+            var path = _directory == null ? null : Path.Combine(_directory, InstalledFileName);
+            if (path == null || !File.Exists(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                var retired = Path.Combine(_directory, RetiredInstalledFileName);
+                if (File.Exists(retired))
                 {
-                    EnsureLoaded();
-                    return _items.Select(Clone).ToList();
+                    File.Delete(retired);
                 }
+
+                File.Move(path, retired);
+                return true;
             }
-        }
-
-        public WorkshopInstalledItem Find(string id, Guid? playniteGameId = null)
-        {
-            lock (_sync)
+            catch (Exception ex)
             {
-                EnsureLoaded();
-                var match = _items.FirstOrDefault(item =>
-                    string.Equals(item.Id, id, StringComparison.OrdinalIgnoreCase) &&
-                    (playniteGameId == null || item.PlayniteGameId == playniteGameId));
-                return match == null ? null : Clone(match);
-            }
-        }
-
-        /// <summary>Records an install, replacing any earlier record of the same item (and game).</summary>
-        public void Record(WorkshopItem item, Guid? playniteGameId = null, string contentHash = null, string baselineFile = null)
-        {
-            if (item == null)
-            {
-                return;
-            }
-
-            lock (_sync)
-            {
-                EnsureLoaded();
-                _items.RemoveAll(existing =>
-                    string.Equals(existing.Id, item.Id, StringComparison.OrdinalIgnoreCase) &&
-                    existing.PlayniteGameId == playniteGameId);
-                _items.Add(new WorkshopInstalledItem
-                {
-                    Id = item.Id,
-                    Version = item.Version,
-                    Kind = item.Kind,
-                    Name = item.Name,
-                    PlayniteGameId = playniteGameId,
-                    ContentHash = contentHash,
-                    BaselineFile = baselineFile,
-                    InstalledUtc = DateTime.UtcNow
-                });
-                Save();
-            }
-
-            RaiseChanged();
-        }
-
-        public void Forget(string id, Guid? playniteGameId = null)
-        {
-            bool removed;
-            lock (_sync)
-            {
-                EnsureLoaded();
-                removed = _items.RemoveAll(existing =>
-                              string.Equals(existing.Id, id, StringComparison.OrdinalIgnoreCase) &&
-                              (playniteGameId == null || existing.PlayniteGameId == playniteGameId)) > 0;
-                if (removed)
-                {
-                    Save();
-                }
-            }
-
-            if (removed)
-            {
-                RaiseChanged();
+                _logger?.Warn(ex, "Failed retiring the Workshop installs recorded before the library.");
+                return false;
             }
         }
 
@@ -390,34 +376,6 @@ namespace PlayniteAchievements.Services.Workshop
 
         private string _displayName;
 
-        private void EnsureLoaded()
-        {
-            if (_items != null)
-            {
-                return;
-            }
-
-            _items = new List<WorkshopInstalledItem>();
-            var path = _directory == null ? null : Path.Combine(_directory, InstalledFileName);
-            if (path == null || !File.Exists(path))
-            {
-                return;
-            }
-
-            try
-            {
-                var loaded = JsonConvert.DeserializeObject<List<WorkshopInstalledItem>>(File.ReadAllText(path));
-                if (loaded != null)
-                {
-                    _items = loaded.Where(item => item != null && !string.IsNullOrWhiteSpace(item.Id)).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Failed reading the Workshop installed list; starting empty.");
-            }
-        }
-
         private void EnsureIdentityLoaded()
         {
             if (_identityLoaded)
@@ -448,26 +406,6 @@ namespace PlayniteAchievements.Services.Workshop
 
         private bool _identityLoaded;
 
-        private void Save()
-        {
-            if (_directory == null)
-            {
-                return;
-            }
-
-            try
-            {
-                System.IO.Directory.CreateDirectory(_directory);
-                File.WriteAllText(
-                    Path.Combine(_directory, InstalledFileName),
-                    JsonConvert.SerializeObject(_items, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Failed writing the Workshop installed list.");
-            }
-        }
-
         private void SaveIdentity()
         {
             if (_directory == null)
@@ -488,21 +426,6 @@ namespace PlayniteAchievements.Services.Workshop
             {
                 _logger?.Warn(ex, "Failed writing the Workshop identity.");
             }
-        }
-
-        private static WorkshopInstalledItem Clone(WorkshopInstalledItem item)
-        {
-            return new WorkshopInstalledItem
-            {
-                Id = item.Id,
-                Version = item.Version,
-                Kind = item.Kind,
-                Name = item.Name,
-                PlayniteGameId = item.PlayniteGameId,
-                ContentHash = item.ContentHash,
-                BaselineFile = item.BaselineFile,
-                InstalledUtc = item.InstalledUtc
-            };
         }
 
         private static bool TryParse(string version, out Version parsed)

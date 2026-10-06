@@ -416,7 +416,22 @@ namespace PlayniteAchievements.Services.Images
             PersistedSettings settings,
             IEnumerable<GameCustomDataFile> gameCustomData = null)
         {
-            if (settings == null)
+            PruneOrphans(new[] { settings }, gameCustomData);
+        }
+
+        /// <summary>
+        /// <see cref="PruneOrphans(PersistedSettings, IEnumerable{GameCustomDataFile})"/> keeping
+        /// what any of <paramref name="settings"/> references, such as the live settings and the
+        /// edit snapshot a Cancel restores.
+        /// </summary>
+        public void PruneOrphans(
+            IEnumerable<PersistedSettings> settings,
+            IEnumerable<GameCustomDataFile> gameCustomData = null)
+        {
+            var allSettings = (settings ?? Enumerable.Empty<PersistedSettings>())
+                .Where(candidate => candidate != null)
+                .ToList();
+            if (allSettings.Count == 0)
             {
                 return;
             }
@@ -427,7 +442,8 @@ namespace PlayniteAchievements.Services.Images
                 if (Directory.Exists(providersRoot))
                 {
                     var customizedFolders = new HashSet<string>(
-                        settings.ProviderNotificationStyles.Keys
+                        allSettings
+                            .SelectMany(candidate => candidate.ProviderNotificationStyles.Keys)
                             .Select(SanitizeProviderFolderName)
                             .Where(folder => folder != null),
                         StringComparer.OrdinalIgnoreCase);
@@ -461,7 +477,7 @@ namespace PlayniteAchievements.Services.Images
                 }
 
                 var referenced = new HashSet<string>(
-                    CollectReferencedPaths(settings, gameCustomData == null ? null : gameRows),
+                    allSettings.SelectMany(candidate => CollectReferencedPaths(candidate, gameCustomData == null ? null : gameRows)),
                     StringComparer.OrdinalIgnoreCase);
                 var root = GetRootDirectory();
                 if (Directory.Exists(root))

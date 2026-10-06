@@ -148,13 +148,16 @@ namespace PlayniteAchievements.Services.Showcase
         /// bundles is handed to <paramref name="storeImage"/> as the extracted file's path and
         /// replaced by what it returns (null drops the image). The caller persists the result
         /// through the normal save path, which normalizes the page.
+        /// <paramref name="idMap"/>, when given, receives each widget's id in the file mapped
+        /// to the id it got.
         /// </summary>
         public static ShowcasePageSettings ApplyPortable(
             ShowcaseSettings settings,
             GridOptionsCatalog gridOptions,
             ShowcasePagePortableFile portable,
             string insertAfterPageId,
-            Func<string, string> storeImage = null)
+            Func<string, string> storeImage = null,
+            IDictionary<string, string> idMap = null)
         {
             Validate(portable);
             return ShowcaseLayoutService.ImportPage(
@@ -166,6 +169,10 @@ namespace PlayniteAchievements.Services.Showcase
                 {
                     RestoreGridSurface(gridOptions, portable, source, imported);
                     RestoreProfileBackground(portable, imported, storeImage);
+                    if (idMap != null && !string.IsNullOrWhiteSpace(source.InstanceId))
+                    {
+                        idMap[source.InstanceId.Trim()] = imported.InstanceId;
+                    }
                 });
         }
 
@@ -367,7 +374,11 @@ namespace PlayniteAchievements.Services.Showcase
             }
         }
 
-        private static void StripUserOptions(ShowcaseWidgetInstanceSettings widget)
+        /// <summary>
+        /// Removes what identifies the user from a widget: its pin collection, its control-bar
+        /// search and filter state, and every part of a profile card but the background.
+        /// </summary>
+        internal static void StripUserOptions(ShowcaseWidgetInstanceSettings widget)
         {
             ShowcaseWidgetOptions.SetPinCollectionId(widget, null);
             foreach (var key in widget.Options.Keys
@@ -511,6 +522,14 @@ namespace PlayniteAchievements.Services.Showcase
                 throw new InvalidOperationException(
                     "This showcase page file is damaged and could not be read.");
             }
+        }
+
+        /// <summary>True for a widget option that belongs to the user rather than the page (search and filter state, the pin collection).</summary>
+        internal static bool IsUserOption(string key)
+        {
+            return !string.IsNullOrWhiteSpace(key)
+                   && (key.StartsWith(ControlBarOptionPrefix, StringComparison.OrdinalIgnoreCase)
+                       || string.Equals(key, ShowcaseWidgetOptions.PinCollectionId, StringComparison.OrdinalIgnoreCase));
         }
 
         private static void CaptureGridSurface(

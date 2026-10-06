@@ -7,6 +7,7 @@
              xmlns:settings="clr-namespace:PlayniteAchievements.Models.Settings"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:settingsControls="clr-namespace:PlayniteAchievements.Views.Settings.Controls"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -165,33 +166,14 @@
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                            <!-- Saved sound packs: .pasounds files under the plugin data folder.
-                                 Imported files and Workshop installs land here; Apply copies one
-                                 onto the tiers below. -->
+                            <!-- The sound packs in the library (.pasounds files under the plugin
+                                 data folder, saved here, imported or from the Workshop). Choosing
+                                 one copies it onto the tiers below and follows it. -->
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Presets_Header}">
-                                <StackPanel Orientation="Horizontal">
-                                    <ComboBox x:Name="SoundPackPresetSelector"
-                                              MinWidth="220"
-                                              VerticalAlignment="Center"
-                                              SelectionChanged="SoundPackPresetSelector_SelectionChanged"
-                                          DropDownOpened="SoundPackPresetSelector_DropDownOpened"/>
-                                    <Button x:Name="ApplySoundPackPresetButton"
-                                            Content="{DynamicResource LOCPlayAch_Button_Apply}"
-                                            IsEnabled="False"
-                                            Margin="6,0,0,0"
-                                            Click="ApplySoundPackPreset_Click"/>
-                                    <Button Content="{DynamicResource LOCPlayAch_Presets_Save}"
-                                            Margin="6,0,0,0"
-                                            Click="SaveSoundPackPreset_Click"/>
-                                    <Button x:Name="DeleteSoundPackPresetButton"
-                                            Content="{DynamicResource LOCPlayAch_Button_Delete}"
-                                            IsEnabled="False"
-                                            Margin="6,0,0,0"
-                                            Click="DeleteSoundPackPreset_Click"/>
-                                </StackPanel>
+                                <settingsControls:LibraryPresetPicker x:Name="SoundPackPresetPicker"/>
                             </controls:SettingRow>
                             <!-- The whole tier set as one .pasounds file: Export writes the user's
-                                 own and theme files, Import adds a file to the packs above. -->
+                                 own and theme files, Import adds a file to the library. -->
                             <StackPanel Orientation="Horizontal"
                                         Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                 <Button Click="UnlockSoundPackExport_Click"

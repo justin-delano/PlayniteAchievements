@@ -30,7 +30,7 @@ namespace PlayniteAchievements.Services.Tests
                 StringAssert.StartsWith(path, Path.Combine(dir, "baselines"));
                 Assert.IsFalse(Path.GetFileName(path).Contains("/"), "the item id's slashes are replaced");
 
-                var loaded = store.Load(new WorkshopInstalledItem { Id = "game-data/steam-1/pack", BaselineFile = path });
+                var loaded = store.Load(path);
                 Assert.IsNotNull(loaded);
                 Assert.AreEqual(gameId, loaded.PlayniteGameId);
                 Assert.AreEqual("a note", loaded.AchievementNotes["ach_one"]);
@@ -44,12 +44,12 @@ namespace PlayniteAchievements.Services.Tests
             {
                 var store = new WorkshopBaselineStore(Path.Combine(dir, "baselines"), logger: null);
                 Assert.IsNull(store.Load(null));
-                Assert.IsNull(store.Load(new WorkshopInstalledItem { Id = "x" }));
-                Assert.IsNull(store.Load(new WorkshopInstalledItem { Id = "x", BaselineFile = Path.Combine(dir, "absent.json") }));
+                Assert.IsNull(store.Load(string.Empty));
+                Assert.IsNull(store.Load(Path.Combine(dir, "absent.json")));
 
                 var broken = Path.Combine(dir, "broken.json");
                 File.WriteAllText(broken, "{ not json");
-                Assert.IsNull(store.Load(new WorkshopInstalledItem { Id = "x", BaselineFile = broken }));
+                Assert.IsNull(store.Load(broken));
             });
         }
 
@@ -70,7 +70,7 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsTrue(File.Exists(WorkshopBaselineStore.IconHashesPath(path)));
                 Assert.AreEqual(path + ".icons.json", WorkshopBaselineStore.IconHashesPath(path));
 
-                var hashes = store.LoadIconHashes(new WorkshopInstalledItem { Id = "item", BaselineFile = path });
+                var hashes = store.LoadIconHashes(path);
                 Assert.IsNotNull(hashes);
                 Assert.AreEqual(2, hashes.Count);
                 Assert.AreEqual(WorkshopBaselineStore.HashIcons(icons)["a.png"], hashes["a.png"]);
@@ -86,7 +86,7 @@ namespace PlayniteAchievements.Services.Tests
             {
                 var store = new WorkshopBaselineStore(Path.Combine(dir, "baselines"), logger: null);
                 Assert.IsNull(store.LoadIconHashes(null));
-                Assert.IsNull(store.LoadIconHashes(new WorkshopInstalledItem { Id = "x", BaselineFile = Path.Combine(dir, "none.json") }));
+                Assert.IsNull(store.LoadIconHashes(Path.Combine(dir, "none.json")));
                 Assert.AreEqual(0, WorkshopBaselineStore.HashIcons(Path.Combine(dir, "no-such-folder")).Count);
             });
         }

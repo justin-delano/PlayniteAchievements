@@ -1,11 +1,7 @@
-using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services.Notifications
 {
@@ -35,16 +31,15 @@ namespace PlayniteAchievements.Services.Notifications
     /// <summary>
     /// Stores named per-surface appearance presets as self-contained surface packages
     /// (<c>.panotif</c> under <c>notification_style_presets\toast</c>, <c>.paframe</c> under
-    /// <c>...\frame</c>) in the plugin's user data folder. Each preset carries one surface's
-    /// style plus its bundled images and optional custom template; packaging and image
-    /// re-materialization are delegated to <see cref="NotificationStylePortableStore"/>, so a
-    /// preset file is also a valid style package for the regular import/export flow. Presets
+    /// <c>...\frame</c>) in the plugin's user data folder: the notification and frame part of the
+    /// library. Each preset carries one surface's style plus its bundled images and optional
+    /// custom template; packages are checked by <see cref="NotificationStylePortableStore"/>, so
+    /// a preset file is also a valid style package for the regular import/export flow. Presets
     /// saved by earlier versions as <c>.pastyle</c> are renamed to the surface extension the
     /// first time they are listed.
     /// </summary>
     public sealed class NotificationStylePresetStore
     {
-        public const int MaxPresetCount = 50;
         public const int MaxNameLength = 64;
 
         private const string PresetsFolderName = "notification_style_presets";
@@ -83,17 +78,6 @@ namespace PlayniteAchievements.Services.Notifications
                 .ToList();
         }
 
-        public bool PresetExists(bool isFrame, string name)
-        {
-            var sanitized = SanitizeName(name);
-            return !string.IsNullOrEmpty(sanitized) && File.Exists(GetPresetPath(isFrame, sanitized));
-        }
-
-        public int CountPresets(bool isFrame)
-        {
-            return ListPresets(isFrame).Count;
-        }
-
         /// <summary>
         /// Trims the name, strips characters that cannot appear in a file name, and caps the
         /// length at <see cref="MaxNameLength"/>. Returns an empty string when nothing valid
@@ -117,40 +101,9 @@ namespace PlayniteAchievements.Services.Notifications
         }
 
         /// <summary>
-        /// Saves the given surface of <paramref name="currentStyle"/> as a named preset,
-        /// overwriting any preset with the same name. Only the saved surface travels, with its
-        /// own badge images and header texts riding along inside the surface style; a toast
-        /// preset additionally carries the toast-only background image. The other surface is
-        /// left at factory defaults in the package and is ignored on apply.
-        /// </summary>
-        public void SavePreset(
-            bool isFrame,
-            string name,
-            NotificationStyleSettings currentStyle,
-            string templateXamlOrNull)
-        {
-            if (currentStyle == null)
-            {
-                throw new ArgumentNullException(nameof(currentStyle));
-            }
-
-            var sanitized = SanitizeName(name);
-            if (string.IsNullOrEmpty(sanitized))
-            {
-                throw new ArgumentException("Preset name is invalid.", nameof(name));
-            }
-
-            _portableStore.ExportSurfacePackage(
-                isFrame,
-                currentStyle,
-                GetPresetPath(isFrame, sanitized),
-                templateXamlOrNull);
-        }
-
-        /// <summary>
-        /// Saves an existing .panotif or .paframe file as the preset <paramref name="name"/>, for
-        /// files that arrive from the Workshop or a file import. The package must carry the
-        /// surface's style; a preset of the same name is replaced.
+        /// Saves a .panotif or .paframe file as the preset <paramref name="name"/>: a look saved
+        /// from the settings (exported to a package first), a Workshop install, or a file import.
+        /// The package must carry the surface's style; a preset of the same name is replaced.
         /// </summary>
         public NotificationStylePresetInfo SavePresetFromPackage(bool isFrame, string name, string packagePath)
         {
@@ -169,11 +122,6 @@ namespace PlayniteAchievements.Services.Notifications
             }
 
             var destination = GetPresetPath(isFrame, sanitized);
-            if (!File.Exists(destination) && CountPresets(isFrame) >= MaxPresetCount)
-            {
-                throw new InvalidOperationException($"You can save up to {MaxPresetCount} presets.");
-            }
-
             Directory.CreateDirectory(GetSurfaceDirectory(isFrame));
             File.Copy(packagePath, destination, overwrite: true);
             return new NotificationStylePresetInfo(sanitized, destination, isFrame);
@@ -209,51 +157,6 @@ namespace PlayniteAchievements.Services.Notifications
             }
 
             throw new InvalidOperationException("Too many presets share this name.");
-        }
-
-        /// <summary>
-        /// Loads a preset's style, re-materializing any bundled images into managed storage
-        /// for <paramref name="targetOwner"/>. The caller merges only the preset's surface
-        /// into the target style.
-        /// </summary>
-        public Task<NotificationStyleSettings> LoadPresetStyleAsync(
-            NotificationStylePresetInfo preset,
-            NotificationImageOwner targetOwner,
-            CancellationToken cancel)
-        {
-            if (preset == null)
-            {
-                throw new ArgumentNullException(nameof(preset));
-            }
-
-            return _portableStore.ImportAsync(preset.FilePath, targetOwner, cancel);
-        }
-
-        /// <summary>
-        /// Reads the preset's embedded template XAML for its surface, or null when the preset
-        /// was saved without a custom template.
-        /// </summary>
-        public string ReadPresetTemplateXaml(NotificationStylePresetInfo preset)
-        {
-            if (preset == null)
-            {
-                throw new ArgumentNullException(nameof(preset));
-            }
-
-            return _portableStore.ReadTemplateXaml(preset.FilePath, preset.IsFrame);
-        }
-
-        public void DeletePreset(NotificationStylePresetInfo preset)
-        {
-            if (preset == null)
-            {
-                throw new ArgumentNullException(nameof(preset));
-            }
-
-            if (File.Exists(preset.FilePath))
-            {
-                File.Delete(preset.FilePath);
-            }
         }
 
         private string GetSurfaceDirectory(bool isFrame)

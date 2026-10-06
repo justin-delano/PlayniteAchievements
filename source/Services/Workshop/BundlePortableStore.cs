@@ -2,7 +2,6 @@ using Newtonsoft.Json;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Notifications;
 using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
@@ -11,8 +10,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services.Workshop
 {
@@ -49,9 +46,9 @@ namespace PlayniteAchievements.Services.Workshop
     /// <summary>
     /// Exports and imports a <c>.pabundle</c> bundle: the global look as any subset of colors,
     /// unlock sounds, notification style and screenshot-frame style. Parts are embedded, not
-    /// referenced, so a bundle installs offline and cannot break when another item changes. The
-    /// importer applies only the parts the caller selects and leaves the rest of the settings as
-    /// they are.
+    /// referenced, so a bundle installs offline and cannot break when another item changes. A
+    /// bundle is unpacked into its parts (<see cref="ExtractParts"/>), each added to the library
+    /// as an item of its own kind.
     /// </summary>
     public sealed class BundlePortableStore
     {
@@ -290,18 +287,9 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>
-        /// Applies the selected parts to <paramref name="persisted"/>: colors are validated and
-        /// set, sounds are copied into managed storage, and each notification surface is imported
-        /// into global image storage and merged onto the global style. Embedded templates are
-        /// handed to <paramref name="installTemplate"/> (surface, xaml) when supplied. The caller
-        /// persists the settings and refreshes application resources afterwards. Returns the
-        /// parts that were applied.
-        /// </summary>
-        /// <summary>
         /// Writes the selected parts that the bundle carries into <paramref name="directory"/>
         /// as their standalone packages (colors.pacolors, sounds.pasounds, toast.panotif,
-        /// frame.paframe) and returns the path of each. Callers that save presets rather than
-        /// apply the bundle use this; <see cref="ImportAsync"/> builds on it.
+        /// frame.paframe) and returns the path of each; a bundle install adds each to the library.
         /// </summary>
         public IReadOnlyDictionary<BundleParts, string> ExtractParts(string sourcePath, BundleParts selected, string directory)
         {
@@ -330,72 +318,6 @@ namespace PlayniteAchievements.Services.Workshop
             }
 
             return extracted;
-        }
-
-        public async Task<BundleParts> ImportAsync(
-            string sourcePath,
-            BundleParts selected,
-            PersistedSettings persisted,
-            Action<bool, string> installTemplate,
-            CancellationToken cancel)
-        {
-            if (persisted == null)
-            {
-                throw new ArgumentNullException(nameof(persisted));
-            }
-
-            var scratch = PortablePackage.CreateScratchDirectory("BundleImport");
-            try
-            {
-                var extracted = ExtractParts(sourcePath, selected, scratch);
-
-                var applied = BundleParts.None;
-
-                if (extracted.TryGetValue(BundleParts.Colors, out var colorsPath))
-                {
-                    _colorStore.Import(colorsPath, persisted);
-                    applied |= BundleParts.Colors;
-                }
-
-                if (extracted.TryGetValue(BundleParts.Sounds, out var soundsPath))
-                {
-                    var sounds = persisted.UnlockSounds ?? UnlockSoundSettings.CreateDefault();
-                    _soundStore.Import(soundsPath, sounds);
-                    persisted.UnlockSounds = sounds;
-                    _soundStore.PruneUnreferenced(sounds);
-                    applied |= BundleParts.Sounds;
-                }
-
-                foreach (var part in new[] { BundleParts.Toast, BundleParts.Frame })
-                {
-                    if (!extracted.TryGetValue(part, out var packagePath))
-                    {
-                        continue;
-                    }
-
-                    var isFrame = part == BundleParts.Frame;
-                    var imported = await _styleStore
-                        .ImportAsync(packagePath, NotificationImageOwner.Global, cancel)
-                        .ConfigureAwait(false);
-                    var merged = (persisted.NotificationStyle ?? NotificationStyleSettings.CreateDefault()).Clone();
-                    NotificationStylePortableStore.ApplyPackSurfaces(merged, imported, isFrame);
-                    persisted.NotificationStyle = merged;
-
-                    var xaml = _styleStore.ReadTemplateXaml(packagePath, isFrame);
-                    if (!string.IsNullOrWhiteSpace(xaml))
-                    {
-                        installTemplate?.Invoke(isFrame, xaml);
-                    }
-
-                    applied |= part;
-                }
-
-                return applied;
-            }
-            finally
-            {
-                PortablePackage.TryDeleteDirectory(scratch);
-            }
         }
 
         private static BundleFile ReadManifestOrThrow(IReadOnlyDictionary<string, ZipArchiveEntry> entries)
