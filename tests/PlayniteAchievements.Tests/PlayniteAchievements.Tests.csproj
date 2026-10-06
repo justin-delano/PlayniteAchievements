@@ -675,6 +675,7 @@
     <Compile Include="..\..\source\Services\Library\ILibraryTargetResolver.cs" Link="Source\Services\Library\ILibraryTargetResolver.cs" />
     <Compile Include="..\..\source\Services\Library\NotificationStyleLibraryAdapter.cs" Link="Source\Services\Library\NotificationStyleLibraryAdapter.cs" />
     <Compile Include="..\..\source\Services\Library\NotificationLibraryTargets.cs" Link="Source\Services\Library\NotificationLibraryTargets.cs" />
+    <Compile Include="..\..\source\Services\Library\ShowcaseLibraryAdapter.cs" Link="Source\Services\Library\ShowcaseLibraryAdapter.cs" />
     <Compile Include="..\..\source\Services\Notifications\NotificationStyleScope.cs" Link="Source\Services\Notifications\NotificationStyleScope.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
