@@ -36,13 +36,21 @@ namespace PlayniteAchievements.Services.Workshop
         private readonly string _directory;
         private readonly string _extension;
         private readonly Action<string> _validate;
+        private readonly Func<string, bool> _countsTowardCap;
 
         /// <param name="pluginUserDataPath">The plugin's user data folder.</param>
         /// <param name="folderName">The folder under it that holds this store's presets.</param>
         /// <param name="extension">The package extension, including the dot.</param>
         /// <param name="validate">Throws when a package is not valid for this store; runs before
         /// a file is copied in so a bad file never becomes a preset.</param>
-        public PackagePresetStore(string pluginUserDataPath, string folderName, string extension, Action<string> validate)
+        /// <param name="countsTowardCap">Whether a preset file counts toward
+        /// <see cref="MaxPresetCount"/>; null counts every file. Workshop items do not count.</param>
+        public PackagePresetStore(
+            string pluginUserDataPath,
+            string folderName,
+            string extension,
+            Action<string> validate,
+            Func<string, bool> countsTowardCap = null)
         {
             if (string.IsNullOrWhiteSpace(pluginUserDataPath))
             {
@@ -62,6 +70,7 @@ namespace PlayniteAchievements.Services.Workshop
             _directory = Path.Combine(pluginUserDataPath, folderName);
             _extension = extension;
             _validate = validate ?? (_ => { });
+            _countsTowardCap = countsTowardCap;
         }
 
         public string DirectoryPath => _directory;
@@ -80,7 +89,10 @@ namespace PlayniteAchievements.Services.Workshop
                 .ToList();
         }
 
-        public int Count() => List().Count;
+        /// <summary>How many presets count toward <see cref="MaxPresetCount"/>.</summary>
+        public int Count() => _countsTowardCap == null
+            ? List().Count
+            : List().Count(preset => _countsTowardCap(preset.FilePath));
 
         public bool Exists(string name)
         {
