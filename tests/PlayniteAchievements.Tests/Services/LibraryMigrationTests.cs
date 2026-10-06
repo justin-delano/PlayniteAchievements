@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Workshop;
 using System;
@@ -236,6 +237,32 @@ namespace PlayniteAchievements.Services.Tests
                 new[] { LocalItem("first", LibraryItemKind.Colors, "Neon", "abc", InstalledAt) });
 
             Assert.AreEqual(0, plan.Steps.Count);
+        }
+
+        [TestMethod]
+        public void LinkGameDataInstalls_LinksEachGameWithItsBaseline_AndKeepsExistingLinks()
+        {
+            var first = Guid.NewGuid();
+            var second = Guid.NewGuid();
+            var onFirst = Record("icons", WorkshopItemKind.GameCustomData, "Icons", "1.0.0", null);
+            onFirst.PlayniteGameId = first;
+            onFirst.BaselineFile = @"C:\baselines\first.json";
+            var onSecond = Record("icons", WorkshopItemKind.GameCustomData, "Icons", "1.1.0", null);
+            onSecond.PlayniteGameId = second;
+            WriteRegistry(onFirst, onSecond);
+            var store = Store();
+            var links = new GameLinkStore(store.LibraryDirectory);
+            links.Set(LibraryTargetKeys.GameData(second), new LibraryLink { LibraryItemId = "other" });
+
+            var plan = LibraryMigration.Run(store, new WorkshopInstalledRegistry(_root));
+            var added = LibraryMigration.LinkGameDataInstalls(plan, store, links);
+
+            Assert.AreEqual(1, added);
+            var link = links.Get(LibraryTargetKeys.GameData(first));
+            Assert.AreEqual("ws:icons", link.LibraryItemId);
+            Assert.AreEqual("1.0.0", link.AppliedVersion);
+            Assert.AreEqual(@"C:\baselines\first.json", link.BaselineFile);
+            Assert.AreEqual("other", links.Get(LibraryTargetKeys.GameData(second)).LibraryItemId);
         }
 
         [TestMethod]
