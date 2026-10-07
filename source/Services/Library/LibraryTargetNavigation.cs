@@ -9,13 +9,17 @@ namespace PlayniteAchievements.Services.Library
         None,
         Settings,
         ManageAchievements,
-        Showcase
+        Showcase,
+
+        /// <summary>A game's Manage Achievements on the Overview tab, where its Workshop game data is managed.</summary>
+        GameData
     }
 
     /// <summary>
     /// The place a link target is configured, read from its key: a settings page (colors,
     /// sounds, the global and per-platform notification and frame scopes), a game's Manage
-    /// Achievements Notifications tab (a game's notification and frame scope), or a showcase page.
+    /// Achievements Notifications tab (a game's notification and frame scope), a showcase page,
+    /// or a game's Manage Achievements Overview tab (a game's Workshop game data).
     /// </summary>
     public sealed class LibraryTargetNavigation
     {
@@ -31,7 +35,7 @@ namespace PlayniteAchievements.Services.Library
         /// <summary>The settings place, for <see cref="LibraryTargetDestination.Settings"/>.</summary>
         public SettingsNavigationRequest Settings { get; private set; }
 
-        /// <summary>The game, for <see cref="LibraryTargetDestination.ManageAchievements"/>.</summary>
+        /// <summary>The game, for <see cref="LibraryTargetDestination.ManageAchievements"/> and <see cref="LibraryTargetDestination.GameData"/>.</summary>
         public Guid GameId { get; private set; }
 
         /// <summary>The surface of a game's scope, for <see cref="LibraryTargetDestination.ManageAchievements"/>.</summary>
@@ -42,6 +46,11 @@ namespace PlayniteAchievements.Services.Library
 
         public static LibraryTargetNavigation Resolve(string targetKey)
         {
+            if (LibraryTargetKeys.IsGameData(targetKey) && LibraryTargetKeys.TryGetGameId(targetKey, out var gameDataGameId))
+            {
+                return new LibraryTargetNavigation(LibraryTargetDestination.GameData) { GameId = gameDataGameId };
+            }
+
             if (string.Equals(targetKey, LibraryTargetKeys.Colors, StringComparison.OrdinalIgnoreCase))
             {
                 return ForSettings(new SettingsNavigationRequest(SettingsNavigationRequest.DisplayTab, SettingsNavigationRequest.ColorsPage));
