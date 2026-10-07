@@ -54,6 +54,7 @@ namespace PlayniteAchievements.Models.Settings
             public const string FriendsOverview = "FriendsOverview";
             public const string ViewFriendsAchievements = "ViewFriendsAchievements";
             public const string DesktopTheme = "DesktopTheme";
+            public const string WorkshopPreview = "WorkshopPreview";
         }
     }
 
@@ -1042,6 +1043,8 @@ namespace PlayniteAchievements.Models.Settings
                     return GridOptionKeys.CategorySummaries.ViewFriendsAchievements;
                 case "DesktopThemeCategorySummaries":
                     return GridOptionKeys.CategorySummaries.DesktopTheme;
+                case "WorkshopPreviewCategorySummaries":
+                    return GridOptionKeys.CategorySummaries.WorkshopPreview;
                 case "ViewAchievementsCategorySummaries":
                 case "SingleGameCategorySummaries":
                 default:
