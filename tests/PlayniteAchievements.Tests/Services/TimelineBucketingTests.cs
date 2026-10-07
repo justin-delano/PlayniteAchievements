@@ -191,5 +191,35 @@ namespace PlayniteAchievements.Services.Tests
 
             CollectionAssert.AreEqual(new[] { 3, 5, 7 }, plan.Buckets.Select(b => b.Count).ToArray());
         }
+
+        [TestMethod]
+        public void SumIntoBuckets_SeriesSumToThePlanTotals()
+        {
+            var steam = new Dictionary<DateTime, int>
+            {
+                { new DateTime(2025, 12, 31), 9 },
+                { new DateTime(2026, 1, 3), 1 },
+                { new DateTime(2026, 2, 1), 5 }
+            };
+            var psn = new Dictionary<DateTime, int>
+            {
+                { new DateTime(2026, 1, 30), 2 },
+                { new DateTime(2026, 3, 31), 7 },
+                { new DateTime(2026, 4, 1), 4 }
+            };
+            var total = steam.Concat(psn)
+                .GroupBy(pair => pair.Key)
+                .ToDictionary(group => group.Key, group => group.Sum(pair => pair.Value));
+
+            var plan = TimelineBucketing.Build(new DateTime(2026, 1, 1), new DateTime(2026, 3, 31), total, TimelineGranularity.Month);
+            var steamBars = TimelineBucketing.SumIntoBuckets(plan, steam);
+            var psnBars = TimelineBucketing.SumIntoBuckets(plan, psn);
+
+            CollectionAssert.AreEqual(new[] { 1, 5, 0 }, steamBars);
+            CollectionAssert.AreEqual(new[] { 2, 0, 7 }, psnBars);
+            CollectionAssert.AreEqual(
+                plan.Buckets.Select(b => b.Count).ToArray(),
+                steamBars.Zip(psnBars, (a, b) => a + b).ToArray());
+        }
     }
 }
