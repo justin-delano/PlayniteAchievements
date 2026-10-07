@@ -21,12 +21,14 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly ShowcaseWidgetInstanceSettings _sourceWidget;
         private readonly ShowcaseWidgetInstanceSettings _workingWidget;
         private readonly ShowcaseProfileSettings _workingProfile;
+        private readonly bool _showControlBarOption;
         private TextBox _titleBox;
         private ShowcaseProfileSettingsEditor _profileEditor;
 
-        private ShowcaseWidgetSettingsDialog(ShowcaseWidgetInstanceSettings widget)
+        private ShowcaseWidgetSettingsDialog(ShowcaseWidgetInstanceSettings widget, bool showControlBarOption)
         {
             _sourceWidget = widget ?? throw new ArgumentNullException(nameof(widget));
+            _showControlBarOption = showControlBarOption;
             _workingWidget = widget.Clone();
             _workingProfile = (widget.Profile ?? new ShowcaseProfileSettings()).Clone();
             Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -43,14 +45,15 @@ namespace PlayniteAchievements.Views.Showcase
 
         public bool Saved { get; private set; }
 
-        public static bool Show(ShowcaseWidgetInstanceSettings widget)
+        /// <param name="showControlBarOption">False for widgets whose host supplies their filters.</param>
+        public static bool Show(ShowcaseWidgetInstanceSettings widget, bool showControlBarOption = true)
         {
             if (widget == null)
             {
                 return false;
             }
 
-            var editor = new ShowcaseWidgetSettingsDialog(widget);
+            var editor = new ShowcaseWidgetSettingsDialog(widget, showControlBarOption);
             var title = string.Format(
                 FormattingCulture.Current,
                 Localize("LOCPlayAch_Showcase_WidgetSettingsTitle"),
@@ -118,7 +121,8 @@ namespace PlayniteAchievements.Views.Showcase
                     _workingWidget,
                     publishChanges: false,
                     margin: new Thickness(0),
-                    loadStyles: false));
+                    loadStyles: false,
+                    showControlBarOption: _showControlBarOption));
             }
 
             var buttons = new StackPanel
