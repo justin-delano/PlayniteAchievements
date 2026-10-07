@@ -88,7 +88,7 @@
                                     Focusable="False"/>
                     <TextBlock Grid.Column="2"
                                Text="{Binding CategoryText}"
-                               ToolTip="{Binding CategoryText}"
+                               ToolTip="{Binding CategoryPathText}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                TextTrimming="CharacterEllipsis"
