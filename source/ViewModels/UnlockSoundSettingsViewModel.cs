@@ -15,10 +15,11 @@ using PlayniteAchievements.Services.UI;
 namespace PlayniteAchievements.ViewModels
 {
     /// <summary>
-    /// The six per-tier rows of the unlock sound table: each shows where its sound currently comes
-    /// from and lets the user point it at their own file. Edits write straight into the live
-    /// persisted settings (the section's Cancel restores them) and, debounced, re-apply the sound
-    /// service so the host preloads the new set.
+    /// The six per-tier rows of the unlock sound table for one scope (global, a platform or a
+    /// game): each shows where its sound currently comes from and lets the user point it at their
+    /// own file. A scope that follows an inherited pack shows that pack read-only. Edits write
+    /// through the scope (a settings scope into the live persisted settings, which the section's
+    /// Cancel restores) and, debounced, re-apply the sound service so the host preloads the new set.
     /// </summary>
     internal sealed class UnlockSoundSettingsViewModel : ObservableObject, IDisposable
     {
@@ -26,6 +27,10 @@ namespace PlayniteAchievements.ViewModels
         private readonly UnlockSoundService _sounds;
         private readonly ILogger _logger;
         private readonly DispatcherTimer _applyDebounceTimer;
+        private UnlockSoundScope _scope;
+        private bool _isEditable = true;
+        private string _testProviderKey;
+        private Guid _testGameId;
 
         public UnlockSoundSettingsViewModel(
             PlayniteAchievementsSettings settings,
@@ -53,20 +58,50 @@ namespace PlayniteAchievements.ViewModels
 
         public ObservableCollection<UnlockSoundRowItem> Rows { get; }
 
+        /// <summary>False while the scope follows an inherited pack, which the rows then show read-only.</summary>
+        public bool IsEditable
+        {
+            get => _isEditable;
+            private set => SetValue(ref _isEditable, value);
+        }
+
         /// <summary>
-        /// Re-reads every row's custom path from settings and re-resolves its source, its badge and
-        /// the theme files it could be tested against. Cheap enough to run whole: six tiers, and
-        /// the only disk work is the existence probes the resolution already does.
+        /// Points the rows at a scope. <paramref name="testProviderKey"/> and
+        /// <paramref name="testGameId"/> are what the Test button resolves through, so it plays
+        /// what an unlock in this scope would.
+        /// </summary>
+        public void SetScope(UnlockSoundScope scope, bool editable, string testProviderKey, Guid testGameId)
+        {
+            _scope = scope;
+            _testProviderKey = testProviderKey;
+            _testGameId = testGameId;
+            IsEditable = editable;
+            Refresh();
+        }
+
+        /// <summary>The pack the rows show: the scope's effective pack, or the global pack without a scope.</summary>
+        public UnlockSoundSettings CurrentSounds => _scope?.EffectiveSounds ?? _settings?.Persisted?.UnlockSounds;
+
+        /// <summary>What each tier of the shown pack plays now.</summary>
+        public System.Collections.Generic.IReadOnlyList<ResolvedUnlockSound> ResolveAll()
+        {
+            return _sounds?.Resolver?.ResolveAll(CurrentSounds);
+        }
+
+        /// <summary>
+        /// Re-reads every row's custom path from the scope and re-resolves its source, its badge
+        /// and the theme files it could be tested against. Cheap enough to run whole: six tiers,
+        /// and the only disk work is the existence probes the resolution already does.
         /// </summary>
         public void Refresh()
         {
-            var sounds = _settings?.Persisted?.UnlockSounds;
+            var sounds = CurrentSounds;
             var resolver = _sounds?.Resolver;
             foreach (var row in Rows)
             {
                 row.Load(
                     sounds?.GetPath(row.Tier),
-                    resolver?.Resolve(row.Tier),
+                    resolver?.Resolve(row.Tier, sounds),
                     resolver?.FindThemeCandidates(row.Tier),
                     CreateBadge(row.Tier));
             }
@@ -82,7 +117,7 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                _sounds.Play(row.Tier, force: true);
+                _sounds.Play(row.Tier, _testProviderKey, _testGameId, force: true);
             }
             catch (Exception ex)
             {
@@ -111,11 +146,37 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        /// <summary>Raised after a row's file changed the scope's pack.</summary>
+        public event EventHandler SoundsChanged;
+
         internal void SetCustomPath(UnlockSoundTier tier, string path)
         {
-            _settings?.Persisted?.UnlockSounds?.SetPath(tier, path);
+            if (!IsEditable)
+            {
+                Refresh();
+                return;
+            }
+
+            if (_scope == null)
+            {
+                _settings?.Persisted?.UnlockSounds?.SetPath(tier, path);
+            }
+            else
+            {
+                var pack = _scope.OwnSounds?.Clone();
+                if (pack == null)
+                {
+                    Refresh();
+                    return;
+                }
+
+                pack.SetPath(tier, path);
+                _scope.Write(pack);
+            }
+
             Refresh();
             ScheduleApply();
+            SoundsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>Volume and path edits re-apply the service after the user pauses typing.</summary>

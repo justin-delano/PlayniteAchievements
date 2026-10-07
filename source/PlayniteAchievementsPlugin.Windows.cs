@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 
@@ -73,9 +74,9 @@ namespace PlayniteAchievements
             Guid gameId,
             ManageAchievementsTab initialTab = ManageAchievementsTab.Overview,
             bool selectManageCategoriesSubTab = false,
-            bool? notificationsShowFrame = null)
+            NotificationSurface? notificationsSurface = null)
         {
-            _windowService.OpenManageAchievementsView(gameId, initialTab, selectManageCategoriesSubTab, notificationsShowFrame);
+            _windowService.OpenManageAchievementsView(gameId, initialTab, selectManageCategoriesSubTab, notificationsSurface);
         }
 
         private void EnsureAchievementResourcesLoaded()

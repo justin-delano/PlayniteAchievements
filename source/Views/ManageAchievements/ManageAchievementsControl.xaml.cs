@@ -11,6 +11,7 @@ using Playnite.SDK.Events;
 using System.Windows.Threading;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Services;
@@ -66,7 +67,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
         private bool _notificationsRefreshDiscardPending;
         private bool _selectManageCategoriesSubTab;
         // The Notifications tab's surface to show once its section exists: true for the frame.
-        private bool? _pendingNotificationsShowFrame;
+        private NotificationSurface? _pendingNotificationsSurface;
         private bool _ensureTabContentQueued;
         private bool _categoryEditsPendingPropagation;
 
@@ -83,7 +84,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             PlayniteAchievementsSettings settings,
             ManualSourceRegistry manualSourceRegistry,
             bool selectManageCategoriesSubTab = false,
-            bool? notificationsShowFrame = null)
+            NotificationSurface? notificationsSurface = null)
         {
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
@@ -97,8 +98,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _gameDataSnapshotProvider = new ManageAchievementsDataSnapshotProvider(gameId, _achievementDataService, logger);
             _selectManageCategoriesSubTab =
                 initialTab == ManageAchievementsTab.Category && selectManageCategoriesSubTab;
-            _pendingNotificationsShowFrame =
-                initialTab == ManageAchievementsTab.Notifications ? notificationsShowFrame : null;
+            _pendingNotificationsSurface =
+                initialTab == ManageAchievementsTab.Notifications ? notificationsSurface : null;
 
             _viewModel = new ManageAchievementsViewModel(
                 gameId,
@@ -142,8 +143,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        /// <param name="notificationsShowFrame">On the Notifications tab, the surface to show: true for the frame, false for the notification, null to keep it.</param>
-        internal void SelectTab(ManageAchievementsTab tab, bool selectManageCategoriesSubTab = false, bool? notificationsShowFrame = null)
+        /// <param name="notificationsSurface">On the Notifications tab, the Styles tab to show; null keeps it.</param>
+        internal void SelectTab(ManageAchievementsTab tab, bool selectManageCategoriesSubTab = false, NotificationSurface? notificationsSurface = null)
         {
             if (_viewModel == null)
             {
@@ -155,9 +156,9 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 _selectManageCategoriesSubTab = true;
             }
 
-            if (tab == ManageAchievementsTab.Notifications && notificationsShowFrame.HasValue)
+            if (tab == ManageAchievementsTab.Notifications && notificationsSurface.HasValue)
             {
-                _pendingNotificationsShowFrame = notificationsShowFrame;
+                _pendingNotificationsSurface = notificationsSurface;
             }
 
             _viewModel.SelectedTab = tab;
@@ -352,10 +353,10 @@ namespace PlayniteAchievements.Views.ManageAchievements
             {
                 var hadNotificationsControl = _notificationsControl != null;
                 EnsureNotificationsControl(forceRecreate: false);
-                if (_pendingNotificationsShowFrame.HasValue && _notificationsControl != null)
+                if (_pendingNotificationsSurface.HasValue && _notificationsControl != null)
                 {
-                    _notificationsControl.Preselect(null, _pendingNotificationsShowFrame.Value);
-                    _pendingNotificationsShowFrame = null;
+                    _notificationsControl.Preselect(null, _pendingNotificationsSurface.Value);
+                    _pendingNotificationsSurface = null;
                 }
 
                 if (_notificationsRefreshPending)

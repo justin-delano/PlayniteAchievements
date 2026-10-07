@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
@@ -182,6 +183,60 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.AreNotEqual(snapshotFolder, Path.GetDirectoryName(settings.UnlockSounds.Common));
             Assert.IsTrue(Directory.Exists(snapshotFolder), "the edit snapshot still points into it");
+        }
+
+        [TestMethod]
+        public void PlatformTarget_GetsItsOwnPack_AndLeavesTheGlobalPackAlone()
+        {
+            var item = SavePack("Chimes", (UnlockSoundTier.Common, 1));
+            var settings = new PersistedSettings();
+            var mine = WriteWav("mine.wav", 9);
+            settings.UnlockSounds.Uncommon = mine;
+            var targets = new SoundsLibraryTargets(_adapter, () => null, () => settings);
+            var platform = targets.SettingsAdapter(LibraryTargetKeys.SoundsProvider("Steam"));
+
+            _service.ApplyToSettings(platform, item, settings);
+
+            var own = settings.GetProviderUnlockSounds("Steam");
+            Assert.IsNotNull(own, "applying a pack gives the platform its own copy");
+            Assert.IsTrue(_store.IsManagedPath(own.Common));
+            Assert.AreEqual(mine, own.Uncommon, "the copy starts from the pack the platform inherited");
+            Assert.IsNull(settings.UnlockSounds.Common, "the global pack is untouched");
+            Assert.IsNotNull(settings.GetLibraryLink(LibraryTargetKeys.SoundsProvider("Steam")));
+            Assert.IsNull(settings.GetLibraryLink(LibraryTargetKeys.Sounds));
+            Assert.IsFalse(_service.GetSettingsState(platform, settings).IsEdited);
+        }
+
+        [TestMethod]
+        public void GameTarget_GetsItsOwnPack()
+        {
+            var item = SavePack("Chimes", (UnlockSoundTier.Rare, 3));
+            var settings = new PersistedSettings();
+            var customData = new GameCustomDataStore(Path.Combine(_root, "custom-data"));
+            var gameId = Guid.NewGuid();
+            var targets = new SoundsLibraryTargets(_adapter, () => customData, () => settings);
+
+            var target = targets.GameTarget(LibraryTargetKeys.SoundsGame(gameId));
+            target.Apply(_service, item);
+
+            Assert.IsTrue(customData.TryLoad(gameId, out var data));
+            Assert.IsTrue(_store.IsManagedPath(data.UnlockSounds.Rare));
+            Assert.IsNull(settings.UnlockSounds.Rare);
+        }
+
+        [TestMethod]
+        public void Prune_KeepsTheFilesOfEveryOtherPack()
+        {
+            var settings = new PersistedSettings();
+            var adapter = new SoundsLibraryAdapter(_store, () => new[] { settings.UnlockSounds }.Concat(settings.ProviderUnlockSounds.Values));
+            var targets = new SoundsLibraryTargets(adapter, () => null, () => settings);
+            var platform = targets.SettingsAdapter(LibraryTargetKeys.SoundsProvider("Steam"));
+            _service.ApplyToSettings(platform, SavePack("Steam pack", (UnlockSoundTier.Common, 1)), settings);
+            var platformFolder = Path.GetDirectoryName(settings.GetProviderUnlockSounds("Steam").Common);
+
+            _service.ApplyToSettings(adapter, SavePack("Global pack", (UnlockSoundTier.Common, 2)), settings);
+
+            Assert.IsTrue(Directory.Exists(platformFolder), "the platform pack still points into it");
         }
 
         private LibraryItem SavePack(string name, params (UnlockSoundTier Tier, byte Seed)[] tiers)

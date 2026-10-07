@@ -82,6 +82,8 @@
                                      Header="{DynamicResource LOCPlayAch_Settings_Style_ToastTab}"/>
                             <TabItem x:Name="FrameTabItem"
                                      Header="{DynamicResource LOCPlayAch_Settings_FrameHeader}"/>
+                            <TabItem x:Name="SoundsTabItem"
+                                     Header="{DynamicResource LOCPlayAch_Workshop_Kind_UnlockSounds}"/>
                         </TabControl>
 
                         <WrapPanel Grid.Column="1"
@@ -188,7 +190,8 @@
                                     Content="&#xEFD1;"
                                     ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ResetToDefault}"
                                     Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
-                                    Margin="16,0,0,8"/>
+                                    Margin="16,0,0,8"
+                                    Visibility="{Binding IsSelected, ElementName=SoundsTabItem, Converter={StaticResource InverseBoolToVis}}"/>
                         </WrapPanel>
                     </Grid>
 
@@ -254,10 +257,15 @@
                              editor below show, top to bottom from widest to narrowest scope. -->
                         <StackPanel Grid.Column="1" Margin="24,0,0,0">
                             <!-- Platform scope. In game mode the game's own override takes its place. -->
+                            <!-- The style checkboxes serve the notification and frame tabs, the
+                                 sound ones the Sounds tab (ApplySurfaceVisibility). -->
                             <StackPanel x:Name="PlatformSelectorPanel"
                                         Margin="0,0,0,10">
                                 <CheckBox x:Name="CustomizeCheckBox"
                                           Click="CustomizeCheckBox_Click"
+                                          Visibility="Collapsed"/>
+                                <CheckBox x:Name="CustomizeSoundsCheckBox"
+                                          Click="CustomizeSoundsCheckBox_Click"
                                           Visibility="Collapsed"/>
                             </StackPanel>
                             <StackPanel x:Name="GameSelectionPanel"
@@ -266,6 +274,9 @@
                                 <CheckBox x:Name="CustomizeGameCheckBox"
                                           Content="{DynamicResource LOCPlayAch_ManageAchievements_Notifications_Customize}"
                                           Click="CustomizeGameCheckBox_Click"/>
+                                <CheckBox x:Name="CustomizeGameSoundsCheckBox"
+                                          Click="CustomizeGameSoundsCheckBox_Click"
+                                          Visibility="Collapsed"/>
                             </StackPanel>
 
                             <!-- Per-kind styling. With one of the special kinds selected in the sample
@@ -353,6 +364,9 @@
                     <notifications:NotificationSurfaceStyleEditor
                         x:Name="FrameEditor"
                         Visibility="{Binding IsSelected, ElementName=FrameTabItem, Converter={StaticResource BoolToVis}}"/>
+                    <notifications:UnlockSoundsEditor
+                        x:Name="SoundsEditor"
+                        Visibility="{Binding IsSelected, ElementName=SoundsTabItem, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

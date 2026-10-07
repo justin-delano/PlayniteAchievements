@@ -11,8 +11,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 {
     /// <summary>
     /// Notifications settings tab: a master-detail navigation over the four notification concerns
-    /// — Behavior (what fires and how), Captures (screenshots and recordings), Appearance
-    /// (templates and surface styles) and Platforms (per-provider overrides). Sections are created
+    /// — Behavior (what fires and how), Captures (screenshots and recordings), Styles
+    /// (templates, surface styles and unlock sounds) and Platforms (per-provider overrides). Sections are created
     /// lazily when first selected. The three unlock-event features are siblings, each with its own
     /// master switch, because none of them depends on the others.
     /// </summary>
@@ -83,8 +83,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         }
 
         /// <summary>
-        /// Shows the request's page, then on Appearance its platform and surface, and on
-        /// Behavior the unlock sounds picker. Selecting a page creates its section synchronously.
+        /// Shows the request's page, then on Styles its platform and tab. Selecting a page creates
+        /// its section synchronously.
         /// </summary>
         internal void NavigateTo(SettingsNavigationRequest request)
         {
@@ -98,15 +98,10 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 NavigateToPage(request.PageKey);
             }
 
-            if (request.IsFrame.HasValue
+            if (request.Surface.HasValue
                 && string.Equals(request.PageKey, SettingsNavigationRequest.AppearancePage, StringComparison.OrdinalIgnoreCase))
             {
-                _appearanceSection?.Preselect(request.ProviderKey, request.IsFrame.Value);
-            }
-
-            if (request.ShowSounds)
-            {
-                _behaviorSection?.BringSoundsIntoView();
+                _appearanceSection?.Preselect(request.ProviderKey, request.Surface.Value);
             }
         }
 

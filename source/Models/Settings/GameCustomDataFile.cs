@@ -178,6 +178,13 @@ namespace PlayniteAchievements.Models.Settings
 
         public GameNotificationAppearanceOverride NotificationAppearanceOverride { get; set; }
 
+        /// <summary>
+        /// The game's own unlock sound pack, or null when it follows its provider's or the global
+        /// pack. A pack owns all six tiers: a blank tier falls to the theme and bundled sounds.
+        /// Not carried by the portable package, which does not package sound files.
+        /// </summary>
+        public UnlockSoundSettings UnlockSounds { get; set; }
+
         public ProviderOverrideData ProviderOverride { get; set; }
 
         /// <summary>
@@ -251,6 +258,7 @@ namespace PlayniteAchievements.Models.Settings
                 ForceUseExophase = ForceUseExophase,
                 ExophaseSlugOverride = ExophaseSlugOverride,
                 NotificationAppearanceOverride = NotificationAppearanceOverride?.Clone(),
+                UnlockSounds = UnlockSounds?.Clone(),
                 ProviderOverride = ProviderOverride?.Clone(),
                 ExophaseEnrichmentSlugOverride = ExophaseEnrichmentSlugOverride,
                 ManualLink = ManualLink?.Clone(),

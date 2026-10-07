@@ -86,6 +86,9 @@ namespace PlayniteAchievements.Services.GameCustomData
                 ? new List<string>(current.GoalAchievementApiNames)
                 : null;
 
+            // The package never carries the game's sound pack, so the local one stays.
+            imported.UnlockSounds = current.UnlockSounds?.Clone();
+
             if (current.ManualLink != null && imported.ManualLink != null &&
                 string.Equals(current.ManualLink.SourceKey, imported.ManualLink.SourceKey, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(current.ManualLink.SourceGameId, imported.ManualLink.SourceGameId, StringComparison.OrdinalIgnoreCase))

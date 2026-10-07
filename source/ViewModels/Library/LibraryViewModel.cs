@@ -345,7 +345,7 @@ namespace PlayniteAchievements.ViewModels.Library
                         _plugin.OpenManageAchievementsView(
                             navigation.GameId,
                             ViewModels.ManageAchievements.ManageAchievementsTab.Notifications,
-                            notificationsShowFrame: navigation.IsFrame);
+                            notificationsSurface: navigation.Surface);
                         break;
                     case LibraryTargetDestination.GameData:
                         _plugin.OpenManageAchievementsView(navigation.GameId, ViewModels.ManageAchievements.ManageAchievementsTab.Overview);
@@ -502,9 +502,11 @@ namespace PlayniteAchievements.ViewModels.Library
                 return L("LOCPlayAch_Workshop_Share_Sounds");
             }
 
-            var surface = key.StartsWith("frame:", StringComparison.OrdinalIgnoreCase)
-                ? L("LOCPlayAch_Workshop_Share_GlobalFrame")
-                : L("LOCPlayAch_Workshop_Share_GlobalStyle");
+            var surface = key.StartsWith("sounds:", StringComparison.OrdinalIgnoreCase)
+                ? L("LOCPlayAch_Workshop_Share_Sounds")
+                : key.StartsWith("frame:", StringComparison.OrdinalIgnoreCase)
+                    ? L("LOCPlayAch_Workshop_Share_GlobalFrame")
+                    : L("LOCPlayAch_Workshop_Share_GlobalStyle");
             if (string.Equals(key, LibraryTargetKeys.ToastGlobal, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, LibraryTargetKeys.FrameGlobal, StringComparison.OrdinalIgnoreCase))
             {

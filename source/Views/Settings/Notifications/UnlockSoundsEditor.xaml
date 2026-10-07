@@ -1,0 +1,164 @@
+<UserControl x:Class="PlayniteAchievements.Views.Settings.Notifications.UnlockSoundsEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="400"
+             d:DesignWidth="700">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <StackPanel>
+        <!-- The global switches: one master switch, volume and chain options for every scope.
+             Shown only while the global pack is selected; the DataContext is the settings. -->
+        <Border x:Name="GlobalSwitchesCard"
+                Style="{StaticResource SectionBorderStyle}">
+            <StackPanel Grid.IsSharedSizeScope="True">
+                <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_EnableUnlockSounds}">
+                    <CheckBox IsChecked="{Binding Persisted.EnableUnlockSounds}"/>
+                </controls:SettingRow>
+                <StackPanel Margin="{StaticResource PlayAch.Thickness.SettingRow.Indent}"
+                            IsEnabled="{Binding Persisted.EnableUnlockSounds}"
+                            Grid.IsSharedSizeScope="True">
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_UnlockSoundVolume}">
+                        <StackPanel Orientation="Horizontal">
+                            <Slider Style="{StaticResource SettingsSliderStyle}"
+                                    Minimum="0" Maximum="100"
+                                    SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"
+                                    Value="{Binding Persisted.UnlockSoundVolumePercent, Mode=TwoWay}"
+                                    Width="160"
+                                    VerticalAlignment="Center"
+                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                            <TextBox Text="{Binding Persisted.UnlockSoundVolumePercent, UpdateSourceTrigger=LostFocus}"
+                                     Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
+                                     TextAlignment="Right"/>
+                        </StackPanel>
+                    </controls:SettingRow>
+                    <!-- Drops the theme step out of the per-tier chain, leaving the user's own
+                         file and the bundled default. On by default so a theme that ships sounds
+                         is heard without configuring anything. -->
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_UseThemeUnlockSounds}">
+                        <CheckBox IsChecked="{Binding Persisted.AllowThemeUnlockSounds}"/>
+                    </controls:SettingRow>
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_UseHiddenUnlockSound}"
+                                         Margin="0">
+                        <CheckBox IsChecked="{Binding Persisted.UseHiddenUnlockSound}"/>
+                    </controls:SettingRow>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- The scope's pack: per tier, the pack's file wins, then the active theme's, then the
+             bundled default. DataContext island (see UnlockSoundSettingsViewModel); button
+             handlers read the row from the sender's DataContext. -->
+        <Border Style="{StaticResource SectionBorderStyle}">
+            <StackPanel x:Name="SoundRowsPanel">
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockSoundFilesHint}"
+                           Style="{StaticResource MutedTextStyle}"
+                           TextWrapping="Wrap"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                <ItemsControl x:Name="UnlockSoundRows"
+                              ItemsSource="{Binding Rows}"
+                              Grid.IsSharedSizeScope="True">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:UnlockSoundRowItem}">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="UnlockSoundTier"/>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="UnlockSoundSource"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- The tier's own badge, drawn from the user's rarity appearance,
+                                     so the table reads as the notifications it configures. -->
+                                <Image Grid.Column="0"
+                                       Source="{Binding BadgeImage}"
+                                       Width="20"
+                                       Height="20"
+                                       Stretch="Uniform"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding TierLabel}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding SourceLabel}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           VerticalAlignment="Center"
+                                           ToolTip="{Binding ResolvedPath}"
+                                           Margin="0,0,10,0"/>
+                                <TextBox Grid.Column="3"
+                                         Text="{Binding CustomPath, UpdateSourceTrigger=LostFocus}"
+                                         IsReadOnly="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource InvertBoolConverter}}"
+                                         ToolTip="{Binding ResolvedPath}"
+                                         VerticalAlignment="Center"/>
+                                <!-- Drawn over the empty box, not behind it, so the theme's
+                                     TextBox background cannot hide it; clicks pass through to the
+                                     box underneath. Names the file a blank tier will actually play,
+                                     so an unconfigured row reads as its source rather than as
+                                     nothing. -->
+                                <TextBlock Grid.Column="3"
+                                           Text="{Binding ResolvedFileName}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsHitTestVisible="False"
+                                           Margin="5,0,4,0"
+                                           Visibility="{Binding ShowResolvedFileName, Converter={StaticResource BoolToVis}}"/>
+                                <Button Grid.Column="4"
+                                        Click="UnlockSoundBrowse_Click"
+                                        Content="{DynamicResource LOCPlayAch_Button_Browse}"
+                                        IsEnabled="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        Margin="6,0,0,0"/>
+                                <!-- The wrapper carries the scope's editability, the button its
+                                     own: a disabled parent wins. -->
+                                <Border Grid.Column="5"
+                                        IsEnabled="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                    <Button Click="UnlockSoundClear_Click"
+                                            Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                            IsEnabled="{Binding HasCustomPath}"
+                                            Margin="6,0,0,0"/>
+                                </Border>
+                                <Button Grid.Column="6"
+                                        Click="UnlockSoundTest_Click"
+                                        Content="{DynamicResource LOCPlayAch_Button_Test}"
+                                        Margin="6,0,0,0"/>
+                                <!-- Plays what a theme ships for this tier, in either Playnite
+                                     mode, whatever the chain currently resolves to. Disabled when
+                                     neither theme provides the tier. -->
+                                <Button Grid.Column="7"
+                                        Click="UnlockSoundTheme_Click"
+                                        Content="{DynamicResource LOCPlayAch_Settings_Style_FireTheme}"
+                                        ToolTip="{DynamicResource LOCPlayAch_Settings_UnlockSoundTheme_Tooltip}"
+                                        IsEnabled="{Binding HasThemeCandidates}"
+                                        Margin="6,0,0,0">
+                                    <Button.ContextMenu>
+                                        <!-- Plain action items, not the checkable ones the rarity
+                                             selectors use: each entry plays a sound rather than
+                                             toggling a value. -->
+                                        <ContextMenu Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                                     ItemContainerStyle="{StaticResource AchievementContextMenuItemStyle}"/>
+                                    </Button.ContextMenu>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -71,6 +71,13 @@ namespace PlayniteAchievements.Services.Sound
         /// </summary>
         public Func<double?> MaxPlaybackSeconds { get; set; }
 
+        /// <summary>
+        /// The sound pack an unlock of a game on a platform plays: the game's own, its platform's,
+        /// or the global pack. Assigned after construction because the custom data store is wired
+        /// separately; null plays the global pack for every unlock.
+        /// </summary>
+        public Func<string, Guid, UnlockSoundSettings> ResolvePack { get; set; }
+
         private bool Enabled
         {
             get
@@ -109,11 +116,17 @@ namespace PlayniteAchievements.Services.Sound
         }
 
         /// <summary>
-        /// Plays the tier's sound at the configured volume. Null when sounds are off, nothing
-        /// resolved, or the host is unavailable. <paramref name="force"/> plays even when the
-        /// master switch is off, for the settings page's Test button.
+        /// Plays the tier's sound at the configured volume, from the pack of the game's scope:
+        /// <paramref name="gameId"/>'s own, else <paramref name="providerKey"/>'s, else the global
+        /// pack. Null when sounds are off, nothing resolved, or the host is unavailable.
+        /// <paramref name="force"/> plays even when the master switch is off, for the settings
+        /// page's Test button.
         /// </summary>
-        public UnlockSoundPlayback Play(UnlockSoundTier tier, bool force = false)
+        public UnlockSoundPlayback Play(
+            UnlockSoundTier tier,
+            string providerKey = null,
+            Guid gameId = default,
+            bool force = false)
         {
             lock (_gate)
             {
@@ -122,7 +135,7 @@ namespace PlayniteAchievements.Services.Sound
                     return null;
                 }
 
-                var resolved = _resolver.Resolve(tier);
+                var resolved = _resolver.Resolve(tier, SafeResolvePack(providerKey, gameId));
                 if (resolved?.Path == null)
                 {
                     return null;
@@ -193,9 +206,40 @@ namespace PlayniteAchievements.Services.Sound
             _host.Dispose();
         }
 
+        private UnlockSoundSettings SafeResolvePack(string providerKey, Guid gameId)
+        {
+            var global = _settings?.Persisted?.UnlockSounds;
+            if (ResolvePack == null || (string.IsNullOrWhiteSpace(providerKey) && gameId == Guid.Empty))
+            {
+                return global;
+            }
+
+            try
+            {
+                return ResolvePack(providerKey, gameId) ?? global;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[UnlockSound] The sound pack for provider={providerKey ?? "<none>"} game={gameId} could not be read; using the global pack.");
+                return global;
+            }
+        }
+
+        /// <summary>
+        /// The global pack and every platform pack, which are what the host keeps warm. A game's
+        /// own pack is played without a preload.
+        /// </summary>
         private IReadOnlyList<string> ResolvedPaths()
         {
-            return _resolver.ResolveAll()
+            var persisted = _settings?.Persisted;
+            var packs = new List<UnlockSoundSettings> { persisted?.UnlockSounds };
+            if (persisted != null)
+            {
+                packs.AddRange(persisted.ProviderUnlockSounds.Values);
+            }
+
+            return packs
+                .SelectMany(pack => _resolver.ResolveAll(pack))
                 .Select(r => r.Path)
                 .Where(p => !string.IsNullOrWhiteSpace(p))
                 .Distinct(StringComparer.OrdinalIgnoreCase)

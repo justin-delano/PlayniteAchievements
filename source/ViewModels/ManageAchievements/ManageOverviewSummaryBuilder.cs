@@ -237,7 +237,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 data.AchievementCategoryImageOverrides?.Count(pair => HasText(pair.Value?.Art)) ?? 0);
 
             AddFlag(result, OrderLabelKey, data.AchievementOrder?.Count > 0 || data.AchievementCategoryOrder?.Count > 0);
-            AddFlag(result, NotificationsLabelKey, data.NotificationAppearanceOverride != null);
+            AddFlag(result, NotificationsLabelKey, data.NotificationAppearanceOverride != null || data.UnlockSounds != null);
             AddFlag(
                 result,
                 ProviderOverrideLabelKey,

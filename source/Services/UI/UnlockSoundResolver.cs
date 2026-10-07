@@ -137,14 +137,29 @@ namespace PlayniteAchievements.Services.UI
             return $"Audio Files ({patterns})|{patterns}";
         }
 
+        /// <summary>Resolves a tier against the global pack.</summary>
         public ResolvedUnlockSound Resolve(UnlockSoundTier tier)
         {
-            return ResolveCustom(tier) ?? ResolveTheme(tier) ?? ResolveBundled(tier);
+            return Resolve(tier, _getSettings?.Invoke());
+        }
+
+        /// <summary>
+        /// Resolves a tier against <paramref name="pack"/>, a platform's or game's own pack or the
+        /// global one: its file for the tier, then the theme, then the bundled sound.
+        /// </summary>
+        public ResolvedUnlockSound Resolve(UnlockSoundTier tier, UnlockSoundSettings pack)
+        {
+            return ResolveCustom(tier, pack) ?? ResolveTheme(tier) ?? ResolveBundled(tier);
         }
 
         public IReadOnlyList<ResolvedUnlockSound> ResolveAll()
         {
-            return UnlockSoundTierExtensions.All.Select(Resolve).ToList();
+            return ResolveAll(_getSettings?.Invoke());
+        }
+
+        public IReadOnlyList<ResolvedUnlockSound> ResolveAll(UnlockSoundSettings pack)
+        {
+            return UnlockSoundTierExtensions.All.Select(tier => Resolve(tier, pack)).ToList();
         }
 
         public void LogDiagnostics(string context = null)
@@ -168,9 +183,9 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private ResolvedUnlockSound ResolveCustom(UnlockSoundTier tier)
+        private ResolvedUnlockSound ResolveCustom(UnlockSoundTier tier, UnlockSoundSettings pack)
         {
-            var path = _getSettings?.Invoke()?.GetPath(tier);
+            var path = pack?.GetPath(tier);
             if (string.IsNullOrWhiteSpace(path))
             {
                 return null;

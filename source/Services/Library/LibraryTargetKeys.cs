@@ -21,6 +21,57 @@ namespace PlayniteAchievements.Services.Library
         private const string GameSegment = "game:";
         private const string ShowcasePrefix = "showcase:";
         private const string GameDataPrefix = "gamedata:";
+        private const string SoundsPrefix = "sounds:";
+
+        public static string SoundsProvider(string providerKey) => SoundsPrefix + ProviderSegment + RequireToken(providerKey, nameof(providerKey));
+
+        public static string SoundsGame(Guid gameId) => SoundsPrefix + GameSegment + GameToken(gameId);
+
+        /// <summary>
+        /// The key of a sound scope: a game when <paramref name="gameId"/> is set, else a platform
+        /// when <paramref name="providerKey"/> is set, else the global <see cref="Sounds"/> key.
+        /// </summary>
+        public static string SoundsScope(string providerKey, Guid gameId)
+        {
+            if (gameId != Guid.Empty)
+            {
+                return SoundsGame(gameId);
+            }
+
+            return string.IsNullOrWhiteSpace(providerKey) ? Sounds : SoundsProvider(providerKey);
+        }
+
+        /// <summary>Reads a sound scope key (global, platform or game) back into its scope.</summary>
+        public static bool TryParseSoundsScope(string targetKey, out string providerKey, out Guid gameId)
+        {
+            providerKey = null;
+            gameId = Guid.Empty;
+            if (string.IsNullOrWhiteSpace(targetKey))
+            {
+                return false;
+            }
+
+            if (string.Equals(targetKey, Sounds, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!targetKey.StartsWith(SoundsPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var rest = targetKey.Substring(SoundsPrefix.Length);
+            if (rest.StartsWith(ProviderSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                providerKey = rest.Substring(ProviderSegment.Length).Trim();
+                return providerKey.Length > 0;
+            }
+
+            return rest.StartsWith(GameSegment, StringComparison.OrdinalIgnoreCase)
+                   && Guid.TryParse(rest.Substring(GameSegment.Length), out gameId)
+                   && gameId != Guid.Empty;
+        }
 
         public static string ToastProvider(string providerKey) => ToastPrefix + ProviderSegment + RequireToken(providerKey, nameof(providerKey));
 
@@ -142,6 +193,10 @@ namespace PlayniteAchievements.Services.Library
             else if (targetKey.StartsWith(FramePrefix + GameSegment, StringComparison.OrdinalIgnoreCase))
             {
                 token = targetKey.Substring((FramePrefix + GameSegment).Length);
+            }
+            else if (targetKey.StartsWith(SoundsPrefix + GameSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                token = targetKey.Substring((SoundsPrefix + GameSegment).Length);
             }
 
             return token != null && Guid.TryParse(token, out gameId) && gameId != Guid.Empty;

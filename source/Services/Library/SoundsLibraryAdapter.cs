@@ -15,7 +15,11 @@ namespace PlayniteAchievements.Services.Library
     /// tiers the merge gives to the package; the managed folders nothing points into any more
     /// are then removed.
     /// </summary>
-    public sealed class SoundsLibraryAdapter : ISettingsLibraryAdapter
+    /// <remarks>
+    /// The settings-backed form targets the global pack under <see cref="LibraryTargetKeys.Sounds"/>;
+    /// the scope form targets a platform's or game's pack, which an apply gives its own copy of.
+    /// </remarks>
+    public sealed class SoundsLibraryAdapter : ISettingsLibraryAdapter, ILibraryAdapter<UnlockSoundScope>
     {
         private static readonly string[] AtomicPaths = { JsonThreeWayMerge.AnySegment };
 
@@ -39,12 +43,17 @@ namespace PlayniteAchievements.Services.Library
 
         public JObject Project(PersistedSettings target, IEnumerable<string> ownedKeys = null)
         {
+            return Project(GlobalScope(target), ownedKeys);
+        }
+
+        public JObject Project(UnlockSoundScope target, IEnumerable<string> ownedKeys = null)
+        {
             if (target == null)
             {
                 throw new ArgumentNullException(nameof(target));
             }
 
-            return ProjectSounds(target.UnlockSounds, TiersOf(ownedKeys));
+            return ProjectSounds(target.EffectiveSounds, TiersOf(ownedKeys));
         }
 
         public IReadOnlyCollection<string> OwnedKeys(string packagePath)
@@ -54,25 +63,35 @@ namespace PlayniteAchievements.Services.Library
 
         public void ApplyReplace(string packagePath, PersistedSettings target)
         {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-
-            var sounds = target.UnlockSounds ?? UnlockSoundSettings.CreateDefault();
-            _store.Import(packagePath, sounds);
-            target.UnlockSounds = sounds;
-            Prune(sounds);
+            ApplyReplace(packagePath, GlobalScope(target));
         }
 
-        public void ApplyMerged(string packagePath, PersistedSettings target, JToken baseline, out int keptEdits)
+        public void ApplyReplace(string packagePath, UnlockSoundScope target)
         {
             if (target == null)
             {
                 throw new ArgumentNullException(nameof(target));
             }
 
-            var sounds = target.UnlockSounds ?? UnlockSoundSettings.CreateDefault();
+            var sounds = target.EffectiveSounds?.Clone() ?? UnlockSoundSettings.CreateDefault();
+            _store.Import(packagePath, sounds);
+            target.Write(sounds);
+            Prune(sounds);
+        }
+
+        public void ApplyMerged(string packagePath, PersistedSettings target, JToken baseline, out int keptEdits)
+        {
+            ApplyMerged(packagePath, GlobalScope(target), baseline, out keptEdits);
+        }
+
+        public void ApplyMerged(string packagePath, UnlockSoundScope target, JToken baseline, out int keptEdits)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            var sounds = target.EffectiveSounds?.Clone() ?? UnlockSoundSettings.CreateDefault();
             var incomingSounds = sounds.Clone();
             var carried = _store.Import(packagePath, incomingSounds);
             var incoming = ProjectSounds(incomingSounds, carried);
@@ -106,8 +125,13 @@ namespace PlayniteAchievements.Services.Library
                 }
             }
 
-            target.UnlockSounds = sounds;
+            target.Write(sounds);
             Prune(sounds);
+        }
+
+        private static UnlockSoundScope GlobalScope(PersistedSettings target)
+        {
+            return UnlockSoundScope.ForSettings(target ?? throw new ArgumentNullException(nameof(target)), null);
         }
 
         /// <summary>The projection of <paramref name="sounds"/> over <paramref name="tiers"/>, or over every tier when null.</summary>
