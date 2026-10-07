@@ -336,13 +336,20 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
+        // Moved rows times total rows past which a reset is cheaper; see SyncFilteredRows.
+        private const long FilterSyncWorkBudget = 250000;
+
         /// <summary>
         /// Brings the view in line with the filter by retesting only the rows whose match changed.
         /// A reset would rebuild every visible row, including the ones that stay; this leaves those
         /// containers in place, so only rows entering the view are realized.
-        /// Measured cheaper than a reset at every size, including when nearly every row changes:
-        /// moving 582 rows out took 38 ms against 160 ms for the reset.
         /// </summary>
+        /// <remarks>
+        /// Each moved row costs time in proportion to the list's length, so the switch to a reset is
+        /// on moved rows times total rows rather than on a count. Measured: on 642 rows, moving 582
+        /// out took 38 ms against 160 ms for a reset; on 5,000 rows, moving 4,940 took 2,087 ms
+        /// against 288 ms, and even 120 lost (216 ms against 148 ms).
+        /// </remarks>
         /// <returns>What was done, for the timing log.</returns>
         private string SyncFilteredRows()
         {
@@ -367,6 +374,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 {
                     changed.Add(row);
                 }
+            }
+
+            if ((long)changed.Count * rows.Count > FilterSyncWorkBudget)
+            {
+                view.Refresh();
+                return "reset changed=" + changed.Count + " rows=" + rows.Count;
             }
 
             foreach (var row in changed)
