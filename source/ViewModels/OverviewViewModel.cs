@@ -356,9 +356,11 @@ namespace PlayniteAchievements.ViewModels
                 nameof(UnlockSpanFilter),
                 () => UnlockRangeFrom,
                 () => UnlockRangeTo,
-                SetUnlockRange)
+                SetUnlockRange,
+                L("LOCPlayAch_Common_Unlocked"))
             {
-                AutoHideWhenUnavailable = false
+                AutoHideWhenUnavailable = false,
+                Width = 190
             });
 
             // The selected-game control bar is built and owned by _selectedGameControlBar.
