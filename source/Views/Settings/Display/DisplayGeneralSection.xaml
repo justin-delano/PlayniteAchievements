@@ -220,6 +220,16 @@
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard}">
                         <CheckBox IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"/>
                     </controls:SettingRow>
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ScoreCardBadgePosition}">
+                        <ComboBox SelectedValue="{Binding Persisted.OverviewScoreCardBadgePosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValuePath="Tag"
+                                  MinWidth="140">
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}"
+                                          Tag="{x:Static settings:ScoreCardBadgePosition.Left}"/>
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}"
+                                          Tag="{x:Static settings:ScoreCardBadgePosition.Right}"/>
+                        </ComboBox>
+                    </controls:SettingRow>
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewGamesPieChart}">
                         <CheckBox IsChecked="{Binding Persisted.ShowOverviewGamesPieChart}"/>
                     </controls:SettingRow>
