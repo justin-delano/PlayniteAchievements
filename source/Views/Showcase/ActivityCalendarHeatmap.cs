@@ -231,58 +231,89 @@ namespace PlayniteAchievements.Views.Showcase
             var highlightedDay = HighlightedDay?.Date;
             var highlightedRect = Rect.Empty;
 
-            for (var weekIndex = 0; weekIndex < weeks.Count; weekIndex++)
+            // Every cell of one intensity goes into one geometry, so a multi-year calendar is
+            // five draw calls rather than one per day.
+            var geometries = new StreamGeometry[5];
+            var contexts = new StreamGeometryContext[5];
+            try
             {
-                var week = weeks[weekIndex];
-                if (week == null)
+                if (ShowMonthLabels)
                 {
-                    continue;
-                }
-
-                var x = weekIndex * cellBox;
-                if (ShowMonthLabels && !string.IsNullOrEmpty(week.MonthLabel))
-                {
-                    var label = new FormattedText(
-                        week.MonthLabel,
-                        CultureInfo.CurrentCulture,
-                        FlowDirection.LeftToRight,
-                        typeface,
-                        metrics.LabelFontSize,
-                        text,
-                        pixelsPerDip);
                     drawingContext.PushOpacity(0.7);
-                    drawingContext.DrawText(label, new Point(x + CellMargin, 1));
-                    drawingContext.Pop();
                 }
 
-                var days = week.Days;
-                if (days == null)
+                for (var weekIndex = 0; weekIndex < weeks.Count; weekIndex++)
                 {
-                    continue;
-                }
-
-                for (var dayIndex = 0; dayIndex < days.Count && dayIndex < 7; dayIndex++)
-                {
-                    var day = days[dayIndex];
-                    if (day == null || day.Intensity < 0)
+                    var week = weeks[weekIndex];
+                    if (week == null)
                     {
                         continue;
                     }
 
-                    var rect = new Rect(
-                        x + CellMargin,
-                        top + dayIndex * cellBox + CellMargin,
-                        cell,
-                        cell);
-                    var brush = day.Intensity == 0
-                        ? empty
-                        : intensityBrushes[Math.Min(day.Intensity, 4) - 1];
-                    drawingContext.DrawRoundedRectangle(brush, null, rect, CellCornerRadius, CellCornerRadius);
-                    if (highlightedDay.HasValue && day.IsDay && day.Date.Date == highlightedDay.Value)
+                    var x = weekIndex * cellBox;
+                    if (ShowMonthLabels && !string.IsNullOrEmpty(week.MonthLabel))
                     {
-                        highlightedRect = rect;
+                        drawingContext.DrawText(
+                            MonthLabelText(week.MonthLabel, typeface, metrics.LabelFontSize, text, pixelsPerDip),
+                            new Point(x + CellMargin, 1));
+                    }
+
+                    var days = week.Days;
+                    if (days == null)
+                    {
+                        continue;
+                    }
+
+                    for (var dayIndex = 0; dayIndex < days.Count && dayIndex < 7; dayIndex++)
+                    {
+                        var day = days[dayIndex];
+                        if (day == null || day.Intensity < 0)
+                        {
+                            continue;
+                        }
+
+                        var rect = new Rect(
+                            x + CellMargin,
+                            top + dayIndex * cellBox + CellMargin,
+                            cell,
+                            cell);
+                        var level = Math.Min(day.Intensity, 4);
+                        if (contexts[level] == null)
+                        {
+                            geometries[level] = new StreamGeometry();
+                            contexts[level] = geometries[level].Open();
+                        }
+
+                        AddRoundedRect(contexts[level], rect, CellCornerRadius);
+                        if (highlightedDay.HasValue && day.IsDay && day.Date.Date == highlightedDay.Value)
+                        {
+                            highlightedRect = rect;
+                        }
                     }
                 }
+
+                if (ShowMonthLabels)
+                {
+                    drawingContext.Pop();
+                }
+            }
+            finally
+            {
+                foreach (var context in contexts)
+                {
+                    context?.Close();
+                }
+            }
+
+            for (var level = 0; level < geometries.Length; level++)
+            {
+                if (geometries[level] == null)
+                {
+                    continue;
+                }
+
+                geometries[level].Freeze();
+                drawingContext.DrawGeometry(level == 0 ? empty : intensityBrushes[level - 1], null, geometries[level]);
             }
 
             // Drawn last so no neighbouring cell paints over the outline.
@@ -290,6 +321,44 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 drawingContext.DrawRoundedRectangle(null, _selectedPen, highlightedRect, CellCornerRadius, CellCornerRadius);
             }
+        }
+
+        // Shaping a label is the costly part of drawing one, and the same few month names repeat
+        // across a long calendar, so each is shaped once per size and theme.
+        private readonly Dictionary<(string Text, double Size), FormattedText> _monthLabels =
+            new Dictionary<(string Text, double Size), FormattedText>();
+
+        private FormattedText MonthLabelText(string label, Typeface typeface, double size, Brush brush, double pixelsPerDip)
+        {
+            if (!_monthLabels.TryGetValue((label, size), out var text))
+            {
+                text = new FormattedText(
+                    label,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    typeface,
+                    size,
+                    brush,
+                    pixelsPerDip);
+                _monthLabels[(label, size)] = text;
+            }
+
+            return text;
+        }
+
+        private static void AddRoundedRect(StreamGeometryContext context, Rect rect, double radius)
+        {
+            var r = Math.Min(radius, Math.Min(rect.Width, rect.Height) / 2);
+            var corner = new Size(r, r);
+            context.BeginFigure(new Point(rect.Left + r, rect.Top), isFilled: true, isClosed: true);
+            context.LineTo(new Point(rect.Right - r, rect.Top), isStroked: false, isSmoothJoin: false);
+            context.ArcTo(new Point(rect.Right, rect.Top + r), corner, 0, false, SweepDirection.Clockwise, false, false);
+            context.LineTo(new Point(rect.Right, rect.Bottom - r), isStroked: false, isSmoothJoin: false);
+            context.ArcTo(new Point(rect.Right - r, rect.Bottom), corner, 0, false, SweepDirection.Clockwise, false, false);
+            context.LineTo(new Point(rect.Left + r, rect.Bottom), isStroked: false, isSmoothJoin: false);
+            context.ArcTo(new Point(rect.Left, rect.Bottom - r), corner, 0, false, SweepDirection.Clockwise, false, false);
+            context.LineTo(new Point(rect.Left, rect.Top + r), isStroked: false, isSmoothJoin: false);
+            context.ArcTo(new Point(rect.Left + r, rect.Top), corner, 0, false, SweepDirection.Clockwise, false, false);
         }
 
         private Brush _emptyBrush;
@@ -311,6 +380,7 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            _monthLabels.Clear();
             var accent = TryFindResource("PlayAch.Brush.Accent") as Brush ?? Brushes.SteelBlue;
             _emptyBrush = TryFindResource("PlayAch.Brush.Overlay.Tint.08") as Brush ??
                 new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
