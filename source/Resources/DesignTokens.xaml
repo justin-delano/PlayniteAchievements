@@ -1,5 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    mc:Ignorable="po"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- App-owned colors. Playnite theme colors continue to come from host keys. -->
@@ -102,8 +105,8 @@
 
     <!-- Completion glow defaults; PlayAchResourceService replaces these with the user's
          configured completed-game gradient colors at runtime. -->
-    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowStart" BlurRadius="14" ShadowDepth="2" Direction="135" Color="#9C27B0" Opacity="1"/>
-    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEnd" BlurRadius="14" ShadowDepth="2" Direction="315" Color="#2196F3" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowStart" po:Freeze="True" BlurRadius="14" ShadowDepth="2" Direction="135" Color="#9C27B0" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEnd" po:Freeze="True" BlurRadius="14" ShadowDepth="2" Direction="315" Color="#2196F3" Opacity="1"/>
 
     <!-- Completed progress fill default; PlayAchResourceService replaces this with the user's
          configured completed-game gradient colors at runtime. The fill is a plain horizontal
