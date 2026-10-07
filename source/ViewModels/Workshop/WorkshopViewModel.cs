@@ -117,6 +117,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private WorkshopKindOption _selectedKind;
         private WorkshopSortOption _selectedSort;
         private bool _onlyMyGames = true;
+        private bool _onlyMine;
         private WorkshopItemViewModel _selectedItem;
         private bool _isLoading;
         private bool _isBusy;
@@ -260,7 +261,24 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
-        public bool ShowOnlyMyGames => _selectedKind?.Kind == null || _selectedKind.Kind == WorkshopItemKind.GameCustomData;
+        /// <summary>
+        /// Lists only the items this install published, of every kind; game data among them shows
+        /// whether or not its game is in the library.
+        /// </summary>
+        public bool OnlyMine
+        {
+            get => _onlyMine;
+            set
+            {
+                if (SetValueAndReturn(ref _onlyMine, value, nameof(OnlyMine)))
+                {
+                    OnPropertyChanged(nameof(ShowOnlyMyGames));
+                    ItemsView.Refresh();
+                }
+            }
+        }
+
+        public bool ShowOnlyMyGames => !_onlyMine && (_selectedKind?.Kind == null || _selectedKind.Kind == WorkshopItemKind.GameCustomData);
 
         public WorkshopItemViewModel SelectedItem
         {
@@ -357,23 +375,21 @@ namespace PlayniteAchievements.ViewModels.Workshop
                     var built = new List<WorkshopItemViewModel>();
                     var library = ReadLibrary();
                     var gameData = ReadGameData();
+                    var owner = _identity.TryGetSubmitterHash();
                     foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         _lifetime.Token.ThrowIfCancellationRequested();
                         var row = new WorkshopItemViewModel(item);
-                        ApplyLocalState(row, library, gameData);
+                        ApplyLocalState(row, library, gameData, owner);
                         built.Add(row);
                     }
 
                     // The index marks every item with its publisher's hash. Records of a first
                     // submission learn their published id from this install's items here, as the
-                    // share dialog links them, so My submissions can address the item.
-                    var owner = _identity.TryGetSubmitterHash();
+                    // share dialog links them, so a later share can update the item.
                     if (owner != null)
                     {
-                        _identity.LinkSubmissions(index.Items.Where(item =>
-                            !string.IsNullOrWhiteSpace(item.OwnerHash) &&
-                            string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase)));
+                        _identity.LinkSubmissions(index.Items.Where(item => WorkshopIdentityStore.IsOwnedBy(item, owner)));
                     }
 
                     return built;
@@ -481,13 +497,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
         /// Marks a row as in the library when any part of it is a library item, with an update
         /// when the index carries a newer version than the library holds. Game data is not a
         /// library item: it is installed when the game it stands for has it applied, with an
-        /// update when the index is newer than that game's version.
+        /// update when the index is newer than that game's version. Marks it as this install's
+        /// when its owner hash is <paramref name="owner"/>.
         /// </summary>
         private void ApplyLocalState(
             WorkshopItemViewModel row,
             ILookup<string, Services.Library.LibraryItem> library,
-            IReadOnlyDictionary<Guid, LibraryLink> gameData)
+            IReadOnlyDictionary<Guid, LibraryLink> gameData,
+            string owner)
         {
+            row.IsMine = WorkshopIdentityStore.IsOwnedBy(row.Item, owner);
             if (row.Kind == WorkshopItemKind.GameCustomData)
             {
                 var match = _matcher.Match(row.Item.Game?.Keys);
@@ -672,7 +691,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 return false;
             }
 
-            if (_onlyMyGames && row.Kind == WorkshopItemKind.GameCustomData && !row.IsInLibrary)
+            if (_onlyMine)
+            {
+                if (!row.IsMine)
+                {
+                    return false;
+                }
+            }
+            else if (_onlyMyGames && row.Kind == WorkshopItemKind.GameCustomData && !row.IsInLibrary)
             {
                 return false;
             }
@@ -840,7 +866,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 StatusMessage = ResourceProvider.GetString("LOCPlayAch_Workshop_Installing");
                 var result = await _installer.InstallAsync(request, _lifetime.Token);
 
-                ApplyLocalState(row, ReadLibrary(), ReadGameData());
+                ApplyLocalState(row, ReadLibrary(), ReadGameData(), _identity.TryGetSubmitterHash());
                 ReloadLocalState();
                 ItemsView.Refresh();
 
@@ -1209,9 +1235,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
             {
                 var library = ReadLibrary();
                 var gameData = ReadGameData();
+                var owner = _identity.TryGetSubmitterHash();
                 foreach (var row in Items.ToList())
                 {
-                    ApplyLocalState(row, library, gameData);
+                    ApplyLocalState(row, library, gameData, owner);
                 }
             }
             finally
