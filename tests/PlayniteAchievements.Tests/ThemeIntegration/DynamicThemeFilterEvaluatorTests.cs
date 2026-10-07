@@ -56,6 +56,26 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void ApplyAchievementFilters_ShippedSideProgressionKey_MatchesSideQuest()
+        {
+            var items = new List<AchievementDetail>
+            {
+                Achievement("Side Quest Item", categoryType: "SideQuest"),
+                Achievement("Stored Before Rename", categoryType: "SideProgression"),
+                Achievement("Base Item", categoryType: "Base")
+            };
+
+            AssertNames(
+                DynamicThemeFilterEvaluator.ApplyAchievementFilters(items, "SideProgression"),
+                "Side Quest Item",
+                "Stored Before Rename");
+            AssertNames(
+                DynamicThemeFilterEvaluator.ApplyAchievementFilters(items, "SideQuest"),
+                "Side Quest Item",
+                "Stored Before Rename");
+        }
+
+        [TestMethod]
         public void ApplyAchievementFilters_SameGroupCategoryTypes_MatchEitherType()
         {
             var items = new List<AchievementDetail>
