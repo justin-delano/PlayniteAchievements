@@ -705,6 +705,70 @@ namespace PlayniteAchievements.Tests.ViewModels
             }
         }
 
+        private static AchievementUnlockedEventArgs RareUnlockArgs()
+        {
+            return new AchievementUnlockedEventArgs
+            {
+                DisplayName = "Deep Diver",
+                Description = "Reach the deepest point of the map.",
+                GameName = "Some Game",
+                RarityTier = "Rare",
+                GlobalPercent = 9.3
+            };
+        }
+
+        [TestMethod]
+        public void InlineGameBadge_DrawsOnTheGameLineAndTheOffsetFollowsIt()
+        {
+            var style = AllLinesVisible();
+            style.InlineGameRarityBadge = true;
+            style.TitleLineOffset = 24;
+
+            var viewModel = BuildLineToast(style, RareUnlockArgs());
+
+            Assert.IsTrue(viewModel.GameCategoryLine.ShowInlineBadge);
+            Assert.IsFalse(viewModel.TitleLine.ShowInlineBadge);
+            Assert.AreEqual(24, viewModel.GameCategoryLine.LeftIndent, "A positive offset indents the badge line.");
+            foreach (var line in viewModel.ToastLines)
+            {
+                if (!(line is ToastGameCategoryLine))
+                {
+                    Assert.AreEqual(0, line.LeftIndent);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void InlineGameBadge_NegativeOffsetIndentsEveryOtherLine()
+        {
+            var style = AllLinesVisible();
+            style.InlineGameRarityBadge = true;
+            style.TitleLineOffset = -24;
+
+            var viewModel = BuildLineToast(style, RareUnlockArgs());
+
+            Assert.AreEqual(0, viewModel.GameCategoryLine.LeftIndent);
+            foreach (var line in viewModel.ToastLines)
+            {
+                if (!(line is ToastGameCategoryLine))
+                {
+                    Assert.AreEqual(24, line.LeftIndent);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void InlineGameBadge_CollapsesWithAnEmptyGameLine()
+        {
+            var style = AllLinesVisible();
+            style.InlineGameRarityBadge = true;
+            style.ShowGameName = false;
+
+            var viewModel = BuildLineToast(style, RareUnlockArgs());
+
+            Assert.AreEqual(Visibility.Collapsed, viewModel.GameCategoryLine.LineVisibility);
+        }
+
         [TestMethod]
         public void UnlockNotification_ProgressLineCollapsesAndProgressValuesAreEmpty()
         {
