@@ -1177,6 +1177,45 @@ namespace PlayniteAchievements.ViewModels.Settings
         public string BadgeCompletionThumbnailUri =>
             Models.Achievements.AchievementIconResolver.ApplyCacheBust(Surface?.BadgeImages?.CompletionPath);
 
+        // The badge a slot's notification draws while it has no custom image: the generated
+        // rarity badge from the user's rarity appearance. Null once a custom image is set, so a
+        // transparent custom image is never drawn over it.
+        public ImageSource BadgeCommonDefaultImage =>
+            DefaultBadgeImage(Surface?.BadgeImages?.CommonPath, Models.Achievements.RarityTier.Common);
+
+        public ImageSource BadgeUncommonDefaultImage =>
+            DefaultBadgeImage(Surface?.BadgeImages?.UncommonPath, Models.Achievements.RarityTier.Uncommon);
+
+        public ImageSource BadgeRareDefaultImage =>
+            DefaultBadgeImage(Surface?.BadgeImages?.RarePath, Models.Achievements.RarityTier.Rare);
+
+        public ImageSource BadgeUltraRareDefaultImage =>
+            DefaultBadgeImage(Surface?.BadgeImages?.UltraRarePath, Models.Achievements.RarityTier.UltraRare);
+
+        public ImageSource BadgeCompletionDefaultImage =>
+            DefaultBadgeImage(Surface?.BadgeImages?.CompletionPath, null);
+
+        private ImageSource DefaultBadgeImage(string customPath, Models.Achievements.RarityTier? tier)
+        {
+            if (!string.IsNullOrWhiteSpace(customPath))
+            {
+                return null;
+            }
+
+            try
+            {
+                var persisted = _settings.Persisted;
+                return tier.HasValue
+                    ? Models.Achievements.RarityAppearanceHelper.CreateBadgePreview(tier.Value, persisted)
+                    : Models.Achievements.RarityAppearanceHelper.CreateCompletedBadgePreview(persisted);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Default notification badge preview could not be built.");
+                return null;
+            }
+        }
+
         private void RefreshBadgeThumbnails()
         {
             OnPropertyChanged(nameof(BadgeCommonThumbnailUri));
@@ -1184,6 +1223,11 @@ namespace PlayniteAchievements.ViewModels.Settings
             OnPropertyChanged(nameof(BadgeRareThumbnailUri));
             OnPropertyChanged(nameof(BadgeUltraRareThumbnailUri));
             OnPropertyChanged(nameof(BadgeCompletionThumbnailUri));
+            OnPropertyChanged(nameof(BadgeCommonDefaultImage));
+            OnPropertyChanged(nameof(BadgeUncommonDefaultImage));
+            OnPropertyChanged(nameof(BadgeRareDefaultImage));
+            OnPropertyChanged(nameof(BadgeUltraRareDefaultImage));
+            OnPropertyChanged(nameof(BadgeCompletionDefaultImage));
         }
 
         /// <summary>
