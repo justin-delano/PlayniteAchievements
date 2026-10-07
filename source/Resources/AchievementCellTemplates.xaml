@@ -41,37 +41,91 @@
         </Style.Triggers>
     </Style>
 
-    <!-- The finish badge's count beside the completion frame's badge, for rows with several
-         capstones. Sits half over the cover art, so it carries a shadow to stay legible. -->
-    <Style x:Key="CompletionBadgeCountTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
-        <Setter Property="Text" Value="{Binding CompletionCountText}"/>
-        <Setter Property="Visibility" Value="{Binding ShowCompletionCount, Converter={StaticResource BoolToVis}}"/>
-        <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Dynamic_Capstone}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Margin" Value="3,0,0,0"/>
-        <Setter Property="Effect">
-            <Setter.Value>
-                <DropShadowEffect Color="{StaticResource PlayAch.Color.Shadow}"
-                                  BlurRadius="3"
-                                  ShadowDepth="1"
-                                  Direction="315"
-                                  Opacity="0.8"/>
-            </Setter.Value>
-        </Setter>
-    </Style>
+    <!-- Fully transparent black, the clear end of the frame's scrim. The shared transparent
+         overlay token is transparent white, which greys a gradient toward black. -->
+    <Color x:Key="CompletionFrameScrimClear">#00000000</Color>
 
-    <!-- Completion frame: a 2px band in the completed brush around the outside of a cover's
-         rectangle. The art is clipped to a plain rectangle, so the band sits outside it rather
-         than over it; at an outer corner radius of 6 or less the band still covers the art's
-         square corners. The host sets CornerRadius. -->
-    <Style x:Key="CompletionFrameBorderStyle" TargetType="Border">
-        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.CompletedGame}"/>
-        <Setter Property="BorderThickness" Value="2"/>
-        <Setter Property="Margin" Value="-2"/>
-        <Setter Property="IsHitTestVisible" Value="False"/>
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-    </Style>
+    <!-- Completion frame, drawn entirely on the cover art: a darkening scrim along the bottom, an
+         outer band and an inset fillet in the completed brush with diamond studs at the fillet's
+         corners, and a crest on the bottom edge carrying the completion badge on a dark plate
+         between two tapered wings.
+         Hosts place a Control with this template over the art, its DataContext the game summary
+         row, and set helpers:CompletionBadge.FrameBadgeSize and FrameCornerRadius on it. -->
+    <ControlTemplate x:Key="CompletionFrameTemplate" TargetType="Control">
+        <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
+            <Border IsHitTestVisible="False"
+                    CornerRadius="{TemplateBinding helpers:CompletionBadge.FrameCornerRadius}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Offset="0.55" Color="{StaticResource CompletionFrameScrimClear}"/>
+                        <GradientStop Offset="1" Color="{StaticResource PlayAch.Color.Overlay.Shade.80}"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <Border IsHitTestVisible="False"
+                    BorderThickness="2"
+                    BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
+                    CornerRadius="{TemplateBinding helpers:CompletionBadge.FrameCornerRadius}"/>
+            <Border IsHitTestVisible="False"
+                    Margin="5"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
+                    Opacity="0.6"
+                    CornerRadius="2"/>
+            <Grid IsHitTestVisible="False">
+                <Grid.Resources>
+                    <Style TargetType="Rectangle">
+                        <Setter Property="Width" Value="6"/>
+                        <Setter Property="Height" Value="6"/>
+                        <Setter Property="Fill" Value="{DynamicResource PlayAch.Brush.CompletedGame}"/>
+                        <Setter Property="Margin" Value="2.5"/>
+                        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                        <Setter Property="RenderTransform">
+                            <Setter.Value>
+                                <RotateTransform Angle="45"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Grid.Resources>
+                <Rectangle HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <Rectangle HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                <Rectangle HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                <Rectangle HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            </Grid>
+            <Grid VerticalAlignment="Bottom" Margin="10,0,10,7">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Path Grid.Column="0"
+                      IsHitTestVisible="False"
+                      Data="M0,1.5 L1,0 L1,3 Z"
+                      Stretch="Fill"
+                      Height="4"
+                      VerticalAlignment="Center"
+                      Fill="{DynamicResource PlayAch.Brush.CompletedGame}"/>
+                <Border Grid.Column="1"
+                        Margin="3,0"
+                        Background="{DynamicResource PlayAch.Brush.Overlay.Shade.80}"
+                        BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
+                        BorderThickness="1.5"
+                        CornerRadius="999"
+                        Padding="3">
+                    <Image Style="{StaticResource CompletionBadgeImageStyle}"
+                           Width="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"
+                           Height="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"/>
+                </Border>
+                <Path Grid.Column="2"
+                      IsHitTestVisible="False"
+                      Data="M0,0 L1,1.5 L0,3 Z"
+                      Stretch="Fill"
+                      Height="4"
+                      VerticalAlignment="Center"
+                      Fill="{DynamicResource PlayAch.Brush.CompletedGame}"/>
+            </Grid>
+        </Grid>
+    </ControlTemplate>
 
     <!-- =======================
          ACHIEVEMENT TEMPLATES
