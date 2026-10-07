@@ -241,6 +241,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     return string.Equals(label, Localize("LOCPlayAch_Overview_Incomplete"), StringComparison.OrdinalIgnoreCase)
                         ? OverviewLinkedSliceKeys.Incomplete
                         : null;
+                case ShowcasePieMode.Rarity:
+                case ShowcasePieMode.Trophy:
+                    // The overview's rarity and trophy filters list these same labels.
+                    return string.Equals(label, Localize("LOCPlayAch_Common_Locked"), StringComparison.OrdinalIgnoreCase)
+                        ? OverviewLinkedSliceKeys.Locked
+                        : label;
                 default:
                     return null;
             }
@@ -258,6 +264,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                         : key == OverviewLinkedSliceKeys.Incomplete
                             ? Localize("LOCPlayAch_Overview_Incomplete")
                             : null;
+                case ShowcasePieMode.Rarity:
+                case ShowcasePieMode.Trophy:
+                    return key;
                 default:
                     return null;
             }
