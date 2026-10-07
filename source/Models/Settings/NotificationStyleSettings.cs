@@ -201,6 +201,7 @@ namespace PlayniteAchievements.Models.Settings
         private ToastMotion? _exitMotion;
         private ToastMotionFeel? _motionFeel;
         private ToastMotionSpeed? _motionSpeed;
+        private ToastScreenCorner? _position;
         private FrameVignetteStyle _frameVignette = FrameVignetteStyle.Full;
         private double? _frameVignetteStrength;
         private List<string> _lineOrder;
@@ -466,6 +467,18 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _motionSpeed;
             set => SetValue(ref _motionSpeed, value);
+        }
+
+        /// <summary>
+        /// Where the toast appears, or null to follow the global position setting. Toast surface
+        /// only. Read from the global, provider or game style like the motion fields; kind styles
+        /// never change it, because a stack sits in one place. Wins over a theme's position
+        /// resource.
+        /// </summary>
+        public ToastScreenCorner? Position
+        {
+            get => _position;
+            set => SetValue(ref _position, value);
         }
 
         /// <summary>
@@ -914,6 +927,7 @@ namespace PlayniteAchievements.Models.Settings
                 ExitMotion = ExitMotion,
                 MotionFeel = MotionFeel,
                 MotionSpeed = MotionSpeed,
+                Position = Position,
                 FrameVignette = FrameVignette,
                 FrameVignetteStrength = FrameVignetteStrength,
                 LineOrder = LineOrder != null ? new List<string>(LineOrder) : null,
