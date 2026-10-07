@@ -104,6 +104,33 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
+        public void ScoreTotalRows_FlagSoftcoreUnlocksByCategoryType()
+        {
+            WithSeededDb(db =>
+            {
+                const string retroGameId = "44444444-4444-4444-4444-444444444444";
+                Exec(db, $"INSERT INTO Games (Id, ProviderKey, PlayniteGameId, GameName) VALUES (500, 'RetroAchievements', '{retroGameId}', 'Retro');");
+                Exec(db, $"INSERT INTO UserGameProgress (Id, UserId, GameId, CacheKey, HasAchievements, LastUpdatedUtc) VALUES (1500, 1, 500, '{retroGameId}', 1, '2026-07-05T00:00:00Z');");
+                Exec(db, "INSERT INTO AchievementDefinitions (Id, GameId, ApiName, Points, CategoryType) VALUES (501, 500, 'r1', 10, 'Base|Hardcore');");
+                Exec(db, "INSERT INTO AchievementDefinitions (Id, GameId, ApiName, Points, CategoryType) VALUES (502, 500, 'r2', 25, 'Base|Progression|Softcore');");
+                Exec(db, "INSERT INTO AchievementDefinitions (Id, GameId, ApiName, Points, CategoryType) VALUES (503, 500, 'r3', 5, NULL);");
+                Exec(db, "INSERT INTO AchievementDefinitions (Id, GameId, ApiName, Points, CategoryType) VALUES (504, 500, 'r4', 7, 'Softcorex');");
+                Exec(db, "INSERT INTO UserAchievements (Id, UserGameProgressId, AchievementDefinitionId, Unlocked) VALUES (501, 1500, 501, 1);");
+                Exec(db, "INSERT INTO UserAchievements (Id, UserGameProgressId, AchievementDefinitionId, Unlocked) VALUES (502, 1500, 502, 1);");
+                Exec(db, "INSERT INTO UserAchievements (Id, UserGameProgressId, AchievementDefinitionId, Unlocked) VALUES (503, 1500, 503, 1);");
+                Exec(db, "INSERT INTO UserAchievements (Id, UserGameProgressId, AchievementDefinitionId, Unlocked) VALUES (504, 1500, 504, 1);");
+
+                var rows = db.Load<ScoreTestRow>(BuildScoreTotalsSql(unlockedOnly: true))
+                    .Where(r => r.CacheKey == retroGameId)
+                    .ToList();
+
+                Assert.AreEqual(4, rows.Count);
+                Assert.AreEqual(47, rows.Sum(r => r.Points ?? 0));
+                Assert.AreEqual(22, rows.Where(r => r.IsSoftcore == 0).Sum(r => r.Points ?? 0));
+            });
+        }
+
+        [TestMethod]
         public void FilterMirror_ReplaceSemanticsAndUniqueDedupe()
         {
             WithSeededDb(db =>
@@ -241,6 +268,8 @@ namespace PlayniteAchievements.SqlNado.Tests
                 "Each anti-join must test the filter flags, not merely the row's presence.");
             // The user-editable fields aggregates read must resolve the override first.
             StringAssert.Contains(reader, "COALESCE(aov.Points, ad.Points) AS Points");
+            // Platform scores drop RetroAchievements softcore unlocks by the derived CategoryType token.
+            StringAssert.Contains(reader, "CASE WHEN ('|' || COALESCE(ad.CategoryType, '') || '|') LIKE '%|Softcore|%'");
             StringAssert.Contains(reader, "LOWER(COALESCE(aov.TrophyType, ad.TrophyType, ''))");
             // Rarity stays provider-owned; an override must never reach it.
             Assert.AreEqual(
@@ -790,7 +819,9 @@ namespace PlayniteAchievements.SqlNado.Tests
                 SELECT
                     lp.CacheKey AS CacheKey,
                     ad.Rarity AS Rarity,
-                    COALESCE(aov.Points, ad.Points) AS Points
+                    COALESCE(aov.Points, ad.Points) AS Points,
+                    CASE WHEN ('|' || COALESCE(ad.CategoryType, '') || '|') LIKE '%|Softcore|%'
+                         THEN 1 ELSE 0 END AS IsSoftcore
                 FROM LatestProgress lp
                 INNER JOIN AchievementDefinitions ad ON ad.GameId = lp.GameId
                 LEFT JOIN AchievementOverrides aov
@@ -847,6 +878,7 @@ namespace PlayniteAchievements.SqlNado.Tests
             public string CacheKey { get; set; }
             public string Rarity { get; set; }
             public int? Points { get; set; }
+            public long IsSoftcore { get; set; }
         }
 
         private sealed class FilterTestRow
