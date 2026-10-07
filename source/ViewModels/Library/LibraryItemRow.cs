@@ -129,6 +129,8 @@ namespace PlayniteAchievements.ViewModels.Library
     {
         private string _thumbnailPath;
         private WorkshopItem _indexItem;
+        private string _publishedItemId;
+        private WorkshopItem _publishedItem;
 
         public LibraryItemRow(LibraryItem item, string filePath, IReadOnlyList<LibraryUseRow> uses, IReadOnlyList<Brush> swatches)
         {
@@ -221,6 +223,39 @@ namespace PlayniteAchievements.ViewModels.Library
         public bool CanUpdate => HasUpdate || HasFollowerUpdate;
 
         public bool CanReinstall => IsWorkshop && _indexItem != null;
+
+        /// <summary>The Workshop id this install published the item as, or null.</summary>
+        public string PublishedItemId => _publishedItemId;
+
+        /// <summary>The index entry of <see cref="PublishedItemId"/>, once the index is read.</summary>
+        public WorkshopItem PublishedItem => _publishedItem;
+
+        /// <summary>True when this install published the item to the Workshop.</summary>
+        public bool IsMine => !string.IsNullOrEmpty(_publishedItemId);
+
+        /// <summary>The published item's folder on GitHub, or null until the index names it.</summary>
+        public string PublishedUrl => _publishedItem?.Urls?.Folder;
+
+        public bool HasPublishedUrl => !string.IsNullOrWhiteSpace(PublishedUrl);
+
+        /// <summary>Sets what the item is published as: its Workshop id and that id's index entry, when read.</summary>
+        public void SetPublished(string itemId, WorkshopItem indexItem)
+        {
+            itemId = string.IsNullOrWhiteSpace(itemId) ? null : itemId;
+            indexItem = itemId == null ? null : indexItem;
+            if (string.Equals(_publishedItemId, itemId, StringComparison.Ordinal) && ReferenceEquals(_publishedItem, indexItem))
+            {
+                return;
+            }
+
+            _publishedItemId = itemId;
+            _publishedItem = indexItem;
+            OnPropertyChanged(nameof(PublishedItemId));
+            OnPropertyChanged(nameof(PublishedItem));
+            OnPropertyChanged(nameof(IsMine));
+            OnPropertyChanged(nameof(PublishedUrl));
+            OnPropertyChanged(nameof(HasPublishedUrl));
+        }
 
         public string SearchText => (Name + " " + Author + " " + KindLabel).ToLowerInvariant();
 
