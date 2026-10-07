@@ -206,6 +206,7 @@ namespace PlayniteAchievements.Services.Sound
                 catch
                 {
                     PortablePackage.TryDeleteDirectory(packDirectory);
+                    EmptyFolders.RemoveUpTo(_managedRoot, _managedRoot);
                     throw;
                 }
 
@@ -260,6 +261,7 @@ namespace PlayniteAchievements.Services.Sound
             catch
             {
                 PortablePackage.TryDeleteDirectory(packDirectory);
+                EmptyFolders.RemoveUpTo(_managedRoot, _managedRoot);
                 throw;
             }
         }
@@ -361,6 +363,9 @@ namespace PlayniteAchievements.Services.Sound
 
                 PortablePackage.TryDeleteDirectory(directory);
             }
+
+            // The folder exists only while a pack points into it; the next import creates it again.
+            EmptyFolders.RemoveUpTo(_managedRoot, _managedRoot);
         }
 
         /// <summary>True when the path points into this store's managed folder.</summary>
