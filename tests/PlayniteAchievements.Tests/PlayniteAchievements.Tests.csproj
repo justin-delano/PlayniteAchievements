@@ -171,6 +171,12 @@
     <Compile Include="..\..\source\Services\Images\ImageFormats.cs" Link="Source\Services\Images\ImageFormats.cs" />
     <Compile Include="..\..\source\Services\Images\WebpAnimationInfo.cs" Link="Source\Services\Images\WebpAnimationInfo.cs" />
     <Compile Include="..\..\source\Services\Images\WebpCodecProbe.cs" Link="Source\Services\Images\WebpCodecProbe.cs" />
+    <Compile Include="..\..\source\Services\Images\WebmCodecProbe.cs" Link="Source\Services\Images\WebmCodecProbe.cs" />
+    <Compile Include="..\..\source\Services\Images\Webm\WebmContainer.cs" Link="Source\Services\Images\Webm\WebmContainer.cs" />
+    <Compile Include="..\..\source\Services\Images\Webm\WebmVideoDecoder.cs" Link="Source\Services\Images\Webm\WebmVideoDecoder.cs" />
+    <Compile Include="..\..\source\Services\Images\Webm\WebmFrameDecoder.cs" Link="Source\Services\Images\Webm\WebmFrameDecoder.cs" />
+    <Compile Include="..\..\source\Services\Images\Webm\WebmStill.cs" Link="Source\Services\Images\Webm\WebmStill.cs" />
+    <Compile Include="..\..\source\Services\Capture\MediaFoundationRuntime.cs" Link="Source\Services\Capture\MediaFoundationRuntime.cs" />
     <Compile Include="..\..\source\Services\Images\MemoryImageService.cs" Link="Source\Services\Images\MemoryImageService.cs" />
     <Compile Include="..\..\source\Services\Images\RayTrack.cs" Link="Source\Services\Images\RayTrack.cs" />
     <Compile Include="..\..\source\Services\Images\RayTrackBuilder.cs" Link="Source\Services\Images\RayTrackBuilder.cs" />
@@ -181,6 +187,8 @@
     <Compile Include="..\..\source\Views\Helpers\Gif\GifImage.cs" Link="Source\Views\Helpers\Gif\GifImage.cs" />
     <Compile Include="..\..\source\Views\Helpers\Gif\GifLzwDecoder.cs" Link="Source\Views\Helpers\Gif\GifLzwDecoder.cs" />
     <Compile Include="..\..\source\Views\Helpers\Gif\GifPlayer.cs" Link="Source\Views\Helpers\Gif\GifPlayer.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\IFrameCanvas.cs" Link="Source\Views\Helpers\Gif\IFrameCanvas.cs" />
+    <Compile Include="..\..\source\Views\Helpers\Gif\WebmCanvas.cs" Link="Source\Views\Helpers\Gif\WebmCanvas.cs" />
     <Compile Include="..\..\source\Views\Helpers\NativeGifAnimation.cs" Link="Source\Views\Helpers\NativeGifAnimation.cs" />
     <Compile Include="..\..\source\Views\Helpers\SliderTrackValueMath.cs" Link="Source\Views\Helpers\SliderTrackValueMath.cs" />
     <Compile Include="..\..\source\Views\Helpers\SharedResourceDictionary.cs" Link="Source\Views\Helpers\SharedResourceDictionary.cs" />
@@ -677,6 +685,14 @@
       <HintPath>..\..\source\packages\SQLNado.dll</HintPath>
       <Private>true</Private>
     </Reference>
+    <Reference Include="SharpDX">
+      <HintPath>..\..\source\packages\SharpDX.4.2.0\lib\net45\SharpDX.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="SharpDX.MediaFoundation">
+      <HintPath>..\..\source\packages\SharpDX.MediaFoundation.4.2.0\lib\net45\SharpDX.MediaFoundation.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -690,6 +706,9 @@
 
   <ItemGroup>
     <None Include="Fixtures\Steam\*.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Fixtures\Webm\*.webm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="..\..\source\Resources\UnlockedAchIcon.png" Link="Resources\UnlockedAchIcon.png">
