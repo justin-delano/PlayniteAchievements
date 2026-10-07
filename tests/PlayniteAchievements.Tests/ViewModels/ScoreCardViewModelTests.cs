@@ -185,14 +185,16 @@ namespace PlayniteAchievements.Tests.ViewModels
             Assert.AreEqual(4, snapshot.LevelsCompletedInRank);
             Assert.AreEqual(snapshot.LevelsInRank, card.Segments.Count);
 
+            var completedFill = card.Segments[0].Fill;
+            Assert.AreEqual(SolidColor(card.AccentBrush), GlossColor(completedFill));
             for (var i = 0; i < snapshot.LevelsCompletedInRank; i++)
             {
-                Assert.AreSame(card.AccentBrush, card.Segments[i].Fill, $"segment {i}");
+                Assert.AreSame(completedFill, card.Segments[i].Fill, $"segment {i}");
             }
 
             Assert.IsInstanceOfType(
                 card.Segments[snapshot.LevelsCompletedInRank].Fill,
-                typeof(LinearGradientBrush));
+                typeof(DrawingBrush));
 
             for (var i = snapshot.LevelsCompletedInRank + 1; i < card.Segments.Count; i++)
             {
@@ -254,8 +256,8 @@ namespace PlayniteAchievements.Tests.ViewModels
                 card.ApplyFromScore(PassLength, useUniformRarityBadges: false);
 
                 Assert.AreEqual("ScoreBadgeCompletedGame", card.BadgeIconKey);
-                var first = SolidColor(card.Segments[0].Fill);
-                var beforeLast = SolidColor(card.Segments[card.Segments.Count - 2].Fill);
+                var first = GlossColor(card.Segments[0].Fill);
+                var beforeLast = GlossColor(card.Segments[card.Segments.Count - 2].Fill);
                 Assert.IsTrue(first.R > first.B, "first segment leans to the start color");
                 Assert.IsTrue(beforeLast.B > beforeLast.R, "late segments lean to the end color");
             }
@@ -289,6 +291,13 @@ namespace PlayniteAchievements.Tests.ViewModels
         {
             Assert.IsInstanceOfType(brush, typeof(SolidColorBrush));
             return ((SolidColorBrush)brush).Color;
+        }
+
+        /// <summary>The accent a glossed segment is built around, at the middle of its gradient.</summary>
+        private static Color GlossColor(Brush brush)
+        {
+            Assert.IsInstanceOfType(brush, typeof(LinearGradientBrush));
+            return ((LinearGradientBrush)brush).GradientStops.Single(stop => stop.Offset == 0.55).Color;
         }
     }
 }
