@@ -858,7 +858,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     }
                 }
 
-                var normalizedCategoryTypes = AchievementCategoryTypeHelper.Combine(categoryTypes);
+                var normalizedCategoryTypes = AchievementCategoryTypeHelper.StripDerivedTypes(AchievementCategoryTypeHelper.Combine(categoryTypes));
                 if (!string.IsNullOrWhiteSpace(normalizedCategoryTypes))
                 {
                     categoryTypeOverrides[apiName] = normalizedCategoryTypes;
@@ -931,7 +931,8 @@ namespace PlayniteAchievements.Services.GameCustomData
             foreach (var pair in values)
             {
                 var apiName = NormalizeString(pair.Key);
-                var categoryType = AchievementCategoryTypeHelper.Normalize(pair.Value);
+                // Softcore/Hardcore come only from RetroAchievements refreshes, never an override.
+                var categoryType = AchievementCategoryTypeHelper.StripDerivedTypes(pair.Value);
                 if (string.IsNullOrWhiteSpace(apiName) || string.IsNullOrWhiteSpace(categoryType))
                 {
                     continue;
@@ -1004,7 +1005,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     Category = !string.IsNullOrWhiteSpace(category)
                         ? CategoryPathHelper.NormalizePath(category)
                         : null,
-                    CategoryType = AchievementCategoryTypeHelper.Normalize(pair.Value.CategoryType),
+                    CategoryType = AchievementCategoryTypeHelper.StripDerivedTypes(pair.Value.CategoryType),
                     Note = AchievementNoteHelper.NormalizeNote(pair.Value.Note),
                     UnlockedIconPath = NormalizeString(pair.Value.UnlockedIconPath),
                     LockedIconPath = NormalizeString(pair.Value.LockedIconPath),
@@ -1513,7 +1514,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     Points = NormalizeNonNegativeInt(definition.Points),
                     ScaledPoints = NormalizeNonNegativeInt(definition.ScaledPoints),
                     Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(definition.Category),
-                    CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(definition.CategoryType),
+                    CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(AchievementCategoryTypeHelper.StripDerivedTypes(definition.CategoryType)),
                     TrophyType = NormalizeTrophyType(definition.TrophyType),
                     Hidden = definition.Hidden,
                     IsAutoCapstone = definition.IsAutoCapstone,
