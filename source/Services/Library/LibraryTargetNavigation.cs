@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Services.Library
         public Guid GameId { get; private set; }
 
         /// <summary>The surface of a game's scope, for <see cref="LibraryTargetDestination.ManageAchievements"/>.</summary>
-        public bool IsFrame { get; private set; }
+        public NotificationSurface Surface { get; private set; }
 
         /// <summary>The page, for <see cref="LibraryTargetDestination.Showcase"/>.</summary>
         public string ShowcasePageId { get; private set; }
@@ -56,30 +56,14 @@ namespace PlayniteAchievements.Services.Library
                 return ForSettings(new SettingsNavigationRequest(SettingsNavigationRequest.DisplayTab, SettingsNavigationRequest.ColorsPage));
             }
 
-            if (string.Equals(targetKey, LibraryTargetKeys.Sounds, StringComparison.OrdinalIgnoreCase))
+            if (LibraryTargetKeys.TryParseSoundsScope(targetKey, out var soundsProviderKey, out var soundsGameId))
             {
-                return ForSettings(new SettingsNavigationRequest(SettingsNavigationRequest.NotificationsTab, SettingsNavigationRequest.BehaviorPage)
-                {
-                    ShowSounds = true
-                });
+                return ForStyles(NotificationSurface.Sounds, soundsProviderKey, soundsGameId);
             }
 
             if (LibraryTargetKeys.TryParseNotificationScope(targetKey, out var isFrame, out var providerKey, out var gameId))
             {
-                if (gameId != Guid.Empty)
-                {
-                    return new LibraryTargetNavigation(LibraryTargetDestination.ManageAchievements)
-                    {
-                        GameId = gameId,
-                        IsFrame = isFrame
-                    };
-                }
-
-                return ForSettings(new SettingsNavigationRequest(SettingsNavigationRequest.NotificationsTab, SettingsNavigationRequest.AppearancePage)
-                {
-                    ProviderKey = providerKey,
-                    IsFrame = isFrame
-                });
+                return ForStyles(isFrame ? NotificationSurface.Frame : NotificationSurface.Toast, providerKey, gameId);
             }
 
             if (LibraryTargetKeys.TryGetShowcasePageId(targetKey, out var pageId))
@@ -88,6 +72,25 @@ namespace PlayniteAchievements.Services.Library
             }
 
             return None;
+        }
+
+        /// <summary>A surface of a scope: a game's in its Manage Achievements, else the Styles page on the platform.</summary>
+        private static LibraryTargetNavigation ForStyles(NotificationSurface surface, string providerKey, Guid gameId)
+        {
+            if (gameId != Guid.Empty)
+            {
+                return new LibraryTargetNavigation(LibraryTargetDestination.ManageAchievements)
+                {
+                    GameId = gameId,
+                    Surface = surface
+                };
+            }
+
+            return ForSettings(new SettingsNavigationRequest(SettingsNavigationRequest.NotificationsTab, SettingsNavigationRequest.AppearancePage)
+            {
+                ProviderKey = providerKey,
+                Surface = surface
+            });
         }
 
         private static LibraryTargetNavigation ForSettings(SettingsNavigationRequest request)
