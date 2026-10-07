@@ -21,14 +21,14 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly ShowcaseWidgetInstanceSettings _sourceWidget;
         private readonly ShowcaseWidgetInstanceSettings _workingWidget;
         private readonly ShowcaseProfileSettings _workingProfile;
-        private readonly bool _showControlBarOption;
+        private readonly bool _linked;
         private TextBox _titleBox;
         private ShowcaseProfileSettingsEditor _profileEditor;
 
-        private ShowcaseWidgetSettingsDialog(ShowcaseWidgetInstanceSettings widget, bool showControlBarOption)
+        private ShowcaseWidgetSettingsDialog(ShowcaseWidgetInstanceSettings widget, bool linked)
         {
             _sourceWidget = widget ?? throw new ArgumentNullException(nameof(widget));
-            _showControlBarOption = showControlBarOption;
+            _linked = linked;
             _workingWidget = widget.Clone();
             _workingProfile = (widget.Profile ?? new ShowcaseProfileSettings()).Clone();
             Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -45,15 +45,18 @@ namespace PlayniteAchievements.Views.Showcase
 
         public bool Saved { get; private set; }
 
-        /// <param name="showControlBarOption">False for widgets whose host supplies their filters.</param>
-        public static bool Show(ShowcaseWidgetInstanceSettings widget, bool showControlBarOption = true)
+        /// <param name="linked">
+        /// True for a widget linked to the overview: its filters and its title come from the
+        /// overview's selections, so neither a control bar option nor a title field is offered.
+        /// </param>
+        public static bool Show(ShowcaseWidgetInstanceSettings widget, bool linked = false)
         {
             if (widget == null)
             {
                 return false;
             }
 
-            var editor = new ShowcaseWidgetSettingsDialog(widget, showControlBarOption);
+            var editor = new ShowcaseWidgetSettingsDialog(widget, linked);
             var title = string.Format(
                 FormattingCulture.Current,
                 Localize("LOCPlayAch_Showcase_WidgetSettingsTitle"),
@@ -103,10 +106,13 @@ namespace PlayniteAchievements.Views.Showcase
             scroll.Content = panel;
             root.Children.Add(scroll);
 
-            _titleBox = ShowcaseProfileSettingsEditor.AddTextBox(
-                panel,
-                Localize("LOCPlayAch_Showcase_CustomTitle"),
-                _workingWidget.CustomTitle);
+            if (!_linked)
+            {
+                _titleBox = ShowcaseProfileSettingsEditor.AddTextBox(
+                    panel,
+                    Localize("LOCPlayAch_Showcase_CustomTitle"),
+                    _workingWidget.CustomTitle);
+            }
 
             if (_workingWidget.Kind == ShowcaseWidgetKind.Profile)
             {
@@ -122,7 +128,7 @@ namespace PlayniteAchievements.Views.Showcase
                     publishChanges: false,
                     margin: new Thickness(0),
                     loadStyles: false,
-                    showControlBarOption: _showControlBarOption));
+                    showControlBarOption: !_linked));
             }
 
             var buttons = new StackPanel
@@ -154,7 +160,10 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            _sourceWidget.CustomTitle = _titleBox.Text?.Trim();
+            if (_titleBox != null)
+            {
+                _sourceWidget.CustomTitle = _titleBox.Text?.Trim();
+            }
             _sourceWidget.Options = new Dictionary<string, string>(
                 _workingWidget.Options ?? new Dictionary<string, string>(),
                 StringComparer.OrdinalIgnoreCase);
