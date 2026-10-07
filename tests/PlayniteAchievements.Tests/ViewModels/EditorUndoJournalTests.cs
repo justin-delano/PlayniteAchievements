@@ -457,6 +457,35 @@ namespace PlayniteAchievements.Tests.ViewModels
             Assert.AreEqual(0, offenders.Count, "A step must hold only plain data: " + string.Join(", ", offenders));
         }
 
+        [TestMethod]
+        public void ARecordStep_CarriesTheArtItOverwrote()
+        {
+            var import = EditorEditIntent.Command("ImportCsv", "LOCPlayAch_Common_Import");
+            var journal = new EditorUndoJournal();
+            journal.Record(Order("a"), Order("b"), true, true, import, new[] { "one" });
+            journal.RecordArtRestore("one", "UnlockedIconPath", "old-copy.png", "new-copy.png");
+            journal.CommitOpenStep();
+
+            var entry = journal.Undo();
+
+            Assert.IsFalse(entry.IsRowValueStep, "The art rides along; the step is still undone by its record.");
+            Assert.AreEqual(1, entry.Facets.Count);
+            var restore = entry.ArtRestores.Single();
+            Assert.AreEqual("one", restore.ApiName);
+            Assert.AreEqual("old-copy.png", restore.OldValue);
+            Assert.AreEqual("new-copy.png", restore.NewValue);
+        }
+
+        [TestMethod]
+        public void AnArtRestore_WithoutAnOpenStep_IsIgnored()
+        {
+            var journal = new EditorUndoJournal();
+            journal.RecordArtRestore("one", "UnlockedIconPath", "old.png", "new.png");
+            journal.CommitOpenStep();
+
+            Assert.IsFalse(journal.CanUndo);
+        }
+
         private static GameCustomDataFile Order(params string[] apiNames)
         {
             return new GameCustomDataFile { AchievementOrder = new List<string>(apiNames) };
