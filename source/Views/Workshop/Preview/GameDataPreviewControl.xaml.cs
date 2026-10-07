@@ -19,54 +19,17 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.Views.Workshop.Preview
 {
-    /// <summary>One package entry of a package-only game data preview, with what the row template shows precomputed.</summary>
-    public sealed class GameDataPreviewRow
-    {
-        // IcoFont glyph from Playnite's shipped icofont.ttf: plus.
-        private const string AddedGlyph = "";
-
-        public GameDataPreviewRow(AchievementPreviewRow row)
-        {
-            Row = row ?? throw new ArgumentNullException(nameof(row));
-            BadgeGlyph = row.Changes.HasFlag(AchievementPreviewChange.Added) ? AddedGlyph : null;
-            IsCapstone = row.After?.IsCapstone == true;
-            CategoryText = AchievementCategoryTypeHelper.ToCategoryLabelCellText(row.After?.Category);
-            CategoryPathText = AchievementCategoryTypeHelper.ToCategoryLabelCellPathText(row.After?.Category);
-        }
-
-        public AchievementPreviewRow Row { get; }
-
-        public AchievementPreviewState After => Row.After;
-
-        public string BadgeGlyph { get; }
-
-        public bool HasBadge => BadgeGlyph != null;
-
-        public bool IsCapstone { get; }
-
-        public string CategoryText { get; }
-
-        /// <summary>The full category path, for the tooltip of a nested category.</summary>
-        public string CategoryPathText { get; }
-    }
-
     /// <summary>
     /// A previewed game data package (<see cref="GameCustomDataPreviewModel"/> as the DataContext):
     /// a summary of what it carries and the game it is compared against. Compared against a
     /// library game, the game's achievements show in the achievement grid as View Achievements
     /// shows them: one grid after the install and one as they are now, Before / After showing
-    /// one of the two, changed rows only unless unchanged ones are asked for. Without a game, the package's own entries are listed.
+    /// one of the two, changed rows only unless unchanged ones are asked for. Without a game, the
+    /// package's own entries show in the same grid, with the columns none of them fills hidden.
     /// <see cref="MaxRows"/> caps either with an "and N more" line.
     /// </summary>
     public partial class GameDataPreviewControl : UserControl
     {
-        /// <summary>The fixed height of one package entry row; the list never measures row content.</summary>
-        public static readonly double RowHeight = 60;
-
-        public static readonly GridLength BadgeColumnWidth = new GridLength(24);
-
-        public static readonly GridLength CategoryColumnWidth = new GridLength(160);
-
         /// <summary>The grid's height cap: none, so it takes the space it is given.</summary>
         public static readonly double UnboundedHeight = double.PositiveInfinity;
 
@@ -111,15 +74,23 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             nameof(NeutralRender), typeof(bool), typeof(GameDataPreviewControl),
             new PropertyMetadata(false, (d, e) => ((GameDataPreviewControl)d).Rebuild()));
 
+        // Columns a package's own entries can leave empty; the live grid hides each one none fills.
+        private static readonly string[] PackageOptionalColumns =
+        {
+            "CategoryType", "CategoryLabel", "CategoryIcon", "Note", "Trophy", "Points", "Rarity", "RarityTier",
+            "RarityPercent", "UnlockDate", "CollectionScore", "PrestigeScore"
+        };
+
         private GameCustomDataPreviewDiff _diff;
-        private List<GameDataPreviewRow> _rows = new List<GameDataPreviewRow>();
-        private HashSet<GameDataPreviewRow> _shown = new HashSet<GameDataPreviewRow>();
-        private ICollectionView _view;
+
+        // What the grid shows after the install: the game's data, or the package's own entries.
+        private GameAchievementData _afterData;
         private HashSet<string> _changedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private List<AchievementDisplayItem> _afterItems;
         private List<AchievementDisplayItem> _beforeItems;
         private List<AchievementDisplayItem> _shownItems = new List<AchievementDisplayItem>();
         private Style _neutralHeaderStyle;
+        private DataTemplate _defaultStatusTemplate;
 
         public GameDataPreviewControl()
         {
@@ -318,7 +289,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             }
         }
 
-        /// <summary>Whether <paramref name="item"/> shows anything in the published image's column <paramref name="key"/>.</summary>
+        /// <summary>Whether <paramref name="item"/> shows anything in the column <paramref name="key"/>.</summary>
         private static bool HasNeutralCellValue(string key, AchievementDisplayItem item)
         {
             switch (key)
@@ -326,18 +297,55 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 case "CategoryType":
                     return !string.IsNullOrWhiteSpace(item.CategoryTypeDisplay);
                 case "CategoryLabel":
+                case "CategoryIcon":
                     return !string.IsNullOrWhiteSpace(item.CategoryLabelDisplay);
+                case "Note":
+                    return item.HasAchievementNote;
                 case "Trophy":
                     return item.HasTrophyType;
                 case "Points":
                     return !string.IsNullOrWhiteSpace(item.PointsTextResolved);
                 case "Rarity":
+                case "RarityTier":
+                case "RarityPercent":
                     // An achievement without rarity data reads as Common; a grid of those alone
                     // says nothing.
                     return item.HasRarityPercent || item.Rarity != RarityTier.Common;
+                case "UnlockDate":
+                case "CollectionScore":
+                case "PrestigeScore":
+                    // A package carries no progress.
+                    return false;
                 default:
                     return true;
             }
+        }
+
+        /// <summary>
+        /// The package's own entries as achievement data for the grid, shown as published: a
+        /// package carries no progress, so no entry is masked as locked.
+        /// </summary>
+        private static GameAchievementData BuildPackageData(GameCustomDataPreviewDiff diff)
+        {
+            var achievements = diff.Rows
+                .Where(row => row?.After != null)
+                .Select(row => new AchievementDetail
+                {
+                    ApiName = row.ApiName,
+                    DisplayName = row.After.DisplayName,
+                    Description = row.After.Description,
+                    UnlockedIconPath = row.After.UnlockedIcon as string,
+                    LockedIconPath = row.After.LockedIcon as string,
+                    Category = row.After.Category,
+                    CategoryType = row.After.CategoryType,
+                    IsCapstone = row.After.IsCapstone,
+                    IsGoal = row.After.IsGoal,
+                    AchievementNote = row.After.Note,
+                    IsCustom = row.After.IsCustom,
+                    Unlocked = true
+                })
+                .ToList();
+            return new GameAchievementData { Achievements = achievements };
         }
 
         private static void ApplyPreloadedIcons(DependencyObject parent, IReadOnlyDictionary<string, ImageSource> images)
@@ -365,9 +373,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             var diff = _diff;
             if (diff == null)
             {
-                _rows = new List<GameDataPreviewRow>();
-                RowList.ItemsSource = null;
-                _view = null;
+                _afterData = null;
                 _shownItems = new List<AchievementDisplayItem>();
                 AfterGrid.ItemsSource = null;
                 BeforeGrid.ItemsSource = null;
@@ -376,7 +382,6 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 GameText.Visibility = Visibility.Collapsed;
                 KeptEditsText.Visibility = Visibility.Collapsed;
                 ComparisonOptions.Visibility = Visibility.Collapsed;
-                RowList.Visibility = Visibility.Collapsed;
                 AfterGrid.Visibility = Visibility.Collapsed;
                 BeforeGrid.Visibility = Visibility.Collapsed;
                 MoreRowsText.Visibility = Visibility.Collapsed;
@@ -406,53 +411,34 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 : string.Empty;
 
             var compared = diff.AfterData != null;
+            _afterData = compared ? diff.AfterData : BuildPackageData(diff);
             ComparisonOptions.Visibility = compared && !NeutralRender ? Visibility.Visible : Visibility.Collapsed;
             BeforeButton.Visibility = diff.BeforeData != null ? Visibility.Visible : Visibility.Collapsed;
             AfterButton.Visibility = BeforeButton.Visibility;
-            RowList.Visibility = compared ? Visibility.Collapsed : Visibility.Visible;
 
-            if (compared)
+            // The published image lists what the package touches in its after-install state;
+            // shared from the game it was made on, the install itself changes nothing there.
+            // Without a game, every row is one of the package's own entries.
+            _changedApiNames = new HashSet<string>(
+                NeutralRender && compared
+                    ? diff.PackageTouchedApiNames
+                    : diff.Rows.Select(row => row?.ApiName).Where(apiName => apiName != null),
+                StringComparer.OrdinalIgnoreCase);
+            ConfigureGrid(AfterGrid, packageOnly: !compared);
+            if (!NeutralRender && diff.BeforeData != null)
             {
-                // The published image lists what the package touches in its after-install state;
-                // shared from the game it was made on, the install itself changes nothing there.
-                _changedApiNames = new HashSet<string>(
-                    NeutralRender
-                        ? diff.PackageTouchedApiNames
-                        : diff.Rows.Select(row => row?.ApiName).Where(apiName => apiName != null),
-                    StringComparer.OrdinalIgnoreCase);
-                ConfigureGrid(AfterGrid);
-                if (!NeutralRender)
-                {
-                    ConfigureGrid(BeforeGrid);
-                }
-                _rows = new List<GameDataPreviewRow>();
-                _view = null;
-                RowList.ItemsSource = null;
-            }
-            else
-            {
-                _rows = diff.Rows
-                    .Where(row => row?.After != null)
-                    .Select(row => new GameDataPreviewRow(row))
-                    .ToList();
-                _view = CollectionViewSource.GetDefaultView(_rows);
-                _view.Filter = item => item is GameDataPreviewRow row && _shown.Contains(row);
-                _shownItems = new List<AchievementDisplayItem>();
-                AfterGrid.ItemsSource = null;
-                BeforeGrid.ItemsSource = null;
-                AfterGrid.Visibility = Visibility.Collapsed;
-                BeforeGrid.Visibility = Visibility.Collapsed;
+                ConfigureGrid(BeforeGrid, packageOnly: false);
             }
 
             RefreshRows();
-            if (!compared)
-            {
-                RowList.ItemsSource = _view;
-            }
         }
 
-        /// <summary>Settings and columns of a grid for the live dialog or the published image.</summary>
-        private void ConfigureGrid(AchievementDataGridControl grid)
+        /// <summary>
+        /// Settings and columns of a grid for the live dialog or the published image. A grid of
+        /// the package's own entries (<paramref name="packageOnly"/>) shows the capstone badge in
+        /// its status cell, as the published image does, since the entries carry no progress.
+        /// </summary>
+        private void ConfigureGrid(AchievementDataGridControl grid, bool packageOnly)
         {
             if (NeutralRender)
             {
@@ -526,6 +512,27 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             grid.ColorRarityColumnsByRarity = persisted?.ViewAchievementsAchievementGridColorRarityColumnsByRarity ?? false;
             grid.FixedRowHeight = persisted?.SingleGameGridRowHeight;
             grid.ShowColumnHeaders = persisted?.ShowViewAchievementsAchievementGridColumnHeaders ?? true;
+
+            grid.ApplyTemplate();
+            var liveStatusColumn = grid.AchievementsDataGrid?.Columns
+                .OfType<DataGridTemplateColumn>()
+                .FirstOrDefault(column => string.Equals(ColumnVisibilityHelper.GetColumnKey(column), "Status", StringComparison.OrdinalIgnoreCase));
+            if (liveStatusColumn != null)
+            {
+                if (_defaultStatusTemplate == null)
+                {
+                    _defaultStatusTemplate = liveStatusColumn.CellTemplate;
+                }
+
+                liveStatusColumn.CellTemplate = packageOnly
+                    ? (DataTemplate)FindResource("NeutralStatusTemplate")
+                    : _defaultStatusTemplate;
+            }
+
+            if (!packageOnly)
+            {
+                grid.HiddenColumnKeys = null;
+            }
         }
 
         private void RefreshRows()
@@ -537,7 +544,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 return;
             }
 
-            var hidden = diff.AfterData != null ? RefreshGrid(diff) : RefreshList();
+            var hidden = RefreshGrid(diff);
             MoreRowsText.Visibility = hidden > 0 ? Visibility.Visible : Visibility.Collapsed;
             MoreRowsText.Text = hidden > 0
                 ? string.Format(
@@ -545,20 +552,6 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                     ResourceProvider.GetString("LOCPlayAch_Workshop_Preview_MoreRows"),
                     hidden.ToString("N0", FormattingCulture.Current))
                 : string.Empty;
-        }
-
-        /// <summary>Shows the package entries up to <see cref="MaxRows"/>; returns how many are left out.</summary>
-        private int RefreshList()
-        {
-            if (_view == null)
-            {
-                return 0;
-            }
-
-            var limit = MaxRows > 0 ? Math.Min(MaxRows, _rows.Count) : _rows.Count;
-            _shown = new HashSet<GameDataPreviewRow>(_rows.Take(limit));
-            _view.Refresh();
-            return _rows.Count - limit;
         }
 
         /// <summary>
@@ -575,7 +568,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             BeforeGrid.Visibility = showBefore ? Visibility.Visible : Visibility.Collapsed;
             var items = showBefore
                 ? _beforeItems ?? (_beforeItems = BuildItems(diff.BeforeData))
-                : _afterItems ?? (_afterItems = BuildItems(diff.AfterData));
+                : _afterItems ?? (_afterItems = BuildItems(_afterData));
 
             var wanted = showUnchanged
                 ? items
@@ -598,6 +591,14 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             if (NeutralRender)
             {
                 ApplyNeutralColumnVisibility(grid.AchievementsDataGrid, _shownItems);
+            }
+            else if (diff.AfterData == null)
+            {
+                // The package's own entries: hide what none of them fills, without touching the
+                // layout the user keeps for this grid.
+                grid.HiddenColumnKeys = PackageOptionalColumns
+                    .Where(key => !items.Any(item => HasNeutralCellValue(key, item)))
+                    .ToList();
             }
 
             return wanted.Count - limit;
