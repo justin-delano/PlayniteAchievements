@@ -114,7 +114,6 @@ namespace PlayniteAchievements.Views.Controls
         private readonly Axis _axisX;
         private readonly Axis _axisY;
         private readonly CartesianChartTooltip _tooltip;
-        private readonly AxisSection _highlight;
 
         public UnlockTimelineChart()
         {
@@ -168,18 +167,10 @@ namespace PlayniteAchievements.Views.Controls
             _tooltip.SetBinding(CartesianChartTooltip.HeaderLabelsProperty, Bind(nameof(TooltipLabels)));
             Chart.DataTooltip = _tooltip;
 
-            // A selected column stands out by the others fading. Stacked columns (the platform
-            // split) cannot be colored per column, so there the selected one gets an outline
-            // instead: a column-wide section with a stroke and no fill.
-            _highlight = new AxisSection
-            {
-                SectionWidth = 1,
-                StrokeThickness = 2,
-                Fill = Brushes.Transparent,
-                Visibility = Visibility.Collapsed
-            };
-            _highlight.SetResourceReference(AxisSection.StrokeProperty, "PlayAch.Brush.Accent");
-            _axisX.Sections.Add(_highlight);
+            // A selected column stands out by the others fading, styled on the drawn bars
+            // themselves so plain and stacked (platform split) columns match and line up exactly.
+            // Every draw can create new bars, so the styling runs again after each one.
+            Chart.UpdaterTick += sender => ApplyHighlight();
             Chart.DataClick += OnChartDataClick;
 
             SizeChanged += OnSizeChanged;
@@ -199,56 +190,61 @@ namespace PlayniteAchievements.Views.Controls
 
         private static void OnHighlightedIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            var chart = (UnlockTimelineChart)d;
-            chart.ApplyHighlight();
-            if (chart.IsLoaded)
-            {
-                chart.Chart.Update(false, true);
-            }
+            ((UnlockTimelineChart)d).ApplyHighlight();
         }
 
-        // Runs again after every data pass, since a pass can replace the series. A column's value
-        // sits at its index with its bar centred there, so the outline starts half a column before.
+        // Each stacked segment of the selected column gets the outline, so the platform split
+        // reads as one outlined column with its segment edges inside.
         private void ApplyHighlight()
         {
             var index = HighlightedIndex;
-            var stacked = false;
+            var outline = index < 0 ? null : TryFindResource("PlayAch.Brush.Text") as Brush;
             foreach (var series in Series ?? new SeriesCollection())
             {
-                if (series is StackedColumnSeries)
+                if (series?.Values == null)
                 {
-                    stacked = true;
                     continue;
                 }
 
-                if (series is ColumnSeries column)
+                foreach (var point in series.Values.GetPoints(series))
                 {
-                    var outline = TryFindResource("PlayAch.Brush.Text") as Brush;
-                    column.StrokeThickness = index < 0 ? 0 : SelectedColumnStroke;
-                    column.Configuration = index < 0
-                        ? null
-                        : LiveCharts.Configurations.Mappers.Xy<int>()
-                            .X((value, i) => i)
-                            .Y(value => value)
-                            .Fill((value, i) => i == index ? null : FadedFill(column))
-                            .Stroke((value, i) => i == index ? outline : Brushes.Transparent);
+                    if (!(BarOf(point?.View) is System.Windows.Shapes.Rectangle bar))
+                    {
+                        continue;
+                    }
+
+                    var selected = (int)Math.Round(point.X) == index;
+                    bar.Opacity = index < 0 || selected ? 1 : UnselectedColumnOpacity;
+                    bar.Stroke = selected ? outline : null;
+                    bar.StrokeThickness = selected ? SelectedColumnStroke : 0;
                 }
             }
-
-            _highlight.Value = Math.Max(0, index) - 0.5;
-            _highlight.Visibility = index >= 0 && stacked ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private static Brush FadedFill(ColumnSeries column)
+        private static System.Reflection.PropertyInfo _barProperty;
+
+        // LiveCharts 0.9.7 draws each column through its internal ColumnPointView, whose public
+        // Rectangle property is the drawn bar; it is reached by reflection since the type is internal.
+        private static object BarOf(object pointView)
         {
-            var brush = (column.Fill as Brush)?.CloneCurrentValue() ?? new SolidColorBrush(Colors.Gray);
-            brush.Opacity = UnselectedColumnOpacity;
-            if (brush.CanFreeze)
+            if (pointView == null)
             {
-                brush.Freeze();
+                return null;
             }
 
-            return brush;
+            var property = _barProperty;
+            if (property == null || property.DeclaringType != pointView.GetType())
+            {
+                property = pointView.GetType().GetProperty("Rectangle");
+                if (property == null)
+                {
+                    return null;
+                }
+
+                _barProperty = property;
+            }
+
+            return property.GetValue(pointView);
         }
 
         private void OnChartDataClick(object sender, ChartPoint point)
@@ -375,7 +371,6 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (d is UnlockTimelineChart chart && chart.IsLoaded)
             {
-                chart.ApplyHighlight();
                 // force: true runs the updater tick now; the value edits before this only armed
                 // its timer, so without it the new bars appear a beat after the click.
                 chart.Chart.Update(false, true);
