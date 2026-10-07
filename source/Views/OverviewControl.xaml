@@ -502,10 +502,17 @@
                         </Style>
                     </StackPanel.Style>
 
-                    <controls:ScoreCardControl Style="{StaticResource OverviewScoreCardStyle}"
+                    <!-- Right-click sets the card's look; whether it shows is a main settings choice. -->
+                    <controls:ScoreCardControl x:Name="CollectionScoreCardControl"
+                                               Style="{StaticResource OverviewScoreCardStyle}"
                                                ScoreCard="{Binding CollectionScoreCard}"
                                                BadgePosition="{Binding OverviewCollectionBadgePosition}"
-                                               Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
+                                               ContextMenuOpening="ScoreCard_ContextMenuOpening"
+                                               Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}">
+                        <controls:ScoreCardControl.ContextMenu>
+                            <ContextMenu/>
+                        </controls:ScoreCardControl.ContextMenu>
+                    </controls:ScoreCardControl>
 
                     <Border x:Name="ScoreCardsDivider"
                             Background="{DynamicResource PlayAch.Brush.ControlBorder}"
@@ -516,10 +523,16 @@
                             Margin="12,2"
                             Visibility="{Binding ShowOverviewScoreCardDivider, Converter={StaticResource BoolToVis}}"/>
 
-                    <controls:ScoreCardControl Style="{StaticResource OverviewScoreCardStyle}"
+                    <controls:ScoreCardControl x:Name="PrestigeScoreCardControl"
+                                               Style="{StaticResource OverviewScoreCardStyle}"
                                                ScoreCard="{Binding PrestigeScoreCard}"
                                                BadgePosition="{Binding OverviewPrestigeBadgePosition}"
-                                               Visibility="{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}"/>
+                                               ContextMenuOpening="ScoreCard_ContextMenuOpening"
+                                               Visibility="{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}">
+                        <controls:ScoreCardControl.ContextMenu>
+                            <ContextMenu/>
+                        </controls:ScoreCardControl.ContextMenu>
+                    </controls:ScoreCardControl>
                 </StackPanel>
 
                 <!-- Right: showcase page/edit controls, re-hosted from ShowcaseControl so the
