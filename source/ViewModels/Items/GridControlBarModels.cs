@@ -482,26 +482,52 @@ namespace PlayniteAchievements.ViewModels.Items
         }
     }
 
-    // A from-to day range in the control bar, always shown. Either end may be left empty for an
-    // open range; both empty means no range. The owner holds the dates, so a range set elsewhere
-    // (a timeline column clicked in the overview's mini-showcase) shows here too.
+    // A from-to day range in the control bar, always shown: a dropdown button like the other
+    // filters, reading the range (or the placeholder while there is none), whose popup holds the
+    // two date pickers. Either end may be left empty for an open range. The owner holds the
+    // dates, so a range set elsewhere (a timeline column clicked in the overview's
+    // mini-showcase) shows here too.
     public sealed class GridDateRangeFilter : GridControlBarItem
     {
         private readonly Func<DateTime?> _getFrom;
         private readonly Func<DateTime?> _getTo;
         private readonly Action<DateTime?, DateTime?> _set;
+        private readonly string _placeholder;
 
         public GridDateRangeFilter(
             INotifyPropertyChanged source,
             string sourcePropertyName,
             Func<DateTime?> getFrom,
             Func<DateTime?> getTo,
-            Action<DateTime?, DateTime?> set)
+            Action<DateTime?, DateTime?> set,
+            string placeholder)
         {
             _getFrom = getFrom;
             _getTo = getTo;
             _set = set;
+            _placeholder = placeholder;
             GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
+        }
+
+        public string DisplayText
+        {
+            get
+            {
+                var from = From;
+                var to = To;
+                if (!from.HasValue && !to.HasValue)
+                {
+                    return _placeholder;
+                }
+
+                var culture = PlayniteAchievements.Common.FormattingCulture.Current;
+                if (from.HasValue && from == to)
+                {
+                    return from.Value.ToString("d", culture);
+                }
+
+                return (from?.ToString("d", culture) ?? "…") + " – " + (to?.ToString("d", culture) ?? "…");
+            }
         }
 
         public DateTime? From
@@ -547,6 +573,7 @@ namespace PlayniteAchievements.ViewModels.Items
             OnPropertyChanged(nameof(From));
             OnPropertyChanged(nameof(To));
             OnPropertyChanged(nameof(HasRange));
+            OnPropertyChanged(nameof(DisplayText));
             OnPropertyChanged(nameof(EffectiveIsVisible));
         }
     }
