@@ -338,14 +338,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 Width = 170
             });
-            // Set by clicking a timeline column or calendar day in the mini-showcase; shown only
-            // while active.
-            GameSummariesControlBar.Items.Add(new GridDismissChip(
-                this,
-                nameof(UnlockSpanFilterText),
-                () => UnlockSpanFilterText,
-                () => _unlockSpanFilter.HasValue,
-                ClearUnlockSpanFilter));
 
             RecentAchievementsControlBar = new GridControlBarViewModel
             {
@@ -357,6 +349,17 @@ namespace PlayniteAchievements.ViewModels
                     L("LOCPlayAch_Filter_Achievements"),
                     ClearRightSearch)
             };
+            // The unlock date range; a timeline column or calendar day in the mini-showcase sets
+            // it too, and the timeline and calendar mark whatever it holds.
+            RecentAchievementsControlBar.Items.Add(new GridDateRangeFilter(
+                this,
+                nameof(UnlockSpanFilter),
+                () => UnlockRangeFrom,
+                () => UnlockRangeTo,
+                SetUnlockRange)
+            {
+                AutoHideWhenUnavailable = false
+            });
 
             // The selected-game control bar is built and owned by _selectedGameControlBar.
         }
@@ -3457,7 +3460,7 @@ namespace PlayniteAchievements.ViewModels
                 L("LOCPlayAch_Filter_InProgress"),
                 L("LOCPlayAch_Filter_NoProgress"));
 
-            filtered = ApplyUnlockSpanFilter(filtered);
+            filtered = ApplyUnlockRangeToGames(filtered);
 
             _filteredGameSummaries = filtered.ToList();
             if (!string.IsNullOrEmpty(_overviewSortPath))
@@ -3610,7 +3613,7 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 _filteredRecentAchievements = OverviewAchievementFilters.FilterRecentAchievements(
-                    _allRecentAchievements,
+                    ApplyUnlockRange(_allRecentAchievements),
                     string.Empty);
 
                 if (searchQuery.HasValue)
