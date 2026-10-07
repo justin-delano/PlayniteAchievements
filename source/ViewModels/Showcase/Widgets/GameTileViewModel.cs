@@ -68,8 +68,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             _rarityBarEnabled = showRarityBar;
             ShowCompletionFrame = showCompletionFrame && game.ShowCompletionBadge;
             GlowSpacing = showCompletionGlow;
-            TileMargin = ResolveTileMargin(spacing, showCompletionGlow, showCompletionFrame);
-            IsSeamless = spacing == 0 && !showCompletionGlow && !showCompletionFrame;
+            TileMargin = new Thickness(showCompletionGlow ? Math.Max(spacing, GlowClearance) : spacing);
+            IsSeamless = spacing == 0 && !showCompletionGlow;
 
             MoveEarlierCommand = new RelayCommand(_ => Move(-1));
             MoveLaterCommand = new RelayCommand(_ => Move(1));
@@ -154,9 +154,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         /// <summary>
         /// Space around the tile: the widget's spacing option, raised to the glow's clearance
-        /// while the completion glow is on (see <see cref="GlowSpacing"/>), and to the completion
-        /// frame's overhang while the frame is on. Like the glow clearance, the frame's applies to
-        /// every tile so the mosaic keeps one tile size.
+        /// while the completion glow is on (see <see cref="GlowSpacing"/>). The completion frame
+        /// draws inside the art, so it needs none.
         /// </summary>
         public Thickness TileMargin { get; }
 
@@ -164,23 +163,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public bool IsSeamless { get; }
 
         private const int GlowClearance = 14;
-
-        // The frame's band sits outside the art; its badge (18px) hangs half its height below.
-        private const int FrameBandClearance = 2;
-        private const int FrameBadgeOverhang = 9;
-
-        internal static Thickness ResolveTileMargin(int spacing, bool showCompletionGlow, bool showCompletionFrame)
-        {
-            double side = showCompletionGlow ? Math.Max(spacing, GlowClearance) : spacing;
-            if (!showCompletionFrame)
-            {
-                return new Thickness(side);
-            }
-
-            var bottom = Math.Max(side, FrameBadgeOverhang);
-            side = Math.Max(side, FrameBandClearance);
-            return new Thickness(side, side, side, bottom);
-        }
 
         public RelayCommand MoveEarlierCommand { get; }
 

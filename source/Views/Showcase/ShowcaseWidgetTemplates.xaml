@@ -884,31 +884,27 @@
                                 </Grid>
                             </Border>
                             <!-- Completion frame: the game summaries grid's cover frame at tile
-                                 size, over the art and the rarity bar. The badge binds the tile's
+                                 size, drawn on the art over the rarity bar. It binds the tile's
                                  summary row, so it makes the same badge choice and shows the same
-                                 capstone count; TileMargin holds the half that hangs below. -->
-                            <Grid Visibility="{Binding ShowCompletionFrame, Converter={StaticResource BoolToVis}}">
-                                <!-- The frame's clearance keeps tiles apart, so the art is never
-                                     seamless here and always has the small corner radius. -->
-                                <Border Style="{StaticResource CompletionFrameBorderStyle}"
-                                        CornerRadius="{StaticResource PlayAch.Radius.Small}"/>
-                                <Grid DataContext="{Binding Game}"
-                                      Height="{StaticResource PlayAch.Size.Icon.Tiny}"
-                                      Margin="0,0,0,-9"
-                                      VerticalAlignment="Bottom">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Image Grid.Column="1"
-                                           Style="{StaticResource CompletionBadgeImageStyle}"
-                                           Width="{StaticResource PlayAch.Size.Icon.Tiny}"
-                                           Height="{StaticResource PlayAch.Size.Icon.Tiny}"/>
-                                    <TextBlock Grid.Column="2"
-                                               Style="{StaticResource CompletionBadgeCountTextStyle}"/>
-                                </Grid>
-                            </Grid>
+                                 capstone count. Seamless tiles have square art, so the frame's
+                                 outer band squares with them. -->
+                            <Control Template="{StaticResource CompletionFrameTemplate}"
+                                     DataContext="{Binding Game}"
+                                     Focusable="False"
+                                     IsTabStop="False"
+                                     helpers:CompletionBadge.FrameBadgeSize="16"
+                                     Visibility="{Binding DataContext.ShowCompletionFrame, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource BoolToVis}}">
+                                <Control.Style>
+                                    <Style TargetType="Control">
+                                        <Setter Property="helpers:CompletionBadge.FrameCornerRadius" Value="{StaticResource PlayAch.Radius.Small}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.IsSeamless, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                <Setter Property="helpers:CompletionBadge.FrameCornerRadius" Value="0"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Control.Style>
+                            </Control>
                         </Grid>
                     </DataTemplate>
             </ListBox.ItemTemplate>
