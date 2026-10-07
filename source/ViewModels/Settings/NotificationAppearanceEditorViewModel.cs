@@ -352,6 +352,7 @@ namespace PlayniteAchievements.ViewModels.Settings
                 new RarityBadgePlacementOption(RarityBadgePlacement.None, L("LOCPlayAch_Common_None")),
                 new RarityBadgePlacementOption(RarityBadgePlacement.UnderIcon, L("LOCPlayAch_Settings_Style_Rarity_BadgeUnderIcon")),
                 new RarityBadgePlacementOption(RarityBadgePlacement.Inline, L("LOCPlayAch_Settings_Style_Rarity_InlineBadge")),
+                new RarityBadgePlacementOption(RarityBadgePlacement.InlineGame, L("LOCPlayAch_Settings_Style_Rarity_InlineGameBadge")),
                 new RarityBadgePlacementOption(RarityBadgePlacement.Right, L("LOCPlayAch_Settings_Style_Rarity_BadgeRight"))
             });
 
@@ -364,8 +365,8 @@ namespace PlayniteAchievements.ViewModels.Settings
             });
 
         /// <summary>
-        /// Rarity badge placement, derived from and written back to the surface's footer / inline /
-        /// right badge flags, which the dropdown keeps mutually exclusive.
+        /// Rarity badge placement, derived from and written back to the surface's footer / inline
+        /// name / inline game / right badge flags, which the dropdown keeps mutually exclusive.
         /// </summary>
         public RarityBadgePlacementOption SelectedBadgePlacement
         {
@@ -380,6 +381,10 @@ namespace PlayniteAchievements.ViewModels.Settings
                 else if (surface.RightRarityBadge)
                 {
                     value = RarityBadgePlacement.Right;
+                }
+                else if (surface.InlineGameRarityBadge)
+                {
+                    value = RarityBadgePlacement.InlineGame;
                 }
                 else if (surface.InlineRarityBadge)
                 {
@@ -408,6 +413,7 @@ namespace PlayniteAchievements.ViewModels.Settings
                 var mode = value.Value;
                 surface.ShowRarityBadge = mode == RarityBadgePlacement.UnderIcon;
                 surface.InlineRarityBadge = mode == RarityBadgePlacement.Inline;
+                surface.InlineGameRarityBadge = mode == RarityBadgePlacement.InlineGame;
                 surface.RightRarityBadge = mode == RarityBadgePlacement.Right;
             }
         }
@@ -2024,6 +2030,7 @@ namespace PlayniteAchievements.ViewModels.Settings
             else if (e.PropertyName == nameof(NotificationSurfaceStyle.ShowRarityBadge) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.ShowRarityPercent) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.InlineRarityBadge) ||
+                     e.PropertyName == nameof(NotificationSurfaceStyle.InlineGameRarityBadge) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.RightRarityBadge) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.RarityPercentUnderBadge))
             {
@@ -2203,6 +2210,7 @@ namespace PlayniteAchievements.ViewModels.Settings
         None,
         UnderIcon,
         Inline,
+        InlineGame,
         Right
     }
 
