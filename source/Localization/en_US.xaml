@@ -1573,6 +1573,8 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Tags">Tags</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents">Contains</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">Open on GitHub</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RemoveFromWorkshop">Remove from Workshop</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RemoveConfirm">Remove "{0}" from the Workshop? Nobody can install it after that; copies people already installed stay theirs, and your library keeps its copy.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Report">Report this item</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RequiresNewerPlugin">Requires extension version {0} or newer.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Downloading">Downloading {0}...</sys:String>
@@ -1624,7 +1626,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Update my earlier submission</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">Uploading {0}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. It appears in the Workshop once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. The Workshop updates once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Mine">Mine</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_Before">Before</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_After">After</sys:String>
