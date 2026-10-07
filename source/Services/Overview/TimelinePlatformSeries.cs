@@ -15,8 +15,14 @@ namespace PlayniteAchievements.Services.Overview
     {
         public const string UnknownKey = "Unknown";
 
-        /// <summary>Every game in the snapshot.</summary>
-        public static IReadOnlyList<TimelineSeriesCounts> FromSnapshot(OverviewDataSnapshot snapshot)
+        /// <summary>
+        /// Every game in the snapshot, or only the games <paramref name="includeGame"/> accepts.
+        /// Unfiltered, unlocks no game accounts for stack under Unknown; filtered, they are left
+        /// out because they cannot match a filter.
+        /// </summary>
+        public static IReadOnlyList<TimelineSeriesCounts> FromSnapshot(
+            OverviewDataSnapshot snapshot,
+            Func<Guid, bool> includeGame = null)
         {
             if (snapshot == null)
             {
@@ -25,11 +31,49 @@ namespace PlayniteAchievements.Services.Overview
 
             var keyByGame = BuildKeyByGame(snapshot);
             var groups = UnlockDayCounts.GroupByKey(
-                snapshot.GlobalUnlockCountsByDate,
-                snapshot.UnlockCountsByDateByGame,
+                includeGame == null ? snapshot.GlobalUnlockCountsByDate : null,
+                FilterGames(snapshot.UnlockCountsByDateByGame, includeGame),
                 gameId => keyByGame.TryGetValue(gameId, out var key) ? key : null,
                 UnknownKey);
             return ToSeries(groups);
+        }
+
+        /// <summary>Day counts summed over the games <paramref name="includeGame"/> accepts.</summary>
+        public static Dictionary<DateTime, int> SumGames(OverviewDataSnapshot snapshot, Func<Guid, bool> includeGame)
+        {
+            var total = new Dictionary<DateTime, int>();
+            var byGame = FilterGames(snapshot?.UnlockCountsByDateByGame, includeGame);
+            if (byGame == null)
+            {
+                return total;
+            }
+
+            foreach (var game in byGame.Values)
+            {
+                foreach (var day in game)
+                {
+                    if (day.Value > 0)
+                    {
+                        total[day.Key] = total.TryGetValue(day.Key, out var existing) ? existing + day.Value : day.Value;
+                    }
+                }
+            }
+
+            return total;
+        }
+
+        private static IReadOnlyDictionary<Guid, Dictionary<DateTime, int>> FilterGames(
+            Dictionary<Guid, Dictionary<DateTime, int>> byGame,
+            Func<Guid, bool> includeGame)
+        {
+            if (byGame == null || includeGame == null)
+            {
+                return byGame;
+            }
+
+            return byGame
+                .Where(pair => pair.Value != null && includeGame(pair.Key))
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         /// <summary>One game's counts as a single series under its platform.</summary>
