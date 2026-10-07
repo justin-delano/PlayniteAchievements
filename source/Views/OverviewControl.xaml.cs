@@ -1770,6 +1770,65 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        // A score card's right-click menu sets which side its badge sits on, and saves at once.
+        // It offers no way to hide the card: that is the main settings toggle's job.
+        private void ScoreCard_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            if (!(sender is FrameworkElement card) || !(card.ContextMenu is ContextMenu menu) || persisted == null)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            var collection = ReferenceEquals(card, CollectionScoreCardControl);
+            var current = collection
+                ? persisted.OverviewCollectionBadgePosition
+                : persisted.OverviewPrestigeBadgePosition;
+            var badge = new MenuItem
+            {
+                Header = ResourceProvider.GetString(collection
+                    ? "LOCPlayAch_Settings_CollectionBadgePosition"
+                    : "LOCPlayAch_Settings_PrestigeBadgePosition")
+            };
+            foreach (var (position, key) in new[]
+            {
+                (ScoreCardBadgePosition.Left, "LOCPlayAch_Settings_GridAlignment_Left"),
+                (ScoreCardBadgePosition.Right, "LOCPlayAch_Settings_GridAlignment_Right")
+            })
+            {
+                var item = new MenuItem
+                {
+                    Header = ResourceProvider.GetString(key),
+                    IsCheckable = true,
+                    IsChecked = position == current
+                };
+                item.Click += (_, __) =>
+                {
+                    var target = _settings?.Persisted;
+                    if (target == null)
+                    {
+                        return;
+                    }
+
+                    if (collection)
+                    {
+                        target.OverviewCollectionBadgePosition = position;
+                    }
+                    else
+                    {
+                        target.OverviewPrestigeBadgePosition = position;
+                    }
+
+                    _persistSettingsForUi();
+                };
+                badge.Items.Add(item);
+            }
+
+            menu.Items.Clear();
+            menu.Items.Add(badge);
+        }
+
         private void MiniShowcase_LinkedClick(object sender, ShowcaseLinkedClickEventArgs e)
         {
             e.Handled = true;
