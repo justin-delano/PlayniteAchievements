@@ -841,19 +841,28 @@ namespace PlayniteAchievements.Services.Achievements
         /// </summary>
         public static void SortUnlessOrdered<TItem>(List<TItem> items, Comparison<TItem> comparison)
         {
-            if (items == null || comparison == null)
+            if (items != null && comparison != null && !IsOrdered(items, comparison))
             {
-                return;
+                items.Sort(comparison);
             }
+        }
 
+        /// <summary>
+        /// Whether no neighbouring pair of <paramref name="items"/> is out of order. A list in
+        /// order comes out of a stable sort unchanged, so a caller can skip building the
+        /// tie-break map as well as the sort.
+        /// </summary>
+        public static bool IsOrdered<TItem>(IReadOnlyList<TItem> items, Comparison<TItem> comparison)
+        {
             for (var i = 1; i < items.Count; i++)
             {
                 if (comparison(items[i - 1], items[i]) > 0)
                 {
-                    items.Sort(comparison);
-                    return;
+                    return false;
                 }
             }
+
+            return true;
         }
 
         public static Comparison<TItem> WithStableOrder<TItem>(
