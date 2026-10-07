@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         private PlayniteAchievementsSettings _settings;
         private PersistedSettingsSubscription _persistedSubscription;
         private UnlockSoundSettingsViewModel _viewModel;
+        private PlayniteAchievementsPlugin _plugin;
         private ILogger _logger;
 
         public UnlockSoundsEditor()
@@ -41,10 +42,18 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         internal void Initialize(PlayniteAchievementsSettings settings, PlayniteAchievementsPlugin plugin, ILogger logger)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _plugin = plugin;
             _logger = logger;
 
             GlobalSwitchesCard.DataContext = settings;
-            _viewModel = new UnlockSoundSettingsViewModel(settings, plugin?.UnlockSounds, logger);
+            var store = plugin?.UnlockSoundPortableStore;
+            var library = plugin?.SoundsLibraryAdapter;
+            _viewModel = new UnlockSoundSettingsViewModel(
+                settings,
+                plugin?.UnlockSounds,
+                logger,
+                store != null ? store.ImportFile : (Func<string, string>)null,
+                library != null ? library.PruneUnreferenced : (Action<UnlockSoundSettings>)null);
             _viewModel.SoundsChanged += (s, e) => SoundsChanged?.Invoke(this, EventArgs.Empty);
             UnlockSoundRows.DataContext = _viewModel;
 
@@ -99,9 +108,23 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 Multiselect = false
             };
 
-            if (dialog.ShowDialog() == DialogResult.OK)
+            if (dialog.ShowDialog() != DialogResult.OK)
             {
-                row.CustomPath = dialog.FileName;
+                return;
+            }
+
+            try
+            {
+                _viewModel?.PickFile(row.Tier, dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Could not use '{dialog.FileName}' as the {row.Tier} unlock sound.");
+                _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
