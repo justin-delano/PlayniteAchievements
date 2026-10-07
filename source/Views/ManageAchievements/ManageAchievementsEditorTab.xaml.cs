@@ -12,6 +12,7 @@ using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views.Helpers;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -309,6 +310,15 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
 
             view.Filter = candidate => ViewModel?.MatchesFilter(candidate as AchievementEditorRow) != false;
+
+            // Live filtering on the retest token, so a filter change can move only the rows whose
+            // match changed instead of resetting the grid. See ViewModel_FilterChanged.
+            if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
+            {
+                live.LiveFilteringProperties.Clear();
+                live.LiveFilteringProperties.Add(nameof(AchievementEditorRow.FilterRetestToken));
+                live.IsLiveFiltering = true;
+            }
         }
 
         private void DetachFilter()
@@ -317,6 +327,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (view != null)
             {
                 view.Filter = null;
+                if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
+                {
+                    live.IsLiveFiltering = false;
+                    live.LiveFilteringProperties.Clear();
+                }
             }
         }
 
@@ -326,10 +341,58 @@ namespace PlayniteAchievements.Views.ManageAchievements
             // The refresh resets the grid, and the rows it realizes, the layout and the render all
             // land after this returns; the probe names those operations.
             Common.DispatcherOperationProbe.Arm(logger, "editor-filter", TimeSpan.FromSeconds(1.5));
-            using (Common.PerfScope.Start(logger, "Editor.FilterRefresh", thresholdMs: 0))
+            using (var scope = Common.PerfScope.Start(logger, "Editor.FilterRefresh", thresholdMs: 0))
             {
-                CollectionViewSource.GetDefaultView(ViewModel?.AchievementRows)?.Refresh();
+                scope.SetContext(SyncFilteredRows());
             }
+        }
+
+        // Past this many rows changing, one reset is cheaper than moving each row on its own.
+        private const int FilterSyncResetThreshold = 200;
+
+        /// <summary>
+        /// Brings the view in line with the filter by retesting only the rows whose match changed.
+        /// A reset would rebuild every visible row, including the ones that stay; this leaves those
+        /// containers in place, so only rows entering the view are realized.
+        /// </summary>
+        /// <returns>What was done, for the timing log.</returns>
+        private string SyncFilteredRows()
+        {
+            var rows = ViewModel?.AchievementRows;
+            var view = CollectionViewSource.GetDefaultView(rows);
+            if (view == null)
+            {
+                return "noview";
+            }
+
+            if (!(view is ICollectionViewLiveShaping live) || live.IsLiveFiltering != true)
+            {
+                view.Refresh();
+                return "reset";
+            }
+
+            var shown = new HashSet<AchievementEditorRow>(view.OfType<AchievementEditorRow>());
+            var changed = new List<AchievementEditorRow>();
+            foreach (var row in rows)
+            {
+                if (row != null && ViewModel.MatchesFilter(row) != shown.Contains(row))
+                {
+                    changed.Add(row);
+                }
+            }
+
+            if (changed.Count > FilterSyncResetThreshold)
+            {
+                view.Refresh();
+                return "reset changed=" + changed.Count;
+            }
+
+            foreach (var row in changed)
+            {
+                row.RequestFilterRetest();
+            }
+
+            return "sync changed=" + changed.Count + " shown=" + shown.Count;
         }
 
         private void ToggleDetailsPaneButton_Click(object sender, RoutedEventArgs e)

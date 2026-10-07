@@ -69,6 +69,41 @@
                 </Style.Triggers>
             </Style>
 
+            <!-- The resting face of a grid text editor: the same box as GridEditorTextBoxStyle with
+                 a TextBlock inside, so a row costs a border and a text run rather than a TextBox.
+                 EditOnClickPresenter swaps the real box in on a press. The text margin is the
+                 box's padding plus the TextBox content host's own 2px inset, so the text does
+                 not move when the box takes over. -->
+            <Style x:Key="GridEditorDisplayBorderStyle" TargetType="Border">
+                <Setter Property="MinHeight" Value="26" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="IBeam" />
+                <Style.Triggers>
+                    <!-- A cell whose editor would be disabled: the presenter takes the IsEnabled
+                         binding, so presses never reach it, and the face dims to say so. -->
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Secondary}" />
+                        <Setter Property="Cursor" Value="Arrow" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="GridEditorDisplayTextStyle" TargetType="TextBlock">
+                <Setter Property="Margin" Value="8,2" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            </Style>
+
+            <Style x:Key="GridEditorDisplayValueStyle" TargetType="TextBlock" BasedOn="{StaticResource GridEditorDisplayTextStyle}">
+                <Setter Property="Margin" Value="6,0" />
+                <Setter Property="TextWrapping" Value="NoWrap" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+            </Style>
+
             <!-- Sits inside the name and description cells, so it is sized to the editor text box
                  beside it rather than to a toolbar button. -->
             <Style x:Key="RevealToggleButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -870,15 +905,29 @@
                                          readable at the column's width instead of only where the
                                          caret happens to be. Enter commits and Shift+Enter starts
                                          a line, which is what AcceptsReturn is here for. -->
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding DisplayName, Mode=OneWay}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             Visibility="{Binding IsTitleHidden, Converter={StaticResource InverseBoolToVis}}"
-                                             TextWrapping="Wrap"
-                                             AcceptsReturn="True"
-                                             LostFocus="RoutedCellTextBox_Commit"
-                                             PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                             helpers:EditorCellRouting.Field="DisplayName" />
+                                    <controls:EditOnClickPresenter Grid.Column="0"
+                                                                   VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsTitleHidden, Converter={StaticResource InverseBoolToVis}}">
+                                        <controls:EditOnClickPresenter.DisplayTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               Style="{StaticResource GridEditorDisplayTextStyle}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.DisplayTemplate>
+                                        <controls:EditOnClickPresenter.EditorTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding DisplayName, Mode=OneWay}"
+                                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                                         TextWrapping="Wrap"
+                                                         AcceptsReturn="True"
+                                                         LostFocus="RoutedCellTextBox_Commit"
+                                                         PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                         helpers:EditorCellRouting.Field="DisplayName" />
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.EditorTemplate>
+                                    </controls:EditOnClickPresenter>
                                     <Border Grid.Column="0"
                                             Background="Transparent"
                                             HorizontalAlignment="Stretch"
@@ -963,15 +1012,29 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding Description, Mode=OneWay}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             Visibility="{Binding IsDescriptionHidden, Converter={StaticResource InverseBoolToVis}}"
-                                             TextWrapping="Wrap"
-                                             AcceptsReturn="True"
-                                             LostFocus="RoutedCellTextBox_Commit"
-                                             PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                             helpers:EditorCellRouting.Field="Description" />
+                                    <controls:EditOnClickPresenter Grid.Column="0"
+                                                                   VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsDescriptionHidden, Converter={StaticResource InverseBoolToVis}}">
+                                        <controls:EditOnClickPresenter.DisplayTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
+                                                    <TextBlock Text="{Binding Description}"
+                                                               Style="{StaticResource GridEditorDisplayTextStyle}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.DisplayTemplate>
+                                        <controls:EditOnClickPresenter.EditorTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding Description, Mode=OneWay}"
+                                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                                         TextWrapping="Wrap"
+                                                         AcceptsReturn="True"
+                                                         LostFocus="RoutedCellTextBox_Commit"
+                                                         PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                         helpers:EditorCellRouting.Field="Description" />
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.EditorTemplate>
+                                    </controls:EditOnClickPresenter>
                                     <Border Grid.Column="0"
                                             Background="Transparent"
                                             HorizontalAlignment="Stretch"
@@ -1035,46 +1098,82 @@
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"
                                                    Visibility="{Binding CanEditUnlockTime, Converter={StaticResource InverseBoolToVis}}" />
-                                        <StackPanel Orientation="Horizontal"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    Visibility="{Binding CanEditUnlockTime, Converter={StaticResource BoolToVis}}">
-                                            <!-- One way with the pick applied in code, like the
-                                                 rest of the routed cells: a two-way binding here
-                                                 would write on the refresh a recycled container
-                                                 gets, not only on a pick. -->
-                                            <DatePicker SelectedDate="{Binding UnlockDate, Mode=OneWay}"
-                                                        SelectedDateChanged="UnlockDateCell_SelectedDateChanged"
-                                                        Padding="4,2"
-                                                        Margin="0,0,6,0" />
-                                            <TextBox Text="{Binding TimeText, Mode=OneWay}"
-                                                     LostFocus="RoutedCellTextBox_Commit"
-                                                     PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                                     helpers:EditorCellRouting.Field="TimeText"
-                                                     Width="62"
-                                                     VerticalContentAlignment="Center"
-                                                     HorizontalContentAlignment="Center"
-                                                     Padding="4,0"
-                                                     MaxLength="5">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsValidTime}" Value="False">
-                                                                <Setter Property="BorderBrush" Value="#FFE07070" />
-                                                                <Setter Property="BorderThickness" Value="2" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
-                                            <ComboBox ItemsSource="{Binding AvailableTimeModes}"
-                                                      SelectedItem="{Binding SelectedTimeModeText, Mode=OneWay}"
-                                                      SelectionChanged="TimeModeCell_SelectionChanged"
-                                                      Width="74"
-                                                      VerticalContentAlignment="Center"
-                                                      Padding="4,0"
-                                                      Margin="2,0,0,0" />
-                                        </StackPanel>
+                                        <!-- Three plain boxes at rest, laid out exactly like the
+                                             editors, so the press lands on the editor it was
+                                             aimed at once they are swapped in. -->
+                                        <controls:EditOnClickPresenter HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       Visibility="{Binding CanEditUnlockTime, Converter={StaticResource BoolToVis}}">
+                                            <controls:EditOnClickPresenter.DisplayTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Border Style="{StaticResource GridEditorDisplayBorderStyle}"
+                                                                Width="118"
+                                                                Margin="0,0,6,0"
+                                                                Cursor="Hand">
+                                                            <TextBlock Text="{Binding UnlockDateText}"
+                                                                       Style="{StaticResource GridEditorDisplayValueStyle}"
+                                                                       HorizontalAlignment="Left" />
+                                                        </Border>
+                                                        <Border Style="{StaticResource GridEditorDisplayBorderStyle}"
+                                                                Width="62">
+                                                            <TextBlock Text="{Binding TimeText}"
+                                                                       Style="{StaticResource GridEditorDisplayValueStyle}" />
+                                                        </Border>
+                                                        <Border Style="{StaticResource GridEditorDisplayBorderStyle}"
+                                                                Width="74"
+                                                                Margin="2,0,0,0"
+                                                                Cursor="Hand">
+                                                            <TextBlock Text="{Binding SelectedTimeModeText}"
+                                                                       Style="{StaticResource GridEditorDisplayValueStyle}"
+                                                                       HorizontalAlignment="Left" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </controls:EditOnClickPresenter.DisplayTemplate>
+                                            <controls:EditOnClickPresenter.EditorTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <!-- One way with the pick applied in code, like the
+                                                             rest of the routed cells: a two-way binding here
+                                                             would write on the refresh a recycled container
+                                                             gets, not only on a pick. -->
+                                                        <DatePicker SelectedDate="{Binding UnlockDate, Mode=OneWay}"
+                                                                    SelectedDateChanged="UnlockDateCell_SelectedDateChanged"
+                                                                    Width="118"
+                                                                    Padding="4,2"
+                                                                    Margin="0,0,6,0" />
+                                                        <TextBox Text="{Binding TimeText, Mode=OneWay}"
+                                                                 LostFocus="RoutedCellTextBox_Commit"
+                                                                 PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                                 helpers:EditorCellRouting.Field="TimeText"
+                                                                 Width="62"
+                                                                 VerticalContentAlignment="Center"
+                                                                 HorizontalContentAlignment="Center"
+                                                                 Padding="4,0"
+                                                                 MaxLength="5">
+                                                            <TextBox.Style>
+                                                                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsValidTime}" Value="False">
+                                                                            <Setter Property="BorderBrush" Value="#FFE07070" />
+                                                                            <Setter Property="BorderThickness" Value="2" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBox.Style>
+                                                        </TextBox>
+                                                        <ComboBox ItemsSource="{Binding AvailableTimeModes}"
+                                                                  SelectedItem="{Binding SelectedTimeModeText, Mode=OneWay}"
+                                                                  SelectionChanged="TimeModeCell_SelectionChanged"
+                                                                  Width="74"
+                                                                  VerticalContentAlignment="Center"
+                                                                  Padding="4,0"
+                                                                  Margin="2,0,0,0" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </controls:EditOnClickPresenter.EditorTemplate>
+                                        </controls:EditOnClickPresenter>
                                     </Grid>
                                 </Grid>
                             </DataTemplate>
@@ -1229,13 +1328,28 @@
                                             </Style>
                                         </Image.Style>
                                     </Image>
-                                    <TextBox Grid.Column="1"
-                                             Text="{Binding RarityInput, Mode=OneWay}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             IsEnabled="{Binding CanEditRarity}"
-                                             LostFocus="RoutedCellTextBox_Commit"
-                                             PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                             helpers:EditorCellRouting.Field="RarityInput" />
+                                    <controls:EditOnClickPresenter Grid.Column="1"
+                                                                   VerticalAlignment="Center"
+                                                                   IsEnabled="{Binding CanEditRarity}">
+                                        <controls:EditOnClickPresenter.DisplayTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
+                                                    <TextBlock Text="{Binding RarityInput}"
+                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                               TextWrapping="NoWrap" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.DisplayTemplate>
+                                        <controls:EditOnClickPresenter.EditorTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding RarityInput, Mode=OneWay}"
+                                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                                         LostFocus="RoutedCellTextBox_Commit"
+                                                         PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                         helpers:EditorCellRouting.Field="RarityInput" />
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.EditorTemplate>
+                                    </controls:EditOnClickPresenter>
                                     <!-- The placeholder keys off the bound value rather than the
                                          box by name: an ElementName reference cannot resolve
                                          inside a cell template. -->
@@ -1458,18 +1572,32 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding PointsText, Mode=OneWay}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             Margin="4,0"
-                                             VerticalAlignment="Center"
-                                             Visibility="{Binding IsPointsHidden, Converter={StaticResource InverseBoolToVis}}"
-                                             Tag="NonNegativeInt"
-                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                             DataObject.Pasting="NumericTextBox_Pasting"
-                                             LostFocus="RoutedCellTextBox_Commit"
-                                             PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                             helpers:EditorCellRouting.Field="PointsText" />
+                                    <controls:EditOnClickPresenter Grid.Column="0"
+                                                                   Margin="4,0"
+                                                                   VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsPointsHidden, Converter={StaticResource InverseBoolToVis}}">
+                                        <controls:EditOnClickPresenter.DisplayTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
+                                                    <TextBlock Text="{Binding PointsText}"
+                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                               TextWrapping="NoWrap" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.DisplayTemplate>
+                                        <controls:EditOnClickPresenter.EditorTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding PointsText, Mode=OneWay}"
+                                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                                         Tag="NonNegativeInt"
+                                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                                         DataObject.Pasting="NumericTextBox_Pasting"
+                                                         LostFocus="RoutedCellTextBox_Commit"
+                                                         PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                         helpers:EditorCellRouting.Field="PointsText" />
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.EditorTemplate>
+                                    </controls:EditOnClickPresenter>
                                     <Border Grid.Column="0"
                                             Background="Transparent"
                                             Cursor="Hand"
@@ -1514,32 +1642,62 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding ProgressNumText, Mode=OneWay}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             IsEnabled="{Binding CanEditProgress}"
-                                             Tag="NonNegativeInt"
-                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                             DataObject.Pasting="NumericTextBox_Pasting"
-                                             LostFocus="RoutedCellTextBox_Commit"
-                                             PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                             helpers:EditorCellRouting.Field="ProgressNumText" />
+                                    <controls:EditOnClickPresenter Grid.Column="0"
+                                                                   VerticalAlignment="Center"
+                                                                   IsEnabled="{Binding CanEditProgress}">
+                                        <controls:EditOnClickPresenter.DisplayTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
+                                                    <TextBlock Text="{Binding ProgressNumText}"
+                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                               TextWrapping="NoWrap" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.DisplayTemplate>
+                                        <controls:EditOnClickPresenter.EditorTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding ProgressNumText, Mode=OneWay}"
+                                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                                         Tag="NonNegativeInt"
+                                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                                         DataObject.Pasting="NumericTextBox_Pasting"
+                                                         LostFocus="RoutedCellTextBox_Commit"
+                                                         PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                         helpers:EditorCellRouting.Field="ProgressNumText" />
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.EditorTemplate>
+                                    </controls:EditOnClickPresenter>
                                     <TextBlock Grid.Column="1"
                                                Text="/"
                                                Margin="4,0"
                                                VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextBrush}"
                                                Opacity="{StaticResource PlayAch.Opacity.Secondary}" />
-                                    <TextBox Grid.Column="2"
-                                             Text="{Binding ProgressDenomText, Mode=OneWay}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             IsEnabled="{Binding CanEditProgress}"
-                                             Tag="PositiveInt"
-                                             PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                             DataObject.Pasting="NumericTextBox_Pasting"
-                                             LostFocus="RoutedCellTextBox_Commit"
-                                             PreviewKeyDown="RoutedCellTextBox_KeyDown"
-                                             helpers:EditorCellRouting.Field="ProgressDenomText" />
+                                    <controls:EditOnClickPresenter Grid.Column="2"
+                                                                   VerticalAlignment="Center"
+                                                                   IsEnabled="{Binding CanEditProgress}">
+                                        <controls:EditOnClickPresenter.DisplayTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
+                                                    <TextBlock Text="{Binding ProgressDenomText}"
+                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                               TextWrapping="NoWrap" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.DisplayTemplate>
+                                        <controls:EditOnClickPresenter.EditorTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding ProgressDenomText, Mode=OneWay}"
+                                                         Style="{StaticResource GridEditorTextBoxStyle}"
+                                                         Tag="PositiveInt"
+                                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                                         DataObject.Pasting="NumericTextBox_Pasting"
+                                                         LostFocus="RoutedCellTextBox_Commit"
+                                                         PreviewKeyDown="RoutedCellTextBox_KeyDown"
+                                                         helpers:EditorCellRouting.Field="ProgressDenomText" />
+                                            </DataTemplate>
+                                        </controls:EditOnClickPresenter.EditorTemplate>
+                                    </controls:EditOnClickPresenter>
                                 </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
