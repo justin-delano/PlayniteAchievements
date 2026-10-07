@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
@@ -40,7 +41,17 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         protected override void Refresh()
         {
-            var items = Projection?.Statistics ?? Array.Empty<ShowcaseStatistic>();
+            IEnumerable<ShowcaseStatistic> items = Projection?.Statistics ?? Array.Empty<ShowcaseStatistic>();
+            // The widget's chosen statistics, in the chosen order; every one when none were chosen.
+            var keys = ShowcaseWidgetOptions.GetStatisticsKeys(Projection?.Instance);
+            if (keys != null)
+            {
+                var byKey = items.Where(item => item?.Key != null)
+                    .GroupBy(item => item.Key, StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+                items = keys.Where(byKey.ContainsKey).Select(key => byKey[key]).ToList();
+            }
+
             Columns = Orientation == WidgetViewportOrientation.Tall ? 1 : 2;
             Tiles.ReplaceAll(items
                 .Select(item => new StatTileViewModel(
