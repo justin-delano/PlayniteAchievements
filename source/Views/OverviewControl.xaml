@@ -294,6 +294,7 @@
             <Style x:Key="OverviewScoreCardStyle" TargetType="controls:ScoreCardControl">
                 <Setter Property="Width" Value="{StaticResource OverviewScoreCardWidth}"/>
                 <Setter Property="Compact" Value="True"/>
+                <Setter Property="BadgePosition" Value="{Binding OverviewScoreCardBadgePosition}"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding ScoreCardsBadgeOnly, ElementName=OverviewControlRoot}" Value="True">
                         <Setter Property="Width" Value="NaN"/>
