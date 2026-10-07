@@ -2174,7 +2174,13 @@ namespace PlayniteAchievements.Views.Showcase
                     ApplyWidgetProjection(request.Host, request.Widget, snapshot);
                     _applyPassEndedTicks = System.Diagnostics.Stopwatch.GetTimestamp();
                     _applyDrainApplied++;
-                    break;
+                    // A strip holds a few light charts that change together (one filter click
+                    // moves several); one per pass would ripple across the row, so they land in
+                    // one pass instead.
+                    if (!_host.IsStrip)
+                    {
+                        break;
+                    }
                 }
             }
             finally
