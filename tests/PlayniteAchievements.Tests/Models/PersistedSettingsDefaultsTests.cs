@@ -155,6 +155,20 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreserveOverviewTimelineSplitByPlatform()
+        {
+            var source = new PersistedSettings { OverviewTimelineSplitByPlatform = true };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsFalse(new PersistedSettings().OverviewTimelineSplitByPlatform);
+            Assert.IsTrue(clone.OverviewTimelineSplitByPlatform);
+            Assert.IsTrue(target.OverviewTimelineSplitByPlatform);
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveOverviewBadgePositionsPerCard()
         {
             var source = new PersistedSettings
