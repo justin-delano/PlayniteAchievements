@@ -155,6 +155,25 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreserveOverviewScoreCardBadgePosition()
+        {
+            var source = new PersistedSettings
+            {
+                OverviewScoreCardBadgePosition = ScoreCardBadgePosition.Right
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(ScoreCardBadgePosition.Left, new PersistedSettings().OverviewScoreCardBadgePosition);
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(ScoreCardBadgePosition.Right, copy.OverviewScoreCardBadgePosition);
+            }
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveClipVariants()
         {
             var source = new PersistedSettings
