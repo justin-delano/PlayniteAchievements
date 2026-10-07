@@ -328,10 +328,15 @@ namespace PlayniteAchievements.ViewModels
                 return entry.Snapshot;
             }
 
-            var snapshot = OverviewLinkedSnapshots.Build(source, kept, keptIsAll);
-            if (filterKey.Length > 0)
+            OverviewDataSnapshot snapshot;
+            using (PerfScope.Start(_logger, "Overview.LinkedSnapshot", thresholdMs: 5,
+                context: exclude + (countsGames ? " games" : string.Empty)))
             {
-                snapshot = OverviewLinkedSnapshots.ClipToAchievements(snapshot, AchievementFilter(exclude));
+                snapshot = OverviewLinkedSnapshots.Build(source, kept, keptIsAll);
+                if (filterKey.Length > 0)
+                {
+                    snapshot = OverviewLinkedSnapshots.ClipToAchievements(snapshot, AchievementFilter(exclude));
+                }
             }
 
             _linkedSnapshots[key] = new LinkedSnapshotEntry
