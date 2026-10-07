@@ -471,7 +471,8 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            normalizedMap[context.ApiName] = merged;
+            normalizedMap[context.ApiName] = AchievementCategoryTypeHelper.NormalizeOrDefault(
+                AchievementCategoryTypeHelper.StripDerivedTypes(merged));
             CurrentOverridesService?.SetAchievementCategoryTypeOverrides(context.GameId, normalizedMap);
             NotifySummaryRowsChanged(context.GameId);
             context.ApplyCategoryType(merged);
@@ -491,7 +492,8 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            normalizedMap[context.ApiName] = remaining;
+            normalizedMap[context.ApiName] = AchievementCategoryTypeHelper.NormalizeOrDefault(
+                AchievementCategoryTypeHelper.StripDerivedTypes(remaining));
             CurrentOverridesService?.SetAchievementCategoryTypeOverrides(context.GameId, normalizedMap);
             NotifySummaryRowsChanged(context.GameId);
             context.ApplyCategoryType(remaining);
