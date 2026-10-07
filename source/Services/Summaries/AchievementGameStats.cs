@@ -38,6 +38,9 @@ namespace PlayniteAchievements.Services.Summaries
         public int PrestigeScoreTotal { get; set; }
         public int Points { get; set; }
 
+        /// <summary>Unlocked <see cref="Points"/> that count toward a platform score: RetroAchievements softcore unlocks are left out.</summary>
+        public int PlatformScorePoints { get; set; }
+
         public DateTime? LastUnlockUtc { get; set; }
 
         /// <summary>Unlock counts per local calendar day (keys from Overview.UnlockDayCounts.DayOf).</summary>
@@ -86,6 +89,7 @@ namespace PlayniteAchievements.Services.Summaries
             target.CollectionScoreTotal = AddClamped(target.CollectionScoreTotal, CollectionScoreTotal);
             target.PrestigeScoreTotal = AddClamped(target.PrestigeScoreTotal, PrestigeScoreTotal);
             target.Points = AddClamped(target.Points, Points);
+            target.PlatformScorePoints = AddClamped(target.PlatformScorePoints, PlatformScorePoints);
 
             if (LastUnlockUtc.HasValue &&
                 (!target.LastUnlockUtc.HasValue || LastUnlockUtc.Value > target.LastUnlockUtc.Value))
@@ -117,6 +121,7 @@ namespace PlayniteAchievements.Services.Summaries
             item.CollectionScoreTotal = CollectionScoreTotal;
             item.PrestigeScoreTotal = PrestigeScoreTotal;
             item.Points = Points;
+            item.PlatformScorePoints = PlatformScorePoints;
             item.TotalCommonPossible = TotalCommonPossible;
             item.TotalUncommonPossible = TotalUncommonPossible;
             item.TotalRarePossible = TotalRarePossible;

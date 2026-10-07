@@ -522,6 +522,22 @@ namespace PlayniteAchievements.Views.Controls
             private set => SetValue(ShowRarityBadgesBelowProgressProperty, value);
         }
 
+        public static readonly DependencyProperty ShowCompletionFrameProperty =
+            DependencyProperty.Register(
+                nameof(ShowCompletionFrame),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(false));
+
+        // Resolved per-surface toggle for the completion frame on the Cover column (the completed
+        // brush border and the completion badge on the cover's bottom edge). Game summary surfaces
+        // only; category surfaces resolve false.
+        public bool ShowCompletionFrame
+        {
+            get => (bool)GetValue(ShowCompletionFrameProperty);
+            private set => SetValue(ShowCompletionFrameProperty, value);
+        }
+
         public static readonly DependencyProperty ShowColumnHeadersProperty =
             DependencyProperty.Register(
                 nameof(ShowColumnHeaders),
@@ -702,6 +718,7 @@ namespace PlayniteAchievements.Views.Controls
             UpdatePreferTrophyBadges(settings);
             UpdateShowNameAboveProgress(settings);
             UpdateShowRarityBadgesBelowProgress(settings);
+            UpdateShowCompletionFrame(settings);
             UpdateShowcaseOptionsSubscription(settings);
             // Tracks the current Persisted instance: CancelEdit replaces it, and a direct
             // subscription would leave this grid on the orphan, keeping the reverted
@@ -1186,7 +1203,9 @@ namespace PlayniteAchievements.Views.Controls
                 GetShowNameAboveProgress = () => showcaseOptions?.ShowNameAboveProgress ??
                     ResolveShowNameAboveProgress(persisted, surface),
                 GetShowRarityBadgesBelowProgress = () => showcaseOptions?.ShowRarityBadgesBelowProgress ??
-                    ResolveShowRarityBadgesBelowProgress(persisted, surface)
+                    ResolveShowRarityBadgesBelowProgress(persisted, surface),
+                GetShowCompletionFrame = () => showcaseOptions?.ShowCompletionFrame ??
+                    ResolveShowCompletionFrame(persisted, surface)
             };
         }
 
@@ -1358,6 +1377,43 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private static bool ResolveShowCompletionFrame(
+            PersistedSettings persisted,
+            GridSurface surface)
+        {
+            if (persisted == null)
+            {
+                return false;
+            }
+
+            switch (surface)
+            {
+                case GridSurface.StartPage:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.StartPage).ShowCompletionFrame;
+                case GridSurface.ViewAchievements:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewAchievements).ShowCompletionFrame;
+                case GridSurface.FriendsOverview:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverview).ShowCompletionFrame;
+                case GridSurface.FriendsOverviewSelectedFriend:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend).ShowCompletionFrame;
+                case GridSurface.ViewFriendsAchievements:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).ShowCompletionFrame;
+                case GridSurface.ViewFriendsAchievementsSelectedFriend:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend).ShowCompletionFrame;
+                case GridSurface.ViewAchievementsCategory:
+                case GridSurface.OverviewSelectedGameCategory:
+                case GridSurface.FriendsOverviewCategory:
+                case GridSurface.ViewFriendsAchievementsCategory:
+                case GridSurface.DesktopThemeCategory:
+                case GridSurface.WorkshopPreviewCategory:
+                    return false;
+                case GridSurface.DesktopTheme:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.DesktopTheme).ShowCompletionFrame;
+                default:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.Overview).ShowCompletionFrame;
+            }
+        }
+
         private static DateDisplayMode ResolveLastPlayedDateMode(
             PersistedSettings persisted,
             GridSurface surface)
@@ -1410,6 +1466,7 @@ namespace PlayniteAchievements.Views.Controls
             public Func<bool> GetColorRarityColumnsByRarity { get; set; }
             public Func<bool> GetShowNameAboveProgress { get; set; }
             public Func<bool> GetShowRarityBadgesBelowProgress { get; set; }
+            public Func<bool> GetShowCompletionFrame { get; set; }
         }
 
         private enum GridSurface
@@ -1667,6 +1724,13 @@ namespace PlayniteAchievements.Views.Controls
             {
                 UpdateShowRarityBadgesBelowProgress(PlayniteAchievementsPlugin.Instance?.Settings);
             }
+
+            // Matches the per-surface flat compatibility names (game-summary surfaces only).
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName.EndsWith(nameof(GameSummaryGridOptions.ShowCompletionFrame), StringComparison.Ordinal))
+            {
+                UpdateShowCompletionFrame(PlayniteAchievementsPlugin.Instance?.Settings);
+            }
         }
 
         private void UpdateLastPlayedDateMode(PlayniteAchievementsSettings settings)
@@ -1712,6 +1776,15 @@ namespace PlayniteAchievements.Views.Controls
             if (surfaceSettings != null)
             {
                 ShowRarityBadgesBelowProgress = surfaceSettings.GetShowRarityBadgesBelowProgress();
+            }
+        }
+
+        private void UpdateShowCompletionFrame(PlayniteAchievementsSettings settings)
+        {
+            var surfaceSettings = GetSurfaceSettings(settings);
+            if (surfaceSettings != null)
+            {
+                ShowCompletionFrame = surfaceSettings.GetShowCompletionFrame();
             }
         }
 
@@ -1765,6 +1838,12 @@ namespace PlayniteAchievements.Views.Controls
             {
                 UpdateShowRarityBadgesBelowProgress(settings);
             }
+
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(GameSummaryGridOptions.ShowCompletionFrame))
+            {
+                UpdateShowCompletionFrame(settings);
+            }
         }
 
         private static void OnColumnSettingsKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -1776,6 +1855,7 @@ namespace PlayniteAchievements.Views.Controls
             control.UpdateColorRarityColumnsByRarity(settings);
             control.UpdateShowNameAboveProgress(settings);
             control.UpdateShowRarityBadgesBelowProgress(settings);
+            control.UpdateShowCompletionFrame(settings);
             if (!control._isAttached && control._columnPersistence != null)
             {
                 // The surface restrictions were resolved for the previous key; a pre-attach
@@ -2056,6 +2136,7 @@ namespace PlayniteAchievements.Views.Controls
             UpdateColorRarityColumnsByRarity(PlayniteAchievementsPlugin.Instance?.Settings);
             UpdateShowNameAboveProgress(PlayniteAchievementsPlugin.Instance?.Settings);
             UpdateShowRarityBadgesBelowProgress(PlayniteAchievementsPlugin.Instance?.Settings);
+            UpdateShowCompletionFrame(PlayniteAchievementsPlugin.Instance?.Settings);
             RefreshPlaytimeText();
         }
 

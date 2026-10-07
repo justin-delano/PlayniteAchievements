@@ -155,6 +155,7 @@ namespace PlayniteAchievements.Services.Overview
             // Disposed explicitly below rather than with a using, so the scope covers the loop
             // and not the phases that follow it.
             var gameRowScope = PerfScope.Start(_logger, "Overview.Build.GameRows", thresholdMs: 25);
+            var platformScores = new PlatformScoreTotals();
             gameRowScope?.SetContext("games=" + games.Count);
 
             for (var i = 0; i < games.Count; i++)
@@ -218,6 +219,7 @@ namespace PlayniteAchievements.Services.Overview
                     CollectionScoreTotal = game.CollectionScoreTotal,
                     PrestigeScoreTotal = game.PrestigeScoreTotal,
                     Points = game.Points,
+                    PlatformScorePoints = game.PlatformScorePoints,
                     TotalCommonPossible = game.TotalCommonPossible,
                     TotalUncommonPossible = game.TotalUncommonPossible,
                     TotalRarePossible = game.TotalRarePossible,
@@ -250,6 +252,7 @@ namespace PlayniteAchievements.Services.Overview
                 snapshot.TotalUltraRare += game.UltraRareCount;
                 snapshot.CollectorScore = AddClamped(snapshot.CollectorScore, game.CollectionScore);
                 snapshot.PrestigeScore = AddClamped(snapshot.PrestigeScore, game.PrestigeScore);
+                platformScores.Add(providerKey, game.PlatformScorePoints);
                 snapshot.TotalCommonPossible += game.TotalCommonPossible;
                 snapshot.TotalUncommonPossible += game.TotalUncommonPossible;
                 snapshot.TotalRarePossible += game.TotalRarePossible;
@@ -316,6 +319,7 @@ namespace PlayniteAchievements.Services.Overview
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
                 : 0;
             ApplyScoreSnapshotFromValues(snapshot, snapshot.CollectorScore, snapshot.PrestigeScore);
+            snapshot.ApplyPlatformScores(platformScores);
 
             Common.LeakWatch.Track("OverviewSnapshot.full", snapshot);
             return snapshot;

@@ -136,6 +136,7 @@ namespace PlayniteAchievements.Tests.StartPage
             source.StartPageGameSummariesGrid.ColorRarityColumnsByRarity = true;
             source.StartPageGameSummariesGrid.ShowNameAboveProgress = true;
             source.StartPageGameSummariesGrid.ShowRarityBadgesBelowProgress = false;
+            source.StartPageGameSummariesGrid.ShowCompletionFrame = true;
             source.StartPageGameSummariesGrid.ShowColumnHeaders = false;
             source.StartPageGameSummariesGrid.ShowControlBar = true;
             source.StartPageGameSummariesGrid.RowHeight = 72d;
@@ -178,6 +179,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsTrue(clone.StartPageGameSummariesGrid.ColorRarityColumnsByRarity);
             Assert.IsTrue(clone.StartPageGameSummariesGrid.ShowNameAboveProgress);
             Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowRarityBadgesBelowProgress);
+            Assert.IsTrue(clone.StartPageGameSummariesGrid.ShowCompletionFrame);
             Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowColumnHeaders);
             Assert.IsTrue(clone.StartPageGameSummariesGrid.ShowControlBar);
             Assert.AreEqual(72d, clone.StartPageGameSummariesGrid.RowHeight);
@@ -186,6 +188,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsFalse(clone.StartPageGameSummariesGrid.SortDescending);
             Assert.IsTrue(copy.StartPageGameSummariesGrid.ShowControlBar);
             Assert.IsFalse(copy.StartPageGameSummariesGrid.ShowRarityBadgesBelowProgress);
+            Assert.IsTrue(copy.StartPageGameSummariesGrid.ShowCompletionFrame);
 
             Assert.IsFalse(copy.StartPageRecentUnlocksGrid.UseCoverImages);
             Assert.IsTrue(copy.StartPageRecentUnlocksGrid.ColorNamesByRarity);
@@ -566,6 +569,7 @@ namespace PlayniteAchievements.Tests.StartPage
             options.ShowCompletionGlow = seed % 2 == 0;
             options.ColorRarityColumnsByRarity = seed % 2 != 0;
             options.ShowNameAboveProgress = seed % 2 == 0;
+            options.ShowCompletionFrame = seed % 2 != 0;
             options.LastPlayedDateMode = (DateDisplayMode)(seed % 3);
             options.SortMode = (GameSummariesSortMode)(seed % 5);
             options.SortDescending = seed % 2 == 0;
@@ -581,6 +585,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual(seed % 2 == 0, options.ShowCompletionGlow);
             Assert.AreEqual(seed % 2 != 0, options.ColorRarityColumnsByRarity);
             Assert.AreEqual(seed % 2 == 0, options.ShowNameAboveProgress);
+            Assert.AreEqual(seed % 2 != 0, options.ShowCompletionFrame);
             Assert.AreEqual((DateDisplayMode)(seed % 3), options.LastPlayedDateMode);
             Assert.AreEqual((GameSummariesSortMode)(seed % 5), options.SortMode);
             Assert.AreEqual(seed % 2 == 0, options.SortDescending);

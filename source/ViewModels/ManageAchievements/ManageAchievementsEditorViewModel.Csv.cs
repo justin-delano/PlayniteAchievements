@@ -119,6 +119,17 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private static string OwnIcon(AchievementEditorRow row, AchievementIconVariant variant)
         {
             var current = NormalizeText(ReadIcon(row, variant));
+
+            // A locked slot can hold a copy of the unlocked icon rather than art of its own;
+            // exported, that copy came back as a separate locked file. Same test the override
+            // write and the authored save use.
+            if (current != null &&
+                variant == AchievementIconVariant.Locked &&
+                !AchievementIconResolver.HasExplicitLockedIcon(current, row.UnlockedIconPath))
+            {
+                return null;
+            }
+
             if (current == null || !row.IsProviderRow)
             {
                 return current;

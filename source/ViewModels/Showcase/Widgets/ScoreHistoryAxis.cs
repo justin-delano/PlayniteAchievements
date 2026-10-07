@@ -41,15 +41,20 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         /// <summary>Share of the window's gain kept above the line so its end never touches the chart top.</summary>
         public const double Headroom = 0.10;
 
-        public static ScoreHistoryAxisFrame Frame(int currentScore, int windowMin, int windowMax)
+        public static ScoreHistoryAxisFrame Frame(
+            int currentScore,
+            int windowMin,
+            int windowMax,
+            AchievementLevelCurveSettings curve = null)
         {
+            curve ??= AchievementLevelCurveSettings.ModernDefault;
             windowMin = Math.Max(0, windowMin);
             windowMax = Math.Max(windowMin, windowMax);
             // The last history point should equal the live score, but the frame tolerates the two
             // disagreeing by anchoring on whichever is higher so the line never clips.
             var effectiveScore = Math.Max(currentScore, windowMax);
-            var current = AchievementLevelCalculator.CalculateModern(effectiveScore);
-            double tierStart = AchievementLevelCalculator.GetScoreForLevel(current.RankStartLevel);
+            var current = AchievementLevelCalculator.Calculate(effectiveScore, curve);
+            double tierStart = AchievementLevelCalculator.GetScoreForLevel(current.RankStartLevel, curve);
             var nextTierStart = current.NextRankScoreThreshold > effectiveScore
                 ? current.NextRankScoreThreshold
                 : double.NaN;

@@ -36,8 +36,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             bool useCovers = true,
             bool showCompletionGlow = false,
             int spacing = 6,
-            bool showRarityBar = false)
+            bool showRarityBar = false,
+            bool showCompletionFrame = false)
         {
+            Game = game;
             _gameId = game.PlayniteGameId;
             _pinCollectionId = pinCollectionId;
             // Icon tiles keep Uniform stretch (HasCover false) so icons are never cropped;
@@ -64,9 +66,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             IsCompleted = game.IsCompleted;
             ShowCompletionGlow = showCompletionGlow && game.IsCompleted;
             _rarityBarEnabled = showRarityBar;
+            ShowCompletionFrame = showCompletionFrame && game.ShowCompletionBadge;
             GlowSpacing = showCompletionGlow;
-            TileMargin = new Thickness(showCompletionGlow ? Math.Max(spacing, GlowClearance) : spacing);
-            IsSeamless = spacing == 0 && !showCompletionGlow;
+            TileMargin = ResolveTileMargin(spacing, showCompletionGlow, showCompletionFrame);
+            IsSeamless = spacing == 0 && !showCompletionGlow && !showCompletionFrame;
 
             MoveEarlierCommand = new RelayCommand(_ => Move(-1));
             MoveLaterCommand = new RelayCommand(_ => Move(1));
@@ -75,6 +78,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         /// <summary>The tile's Playnite game, which a click opens in the library.</summary>
         public Guid? GameId => _gameId;
+
+        /// <summary>
+        /// The game's summary row, which the completion frame's badge binds to for the same badge
+        /// choice and capstone count the game summaries grid shows.
+        /// </summary>
+        public GameSummaryItem Game { get; }
 
         public string CoverPath { get; }
 
@@ -103,6 +112,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         /// <summary>True when the tile's game is completed and the widget shows the glow.</summary>
         public bool ShowCompletionGlow { get; }
+
+        /// <summary>
+        /// True when the widget shows the completion frame and the game shows the completion badge
+        /// (the game summaries grid's condition for the same frame).
+        /// </summary>
+        public bool ShowCompletionFrame { get; }
 
         /// <summary>
         /// Global unlock percent of the game's capstone (or, with no capstone, its rarest
@@ -139,7 +154,9 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         /// <summary>
         /// Space around the tile: the widget's spacing option, raised to the glow's clearance
-        /// while the completion glow is on (see <see cref="GlowSpacing"/>).
+        /// while the completion glow is on (see <see cref="GlowSpacing"/>), and to the completion
+        /// frame's overhang while the frame is on. Like the glow clearance, the frame's applies to
+        /// every tile so the mosaic keeps one tile size.
         /// </summary>
         public Thickness TileMargin { get; }
 
@@ -147,6 +164,23 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public bool IsSeamless { get; }
 
         private const int GlowClearance = 14;
+
+        // The frame's band sits outside the art; its badge (18px) hangs half its height below.
+        private const int FrameBandClearance = 2;
+        private const int FrameBadgeOverhang = 9;
+
+        internal static Thickness ResolveTileMargin(int spacing, bool showCompletionGlow, bool showCompletionFrame)
+        {
+            double side = showCompletionGlow ? Math.Max(spacing, GlowClearance) : spacing;
+            if (!showCompletionFrame)
+            {
+                return new Thickness(side);
+            }
+
+            var bottom = Math.Max(side, FrameBadgeOverhang);
+            side = Math.Max(side, FrameBandClearance);
+            return new Thickness(side, side, side, bottom);
+        }
 
         public RelayCommand MoveEarlierCommand { get; }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.StartPage
@@ -10,7 +11,11 @@ namespace PlayniteAchievements.Services.StartPage
     {
         public string ViewId { get; set; }
 
-        public StartPageWidgetKind WidgetKind { get; set; }
+        /// <summary>
+        /// The stable start page kind registered for this view, or null for a view minted from a
+        /// showcase widget kind that has no dedicated start page kind.
+        /// </summary>
+        public StartPageWidgetKind? WidgetKind { get; set; }
 
         public string NameKey { get; set; }
 
@@ -27,6 +32,12 @@ namespace PlayniteAchievements.Services.StartPage
         public bool Hidden { get; set; }
     }
 
+    /// <summary>
+    /// The start page views mirror the showcase widget catalog: one view per showcase widget kind,
+    /// in the catalog's order, named and flagged by the showcase definition. Legacy views that
+    /// predate the merge onto the showcase widget path follow, hidden, so already-placed start
+    /// page widgets keep resolving by their saved ids.
+    /// </summary>
     public static class StartPageViewCatalog
     {
         public const string GameSummariesGridViewId = "PlayniteAchievements_GameSummariesGrid";
@@ -47,126 +58,51 @@ namespace PlayniteAchievements.Services.StartPage
         public const string ShowcaseScreenshotSlideshowViewId = "PlayniteAchievements_Showcase_ScreenshotSlideshow";
         public const string ShowcaseActivityCalendarViewId = "PlayniteAchievements_Showcase_ActivityCalendar";
 
-        private static readonly IReadOnlyList<StartPageViewDefinition> ViewDefinitions =
-            new List<StartPageViewDefinition>
+        private const string MintedViewIdPrefix = "PlayniteAchievements_Showcase_";
+
+        /// <summary>
+        /// The view each showcase widget kind is offered under. Each reuses a view id that start
+        /// pages already hold, so a widget placed before the start page mirrored the showcase is
+        /// the same entry the add list offers now. A showcase kind missing here is offered under
+        /// a view id minted from its name.
+        /// </summary>
+        private static readonly IReadOnlyDictionary<ShowcaseWidgetKind, (string ViewId, StartPageWidgetKind WidgetKind)> KindViews =
+            new Dictionary<ShowcaseWidgetKind, (string, StartPageWidgetKind)>
             {
-                // The two self grids kept their original view ids when they moved onto the
-                // showcase widget path, so widgets already placed on users' start pages keep
-                // working; their per-instance surfaces are seeded from the fixed StartPage
+                [ShowcaseWidgetKind.Profile] = (ShowcaseProfileViewId, StartPageWidgetKind.ShowcaseProfile),
+                // The former dual-score view; its saved Both choice reads as the Collection card.
+                [ShowcaseWidgetKind.Scores] = (ShowcaseDualScoresViewId, StartPageWidgetKind.ShowcaseDualScores),
+                // The former completed-games pie, which seeds the showcase default pie mode.
+                [ShowcaseWidgetKind.Pie] = (CompletedGamesPieViewId, StartPageWidgetKind.CompletedGamesPie),
+                [ShowcaseWidgetKind.Timeline] = (ShowcaseTimelineViewId, StartPageWidgetKind.ShowcaseTimeline),
+                [ShowcaseWidgetKind.Statistics] = (ShowcaseStatisticsViewId, StartPageWidgetKind.ShowcaseStatistics),
+                [ShowcaseWidgetKind.NativePoints] = (ShowcaseNativePointsViewId, StartPageWidgetKind.ShowcaseNativePoints),
+                [ShowcaseWidgetKind.IconMosaic] = (ShowcaseIconMosaicViewId, StartPageWidgetKind.ShowcaseIconMosaic),
+                [ShowcaseWidgetKind.ScreenshotSlideshow] = (ShowcaseScreenshotSlideshowViewId, StartPageWidgetKind.ShowcaseScreenshotSlideshow),
+                // The two self grids seed their per-instance surfaces from the fixed StartPage
                 // surfaces on first load.
-                new StartPageViewDefinition
-                {
-                    ViewId = GameSummariesGridViewId,
-                    WidgetKind = StartPageWidgetKind.GameSummariesGrid,
-                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.GameSummaries,
-                    NameKey = "LOCPlayAch_Overview_GameSummaries",
-                    HasSettings = true,
-                    AllowMultipleInstances = true
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = RecentUnlocksGridViewId,
-                    WidgetKind = StartPageWidgetKind.RecentUnlocksGrid,
-                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.RecentAchievements,
-                    NameKey = "LOCPlayAch_RecentAchievements",
-                    HasSettings = true,
-                    AllowMultipleInstances = true
-                },
-                // The four pie views ride the showcase Pie widget under their original view
-                // ids; each seeds its pie mode at instance creation (see
-                // GetOrCreateStartPageWidgetSettings) and edits per-widget pie options.
-                new StartPageViewDefinition
-                {
-                    ViewId = CompletedGamesPieViewId,
-                    WidgetKind = StartPageWidgetKind.CompletedGamesPie,
-                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
-                    NameKey = "LOCPlayAch_Overview_GamesPieChart",
-                    HasSettings = true,
-                    AllowMultipleInstances = true
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = ProviderPieViewId,
-                    WidgetKind = StartPageWidgetKind.ProviderPie,
-                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
-                    NameKey = "LOCPlayAch_Overview_ProviderDistribution",
-                    HasSettings = true,
-                    AllowMultipleInstances = true
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = RarityPieViewId,
-                    WidgetKind = StartPageWidgetKind.RarityPie,
-                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
-                    NameKey = "LOCPlayAch_Overview_RarityPieChart",
-                    HasSettings = true,
-                    AllowMultipleInstances = true
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = TrophyPieViewId,
-                    WidgetKind = StartPageWidgetKind.TrophyPie,
-                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie,
-                    NameKey = "LOCPlayAch_Overview_TrophyPieChart",
-                    HasSettings = true,
-                    AllowMultipleInstances = true
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = CollectionScoreCardViewId,
-                    WidgetKind = StartPageWidgetKind.CollectionScoreCard,
-                    NameKey = "LOCPlayAch_Score_Collection"
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = PrestigeScoreCardViewId,
-                    WidgetKind = StartPageWidgetKind.PrestigeScoreCard,
-                    NameKey = "LOCPlayAch_Score_Prestige"
-                },
-                Shared(
-                    ShowcaseProfileViewId,
-                    StartPageWidgetKind.ShowcaseProfile,
-                    ShowcaseWidgetKind.Profile,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseDualScoresViewId,
-                    StartPageWidgetKind.ShowcaseDualScores,
-                    ShowcaseWidgetKind.Scores,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseTimelineViewId,
-                    StartPageWidgetKind.ShowcaseTimeline,
-                    ShowcaseWidgetKind.Timeline,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseStatisticsViewId,
-                    StartPageWidgetKind.ShowcaseStatistics,
-                    ShowcaseWidgetKind.Statistics,
-                    hasSettings: false),
-                // NativePoints stays resolvable for already-placed start-page views; Shared
-                // marks it hidden from the add list because its showcase kind is hidden in the
-                // widget catalog.
-                Shared(
-                    ShowcaseNativePointsViewId,
-                    StartPageWidgetKind.ShowcaseNativePoints,
-                    ShowcaseWidgetKind.NativePoints,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseIconMosaicViewId,
-                    StartPageWidgetKind.ShowcaseIconMosaic,
-                    ShowcaseWidgetKind.IconMosaic,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseScreenshotSlideshowViewId,
-                    StartPageWidgetKind.ShowcaseScreenshotSlideshow,
-                    ShowcaseWidgetKind.ScreenshotSlideshow,
-                    hasSettings: true),
-                Shared(
-                    ShowcaseActivityCalendarViewId,
-                    StartPageWidgetKind.ShowcaseActivityCalendar,
-                    ShowcaseWidgetKind.ActivityCalendar,
-                    hasSettings: true)
+                [ShowcaseWidgetKind.RecentAchievements] = (RecentUnlocksGridViewId, StartPageWidgetKind.RecentUnlocksGrid),
+                [ShowcaseWidgetKind.GameSummaries] = (GameSummariesGridViewId, StartPageWidgetKind.GameSummariesGrid),
+                [ShowcaseWidgetKind.ActivityCalendar] = (ShowcaseActivityCalendarViewId, StartPageWidgetKind.ShowcaseActivityCalendar)
             };
+
+        /// <summary>
+        /// Views a showcase kind's entry replaced. They stay hidden from the add list and seed
+        /// the option they always showed at instance creation (see
+        /// GetOrCreateStartPageWidgetSettings): each pie its pie mode, each score card its card
+        /// type.
+        /// </summary>
+        private static readonly IReadOnlyList<(string ViewId, StartPageWidgetKind WidgetKind, ShowcaseWidgetKind ShowcaseKind)> LegacyViews =
+            new List<(string, StartPageWidgetKind, ShowcaseWidgetKind)>
+            {
+                (ProviderPieViewId, StartPageWidgetKind.ProviderPie, ShowcaseWidgetKind.Pie),
+                (RarityPieViewId, StartPageWidgetKind.RarityPie, ShowcaseWidgetKind.Pie),
+                (TrophyPieViewId, StartPageWidgetKind.TrophyPie, ShowcaseWidgetKind.Pie),
+                (CollectionScoreCardViewId, StartPageWidgetKind.CollectionScoreCard, ShowcaseWidgetKind.Scores),
+                (PrestigeScoreCardViewId, StartPageWidgetKind.PrestigeScoreCard, ShowcaseWidgetKind.Scores)
+            };
+
+        private static readonly IReadOnlyList<StartPageViewDefinition> ViewDefinitions = BuildViews();
 
         public static IReadOnlyList<StartPageViewDefinition> Views => ViewDefinitions;
 
@@ -184,22 +120,86 @@ namespace PlayniteAchievements.Services.StartPage
             return definition != null;
         }
 
-        private static StartPageViewDefinition Shared(
-            string viewId,
-            StartPageWidgetKind startPageKind,
-            ShowcaseWidgetKind showcaseKind,
-            bool hasSettings)
+        /// <summary>
+        /// Seeds a new start page instance with the option its view id has always shown: the
+        /// four pie views share the showcase Pie kind and each seeds its distribution, and the
+        /// former standalone Prestige score card seeds the Prestige card. Every other view keeps
+        /// the showcase defaults.
+        /// </summary>
+        public static void SeedViewOptions(string viewId, ShowcaseWidgetInstanceSettings settings)
         {
-            var definition = ShowcaseWidgetCatalog.Get(showcaseKind);
+            if (settings == null)
+            {
+                return;
+            }
+
+            if (settings.Kind == PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Pie)
+            {
+                ShowcaseWidgetOptions.SetPieMode(settings, ResolvePieMode(viewId));
+            }
+
+            if (settings.Kind == PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Scores &&
+                string.Equals(viewId, PrestigeScoreCardViewId, StringComparison.Ordinal))
+            {
+                ShowcaseWidgetOptions.SetScoreCardType(settings, ScoreCardType.Prestige);
+            }
+        }
+
+        private static ShowcasePieMode ResolvePieMode(string viewId)
+        {
+            switch (viewId)
+            {
+                case ProviderPieViewId:
+                    return ShowcasePieMode.Provider;
+                case RarityPieViewId:
+                    return ShowcasePieMode.Rarity;
+                case TrophyPieViewId:
+                    return ShowcasePieMode.Trophy;
+                default:
+                    return ShowcasePieMode.CompletedGames;
+            }
+        }
+
+        private static IReadOnlyList<StartPageViewDefinition> BuildViews()
+        {
+            var views = new List<StartPageViewDefinition>();
+            foreach (var showcase in ShowcaseWidgetCatalog.Definitions)
+            {
+                var view = KindViews.TryGetValue(showcase.Kind, out var known)
+                    ? FromShowcase(known.ViewId, known.WidgetKind, showcase)
+                    : FromShowcase(MintedViewIdPrefix + showcase.Kind, null, showcase);
+                views.Add(view);
+            }
+
+            foreach (var legacy in LegacyViews)
+            {
+                var view = FromShowcase(
+                    legacy.ViewId,
+                    legacy.WidgetKind,
+                    ShowcaseWidgetCatalog.Get(legacy.ShowcaseKind));
+                view.Hidden = true;
+                views.Add(view);
+            }
+
+            return views;
+        }
+
+        // Every showcase widget kind edits per-instance options in the shared options control,
+        // so every view offers settings.
+        private static StartPageViewDefinition FromShowcase(
+            string viewId,
+            StartPageWidgetKind? startPageKind,
+            ShowcaseWidgetDefinition showcase)
+        {
             return new StartPageViewDefinition
             {
                 ViewId = viewId,
                 WidgetKind = startPageKind,
-                ShowcaseWidgetKind = showcaseKind,
-                NameKey = definition.NameKey,
-                AllowMultipleInstances = definition.AllowMultipleInstances,
-                HasSettings = hasSettings,
-                Hidden = definition.Hidden
+                ShowcaseWidgetKind = showcase.Kind,
+                NameKey = showcase.NameKey,
+                AllowMultipleInstances = showcase.AllowMultipleInstances,
+                HasSettings = true,
+                Hidden = showcase.Hidden
             };
         }
     }

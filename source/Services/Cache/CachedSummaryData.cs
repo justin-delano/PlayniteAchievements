@@ -60,6 +60,9 @@ namespace PlayniteAchievements.Services.Cache
 
         public int Points { get; set; }
 
+        /// <summary>Unlocked points that count toward a platform score: RetroAchievements softcore unlocks are left out.</summary>
+        public int PlatformScorePoints { get; set; }
+
         public int CommonCount { get; set; }
 
         public int UncommonCount { get; set; }

@@ -874,17 +874,25 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ColorRarityColumnsByRaritySelectedGame => _settings?.Persisted?.OverviewSelectedGameColorRarityColumnsByRarity ?? false;
 
-        public bool ShowOverviewCollectionScoreCard => _settings?.Persisted?.ShowOverviewCollectionScoreCard ?? true;
+        public ScoreCardSlot OverviewScoreCardSlot1 =>
+            ScoreCardTypes.Normalize(_settings?.Persisted?.OverviewScoreCardSlot1 ?? ScoreCardSlot.Collection);
 
-        public bool ShowOverviewPrestigeScoreCard => _settings?.Persisted?.ShowOverviewPrestigeScoreCard ?? true;
+        public ScoreCardSlot OverviewScoreCardSlot2 =>
+            ScoreCardTypes.Normalize(_settings?.Persisted?.OverviewScoreCardSlot2 ?? ScoreCardSlot.Prestige);
 
-        public bool ShowOverviewScoreCards => _hasAppliedSnapshot && (ShowOverviewCollectionScoreCard || ShowOverviewPrestigeScoreCard);
+        public bool ShowOverviewScoreCard1 => OverviewScoreCardSlot1 != ScoreCardSlot.None;
 
-        public bool ShowOverviewScoreCardDivider =>_hasAppliedSnapshot && ShowOverviewCollectionScoreCard && ShowOverviewPrestigeScoreCard;
+        public bool ShowOverviewScoreCard2 => OverviewScoreCardSlot2 != ScoreCardSlot.None;
 
-        public ScoreCardViewModel CollectionScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Collection);
+        public bool ShowOverviewScoreCards => _hasAppliedSnapshot && (ShowOverviewScoreCard1 || ShowOverviewScoreCard2);
 
-        public ScoreCardViewModel PrestigeScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Prestige);
+        public bool ShowOverviewScoreCardDivider => _hasAppliedSnapshot && ShowOverviewScoreCard1 && ShowOverviewScoreCard2;
+
+        /// <summary>The header's first score card; its type follows <see cref="OverviewScoreCardSlot1"/>.</summary>
+        public ScoreCardViewModel ScoreCard1 { get; } = new ScoreCardViewModel(ScoreCardType.Collection);
+
+        /// <summary>The header's second score card; its type follows <see cref="OverviewScoreCardSlot2"/>.</summary>
+        public ScoreCardViewModel ScoreCard2 { get; } = new ScoreCardViewModel(ScoreCardType.Prestige);
 
         public bool EnableFriendsFeatures => _settings?.Persisted?.EnableFriendsFeatures ?? true;
 
@@ -2188,18 +2196,20 @@ namespace PlayniteAchievements.ViewModels
         private void ApplyScoreCards()
         {
             var useUniformRarityBadges = UseUniformRarityBadges;
-            CollectionScoreCard.Apply(
-                CollectorScore,
-                CollectorLevel,
-                CollectorLevelProgress,
-                CollectorRank,
-                useUniformRarityBadges);
-            PrestigeScoreCard.Apply(
-                PrestigeScore,
-                PrestigeLevel,
-                PrestigeLevelProgress,
-                PrestigeRank,
-                useUniformRarityBadges);
+            var snapshot = _latestSnapshot ?? new OverviewDataSnapshot
+            {
+                CollectorScore = CollectorScore,
+                PrestigeScore = PrestigeScore
+            };
+            if (ScoreCardTypes.TryGetCardType(OverviewScoreCardSlot1, out var first))
+            {
+                ScoreCard1.ApplyFor(first, snapshot, useUniformRarityBadges);
+            }
+
+            if (ScoreCardTypes.TryGetCardType(OverviewScoreCardSlot2, out var second))
+            {
+                ScoreCard2.ApplyFor(second, snapshot, useUniformRarityBadges);
+            }
         }
 
         private void NormalizeScoreSnapshot(OverviewDataSnapshot snapshot)
@@ -2228,6 +2238,27 @@ namespace PlayniteAchievements.ViewModels
             snapshot.PrestigeLevel = PrestigeLevel;
             snapshot.PrestigeLevelProgress = PrestigeLevelProgress;
             snapshot.PrestigeRank = PrestigeRank;
+
+            // The platform scores ride along so the header's platform cards hold their value too.
+            var previous = _latestSnapshot;
+            if (previous != null)
+            {
+                snapshot.GamerscoreScore = previous.GamerscoreScore;
+                snapshot.GamerscoreLevel = previous.GamerscoreLevel;
+                snapshot.GamerscoreLevelProgress = previous.GamerscoreLevelProgress;
+                snapshot.GamerscoreRank = previous.GamerscoreRank;
+                snapshot.GamerscoreMastery = previous.GamerscoreMastery;
+                snapshot.EpicXpScore = previous.EpicXpScore;
+                snapshot.EpicXpLevel = previous.EpicXpLevel;
+                snapshot.EpicXpLevelProgress = previous.EpicXpLevelProgress;
+                snapshot.EpicXpRank = previous.EpicXpRank;
+                snapshot.EpicXpMastery = previous.EpicXpMastery;
+                snapshot.RetroPointsScore = previous.RetroPointsScore;
+                snapshot.RetroPointsLevel = previous.RetroPointsLevel;
+                snapshot.RetroPointsLevelProgress = previous.RetroPointsLevelProgress;
+                snapshot.RetroPointsRank = previous.RetroPointsRank;
+                snapshot.RetroPointsMastery = previous.RetroPointsMastery;
+            }
         }
 
         private static int AddClamped(int current, int value)
@@ -2519,10 +2550,11 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
             }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewCollectionScoreCard)
-                || propertyName == nameof(PersistedSettings.ShowOverviewPrestigeScoreCard))
+            else if (propertyName == nameof(PersistedSettings.OverviewScoreCardSlot1)
+                || propertyName == nameof(PersistedSettings.OverviewScoreCardSlot2))
             {
                 RaiseOverviewScoreCardVisibilityChanged();
+                ApplyScoreCards();
             }
             else if (propertyName == nameof(PersistedSettings.EnableFriendsFeatures))
             {
@@ -2663,8 +2695,10 @@ namespace PlayniteAchievements.ViewModels
 
         private void RaiseOverviewScoreCardVisibilityChanged()
         {
-            OnPropertyChanged(nameof(ShowOverviewCollectionScoreCard));
-            OnPropertyChanged(nameof(ShowOverviewPrestigeScoreCard));
+            OnPropertyChanged(nameof(OverviewScoreCardSlot1));
+            OnPropertyChanged(nameof(OverviewScoreCardSlot2));
+            OnPropertyChanged(nameof(ShowOverviewScoreCard1));
+            OnPropertyChanged(nameof(ShowOverviewScoreCard2));
             OnPropertyChanged(nameof(ShowOverviewScoreCards));
             OnPropertyChanged(nameof(ShowOverviewScoreCardDivider));
         }

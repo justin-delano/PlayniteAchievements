@@ -10,7 +10,7 @@ namespace PlayniteAchievements.Views.Dialogs
         {
             var dialog = new ScoreInfoDialog();
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                L("LOCPlayAch_Score_Info_WindowTitle"),
+                L("LOCPlayAch_Score_Info_Title"),
                 dialog,
                 new WindowOptions
                 {

@@ -160,7 +160,7 @@ namespace PlayniteAchievements.Services.Showcase
             IDictionary<string, string> idMap = null)
         {
             Validate(portable);
-            return ShowcaseLayoutService.ImportPage(
+            var page = ShowcaseLayoutService.ImportPage(
                 settings,
                 portable.Page,
                 portable.Widgets,
@@ -174,6 +174,15 @@ namespace PlayniteAchievements.Services.Showcase
                         idMap[source.InstanceId.Trim()] = imported.InstanceId;
                     }
                 });
+
+            // A page exported before each Scores widget held one card splits its Both widgets the
+            // way a loaded layout of that age does.
+            if (portable.LayoutVersion < ShowcaseSettings.OneCardScoresLayoutVersion)
+            {
+                ShowcaseLayoutService.SplitLegacyDualScoreWidgets(settings, page);
+            }
+
+            return page;
         }
 
         public static void Write(string destinationPath, ShowcasePagePortableFile portable)

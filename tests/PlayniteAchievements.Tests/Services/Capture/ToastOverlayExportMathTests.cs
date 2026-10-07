@@ -1,5 +1,6 @@
 using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Capture;
 
 namespace PlayniteAchievements.Services.Tests.Capture
@@ -12,12 +13,13 @@ namespace PlayniteAchievements.Services.Tests.Capture
         private const int CardW = 420;
         private const int CardH = 130;
 
-        private static ToastOverlayTrack BottomRightTrack(
-            double gapDip = 24.0, double monitorScale = 1.0, double? gapYDip = null)
+        private static ToastOverlayTrack BottomTrack(
+            double gapDip = 24.0, double monitorScale = 1.0, double? gapYDip = null,
+            ToastHorizontalAlignment horizontal = ToastHorizontalAlignment.Right)
         {
             return new ToastOverlayTrack
             {
-                AlignRight = true,
+                HorizontalAlignment = horizontal,
                 AlignBottom = true,
                 GapXDip = gapDip,
                 GapYDip = gapYDip ?? gapDip,
@@ -48,7 +50,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetSlideOffset_ExactSampleInstant_ReturnsThatSample()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, slideY: 150);
             AddSample(track, 33, slideY: 90);
 
@@ -61,7 +63,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetSlideOffset_BetweenSamples_InterpolatesLinearly()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, slideY: 100);
             AddSample(track, 40, slideY: 60);
 
@@ -74,7 +76,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetSlideOffset_QueryPastNextSample_ClampsToNextSample()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, slideY: 100);
             AddSample(track, 40, slideY: 60);
 
@@ -87,7 +89,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetSlideOffset_LastSample_HoldsWithoutExtrapolating()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, slideY: 100);
             AddSample(track, 40, slideY: 60);
 
@@ -99,7 +101,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetSlideOffset_SingleSample_ReturnsIt()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, slideX: 12.5, slideY: 7.25);
 
             ToastOverlayExportMath.GetSlideOffset(track, 0, 1.0, out var x, out var y);
@@ -113,7 +115,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void ComputeDestRect_BottomRightAtRest_MatchesHandCornerMath()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0);
 
             var rect = ToastOverlayExportMath.ComputeDestRect(
@@ -127,11 +129,27 @@ namespace PlayniteAchievements.Services.Tests.Capture
         }
 
         [TestMethod]
+        public void ComputeDestRect_BottomCenterAtRest_CentersWithoutTheHorizontalGap()
+        {
+            var track = BottomTrack(monitorScale: 1.5, horizontal: ToastHorizontalAlignment.Center);
+            AddSample(track, 0);
+
+            var rect = ToastOverlayExportMath.ComputeDestRect(
+                track, 0, 0.0, ClientW, ClientH);
+
+            // Midway across the client; only the vertical gap applies, scaled to the monitor.
+            Assert.AreEqual((ClientW - CardW) / 2, rect.X);
+            Assert.AreEqual(ClientH - CardH - 36, rect.Y);
+            Assert.AreEqual(CardW, rect.Width);
+            Assert.AreEqual(CardH, rect.Height);
+        }
+
+        [TestMethod]
         public void ComputeDestRect_HoldPhase_IsIdenticalForEveryInstant()
         {
             // The defect this pins down: the card must not move during the hold. With constant
             // dims and zero slide offsets, every output instant must synthesize the same rect.
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             for (var ms = 0; ms <= 4000; ms += 33)
             {
                 AddSample(track, ms);
@@ -152,10 +170,10 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void ComputeDestRect_SlideOffset_TranslatesTheCorner()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, slideY: 150);
 
-            var atRest = BottomRightTrack();
+            var atRest = BottomTrack();
             AddSample(atRest, 0);
 
             var slid = ToastOverlayExportMath.ComputeDestRect(
@@ -173,7 +191,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
             // A theme card whose root margin is not uniform reserves different room on the two
             // axes, so the clip's corner must inset each one by its own gap — the same split the
             // live placer applies, or the composited card lands off the on-screen position.
-            var track = BottomRightTrack(gapDip: 24.0, gapYDip: 14.0);
+            var track = BottomTrack(gapDip: 24.0, gapYDip: 14.0);
             AddSample(track, 0);
 
             var rect = ToastOverlayExportMath.ComputeDestRect(
@@ -186,7 +204,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void ComputeDestRect_MonitorScale_ScalesTheGap()
         {
-            var track = BottomRightTrack(gapDip: 24.0, monitorScale: 1.5);
+            var track = BottomTrack(gapDip: 24.0, monitorScale: 1.5);
             AddSample(track, 0);
 
             var rect = ToastOverlayExportMath.ComputeDestRect(
@@ -199,7 +217,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void ComputeDestRect_DownscaledFrame_ScalesPositionAndSize()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0);
 
             var rect = ToastOverlayExportMath.ComputeDestRect(
@@ -214,7 +232,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void ComputeDestRect_InvalidClientDims_ReturnsEmpty()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             track.Samples.Add(new ToastOverlayTrack.Sample { ElapsedMs = 0, FrameIndex = 0 });
 
             Assert.AreEqual(
@@ -227,7 +245,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetGlowScale_BetweenSamples_InterpolatesLinearly()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, glowScale: 1.0);
             AddSample(track, 40, glowScale: 0.5);
 
@@ -237,7 +255,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetGlowScale_PastNextSample_ClampsToNextSample()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0, glowScale: 1.0);
             AddSample(track, 40, glowScale: 0.5);
 
@@ -250,7 +268,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetHostOpacity_BetweenSamples_InterpolatesLinearly()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             track.Samples.Add(new ToastOverlayTrack.Sample { ElapsedMs = 0, HostOpacity = 1.0 });
             track.Samples.Add(new ToastOverlayTrack.Sample { ElapsedMs = 40, HostOpacity = 0.0 });
 
@@ -261,7 +279,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void FindRayLayerAtOrBefore_AdvancesCursorAndClamps()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             track.RayLayers.Add(new ToastOverlayTrack.TimedLayer { ElapsedMs = 0 });
             track.RayLayers.Add(new ToastOverlayTrack.TimedLayer { ElapsedMs = 100 });
             track.RayLayers.Add(new ToastOverlayTrack.TimedLayer { ElapsedMs = 200 });
@@ -277,7 +295,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetRayLayerBlend_BetweenLayers_IsLinearAndClamped()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             track.RayLayers.Add(new ToastOverlayTrack.TimedLayer { ElapsedMs = 100 });
             track.RayLayers.Add(new ToastOverlayTrack.TimedLayer { ElapsedMs = 300 });
 
@@ -396,7 +414,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetHostScale_UnsetSample_ReadsAsOne()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddSample(track, 0);
             AddSample(track, 100);
 
@@ -406,7 +424,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void GetHostScale_BetweenSamples_Interpolates()
         {
-            var track = BottomRightTrack();
+            var track = BottomTrack();
             AddScaledSample(track, 0, 0.8);
             AddScaledSample(track, 100, 1.0);
 
@@ -416,9 +434,9 @@ namespace PlayniteAchievements.Services.Tests.Capture
         [TestMethod]
         public void ComputeDestRect_Scaled_ShrinksAboutTheCardCenter()
         {
-            var full = BottomRightTrack();
+            var full = BottomTrack();
             AddSample(full, 0);
-            var scaled = BottomRightTrack();
+            var scaled = BottomTrack();
             AddScaledSample(scaled, 0, 0.5);
 
             var rest = ToastOverlayExportMath.ComputeDestRect(full, 0, 0.0, ClientW, ClientH);

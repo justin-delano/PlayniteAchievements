@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Models
@@ -74,7 +75,7 @@ namespace PlayniteAchievements.Models
             new List<ShowcaseWidgetDefinition>
             {
                 Define(ShowcaseWidgetKind.Profile, "LOCPlayAch_Showcase_Widget_Profile", false, true),
-                Define(ShowcaseWidgetKind.Scores, "LOCPlayAch_Showcase_Widget_Scores", false, false),
+                Define(ShowcaseWidgetKind.Scores, "LOCPlayAch_Showcase_Widget_Scores", true, false),
                 Define(ShowcaseWidgetKind.Pie, "LOCPlayAch_Showcase_Widget_Pie", true, false),
                 Define(ShowcaseWidgetKind.Timeline, "LOCPlayAch_Showcase_Widget_Timeline", true, false),
                 Define(ShowcaseWidgetKind.Statistics, "LOCPlayAch_Showcase_Widget_Statistics", true, false),
@@ -361,13 +362,18 @@ namespace PlayniteAchievements.Models
         private const string ShowControlBar = "ShowControlBar";
         private const string UseCoverImages = "UseCoverImages";
         private const string ShowCompletionGlow = "ShowCompletionGlow";
+        private const string ShowCompletionFrame = "ShowCompletionFrame";
         private const string CenterMode = "CenterMode";
         private const string LegacyShowCenterPercentage = "ShowCenterPercentage";
         private const string ShowLegend = "ShowLegend";
         private const string ShowIcons = "ShowIcons";
         private const string LegendPosition = "LegendPosition";
+        // Legacy Scores keys: read only to migrate a widget saved before the card slots existed.
         private const string CollectionBadgePosition = "CollectionBadgePosition";
         private const string PrestigeBadgePosition = "PrestigeBadgePosition";
+        private const string ScoreCard = "ScoreCard";
+        private const string ScoreCardBadgePositionKey = "ScoreCardBadgePosition";
+        private const string ScoreHistoryShown = "ScoreHistoryShown";
         private const string IncludeLocked = "IncludeLocked";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
@@ -506,37 +512,126 @@ namespace PlayniteAchievements.Models
             settings.Options[PinCollectionId] = collectionId.Trim();
         }
 
-        public static ShowcaseScoreMode GetScoreMode(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, Mode, ShowcaseScoreMode.Dual);
+        /// <summary>
+        /// The score a Scores widget shows. A widget saved before the card option existed has
+        /// only the legacy Mode: Prestige reads as Prestige, anything else as Collection. Layouts
+        /// split a legacy Both widget in two on load (see ShowcaseLayoutService.Normalize).
+        /// </summary>
+        public static ScoreCardType GetScoreCardType(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (HasOption(settings, ScoreCard))
+            {
+                return GetEnum(settings, ScoreCard, ScoreCardType.Collection);
+            }
 
-        public static void SetScoreMode(ShowcaseWidgetInstanceSettings settings, ShowcaseScoreMode value) =>
-            settings?.SetOption(Mode, value);
+            return GetEnum(settings, Mode, ShowcaseScoreMode.Dual) == ShowcaseScoreMode.Prestige
+                ? ScoreCardType.Prestige
+                : ScoreCardType.Collection;
+        }
+
+        public static void SetScoreCardType(ShowcaseWidgetInstanceSettings settings, ScoreCardType value) =>
+            settings?.SetOption(ScoreCard, value);
 
         /// <summary>
-        /// Which cards show the score-over-time line. Unset means both, so a layout saved before
-        /// the option existed keeps the chart it already had.
+        /// Which side the card's badge sits on. A widget saved before the option existed keeps the
+        /// legacy Collection or Prestige badge side of the score it shows.
         /// </summary>
-        public static ShowcaseScoreHistoryMode GetScoreHistoryMode(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, ScoreHistory, ShowcaseScoreHistoryMode.Dual);
+        public static ScoreCardBadgePosition GetScoreCardBadgePosition(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (HasOption(settings, ScoreCardBadgePositionKey))
+            {
+                return GetEnum(settings, ScoreCardBadgePositionKey, ScoreCardBadgePosition.Left);
+            }
 
-        public static void SetScoreHistoryMode(
+            return GetEnum(
+                settings,
+                GetScoreCardType(settings) == ScoreCardType.Prestige ? PrestigeBadgePosition : CollectionBadgePosition,
+                ScoreCardBadgePosition.Left);
+        }
+
+        public static void SetScoreCardBadgePosition(
             ShowcaseWidgetInstanceSettings settings,
-            ShowcaseScoreHistoryMode value) => settings?.SetOption(ScoreHistory, value);
+            ScoreCardBadgePosition value) => settings?.SetOption(ScoreCardBadgePositionKey, value);
 
-        public static ScoreCardBadgePosition GetCollectionBadgePosition(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, CollectionBadgePosition, ScoreCardBadgePosition.Left);
+        /// <summary>
+        /// Whether the card carries the score-over-time line. A widget saved before the option
+        /// existed shows it when the legacy choice was Both or named the score it shows; unset
+        /// everywhere means shown, so a layout saved before either option keeps its chart.
+        /// </summary>
+        public static bool GetScoreHistoryShown(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (HasOption(settings, ScoreHistoryShown))
+            {
+                return settings.GetOption(ScoreHistoryShown, true);
+            }
 
-        public static void SetCollectionBadgePosition(
-            ShowcaseWidgetInstanceSettings settings,
-            ScoreCardBadgePosition value) => settings?.SetOption(CollectionBadgePosition, value);
+            switch (GetEnum(settings, ScoreHistory, ShowcaseScoreHistoryMode.Dual))
+            {
+                case ShowcaseScoreHistoryMode.None:
+                    return false;
+                case ShowcaseScoreHistoryMode.Collection:
+                    return GetScoreCardType(settings) == ScoreCardType.Collection;
+                case ShowcaseScoreHistoryMode.Prestige:
+                    return GetScoreCardType(settings) == ScoreCardType.Prestige;
+                default:
+                    return true;
+            }
+        }
 
-        public static ScoreCardBadgePosition GetPrestigeBadgePosition(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, PrestigeBadgePosition, ScoreCardBadgePosition.Left);
+        public static void SetScoreHistoryShown(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ScoreHistoryShown, value);
 
-        public static void SetPrestigeBadgePosition(
-            ShowcaseWidgetInstanceSettings settings,
-            ScoreCardBadgePosition value) => settings?.SetOption(PrestigeBadgePosition, value);
+        /// <summary>True for a Scores widget saved with the legacy Mode of Both and no card option.</summary>
+        public static bool IsLegacyDualScores(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.Kind == ShowcaseWidgetKind.Scores &&
+            !HasOption(settings, ScoreCard) &&
+            GetEnum(settings, Mode, ShowcaseScoreMode.Dual) == ShowcaseScoreMode.Dual;
 
+        /// <summary>
+        /// Writes a Scores widget's legacy options out as the one-card options (card, badge side,
+        /// chart) and removes the legacy keys. A legacy Both widget becomes its Collection card.
+        /// </summary>
+        public static void MigrateLegacyScoreOptions(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (settings?.Kind != ShowcaseWidgetKind.Scores)
+            {
+                return;
+            }
+
+            var type = GetScoreCardType(settings);
+            SetScoreCardType(settings, type);
+            SetScoreCardBadgePosition(settings, GetScoreCardBadgePosition(settings));
+            SetScoreHistoryShown(settings, GetScoreHistoryShown(settings));
+            foreach (var key in new[] { Mode, ScoreHistory, CollectionBadgePosition, PrestigeBadgePosition })
+            {
+                settings.Options?.Remove(key);
+            }
+        }
+
+        /// <summary>
+        /// Splits a legacy Both widget: this widget becomes its Collection card and the returned
+        /// copy, under a new instance id, its Prestige card, each with that score's badge side and
+        /// chart choice. Null for any other widget.
+        /// </summary>
+        public static ShowcaseWidgetInstanceSettings SplitLegacyDualScores(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (!IsLegacyDualScores(settings))
+            {
+                return null;
+            }
+
+            var prestige = settings.Clone();
+            prestige.InstanceId = Guid.NewGuid().ToString("N");
+            SetScoreCardType(prestige, ScoreCardType.Prestige);
+            MigrateLegacyScoreOptions(prestige);
+            MigrateLegacyScoreOptions(settings);
+            return prestige;
+        }
+
+        private static bool HasOption(ShowcaseWidgetInstanceSettings settings, string key) =>
+            settings?.Options != null &&
+            settings.Options.TryGetValue(key, out var raw) &&
+            !string.IsNullOrWhiteSpace(raw);
         public static ShowcasePieMode GetPieMode(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Mode, ShowcasePieMode.CompletedGames);
 
@@ -1012,6 +1107,17 @@ namespace PlayniteAchievements.Models
             ShowcaseWidgetInstanceSettings settings,
             bool value) => settings?.SetOption(ShowCompletionGlow, value);
 
+        /// <summary>
+        /// Whether completed games' tiles get the completion frame: a band in the completed brush
+        /// and the completion badge on the cover's bottom edge.
+        /// </summary>
+        public static bool GetGameMosaicShowCompletionFrame(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowCompletionFrame, false) ?? false;
+
+        public static void SetGameMosaicShowCompletionFrame(
+            ShowcaseWidgetInstanceSettings settings,
+            bool value) => settings?.SetOption(ShowCompletionFrame, value);
+
         private static T GetEnum<T>(
             ShowcaseWidgetInstanceSettings settings,
             string key,
@@ -1044,10 +1150,9 @@ namespace PlayniteAchievements.Models
             switch (kind)
             {
                 case ShowcaseWidgetKind.Scores:
-                    ShowcaseWidgetOptions.SetScoreMode(settings, ShowcaseScoreMode.Dual);
-                    ShowcaseWidgetOptions.SetScoreHistoryMode(settings, ShowcaseScoreHistoryMode.Dual);
-                    ShowcaseWidgetOptions.SetCollectionBadgePosition(settings, ScoreCardBadgePosition.Left);
-                    ShowcaseWidgetOptions.SetPrestigeBadgePosition(settings, ScoreCardBadgePosition.Left);
+                    ShowcaseWidgetOptions.SetScoreCardType(settings, ScoreCardType.Collection);
+                    ShowcaseWidgetOptions.SetScoreCardBadgePosition(settings, ScoreCardBadgePosition.Left);
+                    ShowcaseWidgetOptions.SetScoreHistoryShown(settings, true);
                     ShowcaseTimelineOptions.SetWindow(settings, TimeWindow.FromPreset(TimelineRange.ThreeMonths));
                     break;
                 case ShowcaseWidgetKind.Pie:

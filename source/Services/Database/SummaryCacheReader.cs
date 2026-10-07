@@ -101,6 +101,7 @@ namespace PlayniteAchievements.Services.Database
             public double? GlobalPercentUnlocked { get; set; }
             public string Rarity { get; set; }
             public int? Points { get; set; }
+            public long IsSoftcore { get; set; }
         }
 
         /// <summary>
@@ -282,14 +283,14 @@ namespace PlayniteAchievements.Services.Database
                     scope?.SetContext("rows=" + gameRows.Count);
                 }
 
-                Dictionary<string, (int CollectionScore, int PrestigeScore, int Points)> scoreTotalsByCacheKey;
+                Dictionary<string, (int CollectionScore, int PrestigeScore, int Points, int PlatformScorePoints)> scoreTotalsByCacheKey;
                 using (var scope = PerfScope.Start(logger, "Cache.Summary.ScoreTotalsUnlocked" + tagSuffix, thresholdMs: 25))
                 {
                     scoreTotalsByCacheKey = LoadCachedScoreTotals(db, unlockedOnly: true, scopeGameId: scopeGameId);
                     scope?.SetContext("games=" + scoreTotalsByCacheKey.Count);
                 }
 
-                Dictionary<string, (int CollectionScore, int PrestigeScore, int Points)> possibleScoreTotalsByCacheKey;
+                Dictionary<string, (int CollectionScore, int PrestigeScore, int Points, int PlatformScorePoints)> possibleScoreTotalsByCacheKey;
                 using (var scope = PerfScope.Start(logger, "Cache.Summary.ScoreTotalsPossible" + tagSuffix, thresholdMs: 25))
                 {
                     possibleScoreTotalsByCacheKey = LoadCachedScoreTotals(db, unlockedOnly: false, scopeGameId: scopeGameId);
@@ -361,6 +362,7 @@ namespace PlayniteAchievements.Services.Database
                         CollectionScoreTotal = possibleScoreTotals.CollectionScore,
                         PrestigeScoreTotal = possibleScoreTotals.PrestigeScore,
                         Points = scoreTotals.Points,
+                        PlatformScorePoints = scoreTotals.PlatformScorePoints,
                         CommonCount = (int)Math.Max(0, row.CommonCount),
                         UncommonCount = (int)Math.Max(0, row.UncommonCount),
                         RareCount = (int)Math.Max(0, row.RareCount),
@@ -560,7 +562,7 @@ namespace PlayniteAchievements.Services.Database
                 ORDER BY lp.LastUpdatedUtc DESC, lp.CacheKey;", ScopeArgs(scopeGameId)).ToList();
         }
 
-        private static Dictionary<string, (int CollectionScore, int PrestigeScore, int Points)> LoadCachedScoreTotals(
+        private static Dictionary<string, (int CollectionScore, int PrestigeScore, int Points, int PlatformScorePoints)> LoadCachedScoreTotals(
             SQLiteDatabase db,
             bool unlockedOnly,
             Guid? scopeGameId = null)
@@ -596,7 +598,11 @@ namespace PlayniteAchievements.Services.Database
                     ad.Rarity AS Rarity,
                     -- Points is user-editable, so the score total must read the override first.
                     -- Rarity above deliberately is not: it stays provider-owned.
-                    COALESCE(aov.Points, ad.Points) AS Points
+                    COALESCE(aov.Points, ad.Points) AS Points,
+                    -- RetroAchievements marks softcore unlocks with the derived Softcore type, which
+                    -- only the provider writes (overrides never carry it). Platform scores skip them.
+                    CASE WHEN ('|' || COALESCE(ad.CategoryType, '') || '|') LIKE '%|Softcore|%'
+                         THEN 1 ELSE 0 END AS IsSoftcore
                 FROM LatestProgress lp
                 INNER JOIN AchievementDefinitions ad ON ad.GameId = lp.GameId
                 LEFT JOIN AchievementOverrides aov
@@ -610,7 +616,7 @@ namespace PlayniteAchievements.Services.Database
                                      AND (ao.IsFiltered = 1 OR ao.IsSummaryFiltered = 1))
                 ORDER BY lp.CacheKey;", ScopeArgs(scopeGameId)).ToList();
 
-            var totals = new Dictionary<string, (int CollectionScore, int PrestigeScore, int Points)>(StringComparer.OrdinalIgnoreCase);
+            var totals = new Dictionary<string, (int CollectionScore, int PrestigeScore, int Points, int PlatformScorePoints)>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
@@ -625,7 +631,10 @@ namespace PlayniteAchievements.Services.Database
                 totals[cacheKey] = (
                     AddClamped(current.CollectionScore, AchievementScoreCalculator.GetCollectionValue(rarity)),
                     AddClamped(current.PrestigeScore, AchievementScoreCalculator.GetPrestigeValue(row.GlobalPercentUnlocked, rarity)),
-                    AddClamped(current.Points, row.Points ?? 0));
+                    AddClamped(current.Points, row.Points ?? 0),
+                    row.IsSoftcore != 0
+                        ? current.PlatformScorePoints
+                        : AddClamped(current.PlatformScorePoints, row.Points ?? 0));
             }
 
             return totals;

@@ -265,6 +265,10 @@ namespace PlayniteAchievements.Services.Achievements
             game.CollectionScore = AddClamped(game.CollectionScore, AchievementScoreCalculator.GetCollectionValue(achievement.Rarity));
             game.PrestigeScore = AddClamped(game.PrestigeScore, AchievementScoreCalculator.GetPrestigeValue(achievement.GlobalPercentUnlocked, achievement.Rarity));
             game.Points = AddClamped(game.Points, achievement.Points ?? 0);
+            if (!AchievementCategoryTypeHelper.IsSoftcore(achievement.CategoryType))
+            {
+                game.PlatformScorePoints = AddClamped(game.PlatformScorePoints, achievement.Points ?? 0);
+            }
             AddRarity(game, achievement.Rarity, possible: false);
             AddTrophy(game, achievement.TrophyType, possible: false);
             if (achievement.UnlockTimeUtc.HasValue &&

@@ -779,7 +779,7 @@ namespace PlayniteAchievements.Services.UI
                         {
                             ToastWindowPlacer.ComputeCorner(
                                 anchorPhys, physSize.Width, physSize.Height, _activeMonitorScale,
-                                AlignRight(), AlignBottom(), EffectiveGapDipX(), EffectiveGapDipY(),
+                                Horizontal(), AlignBottom(), EffectiveGapDipX(), EffectiveGapDipY(),
                                 out var ix, out var iy);
                             rect = new System.Drawing.Rectangle(ix, iy, physSize.Width, physSize.Height);
                         }
@@ -1894,7 +1894,7 @@ namespace PlayniteAchievements.Services.UI
 
             ToastWindowPlacer.ComputeCorner(
                 clientPhys, physW, physH, _activeMonitorScale,
-                AlignRight(), AlignBottom(), EffectiveGapDipX(), EffectiveGapDipY(),
+                Horizontal(), AlignBottom(), EffectiveGapDipX(), EffectiveGapDipY(),
                 out var cornerX, out var cornerY);
             WarnOnSettledCardDrift(toastItems.Count, cornerX - clientPhys.X, cornerY - clientPhys.Y,
                 settledRelX, settledRelY);
@@ -2698,7 +2698,7 @@ namespace PlayniteAchievements.Services.UI
                 {
                     trackRecorder = new ToastOverlayTrackRecorder(
                         _logger, TrackSampleIntervalMs(),
-                        AlignRight(), AlignBottom(), EffectiveGapDipX(), EffectiveGapDipY(),
+                        Horizontal(), AlignBottom(), EffectiveGapDipX(), EffectiveGapDipY(),
                         _activeMonitorScale);
                     _trackRenderScratch = new Dictionary<AchievementToastViewModel, CardRenderScratch>();
                     trackSampleCount = 0;
@@ -3646,22 +3646,31 @@ namespace PlayniteAchievements.Services.UI
             TryPlacePhysical(window, false, out _);
         }
 
-        private bool AlignRight()
+        private ToastHorizontalAlignment Horizontal()
         {
-            return _activePosition == ToastScreenCorner.TopRight || _activePosition == ToastScreenCorner.BottomRight;
+            return _activePosition.Horizontal();
         }
 
         private bool AlignBottom()
         {
-            return _activePosition == ToastScreenCorner.BottomLeft || _activePosition == ToastScreenCorner.BottomRight;
+            return _activePosition.IsBottom();
         }
 
         // The window-edge gap in DIPs on each axis: the visible-body gap (CornerGapDip) less the
         // room the stack reserves on the edge the active corner sits against, so the body sits a
-        // constant distance from the corner whatever the template reserves there.
+        // constant distance from the corner whatever the template reserves there. A centered
+        // position sits against neither horizontal edge, so it has no horizontal gap.
         private double EffectiveGapDipX()
         {
-            return CornerGapDip - (AlignRight() ? _activeCardInset.Right : _activeCardInset.Left);
+            switch (Horizontal())
+            {
+                case ToastHorizontalAlignment.Right:
+                    return CornerGapDip - _activeCardInset.Right;
+                case ToastHorizontalAlignment.Center:
+                    return 0;
+                default:
+                    return CornerGapDip - _activeCardInset.Left;
+            }
         }
 
         private double EffectiveGapDipY()
@@ -3713,7 +3722,7 @@ namespace PlayniteAchievements.Services.UI
             var renderScale = ToastWindowPlacer.RenderScale(window);
             var placed = ToastWindowPlacer.PositionPhysical(
                 window, _activeCardSurface, SlideOffsetDipX(), SlideOffsetDipY(),
-                anchorPhys, renderScale, _activeMonitorScale, AlignRight(), AlignBottom(),
+                anchorPhys, renderScale, _activeMonitorScale, Horizontal(), AlignBottom(),
                 EffectiveGapDipX(), EffectiveGapDipY(),
                 measure, ref _placementCorrection, out outcome);
             LogPlacementAnomaly(window, anchorPhys, renderScale, outcome);

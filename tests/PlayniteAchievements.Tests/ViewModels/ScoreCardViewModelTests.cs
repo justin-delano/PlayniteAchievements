@@ -30,6 +30,55 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void Labels_NameThePlatformScores()
+        {
+            Assert.AreEqual("Gamerscore", new ScoreCardViewModel(ScoreCardType.Gamerscore).Label);
+            Assert.AreEqual("Epic XP", new ScoreCardViewModel(ScoreCardType.EpicXp).Label);
+            Assert.AreEqual("RetroAchievements Points", new ScoreCardViewModel(ScoreCardType.RetroPoints).Label);
+        }
+
+        [TestMethod]
+        public void ApplyFromScore_UsesTheCardTypesLadder()
+        {
+            var gamerscore = new ScoreCardViewModel(ScoreCardType.Gamerscore);
+            var collection = new ScoreCardViewModel(ScoreCardType.Collection);
+
+            gamerscore.ApplyFromScore(10000, useUniformRarityBadges: false);
+            collection.ApplyFromScore(10000, useUniformRarityBadges: false);
+
+            Assert.AreEqual("Silver4", gamerscore.Rank);
+            Assert.AreEqual(60, gamerscore.Level);
+            Assert.AreEqual(AchievementLevelCalculator.CalculateModern(10000).Rank, collection.Rank);
+        }
+
+        [TestMethod]
+        public void ApplyFor_SwitchesTypeAndReadsThatScore()
+        {
+            var card = new ScoreCardViewModel(ScoreCardType.Collection);
+            var snapshot = new PlayniteAchievements.Services.Overview.OverviewDataSnapshot
+            {
+                CollectorScore = 10000,
+                GamerscoreScore = 10000,
+                RetroPointsScore = 400
+            };
+
+            card.ApplyFor(ScoreCardType.Collection, snapshot, useUniformRarityBadges: false);
+            Assert.AreEqual(ScoreCardType.Collection, card.ScoreType);
+            var collectionRank = card.Rank;
+
+            card.ApplyFor(ScoreCardType.Gamerscore, snapshot, useUniformRarityBadges: false);
+            Assert.AreEqual(ScoreCardType.Gamerscore, card.ScoreType);
+            Assert.AreEqual("Gamerscore", card.Label);
+            Assert.AreEqual(10000, card.Score);
+            Assert.AreEqual("Silver4", card.Rank);
+            Assert.AreNotEqual(collectionRank, card.Rank);
+
+            card.ApplyFor(ScoreCardType.RetroPoints, snapshot, useUniformRarityBadges: false);
+            Assert.AreEqual(400, card.Score);
+            Assert.AreEqual("Bronze4", card.Rank);
+        }
+
+        [TestMethod]
         public void Apply_FormatsPointsTierAndLevel()
         {
             var card = new ScoreCardViewModel(ScoreCardType.Collection);

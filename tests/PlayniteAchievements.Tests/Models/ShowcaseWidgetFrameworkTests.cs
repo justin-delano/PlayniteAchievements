@@ -1,5 +1,6 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 
@@ -161,14 +162,12 @@ namespace PlayniteAchievements.Tests.Models
 
             instance.SetOption("ScoreHistory", 999);
 
-            Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(instance));
-            // A layout saved before the option existed, or with a junk value, keeps both charts.
-            Assert.AreEqual(
-                ShowcaseScoreHistoryMode.Dual,
-                ShowcaseWidgetOptions.GetScoreHistoryMode(new ShowcaseWidgetInstanceSettings()));
-            Assert.AreEqual(
-                ShowcaseScoreHistoryMode.Dual,
-                ShowcaseWidgetOptions.GetScoreHistoryMode(instance));
+            Assert.AreEqual(ScoreCardType.Collection, ShowcaseWidgetOptions.GetScoreCardType(instance));
+            // A layout saved before the option existed, or with a junk value, keeps its chart.
+            Assert.IsTrue(ShowcaseWidgetOptions.GetScoreHistoryShown(new ShowcaseWidgetInstanceSettings()));
+            Assert.IsTrue(ShowcaseWidgetOptions.GetScoreHistoryShown(instance));
+            instance.SetOption("ScoreCard", 999);
+            Assert.AreEqual(ScoreCardType.Collection, ShowcaseWidgetOptions.GetScoreCardType(instance));
             Assert.AreEqual(25, ShowcaseWidgetOptions.GetTopN(instance));
             Assert.AreEqual(1, ShowcaseWidgetOptions.GetMosaicCount(instance));
             Assert.AreEqual(300, ShowcaseWidgetOptions.GetSlideshowIntervalSeconds(instance));
@@ -188,6 +187,21 @@ namespace PlayniteAchievements.Tests.Models
 
             instance.SetOption("Count", 0);
             Assert.AreEqual(1, ShowcaseWidgetOptions.GetGameMosaicCount(instance));
+        }
+
+        [TestMethod]
+        public void GameMosaicShowCompletionFrame_DefaultsOffAndRoundTrips()
+        {
+            Assert.IsFalse(ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(null));
+
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.IconMosaic };
+            Assert.IsFalse(ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(instance));
+
+            ShowcaseWidgetOptions.SetGameMosaicShowCompletionFrame(instance, true);
+
+            Assert.IsTrue(ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(instance));
+            // Its own key: the completion glow keeps its default.
+            Assert.IsTrue(ShowcaseWidgetOptions.GetGameMosaicShowCompletionGlow(instance));
         }
 
         [TestMethod]
@@ -211,10 +225,11 @@ namespace PlayniteAchievements.Tests.Models
                 ShowcaseWidgetOptions.GetGameGridSource(summaries));
 
             var scores = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.Scores);
-            Assert.AreEqual(ShowcaseScoreMode.Dual, ShowcaseWidgetOptions.GetScoreMode(scores));
-            Assert.AreEqual(
-                ShowcaseScoreHistoryMode.Dual,
-                ShowcaseWidgetOptions.GetScoreHistoryMode(scores));
+            Assert.AreEqual(ScoreCardType.Collection, ShowcaseWidgetOptions.GetScoreCardType(scores));
+            Assert.AreEqual(ScoreCardBadgePosition.Left, ShowcaseWidgetOptions.GetScoreCardBadgePosition(scores));
+            Assert.IsTrue(ShowcaseWidgetOptions.GetScoreHistoryShown(scores));
+            Assert.IsFalse(ShowcaseWidgetOptions.IsLegacyDualScores(scores));
+            Assert.IsTrue(ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.Scores).AllowMultipleInstances);
             Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.ThreeMonths), ShowcaseTimelineOptions.GetWindow(scores));
 
             var calendar = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.ActivityCalendar);

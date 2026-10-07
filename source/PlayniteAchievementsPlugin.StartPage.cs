@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models.Settings;
@@ -178,7 +179,6 @@ namespace PlayniteAchievements
             StartPageViewDefinition definition,
             Func<ShowcaseWidgetInstanceSettings> resolveSettings)
         {
-            var widgetKind = definition.WidgetKind;
             if (definition.ShowcaseWidgetKind.HasValue)
             {
                 return new StartPageShowcaseWidgetViewModel(
@@ -188,14 +188,7 @@ namespace PlayniteAchievements
                     _logger);
             }
 
-            switch (widgetKind)
-            {
-                case StartPageWidgetKind.CollectionScoreCard:
-                case StartPageWidgetKind.PrestigeScoreCard:
-                    return new StartPageScoreCardWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
-                default:
-                    return null;
-            }
+            return null;
         }
 
         private static Control CreateStartPageView(StartPageViewDefinition definition)
@@ -205,15 +198,7 @@ namespace PlayniteAchievements
                 return new StartPageShowcaseWidgetView();
             }
 
-            var widgetKind = definition.WidgetKind;
-            switch (widgetKind)
-            {
-                case StartPageWidgetKind.CollectionScoreCard:
-                case StartPageWidgetKind.PrestigeScoreCard:
-                    return new StartPageScoreCardWidgetView();
-                default:
-                    return null;
-            }
+            return null;
         }
 
         private StartPageDataCoordinator GetStartPageDataCoordinator()
@@ -734,12 +719,7 @@ namespace PlayniteAchievements
                     showcase.DefaultGamePinCollectionId);
             }
 
-            // The four pie views share the showcase Pie kind; each seeds the distribution
-            // its view id has always shown.
-            if (kind == ShowcaseWidgetKind.Pie)
-            {
-                ShowcaseWidgetOptions.SetPieMode(settings, ResolvePieModeForView(viewId));
-            }
+            StartPageViewCatalog.SeedViewOptions(viewId, settings);
 
             // Migration: StartPage-hosted grid widgets used to share the fixed StartPage
             // surfaces edited on the Display tab. Seed each new per-instance surface from
@@ -759,21 +739,6 @@ namespace PlayniteAchievements
             showcase.StartPageInstances[key] = settings;
             PersistSettingsForUi();
             return settings;
-        }
-
-        private static ShowcasePieMode ResolvePieModeForView(string viewId)
-        {
-            switch (viewId)
-            {
-                case StartPageViewCatalog.ProviderPieViewId:
-                    return ShowcasePieMode.Provider;
-                case StartPageViewCatalog.RarityPieViewId:
-                    return ShowcasePieMode.Rarity;
-                case StartPageViewCatalog.TrophyPieViewId:
-                    return ShowcasePieMode.Trophy;
-                default:
-                    return ShowcasePieMode.CompletedGames;
-            }
         }
 
         private static string L(string key)

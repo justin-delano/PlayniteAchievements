@@ -284,26 +284,16 @@
         </Style.Triggers>
     </Style>
 
-    <!-- The finish badge. When the row's capstones are exactly its platinum trophies and the user
-         has left trophy badges on, the badge becomes the platinum itself and the trophy row drops
-         its own platinum, so the platinum is shown once rather than twice. -->
-    <Style x:Key="OverviewCompletedFooterIconStyle" TargetType="Image" BasedOn="{StaticResource OverviewMiniBadgeImageStyle}">
+    <!-- The finish badge at mini-badge size. When the row's capstones are exactly its platinum
+         trophies and the user has left trophy badges on, the badge becomes the platinum itself
+         (CompletionBadgeImageStyle) and the trophy row drops its own platinum, so the platinum is
+         shown once rather than twice. -->
+    <Style x:Key="OverviewCompletedFooterIconStyle" TargetType="Image" BasedOn="{StaticResource CompletionBadgeImageStyle}">
+        <Setter Property="Width" Value="{StaticResource PlayAch.Size.Icon.Tiny}"/>
+        <Setter Property="Height" Value="{StaticResource PlayAch.Size.Icon.Tiny}"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="4,0,0,0"/>
-        <Setter Property="Source" Value="{DynamicResource BadgeRarityCompleted}"/>
-        <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Completed}"/>
-        <Setter Property="Visibility" Value="{Binding ShowCompletionBadge, Converter={StaticResource BoolToVis}}"/>
-        <Style.Triggers>
-            <MultiDataTrigger>
-                <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding ShowPlatinumInCompletionSpot}" Value="True"/>
-                    <Condition Binding="{Binding PreferTrophyBadges, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
-                </MultiDataTrigger.Conditions>
-                <Setter Property="Source" Value="{DynamicResource TrophyPlatinum}"/>
-                <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Trophy_Platinum}"/>
-            </MultiDataTrigger>
-        </Style.Triggers>
     </Style>
 
     <!-- The finish badge's count, tinted to match whichever icon the badge is showing. -->

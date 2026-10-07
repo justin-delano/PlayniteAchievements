@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
@@ -115,6 +116,82 @@ namespace PlayniteAchievements.Services.Overview
         public int PrestigeLevel { get; set; }
         public double PrestigeLevelProgress { get; set; }
         public string PrestigeRank { get; set; } = "Bronze5";
+
+        // Platform scores: unlocked provider points summed per platform by effective provider key,
+        // each on its own milestone ladder (see ScoreCardTypes).
+        public int GamerscoreScore { get; set; }
+        public int GamerscoreLevel { get; set; }
+        public double GamerscoreLevelProgress { get; set; }
+        public string GamerscoreRank { get; set; } = "Bronze5";
+        public int GamerscoreMastery { get; set; }
+        public int EpicXpScore { get; set; }
+        public int EpicXpLevel { get; set; }
+        public double EpicXpLevelProgress { get; set; }
+        public string EpicXpRank { get; set; } = "Bronze5";
+        public int EpicXpMastery { get; set; }
+        public int RetroPointsScore { get; set; }
+        public int RetroPointsLevel { get; set; }
+        public double RetroPointsLevelProgress { get; set; }
+        public string RetroPointsRank { get; set; } = "Bronze5";
+        public int RetroPointsMastery { get; set; }
+
+        /// <summary>The raw score a card type shows.</summary>
+        public int GetScore(ScoreCardType type)
+        {
+            switch (type)
+            {
+                case ScoreCardType.Prestige:
+                    return PrestigeScore;
+                case ScoreCardType.Gamerscore:
+                    return GamerscoreScore;
+                case ScoreCardType.EpicXp:
+                    return EpicXpScore;
+                case ScoreCardType.RetroPoints:
+                    return RetroPointsScore;
+                default:
+                    return CollectorScore;
+            }
+        }
+
+        /// <summary>
+        /// Sets the platform score sums and the level, progress, rank and mastery each reaches on
+        /// its own ladder.
+        /// </summary>
+        public void ApplyPlatformScores(PlatformScoreTotals totals)
+        {
+            totals ??= new PlatformScoreTotals();
+
+            var gamerscore = ScoreCardTypes.Calculate(ScoreCardType.Gamerscore, totals.Gamerscore);
+            GamerscoreScore = totals.Gamerscore;
+            GamerscoreLevel = GetDisplayLevel(gamerscore);
+            GamerscoreLevelProgress = gamerscore.LevelProgress;
+            GamerscoreRank = gamerscore.Rank ?? "Bronze5";
+            GamerscoreMastery = gamerscore.Mastery;
+
+            var epicXp = ScoreCardTypes.Calculate(ScoreCardType.EpicXp, totals.EpicXp);
+            EpicXpScore = totals.EpicXp;
+            EpicXpLevel = GetDisplayLevel(epicXp);
+            EpicXpLevelProgress = epicXp.LevelProgress;
+            EpicXpRank = epicXp.Rank ?? "Bronze5";
+            EpicXpMastery = epicXp.Mastery;
+
+            var retroPoints = ScoreCardTypes.Calculate(ScoreCardType.RetroPoints, totals.RetroPoints);
+            RetroPointsScore = totals.RetroPoints;
+            RetroPointsLevel = GetDisplayLevel(retroPoints);
+            RetroPointsLevelProgress = retroPoints.LevelProgress;
+            RetroPointsRank = retroPoints.Rank ?? "Bronze5";
+            RetroPointsMastery = retroPoints.Mastery;
+        }
+
+        private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return 0;
+            }
+
+            return snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level;
+        }
 
         /// <summary>
         /// Unlocked achievements per provider (for provider distribution pie chart).
@@ -240,6 +317,7 @@ namespace PlayniteAchievements.Services.Overview
             PossibleCompletions = 0;
             CollectorScore = 0;
             PrestigeScore = 0;
+            var platformScores = addClamped != null ? new PlatformScoreTotals() : null;
             TotalPlatinum = 0;
             TotalGold = 0;
             TotalSilver = 0;
@@ -310,7 +388,13 @@ namespace PlayniteAchievements.Services.Overview
                 {
                     CollectorScore = addClamped(CollectorScore, game.CollectionScore);
                     PrestigeScore = addClamped(PrestigeScore, game.PrestigeScore);
+                    platformScores.Add(game.ProviderKey, game.PlatformScorePoints);
                 }
+            }
+
+            if (platformScores != null)
+            {
+                ApplyPlatformScores(platformScores);
             }
 
             TotalLocked = Math.Max(0, TotalAchievements - TotalUnlocked);

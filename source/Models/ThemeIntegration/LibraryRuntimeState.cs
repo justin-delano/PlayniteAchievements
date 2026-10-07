@@ -61,6 +61,21 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public string PrestigeRank { get; set; } = "Bronze5";
         public int CollectorMastery { get; set; }
         public int PrestigeMastery { get; set; }
+        public int GamerscoreScore { get; set; }
+        public int GamerscoreLevel { get; set; }
+        public double GamerscoreLevelProgress { get; set; }
+        public string GamerscoreRank { get; set; } = "Bronze5";
+        public int GamerscoreMastery { get; set; }
+        public int EpicXpScore { get; set; }
+        public int EpicXpLevel { get; set; }
+        public double EpicXpLevelProgress { get; set; }
+        public string EpicXpRank { get; set; } = "Bronze5";
+        public int EpicXpMastery { get; set; }
+        public int RetroPointsScore { get; set; }
+        public int RetroPointsLevel { get; set; }
+        public double RetroPointsLevelProgress { get; set; }
+        public string RetroPointsRank { get; set; } = "Bronze5";
+        public int RetroPointsMastery { get; set; }
 
         public List<AchievementDetail> AllAchievements { get; set; } = new List<AchievementDetail>();
         public List<AchievementDetail> AllAchievementsUnlockAsc { get; set; } = new List<AchievementDetail>();

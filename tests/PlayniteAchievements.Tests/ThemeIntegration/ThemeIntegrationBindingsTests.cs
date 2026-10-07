@@ -847,6 +847,41 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void OpenAchievementWindow_PublishesPlatformScores()
+        {
+            using var context = CreateServiceContext();
+
+            var gameId = Guid.NewGuid();
+            var game = new Game { Id = gameId, Name = "Platform Score Game" };
+            var unlocked = Achievement("Xbox Unlock", 50.0, unlocked: true);
+            unlocked.Points = 1000;
+            var locked = Achievement("Xbox Locked", 50.0, unlocked: false);
+            locked.Points = 500;
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    ProviderKey = "Exophase",
+                    ProviderPlatformKey = "Xbox",
+                    Game = game,
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail> { unlocked, locked }
+                }
+            };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+
+            Assert.AreEqual(1000, context.Settings.GamerscoreScore);
+            Assert.AreEqual(10, context.Settings.GamerscoreLevel);
+            Assert.AreEqual("Bronze4", context.Settings.GamerscoreRank);
+            Assert.AreEqual(0, context.Settings.GamerscoreMastery);
+            Assert.AreEqual(0, context.Settings.EpicXpScore);
+            Assert.AreEqual(0, context.Settings.RetroPointsScore);
+            Assert.AreEqual("Bronze5", context.Settings.RetroPointsRank);
+        }
+
+        [TestMethod]
         public void OpenAchievementWindow_PublishesModernScoresWithoutChangingLegacyScore()
         {
             using var context = CreateServiceContext();
