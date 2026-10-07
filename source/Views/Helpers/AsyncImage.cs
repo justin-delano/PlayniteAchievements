@@ -633,6 +633,14 @@ namespace PlayniteAchievements.Views.Helpers
                     animation.Dispose();
                 }
 
+                // A cancelled load was superseded by a newer one that owns the image now. Player
+                // creation can outlast the newer load (a WebM opens its decoders first), so writing
+                // the fallback here would blank the source the newer load already attached.
+                if (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
                 // Without a still in hand the caller loads one itself, so an unreadable GIF just
                 // takes the normal image path.
                 if (fallback == null && !(ex is OperationCanceledException))
