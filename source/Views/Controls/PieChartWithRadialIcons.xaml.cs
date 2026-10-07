@@ -341,6 +341,10 @@ namespace PlayniteAchievements.Views.Controls
                 if (chartDataChanged && IsLoaded)
                 {
                     chartDataChanged = false;
+                    // The legend rows and the layout they cause come first, so the chart draws
+                    // at the size it keeps rather than full width and then shrinking.
+                    SynchronizeLegendRows();
+                    UpdateLayout();
                     Chart.Update(false, true);
                 }
 
@@ -496,9 +500,11 @@ namespace PlayniteAchievements.Views.Controls
             DetachCurrentSources();
         }
 
+        // A new size redraws the slices now; LiveCharts' own redraw comes on its timer, frames
+        // after the pie's square has already changed.
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
-            ScheduleCalculation();
+            ScheduleCalculation(dataChanged: true);
         }
 
         private void AttachCurrentSources()
