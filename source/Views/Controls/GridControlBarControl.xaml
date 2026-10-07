@@ -490,6 +490,28 @@
                         Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
             </DataTemplate>
 
+            <!-- An externally set filter: the toggle filter's selected look, so it reads as an
+                 active filter, with a close mark; a click clears it. -->
+            <DataTemplate DataType="{x:Type vm:GridDismissChip}">
+                <ToggleButton Style="{StaticResource GridToggleFilterButtonStyle}"
+                              IsChecked="{Binding IsActive, Mode=OneWay}"
+                              Click="DismissChip_Click"
+                              Height="{StaticResource PlayAch.Size.Control.Height}"
+                              Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                              VerticalAlignment="Center"
+                              ToolTip="{Binding ToolTip}"
+                              Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Content}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="&#x00D7;"
+                                   Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ToggleButton>
+            </DataTemplate>
+
             <DataTemplate DataType="{x:Type vm:GridModeToggle}">
                 <ToggleButton x:Name="ModeToggleButton"
                               Style="{StaticResource GridModeToggleButtonStyle}"
