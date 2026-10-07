@@ -589,9 +589,8 @@
                 </Grid>
 
 
-            <!-- Diagnostic: times the grid's measure and arrange. -->
-            <controls:LayoutTimingDecorator Grid.Row="1" Label="grid">
             <DataGrid x:Name="CustomAchievementsGrid"
+                      Grid.Row="1"
                       ItemsSource="{Binding AchievementRows}"
                       SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
                       SelectionChanged="AchievementsGrid_SelectionChanged"
@@ -1859,7 +1858,6 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
-            </controls:LayoutTimingDecorator>
 
                 <!-- A second Add directly beneath the grid, pinned rather than scrolling away. -->
                 <Button x:Name="AddRowFooterButton"
@@ -1888,7 +1886,6 @@
             </Grid>
 
             <Grid Grid.Column="2">
-            <controls:LayoutTimingDecorator Label="pane">
             <Border x:Name="DetailsPaneCard"
                     Width="340"
                     Style="{StaticResource CardBorderStyle}"
@@ -2499,7 +2496,6 @@
                            Visibility="{Binding HasApiName, Converter={StaticResource BoolToVis}}" />
                 </Grid>
             </Border>
-            </controls:LayoutTimingDecorator>
 
             <!-- What is left of the pane once it is folded away: the chevron that brings it back,
                  over the full height so it stays easy to hit. -->
