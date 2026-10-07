@@ -114,6 +114,13 @@ namespace PlayniteAchievements.Views.Showcase
                         ScoreModeName);
                     AddChoice(
                         panel,
+                        Localize("LOCPlayAch_Settings_ScoreCardBadgePosition"),
+                        new[] { ScoreCardBadgePosition.Left, ScoreCardBadgePosition.Right },
+                        ShowcaseWidgetOptions.GetScoreBadgePosition(_settings),
+                        value => ShowcaseWidgetOptions.SetScoreBadgePosition(_settings, value),
+                        ScoreBadgePositionName);
+                    AddChoice(
+                        panel,
                         Localize("LOCPlayAch_Showcase_ScoreHistory"),
                         new[]
                         {
@@ -1182,6 +1189,11 @@ namespace PlayniteAchievements.Views.Showcase
             Localize(value == PieLegendPosition.Left
                 ? "LOCPlayAch_Settings_GridAlignment_Left"
                 : "LOCPlayAch_Settings_GridAlignment_Right");
+
+        private static string ScoreBadgePositionName(ScoreCardBadgePosition value) =>
+            Localize(value == ScoreCardBadgePosition.Right
+                ? "LOCPlayAch_Settings_GridAlignment_Right"
+                : "LOCPlayAch_Settings_GridAlignment_Left");
 
         private static string PieCenterModeName(PieCenterMode value)
         {
