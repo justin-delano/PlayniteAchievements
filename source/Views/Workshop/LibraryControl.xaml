@@ -51,9 +51,10 @@
             <!-- The thumbnail: the Workshop cover or preview, the color swatches of a color set, or the kind glyph. -->
             <DataTemplate x:Key="LibraryThumbnailTemplate" DataType="{x:Type vm:LibraryItemRow}">
                 <Grid>
+                    <!-- Uniform: the whole image fits the box instead of being cropped to fill it. -->
                     <Image helpers:AsyncImage.Uri="{Binding ThumbnailPath}"
                            helpers:AsyncImage.DecodePixel="144"
-                           Stretch="UniformToFill"
+                           Stretch="Uniform"
                            RenderOptions.BitmapScalingMode="HighQuality"
                            Visibility="{Binding HasThumbnail, Converter={StaticResource BoolToVis}}"/>
                     <ItemsControl ItemsSource="{Binding Swatches}"
