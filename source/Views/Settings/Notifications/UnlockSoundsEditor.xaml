@@ -101,23 +101,24 @@
                                            VerticalAlignment="Center"
                                            ToolTip="{Binding ResolvedPath}"
                                            Margin="0,0,10,0"/>
-                                <TextBox Grid.Column="3"
-                                         Text="{Binding CustomPath, UpdateSourceTrigger=LostFocus}"
-                                         IsReadOnly="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource InvertBoolConverter}}"
-                                         ToolTip="{Binding ResolvedPath}"
-                                         VerticalAlignment="Center"/>
-                                <!-- Drawn over the empty box, not behind it, so the theme's
-                                     TextBox background cannot hide it; clicks pass through to the
-                                     box underneath. Names the file a blank tier will actually play,
-                                     so an unconfigured row reads as its source rather than as
-                                     nothing. -->
+                                <!-- The tier's file by name. A picked file is copied into the
+                                     plugin's storage, so its path is not the user's to read; the
+                                     name is the one it was picked with. A blank tier names the file
+                                     it will actually play, muted, so it reads as its source rather
+                                     than as nothing. -->
+                                <TextBlock Grid.Column="3"
+                                           Text="{Binding CustomFileName}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           ToolTip="{Binding ResolvedPath}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           Visibility="{Binding HasCustomPath, Converter={StaticResource BoolToVis}}"/>
                                 <TextBlock Grid.Column="3"
                                            Text="{Binding ResolvedFileName}"
                                            Style="{StaticResource MutedTextStyle}"
+                                           ToolTip="{Binding ResolvedPath}"
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"
-                                           IsHitTestVisible="False"
-                                           Margin="5,0,4,0"
                                            Visibility="{Binding ShowResolvedFileName, Converter={StaticResource BoolToVis}}"/>
                                 <Button Grid.Column="4"
                                         Click="UnlockSoundBrowse_Click"
