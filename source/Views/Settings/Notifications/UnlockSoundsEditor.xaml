@@ -62,10 +62,6 @@
              handlers read the row from the sender's DataContext. -->
         <Border Style="{StaticResource SectionBorderStyle}">
             <StackPanel x:Name="SoundRowsPanel">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockSoundFilesHint}"
-                           Style="{StaticResource MutedTextStyle}"
-                           TextWrapping="Wrap"
-                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                 <ItemsControl x:Name="UnlockSoundRows"
                               ItemsSource="{Binding Rows}"
                               Grid.IsSharedSizeScope="True">
@@ -96,38 +92,33 @@
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,10,0"/>
-                                <TextBlock Grid.Column="2"
-                                           Text="{Binding SourceLabel}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           VerticalAlignment="Center"
-                                           ToolTip="{Binding ResolvedPath}"
-                                           Margin="0,0,10,0"/>
-                                <!-- The tier's file by name. A picked file is copied into the
-                                     plugin's storage, so its path is not the user's to read; the
-                                     name is the one it was picked with. A blank tier names the file
-                                     it will actually play, muted, so it reads as its source rather
-                                     than as nothing. While the scope is editable the cell takes a
-                                     dropped sound file, or a click and a pasted one. -->
-                                <Border Grid.Column="3"
+                                <!-- Where the tier's sound comes from: Custom, Theme or Default. A
+                                     picked file is copied and stored by the plugin, so neither its
+                                     path nor its name is shown. While the scope is editable the
+                                     label takes a dropped sound file, or a click and a pasted one. -->
+                                <Border Grid.Column="2"
                                         Style="{DynamicResource PlayAch.FilePickTarget.Style}"
                                         Background="Transparent"
                                         CornerRadius="3"
                                         Padding="6,3"
-                                        ToolTip="{Binding ResolvedPath}"
+                                        Margin="0,0,10,0"
                                         VerticalAlignment="Center"
                                         helpers:FilePickTarget.Kind="Sound"
                                         helpers:FilePickTarget.IsEnabled="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                         helpers:FilePickTarget.Picked="SoundPickTarget_Picked">
-                                    <Grid>
-                                        <TextBlock Text="{Binding CustomFileName}"
-                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Visibility="{Binding HasCustomPath, Converter={StaticResource BoolToVis}}"/>
-                                        <TextBlock Text="{Binding ResolvedFileName}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Visibility="{Binding ShowResolvedFileName, Converter={StaticResource BoolToVis}}"/>
-                                    </Grid>
+                                    <TextBlock Text="{Binding SourceLabel}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasCustomPath}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </Border>
                                 <Button Grid.Column="4"
                                         Click="UnlockSoundBrowse_Click"
