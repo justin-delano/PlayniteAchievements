@@ -68,8 +68,16 @@ namespace PlayniteAchievements.Views.Showcase
                     projection.LinkedSliceKeys = _overview.GetLinkedSliceKeys(ShowcaseWidgetOptions.GetPieMode(widget));
                     break;
                 case ShowcaseWidgetKind.Timeline:
+                    projection.HighlightedSpan = _overview.UnlockSpanFilter;
+                    break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     projection.HighlightedSpan = _overview.UnlockSpanFilter;
+                    // Only the weeks the selection's unlocks span, not the run up to today.
+                    projection.ActivityCalendar = ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                        projection.Snapshot,
+                        widget,
+                        DateTime.Now.Date,
+                        trimToUnlocks: true);
                     break;
             }
 
