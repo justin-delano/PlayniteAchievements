@@ -48,15 +48,18 @@ namespace PlayniteAchievements.Views.Controls
                 var pieDesired = Pie?.DesiredSize ?? new Size();
 
                 return new Size(
-                    double.IsInfinity(availableSize.Width) ? pieDesired.Width + legendWidth : availableSize.Width,
+                    pieDesired.Width + legendWidth,
                     Math.Max(pieDesired.Height, legendSize.Height));
             }
 
             var side = ResolvePieSide(availableSize, legendWidth);
             Pie?.Measure(new Size(side, side));
 
+            // Report the content's width, never the whole width offered: WPF clips an element whose
+            // desired size exceeds the slot it is arranged into, and that clip cuts off the radial
+            // icons drawn outside the pie.
             return new Size(
-                double.IsInfinity(availableSize.Width) ? side + legendWidth : availableSize.Width,
+                side + legendWidth,
                 Math.Max(side, legendSize.Height));
         }
 
