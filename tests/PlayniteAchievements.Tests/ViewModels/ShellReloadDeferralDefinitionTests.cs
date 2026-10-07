@@ -88,7 +88,7 @@ namespace PlayniteAchievements.Tests.ViewModels
             var body = Between(
                 ReadViewModel(),
                 "internal void FlushPendingShellReload()",
-                "internal void NotifyIconOverridesChanged(");
+                "internal Task NotifyIconOverridesChanged(");
 
             StringAssert.Contains(
                 body,
