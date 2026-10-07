@@ -527,14 +527,9 @@ namespace PlayniteAchievements.Views
 
         private static void EnsureThemeResources(PlayniteAchievementsSettings settings)
         {
-            var resources = Application.Current?.Resources;
-            if (resources != null)
-            {
-                PlayAchResourceService.Apply(
-                    resources,
-                    settings?.Persisted?.ResourceOverrides,
-                    settings?.Persisted);
-            }
+            PlayAchResourceService.ApplyToApplication(
+                settings?.Persisted?.ResourceOverrides,
+                settings?.Persisted);
         }
 
         private void InitializeScopeOptions()
