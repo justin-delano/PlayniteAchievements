@@ -62,6 +62,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Scores:
                 case ShowcaseWidgetKind.Pie:
                 case ShowcaseWidgetKind.Timeline:
+                case ShowcaseWidgetKind.Statistics:
                 case ShowcaseWidgetKind.NativePoints:
                 case ShowcaseWidgetKind.IconMosaic:
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
@@ -245,6 +246,9 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseTimelineOptions.GetSplitByPlatform(_settings),
                         value => ShowcaseTimelineOptions.SetSplitByPlatform(_settings, value));
                     AddShowControlsToggle(panel);
+                    break;
+                case ShowcaseWidgetKind.Statistics:
+                    AddStatisticsSlots(panel);
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(
@@ -944,6 +948,26 @@ namespace PlayniteAchievements.Views.Showcase
         /// </summary>
         private void AddProfileStatSlots(Panel panel)
         {
+            AddStatSlots(
+                panel,
+                ShowcaseWidgetOptions.GetProfileStatKeys(_settings),
+                keys => ShowcaseWidgetOptions.SetProfileStatKeys(_settings, keys));
+        }
+
+        // The Statistics widget's own slots: unset means every statistic, so the editor starts
+        // from the full list in catalog order.
+        private void AddStatisticsSlots(Panel panel)
+        {
+            var current = ShowcaseWidgetOptions.GetStatisticsKeys(_settings) ??
+                ShowcaseWidgetProjectionService.BuildStatistics(null, DateTime.Now).Select(stat => stat.Key).ToList();
+            AddStatSlots(
+                panel,
+                current,
+                keys => ShowcaseWidgetOptions.SetStatisticsKeys(_settings, keys));
+        }
+
+        private void AddStatSlots(Panel panel, IReadOnlyList<string> initial, Action<List<string>> save)
+        {
             // Key/label catalog only; the empty snapshot's values are never shown.
             var catalog = ShowcaseWidgetProjectionService.BuildStatistics(null, DateTime.Now);
 
@@ -956,13 +980,13 @@ namespace PlayniteAchievements.Views.Showcase
             labelBlock.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             panel.Children.Add(labelBlock);
 
-            var slots = ShowcaseWidgetOptions.GetProfileStatKeys(_settings).ToList();
+            var slots = (initial ?? Array.Empty<string>()).ToList();
             var grid = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2 };
             var rebuilding = false;
 
             void Store()
             {
-                ShowcaseWidgetOptions.SetProfileStatKeys(_settings, slots);
+                save(slots);
                 _persist?.Invoke();
                 if (_publishChanges)
                 {
