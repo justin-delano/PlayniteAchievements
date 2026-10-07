@@ -339,7 +339,7 @@ namespace PlayniteAchievements.Services.Achievements
             var comparison = GetComparison(configuredSort.SortMemberPath, configuredSort.Direction, scope);
             if (comparison != null)
             {
-                items.Sort(WithStableOrder(comparison, stableOrder));
+                SortUnlessOrdered(items, WithStableOrder(comparison, stableOrder));
             }
         }
 
@@ -369,7 +369,7 @@ namespace PlayniteAchievements.Services.Achievements
                 : null;
             if (columnComparison != null)
             {
-                items.Sort(WithStableOrder(columnComparison, sourceOrder));
+                SortUnlessOrdered(items, WithStableOrder(columnComparison, sourceOrder));
             }
             else if (!useSourceOrder)
             {
@@ -704,7 +704,7 @@ namespace PlayniteAchievements.Services.Achievements
 
             currentSortPath = sortMemberPath;
             currentSortDirection = direction;
-            items.Sort(WithStableOrder(comparison, stableOrder));
+            SortUnlessOrdered(items, WithStableOrder(comparison, stableOrder));
             return true;
         }
 
@@ -832,6 +832,28 @@ namespace PlayniteAchievements.Services.Achievements
             });
 
             return indexed.Select(item => item.Detail).ToList();
+        }
+
+        /// <summary>
+        /// Sorts <paramref name="items"/> unless they already are in order. Filtering an ordered
+        /// list keeps it ordered, so a grid re-filtered under an unchanged sort pays one linear
+        /// check instead of a full sort; a list already in order also keeps its order of ties.
+        /// </summary>
+        public static void SortUnlessOrdered<TItem>(List<TItem> items, Comparison<TItem> comparison)
+        {
+            if (items == null || comparison == null)
+            {
+                return;
+            }
+
+            for (var i = 1; i < items.Count; i++)
+            {
+                if (comparison(items[i - 1], items[i]) > 0)
+                {
+                    items.Sort(comparison);
+                    return;
+                }
+            }
         }
 
         public static Comparison<TItem> WithStableOrder<TItem>(
