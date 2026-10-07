@@ -9,10 +9,12 @@ using PlayniteAchievements.ViewModels.Items;
 namespace PlayniteAchievements.ViewModels
 {
     // The overview's side of its mini-showcase: the snapshots its linked widgets project from,
-    // the filters their clicks set, and the unlock-day filter only they can set.
+    // the filters their clicks set, and the Achievements grid's unlock date range, which a
+    // timeline column or calendar day sets as well.
     public partial class OverviewViewModel
     {
-        private UnlockDaySpan? _unlockSpanFilter;
+        private DateTime? _unlockRangeFrom;
+        private DateTime? _unlockRangeTo;
 
         private readonly Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), LinkedSnapshotEntry> _linkedSnapshots =
             new Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), LinkedSnapshotEntry>();
@@ -23,60 +25,100 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         public event EventHandler LinkedDataChanged;
 
-        /// <summary>The unlock-day filter a linked timeline or calendar set, or null.</summary>
-        public UnlockDaySpan? UnlockSpanFilter => _unlockSpanFilter;
+        /// <summary>The Achievements grid's range start day, or null for an open start.</summary>
+        public DateTime? UnlockRangeFrom => _unlockRangeFrom;
 
-        /// <summary>The control bar chip's text for the unlock-day filter; empty while it is off.</summary>
+        /// <summary>The Achievements grid's range end day, or null for an open end.</summary>
+        public DateTime? UnlockRangeTo => _unlockRangeTo;
+
+        /// <summary>The unlock date range as one span, open ends at the calendar's limits; null when unset.</summary>
+        public UnlockDaySpan? UnlockSpanFilter =>
+            _unlockRangeFrom.HasValue || _unlockRangeTo.HasValue
+                ? new UnlockDaySpan(_unlockRangeFrom ?? DateTime.MinValue, _unlockRangeTo ?? DateTime.MaxValue.Date)
+                : (UnlockDaySpan?)null;
+
+        /// <summary>The range as a title fragment ("Unlocked: 3/1/2026 – 3/31/2026"); empty while unset.</summary>
         public string UnlockSpanFilterText
         {
             get
             {
-                if (!_unlockSpanFilter.HasValue)
+                if (!_unlockRangeFrom.HasValue && !_unlockRangeTo.HasValue)
                 {
                     return string.Empty;
                 }
 
-                var span = _unlockSpanFilter.Value;
                 var culture = FormattingCulture.Current;
-                var days = span.Start == span.End
-                    ? span.Start.ToString("d", culture)
-                    : span.Start.ToString("d", culture) + " – " + span.End.ToString("d", culture);
+                var from = _unlockRangeFrom?.ToString("d", culture) ?? "…";
+                var to = _unlockRangeTo?.ToString("d", culture) ?? "…";
+                var days = _unlockRangeFrom.HasValue && _unlockRangeFrom == _unlockRangeTo ? from : from + " – " + to;
                 return string.Format(culture, L("LOCPlayAch_Filter_UnlockedDuring"), days);
             }
         }
 
-        /// <summary>Filters the grid to games with unlocks in <paramref name="span"/>; the same span again clears it.</summary>
+        /// <summary>Sets the range to <paramref name="span"/>, or clears it when it is already that span.</summary>
         public void ToggleUnlockSpanFilter(UnlockDaySpan span)
         {
-            SetUnlockSpanFilter(Nullable.Equals(_unlockSpanFilter, span) ? (UnlockDaySpan?)null : span);
+            if (Nullable.Equals(UnlockSpanFilter, span))
+            {
+                SetUnlockRange(null, null);
+            }
+            else
+            {
+                SetUnlockRange(span.Start, span.End);
+            }
         }
 
-        public void ClearUnlockSpanFilter() => SetUnlockSpanFilter(null);
-
-        private void SetUnlockSpanFilter(UnlockDaySpan? span)
+        /// <summary>Sets the range from the Achievements grid's pickers; either end may be open.</summary>
+        public void SetUnlockRange(DateTime? from, DateTime? to)
         {
-            if (Nullable.Equals(_unlockSpanFilter, span))
+            from = from?.Date;
+            to = to?.Date;
+            if (Nullable.Equals(_unlockRangeFrom, from) && Nullable.Equals(_unlockRangeTo, to))
             {
                 return;
             }
 
-            _unlockSpanFilter = span;
-            OnPropertyChanged(nameof(UnlockSpanFilterText));
-            // Deferred like the other filters, so the click that set it finishes first.
+            _unlockRangeFrom = from;
+            _unlockRangeTo = to;
+            OnPropertyChanged(nameof(UnlockSpanFilter));
+            // Deferred like the other filters, so the click or pick that set it finishes first.
+            // The Games grid follows it too, to the games with unlocks in the range; refiltering
+            // the games also refreshes the linked widgets.
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(ApplyLeftFilters),
+                new Action(() =>
+                {
+                    ApplyRightFilters();
+                    ApplyLeftFilters();
+                }),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
-        private IEnumerable<GameSummaryItem> ApplyUnlockSpanFilter(IEnumerable<GameSummaryItem> games)
+        /// <summary>Games with at least one unlock in the range; every game while it is unset.</summary>
+        private IEnumerable<GameSummaryItem> ApplyUnlockRangeToGames(IEnumerable<GameSummaryItem> games)
         {
-            if (!_unlockSpanFilter.HasValue)
+            var span = UnlockSpanFilter;
+            if (!span.HasValue)
             {
                 return games;
             }
 
-            var kept = OverviewLinkedSnapshots.GamesUnlockedDuring(_latestSnapshot, _unlockSpanFilter.Value);
+            var kept = OverviewLinkedSnapshots.GamesUnlockedDuring(_latestSnapshot, span.Value);
             return games.Where(game => game?.PlayniteGameId.HasValue == true && kept.Contains(game.PlayniteGameId.Value));
+        }
+
+        /// <summary>Unlocked rows whose local unlock day falls in the range; every row while it is unset.</summary>
+        private IEnumerable<AchievementDisplayItem> ApplyUnlockRange(IEnumerable<AchievementDisplayItem> items)
+        {
+            var span = UnlockSpanFilter;
+            if (!span.HasValue)
+            {
+                return items;
+            }
+
+            return items.Where(item =>
+                item?.Unlocked == true &&
+                item.UnlockTimeUtc.HasValue &&
+                span.Value.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)));
         }
 
         /// <summary>
@@ -95,7 +137,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             var narrowTo = GetLinkedNarrowedGame(selection)?.PlayniteGameId;
-            var key = (narrowTo.HasValue ? OverviewLinkedFilter.None : exclude, narrowTo);
+            // Narrowed to one game, the grid filters no longer apply, but the unlock range does.
+            var key = (narrowTo.HasValue ? exclude & OverviewLinkedFilter.UnlockSpan : exclude, narrowTo);
+            var span = (exclude & OverviewLinkedFilter.UnlockSpan) == 0 ? UnlockSpanFilter : null;
             _linkedSnapshots.TryGetValue(key, out var entry);
             if (entry != null && entry.IsCurrent)
             {
@@ -124,6 +168,7 @@ namespace PlayniteAchievements.ViewModels
                 .Select(game => game.PlayniteGameId.Value));
             if (entry != null &&
                 ReferenceEquals(entry.Source, source) &&
+                Nullable.Equals(entry.Span, span) &&
                 entry.KeptCount == kept.Count &&
                 entry.KeptIds.SetEquals(ids))
             {
@@ -131,21 +176,29 @@ namespace PlayniteAchievements.ViewModels
                 return entry.Snapshot;
             }
 
+            var snapshot = OverviewLinkedSnapshots.Build(source, kept, keptIsAll);
+            if (span.HasValue)
+            {
+                snapshot = OverviewLinkedSnapshots.ClipToSpan(snapshot, span.Value);
+            }
+
             _linkedSnapshots[key] = new LinkedSnapshotEntry
             {
                 Source = source,
+                Span = span,
                 KeptCount = kept.Count,
                 KeptIds = ids,
-                Snapshot = OverviewLinkedSnapshots.Build(source, kept, keptIsAll),
+                Snapshot = snapshot,
                 IsCurrent = true
             };
-            return _linkedSnapshots[key].Snapshot;
+            return snapshot;
         }
 
-        /// <summary>One linked view's snapshot and the games it was built from.</summary>
+        /// <summary>One linked view's snapshot and the games and range it was built from.</summary>
         private sealed class LinkedSnapshotEntry
         {
             public OverviewDataSnapshot Source;
+            public UnlockDaySpan? Span;
             public int KeptCount;
             public HashSet<Guid> KeptIds;
             public OverviewDataSnapshot Snapshot;
@@ -162,10 +215,11 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         public string GetLinkedContextLabel(OverviewLinkedFilter exclude, OverviewLinkedSelection selection)
         {
+            var rangeText = (exclude & OverviewLinkedFilter.UnlockSpan) == 0 ? UnlockSpanFilterText : string.Empty;
             var game = GetLinkedNarrowedGame(selection);
             if (game != null)
             {
-                return game.GameName;
+                return string.IsNullOrEmpty(rangeText) ? game.GameName : game.GameName + " · " + rangeText;
             }
 
             var parts = new List<string>();
@@ -188,9 +242,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             parts.AddRange(OrderedSelections(_selectedPlayStatusFilters, PlayStatusFilterOptions));
-            if ((exclude & OverviewLinkedFilter.UnlockSpan) == 0 && _unlockSpanFilter.HasValue)
+            if (!string.IsNullOrEmpty(rangeText))
             {
-                parts.Add(UnlockSpanFilterText);
+                parts.Add(rangeText);
             }
 
             return string.Join(" · ", parts);
@@ -214,9 +268,10 @@ namespace PlayniteAchievements.ViewModels
             return OverviewLinkedSnapshots.NarrowsTo(selected, selection) ? selected : null;
         }
 
-        // The grid's own filters (ApplyLeftFilters), less the ones the widget sets itself. A
+        // The Games grid's own filters (ApplyLeftFilters), less the ones the widget sets itself. A
         // completions pie that leaves the progress filter out still keeps it to the games that
-        // could finish, as the overview's completions pie did.
+        // could finish, as the overview's completions pie did. The unlock range keeps the games
+        // with unlocks in it here, and GetLinkedSnapshot then clips their achievements to it.
         private List<GameSummaryItem> FilterLinkedGames(List<GameSummaryItem> all, OverviewLinkedFilter exclude)
         {
             IEnumerable<GameSummaryItem> games = all;
@@ -245,7 +300,7 @@ namespace PlayniteAchievements.ViewModels
 
             if ((exclude & OverviewLinkedFilter.UnlockSpan) == 0)
             {
-                games = ApplyUnlockSpanFilter(games);
+                games = ApplyUnlockRangeToGames(games);
             }
 
             return games.ToList();
