@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.UI
 {
@@ -447,7 +448,7 @@ namespace PlayniteAchievements.Services.UI
             Rectangle gameClientPhys,
             double renderScale,
             double monitorScale,
-            bool alignRight,
+            ToastHorizontalAlignment horizontal,
             bool alignBottom,
             double gapDipX,
             double gapDipY,
@@ -490,7 +491,7 @@ namespace PlayniteAchievements.Services.UI
             }
 
             ComputeCorner(
-                gameClientPhys, physW, physH, monitorScale, alignRight, alignBottom,
+                gameClientPhys, physW, physH, monitorScale, horizontal, alignBottom,
                 gapDipX, gapDipY, out x, out y);
 
             // A negative gap is deliberate: with the card's border glow on, the window hangs past the
@@ -637,7 +638,8 @@ namespace PlayniteAchievements.Services.UI
         /// Pure corner math, shared between live window placement and the per-item screenshot/clip
         /// composites: the top-left of a box of the given physical size placed at the requested
         /// corner of the client rect, inset by <paramref name="gapDipX"/> and
-        /// <paramref name="gapDipY"/> scaled to the monitor.
+        /// <paramref name="gapDipY"/> scaled to the monitor. A centered box ignores
+        /// <paramref name="gapDipX"/>: it sits against neither horizontal edge.
         ///
         /// The two axes are separate because the gap is derived from the transparent room the card
         /// reserves on the edge it sits against, and a template's root margin need not be uniform.
@@ -647,7 +649,7 @@ namespace PlayniteAchievements.Services.UI
             int physW,
             int physH,
             double monitorScale,
-            bool alignRight,
+            ToastHorizontalAlignment horizontal,
             bool alignBottom,
             double gapDipX,
             double gapDipY,
@@ -657,7 +659,19 @@ namespace PlayniteAchievements.Services.UI
             var scale = monitorScale > 0 ? monitorScale : 1.0;
             var gapX = (int)Math.Round(gapDipX * scale);
             var gapY = (int)Math.Round(gapDipY * scale);
-            x = alignRight ? gameClientPhys.Right - physW - gapX : gameClientPhys.Left + gapX;
+            switch (horizontal)
+            {
+                case ToastHorizontalAlignment.Right:
+                    x = gameClientPhys.Right - physW - gapX;
+                    break;
+                case ToastHorizontalAlignment.Center:
+                    x = gameClientPhys.Left + ((gameClientPhys.Width - physW) / 2);
+                    break;
+                default:
+                    x = gameClientPhys.Left + gapX;
+                    break;
+            }
+
             y = alignBottom ? gameClientPhys.Bottom - physH - gapY : gameClientPhys.Top + gapY;
         }
 
@@ -835,7 +849,7 @@ namespace PlayniteAchievements.Services.UI
             Rectangle gameClientPhys,
             double renderScale,
             double monitorScale,
-            bool alignRight,
+            ToastHorizontalAlignment horizontal,
             bool alignBottom,
             double gapDipX,
             double gapDipY,
@@ -846,7 +860,7 @@ namespace PlayniteAchievements.Services.UI
             outcome = default(PlacementOutcome);
             if (!TryComputeCorner(
                 window, card, slideDipX, slideDipY, gameClientPhys, renderScale, monitorScale,
-                alignRight, alignBottom, gapDipX, gapDipY,
+                horizontal, alignBottom, gapDipX, gapDipY,
                 out var x, out var y, out var clamped))
             {
                 return false;

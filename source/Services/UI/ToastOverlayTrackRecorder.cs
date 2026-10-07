@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Capture;
 using PlayniteAchievements.ViewModels;
 
@@ -99,7 +100,7 @@ namespace PlayniteAchievements.Services.UI
 
         private readonly ILogger _logger;
         private readonly double _sampleIntervalMs;
-        private readonly bool _alignRight;
+        private readonly ToastHorizontalAlignment _horizontal;
         private readonly bool _alignBottom;
         private readonly double _gapXDip;
         private readonly double _gapYDip;
@@ -136,17 +137,18 @@ namespace PlayniteAchievements.Services.UI
         /// and pads the last sample, so a track's duration covers the frame its final sample
         /// represents.
         /// </param>
-        /// <param name="alignRight">Wave placement geometry, stamped on every track: the corner
+        /// <param name="horizontal">Wave placement geometry, stamped on every track: the
         /// alignment and the DIP gap/monitor scale the export uses to compute where a lone toast of
         /// each frame's size would sit. Resolved once per wave, like the live placement.</param>
         public ToastOverlayTrackRecorder(
             ILogger logger, double sampleIntervalMs,
-            bool alignRight, bool alignBottom, double gapXDip, double gapYDip, double monitorScale)
+            ToastHorizontalAlignment horizontal, bool alignBottom, double gapXDip, double gapYDip,
+            double monitorScale)
         {
             _logger = logger;
             _sampleIntervalMs = sampleIntervalMs > 0 ? sampleIntervalMs : 1;
             _maxQueuedPixelJobs = Math.Max(16, (int)Math.Round(1000.0 / _sampleIntervalMs / 2.0));
-            _alignRight = alignRight;
+            _horizontal = horizontal;
             _alignBottom = alignBottom;
             _gapXDip = gapXDip;
             _gapYDip = gapYDip;
@@ -433,7 +435,7 @@ namespace PlayniteAchievements.Services.UI
                         ProviderKey = vm.ProviderKey,
                         AchievementName = vm.AchievementName,
                         StartUtc = CaptureTimelineClock.UtcNow,
-                        AlignRight = _alignRight,
+                        HorizontalAlignment = _horizontal,
                         AlignBottom = _alignBottom,
                         GapXDip = _gapXDip,
                         GapYDip = _gapYDip,
