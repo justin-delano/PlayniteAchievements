@@ -396,6 +396,22 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Column keys the surface hides whatever the saved layout says, such as columns no row
+        /// has a value for; the column menu does not offer them and the layout does not save them.
+        /// </summary>
+        public static readonly DependencyProperty HiddenColumnKeysProperty =
+            DependencyProperty.Register(nameof(HiddenColumnKeys), typeof(IReadOnlyCollection<string>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnColumnVisibilityChanged));
+
+        public IReadOnlyCollection<string> HiddenColumnKeys
+        {
+            get => (IReadOnlyCollection<string>)GetValue(HiddenColumnKeysProperty);
+            set => SetValue(HiddenColumnKeysProperty, value);
+        }
+
+        private List<string> _appliedHiddenColumnKeys = new List<string>();
+
+        /// <summary>
         /// Identifies the HideStatusColumn dependency property.
         /// When true, hides the Status column (checkmark/padlock).
         /// </summary>
@@ -2712,6 +2728,12 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
+            // Released first, so a key the surface stops hiding falls back to the rules below.
+            foreach (var key in _appliedHiddenColumnKeys)
+            {
+                SetForcedColumnCollapsed(_columnPersistence, key, false);
+            }
+
             SetForcedColumnCollapsed(_columnPersistence, StatusColumnKey, HideStatusColumn);
             SetForcedColumnCollapsed(_columnPersistence, GameColumnKey, !ShowGameColumn);
             SetForcedColumnCollapsed(_columnPersistence, FriendAvatarColumnKey, !ShowFriendColumn);
@@ -2723,6 +2745,12 @@ namespace PlayniteAchievements.Views.Controls
                 _columnPersistence,
                 CapturesColumnKey,
                 IsFriendSurface(ColumnSettingsKey) || IsWorkshopPreviewSurface(ColumnSettingsKey));
+
+            _appliedHiddenColumnKeys = HiddenColumnKeys?.Where(key => !string.IsNullOrWhiteSpace(key)).ToList() ?? new List<string>();
+            foreach (var key in _appliedHiddenColumnKeys)
+            {
+                SetForcedColumnCollapsed(_columnPersistence, key, true);
+            }
         }
 
         private static bool IsWorkshopPreviewSurface(string columnSettingsKey)
