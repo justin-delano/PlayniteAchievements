@@ -2224,9 +2224,19 @@
                                         <Grid Grid.Column="1" Margin="8,0,0,0">
                                             <Border Style="{StaticResource PreviewBorderStyle}"
                                                     Tag="Unlocked"
-                                                    ToolTip="{Binding UnlockedIconPath}"
+                                                    ToolTipService.InitialShowDelay="300"
                                                     helpers:FilePickTarget.IsEnabled="True"
                                                     helpers:FilePickTarget.Picked="IconPickTarget_Picked">
+                                                <!-- A larger preview of the art, sized up front so the tooltip does not grow as it loads. -->
+                                                <Border.ToolTip>
+                                                    <ToolTip>
+                                                        <Image helpers:AsyncImage.Uri="{Binding UnlockedPreviewPath}"
+                                                               helpers:AsyncImage.DecodePixel="160"
+                                                               Width="160"
+                                                               Height="160"
+                                                               Stretch="Uniform" />
+                                                    </ToolTip>
+                                                </Border.ToolTip>
                                                 <Image Width="48"
                                                        Height="48"
                                                        Stretch="Uniform"
@@ -2282,9 +2292,19 @@
                                         <Grid Grid.Column="1" Margin="8,0,0,0">
                                             <Border Style="{StaticResource PreviewBorderStyle}"
                                                     Tag="Locked"
-                                                    ToolTip="{Binding LockedIconPath}"
+                                                    ToolTipService.InitialShowDelay="300"
                                                     helpers:FilePickTarget.IsEnabled="True"
                                                     helpers:FilePickTarget.Picked="IconPickTarget_Picked">
+                                                <!-- A larger preview of the art, sized up front so the tooltip does not grow as it loads. -->
+                                                <Border.ToolTip>
+                                                    <ToolTip>
+                                                        <Image helpers:AsyncImage.Uri="{Binding LockedPreviewPath}"
+                                                               helpers:AsyncImage.DecodePixel="160"
+                                                               Width="160"
+                                                               Height="160"
+                                                               Stretch="Uniform" />
+                                                    </ToolTip>
+                                                </Border.ToolTip>
                                                 <Image Width="48"
                                                        Height="48"
                                                        Stretch="Uniform"
