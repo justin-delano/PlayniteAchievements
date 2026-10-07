@@ -154,8 +154,6 @@
                             <Run Text="{DynamicResource LOCPlayAch_Workshop_Downloads}"/><Run Text=": "/><Run Text="{Binding Downloads, Mode=OneWay}"/>
                         </TextBlock>
                         <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}" Margin="0,2,0,0" TextWrapping="Wrap">
-                            <Run Text="{DynamicResource LOCPlayAch_Workshop_License}"/><Run Text=": "/><Run Text="{Binding License, Mode=OneWay}"/>
-                            <Run Text=" · "/>
                             <Run Text="{Binding Updated, Mode=OneWay}"/>
                         </TextBlock>
                         <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}" Margin="0,2,0,0" TextWrapping="Wrap"
