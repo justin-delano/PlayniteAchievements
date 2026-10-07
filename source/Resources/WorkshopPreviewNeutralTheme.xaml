@@ -1,5 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    mc:Ignorable="po"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!--
@@ -80,9 +83,9 @@
     <SolidColorBrush x:Key="PlayAch.Brush.Trophy.Platinum" Color="#86C8FF"/>
     <SolidColorBrush x:Key="PlayAch.Brush.CompletedGame" Color="#2196F3"/>
     <SolidColorBrush x:Key="PlayAch.Brush.Status.MissableLock" Color="#E04848"/>
-    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowStart" BlurRadius="14" ShadowDepth="2" Direction="135" Color="#9C27B0" Opacity="1"/>
-    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEnd" BlurRadius="14" ShadowDepth="2" Direction="315" Color="#2196F3" Opacity="1"/>
-    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEdge" BlurRadius="4" ShadowDepth="0" Color="#2196F3" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowStart" po:Freeze="True" BlurRadius="14" ShadowDepth="2" Direction="135" Color="#9C27B0" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEnd" po:Freeze="True" BlurRadius="14" ShadowDepth="2" Direction="315" Color="#2196F3" Opacity="1"/>
+    <DropShadowEffect x:Key="PlayAch.Effect.CompletedGlowEdge" po:Freeze="True" BlurRadius="4" ShadowDepth="0" Color="#2196F3" Opacity="1"/>
     <LinearGradientBrush x:Key="PlayAch.Brush.Progress.CompletedFill" StartPoint="0,0" EndPoint="1,0">
         <GradientStop Offset="0.00" Color="#9C27B0"/>
         <GradientStop Offset="1.00" Color="#2196F3"/>
