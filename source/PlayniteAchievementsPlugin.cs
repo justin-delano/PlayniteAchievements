@@ -270,6 +270,8 @@ namespace PlayniteAchievements
                 GameLinkStore,
                 LibraryStore.LibraryDirectory,
                 System.IO.Path.Combine(WorkshopIdentityStore.Directory, Services.Workshop.WorkshopBaselineStore.FolderName),
+                gameId => GameCustomDataStore != null && GameCustomDataStore.TryLoad(gameId, out var data) ? data : null,
+                gameId => ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D")),
                 (ex, message) => _logger?.Warn(ex, message)));
 
         /// <summary>Writes Workshop packages into the library and keeps the targets that follow library items in step.</summary>
