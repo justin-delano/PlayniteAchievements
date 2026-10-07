@@ -194,6 +194,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
                    data.NotificationAppearanceOverride != null ||
+                   data.UnlockSounds != null ||
                    data.ManualLink != null ||
                    (data.CustomAchievements != null && data.CustomAchievements.Count > 0) ||
                    !string.IsNullOrWhiteSpace(data.CustomProviderId);
@@ -365,6 +366,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 NotificationAppearanceOverride =
                     NormalizeNotificationAppearanceOverride(existing.NotificationAppearanceOverride) ??
                     NormalizeNotificationAppearanceOverride(legacy.NotificationAppearanceOverride),
+                UnlockSounds = existing.UnlockSounds?.Clone() ?? legacy.UnlockSounds?.Clone(),
                 ProviderOverride = ResolveEffectiveProviderOverride(existing) ??
                     ResolveEffectiveProviderOverride(legacy),
                 ExophaseEnrichmentSlugOverride = !string.IsNullOrWhiteSpace(existing.ExophaseEnrichmentSlugOverride)
