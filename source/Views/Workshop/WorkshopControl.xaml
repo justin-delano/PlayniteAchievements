@@ -105,11 +105,11 @@
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}"/>
                         <Border Style="{StaticResource WorkshopTagStyle}"
-                                BorderBrush="{DynamicResource PlayAch.Brush.AuthSuccess}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                 Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Mine}"
                                        Style="{StaticResource WorkshopTagTextStyle}"
-                                       Foreground="{DynamicResource PlayAch.Brush.AuthSuccess}"/>
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                         </Border>
                     </StackPanel>
                 </Grid>
