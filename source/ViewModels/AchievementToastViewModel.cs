@@ -350,6 +350,10 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowInlineBadge => _style.Toast.InlineRarityBadge && HasBadgeData;
         public bool FrameShowInlineBadge => _style.Frame.InlineRarityBadge && HasBadgeData;
 
+        // The same badge drawn inline before the game name on the game/category line.
+        public bool ShowInlineGameBadge => _style.Toast.InlineGameRarityBadge && HasBadgeData;
+        public bool FrameShowInlineGameBadge => _style.Frame.InlineGameRarityBadge && HasBadgeData;
+
         // The rarity/trophy badge drawn larger on the right, replacing the provider icon. Shares
         // the same badge image sources as the footer/inline badges.
         public bool ShowRightBadge => _style.Toast.RightRarityBadge && HasBadgeData;
@@ -1457,14 +1461,17 @@ namespace PlayniteAchievements.ViewModels
             var descriptionMaxLines =
                 (showGameName || showCategory || (!isFrame && IsProgressUpdate)) ? 1 : 2;
 
-            // Name-line offset: a positive value indents the title line to the right; a negative
-            // value indents every other line instead, so the title line (with its inline badge)
-            // never slides left under the icon column. The standalone completion notification has
-            // no inline badge (its title is "Game Complete!"), and a progress notification hides
-            // every badge placement, so the offset does not apply to either.
+            // Badge-line offset: a positive value indents the line carrying the inline badge to the
+            // right; a negative value indents every other line instead, so the badge line never
+            // slides left under the icon column. The badge line is the game/category line when the
+            // badge sits inline before the game name, and the title line otherwise. The standalone
+            // completion notification has no inline badge (its title is "Game Complete!"), and a
+            // progress notification hides every badge placement, so the offset does not apply to
+            // either.
             var offset = IsGameCompleted || IsProgressUpdate ? 0 : surface.TitleLineOffset;
-            var titleIndent = offset > 0 ? offset : 0;
+            var badgeLineIndent = offset > 0 ? offset : 0;
             var otherIndent = offset < 0 ? -offset : 0;
+            var badgeOnGameLine = surface.InlineGameRarityBadge;
 
             // Extra top/bottom padding applied to every line.
             var linePadding = surface.LinePadding is double lp && lp > 0 ? lp : 0;
@@ -1521,7 +1528,10 @@ namespace PlayniteAchievements.ViewModels
                             contentShadow,
                             showGameName,
                             showCategory,
-                            isFrame ? FrameShowGameCategorySeparator : ShowGameCategorySeparator));
+                            isFrame ? FrameShowGameCategorySeparator : ShowGameCategorySeparator,
+                            isFrame ? FrameShowInlineGameBadge : ShowInlineGameBadge,
+                            isFrame ? (object)FrameBadgeImage : ToastBadgeSource,
+                            isFrame ? FrameBadgeSize : ToastBadgeSize));
                         break;
                     case NotificationSurfaceStyle.LineProgress:
                         // Toast only: progress notifications never produce a screenshot, so the
@@ -1549,7 +1559,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 var line = lines[i];
                 line.RowIndex = i;
-                line.LeftIndent = line is ToastTitleLine ? titleIndent : otherIndent;
+                var isBadgeLine = badgeOnGameLine ? line is ToastGameCategoryLine : line is ToastTitleLine;
+                line.LeftIndent = isBadgeLine ? badgeLineIndent : otherIndent;
                 line.VerticalPadding = linePadding;
                 line.ImageShadow = imageShadow;
                 ApplyLineEmphasis(line, surface, innerShadow, textBrush);
