@@ -32,6 +32,18 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void IsOwnedBy_MatchesTheOwnerHashIgnoringCase_AndNeverAMissingHash()
+        {
+            var hash = new string('a', 64);
+            Assert.IsTrue(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = hash.ToUpperInvariant() }, hash));
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = new string('b', 64) }, hash));
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = null }, hash), "an item without an owner is no one's");
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = "" }, ""), "two blanks are not a match");
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = hash }, null), "an install without a key owns nothing");
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(null, hash));
+        }
+
+        [TestMethod]
         public void ReadLegacyInstalls_IsEmptyWithoutAFileOrForAnUnreadableOne()
         {
             WithTemp(dir =>
