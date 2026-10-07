@@ -54,6 +54,15 @@ namespace PlayniteAchievements.Views.Controls
                 ["Captures"] = DefaultCapturesColumnWidth
             };
 
+        // The Workshop preview's category tree shows category art as a thumbnail beside the name.
+        private static readonly IReadOnlyDictionary<string, double> WorkshopPreviewImageColumnWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Cover"] = 56,
+                ["GameSummaryPlatform"] = DefaultPlatformColumnWidth,
+                ["Captures"] = DefaultCapturesColumnWidth
+            };
+
         private static readonly IReadOnlyDictionary<string, double> LegacyImageColumnRuntimeDefaults =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
@@ -1214,6 +1223,8 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements).Columns;
                 case GridSurface.DesktopThemeCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.DesktopTheme).Columns;
+                case GridSurface.WorkshopPreviewCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.WorkshopPreview).Columns;
                 case GridSurface.DesktopTheme:
                     return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.DesktopTheme).Columns;
                 default:
@@ -1254,6 +1265,8 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements).ColorRarityColumnsByRarity;
                 case GridSurface.DesktopThemeCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.DesktopTheme).ColorRarityColumnsByRarity;
+                case GridSurface.WorkshopPreviewCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.WorkshopPreview).ColorRarityColumnsByRarity;
                 case GridSurface.DesktopTheme:
                     return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.DesktopTheme).ColorRarityColumnsByRarity;
                 default:
@@ -1294,6 +1307,8 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements).ShowNameAboveProgress;
                 case GridSurface.DesktopThemeCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.DesktopTheme).ShowNameAboveProgress;
+                case GridSurface.WorkshopPreviewCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.WorkshopPreview).ShowNameAboveProgress;
                 case GridSurface.DesktopTheme:
                     return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.DesktopTheme).ShowNameAboveProgress;
                 default:
@@ -1334,6 +1349,8 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements).ShowRarityBadgesBelowProgress;
                 case GridSurface.DesktopThemeCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.DesktopTheme).ShowRarityBadgesBelowProgress;
+                case GridSurface.WorkshopPreviewCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.WorkshopPreview).ShowRarityBadgesBelowProgress;
                 case GridSurface.DesktopTheme:
                     return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.DesktopTheme).ShowRarityBadgesBelowProgress;
                 default:
@@ -1409,12 +1426,18 @@ namespace PlayniteAchievements.Views.Controls
             FriendsOverviewCategory,
             ViewFriendsAchievementsCategory,
             DesktopThemeCategory,
-            DesktopTheme
+            DesktopTheme,
+            WorkshopPreviewCategory
         }
 
         private IReadOnlyDictionary<string, double> ResolveDefaultWidthSeeds()
         {
             var surface = ResolveSurface();
+            if (surface == GridSurface.WorkshopPreviewCategory)
+            {
+                return WorkshopPreviewImageColumnWidthSeeds;
+            }
+
             return surface == GridSurface.ViewFriendsAchievements ||
                    surface == GridSurface.ViewFriendsAchievementsSelectedFriend
                 ? CompactImageColumnWidthSeeds
@@ -1484,6 +1507,11 @@ namespace PlayniteAchievements.Views.Controls
                 return GridSurface.DesktopTheme;
             }
 
+            if (string.Equals(ColumnSettingsKey, "WorkshopPreviewCategorySummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.WorkshopPreviewCategory;
+            }
+
             return GridSurface.Overview;
         }
 
@@ -1516,7 +1544,8 @@ namespace PlayniteAchievements.Views.Controls
                    surface == GridSurface.OverviewSelectedGameCategory ||
                    surface == GridSurface.FriendsOverviewCategory ||
                    surface == GridSurface.ViewFriendsAchievementsCategory ||
-                   surface == GridSurface.DesktopThemeCategory;
+                   surface == GridSurface.DesktopThemeCategory ||
+                   surface == GridSurface.WorkshopPreviewCategory;
         }
 
         private const string CapturesColumnKey = "Captures";
