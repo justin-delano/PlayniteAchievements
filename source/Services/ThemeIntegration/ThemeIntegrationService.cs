@@ -4456,7 +4456,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 item => item != null && AchievementCategoryTypeHelper.ParseValues(item.CategoryType)
                     .Contains(key, StringComparer.OrdinalIgnoreCase);
 
-            return new Dictionary<string, Func<FriendAchievementDisplayItem, bool>>(StringComparer.Ordinal)
+            var predicates = new Dictionary<string, Func<FriendAchievementDisplayItem, bool>>(StringComparer.Ordinal)
             {
                 [DynamicThemeViewKeys.Unlocked] = item => item?.Unlocked == true,
                 [DynamicThemeViewKeys.Locked] = item => item != null && !item.Unlocked,
@@ -4473,19 +4473,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 [DynamicThemeViewKeys.Gold] = Trophy(DynamicThemeViewKeys.Gold),
                 [DynamicThemeViewKeys.Silver] = Trophy(DynamicThemeViewKeys.Silver),
                 [DynamicThemeViewKeys.Bronze] = Trophy(DynamicThemeViewKeys.Bronze),
-                ["Base"] = CategoryType("Base"),
-                ["DLC"] = CategoryType("DLC"),
-                ["Singleplayer"] = CategoryType("Singleplayer"),
-                ["Multiplayer"] = CategoryType("Multiplayer"),
-                ["Progression"] = CategoryType("Progression"),
-                ["WinCondition"] = CategoryType("WinCondition"),
-                ["Collectable"] = CategoryType("Collectable"),
-                ["Missable"] = CategoryType("Missable"),
-                [AchievementCategoryTypeHelper.UnobtainableCategoryType] = CategoryType(AchievementCategoryTypeHelper.UnobtainableCategoryType),                ["Difficulty"] = CategoryType("Difficulty"),
-                ["Stackable"] = CategoryType("Stackable"),
-                [AchievementCategoryTypeHelper.SoftcoreCategoryType] = CategoryType(AchievementCategoryTypeHelper.SoftcoreCategoryType),
-                [AchievementCategoryTypeHelper.HardcoreCategoryType] = CategoryType(AchievementCategoryTypeHelper.HardcoreCategoryType),
             };
+
+            // One entry per category type, from the same vocabulary as the type menus.
+            foreach (var categoryType in DynamicThemeOptionGroups.AchievementCategoryTypeFilterKeys
+                .Where(key => !string.Equals(key, DynamicThemeViewKeys.All, StringComparison.Ordinal)))
+            {
+                predicates[categoryType] = CategoryType(categoryType);
+            }
+
+            // The key Side Quest shipped under, for themes that still name it.
+            predicates["SideProgression"] = CategoryType("SideQuest");
+
+            return predicates;
         }
 
         private delegate IOrderedEnumerable<T> DynamicSortPrimary<T>(IEnumerable<T> source, bool descending, StringComparer nameComparer);
