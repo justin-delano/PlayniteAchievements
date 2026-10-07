@@ -1259,11 +1259,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
         }
 
         // An image dropped on or pasted into a details-pane icon slot.
-        private void IconPickTarget_Picked(object sender, ImagePickedEventArgs e)
+        private void IconPickTarget_Picked(object sender, FilePickedEventArgs e)
         {
             if (TryResolveRowAndVariant(sender as FrameworkElement, out var row, out var variant))
             {
-                SetIconPath(row, variant, e.ImageSource);
+                SetIconPath(row, variant, e.PickedSource);
             }
         }
 
