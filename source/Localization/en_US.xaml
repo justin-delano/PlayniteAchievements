@@ -1600,14 +1600,13 @@
     <sys:String x:Key="LOCPlayAch_Workshop_CurrentSettings">Current settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">Choose what each part of the bundle is built from: your current settings or a saved preset.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_SavedAsCopy">"{0}" is a Workshop item, so your preset was saved as "{1}".</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_Hint">Your saved looks and everything added from the Workshop. Apply one from its settings card; it is then tracked, so updates keep what you changed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Hint">Your saved looks and everything added from the Workshop. Apply one from its settings card; updates then keep what you changed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_InLibrary">In library</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_InUse">In use</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Applied">Applied</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_Edited">Edited</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_UsedIn">Used in</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_NotApplied">Not applied anywhere. Apply it from its settings card.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_Following">Following {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_StopFollowing">Stop following</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Unlink">Unlink: keep the current look and stop taking updates from this item</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_UpdatesWhenApplied">Notifications, frames and showcase pages that use it take the new version when you apply it again.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_ReinstallChoice">"{0}" is used in {1} places. Merge keeps what you changed there and takes the rest from the package; Replace applies the package as published.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_DeleteConfirm">Delete "{0}" from your library? Places that use it keep their current look.</sys:String>
