@@ -118,7 +118,6 @@
     <sys:String x:Key="LOCPlayAch_Score_MasteryFormat">Mastery {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} until {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">Score System</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Collection and Prestige Scores</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Collection Score rewards total achievement collecting. Each unlocked achievement gives fixed points from its rarity tier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige Score rewards rare achievement collecting. Rare achievements are worth many more points than common achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Levels and tiers</sys:String>
