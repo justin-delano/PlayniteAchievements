@@ -776,18 +776,30 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        public void OpenOverviewWindow()
+        /// <summary>
+        /// Opens the Overview window, or brings the open one forward. With
+        /// <paramref name="showcasePageId"/> it shows the Showcase on that page.
+        /// </summary>
+        public void OpenOverviewWindow(string showcasePageId = null)
         {
             try
             {
                 InvokeOnUiThread(() =>
                 {
+                    var open = FindOpenOverviewWindow();
+                    if (open != null
+                        && !string.IsNullOrWhiteSpace(showcasePageId)
+                        && TryGetWindowContent<OverviewControl>(open, out var openView))
+                    {
+                        openView.ShowShowcasePage(showcasePageId);
+                    }
+
                     if (TryActivateOverviewWindow(closeIfActive: false))
                     {
                         return;
                     }
 
-                    OpenOverviewWindowCore();
+                    OpenOverviewWindowCore(showcasePageId);
                 });
             }
             catch (Exception ex)
@@ -1053,7 +1065,8 @@ namespace PlayniteAchievements.Services.UI
         private bool TryActivateManageAchievementsWindow(
             Guid gameId,
             ManageAchievementsTab tab,
-            bool selectManageCategoriesSubTab = false)
+            bool selectManageCategoriesSubTab = false,
+            bool? notificationsShowFrame = null)
         {
             if (!TryGetTrackedWindow(AchievementWindowKind.ManageAchievements, gameId, out var window))
             {
@@ -1062,7 +1075,7 @@ namespace PlayniteAchievements.Services.UI
 
             if (TryGetWindowContent<ManageAchievementsControl>(window, out var control))
             {
-                control.SelectTab(tab, selectManageCategoriesSubTab);
+                control.SelectTab(tab, selectManageCategoriesSubTab, notificationsShowFrame);
             }
 
             ActivateTrackedWindow(window);
@@ -1281,7 +1294,7 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private void OpenOverviewWindowCore()
+        private void OpenOverviewWindowCore(string showcasePageId = null)
         {
             try
             {
@@ -1302,6 +1315,10 @@ namespace PlayniteAchievements.Services.UI
                     OverviewLaunchContext.Popout,
                     _friendsOverviewDataCoordinator,
                     _widgetCoordinatorAccessor);
+                if (!string.IsNullOrWhiteSpace(showcasePageId))
+                {
+                    view.ShowShowcasePage(showcasePageId);
+                }
 
                 var windowOptions = new WindowOptions
                 {
@@ -1623,14 +1640,16 @@ namespace PlayniteAchievements.Services.UI
         public void OpenManageAchievementsView(
             Guid gameId,
             ManageAchievementsTab initialTab,
-            bool selectManageCategoriesSubTab = false)
+            bool selectManageCategoriesSubTab = false,
+            bool? notificationsShowFrame = null)
         {
             try
             {
                 InvokeOnUiThread(() => OpenManageAchievementsViewCore(
                     gameId,
                     initialTab,
-                    selectManageCategoriesSubTab));
+                    selectManageCategoriesSubTab,
+                    notificationsShowFrame));
             }
             catch (Exception ex)
             {
@@ -1644,12 +1663,14 @@ namespace PlayniteAchievements.Services.UI
         private void OpenManageAchievementsViewCore(
             Guid gameId,
             ManageAchievementsTab initialTab,
-            bool selectManageCategoriesSubTab = false)
+            bool selectManageCategoriesSubTab = false,
+            bool? notificationsShowFrame = null)
         {
             if (TryActivateManageAchievementsWindow(
                 gameId,
                 initialTab,
-                selectManageCategoriesSubTab))
+                selectManageCategoriesSubTab,
+                notificationsShowFrame))
             {
                 return;
             }
@@ -1693,7 +1714,8 @@ namespace PlayniteAchievements.Services.UI
                         _logger,
                         _settings,
                         _manualSourceRegistry,
-                        selectManageCategoriesSubTab);
+                        selectManageCategoriesSubTab,
+                        notificationsShowFrame);
                 }
 
                 var windowOptions = new WindowOptions
