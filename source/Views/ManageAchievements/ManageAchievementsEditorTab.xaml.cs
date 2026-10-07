@@ -332,7 +332,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             Common.DispatcherOperationProbe.Arm(logger, "editor-filter", TimeSpan.FromSeconds(1.5));
             using (var scope = Common.PerfScope.Start(logger, "Editor.FilterRefresh", thresholdMs: 0))
             {
-                scope.SetContext(SyncFilteredRows());
+                scope.SetContext(SyncFilteredRows() + " pane=" + (ViewModel?.IsDetailsPaneExpanded == true ? "open" : "collapsed"));
             }
         }
 
