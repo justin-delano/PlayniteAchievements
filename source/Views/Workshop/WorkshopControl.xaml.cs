@@ -66,14 +66,18 @@ namespace PlayniteAchievements.Views.Workshop
             else
             {
                 // The window's Library tab; settings host the Library page on its own. Opened for
-                // a game or for game data, it starts on the games that have Workshop game data.
+                // a game or for game data, it starts on game data, with that game's selected.
                 var focusGameData = focusGameId.HasValue || focusKind == WorkshopItemKind.GameCustomData;
-                _library = new LibraryControl(plugin, logger, focusGameData ? null : LibraryKindOf(focusKind), focusGameData);
+                _library = new LibraryControl(
+                    plugin,
+                    logger,
+                    focusGameData ? Services.Library.LibraryItemKind.GameData : LibraryKindOf(focusKind),
+                    focusGameId);
                 LibraryTab.Content = _library;
             }
         }
 
-        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles and game data have none.</summary>
+        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles have none.</summary>
         private static Services.Library.LibraryItemKind? LibraryKindOf(WorkshopItemKind? kind)
         {
             switch (kind)
