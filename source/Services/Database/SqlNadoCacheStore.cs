@@ -5431,7 +5431,7 @@ namespace PlayniteAchievements.Services.Database
                 customData.AchievementCategoryTypeOverrides.TryGetValue(apiName, out var categoryTypeOverride) &&
                 !string.IsNullOrWhiteSpace(categoryTypeOverride))
             {
-                item.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride);
+                item.CategoryType = AchievementCategoryTypeHelper.ApplyOverride(item.CategoryType, categoryTypeOverride);
             }
 
             item.AchievementNote = customData.AchievementNotes != null &&
