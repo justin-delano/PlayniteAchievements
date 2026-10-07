@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.UI;
 
 namespace PlayniteAchievements.Models.Achievements
 {
@@ -433,9 +434,14 @@ namespace PlayniteAchievements.Models.Achievements
                 return;
             }
 
+            // Staged into the runtime dictionary so the pass lands as one resource change; the
+            // event fires after the swap so its handlers resolve the new values.
             void apply()
             {
-                ApplyBadgeApplicationResources(app.Resources, settings);
+                _activeSettings = settings;
+                ClearRayGlowPalettes();
+                PlayAchRuntimeResources.Update(resources => ApplyBadgeResources(resources, settings));
+                AppearanceChanged?.Invoke(null, EventArgs.Empty);
             }
 
             var dispatcher = app.Dispatcher;
