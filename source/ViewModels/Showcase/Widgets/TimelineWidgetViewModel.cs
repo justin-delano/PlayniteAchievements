@@ -24,7 +24,15 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             _timeline.Window = ShowcaseTimelineOptions.GetWindow(instance);
             _timeline.Granularity = ShowcaseTimelineOptions.GetGranularity(instance);
             // The chart itself shows the empty caption when the window holds no unlocks.
-            _timeline.SetCounts(counts.ToDictionary(pair => pair.Key, pair => pair.Value));
+            var byPlatform = Projection?.TimelineByPlatform;
+            if (byPlatform != null)
+            {
+                _timeline.SetSeriesCounts(byPlatform);
+            }
+            else
+            {
+                _timeline.SetCounts(counts.ToDictionary(pair => pair.Key, pair => pair.Value));
+            }
         }
     }
 }
