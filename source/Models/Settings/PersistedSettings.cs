@@ -203,6 +203,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewPieIcons = true;
         private bool _showOverviewPieLegend;
         private PieLegendPosition _overviewPieLegendPosition = PieLegendPosition.Right;
+        private ScoreCardBadgePosition _overviewScoreCardBadgePosition = ScoreCardBadgePosition.Left;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
@@ -2418,6 +2419,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Which side of each overview header score card its badge sits on.
+        /// </summary>
+        public ScoreCardBadgePosition OverviewScoreCardBadgePosition
+        {
+            get => _overviewScoreCardBadgePosition;
+            set => SetValue(ref _overviewScoreCardBadgePosition, value);
+        }
+
+        /// <summary>
         /// Determines how overview pie charts handle slices below five percent.
         /// </summary>
         public OverviewPieSmallSliceMode OverviewPieSmallSliceMode
@@ -3458,6 +3468,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewPieIcons = this.ShowOverviewPieIcons,
                 ShowOverviewPieLegend = this.ShowOverviewPieLegend,
                 OverviewPieLegendPosition = this.OverviewPieLegendPosition,
+                OverviewScoreCardBadgePosition = this.OverviewScoreCardBadgePosition,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 OverviewPieIncludeLocked = this.OverviewPieIncludeLocked,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
@@ -3635,6 +3646,7 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewPieIcons = defaults.ShowOverviewPieIcons;
             ShowOverviewPieLegend = defaults.ShowOverviewPieLegend;
             OverviewPieLegendPosition = defaults.OverviewPieLegendPosition;
+            OverviewScoreCardBadgePosition = defaults.OverviewScoreCardBadgePosition;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             OverviewPieIncludeLocked = defaults.OverviewPieIncludeLocked;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
