@@ -173,10 +173,11 @@ namespace PlayniteAchievements.Services.Showcase
         public string ContextLabel { get; set; }
 
         /// <summary>
-        /// The linking host's state generation this projection was decorated under. Linked
-        /// state (selected slices, the unlock-day filter) can change while the snapshot does not.
+        /// The linked state this projection was decorated with (selected slices, the marked
+        /// days, the narrowed game), in one comparable string. That state can change while the
+        /// snapshot does not, and only a widget whose own stamp moved needs reprojecting.
         /// </summary>
-        public int LinkedRevision { get; set; }
+        public string LinkedStamp { get; set; }
     }
 
     public static class ShowcaseWidgetProjectionService
