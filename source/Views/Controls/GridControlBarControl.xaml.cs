@@ -179,6 +179,16 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private void DateRangeClearFrom_Click(object sender, RoutedEventArgs e)
+        {
+            ((sender as FrameworkElement)?.DataContext as GridDateRangeFilter)?.ClearFrom();
+        }
+
+        private void DateRangeClearTo_Click(object sender, RoutedEventArgs e)
+        {
+            ((sender as FrameworkElement)?.DataContext as GridDateRangeFilter)?.ClearTo();
+        }
+
         private void DateRangeClear_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as FrameworkElement)?.DataContext is GridDateRangeFilter item)
