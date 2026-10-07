@@ -164,6 +164,9 @@ namespace PlayniteAchievements.Services.UI
         // needs no travel room reserved. True for the built-in slide.
         private bool _activeSlideInTravels = true;
         private bool _activeSlideOutTravels = true;
+        // The style's entrance and exit motion for this wave, or null when the style sets none and
+        // the themeable storyboards above apply. Read from the first card's scope style.
+        private ToastMotionPlan _activeMotionPlan;
         // The storyboard currently running, so StopActiveSlide can stop the right one.
         private Storyboard _runningSlideStoryboard;
         // The quiet scope covering the running slide's span. Opened when a slide storyboard
@@ -1386,6 +1389,9 @@ namespace PlayniteAchievements.Services.UI
             var slideXPhys = (_activeSlideTransform?.X ?? 0d) * pxPerDipX;
             var slideYPhys = (_activeSlideTransform?.Y ?? 0d) * pxPerDipY;
             var hostOpacity = Math.Max(0d, Math.Min(1d, _activeSlideHost?.Opacity ?? 1d));
+            // A zoom scales the host about the card's center; recorded like the opacity so export can
+            // replay it, since the card pixels are rendered without the host's transform.
+            var hostScale = SlideHostScale()?.ScaleX ?? 1d;
 
             for (var i = 0; i < toastItems.Count; i++)
             {
@@ -1414,7 +1420,7 @@ namespace PlayniteAchievements.Services.UI
                             vm, primed, scratch.PrimedW, scratch.PrimedH,
                             scratch.LastCardWPhys, scratch.LastCardHPhys, slideXPhys, slideYPhys,
                             glowScale, hostOpacity,
-                            clientPhys.Width, clientPhys.Height, elapsedMs);
+                            clientPhys.Width, clientPhys.Height, elapsedMs, hostScale);
                         scratch.HasPixelFrame = true;
                         _wavePrimedSubmitCount++;
                         continue;
@@ -1451,7 +1457,7 @@ namespace PlayniteAchievements.Services.UI
                     recorder.Sample(
                         vm, null, 0, 0, scratch.LastCardWPhys, scratch.LastCardHPhys,
                         slideXPhys, slideYPhys, glowScale, hostOpacity,
-                        clientPhys.Width, clientPhys.Height, elapsedMs);
+                        clientPhys.Width, clientPhys.Height, elapsedMs, hostScale);
                     continue;
                 }
 
@@ -1529,7 +1535,7 @@ namespace PlayniteAchievements.Services.UI
                 recorder.Sample(
                     vm, pixels, pw, ph, cardWPhys, cardHPhys, slideXPhys, slideYPhys,
                     glowScale, hostOpacity,
-                    clientPhys.Width, clientPhys.Height, elapsedMs);
+                    clientPhys.Width, clientPhys.Height, elapsedMs, hostScale);
                 if (rayDelta != null)
                 {
                     recorder.AttachRayLayer(vm, rayDelta, rayW, rayH, elapsedMs);
@@ -2290,6 +2296,7 @@ namespace PlayniteAchievements.Services.UI
             // slide began. Called unconditionally so all four fields are always this wave's, never a
             // previous wave's. Only the storyboards' shape is resolved here; each is bound to this
             // wave's slide host at the slide itself, since the window does not exist yet.
+            _activeMotionPlan = ToastMotionStoryboardFactory.Resolve(wave[0].MotionSurface);
             ResolveWaveSlideTiming();
             // Zero until the cards are laid out and measured; the pre-show placement pass has no
             // card to measure either, so the two agree.
@@ -4140,6 +4147,12 @@ namespace PlayniteAchievements.Services.UI
             // card moves. Place once here so the slide starts from a settled position.
             PlaceWindow(window);
 
+            if (_activeMotionPlan != null)
+            {
+                RunStyleMotion(window, _activeMotionPlan.Entrance, entering: true, _activeSlideInMs, "in");
+                return;
+            }
+
             var distance = SlideDistanceDip(window);
             var from = SlideFromBottom() ? distance : -distance;
             RunSlideStoryboard(
@@ -4155,12 +4168,96 @@ namespace PlayniteAchievements.Services.UI
                 return 0;
             }
 
+            if (_activeMotionPlan != null)
+            {
+                RunStyleMotion(window, _activeMotionPlan.Exit, entering: false, _activeSlideOutMs, "out");
+                return _activeSlideOutMs;
+            }
+
             var distance = SlideDistanceDip(window);
             var to = SlideFromBottom() ? distance : -distance;
             RunSlideStoryboard(
                 _activeSlideOutStoryboard, 0d, to, DefaultSlideOutEase, _activeSlideOutMs,
                 _activeSlideOutTravels, "out");
             return _activeSlideOutMs;
+        }
+
+        /// <summary>
+        /// Runs one entrance or exit chosen on the style, through the same storyboard path a theme
+        /// slide takes. The properties the motion animates are first given, as local values, where
+        /// the card belongs once it is over, for the same reason <see cref="RunSlideStoryboard"/>
+        /// seeds the translate's Y: stopping the storyboard reverts to the local value, and an exit
+        /// must leave the card off screen or transparent rather than back at rest.
+        /// </summary>
+        private void RunStyleMotion(Window window, ToastMotion motion, bool entering, double durationMs, string label)
+        {
+            var offset = ToastMotionStoryboardFactory.TravelOffset(
+                motion, _activePosition, SlideDistanceDip(window), SlideDistanceDipX(window));
+            var storyboard = ToastMotionStoryboardFactory.Build(
+                motion, entering, _activeMotionPlan.Feel, durationMs, offset);
+
+            var host = _activeSlideHost;
+            var transform = _activeSlideTransform;
+            if (host != null && transform != null)
+            {
+                transform.X = entering ? 0d : offset.X;
+                var hidden = !entering && (motion == ToastMotion.Fade || motion == ToastMotion.Zoom);
+                host.Opacity = hidden ? 0d : 1d;
+                var scale = SlideHostScale();
+                if (scale != null)
+                {
+                    var restScale = !entering && motion == ToastMotion.Zoom
+                        ? ToastMotionStoryboardFactory.ZoomFromScale
+                        : 1d;
+                    scale.ScaleX = restScale;
+                    scale.ScaleY = restScale;
+                }
+
+                if (motion == ToastMotion.Zoom)
+                {
+                    PivotScaleOnCard(host);
+                }
+            }
+
+            var travels = ToastMotionStoryboardFactory.Travels(motion);
+            RunSlideStoryboard(
+                storyboard, entering ? offset.Y : 0d, entering ? 0d : offset.Y, DefaultSlideInEase,
+                storyboard == null ? 0d : durationMs, travels, label);
+        }
+
+        /// <summary>The scale at index 0 of the slide host's transform group, or null.</summary>
+        private ScaleTransform SlideHostScale()
+        {
+            return (_activeSlideHost?.RenderTransform as TransformGroup)?.Children.Count > 0
+                ? ((TransformGroup)_activeSlideHost.RenderTransform).Children[0] as ScaleTransform
+                : null;
+        }
+
+        /// <summary>
+        /// Puts the host's scale pivot on the card's center. The host is centered on by default,
+        /// which is the card itself unless travel room was reserved for a slide on the other end
+        /// of the wave; then the room would pull the pivot off the card. Clip export scales about
+        /// the card's center, so this also keeps the clip and the screen in agreement.
+        /// </summary>
+        private void PivotScaleOnCard(FrameworkElement host)
+        {
+            var card = _activeCardSurface;
+            if (card == null || host.ActualWidth <= 0 || host.ActualHeight <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var center = card.TranslatePoint(
+                    new Point(card.ActualWidth / 2d, card.ActualHeight / 2d), host);
+                host.RenderTransformOrigin = new Point(
+                    center.X / host.ActualWidth, center.Y / host.ActualHeight);
+            }
+            catch (InvalidOperationException)
+            {
+                // The card is not under the host (teardown); the default center pivot stays.
+            }
         }
 
         /// <summary>
@@ -4221,6 +4318,22 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private void ResolveWaveSlideTiming()
         {
+            // A style motion replaces the theme storyboards. Its storyboards are built at the slide
+            // itself, because their travel depends on the laid-out card.
+            var plan = _activeMotionPlan;
+            if (plan != null)
+            {
+                _activeSlideInStoryboard = null;
+                _activeSlideOutStoryboard = null;
+                _activeSlideInMs = ToastMotionStoryboardFactory.DurationMs(
+                    plan.Entrance, SlideInDurationMs, plan.SpeedScale);
+                _activeSlideOutMs = ToastMotionStoryboardFactory.DurationMs(
+                    plan.Exit, SlideOutDurationMs, plan.SpeedScale);
+                _activeSlideInTravels = ToastMotionStoryboardFactory.Travels(plan.Entrance);
+                _activeSlideOutTravels = ToastMotionStoryboardFactory.Travels(plan.Exit);
+                return;
+            }
+
             _activeSlideInStoryboard = ResolveSlideStoryboard(
                 AchievementToastTemplateResolver.SlideInStoryboardKey, SlideInDurationMs,
                 out _activeSlideInMs, out _activeSlideInTravels);
@@ -4934,6 +5047,44 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
+        /// The horizontal counterpart of <see cref="SlideDistanceDip"/>, for a side slide: the card's
+        /// laid-out width plus the same padding.
+        /// </summary>
+        private double SlideDistanceDipX(Window window)
+        {
+            var width = _activeCardSurface?.ActualWidth ?? 0d;
+            if (double.IsNaN(width) || width <= 0)
+            {
+                width = window != null && window.ActualWidth > 0
+                    ? window.ActualWidth
+                    : ToastWindowPlacer.DefaultCardWidthDip;
+            }
+
+            return width + SlideTravelPaddingDip;
+        }
+
+        /// <summary>
+        /// The travel room a style motion needs: on each side, the farthest the entrance or the exit
+        /// takes the card past it.
+        /// </summary>
+        private Thickness StyleMotionTravel(Window window, ToastMotionPlan plan)
+        {
+            var vertical = SlideDistanceDip(window);
+            var horizontal = SlideDistanceDipX(window);
+            var room = new Thickness();
+            foreach (var motion in new[] { plan.Entrance, plan.Exit })
+            {
+                var offset = ToastMotionStoryboardFactory.TravelOffset(motion, _activePosition, vertical, horizontal);
+                room.Left = Math.Max(room.Left, -offset.X);
+                room.Right = Math.Max(room.Right, offset.X);
+                room.Top = Math.Max(room.Top, -offset.Y);
+                room.Bottom = Math.Max(room.Bottom, offset.Y);
+            }
+
+            return room;
+        }
+
+        /// <summary>
         /// Reserves the slide's travel as empty room past the card on the side it enters from, so the
         /// window is big enough to hold the card at both ends. An HWND clips its content unconditionally,
         /// so without this the card is simply cut off while it slides.
@@ -4959,7 +5110,15 @@ namespace PlayniteAchievements.Services.UI
 
             try
             {
-                ToastSurfaceFactory.ApplySlideTravel(surface, SlideDistanceDip(window), SlideFromBottom());
+                if (_activeMotionPlan != null)
+                {
+                    ToastSurfaceFactory.ApplySlideTravel(surface, StyleMotionTravel(window, _activeMotionPlan));
+                }
+                else
+                {
+                    ToastSurfaceFactory.ApplySlideTravel(surface, SlideDistanceDip(window), SlideFromBottom());
+                }
+
                 window.UpdateLayout();
             }
             catch (Exception ex)
