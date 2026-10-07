@@ -1,7 +1,9 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.Services.Workshop.Preview;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
@@ -88,6 +90,9 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         private HashSet<string> _changedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private List<AchievementDisplayItem> _afterItems;
         private List<AchievementDisplayItem> _beforeItems;
+
+        // The after-install category tree, every node expanded, built from all after rows.
+        private List<GameSummaryItem> _categoryRows;
         private List<AchievementDisplayItem> _shownItems = new List<AchievementDisplayItem>();
         private Style _neutralHeaderStyle;
         private DataTemplate _defaultStatusTemplate;
@@ -146,6 +151,8 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         private AchievementDataGridControl VisibleGrid => ShowsBefore ? BeforeGrid : AfterGrid;
 
         private bool ShowsBefore => !NeutralRender && _diff?.BeforeData != null && BeforeButton.IsChecked == true;
+
+        private bool ShowsCategories => !NeutralRender && CategoriesButton.IsChecked == true;
 
         /// <summary>
         /// Gives the grid's star-sized columns fixed widths that share <paramref name="width"/>,
@@ -323,9 +330,12 @@ namespace PlayniteAchievements.Views.Workshop.Preview
 
         /// <summary>
         /// The package's own entries as achievement data for the grid, shown as published: a
-        /// package carries no progress, so no entry is masked as locked.
+        /// package carries no progress, so no entry is masked as locked. The package's category
+        /// order, art and summary category come with them, the art at its extracted paths.
         /// </summary>
-        private static GameAchievementData BuildPackageData(GameCustomDataPreviewDiff diff)
+        private static GameAchievementData BuildPackageData(
+            GameCustomDataPreviewDiff diff,
+            GameCustomDataPortableFile manifest)
         {
             var achievements = diff.Rows
                 .Where(row => row?.After != null)
@@ -345,7 +355,17 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                     Unlocked = true
                 })
                 .ToList();
-            return new GameAchievementData { Achievements = achievements };
+            return new GameAchievementData
+            {
+                Achievements = achievements,
+                AchievementCategoryOrder = manifest?.AchievementCategoryOrder?.Count > 0
+                    ? new List<string>(manifest.AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = manifest?.AchievementCategoryImageOverrides?.Count > 0
+                    ? GameCustomDataFile.CloneCategoryImageOverrideMap(manifest.AchievementCategoryImageOverrides)
+                    : null,
+                GameSummaryCategory = manifest?.GameSummaryCategory
+            };
         }
 
         private static void ApplyPreloadedIcons(DependencyObject parent, IReadOnlyDictionary<string, ImageSource> images)
@@ -370,6 +390,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             _diff = (DataContext as GameCustomDataPreviewModel)?.Diff;
             _afterItems = null;
             _beforeItems = null;
+            _categoryRows = null;
             var diff = _diff;
             if (diff == null)
             {
@@ -377,6 +398,8 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 _shownItems = new List<AchievementDisplayItem>();
                 AfterGrid.ItemsSource = null;
                 BeforeGrid.ItemsSource = null;
+                CategoryGrid.ItemsSource = null;
+                CategoryGrid.Visibility = Visibility.Collapsed;
                 SummaryText.Text = string.Empty;
                 PackageOnlyText.Visibility = Visibility.Collapsed;
                 GameText.Visibility = Visibility.Collapsed;
@@ -411,10 +434,23 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 : string.Empty;
 
             var compared = diff.AfterData != null;
-            _afterData = compared ? diff.AfterData : BuildPackageData(diff);
-            ComparisonOptions.Visibility = compared && !NeutralRender ? Visibility.Visible : Visibility.Collapsed;
-            BeforeButton.Visibility = diff.BeforeData != null ? Visibility.Visible : Visibility.Collapsed;
-            AfterButton.Visibility = BeforeButton.Visibility;
+            _afterData = compared
+                ? diff.AfterData
+                : BuildPackageData(diff, (DataContext as GameCustomDataPreviewModel)?.Package?.Manifest);
+
+            // Categories needs two or more categories to say anything; Before / After needs a
+            // game to compare against. The row shows when either is on offer.
+            var hasBefore = diff.BeforeData != null;
+            var hasCategories = !NeutralRender && BuildCategoryRows().OfType<CategorySummaryItem>().Skip(1).Any();
+            BeforeButton.Visibility = hasBefore ? Visibility.Visible : Visibility.Collapsed;
+            AfterButton.Visibility = hasBefore || hasCategories ? Visibility.Visible : Visibility.Collapsed;
+            CategoriesButton.Visibility = hasCategories ? Visibility.Visible : Visibility.Collapsed;
+            if (!hasCategories && CategoriesButton.IsChecked == true)
+            {
+                AfterButton.IsChecked = true;
+            }
+
+            ComparisonOptions.Visibility = (compared || hasCategories) && !NeutralRender ? Visibility.Visible : Visibility.Collapsed;
 
             // The published image lists what the package touches in its after-install state;
             // shared from the game it was made on, the install itself changes nothing there.
@@ -544,6 +580,21 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 return;
             }
 
+            // Unchanged rows exist only against a game, and the category tree shows every row.
+            ShowUnchangedCheckBox.Visibility = diff.AfterData != null && !ShowsCategories
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            if (ShowsCategories)
+            {
+                AfterGrid.Visibility = Visibility.Collapsed;
+                BeforeGrid.Visibility = Visibility.Collapsed;
+                CategoryGrid.ItemsSource = BuildCategoryRows();
+                CategoryGrid.Visibility = Visibility.Visible;
+                MoreRowsText.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            CategoryGrid.Visibility = Visibility.Collapsed;
             var hidden = RefreshGrid(diff);
             MoreRowsText.Visibility = hidden > 0 ? Visibility.Visible : Visibility.Collapsed;
             MoreRowsText.Text = hidden > 0
@@ -602,6 +653,28 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             }
 
             return wanted.Count - limit;
+        }
+
+        /// <summary>
+        /// The after-install category tree as View Achievements' category list shows it: one row
+        /// per category with its art and leaf name, nested under the tree guide, every node
+        /// expanded, from every after row whatever the Before / After filters show.
+        /// </summary>
+        private List<GameSummaryItem> BuildCategoryRows()
+        {
+            if (_categoryRows != null)
+            {
+                return _categoryRows;
+            }
+
+            var items = _afterItems ?? (_afterItems = BuildItems(_afterData));
+            var badgeMode = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.CategoryCompletionBadgeMode
+                ?? CategoryCompletionBadgeMode.All;
+            _categoryRows = items.Count == 0
+                ? new List<GameSummaryItem>()
+                : CategorySummaryBuilder.BuildTree(items, badgeMode, useLeafNames: true);
+            CategoryTreeShapeBuilder.Stamp(_categoryRows, enabled: true);
+            return _categoryRows;
         }
 
         /// <summary>
