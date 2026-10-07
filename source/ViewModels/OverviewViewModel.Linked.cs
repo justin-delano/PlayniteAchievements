@@ -37,24 +37,6 @@ namespace PlayniteAchievements.ViewModels
                 ? new UnlockDaySpan(_unlockRangeFrom ?? DateTime.MinValue, _unlockRangeTo ?? DateTime.MaxValue.Date)
                 : (UnlockDaySpan?)null;
 
-        /// <summary>The range as a title fragment ("Unlocked: 3/1/2026 – 3/31/2026"); empty while unset.</summary>
-        public string UnlockSpanFilterText
-        {
-            get
-            {
-                if (!_unlockRangeFrom.HasValue && !_unlockRangeTo.HasValue)
-                {
-                    return string.Empty;
-                }
-
-                var culture = FormattingCulture.Current;
-                var from = _unlockRangeFrom?.ToString("d", culture) ?? "…";
-                var to = _unlockRangeTo?.ToString("d", culture) ?? "…";
-                var days = _unlockRangeFrom.HasValue && _unlockRangeFrom == _unlockRangeTo ? from : from + " – " + to;
-                return string.Format(culture, L("LOCPlayAch_Filter_UnlockedDuring"), days);
-            }
-        }
-
         /// <summary>Sets the range to <paramref name="span"/>, or clears it when it is already that span.</summary>
         public void ToggleUnlockSpanFilter(UnlockDaySpan span)
         {
@@ -208,58 +190,11 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// A linked widget's title: what the overview narrowed it to. The selected game when the
-        /// widget follows it, otherwise the active selections it follows (search, platforms,
-        /// progress, activity, unlock days), leaving out the ones it sets itself. Empty when
-        /// nothing narrows it.
+        /// A linked widget's title: the selected game's name while the widget is narrowed to it,
+        /// the one thing its chart cannot say for itself; empty otherwise.
         /// </summary>
-        public string GetLinkedContextLabel(OverviewLinkedFilter exclude, OverviewLinkedSelection selection)
-        {
-            var rangeText = (exclude & OverviewLinkedFilter.UnlockSpan) == 0 ? UnlockSpanFilterText : string.Empty;
-            var game = GetLinkedNarrowedGame(selection);
-            if (game != null)
-            {
-                return string.IsNullOrEmpty(rangeText) ? game.GameName : game.GameName + " · " + rangeText;
-            }
-
-            var parts = new List<string>();
-            var search = LeftSearchText?.Trim();
-            if (!string.IsNullOrEmpty(search))
-            {
-                parts.Add("“" + search + "”");
-            }
-
-            if ((exclude & OverviewLinkedFilter.Provider) == 0)
-            {
-                parts.AddRange((ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>())
-                    .Where(group => group.HasAnySelected && !string.IsNullOrWhiteSpace(group.DisplayName))
-                    .Select(group => group.DisplayName));
-            }
-
-            if ((exclude & OverviewLinkedFilter.Completeness) == 0)
-            {
-                parts.AddRange(OrderedSelections(_selectedCompletenessFilters, CompletenessFilterOptions));
-            }
-
-            parts.AddRange(OrderedSelections(_selectedPlayStatusFilters, PlayStatusFilterOptions));
-            if (!string.IsNullOrEmpty(rangeText))
-            {
-                parts.Add(rangeText);
-            }
-
-            return string.Join(" · ", parts);
-        }
-
-        // Selected filter values in the order the filter lists them.
-        private static IEnumerable<string> OrderedSelections(ISet<string> selected, IEnumerable<string> options)
-        {
-            if (selected == null || selected.Count == 0)
-            {
-                return Enumerable.Empty<string>();
-            }
-
-            return (options ?? Enumerable.Empty<string>()).Where(selected.Contains);
-        }
+        public string GetLinkedContextLabel(OverviewLinkedSelection selection) =>
+            GetLinkedNarrowedGame(selection)?.GameName ?? string.Empty;
 
         /// <summary>The selected game a linked widget with this rule narrows to, or null.</summary>
         public GameSummaryItem GetLinkedNarrowedGame(OverviewLinkedSelection selection)
