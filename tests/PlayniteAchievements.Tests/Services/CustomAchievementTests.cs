@@ -294,6 +294,62 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void CsvParse_ReadsSemicolonAndTabFiles()
+        {
+            var service = new CustomAchievementTextImportService();
+
+            var semicolon = service.Parse("ID;Title;Description\r\na;First, win;\"Uses; a semicolon\"\r\n");
+            Assert.IsFalse(semicolon.HasErrors, string.Join("; ", semicolon.Errors));
+            Assert.AreEqual("First, win", semicolon.Rows[0].DisplayName, "A comma is plain text in a semicolon file.");
+            Assert.AreEqual("Uses; a semicolon", semicolon.Rows[0].Description);
+
+            var tab = service.Parse("ID\tTitle\r\na\tFirst, win\r\n");
+            Assert.IsFalse(tab.HasErrors, string.Join("; ", tab.Errors));
+            Assert.AreEqual("First, win", tab.Rows[0].DisplayName);
+        }
+
+        [TestMethod]
+        public void CsvParse_HonoursExcelsSeparatorLineWithoutCountingItAsARow()
+        {
+            var result = new CustomAchievementTextImportService().Parse(
+                "sep=;\r\nID;Title;Trophy Type\r\na;One;gold\r\nb;Two;Diamond\r\n");
+
+            Assert.IsTrue(
+                result.Errors.Any(error => error.StartsWith("Row 3, Trophy Type")),
+                "Rows are numbered as Excel shows them, with the hidden sep= line not counted: " + string.Join("; ", result.Errors));
+            Assert.AreEqual("One", result.Rows.Single().DisplayName);
+        }
+
+        [TestMethod]
+        public void CsvParse_RejectsRowsWithAnotherSeparatorOrExtraCells()
+        {
+            var result = new CustomAchievementTextImportService().Parse(
+                "ID,Title,Description\r\n" +
+                "a,One,\r\n" +
+                "b;Two;Text\r\n" +
+                "c,Three,Has, an unquoted comma\r\n");
+
+            Assert.IsTrue(result.Errors.Any(error => error.StartsWith("Row 3: uses a different separator than the header (\",\")")), string.Join("; ", result.Errors));
+            Assert.IsTrue(result.Errors.Any(error => error.StartsWith("Row 4: has more cells than the header")), string.Join("; ", result.Errors));
+            Assert.AreEqual("a", result.Rows.Single().Id);
+        }
+
+        [TestMethod]
+        public void CsvFormat_WritesTheGivenSeparatorAndReadsItBack()
+        {
+            var lines = CustomAchievementCsvFormat.BuildLines(
+                new[] { new CustomAchievementCsvRow { Id = "a", DisplayName = "One, two", Description = "Three; four", RarityPercent = 12.5 } },
+                ';');
+
+            Assert.AreEqual(CustomAchievementCsvFormat.Header.Replace(',', ';'), lines[0]);
+            var result = new CustomAchievementTextImportService().Parse(string.Join("\r\n", lines));
+            Assert.IsFalse(result.HasErrors, string.Join("; ", result.Errors));
+            Assert.AreEqual("One, two", result.Rows[0].DisplayName);
+            Assert.AreEqual("Three; four", result.Rows[0].Description);
+            Assert.AreEqual(12.5, result.Rows[0].RarityPercent);
+        }
+
+        [TestMethod]
         public void CsvFormat_WriteFileEmitsByteOrderMarkAndCrlf()
         {
             var path = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N") + ".csv");
