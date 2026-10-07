@@ -1843,10 +1843,17 @@ namespace PlayniteAchievements
                         _logger?.Info($"[Library] Indexed the preset folders; {plan.Steps.Count} Workshop install change(s) brought into the library.");
                     }
 
-                    var linked = Services.Library.LibraryMigration.LinkGameDataInstalls(plan, store, gameLinks);
+                    var linked = Services.Library.LibraryMigration.LinkGameDataInstalls(plan, gameLinks);
                     if (linked > 0)
                     {
                         _logger?.Info($"[Library] Linked {linked} game(s) to the Workshop game data installed on them.");
+                    }
+
+                    // Game data is recorded on the games: what the old library items knew moves into their links.
+                    var moved = Services.Library.LibraryMigration.MoveGameDataItemsToLinks(store.TakeLegacyGameDataItems(), gameLinks);
+                    if (moved > 0)
+                    {
+                        _logger?.Info($"[Library] Moved the names of {moved} game data record(s) out of the library index.");
                     }
 
                     // Everything installed.json recorded is in the library now; it is read no more.
