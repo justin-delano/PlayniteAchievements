@@ -85,11 +85,8 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasAppliedSnapshot;
 
         private readonly RefreshHeaderProgressTracker _progressTracker;
-        private const int ContextualPieSeriesCount = 5;
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
-        private bool _isApplyingTimelineRange;
-        private System.Windows.Threading.DispatcherTimer _timelinePersistTimer;
         private bool _selectedGameLoadInProgress;
         private bool _selectedGameContentReady;
         private CancellationTokenSource _selectedGameLoadCts;
@@ -203,29 +200,6 @@ namespace PlayniteAchievements.ViewModels
                 _selectedRefreshMode = configuredDefault.GetKey();
             }
 
-            GlobalTimeline = new TimelineViewModel();
-            SelectedGameTimeline = new TimelineViewModel();
-            InitializeTimelineRangePersistence();
-
-            GamesPieChart = new PieChartViewModel
-            {
-                AlwaysShowSmallSliceIcons = true
-            };
-            RarityPieChart = new PieChartViewModel
-            {
-                MinimumSeriesCount = ContextualPieSeriesCount
-            };
-            ProviderPieChart = new PieChartViewModel();
-            TrophyPieChart = new PieChartViewModel
-            {
-                MinimumSeriesCount = ContextualPieSeriesCount
-            };
-            ApplyOverviewPieSmallSliceMode();
-            ApplyOverviewPieIncludeLocked();
-            ApplyOverviewPieCenterMode();
-            ApplyOverviewPieIcons();
-            ApplyOverviewPieLegend();
-
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
             _sortIndex = 2; // Unlock Date
@@ -323,29 +297,6 @@ namespace PlayniteAchievements.ViewModels
                 GameSummaries?.Count ?? 0);
         }
 
-        private void InitializeTimelineRangePersistence()
-        {
-            ApplySavedTimelineWindow();
-            if (GlobalTimeline != null)
-            {
-                GlobalTimeline.PropertyChanged += Timeline_PropertyChanged;
-            }
-
-            if (SelectedGameTimeline != null)
-            {
-                SelectedGameTimeline.PropertyChanged += Timeline_PropertyChanged;
-            }
-
-            // A window that ends at "today" moves at local midnight; the counts do not.
-            LocalDayRollover.Subscribe(OnLocalDayChanged);
-        }
-
-        private void OnLocalDayChanged(object sender, DateTime today)
-        {
-            GlobalTimeline?.UpdateTimelineData();
-            SelectedGameTimeline?.UpdateTimelineData();
-        }
-
         private void InitializeGridControlBars()
         {
             GameSummariesControlBar = new GridControlBarViewModel
@@ -408,130 +359,6 @@ namespace PlayniteAchievements.ViewModels
             };
 
             // The selected-game control bar is built and owned by _selectedGameControlBar.
-        }
-
-        private void Timeline_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (_isApplyingTimelineRange || !(sender is TimelineViewModel timeline))
-            {
-                return;
-            }
-
-            var isWindow = e?.PropertyName == nameof(TimelineViewModel.Window);
-            var isGranularity = e?.PropertyName == nameof(TimelineViewModel.Granularity);
-            if (!isWindow && !isGranularity)
-            {
-                return;
-            }
-
-            try
-            {
-                _isApplyingTimelineRange = true;
-                // The global and selected-game charts share one window and one granularity.
-                foreach (var other in new[] { GlobalTimeline, SelectedGameTimeline })
-                {
-                    if (other == null || ReferenceEquals(other, timeline))
-                    {
-                        continue;
-                    }
-
-                    if (isWindow)
-                    {
-                        other.Window = timeline.Window;
-                    }
-                    else
-                    {
-                        other.Granularity = timeline.Granularity;
-                    }
-                }
-
-                var persisted = _settings?.Persisted;
-                if (persisted == null)
-                {
-                    return;
-                }
-
-                var changed = false;
-                if (isWindow && !Equals(persisted.OverviewTimeWindow, timeline.Window))
-                {
-                    persisted.OverviewTimeWindow = timeline.Window;
-                    changed = true;
-                }
-
-                if (isGranularity && persisted.OverviewTimelineGranularity != timeline.Granularity)
-                {
-                    persisted.OverviewTimelineGranularity = timeline.Granularity;
-                    changed = true;
-                }
-
-                if (changed)
-                {
-                    SchedulePersistTimelineSettings();
-                }
-            }
-            finally
-            {
-                _isApplyingTimelineRange = false;
-            }
-        }
-
-        // A full settings write per chip click is what makes the strip feel laggy (it serializes the
-        // whole tree and notifies every listener), so a burst of clicks collapses into one write.
-        private void SchedulePersistTimelineSettings()
-        {
-            if (_timelinePersistTimer == null)
-            {
-                _timelinePersistTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
-                {
-                    Interval = TimeSpan.FromMilliseconds(600)
-                };
-                _timelinePersistTimer.Tick += (_, __) => FlushTimelineSettingsPersist();
-            }
-
-            _timelinePersistTimer.Stop();
-            _timelinePersistTimer.Start();
-        }
-
-        private void FlushTimelineSettingsPersist()
-        {
-            if (_timelinePersistTimer == null || !_timelinePersistTimer.IsEnabled)
-            {
-                return;
-            }
-
-            _timelinePersistTimer.Stop();
-            _persistSettingsForUi?.Invoke();
-        }
-
-        private void ApplySavedTimelineWindow()
-        {
-            var window = _settings?.Persisted?.OverviewTimeWindow ?? TimeWindow.FromPreset(TimelineRange.OneYear);
-            var granularity = _settings?.Persisted?.OverviewTimelineGranularity ?? TimelineGranularity.Auto;
-            try
-            {
-                _isApplyingTimelineRange = true;
-                foreach (var timeline in new[] { GlobalTimeline, SelectedGameTimeline })
-                {
-                    if (timeline == null)
-                    {
-                        continue;
-                    }
-
-                    if (!Equals(timeline.Window, window))
-                    {
-                        timeline.Window = window;
-                    }
-
-                    if (timeline.Granularity != granularity)
-                    {
-                        timeline.Granularity = granularity;
-                    }
-                }
-            }
-            finally
-            {
-                _isApplyingTimelineRange = false;
-            }
         }
 
         private void CloseOverviewWindow()
@@ -808,7 +635,6 @@ namespace PlayniteAchievements.ViewModels
         private void OnProviderFilterSelectionChanged()
         {
             OnPropertyChanged(nameof(SelectedProviderFilterText));
-            UpdateOverviewPieChartSelectionStates();
             // One deferred pass per burst: clearing several groups raises once per group.
             if (_providerFilterApplyScheduled)
             {
@@ -821,8 +647,6 @@ namespace PlayniteAchievements.ViewModels
                 {
                     _providerFilterApplyScheduled = false;
                     ApplyLeftFilters();
-                    UpdateAggregatePieCharts();
-                    FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
                 }),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
@@ -858,36 +682,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        /// <summary>
-        /// Toggles all platforms for a provider when its pie slice is clicked.
-        /// </summary>
-        /// <param name="sliceLabel">The display label from the clicked slice</param>
-        public void ToggleProviderFilterFromPieChart(string sliceLabel)
-        {
-            if (string.IsNullOrWhiteSpace(sliceLabel))
-            {
-                return;
-            }
-
-            // Check if "Locked" was clicked
-            if (string.Equals(sliceLabel, L("LOCPlayAch_Common_Locked"), StringComparison.OrdinalIgnoreCase))
-            {
-                ClearProviderFilters();
-                return;
-            }
-
-            // Get the provider key from the pie chart's label mapping
-            var providerKey = ProviderPieChart.GetProviderKeyFromLabel(sliceLabel);
-            if (string.IsNullOrWhiteSpace(providerKey))
-            {
-                return;
-            }
-
-            var group = ProviderFilterGroups?.FirstOrDefault(
-                g => string.Equals(g.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase));
-            group?.ToggleAll();
-        }
-
         private ObservableCollection<string> _completenessFilterOptions;
         public ObservableCollection<string> CompletenessFilterOptions
         {
@@ -913,10 +707,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(SelectedCompletenessFilterText));
-            UpdateOverviewPieChartSelectionStates();
             // Defer filter application to avoid interfering with menu click handling.
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() => { ApplyLeftFilters(); UpdateAggregatePieCharts(); }),
+                new Action(ApplyLeftFilters),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
@@ -947,7 +740,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(SelectedPlayStatusFilterText));
             // Defer filter application to avoid interfering with menu click handling.
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() => { ApplyLeftFilters(); UpdateAggregatePieCharts(); }),
+                new Action(ApplyLeftFilters),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
@@ -997,9 +790,8 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(SelectedCompletenessFilterText));
-            UpdateOverviewPieChartSelectionStates();
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() => { ApplyLeftFilters(); UpdateAggregatePieCharts(); }),
+                new Action(ApplyLeftFilters),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
@@ -1076,22 +868,6 @@ namespace PlayniteAchievements.ViewModels
         public ScoreCardViewModel CollectionScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Collection);
 
         public ScoreCardViewModel PrestigeScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Prestige);
-
-        public bool ShowOverviewPieCharts =>
-            ShowOverviewGamesPieChart ||
-            ShowOverviewProviderPieChart ||
-            ShowOverviewRarityPieChart ||
-            ShowOverviewTrophyPieChart;
-
-        public bool ShowOverviewGamesPieChart => _settings?.Persisted?.ShowOverviewGamesPieChart ?? true;
-
-        public bool ShowOverviewProviderPieChart => _settings?.Persisted?.ShowOverviewProviderPieChart ?? true;
-
-        public bool ShowOverviewRarityPieChart => _settings?.Persisted?.ShowOverviewRarityPieChart ?? true;
-
-        public bool ShowOverviewTrophyPieChart => _settings?.Persisted?.ShowOverviewTrophyPieChart ?? true;
-
-        public bool ShowOverviewBarCharts => _settings?.Persisted?.ShowOverviewBarCharts ?? true;
 
         public bool EnableFriendsFeatures => _settings?.Persisted?.EnableFriendsFeatures ?? true;
 
@@ -1257,10 +1033,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void SetDisplayedSelectedGame(GameSummaryItem value)
         {
-            if (SetValueAndReturn(ref _displayedSelectedGame, value, nameof(DisplayedSelectedGame)))
-            {
-                OnPropertyChanged(nameof(TimelineSectionTitle));
-            }
+            SetValueAndReturn(ref _displayedSelectedGame, value, nameof(DisplayedSelectedGame));
         }
 
         private GameSummaryItem _selectedGame;
@@ -1320,7 +1093,6 @@ namespace PlayniteAchievements.ViewModels
 
                     _selectedGameLoadInProgress = newGameId.HasValue;
                     NotifySelectedGameViewStateChanged();
-                    OnPropertyChanged(nameof(TimelineSectionTitle));
                     CancelSelectedGameLoad();
                     _selectedGameLoadCts = new CancellationTokenSource();
 
@@ -1414,43 +1186,6 @@ namespace PlayniteAchievements.ViewModels
         #endregion
 
         #region Timeline Properties
-
-        public TimelineViewModel GlobalTimeline { get; private set; }
-        public TimelineViewModel SelectedGameTimeline { get; private set; }
-        public string TimelineSectionTitle
-        {
-            get
-            {
-                var title = L("LOCPlayAch_Section_Timeline");
-                var selectedGameName = IsSelectedGameContentReady ? DisplayedSelectedGame?.GameName : null;
-                return string.IsNullOrWhiteSpace(selectedGameName)
-                    ? title
-                    : $"{title} ({selectedGameName})";
-            }
-        }
-
-        public PieChartViewModel GamesPieChart { get; private set; }
-        public PieChartViewModel RarityPieChart { get; private set; }
-        public PieChartViewModel ProviderPieChart { get; private set; }
-        public PieChartViewModel TrophyPieChart { get; private set; }
-
-        private string _rarityPieChartTitle;
-        public string RarityPieChartTitle
-        {
-            get => string.IsNullOrWhiteSpace(_rarityPieChartTitle)
-                ? L("LOCPlayAch_Overview_RarityPieChart")
-                : _rarityPieChartTitle;
-            private set => SetValue(ref _rarityPieChartTitle, value);
-        }
-
-        private string _trophyPieChartTitle;
-        public string TrophyPieChartTitle
-        {
-            get => string.IsNullOrWhiteSpace(_trophyPieChartTitle)
-                ? L("LOCPlayAch_Overview_TrophyPieChart")
-                : _trophyPieChartTitle;
-            private set => SetValue(ref _trophyPieChartTitle, value);
-        }
 
         // Rarity percentage properties for distribution bars
         public double CommonPercentage => TotalUnlockedOverview > 0
@@ -2102,11 +1837,6 @@ namespace PlayniteAchievements.ViewModels
 
             RefreshFilter();
             ApplyLeftFilters();
-            using (PerfScope.Start(_logger, "Overview.UpdateAggregatePieCharts", thresholdMs: 15))
-            {
-                UpdateAggregatePieCharts();
-            }
-
             SyncRecentAchievementsDisplay();
 
             // A full snapshot replaces every game's rows, so the selected game's own rows are
@@ -2419,12 +2149,6 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(RarePercentage));
             OnPropertyChanged(nameof(UltraRarePercentage));
 
-            IDictionary<DateTime, int> selectedTimelineCounts = SelectedGame?.PlayniteGameId.HasValue == true
-                ? GetSelectedGameTimelineCounts(SelectedGame.PlayniteGameId.Value)
-                : null;
-
-            FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
-            SelectedGameTimeline.SetCounts(selectedTimelineCounts);
             SnapshotChanged?.Invoke(this, EventArgs.Empty);
             InvalidateLinkedSnapshots();
             PublishSharedSnapshot(snapshot);
@@ -2628,7 +2352,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(SelectedProviderFilterText));
-            UpdateOverviewPieChartSelectionStates();
         }
 
         private void UpdateCompletenessFilterOptions()
@@ -2655,7 +2378,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(SelectedCompletenessFilterText));
-            UpdateOverviewPieChartSelectionStates();
         }
 
         private void UpdatePlayStatusFilterOptions()
@@ -2716,13 +2438,6 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ColorRarityColumnsByRaritySelectedGame));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
                 RaiseOverviewScoreCardVisibilityChanged();
-                ApplyOverviewPieSmallSliceMode();
-                ApplyOverviewPieIncludeLocked();
-                ApplyOverviewPieCenterMode();
-                ApplyOverviewPieIcons();
-                ApplyOverviewPieLegend();
-                RaiseOverviewPieChartVisibilityChanged();
-                OnPropertyChanged(nameof(ShowOverviewBarCharts));
                 OnPropertyChanged(nameof(EnableFriendsFeatures));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlatform));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlaytime));
@@ -2744,10 +2459,8 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(OverviewSelectedGameGridRowHeight));
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 ApplyScoreCards();
-                ApplySavedTimelineWindow();
                 _ = RefreshViewAsync();
                 ApplyLeftFilters();
-                UpdateAggregatePieCharts();
                 return;
             }
 
@@ -2799,18 +2512,6 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.OverviewPrestigeBadgePosition))
             {
                 OnPropertyChanged(nameof(OverviewPrestigeBadgePosition));
-            }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewPieCharts)
-                || propertyName == nameof(PersistedSettings.ShowOverviewGamesPieChart)
-                || propertyName == nameof(PersistedSettings.ShowOverviewProviderPieChart)
-                || propertyName == nameof(PersistedSettings.ShowOverviewRarityPieChart)
-                || propertyName == nameof(PersistedSettings.ShowOverviewTrophyPieChart))
-            {
-                RaiseOverviewPieChartVisibilityChanged();
-            }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewBarCharts))
-            {
-                OnPropertyChanged(nameof(ShowOverviewBarCharts));
             }
             else if (propertyName == nameof(PersistedSettings.EnableFriendsFeatures))
             {
@@ -2907,47 +2608,14 @@ namespace PlayniteAchievements.ViewModels
                     item?.RefreshProviderAppearance();
                 }
 
-                UpdateAggregatePieCharts();
-                FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
-            }
-            else if (propertyName == nameof(PersistedSettings.OverviewTimelineSplitByPlatform))
-            {
-                OnPropertyChanged(nameof(TimelineSplitByPlatform));
-                FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
+                // The mini-showcase's pies and timeline draw in platform colors.
+                InvalidateLinkedSnapshots();
             }
             else if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(propertyName))
             {
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 ApplyScoreCards();
-                UpdateAggregatePieCharts();
-            }
-            else if (propertyName == nameof(PersistedSettings.OverviewPieSmallSliceMode))
-            {
-                ApplyOverviewPieSmallSliceMode();
-                UpdateAggregatePieCharts();
-            }
-            else if (propertyName == nameof(PersistedSettings.OverviewPieIncludeLocked))
-            {
-                ApplyOverviewPieIncludeLocked();
-                UpdateAggregatePieCharts();
-            }
-            else if (propertyName == nameof(PersistedSettings.OverviewPieCenterMode))
-            {
-                ApplyOverviewPieCenterMode();
-            }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewPieLegend) ||
-                propertyName == nameof(PersistedSettings.OverviewPieLegendPosition))
-            {
-                ApplyOverviewPieLegend();
-            }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewPieIcons))
-            {
-                ApplyOverviewPieIcons();
-            }
-            else if (propertyName == nameof(PersistedSettings.OverviewTimeWindow) ||
-                propertyName == nameof(PersistedSettings.OverviewTimelineGranularity))
-            {
-                ApplySavedTimelineWindow();
+                InvalidateLinkedSnapshots();
             }
             else if (GameSummariesSortHelper.IsConfiguredDefaultSortPropertyName(propertyName))
             {
@@ -2979,15 +2647,6 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(ShowOverviewPrestigeScoreCard));
             OnPropertyChanged(nameof(ShowOverviewScoreCards));
             OnPropertyChanged(nameof(ShowOverviewScoreCardDivider));
-        }
-
-        private void RaiseOverviewPieChartVisibilityChanged()
-        {
-            OnPropertyChanged(nameof(ShowOverviewPieCharts));
-            OnPropertyChanged(nameof(ShowOverviewGamesPieChart));
-            OnPropertyChanged(nameof(ShowOverviewProviderPieChart));
-            OnPropertyChanged(nameof(ShowOverviewRarityPieChart));
-            OnPropertyChanged(nameof(ShowOverviewTrophyPieChart));
         }
 
         private void RevealAchievement(AchievementDisplayItem item)
@@ -3303,11 +2962,6 @@ namespace PlayniteAchievements.ViewModels
                 // collection Reset, per edit. Every user-driven filter and sort change still
                 // calls RefreshFilter, which rebuilds the collection and re-seeds the count.
                 ApplyLeftFilters();
-            }
-
-            using (Common.PerfScope.Start(_logger, "Overview.DeltaTick.Charts", thresholdMs: 5))
-            {
-                UpdateAggregatePieCharts();
             }
 
             using (var scope = Common.PerfScope.Start(_logger, "Overview.DeltaTick.RightFilters", thresholdMs: 5))
@@ -3844,213 +3498,6 @@ namespace PlayniteAchievements.ViewModels
             InvalidateLinkedSnapshots();
         }
 
-        private void UpdateOverviewPieChartSelectionStates()
-        {
-            ProviderPieChart?.SetSelectedLabels(
-                (ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>())
-                    .Where(group => group.HasAnySelected)
-                    .Select(group => group.DisplayName)
-                    .Where(label => !string.IsNullOrWhiteSpace(label)));
-            GamesPieChart?.SetSelectedLabels(GetGamesPieChartSelectedLabels());
-        }
-
-        private IEnumerable<string> GetGamesPieChartSelectedLabels()
-        {
-            var visibleLabels = new HashSet<string>(
-                (GamesPieChart?.LegendItems ?? Enumerable.Empty<LegendItem>())
-                    .Select(item => item?.Label)
-                    .Where(label => !string.IsNullOrWhiteSpace(label)),
-                StringComparer.OrdinalIgnoreCase);
-            if (visibleLabels.Count <= 1 || _selectedCompletenessFilters.Count == 0)
-            {
-                return Enumerable.Empty<string>();
-            }
-
-            var labels = new List<string>();
-            var completeLabel = L("LOCPlayAch_Filter_Complete");
-            if (_selectedCompletenessFilters.Contains(completeLabel))
-            {
-                labels.Add(completeLabel);
-            }
-
-            if (_selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_InProgress")) ||
-                _selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_NoProgress")))
-            {
-                labels.Add(L("LOCPlayAch_Overview_Incomplete"));
-            }
-
-            var selectedVisibleLabels = labels
-                .Where(label => visibleLabels.Contains(label))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            return selectedVisibleLabels.Count == 1
-                ? selectedVisibleLabels
-                : Enumerable.Empty<string>();
-        }
-
-        private void ApplyOverviewPieSmallSliceMode()
-        {
-            var mode = _settings?.Persisted?.OverviewPieSmallSliceMode ?? OverviewPieSmallSliceMode.Round;
-            GamesPieChart.SmallSliceMode = mode;
-            ProviderPieChart.SmallSliceMode = mode;
-            RarityPieChart.SmallSliceMode = mode;
-            TrophyPieChart.SmallSliceMode = mode;
-        }
-
-        // The completions pie never hides its trailing slice, so it keeps the requested
-        // percentage regardless; the other three follow the setting.
-        private void ApplyOverviewPieIncludeLocked()
-        {
-            var includeLocked = _settings?.Persisted?.OverviewPieIncludeLocked ?? true;
-            ProviderPieChart.IncludeLocked = includeLocked;
-            RarityPieChart.IncludeLocked = includeLocked;
-            TrophyPieChart.IncludeLocked = includeLocked;
-        }
-
-        private void ApplyOverviewPieCenterMode()
-        {
-            var centerMode = _settings?.Persisted?.OverviewPieCenterMode ?? PieCenterMode.Percentage;
-            GamesPieChart.CenterMode = centerMode;
-            ProviderPieChart.CenterMode = centerMode;
-            RarityPieChart.CenterMode = centerMode;
-            TrophyPieChart.CenterMode = centerMode;
-        }
-
-        private void ApplyOverviewPieLegend()
-        {
-            var showLegend = _settings?.Persisted?.ShowOverviewPieLegend ?? false;
-            var position = _settings?.Persisted?.OverviewPieLegendPosition ?? PieLegendPosition.Right;
-            foreach (var chart in new[] { GamesPieChart, ProviderPieChart, RarityPieChart, TrophyPieChart })
-            {
-                chart.ShowLegend = showLegend;
-                chart.LegendPosition = position;
-            }
-        }
-
-        private void ApplyOverviewPieIcons()
-        {
-            var showIcons = _settings?.Persisted?.ShowOverviewPieIcons ?? true;
-            GamesPieChart.ShowIcons = showIcons;
-            ProviderPieChart.ShowIcons = showIcons;
-            RarityPieChart.ShowIcons = showIcons;
-            TrophyPieChart.ShowIcons = showIcons;
-        }
-
-        private void UpdateAggregatePieCharts()
-        {
-            var snapshot = BuildPieChartSnapshotFromCurrentState();
-            var gamesPieSnapshot = BuildPieChartSnapshotFromCurrentState(
-                useCompletedGamesPieProgressScope: true,
-                applyProviderFilter: true);
-            var contextualSnapshot = HasProviderFilter
-                ? BuildPieChartSnapshotFromCurrentState(applyProviderFilter: true)
-                : snapshot;
-
-            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
-            var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Overview_Incomplete");
-            var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Common_Locked");
-            var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
-            var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
-            var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
-            var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
-            var trophyPlatinumLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Platinum");
-            var trophyGoldLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Gold");
-            var trophySilverLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Silver");
-            var trophyBronzeLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze");
-
-            // Finishes, not finished games: a game with several capstones offers several, so the
-            // pie partitions every finish the library holds rather than every game.
-            GamesPieChart?.SetGameData(
-                gamesPieSnapshot.PossibleCompletions,
-                gamesPieSnapshot.Completions,
-                completedLabel,
-                incompleteLabel);
-
-            var providerLookup = BuildProviderLookup(snapshot.UnlockedByProvider.Keys);
-            var providerDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var providerKey in snapshot.UnlockedByProvider.Keys)
-            {
-                providerDisplayNames[providerKey] = GetProviderFilterDisplayName(providerKey);
-            }
-            ProviderPieChart?.SetProviderData(
-                snapshot.UnlockedByProvider,
-                snapshot.TotalByProvider,
-                snapshot.TotalLocked,
-                lockedLabel,
-                providerLookup,
-                providerDisplayNames);
-
-            UpdateOverviewPieChartSelectionStates();
-            if (SelectedGame?.PlayniteGameId.HasValue == true && _selectedGameLoadInProgress)
-            {
-                return;
-            }
-
-            UpdateContextualPieCharts(
-                contextualSnapshot,
-                commonLabel,
-                uncommonLabel,
-                rareLabel,
-                ultraRareLabel,
-                trophyPlatinumLabel,
-                trophyGoldLabel,
-                trophySilverLabel,
-                trophyBronzeLabel,
-                lockedLabel);
-        }
-
-        /// <summary>
-        /// Each pie follows every filter except its own: the provider pie ignores the platform
-        /// filter (so it keeps every slice and only highlights the selection), the games pie
-        /// scopes the completeness filter, and the rarity and trophy pies follow all of them.
-        /// </summary>
-        private OverviewDataSnapshot BuildPieChartSnapshotFromCurrentState(
-            bool useCompletedGamesPieProgressScope = false,
-            bool applyProviderFilter = false)
-        {
-            var games = useCompletedGamesPieProgressScope
-                ? GetCompletedGamesPieChartGames()
-                : GetPieChartGames();
-            if (applyProviderFilter)
-            {
-                games = OverviewGameSummaryFilters.ApplyProviderPlatformFilter(games, ProviderFilterGroups);
-            }
-
-            return OverviewDataSnapshot.FromGameSummaries(games.ToList());
-        }
-
-        private bool HasProviderFilter =>
-            ProviderFilterGroups?.Any(group => group != null && group.HasAnySelected) == true;
-
-        private IEnumerable<GameSummaryItem> GetPieChartGames()
-        {
-            var filteredGames = (_allGameSummaries ?? new List<GameSummaryItem>()).Where(game => game != null);
-            return OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
-                filteredGames,
-                _selectedPlayStatusFilters,
-                _selectedCompletenessFilters,
-                L("LOCPlayAch_Filter_Played"),
-                L("LOCPlayAch_Filter_Unplayed"),
-                L("LOCPlayAch_Filter_Complete"),
-                L("LOCPlayAch_Filter_InProgress"),
-                L("LOCPlayAch_Filter_NoProgress"));
-        }
-
-        private IEnumerable<GameSummaryItem> GetCompletedGamesPieChartGames()
-        {
-            var filteredGames = (_allGameSummaries ?? new List<GameSummaryItem>()).Where(game => game != null);
-            return OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
-                filteredGames,
-                _selectedPlayStatusFilters,
-                GetCompletedGamesPieProgressFilters(),
-                L("LOCPlayAch_Filter_Played"),
-                L("LOCPlayAch_Filter_Unplayed"),
-                L("LOCPlayAch_Filter_Complete"),
-                L("LOCPlayAch_Filter_InProgress"),
-                L("LOCPlayAch_Filter_NoProgress"));
-        }
-
         private ISet<string> GetCompletedGamesPieProgressFilters()
         {
             if (_selectedCompletenessFilters == null || _selectedCompletenessFilters.Count == 0)
@@ -4071,141 +3518,6 @@ namespace PlayniteAchievements.ViewModels
             };
         }
 
-        /// <param name="displayProviderKeys">
-        /// Provider keys present in the data being charted. Custom-only games display as keys no
-        /// registered provider owns (Custom and Custom:&lt;id&gt;), so they resolve here by key rather
-        /// than through the provider list.
-        /// </param>
-        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup(
-            IEnumerable<string> displayProviderKeys = null)
-        {
-            var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            var keys = _refreshService.Providers
-                .Select(provider => provider?.ProviderKey)
-                .Concat(displayProviderKeys ?? Enumerable.Empty<string>())
-                .Where(key => !string.IsNullOrWhiteSpace(key));
-            foreach (var providerKey in keys)
-            {
-                if (providerLookup.ContainsKey(providerKey))
-                {
-                    continue;
-                }
-
-                if (ProviderRegistry.TryResolveProviderVisuals(
-                    providerKey,
-                    out var iconKey,
-                    out var colorHex))
-                {
-                    providerLookup[providerKey] = (iconKey, colorHex);
-                }
-            }
-            return providerLookup;
-        }
-
-        private void UpdateContextualPieCharts(
-            OverviewDataSnapshot snapshot,
-            string commonLabel = null,
-            string uncommonLabel = null,
-            string rareLabel = null,
-            string ultraRareLabel = null,
-            string trophyPlatinumLabel = null,
-            string trophyGoldLabel = null,
-            string trophySilverLabel = null,
-            string trophyBronzeLabel = null,
-            string lockedLabel = null)
-        {
-            commonLabel ??= L("LOCPlayAch_Rarity_Common");
-            uncommonLabel ??= L("LOCPlayAch_Rarity_Uncommon");
-            rareLabel ??= L("LOCPlayAch_Rarity_Rare");
-            ultraRareLabel ??= L("LOCPlayAch_Rarity_UltraRare");
-            trophyPlatinumLabel ??= L("LOCPlayAch_Trophy_Platinum");
-            trophyGoldLabel ??= L("LOCPlayAch_Trophy_Gold");
-            trophySilverLabel ??= L("LOCPlayAch_Trophy_Silver");
-            trophyBronzeLabel ??= L("LOCPlayAch_Trophy_Bronze");
-            lockedLabel ??= L("LOCPlayAch_Common_Locked");
-
-            var selectedGame = ResolveSelectedGameForChartContext(snapshot);
-            var useSelectedRarity = selectedGame?.HasRarityPieChartData == true;
-            var useSelectedTrophy = selectedGame?.HasTrophyPieChartData == true;
-
-            if (useSelectedRarity)
-            {
-                RarityPieChart.SetRarityData(
-                    selectedGame.CommonCount,
-                    selectedGame.UncommonCount,
-                    selectedGame.RareCount,
-                    selectedGame.UltraRareCount,
-                    GetSelectedGameLockedAchievementCount(selectedGame),
-                    selectedGame.TotalCommonPossible,
-                    selectedGame.TotalUncommonPossible,
-                    selectedGame.TotalRarePossible,
-                    selectedGame.TotalUltraRarePossible,
-                    commonLabel,
-                    uncommonLabel,
-                    rareLabel,
-                    ultraRareLabel,
-                    lockedLabel);
-            }
-            else
-            {
-                RarityPieChart.SetRarityData(
-                    snapshot?.TotalCommon ?? 0,
-                    snapshot?.TotalUncommon ?? 0,
-                    snapshot?.TotalRare ?? 0,
-                    snapshot?.TotalUltraRare ?? 0,
-                    snapshot?.TotalLocked ?? 0,
-                    snapshot?.TotalCommonPossible ?? 0,
-                    snapshot?.TotalUncommonPossible ?? 0,
-                    snapshot?.TotalRarePossible ?? 0,
-                    snapshot?.TotalUltraRarePossible ?? 0,
-                    commonLabel,
-                    uncommonLabel,
-                    rareLabel,
-                    ultraRareLabel,
-                    lockedLabel);
-            }
-
-            if (useSelectedTrophy)
-            {
-                TrophyPieChart.SetTrophyData(
-                    selectedGame.TrophyPlatinumCount,
-                    selectedGame.TrophyGoldCount,
-                    selectedGame.TrophySilverCount,
-                    selectedGame.TrophyBronzeCount,
-                    selectedGame.TrophyPlatinumTotal,
-                    selectedGame.TrophyGoldTotal,
-                    selectedGame.TrophySilverTotal,
-                    selectedGame.TrophyBronzeTotal,
-                    trophyPlatinumLabel,
-                    trophyGoldLabel,
-                    trophySilverLabel,
-                    trophyBronzeLabel,
-                    lockedLabel);
-            }
-            else
-            {
-                TrophyPieChart.SetTrophyData(
-                    snapshot?.TotalPlatinum ?? 0,
-                    snapshot?.TotalGold ?? 0,
-                    snapshot?.TotalSilver ?? 0,
-                    snapshot?.TotalBronze ?? 0,
-                    snapshot?.TotalPlatinumPossible ?? 0,
-                    snapshot?.TotalGoldPossible ?? 0,
-                    snapshot?.TotalSilverPossible ?? 0,
-                    snapshot?.TotalBronzePossible ?? 0,
-                    trophyPlatinumLabel,
-                    trophyGoldLabel,
-                    trophySilverLabel,
-                    trophyBronzeLabel,
-                    lockedLabel);
-            }
-
-            var rarityTitle = L("LOCPlayAch_Overview_RarityPieChart");
-            var trophyTitle = L("LOCPlayAch_Overview_TrophyPieChart");
-            RarityPieChartTitle = BuildContextualPieChartTitle(rarityTitle, useSelectedRarity ? selectedGame?.GameName : null);
-            TrophyPieChartTitle = BuildContextualPieChartTitle(trophyTitle, useSelectedTrophy ? selectedGame?.GameName : null);
-        }
-
         private GameSummaryItem ResolveSelectedGameForChartContext(OverviewDataSnapshot snapshot)
         {
             if (SelectedGame?.PlayniteGameId.HasValue != true)
@@ -4216,23 +3528,6 @@ namespace PlayniteAchievements.ViewModels
             var selectedGameId = SelectedGame.PlayniteGameId.Value;
             return snapshot?.GameSummaries?.FirstOrDefault(game => game?.PlayniteGameId == selectedGameId)
                 ?? SelectedGame;
-        }
-
-        private static int GetSelectedGameLockedAchievementCount(GameSummaryItem game)
-        {
-            if (game == null)
-            {
-                return 0;
-            }
-
-            return Math.Max(0, game.TotalAchievements - game.UnlockedAchievements);
-        }
-
-        private static string BuildContextualPieChartTitle(string baseTitle, string gameName)
-        {
-            return string.IsNullOrWhiteSpace(gameName)
-                ? baseTitle
-                : $"{baseTitle} ({gameName})";
         }
 
         private void UpdateSelectedGameAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
@@ -4492,14 +3787,6 @@ namespace PlayniteAchievements.ViewModels
             // Fire visibility notifications after the current selection load has settled so the
             // selected-game grid is not realized with empty rows during game-to-game switches.
             NotifySelectedGameViewStateChanged();
-            OnPropertyChanged(nameof(TimelineSectionTitle));
-
-            if (!loadApplied)
-            {
-                return;
-            }
-
-            UpdateContextualPieCharts(BuildPieChartSnapshotFromCurrentState(applyProviderFilter: true));
         }
 
         private async Task<bool> LoadSelectedGameAchievementsAsync(
@@ -4528,7 +3815,6 @@ namespace PlayniteAchievements.ViewModels
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 SyncSelectedGameAchievementsDisplay();
-                FeedGlobalTimeline(null);
                 RefreshSelectedGameHeaderCounts();
                 return true;
             }
@@ -4579,9 +3865,6 @@ namespace PlayniteAchievements.ViewModels
                     FriendCompare?.SetTargetItems(items);
                     UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
                     ApplyRightFilters();
-
-                    FeedGlobalTimeline(gameId);
-                    SelectedGameTimeline.SetCounts(GetSelectedGameTimelineCounts(gameId));
                 }
 
                 return true;
@@ -4676,87 +3959,6 @@ namespace PlayniteAchievements.ViewModels
 
                 return new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
             }
-        }
-
-        /// <summary>
-        /// Feeds the overview timeline: the selected game's unlocks, otherwise every game the
-        /// platform filter (or a provider pie slice) keeps, split into per-platform segments when
-        /// <see cref="TimelineSplitByPlatform"/> is on.
-        /// </summary>
-        private void FeedGlobalTimeline(Guid? selectedGameId)
-        {
-            var snapshot = _latestSnapshot;
-            if (GlobalTimeline == null || snapshot == null)
-            {
-                return;
-            }
-
-            var split = TimelineSplitByPlatform;
-            if (selectedGameId.HasValue)
-            {
-                if (split)
-                {
-                    GlobalTimeline.SetSeriesCounts(TimelinePlatformSeries.ForGame(snapshot, selectedGameId.Value));
-                }
-                else
-                {
-                    GlobalTimeline.SetCounts(GetSelectedGameTimelineCounts(selectedGameId.Value));
-                }
-
-                return;
-            }
-
-            Func<Guid, bool> includeGame = null;
-            if (HasProviderFilter)
-            {
-                var kept = new HashSet<Guid>(
-                    OverviewGameSummaryFilters.ApplyProviderPlatformFilter(
-                            (_allGameSummaries ?? new List<GameSummaryItem>()).Where(game => game != null),
-                            ProviderFilterGroups)
-                        .Where(game => game.PlayniteGameId.HasValue)
-                        .Select(game => game.PlayniteGameId.Value));
-                includeGame = kept.Contains;
-            }
-
-            if (split)
-            {
-                GlobalTimeline.SetSeriesCounts(TimelinePlatformSeries.FromSnapshot(snapshot, includeGame));
-            }
-            else
-            {
-                GlobalTimeline.SetCounts(includeGame == null
-                    ? snapshot.GlobalUnlockCountsByDate
-                    : TimelinePlatformSeries.SumGames(snapshot, includeGame));
-            }
-        }
-
-        /// <summary>Overview timeline platform split; persisted across sessions.</summary>
-        public bool TimelineSplitByPlatform
-        {
-            get => _settings?.Persisted?.OverviewTimelineSplitByPlatform ?? false;
-            set
-            {
-                var persisted = _settings?.Persisted;
-                if (persisted == null || persisted.OverviewTimelineSplitByPlatform == value)
-                {
-                    return;
-                }
-
-                // The persisted-settings listener re-feeds the chart and raises the change.
-                persisted.OverviewTimelineSplitByPlatform = value;
-                SchedulePersistTimelineSettings();
-            }
-        }
-
-        private IDictionary<DateTime, int> GetSelectedGameTimelineCounts(Guid gameId)
-        {
-            if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
-                _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var counts))
-            {
-                return counts;
-            }
-
-            return new Dictionary<DateTime, int>();
         }
 
         private void CancelSelectedGameLoad()
@@ -4922,17 +4124,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _gameCustomDataStore.CustomDataChanged -= OnCustomDataChanged;
             }
-            LocalDayRollover.Unsubscribe(OnLocalDayChanged);
-            // The last click in a burst must not be lost when the window closes inside the debounce.
-            FlushTimelineSettingsPersist();
-            if (GlobalTimeline != null)
-            {
-                GlobalTimeline.PropertyChanged -= Timeline_PropertyChanged;
-            }
-            if (SelectedGameTimeline != null)
-            {
-                SelectedGameTimeline.PropertyChanged -= Timeline_PropertyChanged;
-            }
             if (_settings != null)
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
@@ -4949,14 +4140,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _deltaBatchTimer.Tick -= OnDeltaBatchTimerTick;
             }
-
-            // Each chart view model is subscribed to the process-lifetime appearance event, so
-            // without this every overview open strands four of them (and their series data)
-            // for the rest of the session.
-            GamesPieChart?.Dispose();
-            RarityPieChart?.Dispose();
-            ProviderPieChart?.Dispose();
-            TrophyPieChart?.Dispose();
 
             ReleaseRetainedData();
         }
