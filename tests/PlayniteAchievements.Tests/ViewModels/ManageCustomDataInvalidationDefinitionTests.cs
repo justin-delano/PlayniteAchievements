@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Tests.ViewModels
             var core = Between(
                 source,
                 "private void NotifyCustomDataChangedCore(",
-                "internal void NotifyIconOverridesChanged(");
+                "internal Task NotifyIconOverridesChanged(");
 
             // This was once removed as redundant with the store's own CustomDataChanged. It is
             // not, and the reason is the flag: the editor's category, category-type, filter and
