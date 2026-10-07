@@ -13,10 +13,10 @@ namespace PlayniteAchievements.Tests.StartPage
         {
             var views = StartPageViewCatalog.Views;
 
-            // 8 original views, the 3 platform score cards, and the 8 shared showcase views. PinnedAchievements,
+            // 8 original views plus the 8 shared showcase views. PinnedAchievements,
             // FavoriteGames, and GameMosaic are retired (see ShowcaseWidgetKind), so they
             // no longer contribute views of their own.
-            Assert.AreEqual(19, views.Count);
+            Assert.AreEqual(16, views.Count);
             CollectionAssert.AreEqual(
                 new[]
                 {
@@ -40,10 +40,7 @@ namespace PlayniteAchievements.Tests.StartPage
                     StartPageWidgetKind.RarityPie,
                     StartPageWidgetKind.TrophyPie,
                     StartPageWidgetKind.CollectionScoreCard,
-                    StartPageWidgetKind.PrestigeScoreCard,
-                    StartPageWidgetKind.GamerscoreScoreCard,
-                    StartPageWidgetKind.EpicXpScoreCard,
-                    StartPageWidgetKind.RetroPointsScoreCard
+                    StartPageWidgetKind.PrestigeScoreCard
                 },
                 views.Select(view => view.WidgetKind).ToArray());
 
@@ -73,12 +70,30 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseActivityCalendarViewId)
                 .HasSettings);
-            // NativePoints is the only parked view: resolvable for already-placed widgets but
-            // omitted from the add list.
+            // Parked views: resolvable for already-placed widgets but omitted from the add list.
+            // The two standalone score cards ride the showcase Scores widget, and the visible
+            // Score Card entry is the former dual-score view.
             Assert.IsTrue(views.Single(view =>
                 view.ViewId == StartPageViewCatalog.ShowcaseNativePointsViewId)
                 .Hidden);
-            Assert.AreEqual(1, views.Count(view => view.Hidden));
+            foreach (var parked in new[]
+            {
+                StartPageViewCatalog.CollectionScoreCardViewId,
+                StartPageViewCatalog.PrestigeScoreCardViewId
+            })
+            {
+                var view = views.Single(candidate => candidate.ViewId == parked);
+                Assert.IsTrue(view.Hidden);
+                Assert.AreEqual(ShowcaseWidgetKind.Scores, view.ShowcaseWidgetKind);
+                Assert.IsTrue(view.HasSettings);
+            }
+
+            Assert.AreEqual(3, views.Count(view => view.Hidden));
+            Assert.AreEqual(1, views.Count(view =>
+                !view.Hidden && view.ShowcaseWidgetKind == ShowcaseWidgetKind.Scores));
+            Assert.IsTrue(views.Single(view =>
+                view.ViewId == StartPageViewCatalog.ShowcaseDualScoresViewId)
+                .AllowMultipleInstances);
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
         }
 

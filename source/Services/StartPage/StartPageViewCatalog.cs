@@ -38,9 +38,6 @@ namespace PlayniteAchievements.Services.StartPage
         public const string TrophyPieViewId = "PlayniteAchievements_TrophyPie";
         public const string CollectionScoreCardViewId = "PlayniteAchievements_CollectionScoreCard";
         public const string PrestigeScoreCardViewId = "PlayniteAchievements_PrestigeScoreCard";
-        public const string GamerscoreScoreCardViewId = "PlayniteAchievements_GamerscoreScoreCard";
-        public const string EpicXpScoreCardViewId = "PlayniteAchievements_EpicXpScoreCard";
-        public const string RetroPointsScoreCardViewId = "PlayniteAchievements_RetroPointsScoreCard";
         public const string ShowcaseProfileViewId = "PlayniteAchievements_Showcase_Profile";
         public const string ShowcaseDualScoresViewId = "PlayniteAchievements_Showcase_DualScores";
         public const string ShowcaseTimelineViewId = "PlayniteAchievements_Showcase_Timeline";
@@ -114,41 +111,38 @@ namespace PlayniteAchievements.Services.StartPage
                     HasSettings = true,
                     AllowMultipleInstances = true
                 },
+                // The two standalone score card views ride the showcase Scores widget under
+                // their original ids, hidden from the add list: an already-placed view seeds its
+                // card type (Collection or Prestige) at instance creation (see
+                // GetOrCreateStartPageWidgetSettings). New score cards come from the Score Card
+                // entry below.
                 new StartPageViewDefinition
                 {
                     ViewId = CollectionScoreCardViewId,
                     WidgetKind = StartPageWidgetKind.CollectionScoreCard,
-                    NameKey = "LOCPlayAch_Score_Collection"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Scores,
+                    NameKey = "LOCPlayAch_Score_Collection",
+                    HasSettings = true,
+                    AllowMultipleInstances = true,
+                    Hidden = true
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = PrestigeScoreCardViewId,
                     WidgetKind = StartPageWidgetKind.PrestigeScoreCard,
-                    NameKey = "LOCPlayAch_Score_Prestige"
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = GamerscoreScoreCardViewId,
-                    WidgetKind = StartPageWidgetKind.GamerscoreScoreCard,
-                    NameKey = "LOCPlayAch_Score_Gamerscore"
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = EpicXpScoreCardViewId,
-                    WidgetKind = StartPageWidgetKind.EpicXpScoreCard,
-                    NameKey = "LOCPlayAch_Score_EpicXp"
-                },
-                new StartPageViewDefinition
-                {
-                    ViewId = RetroPointsScoreCardViewId,
-                    WidgetKind = StartPageWidgetKind.RetroPointsScoreCard,
-                    NameKey = "LOCPlayAch_Score_RetroPoints"
+                    ShowcaseWidgetKind = PlayniteAchievements.Models.Settings.ShowcaseWidgetKind.Scores,
+                    NameKey = "LOCPlayAch_Score_Prestige",
+                    HasSettings = true,
+                    AllowMultipleInstances = true,
+                    Hidden = true
                 },
                 Shared(
                     ShowcaseProfileViewId,
                     StartPageWidgetKind.ShowcaseProfile,
                     ShowcaseWidgetKind.Profile,
                     hasSettings: true),
+                // The one visible Score Card entry. It keeps the id of the former dual-score view,
+                // so a placed one stays put; its saved Both choice reads as the Collection card.
                 Shared(
                     ShowcaseDualScoresViewId,
                     StartPageWidgetKind.ShowcaseDualScores,

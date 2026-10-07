@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using Playnite.SDK;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models.Settings;
@@ -178,7 +179,6 @@ namespace PlayniteAchievements
             StartPageViewDefinition definition,
             Func<ShowcaseWidgetInstanceSettings> resolveSettings)
         {
-            var widgetKind = definition.WidgetKind;
             if (definition.ShowcaseWidgetKind.HasValue)
             {
                 return new StartPageShowcaseWidgetViewModel(
@@ -188,17 +188,7 @@ namespace PlayniteAchievements
                     _logger);
             }
 
-            switch (widgetKind)
-            {
-                case StartPageWidgetKind.CollectionScoreCard:
-                case StartPageWidgetKind.PrestigeScoreCard:
-                case StartPageWidgetKind.GamerscoreScoreCard:
-                case StartPageWidgetKind.EpicXpScoreCard:
-                case StartPageWidgetKind.RetroPointsScoreCard:
-                    return new StartPageScoreCardWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
-                default:
-                    return null;
-            }
+            return null;
         }
 
         private static Control CreateStartPageView(StartPageViewDefinition definition)
@@ -208,18 +198,7 @@ namespace PlayniteAchievements
                 return new StartPageShowcaseWidgetView();
             }
 
-            var widgetKind = definition.WidgetKind;
-            switch (widgetKind)
-            {
-                case StartPageWidgetKind.CollectionScoreCard:
-                case StartPageWidgetKind.PrestigeScoreCard:
-                case StartPageWidgetKind.GamerscoreScoreCard:
-                case StartPageWidgetKind.EpicXpScoreCard:
-                case StartPageWidgetKind.RetroPointsScoreCard:
-                    return new StartPageScoreCardWidgetView();
-                default:
-                    return null;
-            }
+            return null;
         }
 
         private StartPageDataCoordinator GetStartPageDataCoordinator()
@@ -745,6 +724,14 @@ namespace PlayniteAchievements
             if (kind == ShowcaseWidgetKind.Pie)
             {
                 ShowcaseWidgetOptions.SetPieMode(settings, ResolvePieModeForView(viewId));
+            }
+
+            // Likewise the former standalone Prestige score card view seeds the card it showed;
+            // every other score card view starts on the default Collection card.
+            if (kind == ShowcaseWidgetKind.Scores &&
+                string.Equals(viewId, StartPageViewCatalog.PrestigeScoreCardViewId, StringComparison.Ordinal))
+            {
+                ShowcaseWidgetOptions.SetScoreCardType(settings, ScoreCardType.Prestige);
             }
 
             // Migration: StartPage-hosted grid widgets used to share the fixed StartPage
