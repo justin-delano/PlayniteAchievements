@@ -801,10 +801,24 @@ namespace PlayniteAchievements.ViewModels
         {
             OnPropertyChanged(nameof(SelectedProviderFilterText));
             UpdateOverviewPieChartSelectionStates();
+            // One deferred pass per burst: clearing several groups raises once per group.
+            if (_providerFilterApplyScheduled)
+            {
+                return;
+            }
+
+            _providerFilterApplyScheduled = true;
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() => ApplyLeftFilters()),
+                new Action(() =>
+                {
+                    _providerFilterApplyScheduled = false;
+                    ApplyLeftFilters();
+                    UpdateAggregatePieCharts();
+                }),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
+
+        private bool _providerFilterApplyScheduled;
 
         public void ClearProviderFilters()
         {
@@ -3919,7 +3933,12 @@ namespace PlayniteAchievements.ViewModels
         private void UpdateAggregatePieCharts()
         {
             var snapshot = BuildPieChartSnapshotFromCurrentState();
-            var gamesPieSnapshot = BuildPieChartSnapshotFromCurrentState(useCompletedGamesPieProgressScope: true);
+            var gamesPieSnapshot = BuildPieChartSnapshotFromCurrentState(
+                useCompletedGamesPieProgressScope: true,
+                applyProviderFilter: true);
+            var contextualSnapshot = HasProviderFilter
+                ? BuildPieChartSnapshotFromCurrentState(applyProviderFilter: true)
+                : snapshot;
 
             var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
             var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Overview_Incomplete");
@@ -3962,7 +3981,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             UpdateContextualPieCharts(
-                snapshot,
+                contextualSnapshot,
                 commonLabel,
                 uncommonLabel,
                 rareLabel,
@@ -3974,13 +3993,28 @@ namespace PlayniteAchievements.ViewModels
                 lockedLabel);
         }
 
-        private OverviewDataSnapshot BuildPieChartSnapshotFromCurrentState(bool useCompletedGamesPieProgressScope = false)
+        /// <summary>
+        /// Each pie follows every filter except its own: the provider pie ignores the platform
+        /// filter (so it keeps every slice and only highlights the selection), the games pie
+        /// scopes the completeness filter, and the rarity and trophy pies follow all of them.
+        /// </summary>
+        private OverviewDataSnapshot BuildPieChartSnapshotFromCurrentState(
+            bool useCompletedGamesPieProgressScope = false,
+            bool applyProviderFilter = false)
         {
-            var gamesList = (useCompletedGamesPieProgressScope
+            var games = useCompletedGamesPieProgressScope
                 ? GetCompletedGamesPieChartGames()
-                : GetPieChartGames()).ToList();
-            return OverviewDataSnapshot.FromGameSummaries(gamesList);
+                : GetPieChartGames();
+            if (applyProviderFilter)
+            {
+                games = OverviewGameSummaryFilters.ApplyProviderPlatformFilter(games, ProviderFilterGroups);
+            }
+
+            return OverviewDataSnapshot.FromGameSummaries(games.ToList());
         }
+
+        private bool HasProviderFilter =>
+            ProviderFilterGroups?.Any(group => group != null && group.HasAnySelected) == true;
 
         private IEnumerable<GameSummaryItem> GetPieChartGames()
         {
@@ -4458,7 +4492,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            UpdateContextualPieCharts(BuildPieChartSnapshotFromCurrentState());
+            UpdateContextualPieCharts(BuildPieChartSnapshotFromCurrentState(applyProviderFilter: true));
         }
 
         private async Task<bool> LoadSelectedGameAchievementsAsync(
