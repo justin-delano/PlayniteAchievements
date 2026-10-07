@@ -171,6 +171,12 @@ namespace PlayniteAchievements.Services.Showcase
 
         /// <summary>The game a linked widget narrowed to, shown beside its title.</summary>
         public string ContextLabel { get; set; }
+
+        /// <summary>
+        /// The linking host's state generation this projection was decorated under. Linked
+        /// state (selected slices, the unlock-day filter) can change while the snapshot does not.
+        /// </summary>
+        public int LinkedRevision { get; set; }
     }
 
     public static class ShowcaseWidgetProjectionService
