@@ -79,23 +79,26 @@ namespace PlayniteAchievements.Services.UI
 
         /// <summary>
         /// Where the card sits off screen for this motion, relative to its resting place, in DIPs.
-        /// A vertical slide leaves through the edge the corner is on; a side slide leaves through
-        /// the side the corner is on. Zero for motions that stay in place.
+        /// A vertical slide leaves through the top or bottom edge the position is on; a side slide
+        /// leaves through the side the position is on, and slides vertically at a centered
+        /// position, which is against neither side. Zero for motions that stay in place.
         /// </summary>
         public static Vector TravelOffset(
-            ToastMotion motion, ToastScreenCorner corner, double verticalDip, double horizontalDip)
+            ToastMotion motion, ToastScreenCorner position, double verticalDip, double horizontalDip)
         {
-            switch (motion)
+            var horizontal = position.Horizontal();
+            if (motion == ToastMotion.SlideSide && horizontal != ToastHorizontalAlignment.Center)
             {
-                case ToastMotion.Slide:
-                    var fromBottom = corner != ToastScreenCorner.TopLeft && corner != ToastScreenCorner.TopRight;
-                    return new Vector(0d, fromBottom ? verticalDip : -verticalDip);
-                case ToastMotion.SlideSide:
-                    var fromRight = corner != ToastScreenCorner.TopLeft && corner != ToastScreenCorner.BottomLeft;
-                    return new Vector(fromRight ? horizontalDip : -horizontalDip, 0d);
-                default:
-                    return new Vector(0d, 0d);
+                return new Vector(
+                    horizontal == ToastHorizontalAlignment.Right ? horizontalDip : -horizontalDip, 0d);
             }
+
+            if (motion == ToastMotion.Slide || motion == ToastMotion.SlideSide)
+            {
+                return new Vector(0d, position.IsBottom() ? verticalDip : -verticalDip);
+            }
+
+            return new Vector(0d, 0d);
         }
 
         /// <summary>
@@ -117,12 +120,14 @@ namespace PlayniteAchievements.Services.UI
             switch (motion)
             {
                 case ToastMotion.Slide:
-                    storyboard.Children.Add(Animate(TranslatePath(TranslateTransform.YProperty),
-                        entering ? offset.Y : 0d, entering ? 0d : offset.Y, duration, motionEase));
-                    break;
                 case ToastMotion.SlideSide:
-                    storyboard.Children.Add(Animate(TranslatePath(TranslateTransform.XProperty),
-                        entering ? offset.X : 0d, entering ? 0d : offset.X, duration, motionEase));
+                    // The axis follows the offset rather than the motion: a side slide at a
+                    // centered position travels vertically (see TravelOffset).
+                    var horizontal = offset.X != 0d;
+                    var travel = horizontal ? offset.X : offset.Y;
+                    storyboard.Children.Add(Animate(
+                        TranslatePath(horizontal ? TranslateTransform.XProperty : TranslateTransform.YProperty),
+                        entering ? travel : 0d, entering ? 0d : travel, duration, motionEase));
                     break;
                 case ToastMotion.Fade:
                     storyboard.Children.Add(Animate(new PropertyPath(UIElement.OpacityProperty),
