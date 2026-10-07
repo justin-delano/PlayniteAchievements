@@ -300,14 +300,28 @@ namespace PlayniteAchievements.Views.Showcase
             HeaderBorder.Visibility = Visibility.Visible;
         }
 
+        // A linked widget's title is a quiet caption in the body's top-left corner: no band, no
+        // weight, so the chart keeps the row's height and reads first.
         private void ApplyHeaderPlacement(bool overlay)
         {
             Grid.SetRow(HeaderBorder, overlay ? 1 : 0);
             Panel.SetZIndex(HeaderBorder, overlay ? 1 : 0);
             HeaderBorder.HorizontalAlignment = overlay ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
             HeaderBorder.VerticalAlignment = overlay ? VerticalAlignment.Top : VerticalAlignment.Stretch;
-            HeaderBorder.Padding = overlay ? new Thickness(6, 2, 6, 2) : new Thickness(9, 5, 9, 5);
-            HeaderBorder.CornerRadius = overlay ? new CornerRadius(0, 0, 4, 0) : new CornerRadius(0);
+            HeaderBorder.Padding = overlay ? new Thickness(8, 4, 8, 0) : new Thickness(9, 5, 9, 5);
+            if (overlay)
+            {
+                HeaderBorder.Background = Brushes.Transparent;
+                TitleText.FontWeight = FontWeights.Normal;
+                TitleText.SetResourceReference(OpacityProperty, "PlayAch.Opacity.Subtle");
+            }
+            else
+            {
+                HeaderBorder.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
+                TitleText.FontWeight = FontWeights.SemiBold;
+                TitleText.ClearValue(OpacityProperty);
+            }
+
             // Clicks pass through to the chart beneath.
             HeaderBorder.IsHitTestVisible = !overlay;
         }
