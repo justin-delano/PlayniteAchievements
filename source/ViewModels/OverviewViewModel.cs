@@ -3470,6 +3470,14 @@ namespace PlayniteAchievements.ViewModels
 
         private void ApplyLeftFilters()
         {
+            using (PerfScope.Start(_logger, "Overview.ApplyLeftFilters", thresholdMs: 10))
+            {
+                ApplyLeftFiltersCore();
+            }
+        }
+
+        private void ApplyLeftFiltersCore()
+        {
             // Preserve selection across filter updates
             Guid? selectedGameId = SelectedGame?.PlayniteGameId;
 
@@ -3522,7 +3530,10 @@ namespace PlayniteAchievements.ViewModels
             // The Achievements grid shows the achievements of the games listed here, so it follows.
             if (!IsGameSelected)
             {
-                ApplyRightFilters();
+                using (PerfScope.Start(_logger, "Overview.ApplyLeftFilters.Achievements", thresholdMs: 10))
+                {
+                    ApplyRightFilters();
+                }
             }
 
             InvalidateLinkedSnapshots();
