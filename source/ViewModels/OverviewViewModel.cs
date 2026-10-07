@@ -857,12 +857,6 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewScoreCards => _hasAppliedSnapshot && (ShowOverviewCollectionScoreCard || ShowOverviewPrestigeScoreCard);
 
-        public ScoreCardBadgePosition OverviewCollectionBadgePosition =>
-            _settings?.Persisted?.OverviewCollectionBadgePosition ?? ScoreCardBadgePosition.Left;
-
-        public ScoreCardBadgePosition OverviewPrestigeBadgePosition =>
-            _settings?.Persisted?.OverviewPrestigeBadgePosition ?? ScoreCardBadgePosition.Left;
-
         public bool ShowOverviewScoreCardDivider =>_hasAppliedSnapshot && ShowOverviewCollectionScoreCard && ShowOverviewPrestigeScoreCard;
 
         public ScoreCardViewModel CollectionScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Collection);
@@ -2505,14 +2499,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 RaiseOverviewScoreCardVisibilityChanged();
             }
-            else if (propertyName == nameof(PersistedSettings.OverviewCollectionBadgePosition))
-            {
-                OnPropertyChanged(nameof(OverviewCollectionBadgePosition));
-            }
-            else if (propertyName == nameof(PersistedSettings.OverviewPrestigeBadgePosition))
-            {
-                OnPropertyChanged(nameof(OverviewPrestigeBadgePosition));
-            }
             else if (propertyName == nameof(PersistedSettings.EnableFriendsFeatures))
             {
                 OnPropertyChanged(nameof(EnableFriendsFeatures));
@@ -2609,13 +2595,13 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 // The mini-showcase's pies and timeline draw in platform colors.
-                InvalidateLinkedSnapshots();
+                InvalidateLinkedSnapshots(rebuild: true);
             }
             else if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(propertyName))
             {
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 ApplyScoreCards();
-                InvalidateLinkedSnapshots();
+                InvalidateLinkedSnapshots(rebuild: true);
             }
             else if (GameSummariesSortHelper.IsConfiguredDefaultSortPropertyName(propertyName))
             {
