@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -211,13 +210,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            await ApplyWorkshopPackageAsync(item, keptPackage: null, WorkshopGameDataInstallMode.KeepEditsSinceInstall);
+            var gameId = _gameId;
+            await ApplyWorkshopPackageAsync(applier => applier.ApplyAsync(gameId, item, WorkshopGameDataInstallMode.KeepEditsSinceInstall, CancellationToken.None));
         }
 
         /// <summary>
-        /// After a Playnite confirmation, applies the kept package copy again as published. A
-        /// record without a copy (one made before copies were kept) takes the Workshop's current
-        /// version instead, which is the only one the index offers.
+        /// After a Playnite confirmation, applies the kept package copy again as published (see
+        /// <see cref="GameDataPackageApplier.ResetAsync"/>).
         /// </summary>
         private async Task ResetWorkshopDataAsync()
         {
@@ -237,40 +236,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            var kept = _plugin?.GameDataLinks?.PackagePathOf(link);
-            if (kept != null)
-            {
-                var item = new WorkshopItem
-                {
-                    Id = GameDataLinkService.WorkshopItemIdOf(link),
-                    Kind = WorkshopItemKind.GameCustomData,
-                    Name = WorkshopSourceName,
-                    Version = link.AppliedVersion
-                };
-                await ApplyWorkshopPackageAsync(item, kept, WorkshopGameDataInstallMode.Replace);
-                return;
-            }
-
-            try
-            {
-                var index = _plugin?.WorkshopClient?.LastIndex
-                            ?? await _plugin.WorkshopClient.FetchIndexAsync(CancellationToken.None);
-                var latest = GameDataLinkService.IndexItemOf(index, link)
-                             ?? throw new InvalidOperationException("The Workshop no longer lists this item.");
-                await ApplyWorkshopPackageAsync(latest, keptPackage: null, WorkshopGameDataInstallMode.Replace);
-            }
-            catch (Exception ex)
-            {
-                ShowWorkshopSourceFailure(ex);
-            }
+            var gameId = _gameId;
+            var name = WorkshopSourceName;
+            await ApplyWorkshopPackageAsync(applier => applier.ResetAsync(gameId, link, name, CancellationToken.None));
         }
 
         /// <summary>
-        /// Installs the item onto this game from the kept package, or from a fresh download when
-        /// there is none, through the Workshop installer (which records the game's new version,
-        /// baseline and package copy).
+        /// Runs an apply onto this game through the shared game data applier, then refreshes the
+        /// window and shows any warnings.
         /// </summary>
-        private async Task ApplyWorkshopPackageAsync(WorkshopItem item, string keptPackage, WorkshopGameDataInstallMode mode)
+        private async Task ApplyWorkshopPackageAsync(Func<GameDataPackageApplier, Task<WorkshopInstallResult>> apply)
         {
             if (_plugin == null || IsWorkshopSourceBusy)
             {
@@ -278,32 +253,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             IsWorkshopSourceBusy = true;
-            var scratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "GameDataApply", Guid.NewGuid().ToString("N"));
             try
             {
-                Directory.CreateDirectory(scratch);
-                var fileName = keptPackage != null
-                    ? Path.GetFileName(keptPackage)
-                    : item.Package?.File ?? "package" + Services.GameCustomData.GameCustomDataStore.PortableFileExtension;
-                var package = Path.Combine(scratch, fileName);
-                if (keptPackage != null)
-                {
-                    await Task.Run(() => File.Copy(keptPackage, package, overwrite: true));
-                }
-                else
-                {
-                    await _plugin.WorkshopClient.DownloadPackageAsync(item, package, null, CancellationToken.None);
-                }
-
-                var result = await _plugin.WorkshopInstaller.InstallAsync(
-                    new WorkshopInstallRequest
-                    {
-                        Item = item,
-                        PackagePath = package,
-                        TargetGameId = _gameId,
-                        GameDataMode = mode
-                    },
-                    CancellationToken.None);
+                var applier = new GameDataPackageApplier(_plugin.WorkshopClient, _plugin.WorkshopInstaller, _plugin.GameDataLinks);
+                var result = await apply(applier);
 
                 NotifyCustomDataChanged(requiresRefresh: false);
                 if (result.Warnings.Count > 0)
@@ -321,7 +274,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
             finally
             {
-                PortablePackage.TryDeleteDirectory(scratch);
                 IsWorkshopSourceBusy = false;
                 RefreshWorkshopSource();
             }
