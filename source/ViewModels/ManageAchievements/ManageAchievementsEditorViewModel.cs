@@ -3708,6 +3708,43 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             OnPropertyChanged(nameof(IsCapstoneEditableForSelection));
         }
 
+        private static void CarryRevealState(
+            IEnumerable<AchievementEditorRow> previousRows,
+            IReadOnlyList<AchievementEditorRow> freshRows)
+        {
+            var previousByKey = new Dictionary<string, AchievementEditorRow>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in previousRows)
+            {
+                var key = RevealStateKey(row);
+                if (key != null && !previousByKey.ContainsKey(key))
+                {
+                    previousByKey[key] = row;
+                }
+            }
+
+            if (previousByKey.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var row in freshRows)
+            {
+                var key = RevealStateKey(row);
+                if (key != null && previousByKey.TryGetValue(key, out var previous))
+                {
+                    row.CarryRevealStateFrom(previous);
+                }
+            }
+        }
+
+        private static string RevealStateKey(AchievementEditorRow row)
+        {
+            var key = !string.IsNullOrWhiteSpace(row?.OriginalApiName)
+                ? row.OriginalApiName
+                : row?.NormalizedId;
+            return string.IsNullOrWhiteSpace(key) ? null : key;
+        }
+
         private void ReplaceRows(IEnumerable<AchievementEditorRow> rows)
         {
             using var replaceScope = Common.PerfScope.Start(_logger, "Editor.ReplaceRows", thresholdMs: 5);
@@ -3752,6 +3789,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 materializedRows = (rows ?? Enumerable.Empty<AchievementEditorRow>()).ToList();
                 buildScope?.SetContext("rows=" + materializedRows.Count);
             }
+
+            // A reload is not the user hiding things again. Reloads arrive from outside the
+            // editor -- a background refresh or the in-game monitor saving this game -- and the
+            // fresh rows start masked, so without this every reveal snapped back at random.
+            // Carried before the in-place comparison so a reveal alone does not read as a change.
+            CarryRevealState(AchievementRows, materializedRows);
 
             // Attached below, once it is known which rows actually end up in the collection.
             // Wiring the freshly built rows here would leave the live ones detached on the
@@ -6797,6 +6840,26 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             // Empty name, which WPF reads as "every property changed".
             OnPropertyChanged(string.Empty);
+        }
+
+        /// <summary>
+        /// Takes the session's reveal state from the row this one replaces on a reload.
+        /// </summary>
+        /// <remarks>
+        /// Fields, without notifications: the row is freshly built and nothing is bound to it yet.
+        /// </remarks>
+        internal void CarryRevealStateFrom(AchievementEditorRow previous)
+        {
+            if (previous == null || ReferenceEquals(previous, this))
+            {
+                return;
+            }
+
+            _iconStage = previous._iconStage;
+            _isTitleRevealed = previous._isTitleRevealed;
+            _isDescriptionRevealed = previous._isDescriptionRevealed;
+            _isTrophyRevealed = previous._isTrophyRevealed;
+            _isPointsRevealed = previous._isPointsRevealed;
         }
 
         public string OriginalApiName { get; private set; }
