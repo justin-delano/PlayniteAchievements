@@ -247,6 +247,44 @@ namespace PlayniteAchievements.Services.Library
         }
 
         /// <summary>
+        /// The records grouped by Workshop item, one group per item, ordered by name: each with the
+        /// games that have it, the highest version any of them applied, and the name the record
+        /// at that version (or else any record) carries. Records that name no item are left out.
+        /// </summary>
+        public static IReadOnlyList<GameDataItemGroup> GroupByItem(IEnumerable<KeyValuePair<Guid, LibraryLink>> records)
+        {
+            return (records ?? Enumerable.Empty<KeyValuePair<Guid, LibraryLink>>())
+                .Where(pair => pair.Key != Guid.Empty && WorkshopItemIdOf(pair.Value) != null)
+                .GroupBy(pair => WorkshopItemIdOf(pair.Value).Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var games = group.ToList();
+                    var highest = games
+                        .Select(pair => pair.Value)
+                        .Aggregate((LibraryLink)null, (best, link) =>
+                            best == null || WorkshopIdentityStore.IsNewer(link.AppliedVersion, best.AppliedVersion)
+                                || (string.IsNullOrWhiteSpace(best.AppliedVersion) && !string.IsNullOrWhiteSpace(link.AppliedVersion))
+                                ? link
+                                : best);
+                    var name = !string.IsNullOrWhiteSpace(highest?.Name)
+                        ? highest.Name
+                        : games.Select(pair => pair.Value.Name).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+                    return new GameDataItemGroup(group.Key, name, highest?.AppliedVersion, games);
+                })
+                .OrderBy(group => group.Name ?? group.WorkshopItemId, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+        }
+
+        /// <summary>The games whose record names <paramref name="indexItem"/> at an older version than the index lists.</summary>
+        public static IReadOnlyList<Guid> GamesBehind(IEnumerable<KeyValuePair<Guid, LibraryLink>> records, WorkshopItem indexItem)
+        {
+            return (records ?? Enumerable.Empty<KeyValuePair<Guid, LibraryLink>>())
+                .Where(pair => pair.Key != Guid.Empty && HasUpdate(pair.Value, indexItem))
+                .Select(pair => pair.Key)
+                .ToList();
+        }
+
+        /// <summary>
         /// True when a curated value differs between the two: everything a package can carry,
         /// with the user's own progress (unlocks, goals) left out.
         /// </summary>
@@ -408,5 +446,28 @@ namespace PlayniteAchievements.Services.Library
                        right.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
                        StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    /// <summary>One Workshop item's game data across every game that has it.</summary>
+    public sealed class GameDataItemGroup
+    {
+        public GameDataItemGroup(string workshopItemId, string name, string highestVersion, IReadOnlyList<KeyValuePair<Guid, LibraryLink>> games)
+        {
+            WorkshopItemId = workshopItemId;
+            Name = name;
+            HighestVersion = highestVersion;
+            Games = games ?? Array.Empty<KeyValuePair<Guid, LibraryLink>>();
+        }
+
+        public string WorkshopItemId { get; }
+
+        /// <summary>The item's name as the records carry it, or null when none does.</summary>
+        public string Name { get; }
+
+        /// <summary>The highest version any game applied, or null when none recorded one.</summary>
+        public string HighestVersion { get; }
+
+        /// <summary>Each game that has the item, with its record.</summary>
+        public IReadOnlyList<KeyValuePair<Guid, LibraryLink>> Games { get; }
     }
 }
