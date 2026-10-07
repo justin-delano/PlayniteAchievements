@@ -40,6 +40,9 @@ namespace PlayniteAchievements.Services.Workshop
         public string ItemId { get; set; }
         public DateTime SubmittedUtc { get; set; }
         public string LastState { get; set; }
+
+        /// <summary>The library item the submission was shared from, when it was shared from the Library.</summary>
+        public string LibraryItemId { get; set; }
     }
 
     /// <summary>
@@ -353,6 +356,58 @@ namespace PlayniteAchievements.Services.Workshop
                 && !string.IsNullOrWhiteSpace(item.OwnerHash)
                 && !string.IsNullOrWhiteSpace(ownerHash)
                 && string.Equals(item.OwnerHash.Trim(), ownerHash.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// The Workshop id a library item is published as by this install, or null. A Workshop
+        /// item is when its index entry (<paramref name="indexItem"/>) is owned by this install's
+        /// key; a local item is when a submission shared from it has learned its Workshop id, the
+        /// latest such submission first.
+        /// </summary>
+        public string PublishedIdOf(Library.LibraryItem item, WorkshopItem indexItem)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            if (item.IsWorkshop)
+            {
+                return indexItem != null
+                       && string.Equals(indexItem.Id, item.WorkshopItemId, StringComparison.OrdinalIgnoreCase)
+                       && IsOwnedBy(indexItem, TryGetSubmitterHash())
+                    ? item.WorkshopItemId
+                    : null;
+            }
+
+            if (string.IsNullOrWhiteSpace(item.Id))
+            {
+                return null;
+            }
+
+            lock (_sync)
+            {
+                EnsureIdentityLoaded();
+                return _submissions
+                    .Where(s => !string.IsNullOrWhiteSpace(s.ItemId)
+                                && string.Equals(s.LibraryItemId, item.Id, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(s => s.SubmittedUtc)
+                    .Select(s => s.ItemId)
+                    .FirstOrDefault();
+            }
+        }
+
+        /// <summary>True when some submission was shared from a library item.</summary>
+        public bool HasLibrarySubmissions
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    EnsureIdentityLoaded();
+                    return _submissions.Any(s => !string.IsNullOrWhiteSpace(s.LibraryItemId));
+                }
+            }
         }
 
         private static string HashKey(string key)
