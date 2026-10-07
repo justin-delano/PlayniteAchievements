@@ -4410,9 +4410,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             row.ShowLockedPoints = _settings?.Persisted?.ShowLockedPoints ?? true;
             row.UseSeparateLockedIcons = useSeparateLockedIcons
                 ?? ResolveUseSeparateLockedIcons();
-            row.ConfigureIconPathDisplay(
-                path => _managedCustomIconService?.GetManagedDisplayPath(path, _gameIdText) ?? path,
-                text => _managedCustomIconService?.ResolveManagedDisplayPath(text, _gameIdText) ?? text);
             row.PropertyChanged -= Row_PropertyChanged;
             row.PropertyChanged += Row_PropertyChanged;
             row.RevealStateChanged -= Row_RevealStateChanged;
@@ -7510,8 +7507,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             // The provider icon baselines arrive after the row is built, and the slots read
             // them to decide whether they are showing the user's art or the provider's.
-            OnPropertyChanged(nameof(UnlockedIconDisplayText));
-            OnPropertyChanged(nameof(LockedIconDisplayText));
+            OnPropertyChanged(nameof(HasUnlockedIconOverride));
+            OnPropertyChanged(nameof(HasLockedIconOverride));
 
             AchievementEditorFieldRules.TryParsePoints(PointsText, out var points);
             CustomizationFacets = AchievementCustomizationRules.Resolve(new AchievementCustomizationInputs
@@ -8253,7 +8250,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (SetValueAndReturn(ref _unlockedIconPath, value))
                 {
-                    OnPropertyChanged(nameof(UnlockedIconDisplayText));
+                    OnPropertyChanged(nameof(HasUnlockedIconOverride));
                     OnPropertyChanged(nameof(UnlockedPreviewPath));
                     OnPropertyChanged(nameof(LockedPreviewPath));
                     OnPropertyChanged(nameof(DisplayIcon));
@@ -8268,54 +8265,22 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (SetValueAndReturn(ref _lockedIconPath, value))
                 {
-                    OnPropertyChanged(nameof(LockedIconDisplayText));
+                    OnPropertyChanged(nameof(HasLockedIconOverride));
                     OnPropertyChanged(nameof(LockedPreviewPath));
                     OnPropertyChanged(nameof(DisplayIcon));
                 }
             }
         }
 
-        private Func<string, string> _iconPathToDisplay;
-        private Func<string, string> _iconPathFromDisplay;
-
         /// <summary>
-        /// Managed icons live under the plugin's icon cache; the editor shows them relative to
-        /// that root and maps typed text back to a stored path.
+        /// Whether the unlocked slot holds the user's own art rather than the provider's, which
+        /// is when the slot offers Clear. A row carries its effective icon, so a filled path
+        /// alone does not mean anything is stored.
         /// </summary>
-        public void ConfigureIconPathDisplay(Func<string, string> toDisplay, Func<string, string> fromDisplay)
-        {
-            _iconPathToDisplay = toDisplay;
-            _iconPathFromDisplay = fromDisplay;
-            OnPropertyChanged(nameof(UnlockedIconDisplayText));
-            OnPropertyChanged(nameof(LockedIconDisplayText));
-        }
+        public bool HasUnlockedIconOverride => IsIconOverride(UnlockedIconPath, ProviderUnlockedIconPath);
 
-        /// <summary>
-        /// The icon slot's text: the user's own art, or blank where the achievement is still
-        /// showing the provider's.
-        /// </summary>
-        /// <remarks>
-        /// A row carries its effective icon, so this field used to read back the provider's path
-        /// on every untouched achievement -- a long string the user cannot act on, and which
-        /// makes a slot holding nothing look like a slot holding something. Blank says what is
-        /// true: there is no override here. The path in use is still on the slot's tooltip.
-        /// </remarks>
-        public string UnlockedIconDisplayText
-        {
-            get => IsIconOverride(UnlockedIconPath, ProviderUnlockedIconPath)
-                ? ToIconDisplayText(UnlockedIconPath)
-                : string.Empty;
-            set => UnlockedIconPath = FromIconDisplayText(value);
-        }
-
-        /// <inheritdoc cref="UnlockedIconDisplayText"/>
-        public string LockedIconDisplayText
-        {
-            get => IsIconOverride(LockedIconPath, ProviderLockedIconPath)
-                ? ToIconDisplayText(LockedIconPath)
-                : string.Empty;
-            set => LockedIconPath = FromIconDisplayText(value);
-        }
+        /// <inheritdoc cref="HasUnlockedIconOverride"/>
+        public bool HasLockedIconOverride => IsIconOverride(LockedIconPath, ProviderLockedIconPath);
 
         /// <summary>
         /// Whether a slot holds the user's art rather than the provider's. The same test the
@@ -8329,22 +8294,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                        NormalizeRowText(current),
                        NormalizeRowText(provider),
                        StringComparison.OrdinalIgnoreCase);
-        }
-
-        private string ToIconDisplayText(string path)
-        {
-            var normalized = NormalizeText(path);
-            return string.IsNullOrWhiteSpace(normalized)
-                ? string.Empty
-                : _iconPathToDisplay?.Invoke(normalized) ?? normalized;
-        }
-
-        private string FromIconDisplayText(string text)
-        {
-            var normalized = NormalizeText(text);
-            return string.IsNullOrWhiteSpace(normalized)
-                ? null
-                : _iconPathFromDisplay?.Invoke(normalized) ?? normalized;
         }
 
         // Both re-raise the reveal state: gaining or losing a value flips whether the row has
