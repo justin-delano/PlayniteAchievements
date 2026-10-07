@@ -156,10 +156,19 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(SelectedTrophyFilterText));
         }
 
-        // Deferred like the other filters, so the click or pick that set it finishes first.
-        // Refiltering the games also refilters the achievements and refreshes the linked widgets.
-        private void ScheduleAchievementFilterApply()
+        private void ScheduleAchievementFilterApply() => ScheduleFilterApply();
+
+        /// <summary>
+        /// Applies a filter change in two steps. The linked widgets refresh at once, since they
+        /// read the filter state rather than the grids, and draw in the next Background pass.
+        /// The grids refilter after that, deferred to ContextIdle so the click or pick that set
+        /// the filter finishes first. A click on a chart so shows on the charts without waiting
+        /// for the grids to rebuild their rows; the grids' own pass then finds the widgets'
+        /// views unchanged and leaves them alone.
+        /// </summary>
+        private void ScheduleFilterApply()
         {
+            InvalidateLinkedSnapshots();
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
                 new Action(ApplyLeftFilters),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
