@@ -23,8 +23,34 @@ namespace PlayniteAchievements.ViewModels
         private readonly Dictionary<Guid, GameSummaryItem> _gamesById = new Dictionary<Guid, GameSummaryItem>();
         private List<GameSummaryItem> _libraryGames;
         private string _searchText = string.Empty;
+        private DateTime? _unlockedFrom;
+        private DateTime? _unlockedTo;
         private ObservableCollection<ProviderFilterGroup> _providerFilterGroups =
             new ObservableCollection<ProviderFilterGroup>();
+
+        /// <summary>The unlock date range's start day, or null for an open start.</summary>
+        public DateTime? UnlockedFrom => _unlockedFrom;
+
+        /// <summary>The unlock date range's end day, or null for an open end.</summary>
+        public DateTime? UnlockedTo => _unlockedTo;
+
+        /// <summary>Raised for the range item; its from and to change together.</summary>
+        public string UnlockedRangeKey => (_unlockedFrom?.Ticks ?? 0) + "-" + (_unlockedTo?.Ticks ?? 0);
+
+        public void SetUnlockedRange(DateTime? from, DateTime? to)
+        {
+            from = from?.Date;
+            to = to?.Date;
+            if (Nullable.Equals(_unlockedFrom, from) && Nullable.Equals(_unlockedTo, to))
+            {
+                return;
+            }
+
+            _unlockedFrom = from;
+            _unlockedTo = to;
+            OnPropertyChanged(nameof(UnlockedRangeKey));
+            RaiseFilterChanged();
+        }
 
         public CrossGameAchievementControlBarAdapter()
         {
@@ -103,7 +129,9 @@ namespace PlayniteAchievements.ViewModels
             return new ControlBarFilterState
             {
                 SearchText = SearchText,
-                Platforms = CapturePlatformSelections(ProviderFilterGroups)
+                Platforms = CapturePlatformSelections(ProviderFilterGroups),
+                UnlockedFrom = _unlockedFrom,
+                UnlockedTo = _unlockedTo
             };
         }
 
@@ -117,6 +145,9 @@ namespace PlayniteAchievements.ViewModels
             _searchText = state.SearchText ?? string.Empty;
             OnPropertyChanged(nameof(SearchText));
             PendingPlatformSelections = state.Platforms;
+            _unlockedFrom = state.UnlockedFrom?.Date;
+            _unlockedTo = state.UnlockedTo?.Date;
+            OnPropertyChanged(nameof(UnlockedRangeKey));
         }
 
         /// <summary>
@@ -135,6 +166,16 @@ namespace PlayniteAchievements.ViewModels
             {
                 _searchIndex.Rebuild(items);
                 filtered = filtered.Where(item => _searchIndex.Matches(item, searchQuery));
+            }
+
+            // The unlock range keeps unlocked rows whose local unlock day falls in it.
+            if (_unlockedFrom.HasValue || _unlockedTo.HasValue)
+            {
+                var span = new UnlockDaySpan(_unlockedFrom ?? DateTime.MinValue, _unlockedTo ?? DateTime.MaxValue.Date);
+                filtered = filtered.Where(item =>
+                    item.Unlocked &&
+                    item.UnlockTimeUtc.HasValue &&
+                    span.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)));
             }
 
             if ((ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>()).Any(group => group?.HasAnySelected == true))
@@ -197,6 +238,17 @@ namespace PlayniteAchievements.ViewModels
                 CollapseUnselectedProviderFilters)
             {
                 Width = 170
+            });
+            controlBar.Items.Add(new GridDateRangeFilter(
+                this,
+                nameof(UnlockedRangeKey),
+                () => UnlockedFrom,
+                () => UnlockedTo,
+                SetUnlockedRange,
+                ResourceProvider.GetString("LOCPlayAch_Filter_AllTime"))
+            {
+                AutoHideWhenUnavailable = false,
+                Width = 190
             });
             return controlBar;
         }
