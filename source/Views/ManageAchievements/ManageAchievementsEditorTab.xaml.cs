@@ -336,13 +336,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        // Past this many rows changing, one reset is cheaper than moving each row on its own.
-        private const int FilterSyncResetThreshold = 200;
-
         /// <summary>
         /// Brings the view in line with the filter by retesting only the rows whose match changed.
         /// A reset would rebuild every visible row, including the ones that stay; this leaves those
         /// containers in place, so only rows entering the view are realized.
+        /// Measured cheaper than a reset at every size, including when nearly every row changes:
+        /// moving 582 rows out took 38 ms against 160 ms for the reset.
         /// </summary>
         /// <returns>What was done, for the timing log.</returns>
         private string SyncFilteredRows()
@@ -368,12 +367,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 {
                     changed.Add(row);
                 }
-            }
-
-            if (changed.Count > FilterSyncResetThreshold)
-            {
-                view.Refresh();
-                return "reset changed=" + changed.Count;
             }
 
             foreach (var row in changed)
