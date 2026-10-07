@@ -26,12 +26,12 @@ namespace PlayniteAchievements.ViewModels.Library
     /// grouped by kind and filtered by kind and text, with where each is used and how those
     /// places stand. Actions: update (a newer Workshop version, or a re-saved preset its
     /// followers have not taken), reinstall, export, share, rename and delete; each place an item
-    /// is used opens where that place is configured. The game data chip
-    /// lists the games that have Workshop game data instead; a row opens the game's Manage
-    /// Achievements, where that data is updated, reset or unlinked. The lists follow the library,
-    /// the per-game links and the settings links as they change. UI thread.
+    /// is used opens where that place is configured. Workshop game data is listed the same way,
+    /// one row per Workshop item built from the games' records, used in each game that has it;
+    /// its actions update, reset or unlink those games. The list follows the library, the
+    /// per-game links and the settings links as they change. UI thread.
     /// </summary>
-    public sealed class LibraryViewModel : ObservableObject, IDisposable
+    public sealed partial class LibraryViewModel : ObservableObject, IDisposable
     {
         private static readonly LibraryItemKind[] KindOrder =
         {
@@ -39,7 +39,8 @@ namespace PlayniteAchievements.ViewModels.Library
             LibraryItemKind.Toast,
             LibraryItemKind.Frame,
             LibraryItemKind.Sounds,
-            LibraryItemKind.ShowcasePage
+            LibraryItemKind.ShowcasePage,
+            LibraryItemKind.GameData
         };
 
         private readonly PlayniteAchievementsPlugin _plugin;
@@ -53,10 +54,12 @@ namespace PlayniteAchievements.ViewModels.Library
         private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
         private readonly Dictionary<string, string> _thumbnails = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, IReadOnlyList<Brush>> _swatches = new Dictionary<string, IReadOnlyList<Brush>>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<Guid> _editedGameData = new HashSet<Guid>();
         private Dictionary<string, WorkshopItem> _index;
         private bool _indexRequested;
         private bool _reloadQueued;
-        private int _gameDataGeneration;
+        private int _editedGeneration;
+        private Guid? _focusGameId;
 
         private LibraryKindFilter _selectedFilter;
         private string _searchText = string.Empty;
@@ -65,8 +68,9 @@ namespace PlayniteAchievements.ViewModels.Library
         private string _statusMessage;
         private string _errorMessage;
 
-        /// <param name="focusGameData">Start on the game data list rather than a kind of item.</param>
-        public LibraryViewModel(PlayniteAchievementsPlugin plugin, ILogger logger, LibraryItemKind? focusKind = null, bool focusGameData = false)
+        /// <param name="focusKind">The kind the page starts filtered to, or null for every kind.</param>
+        /// <param name="focusGameId">A game whose Workshop game data starts selected, when it has any.</param>
+        public LibraryViewModel(PlayniteAchievementsPlugin plugin, ILogger logger, LibraryItemKind? focusKind = null, Guid? focusGameId = null)
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
@@ -75,18 +79,12 @@ namespace PlayniteAchievements.ViewModels.Library
             _gameLinks = plugin.GameLinkStore;
             _identity = plugin.WorkshopIdentityStore;
             _dispatcher = Dispatcher.CurrentDispatcher;
+            _focusGameId = focusGameId;
 
             Filters = new List<LibraryKindFilter> { new LibraryKindFilter(null, ResourceProvider.GetString("LOCPlayAch_Common_All")) };
             Filters.AddRange(KindOrder.Select(kind => new LibraryKindFilter(kind, LibraryItemRow.KindLabelFor(kind))));
-            Filters.Add(new LibraryKindFilter(null, ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_GameCustomData"), isGameData: true));
-            _selectedFilter = focusGameData
-                ? Filters.Last()
-                : Filters.FirstOrDefault(filter => !filter.IsGameData && filter.Kind == focusKind) ?? Filters[0];
+            _selectedFilter = Filters.FirstOrDefault(filter => filter.Kind == focusKind) ?? Filters[0];
             _selectedFilter.IsSelected = true;
-
-            GameDataView = CollectionViewSource.GetDefaultView(GameDataRows);
-            GameDataView.SortDescriptions.Add(new SortDescription(nameof(LibraryGameDataRow.GameName), ListSortDirection.Ascending));
-            GameDataView.Filter = FilterGameDataRow;
 
             RowsView = CollectionViewSource.GetDefaultView(Rows);
             RowsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(LibraryItemRow.KindLabel)));
@@ -98,11 +96,10 @@ namespace PlayniteAchievements.ViewModels.Library
             UpdateCommand = new AsyncCommand(_ => UpdateAsync(SelectedRow), _ => !IsBusy && SelectedRow?.CanUpdate == true);
             ReinstallCommand = new AsyncCommand(_ => ReinstallAsync(SelectedRow), _ => !IsBusy && SelectedRow?.CanReinstall == true);
             ShareCommand = new RelayCommand(_ => Share(SelectedRow), _ => SelectedRow?.HasFile == true);
-            RenameCommand = new RelayCommand(_ => Rename(SelectedRow), _ => !IsBusy && SelectedRow != null);
+            RenameCommand = new RelayCommand(_ => Rename(SelectedRow), _ => !IsBusy && SelectedRow?.HasLibraryCopy == true);
             DeleteCommand = new RelayCommand(_ => Delete(SelectedRow), _ => !IsBusy && SelectedRow != null);
-            ResetCommand = new RelayCommand(parameter => Reset(parameter as LibraryUseRow));
-            StopFollowingCommand = new RelayCommand(parameter => StopFollowing(parameter as LibraryUseRow));
-            OpenGameDataCommand = new RelayCommand(parameter => OpenGameData(parameter as LibraryGameDataRow));
+            ResetCommand = new RelayCommand(parameter => Reset(parameter as LibraryUseRow), _ => !IsBusy);
+            StopFollowingCommand = new RelayCommand(parameter => StopFollowing(parameter as LibraryUseRow), _ => !IsBusy);
             OpenTargetCommand = new RelayCommand(parameter => OpenTarget(parameter as LibraryUseRow));
             OpenPublishedCommand = new RelayCommand(_ => OpenUrl(SelectedRow?.PublishedUrl), _ => SelectedRow?.HasPublishedUrl == true);
 
@@ -140,19 +137,10 @@ namespace PlayniteAchievements.ViewModels.Library
         public RelayCommand DeleteCommand { get; }
         public RelayCommand ResetCommand { get; }
         public RelayCommand StopFollowingCommand { get; }
-        public RelayCommand OpenGameDataCommand { get; }
         public RelayCommand OpenTargetCommand { get; }
 
         /// <summary>Opens the selected item's Workshop page on GitHub, for an item this install published.</summary>
         public RelayCommand OpenPublishedCommand { get; }
-
-        /// <summary>One row per game with Workshop game data.</summary>
-        public ObservableCollection<LibraryGameDataRow> GameDataRows { get; } = new ObservableCollection<LibraryGameDataRow>();
-
-        public ICollectionView GameDataView { get; }
-
-        /// <summary>True while the game data chip is selected: the page lists games instead of library items.</summary>
-        public bool ShowGameData => _selectedFilter?.IsGameData == true;
 
         // ---- host callbacks ---------------------------------------------------------------------
 
@@ -228,7 +216,7 @@ namespace PlayniteAchievements.ViewModels.Library
 
         public bool HasError => !string.IsNullOrWhiteSpace(_errorMessage);
 
-        public bool IsEmpty => ShowGameData ? !GameDataView.Cast<object>().Any() : !RowsView.Cast<object>().Any();
+        public bool IsEmpty => !RowsView.Cast<object>().Any();
 
         // ---- list -------------------------------------------------------------------------------
 
@@ -253,7 +241,10 @@ namespace PlayniteAchievements.ViewModels.Library
             }), DispatcherPriority.Background);
         }
 
-        /// <summary>Reads the library and every item's uses into fresh rows, keeping the selection.</summary>
+        /// <summary>
+        /// Reads the library, the games' Workshop game data records and every item's uses into
+        /// fresh rows, keeping the selection.
+        /// </summary>
         public void Reload(bool reconcile)
         {
             List<LibraryItemRow> rows;
@@ -264,12 +255,21 @@ namespace PlayniteAchievements.ViewModels.Library
                     _library.Reconcile();
                 }
 
-                rows = _library.Items.Select(BuildRow).ToList();
+                rows = _library.Items.Where(item => item.Kind != LibraryItemKind.GameData).Select(BuildRow).ToList();
             }
             catch (Exception ex)
             {
                 _logger?.Warn(ex, "Failed reading the library.");
                 rows = new List<LibraryItemRow>();
+            }
+
+            try
+            {
+                rows.AddRange(GameDataLinkService.GroupByItem(_plugin.GameDataLinks.All).Select(BuildGameDataRow));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed reading the games with Workshop game data.");
             }
 
             var selectedId = _selectedRow?.Id;
@@ -279,67 +279,15 @@ namespace PlayniteAchievements.ViewModels.Library
                 Rows.Add(row);
             }
 
-            foreach (var filter in Filters.Where(filter => !filter.IsGameData))
+            foreach (var filter in Filters)
             {
                 filter.Count = filter.Kind == null ? rows.Count : rows.Count(row => row.Kind == filter.Kind);
             }
 
-            SelectedRow = rows.FirstOrDefault(row => string.Equals(row.Id, selectedId, StringComparison.OrdinalIgnoreCase));
+            SelectedRow = TakeFocusedRow(rows)
+                          ?? rows.FirstOrDefault(row => string.Equals(row.Id, selectedId, StringComparison.OrdinalIgnoreCase));
             RefreshView();
-            _ = ReloadGameDataAsync();
-            _ = EnsureIndexAsync();
-        }
-
-        /// <summary>
-        /// Rebuilds the game data list: one row per game with a record. Whether a game's data was
-        /// edited reads its data and icons from disk, so that runs off the UI thread; a newer
-        /// reload discards an older one's result.
-        /// </summary>
-        private async Task ReloadGameDataAsync()
-        {
-            var generation = ++_gameDataGeneration;
-            var service = _plugin.GameDataLinks;
-            List<(Guid GameId, LibraryLink Link, bool IsEdited)> records;
-            try
-            {
-                records = await Task.Run(() => service.All
-                    .Select(pair => (pair.Key, pair.Value, service.IsEdited(pair.Key, pair.Value)))
-                    .ToList());
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Failed reading the games with Workshop game data.");
-                records = new List<(Guid, LibraryLink, bool)>();
-            }
-
-            if (generation != _gameDataGeneration || _lifetime.IsCancellationRequested)
-            {
-                return;
-            }
-
-            var games = _plugin.PlayniteApi?.Database?.Games;
-            var rows = records
-                .Select(record => new LibraryGameDataRow(
-                    record.GameId,
-                    games?.Get(record.GameId)?.Name ?? record.GameId.ToString(),
-                    record.Link,
-                    record.IsEdited))
-                .ToList();
-            GameDataRows.Clear();
-            foreach (var row in rows)
-            {
-                row.IndexItem = IndexItemOf(row.Link);
-                GameDataRows.Add(row);
-            }
-
-            var chip = Filters.FirstOrDefault(filter => filter.IsGameData);
-            if (chip != null)
-            {
-                chip.Count = rows.Count;
-            }
-
-            GameDataView.Refresh();
-            OnPropertyChanged(nameof(IsEmpty));
+            _ = RefreshEditedGameDataAsync();
             _ = EnsureIndexAsync();
         }
 
@@ -369,45 +317,10 @@ namespace PlayniteAchievements.ViewModels.Library
             row.SetPublished(id, published);
         }
 
-        private WorkshopItem IndexItemOf(LibraryLink link)
-        {
-            var id = GameDataLinkService.WorkshopItemIdOf(link);
-            return id != null && _index != null && _index.TryGetValue(id, out var item) ? item : null;
-        }
-
-        private bool FilterGameDataRow(object value)
-        {
-            if (!(value is LibraryGameDataRow row))
-            {
-                return false;
-            }
-
-            var query = _searchText.Trim();
-            return query.Length == 0 || row.SearchText.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        /// <summary>Opens the game's Manage Achievements on the Overview tab, where its Workshop data is managed.</summary>
-        private void OpenGameData(LibraryGameDataRow row)
-        {
-            if (row == null)
-            {
-                return;
-            }
-
-            try
-            {
-                _plugin.OpenManageAchievementsView(row.GameId, ViewModels.ManageAchievements.ManageAchievementsTab.Overview);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Failed opening Manage Achievements for {row.GameId}.");
-                ErrorMessage = string.Format(L("LOCPlayAch_Status_Failed"), ex.Message);
-            }
-        }
-
         /// <summary>
         /// Goes to where a use is configured: its settings page through the host, a game's
-        /// Manage Achievements on the Notifications tab, or the Overview's Showcase page.
+        /// Manage Achievements on the Notifications tab (a game's look) or the Overview tab (a
+        /// game's Workshop game data), or the Overview's Showcase page.
         /// </summary>
         private void OpenTarget(LibraryUseRow use)
         {
@@ -429,6 +342,9 @@ namespace PlayniteAchievements.ViewModels.Library
                             navigation.GameId,
                             ViewModels.ManageAchievements.ManageAchievementsTab.Notifications,
                             notificationsShowFrame: navigation.IsFrame);
+                        break;
+                    case LibraryTargetDestination.GameData:
+                        _plugin.OpenManageAchievementsView(navigation.GameId, ViewModels.ManageAchievements.ManageAchievementsTab.Overview);
                         break;
                     case LibraryTargetDestination.Showcase:
                         _plugin.OpenShowcasePage(navigation.ShowcasePageId);
@@ -514,7 +430,7 @@ namespace PlayniteAchievements.ViewModels.Library
                 return false;
             }
 
-            if (_selectedFilter?.IsGameData == true || (_selectedFilter?.Kind is LibraryItemKind kind && row.Kind != kind))
+            if (_selectedFilter?.Kind is LibraryItemKind kind && row.Kind != kind)
             {
                 return false;
             }
@@ -536,14 +452,12 @@ namespace PlayniteAchievements.ViewModels.Library
             }
 
             _selectedFilter = filter;
-            OnPropertyChanged(nameof(ShowGameData));
             RefreshView();
         }
 
         private void RefreshView()
         {
             RowsView.Refresh();
-            GameDataView?.Refresh();
             if (_selectedRow != null && !FilterRow(_selectedRow))
             {
                 SelectedRow = null;
@@ -565,6 +479,8 @@ namespace PlayniteAchievements.ViewModels.Library
             OpenPublishedCommand?.RaiseCanExecuteChanged();
             RenameCommand?.RaiseCanExecuteChanged();
             DeleteCommand?.RaiseCanExecuteChanged();
+            ResetCommand?.RaiseCanExecuteChanged();
+            StopFollowingCommand?.RaiseCanExecuteChanged();
         }
 
         // ---- labels -----------------------------------------------------------------------------
@@ -607,11 +523,15 @@ namespace PlayniteAchievements.ViewModels.Library
 
             if (LibraryTargetKeys.TryGetGameId(key, out var gameId))
             {
-                var game = _plugin.PlayniteApi?.Database?.Games?.Get(gameId)?.Name ?? gameId.ToString();
-                return surface + " · " + game;
+                return surface + " · " + GameNameOf(gameId);
             }
 
             return key;
+        }
+
+        private string GameNameOf(Guid gameId)
+        {
+            return _plugin.PlayniteApi?.Database?.Games?.Get(gameId)?.Name ?? gameId.ToString();
         }
 
         private static string UseState(LibraryItem item, LibraryTargetUse use)
@@ -652,7 +572,7 @@ namespace PlayniteAchievements.ViewModels.Library
         /// </summary>
         private async Task EnsureIndexAsync()
         {
-            if (_indexRequested || (!Rows.Any(row => row.IsWorkshop) && GameDataRows.Count == 0 && !_identity.HasLibrarySubmissions))
+            if (_indexRequested || (!Rows.Any(row => row.IsWorkshop) && !_identity.HasLibrarySubmissions))
             {
                 return;
             }
@@ -687,9 +607,11 @@ namespace PlayniteAchievements.ViewModels.Library
                     ApplyPublished(row);
                 }
 
-                foreach (var row in GameDataRows)
+                // Which games are behind the Workshop shows on the uses of game data, which are
+                // built with the row: rebuild the rows.
+                if (Rows.Any(row => row.IsGameData))
                 {
-                    row.IndexItem = IndexItemOf(row.Link);
+                    Reload(reconcile: false);
                 }
 
                 RaiseCommandStates();
@@ -750,12 +672,19 @@ namespace PlayniteAchievements.ViewModels.Library
         /// <summary>
         /// Takes a newer Workshop version into the library and merges it into every place that
         /// follows the item; for a re-saved preset, merges it into the places that have not
-        /// taken it yet. Edits made in those places are kept.
+        /// taken it yet. Edits made in those places are kept. For game data, merges the
+        /// Workshop's newer version into every game that is behind it.
         /// </summary>
         private async Task UpdateAsync(LibraryItemRow row)
         {
             if (row == null || IsBusy)
             {
+                return;
+            }
+
+            if (row.IsGameData)
+            {
+                await UpdateGameDataAsync(row);
                 return;
             }
 
@@ -975,7 +904,10 @@ namespace PlayniteAchievements.ViewModels.Library
             }, $"Failed renaming the library item {row.Id}.");
         }
 
-        /// <summary>Deletes the item and its file after a Playnite confirmation; the places that used it keep their look.</summary>
+        /// <summary>
+        /// Deletes the item and its file after a Playnite confirmation; the places that used it
+        /// keep what they have. For game data, ends every game's record; the games keep their data.
+        /// </summary>
         private void Delete(LibraryItemRow row)
         {
             if (row == null)
@@ -985,6 +917,21 @@ namespace PlayniteAchievements.ViewModels.Library
 
             if (Confirm != null && !Confirm(string.Format(L("LOCPlayAch_Library_DeleteConfirm"), row.Name)))
             {
+                return;
+            }
+
+            if (row.IsGameData)
+            {
+                Run(() =>
+                {
+                    foreach (var use in row.Uses)
+                    {
+                        if (LibraryTargetKeys.TryGetGameId(use.TargetKey, out var gameId))
+                        {
+                            _plugin.GameDataLinks.Unlink(gameId);
+                        }
+                    }
+                }, $"Failed ending the game data records of {row.Id}.");
                 return;
             }
 
@@ -1002,18 +949,31 @@ namespace PlayniteAchievements.ViewModels.Library
 
         private void Reset(LibraryUseRow use)
         {
-            if (use == null)
+            if (use == null || IsBusy)
             {
+                return;
+            }
+
+            if (LibraryTargetKeys.IsGameData(use.TargetKey))
+            {
+                _ = ResetGameDataAsync(use);
                 return;
             }
 
             Run(() => _updates.Reset(use.TargetKey), $"Failed resetting {use.TargetKey}.");
         }
 
+        /// <summary>Ends the link; for game data, the game's record (the game keeps its data).</summary>
         private void StopFollowing(LibraryUseRow use)
         {
-            if (use == null)
+            if (use == null || IsBusy)
             {
+                return;
+            }
+
+            if (LibraryTargetKeys.IsGameData(use.TargetKey) && LibraryTargetKeys.TryGetGameId(use.TargetKey, out var gameId))
+            {
+                Run(() => _plugin.GameDataLinks.Unlink(gameId), $"Failed ending the game data record of {use.TargetKey}.");
                 return;
             }
 
