@@ -168,14 +168,15 @@ namespace PlayniteAchievements.Views.Controls
             _tooltip.SetBinding(CartesianChartTooltip.HeaderLabelsProperty, Bind(nameof(TooltipLabels)));
             Chart.DataTooltip = _tooltip;
 
-            // One column-wide band behind the bars, shown only while a column is selected.
+            // One column-wide band behind the bars, shown only while a column is selected. A faint
+            // neutral wash rather than the accent, which is the bars' own color.
             _highlight = new AxisSection
             {
                 SectionWidth = 1,
-                Opacity = 0.18,
+                Opacity = 0.12,
                 Visibility = Visibility.Collapsed
             };
-            _highlight.SetResourceReference(AxisSection.FillProperty, "PlayAch.Brush.Accent");
+            _highlight.SetResourceReference(AxisSection.FillProperty, "PlayAch.Brush.Text");
             _axisX.Sections.Add(_highlight);
             Chart.DataClick += OnChartDataClick;
 
@@ -192,7 +193,9 @@ namespace PlayniteAchievements.Views.Controls
         {
             var chart = (UnlockTimelineChart)d;
             var index = (int)e.NewValue;
-            chart._highlight.Value = Math.Max(0, index);
+            // A column's value sits at its index and its bar is centred there, so the band starts
+            // half a column before it.
+            chart._highlight.Value = Math.Max(0, index) - 0.5;
             chart._highlight.Visibility = index >= 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
