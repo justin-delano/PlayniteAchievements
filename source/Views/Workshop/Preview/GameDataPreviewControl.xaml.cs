@@ -343,13 +343,16 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         }
 
         /// <summary>
-        /// The package's own entries as achievement data for the grid, shown as published: a
-        /// package carries no progress, so no entry is masked as locked. The package's category
-        /// order, art and summary category come with them, the art at its extracted paths.
+        /// The package's own entries as achievement data for the grid. A package carries no
+        /// progress, so the live dialog shows every entry locked, and the category tree counts
+        /// none unlocked; the published image (<paramref name="neutral"/>) shows them unlocked,
+        /// as its status cell never shows progress. The package's category order, art and
+        /// summary category come with them, the art at its extracted paths.
         /// </summary>
         private static GameAchievementData BuildPackageData(
             GameCustomDataPreviewDiff diff,
-            GameCustomDataPortableFile manifest)
+            GameCustomDataPortableFile manifest,
+            bool neutral)
         {
             var achievements = diff.Rows
                 .Where(row => row?.After != null)
@@ -366,7 +369,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                     IsGoal = row.After.IsGoal,
                     AchievementNote = row.After.Note,
                     IsCustom = row.After.IsCustom,
-                    Unlocked = true
+                    Unlocked = neutral
                 })
                 .ToList();
             return new GameAchievementData
@@ -450,7 +453,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             var compared = diff.AfterData != null;
             _afterData = compared
                 ? diff.AfterData
-                : BuildPackageData(diff, (DataContext as GameCustomDataPreviewModel)?.Package?.Manifest);
+                : BuildPackageData(diff, (DataContext as GameCustomDataPreviewModel)?.Package?.Manifest, NeutralRender);
 
             // Categories needs two or more categories to say anything; Before / After needs a
             // game to compare against. The row shows when either is on offer.
@@ -484,9 +487,9 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         }
 
         /// <summary>
-        /// Settings and columns of a grid for the live dialog or the published image. A grid of
-        /// the package's own entries (<paramref name="packageOnly"/>) shows the capstone badge in
-        /// its status cell, as the published image does, since the entries carry no progress.
+        /// Settings and columns of a grid for the live dialog or the published image. The live
+        /// grid keeps View Achievements' status cell, which shows the package's own entries
+        /// (<paramref name="packageOnly"/>) as locked.
         /// </summary>
         private void ConfigureGrid(AchievementDataGridControl grid, bool packageOnly)
         {
@@ -574,9 +577,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                     _defaultStatusTemplate = liveStatusColumn.CellTemplate;
                 }
 
-                liveStatusColumn.CellTemplate = packageOnly
-                    ? (DataTemplate)FindResource("NeutralStatusTemplate")
-                    : _defaultStatusTemplate;
+                liveStatusColumn.CellTemplate = _defaultStatusTemplate;
             }
 
             if (!packageOnly)
