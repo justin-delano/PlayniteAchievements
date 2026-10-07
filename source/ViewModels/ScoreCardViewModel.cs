@@ -40,6 +40,7 @@ namespace PlayniteAchievements.ViewModels
         private Brush _nextTierAccentBrush;
         private Brush _accentBackgroundBrush;
         private Brush _accentTrackBrush;
+        private Brush _accentGlossBrush;
 
         private int _score;
         private int _level;
@@ -260,8 +261,8 @@ namespace PlayniteAchievements.ViewModels
             for (var i = 0; i < count; i++)
             {
                 var accent = isMaster
-                    ? CreateFrozenBrush(Lerp(sweepStart, sweepEnd, (i + 0.5d) / count))
-                    : AccentBrush;
+                    ? CreateGlossBrush(Lerp(sweepStart, sweepEnd, (i + 0.5d) / count))
+                    : _accentGlossBrush;
 
                 if (i < completed)
                 {
@@ -279,8 +280,8 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// The level in progress: a hard-stop gradient at the fill fraction, so one cell reads as a
-        /// partly-earned level rather than a separate widget.
+        /// The level in progress: the glossed fill drawn over the track up to the fill fraction, so
+        /// one cell reads as a partly-earned level rather than a separate widget.
         /// </summary>
         private static Brush CreateSegmentFill(double fraction, Brush accent, Brush track)
         {
@@ -294,18 +295,30 @@ namespace PlayniteAchievements.ViewModels
                 return accent;
             }
 
-            var accentColor = (accent as SolidColorBrush)?.Color ?? Colors.Gray;
-            var trackColor = (track as SolidColorBrush)?.Color ?? Colors.Transparent;
             var offset = Math.Max(0d, Math.Min(1d, fraction));
+            var drawing = new DrawingGroup();
+            drawing.Children.Add(new GeometryDrawing(track, null, new RectangleGeometry(new System.Windows.Rect(0, 0, 1, 1))));
+            drawing.Children.Add(new GeometryDrawing(accent, null, new RectangleGeometry(new System.Windows.Rect(0, 0, offset, 1))));
+            var brush = new DrawingBrush(drawing);
+            brush.Freeze();
+            return brush;
+        }
+
+        /// <summary>
+        /// A filled cell: lighter along the top edge and deeper along the bottom, around the
+        /// accent at the middle.
+        /// </summary>
+        private static Brush CreateGlossBrush(Color color)
+        {
             var brush = new LinearGradientBrush
             {
-                StartPoint = new System.Windows.Point(0, 0.5),
-                EndPoint = new System.Windows.Point(1, 0.5)
+                StartPoint = new System.Windows.Point(0.5, 0),
+                EndPoint = new System.Windows.Point(0.5, 1)
             };
-            brush.GradientStops.Add(new GradientStop(accentColor, 0));
-            brush.GradientStops.Add(new GradientStop(accentColor, offset));
-            brush.GradientStops.Add(new GradientStop(trackColor, offset));
-            brush.GradientStops.Add(new GradientStop(trackColor, 1));
+            brush.GradientStops.Add(new GradientStop(Lerp(color, Colors.White, 0.45d), 0));
+            brush.GradientStops.Add(new GradientStop(Lerp(color, Colors.White, 0.15d), 0.45));
+            brush.GradientStops.Add(new GradientStop(color, 0.55));
+            brush.GradientStops.Add(new GradientStop(Lerp(color, Colors.Black, 0.25d), 1));
             brush.Freeze();
             return brush;
         }
@@ -469,6 +482,7 @@ namespace PlayniteAchievements.ViewModels
             _accentBrush = CreateFrozenBrush(accent);
             _accentBackgroundBrush = CreateFrozenBrush(WithAlpha(accent, BackgroundAlpha));
             _accentTrackBrush = CreateFrozenBrush(WithAlpha(accent, TrackAlpha));
+            _accentGlossBrush = CreateGlossBrush(accent);
             _nextTierAccentBrush = CreateFrozenBrush(GetAccentColor(
                 string.IsNullOrWhiteSpace(_snapshot?.NextRank) ? Rank : _snapshot.NextRank));
         }
