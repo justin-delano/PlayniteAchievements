@@ -510,15 +510,11 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid KeyboardNavigation.DirectionalNavigation="Continue">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*" MinWidth="100"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-
-        <ItemsControl Grid.Column="0"
-                      ItemsSource="{Binding ControlBar.LeadingItems, ElementName=Root}"
+    <!-- Children in order: leading items, search box, filter items. With WrapItems the filters
+         drop below the search box when the bar is too narrow, and wrap across lines there. -->
+    <controls:ControlBarLayoutPanel KeyboardNavigation.DirectionalNavigation="Continue"
+                                    Wrap="{Binding (controls:GridControlBarControl.WrapItems), ElementName=Root}">
+        <ItemsControl ItemsSource="{Binding ControlBar.LeadingItems, ElementName=Root}"
                       VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -527,17 +523,35 @@
             </ItemsControl.ItemsPanel>
         </ItemsControl>
 
-        <ContentControl Grid.Column="1"
-                        Content="{Binding ControlBar.Search, ElementName=Root}"/>
+        <ContentControl Content="{Binding ControlBar.Search, ElementName=Root}"/>
 
-        <ItemsControl Grid.Column="2"
-                      ItemsSource="{Binding ControlBar.Items, ElementName=Root}"
+        <ItemsControl ItemsSource="{Binding ControlBar.Items, ElementName=Root}"
                       VerticalAlignment="Center">
+            <ItemsControl.Style>
+                <Style TargetType="ItemsControl">
+                    <Style.Triggers>
+                        <!-- Offsets the item margins below, so one line keeps its height. -->
+                        <DataTrigger Binding="{Binding (controls:GridControlBarControl.WrapItems), ElementName=Root}" Value="True">
+                            <Setter Property="Margin" Value="0,-2"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ItemsControl.Style>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Style.Triggers>
+                        <!-- Gap between wrapped lines. -->
+                        <DataTrigger Binding="{Binding (controls:GridControlBarControl.WrapItems), RelativeSource={RelativeSource AncestorType=controls:GridControlBarControl}}" Value="True">
+                            <Setter Property="Margin" Value="0,2"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"/>
+                    <WrapPanel Orientation="Horizontal"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
         </ItemsControl>
-    </Grid>
+    </controls:ControlBarLayoutPanel>
 </UserControl>
