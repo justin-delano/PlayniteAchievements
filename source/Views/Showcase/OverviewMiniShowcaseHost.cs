@@ -119,8 +119,9 @@ namespace PlayniteAchievements.Views.Showcase
         /// <summary>
         /// Which filters a widget leaves out and when it follows the selected game: each pie
         /// follows every filter except its own, the rarity and trophy pies switch to the selected
-        /// game when it has that data, and the timeline and calendar mark the unlock-day filter
-        /// they set rather than narrowing to it.
+        /// game when it has that data, and the timeline and calendar mark the unlock range they
+        /// set rather than narrowing to it. Every other widget follows the range: to the games
+        /// with unlocks in it, and to those unlocks where it counts achievements.
         /// </summary>
         private static (OverviewLinkedFilter Exclude, OverviewLinkedSelection Selection) LinkRule(
             ShowcaseWidgetInstanceSettings widget)
