@@ -906,16 +906,34 @@ namespace PlayniteAchievements.Services.Showcase
             return games.Take(count).ToList();
         }
 
+        /// <param name="trimToUnlocks">
+        /// Narrows the window to the days from the first unlock in it to the last, for a calendar
+        /// following a selection (the overview's mini-showcase) whose span is what matters, not
+        /// the run up to today.
+        /// </param>
         public static ShowcaseActivityCalendar BuildActivityCalendar(
             OverviewDataSnapshot snapshot,
             ShowcaseWidgetInstanceSettings instance,
-            DateTime endDate)
+            DateTime endDate,
+            bool trimToUnlocks = false)
         {
             var counts = NormalizeDailyCounts(snapshot);
             var range = ResolveDayRange(instance, endDate.Date, counts);
             var start = range.Start;
             // A custom window with a fixed end stops the calendar there rather than at today.
             endDate = range.End;
+            if (trimToUnlocks)
+            {
+                var active = counts
+                    .Where(pair => pair.Value > 0 && pair.Key >= start && pair.Key <= endDate)
+                    .Select(pair => pair.Key)
+                    .ToList();
+                if (active.Count > 0)
+                {
+                    start = active.Min();
+                    endDate = active.Max();
+                }
+            }
             // Weeks render as Sunday-first columns, so the window starts on a Sunday.
             while (start.DayOfWeek != DayOfWeek.Sunday)
             {
