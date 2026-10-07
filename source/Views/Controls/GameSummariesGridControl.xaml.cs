@@ -24,17 +24,8 @@ namespace PlayniteAchievements.Views.Controls
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
 
-        // Tracing only: rows are realized during measure, so a filter that swaps the rows shows
-        // its grid cost here, per grid, inside the render pass that no other scope covers.
-        private static readonly ILogger PerfLogger = Services.Logging.PluginLogger.GetLogger(nameof(GameSummariesGridControl));
-
-        protected override System.Windows.Size MeasureOverride(System.Windows.Size constraint)
-        {
-            using (Common.PerfScope.Start(PerfLogger, "Grid.Measure", thresholdMs: 10, context: ColumnSettingsKey))
-            {
-                return base.MeasureOverride(constraint);
-            }
-        }
+        // Tracing only: how many rows each layout pass prepares, per grid.
+        private RowPrepareCounter _rowPrepareCounter;
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
         private PersistedSettingsSubscription _persistedSubscription;
@@ -880,6 +871,9 @@ namespace PlayniteAchievements.Views.Controls
 
         private void GameSummariesGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
+            (_rowPrepareCounter ?? (_rowPrepareCounter = new RowPrepareCounter(
+                Services.Logging.PluginLogger.GetLogger(nameof(GameSummariesGridControl)),
+                ColumnSettingsKey))).RowPrepared(Dispatcher);
             ApplyFixedRowHeight(e.Row);
             ApplyTailToggleSlack(e.Row);
         }
