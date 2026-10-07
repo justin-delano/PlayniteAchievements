@@ -490,39 +490,75 @@
                         Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
             </DataTemplate>
 
-            <!-- A from-to day range: the plugin's themed date pickers either side of a dash, and a
-                 clear button while either end is set. An empty end leaves that side open. -->
+            <!-- A from-to day range, shaped like the other filters: a dropdown button reading the
+                 range (or "Unlocked" while there is none) whose popup holds the plugin's themed
+                 date pickers and a clear button. An empty end leaves that side open. -->
             <DataTemplate DataType="{x:Type vm:GridDateRangeFilter}">
-                <StackPanel Orientation="Horizontal"
-                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                            VerticalAlignment="Center"
-                            Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
-                    <DatePicker Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
-                                SelectedDate="{Binding From, Mode=TwoWay}"
-                                ToolTip="{DynamicResource LOCPlayAch_DateRange_From}"
-                                Height="{StaticResource PlayAch.Size.Control.Height}"
-                                Width="122"
-                                VerticalAlignment="Center"/>
-                    <TextBlock Text="&#x2013;"
-                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               Margin="6,0"
-                               VerticalAlignment="Center"/>
-                    <DatePicker Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
-                                SelectedDate="{Binding To, Mode=TwoWay}"
-                                ToolTip="{DynamicResource LOCPlayAch_DateRange_To}"
-                                Height="{StaticResource PlayAch.Size.Control.Height}"
-                                Width="122"
-                                VerticalAlignment="Center"/>
-                    <Button Style="{StaticResource GridActionButtonStyle}"
-                            Content="&#x00D7;"
-                            Click="DateRangeClear_Click"
+                <Grid Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                      VerticalAlignment="Center"
+                      Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
+                    <Button x:Name="RangeButton"
+                            Style="{StaticResource AchievementSelectorButtonStyle}"
+                            Content="{Binding DisplayText}"
+                            Click="DateRange_Click"
+                            Tag="{Binding ElementName=RangePopup}"
+                            Width="{Binding Width}"
                             Height="{StaticResource PlayAch.Size.Control.Height}"
-                            Padding="8,0"
-                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                            VerticalAlignment="Center"
-                            ToolTip="{DynamicResource LOCPlayAch_Button_Clear}"
-                            Visibility="{Binding HasRange, Converter={StaticResource GridControlBarBoolToVis}}"/>
-                </StackPanel>
+                            VerticalAlignment="Center"/>
+                    <Popup x:Name="RangePopup"
+                           PlacementTarget="{Binding ElementName=RangeButton}"
+                           Placement="Bottom"
+                           VerticalOffset="2"
+                           StaysOpen="False"
+                           AllowsTransparency="True"
+                           Closed="DateRangePopup_Closed">
+                        <Border Background="{DynamicResource PlayAch.Brush.PopupSurface}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                Padding="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="150"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_DateRange_From}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,6"/>
+                                <DatePicker Grid.Column="1"
+                                            Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
+                                            SelectedDate="{Binding From, Mode=TwoWay}"
+                                            Height="{StaticResource PlayAch.Size.Control.Height}"
+                                            Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="1"
+                                           Text="{DynamicResource LOCPlayAch_DateRange_To}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+                                <DatePicker Grid.Row="1"
+                                            Grid.Column="1"
+                                            Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
+                                            SelectedDate="{Binding To, Mode=TwoWay}"
+                                            Height="{StaticResource PlayAch.Size.Control.Height}"/>
+                                <Button Grid.Row="2"
+                                        Grid.ColumnSpan="2"
+                                        Style="{StaticResource GridActionButtonStyle}"
+                                        Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                        Click="DateRangeClear_Click"
+                                        HorizontalAlignment="Right"
+                                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                                        Margin="0,8,0,0"
+                                        IsEnabled="{Binding HasRange}"/>
+                            </Grid>
+                        </Border>
+                    </Popup>
+                </Grid>
             </DataTemplate>
 
             <DataTemplate DataType="{x:Type vm:GridModeToggle}">
