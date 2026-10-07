@@ -113,7 +113,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             }
         }
 
-        private async void ImagePickTarget_Picked(object sender, ImagePickedEventArgs e)
+        private async void ImagePickTarget_Picked(object sender, FilePickedEventArgs e)
         {
             var viewModel = ViewModel;
             if (viewModel == null || !TryResolveSlot(sender as FrameworkElement, out var slot))
@@ -121,7 +121,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 return;
             }
 
-            await viewModel.ApplyImageAsync(slot, e.ImageSource);
+            await viewModel.ApplyImageAsync(slot, e.PickedSource);
         }
 
         private void ApplyFontFamilyToAllLines_Click(object sender, RoutedEventArgs e)
