@@ -135,6 +135,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private int _columns = 1;
         private bool _isFeatured = true;
         private double _maxCardWidth = 360;
+        private ScoreCardBadgePosition _badgePosition = ScoreCardBadgePosition.Left;
 
         // What the cards were last built from. Rebuilding the collection makes LiveCharts throw
         // away and re-plot every series, so an unrelated refresh (a pin toggle, another widget's
@@ -158,6 +159,15 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public double MaxCardWidth { get => _maxCardWidth; private set => SetValue(ref _maxCardWidth, value); }
 
+        /// <summary>
+        /// Widget-level so flipping the side re-binds the cards instead of rebuilding them.
+        /// </summary>
+        public ScoreCardBadgePosition BadgePosition
+        {
+            get => _badgePosition;
+            private set => SetValue(ref _badgePosition, value);
+        }
+
         protected override void Refresh()
         {
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
@@ -171,6 +181,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             Columns = count > 1 && !tall ? 2 : 1;
             IsFeatured = true;
             MaxCardWidth = Density == WidgetViewportDensity.Expanded ? 440 : 360;
+            BadgePosition = ShowcaseWidgetOptions.GetScoreBadgePosition(Projection?.Instance);
 
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
             // Two points is the least that draws a line at all; the option then decides which
