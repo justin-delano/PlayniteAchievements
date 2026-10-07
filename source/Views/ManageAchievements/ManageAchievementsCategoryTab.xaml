@@ -216,7 +216,7 @@
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementStatusTemplate}" />
 
-                <DataGridTemplateColumn Width="72" MinWidth="44" Width="160" CanUserResize="True"
+                <DataGridTemplateColumn Width="72" MinWidth="44" MaxWidth="160" CanUserResize="True"
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}" />
 
