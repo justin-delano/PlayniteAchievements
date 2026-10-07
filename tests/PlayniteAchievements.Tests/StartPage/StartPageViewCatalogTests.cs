@@ -11,91 +11,90 @@ namespace PlayniteAchievements.Tests.StartPage
     public class StartPageViewCatalogTests
     {
         [TestMethod]
-        public void Views_PreserveOriginalNineIdsAndRegisterShowcaseWidgets()
+        public void Views_OfferOneVisibleEntryPerVisibleShowcaseWidgetInCatalogOrder()
         {
-            var views = StartPageViewCatalog.Views;
+            var visible = StartPageViewCatalog.Views.Where(view => !view.Hidden).ToList();
+            var showcase = ShowcaseWidgetCatalog.Definitions.Where(definition => !definition.Hidden).ToList();
 
-            // 8 original views plus the 8 shared showcase views. PinnedAchievements,
-            // FavoriteGames, and GameMosaic are retired (see ShowcaseWidgetKind), so they
-            // no longer contribute views of their own.
-            Assert.AreEqual(16, views.Count);
+            CollectionAssert.AreEqual(
+                showcase.Select(definition => (ShowcaseWidgetKind?)definition.Kind).ToArray(),
+                visible.Select(view => view.ShowcaseWidgetKind).ToArray());
+            for (var i = 0; i < showcase.Count; i++)
+            {
+                Assert.AreEqual(showcase[i].NameKey, visible[i].NameKey);
+                Assert.AreEqual(showcase[i].AllowMultipleInstances, visible[i].AllowMultipleInstances);
+                Assert.IsTrue(visible[i].HasSettings);
+            }
+        }
+
+        [TestMethod]
+        public void Views_OfferedEntriesReuseExistingViewIds()
+        {
             CollectionAssert.AreEqual(
                 new[]
                 {
-                    StartPageViewCatalog.GameSummariesGridViewId,
-                    StartPageViewCatalog.RecentUnlocksGridViewId,
+                    StartPageViewCatalog.ShowcaseProfileViewId,
+                    StartPageViewCatalog.ShowcaseDualScoresViewId,
                     StartPageViewCatalog.CompletedGamesPieViewId,
-                    StartPageViewCatalog.ProviderPieViewId,
-                    StartPageViewCatalog.RarityPieViewId,
-                    StartPageViewCatalog.TrophyPieViewId,
-                    StartPageViewCatalog.CollectionScoreCardViewId,
-                    StartPageViewCatalog.PrestigeScoreCardViewId
+                    StartPageViewCatalog.ShowcaseTimelineViewId,
+                    StartPageViewCatalog.ShowcaseStatisticsViewId,
+                    StartPageViewCatalog.ShowcaseIconMosaicViewId,
+                    StartPageViewCatalog.ShowcaseScreenshotSlideshowViewId,
+                    StartPageViewCatalog.RecentUnlocksGridViewId,
+                    StartPageViewCatalog.GameSummariesGridViewId,
+                    StartPageViewCatalog.ShowcaseActivityCalendarViewId
                 },
-                views.Take(8).Select(view => view.ViewId).ToArray());
-            CollectionAssert.IsSubsetOf(
-                new[]
-                {
-                    StartPageWidgetKind.GameSummariesGrid,
-                    StartPageWidgetKind.RecentUnlocksGrid,
-                    StartPageWidgetKind.CompletedGamesPie,
-                    StartPageWidgetKind.ProviderPie,
-                    StartPageWidgetKind.RarityPie,
-                    StartPageWidgetKind.TrophyPie,
-                    StartPageWidgetKind.CollectionScoreCard,
-                    StartPageWidgetKind.PrestigeScoreCard
-                },
-                views.Select(view => view.WidgetKind).ToArray());
+                StartPageViewCatalog.Views.Where(view => !view.Hidden).Select(view => view.ViewId).ToArray());
+        }
 
-            // The grid and pie views ride the showcase widget path under their original ids.
-            Assert.IsTrue(views
-                .Where(view => view.ViewId == StartPageViewCatalog.RecentUnlocksGridViewId ||
-                    view.ViewId == StartPageViewCatalog.GameSummariesGridViewId ||
-                    view.ViewId == StartPageViewCatalog.CompletedGamesPieViewId ||
-                    view.ViewId == StartPageViewCatalog.ProviderPieViewId ||
-                    view.ViewId == StartPageViewCatalog.RarityPieViewId ||
-                    view.ViewId == StartPageViewCatalog.TrophyPieViewId)
-                .All(view => view.ShowcaseWidgetKind.HasValue &&
-                    view.HasSettings &&
-                    view.AllowMultipleInstances));
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseTimelineViewId)
-                .AllowMultipleInstances);
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseNativePointsViewId)
-                .HasSettings);
-            Assert.IsFalse(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseProfileViewId)
-                .AllowMultipleInstances);
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseDualScoresViewId)
-                .HasSettings);
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseActivityCalendarViewId)
-                .HasSettings);
-            // Parked views: resolvable for already-placed widgets but omitted from the add list.
-            // The two standalone score cards ride the showcase Scores widget, and the visible
-            // Score Card entry is the former dual-score view.
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseNativePointsViewId)
-                .Hidden);
-            foreach (var parked in new[]
+        [TestMethod]
+        public void Views_EveryShowcaseKindHasADedicatedStartPageKind()
+        {
+            foreach (var definition in ShowcaseWidgetCatalog.Definitions)
             {
-                StartPageViewCatalog.CollectionScoreCardViewId,
-                StartPageViewCatalog.PrestigeScoreCardViewId
-            })
-            {
-                var view = views.Single(candidate => candidate.ViewId == parked);
-                Assert.IsTrue(view.Hidden);
-                Assert.AreEqual(ShowcaseWidgetKind.Scores, view.ShowcaseWidgetKind);
-                Assert.IsTrue(view.HasSettings);
+                var view = StartPageViewCatalog.Views.First(candidate =>
+                    candidate.ShowcaseWidgetKind == definition.Kind);
+                Assert.IsTrue(view.WidgetKind.HasValue, definition.Kind.ToString());
             }
+        }
 
-            Assert.AreEqual(3, views.Count(view => view.Hidden));
-            Assert.AreEqual(1, views.Count(view =>
-                !view.Hidden && view.ShowcaseWidgetKind == ShowcaseWidgetKind.Scores));
-            Assert.IsTrue(views.Single(view =>
-                view.ViewId == StartPageViewCatalog.ShowcaseDualScoresViewId)
-                .AllowMultipleInstances);
+        [DataTestMethod]
+        [DataRow(StartPageViewCatalog.GameSummariesGridViewId, StartPageWidgetKind.GameSummariesGrid, ShowcaseWidgetKind.GameSummaries, false)]
+        [DataRow(StartPageViewCatalog.RecentUnlocksGridViewId, StartPageWidgetKind.RecentUnlocksGrid, ShowcaseWidgetKind.RecentAchievements, false)]
+        [DataRow(StartPageViewCatalog.CompletedGamesPieViewId, StartPageWidgetKind.CompletedGamesPie, ShowcaseWidgetKind.Pie, false)]
+        [DataRow(StartPageViewCatalog.ProviderPieViewId, StartPageWidgetKind.ProviderPie, ShowcaseWidgetKind.Pie, true)]
+        [DataRow(StartPageViewCatalog.RarityPieViewId, StartPageWidgetKind.RarityPie, ShowcaseWidgetKind.Pie, true)]
+        [DataRow(StartPageViewCatalog.TrophyPieViewId, StartPageWidgetKind.TrophyPie, ShowcaseWidgetKind.Pie, true)]
+        [DataRow(StartPageViewCatalog.CollectionScoreCardViewId, StartPageWidgetKind.CollectionScoreCard, ShowcaseWidgetKind.Scores, true)]
+        [DataRow(StartPageViewCatalog.PrestigeScoreCardViewId, StartPageWidgetKind.PrestigeScoreCard, ShowcaseWidgetKind.Scores, true)]
+        [DataRow(StartPageViewCatalog.ShowcaseProfileViewId, StartPageWidgetKind.ShowcaseProfile, ShowcaseWidgetKind.Profile, false)]
+        [DataRow(StartPageViewCatalog.ShowcaseDualScoresViewId, StartPageWidgetKind.ShowcaseDualScores, ShowcaseWidgetKind.Scores, false)]
+        [DataRow(StartPageViewCatalog.ShowcaseTimelineViewId, StartPageWidgetKind.ShowcaseTimeline, ShowcaseWidgetKind.Timeline, false)]
+        [DataRow(StartPageViewCatalog.ShowcaseStatisticsViewId, StartPageWidgetKind.ShowcaseStatistics, ShowcaseWidgetKind.Statistics, false)]
+        [DataRow(StartPageViewCatalog.ShowcaseNativePointsViewId, StartPageWidgetKind.ShowcaseNativePoints, ShowcaseWidgetKind.NativePoints, true)]
+        [DataRow(StartPageViewCatalog.ShowcaseIconMosaicViewId, StartPageWidgetKind.ShowcaseIconMosaic, ShowcaseWidgetKind.IconMosaic, false)]
+        [DataRow(StartPageViewCatalog.ShowcaseScreenshotSlideshowViewId, StartPageWidgetKind.ShowcaseScreenshotSlideshow, ShowcaseWidgetKind.ScreenshotSlideshow, false)]
+        [DataRow(StartPageViewCatalog.ShowcaseActivityCalendarViewId, StartPageWidgetKind.ShowcaseActivityCalendar, ShowcaseWidgetKind.ActivityCalendar, false)]
+        public void TryGetDefinition_ResolvesEveryPlacedViewId(
+            string viewId,
+            StartPageWidgetKind widgetKind,
+            ShowcaseWidgetKind showcaseKind,
+            bool hidden)
+        {
+            Assert.IsTrue(StartPageViewCatalog.TryGetDefinition(viewId, out var definition));
+            Assert.AreEqual(viewId, definition.ViewId);
+            Assert.AreEqual(widgetKind, definition.WidgetKind);
+            Assert.AreEqual(showcaseKind, definition.ShowcaseWidgetKind);
+            Assert.AreEqual(hidden, definition.Hidden);
+            Assert.IsTrue(definition.HasSettings);
+        }
+
+        [TestMethod]
+        public void Views_HaveDistinctIds()
+        {
+            var views = StartPageViewCatalog.Views;
+
+            Assert.AreEqual(16, views.Count);
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
         }
 
