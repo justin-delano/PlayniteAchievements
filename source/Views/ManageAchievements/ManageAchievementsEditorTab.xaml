@@ -71,21 +71,27 @@
 
             <!-- The resting face of a grid text editor: the same box as GridEditorTextBoxStyle with
                  a TextBlock inside, so a row costs a border and a text run rather than a TextBox.
-                 EditOnClickPresenter swaps the real box in on a press. The text margin is the
-                 box's padding plus the TextBox content host's own 2px inset, so the text does
-                 not move when the box takes over. -->
+                 EditOnClickPresenter swaps the real box in on a press. Corner, hover border and font
+                 come from the same tokens as PlayAch.TextBox.BaseStyle, and the text margin is the
+                 box's padding plus the TextBox content host's own 2px inset (measured: text at 9,5
+                 in both), so nothing moves when the box takes over. -->
             <Style x:Key="GridEditorDisplayBorderStyle" TargetType="Border">
                 <Setter Property="MinHeight" Value="26" />
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{StaticResource PlayAch.Radius.Small}" />
+                <Setter Property="SnapsToDevicePixels" Value="True" />
                 <Setter Property="Cursor" Value="IBeam" />
                 <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}" />
+                    </Trigger>
                     <!-- A cell whose editor would be disabled: the presenter takes the IsEnabled
-                         binding, so presses never reach it, and the face dims to say so. -->
+                         binding, so presses never reach it, and the face dims as the box would. -->
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Secondary}" />
+                        <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Disabled}" />
                         <Setter Property="Cursor" Value="Arrow" />
                     </Trigger>
                 </Style.Triggers>
@@ -96,12 +102,47 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="TextWrapping" Value="Wrap" />
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}" />
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}" />
             </Style>
 
-            <Style x:Key="GridEditorDisplayValueStyle" TargetType="TextBlock" BasedOn="{StaticResource GridEditorDisplayTextStyle}">
-                <Setter Property="Margin" Value="6,0" />
+            <!-- The unlock-time cell's resting faces stand in for a DatePicker, a TextBox and a
+                 ComboBox in their PlayAch base styles, so they take those controls' input chrome:
+                 the input brushes, the control height and the small corner. Padding 0,7 gives the
+                 measured 32px box with the text at y=8, as the real editors have it. -->
+            <Style x:Key="GridInputDisplayBorderStyle" TargetType="Border">
+                <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Control.Height}" />
+                <Setter Property="Padding" Value="0,7" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Input.Background}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Input.Border}" />
+                <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}" />
+                <Setter Property="CornerRadius" Value="{StaticResource PlayAch.Radius.Small}" />
+                <Setter Property="SnapsToDevicePixels" Value="True" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="GridInputDisplayTextStyle" TargetType="TextBlock">
+                <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="TextWrapping" Value="NoWrap" />
-                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}" />
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}" />
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}" />
+            </Style>
+
+            <!-- The drop-down chevron the DatePicker and ComboBox base styles draw. -->
+            <Style x:Key="GridInputDisplayChevronStyle" TargetType="TextBlock">
+                <Setter Property="Text" Value="6" />
+                <Setter Property="FontFamily" Value="Marlett" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="TextAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Glyph}" />
             </Style>
 
             <!-- Sits inside the name and description cells, so it is sized to the editor text box
@@ -1130,26 +1171,40 @@
                                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                                             <DataTemplate>
                                                                 <StackPanel Orientation="Horizontal">
-                                                                    <Border Style="{StaticResource GridEditorDisplayBorderStyle}"
+                                                                    <!-- Text and chevron placed where the DatePicker draws them: text at x=7, a 23px
+                                                                         button on the right. -->
+                                                                    <Border Style="{StaticResource GridInputDisplayBorderStyle}"
                                                                             Width="118"
-                                                                            Margin="0,0,6,0"
-                                                                            Cursor="Hand">
-                                                                        <TextBlock Text="{Binding UnlockDateText}"
-                                                                                   Style="{StaticResource GridEditorDisplayValueStyle}"
-                                                                                   HorizontalAlignment="Left" />
+                                                                            Margin="0,0,6,0">
+                                                                        <DockPanel>
+                                                                            <TextBlock DockPanel.Dock="Right"
+                                                                                       Width="23"
+                                                                                       Style="{StaticResource GridInputDisplayChevronStyle}" />
+                                                                            <TextBlock Text="{Binding UnlockDateText}"
+                                                                                       Margin="6,0,0,0"
+                                                                                       Style="{StaticResource GridInputDisplayTextStyle}" />
+                                                                        </DockPanel>
                                                                     </Border>
-                                                                    <Border Style="{StaticResource GridEditorDisplayBorderStyle}"
-                                                                            Width="62">
+                                                                    <Border Style="{StaticResource GridInputDisplayBorderStyle}"
+                                                                            Width="62"
+                                                                            Cursor="IBeam">
                                                                         <TextBlock Text="{Binding TimeText}"
-                                                                                   Style="{StaticResource GridEditorDisplayValueStyle}" />
+                                                                                   HorizontalAlignment="Center"
+                                                                                   Style="{StaticResource GridInputDisplayTextStyle}" />
                                                                     </Border>
-                                                                    <Border Style="{StaticResource GridEditorDisplayBorderStyle}"
+                                                                    <!-- The ComboBox's content site starts at x=6 and its chevron sits in 20px, 2px in. -->
+                                                                    <Border Style="{StaticResource GridInputDisplayBorderStyle}"
                                                                             Width="74"
-                                                                            Margin="2,0,0,0"
-                                                                            Cursor="Hand">
-                                                                        <TextBlock Text="{Binding SelectedTimeModeText}"
-                                                                                   Style="{StaticResource GridEditorDisplayValueStyle}"
-                                                                                   HorizontalAlignment="Left" />
+                                                                            Margin="2,0,0,0">
+                                                                        <DockPanel>
+                                                                            <TextBlock DockPanel.Dock="Right"
+                                                                                       Width="20"
+                                                                                       Margin="0,0,2,0"
+                                                                                       Style="{StaticResource GridInputDisplayChevronStyle}" />
+                                                                            <TextBlock Text="{Binding SelectedTimeModeText}"
+                                                                                       Margin="5,0,0,0"
+                                                                                       Style="{StaticResource GridInputDisplayTextStyle}" />
+                                                                        </DockPanel>
                                                                     </Border>
                                                                 </StackPanel>
                                                             </DataTemplate>
