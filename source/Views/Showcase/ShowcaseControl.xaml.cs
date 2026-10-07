@@ -2255,7 +2255,9 @@ namespace PlayniteAchievements.Views.Showcase
                     snapshot,
                     Layout,
                     widget,
-                    gridOptions: _settings.Persisted?.GridOptions);
+                    gridOptions: _settings.Persisted?.GridOptions,
+                    // A strip's calendar spans only the weeks its unlocks cover, not the run up to today.
+                    trimCalendarToUnlocks: _host.IsStrip);
                 _host.Decorate(projection);
                 build?.SetContext(context + " " + DescribeProjection(projection));
             }
