@@ -154,11 +154,11 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
-        private void DismissChip_Click(object sender, RoutedEventArgs e)
+        private void DateRangeClear_Click(object sender, RoutedEventArgs e)
         {
-            if ((sender as FrameworkElement)?.DataContext is GridDismissChip item)
+            if ((sender as FrameworkElement)?.DataContext is GridDateRangeFilter item)
             {
-                item.Dismiss();
+                item.Clear();
             }
         }
 
