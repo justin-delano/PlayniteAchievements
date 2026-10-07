@@ -374,6 +374,7 @@ namespace PlayniteAchievements.Models
         internal const string PinCollectionId = "PinCollectionId";
         private const string Content = "Content";
         private const string ProfileStats = "ProfileStats";
+        private const string StatisticsStats = "StatisticsStats";
         private const string ProfileMedals = "ProfileMedals";
         private const string ProfileFullBleed = "ProfileFullBleed";
         private const string ProfileLayoutOption = "ProfileLayout";
@@ -442,6 +443,33 @@ namespace PlayniteAchievements.Models
                 (keys ?? Enumerable.Empty<string>())
                     .Where(key => !string.IsNullOrWhiteSpace(key))
                     .Select(key => key.Trim()));
+        }
+
+        /// <summary>
+        /// Keys of the statistics a Statistics widget shows, in order; null while unset, which
+        /// means every statistic.
+        /// </summary>
+        public static IReadOnlyList<string> GetStatisticsKeys(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (settings?.Options == null || !settings.Options.TryGetValue(StatisticsStats, out var raw))
+            {
+                return null;
+            }
+
+            return (raw ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(key => key.Trim())
+                .Where(key => key.Length > 0)
+                .ToList();
+        }
+
+        public static void SetStatisticsKeys(ShowcaseWidgetInstanceSettings settings, IEnumerable<string> keys)
+        {
+            settings?.SetOption(
+                StatisticsStats,
+                string.Join(",", (keys ?? Enumerable.Empty<string>())
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())));
         }
 
         public static string GetPinCollectionId(ShowcaseWidgetInstanceSettings settings)
