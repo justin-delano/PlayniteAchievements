@@ -168,20 +168,25 @@ namespace PlayniteAchievements.Views.Controls
             _tooltip.SetBinding(CartesianChartTooltip.HeaderLabelsProperty, Bind(nameof(TooltipLabels)));
             Chart.DataTooltip = _tooltip;
 
-            // One column-wide band behind the bars, shown only while a column is selected. A faint
-            // neutral wash rather than the accent, which is the bars' own color.
+            // A selected column stands out by the others fading. Stacked columns (the platform
+            // split) cannot be colored per column, so there the selected one gets an outline
+            // instead: a column-wide section with a stroke and no fill.
             _highlight = new AxisSection
             {
                 SectionWidth = 1,
-                Opacity = 0.12,
+                StrokeThickness = 1.5,
+                Fill = Brushes.Transparent,
                 Visibility = Visibility.Collapsed
             };
-            _highlight.SetResourceReference(AxisSection.FillProperty, "PlayAch.Brush.Text");
+            _highlight.SetResourceReference(AxisSection.StrokeProperty, "PlayAch.Brush.Accent");
             _axisX.Sections.Add(_highlight);
             Chart.DataClick += OnChartDataClick;
 
             SizeChanged += OnSizeChanged;
         }
+
+        /// <summary>How strongly the unselected columns fade while one is selected.</summary>
+        private const double UnselectedColumnOpacity = 0.3;
 
         public int HighlightedIndex
         {
@@ -192,11 +197,52 @@ namespace PlayniteAchievements.Views.Controls
         private static void OnHighlightedIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var chart = (UnlockTimelineChart)d;
-            var index = (int)e.NewValue;
-            // A column's value sits at its index and its bar is centred there, so the band starts
-            // half a column before it.
-            chart._highlight.Value = Math.Max(0, index) - 0.5;
-            chart._highlight.Visibility = index >= 0 ? Visibility.Visible : Visibility.Collapsed;
+            chart.ApplyHighlight();
+            if (chart.IsLoaded)
+            {
+                chart.Chart.Update(false, true);
+            }
+        }
+
+        // Runs again after every data pass, since a pass can replace the series. A column's value
+        // sits at its index with its bar centred there, so the outline starts half a column before.
+        private void ApplyHighlight()
+        {
+            var index = HighlightedIndex;
+            var stacked = false;
+            foreach (var series in Series ?? new SeriesCollection())
+            {
+                if (series is StackedColumnSeries)
+                {
+                    stacked = true;
+                    continue;
+                }
+
+                if (series is ColumnSeries column)
+                {
+                    column.Configuration = index < 0
+                        ? null
+                        : LiveCharts.Configurations.Mappers.Xy<int>()
+                            .X((value, i) => i)
+                            .Y(value => value)
+                            .Fill((value, i) => i == index ? null : FadedFill(column));
+                }
+            }
+
+            _highlight.Value = Math.Max(0, index) - 0.5;
+            _highlight.Visibility = index >= 0 && stacked ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private static Brush FadedFill(ColumnSeries column)
+        {
+            var brush = (column.Fill as Brush)?.CloneCurrentValue() ?? new SolidColorBrush(Colors.Gray);
+            brush.Opacity = UnselectedColumnOpacity;
+            if (brush.CanFreeze)
+            {
+                brush.Freeze();
+            }
+
+            return brush;
         }
 
         private void OnChartDataClick(object sender, ChartPoint point)
@@ -323,6 +369,7 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (d is UnlockTimelineChart chart && chart.IsLoaded)
             {
+                chart.ApplyHighlight();
                 // force: true runs the updater tick now; the value edits before this only armed
                 // its timer, so without it the new bars appear a beat after the click.
                 chart.Chart.Update(false, true);
