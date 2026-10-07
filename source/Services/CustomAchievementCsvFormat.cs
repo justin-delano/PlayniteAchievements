@@ -9,9 +9,9 @@ using System.Text;
 namespace PlayniteAchievements.Services
 {
     /// <summary>
-    /// One achievement as a CSV line: the editor's spreadsheet export, and what the reader takes
-    /// from a custom-achievements .pa package, whose CSV adds two icon columns. Every value is
-    /// optional; a blank cell reads back as "leave unchanged".
+    /// One achievement as a CSV line: the editor's spreadsheet export, and the CSV inside a
+    /// custom-achievements .pa package. Every value is optional; a blank cell reads back as
+    /// "leave unchanged".
     /// </summary>
     public sealed class CustomAchievementCsvRow
     {
@@ -48,6 +48,10 @@ namespace PlayniteAchievements.Services
 
         public DateTime? UnlockTimeUtc { get; set; }
 
+        /// <summary>
+        /// A web URL or a local file. A relative path read from a file is resolved against that
+        /// file's folder.
+        /// </summary>
         public string UnlockedIconPath { get; set; }
 
         public string LockedIconPath { get; set; }
@@ -70,7 +74,7 @@ namespace PlayniteAchievements.Services
     public static class CustomAchievementCsvFormat
     {
         public const string Header =
-            "ID,Title,Description,Points,Trophy Type,Hidden,Rarity,Category,Progress,Progress Total,Unlocked,Unlock Time";
+            "ID,Title,Description,Points,Trophy Type,Hidden,Rarity,Category,Progress,Progress Total,Unlocked,Unlock Time,Unlocked Icon,Locked Icon";
 
         public const string UnlockTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
@@ -108,7 +112,9 @@ namespace PlayniteAchievements.Services
                     ? DateTime.SpecifyKind(row.UnlockTimeUtc.Value, DateTimeKind.Utc)
                         .ToLocalTime()
                         .ToString(UnlockTimeFormat, CultureInfo.InvariantCulture)
-                    : null
+                    : null,
+                row.UnlockedIconPath,
+                row.LockedIconPath
             };
 
             return string.Join(",", fields.Select(Escape));
