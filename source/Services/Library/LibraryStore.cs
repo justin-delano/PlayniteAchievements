@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Newtonsoft.Json;
-using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Notifications;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.Services.Sound;
@@ -14,7 +13,9 @@ namespace PlayniteAchievements.Services.Library
 {
     /// <summary>
     /// The library index: one entry per preset file in the preset folders, plus Workshop items
-    /// that have no stored package. The preset folders stay the file layer; the index at
+    /// that have no stored package (showcase pages installed before the library). Workshop game
+    /// data is not a library item: it is recorded on each game. The preset folders stay the file
+    /// layer; the index at
     /// <c>UserData\library\library.json</c> adds identity, origin and version. The first read
     /// reconciles the index with the folders: unindexed files become local items, entries whose
     /// file is gone are dropped (their ids collect in <see cref="TakeDroppedIds"/> so links to
@@ -25,7 +26,6 @@ namespace PlayniteAchievements.Services.Library
         public const string DirectoryName = "library";
         public const string IndexFileName = "library.json";
         public const string ShowcaseFolderName = "showcase_presets";
-        public const string GameDataFolderName = "gamedata_presets";
 
         private const int SchemaVersion = 1;
 
@@ -40,8 +40,7 @@ namespace PlayniteAchievements.Services.Library
                 [LibraryItemKind.Frame] = new KindLayout(
                     Path.Combine("notification_style_presets", "frame"),
                     NotificationStylePortableStore.FramePackageFileExtension),
-                [LibraryItemKind.ShowcasePage] = new KindLayout(ShowcaseFolderName, ShowcasePagePortableStore.PackageFileExtension),
-                [LibraryItemKind.GameData] = new KindLayout(GameDataFolderName, GameCustomDataStore.PortableFileExtension)
+                [LibraryItemKind.ShowcasePage] = new KindLayout(ShowcaseFolderName, ShowcasePagePortableStore.PackageFileExtension)
             };
 
         private readonly string _root;
@@ -50,6 +49,7 @@ namespace PlayniteAchievements.Services.Library
         private readonly Func<DateTime> _utcNow;
         private readonly object _sync = new object();
         private readonly List<string> _pendingDropped = new List<string>();
+        private readonly List<LibraryItem> _legacyGameData = new List<LibraryItem>();
         private List<LibraryItem> _items;
 
         private sealed class KindLayout
@@ -304,6 +304,22 @@ namespace PlayniteAchievements.Services.Library
             }
         }
 
+        /// <summary>
+        /// The game data items an index from before game data moved onto the games still listed.
+        /// The load leaves them out of the index; the migration copies their names into the games'
+        /// links. Returned once.
+        /// </summary>
+        public IReadOnlyList<LibraryItem> TakeLegacyGameDataItems()
+        {
+            lock (_sync)
+            {
+                EnsureLoaded();
+                var items = _legacyGameData.Select(item => item.Clone()).ToList();
+                _legacyGameData.Clear();
+                return items;
+            }
+        }
+
         /// <summary>Lowercase hex SHA-256 of a file, the format Workshop installs record.</summary>
         public static string HashFile(string path)
         {
@@ -329,6 +345,7 @@ namespace PlayniteAchievements.Services.Library
         {
             _items = new List<LibraryItem>();
             var hadIndex = File.Exists(_indexPath);
+            var droppedLegacy = false;
             if (hadIndex)
             {
                 try
@@ -337,7 +354,18 @@ namespace PlayniteAchievements.Services.Library
                     var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var item in index?.Items ?? new List<LibraryItem>())
                     {
-                        if (item != null && !string.IsNullOrWhiteSpace(item.Id) && Layouts.ContainsKey(item.Kind) && seen.Add(item.Id))
+                        if (item == null || string.IsNullOrWhiteSpace(item.Id))
+                        {
+                            continue;
+                        }
+
+                        if (item.Kind == LibraryItemKind.GameData)
+                        {
+                            // Game data lives on the games now; the migration takes these.
+                            _legacyGameData.Add(item);
+                            droppedLegacy = true;
+                        }
+                        else if (Layouts.ContainsKey(item.Kind) && seen.Add(item.Id))
                         {
                             _items.Add(item);
                         }
@@ -351,7 +379,7 @@ namespace PlayniteAchievements.Services.Library
             }
 
             var result = ReconcileLocked();
-            if (result.HasChanges || !hadIndex)
+            if (result.HasChanges || !hadIndex || droppedLegacy)
             {
                 Save();
             }
