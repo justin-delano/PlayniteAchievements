@@ -86,10 +86,10 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>
-        /// Raised after a submission is recorded, on the thread that recorded it. Every Workshop
-        /// list shares this store, so a share made from one reaches the others through this
-        /// event. Linking submissions and updating their state stay silent: both run while a list
-        /// loads.
+        /// Raised after a submission is recorded or the submitter key is replaced, on the thread
+        /// that did it. Every Workshop list shares this store, so a share made from one reaches
+        /// the others through this event, and the items marked as this install's follow a new key.
+        /// Linking submissions and updating their state stay silent: both run while a list loads.
         /// </summary>
         public event EventHandler Changed;
 
@@ -316,6 +316,7 @@ namespace PlayniteAchievements.Services.Workshop
                 SaveIdentity();
             }
 
+            RaiseChanged();
             return true;
         }
 
