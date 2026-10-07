@@ -224,6 +224,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewPieIcons = source.ShowOverviewPieIcons;
             target.ShowOverviewPieLegend = source.ShowOverviewPieLegend;
             target.OverviewPieLegendPosition = source.OverviewPieLegendPosition;
+            target.OverviewScoreCardBadgePosition = source.OverviewScoreCardBadgePosition;
             target.OverviewPieSmallSliceMode = source.OverviewPieSmallSliceMode;
             target.OverviewPieIncludeLocked = source.OverviewPieIncludeLocked;
             target.ShowOverviewBarCharts = source.ShowOverviewBarCharts;
