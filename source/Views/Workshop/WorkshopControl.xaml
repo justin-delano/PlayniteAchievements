@@ -88,7 +88,7 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Library_InLibrary}"
+                        <TextBlock Text="{Binding InstalledLabel}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}"/>
