@@ -204,12 +204,11 @@
                 </StackPanel>
             </Border>
 
-            <!-- Which panels the Overview window shows, and how its pies render. These
-                 govern the Overview only; showcase and start page widgets carry their own
-                 per-widget equivalents. -->
+            <!-- Which parts of the Overview window show. How they look is set in the window
+                 itself: a score card's right-click menu, and the mini-showcase's editor. -->
             <Border Style="{StaticResource SectionBorderStyle}" Grid.IsSharedSizeScope="True">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_OverviewCharts}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Menu_OpenOverview}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
@@ -217,96 +216,12 @@
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewCollectionScoreCard}">
                         <CheckBox IsChecked="{Binding Persisted.ShowOverviewCollectionScoreCard}"/>
                     </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_CollectionBadgePosition}"
-                                         IsEnabled="{Binding Persisted.ShowOverviewCollectionScoreCard}">
-                        <ComboBox SelectedValue="{Binding Persisted.OverviewCollectionBadgePosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  SelectedValuePath="Tag"
-                                  MinWidth="140">
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}"
-                                          Tag="{x:Static settings:ScoreCardBadgePosition.Left}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}"
-                                          Tag="{x:Static settings:ScoreCardBadgePosition.Right}"/>
-                        </ComboBox>
-                    </controls:SettingRow>
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard}">
                         <CheckBox IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"/>
                     </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PrestigeBadgePosition}"
-                                         IsEnabled="{Binding Persisted.ShowOverviewPrestigeScoreCard}">
-                        <ComboBox SelectedValue="{Binding Persisted.OverviewPrestigeBadgePosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  SelectedValuePath="Tag"
-                                  MinWidth="140">
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}"
-                                          Tag="{x:Static settings:ScoreCardBadgePosition.Left}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}"
-                                          Tag="{x:Static settings:ScoreCardBadgePosition.Right}"/>
-                        </ComboBox>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewGamesPieChart}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewGamesPieChart}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewProviderPieChart}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewProviderPieChart}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewRarityPieChart}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewRarityPieChart}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewTrophyPieChart}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewTrophyPieChart}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewBarCharts}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewBarCharts}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PieCenter}">
-                        <ComboBox SelectedValue="{Binding Persisted.OverviewPieCenterMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  SelectedValuePath="Tag"
-                                  MinWidth="140">
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_PieCenter_Percentage}"
-                                          Tag="{x:Static settings:PieCenterMode.Percentage}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_PieCenter_Empty}"
-                                          Tag="{x:Static settings:PieCenterMode.Empty}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_PieCenter_Filled}"
-                                          Tag="{x:Static settings:PieCenterMode.Filled}"/>
-                        </ComboBox>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPieIcons}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewPieIcons}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPieLegend}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewPieLegend}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PieLegendPosition}"
-                                         IsEnabled="{Binding Persisted.ShowOverviewPieLegend}">
-                        <ComboBox SelectedValue="{Binding Persisted.OverviewPieLegendPosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  SelectedValuePath="Tag"
-                                  MinWidth="140">
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}"
-                                          Tag="{x:Static settings:PieLegendPosition.Left}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}"
-                                          Tag="{x:Static settings:PieLegendPosition.Right}"/>
-                        </ComboBox>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_PieIncludeLocked}">
-                        <CheckBox IsChecked="{Binding Persisted.OverviewPieIncludeLocked}"/>
-                    </controls:SettingRow>
-                    <!-- Each mode's own explanation rides on its item's tooltip; the row's hint
-                         carries the note that applies to all three. -->
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode}"
-                                         Hint="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note}"
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewMiniShowcase}"
                                          Margin="0">
-                        <ComboBox SelectedValue="{Binding Persisted.OverviewPieSmallSliceMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                  SelectedValuePath="Tag"
-                                  MinWidth="140">
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact}"
-                                          ToolTip="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description}"
-                                          Tag="{x:Static settings:OverviewPieSmallSliceMode.Exact}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Hide}"
-                                          ToolTip="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description}"
-                                          Tag="{x:Static settings:OverviewPieSmallSliceMode.Hide}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round}"
-                                          ToolTip="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description}"
-                                          Tag="{x:Static settings:OverviewPieSmallSliceMode.Round}"/>
-                        </ComboBox>
+                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewMiniShowcase}"/>
                     </controls:SettingRow>
                 </StackPanel>
             </Border>
