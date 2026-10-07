@@ -357,10 +357,32 @@ namespace PlayniteAchievements.ViewModels
                 () => UnlockRangeFrom,
                 () => UnlockRangeTo,
                 SetUnlockRange,
-                L("LOCPlayAch_Common_Unlocked"))
+                L("LOCPlayAch_Filter_AllTime"))
             {
                 AutoHideWhenUnavailable = false,
                 Width = 190
+            });
+            // Rarity and trophy type; a rarity or trophy pie slice in the mini-showcase toggles
+            // them too. The trophy filter hides while no unlock has a trophy type.
+            RecentAchievementsControlBar.Items.Add(new GridMultiSelectFilter(
+                this,
+                nameof(SelectedRarityFilterText),
+                () => SelectedRarityFilterText,
+                () => RarityFilterOptions,
+                IsRarityFilterSelected,
+                SetRarityFilterSelected)
+            {
+                Width = 130
+            });
+            RecentAchievementsControlBar.Items.Add(new GridMultiSelectFilter(
+                this,
+                nameof(SelectedTrophyFilterText),
+                () => SelectedTrophyFilterText,
+                () => TrophyFilterOptions,
+                IsTrophyFilterSelected,
+                SetTrophyFilterSelected)
+            {
+                Width = 130
             });
 
             // The selected-game control bar is built and owned by _selectedGameControlBar.
@@ -1877,6 +1899,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
             }
+
+            UpdateAchievementFilterOptions();
         }
 
         private bool ApplyFragmentDelta(string key, OverviewGameFragment fragment)
@@ -3462,7 +3486,7 @@ namespace PlayniteAchievements.ViewModels
                 L("LOCPlayAch_Filter_InProgress"),
                 L("LOCPlayAch_Filter_NoProgress"));
 
-            filtered = ApplyUnlockRangeToGames(filtered);
+            filtered = ApplyAchievementFiltersToGames(filtered);
 
             _filteredGameSummaries = filtered.ToList();
             if (!string.IsNullOrEmpty(_overviewSortPath))
@@ -3615,7 +3639,7 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 _filteredRecentAchievements = OverviewAchievementFilters.FilterRecentAchievements(
-                    ApplyUnlockRange(_allRecentAchievements),
+                    ApplyAchievementFilters(_allRecentAchievements),
                     string.Empty);
 
                 if (searchQuery.HasValue)
