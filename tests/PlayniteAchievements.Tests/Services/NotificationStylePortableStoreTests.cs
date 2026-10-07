@@ -232,6 +232,60 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ExportSurfacePackage_Toast_RoundTripsMotionFields()
+        {
+            var tempDir = CreateTempDirectory();
+            try
+            {
+                var store = CreateStore(tempDir, out _);
+
+                var style = NotificationStyleSettings.CreateDefault();
+                style.Toast.EntranceMotion = ToastMotion.Zoom;
+                style.Toast.ExitMotion = ToastMotion.Fade;
+                style.Toast.MotionFeel = ToastMotionFeel.Smooth;
+                style.Toast.MotionSpeed = ToastMotionSpeed.Relaxed;
+
+                var filePath = Path.Combine(tempDir, "motion.panotif");
+                store.ExportSurfacePackage(isFrame: false, style, filePath);
+
+                var imported = Read(store, tempDir, filePath);
+                Assert.AreEqual(ToastMotion.Zoom, imported.Toast.EntranceMotion);
+                Assert.AreEqual(ToastMotion.Fade, imported.Toast.ExitMotion);
+                Assert.AreEqual(ToastMotionFeel.Smooth, imported.Toast.MotionFeel);
+                Assert.AreEqual(ToastMotionSpeed.Relaxed, imported.Toast.MotionSpeed);
+                Assert.IsTrue(imported.Toast.HasCustomMotion);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void ExportSurfacePackage_Toast_UnsetMotionStaysUnset()
+        {
+            var tempDir = CreateTempDirectory();
+            try
+            {
+                var store = CreateStore(tempDir, out _);
+
+                var filePath = Path.Combine(tempDir, "plain.panotif");
+                store.ExportSurfacePackage(isFrame: false, NotificationStyleSettings.CreateDefault(), filePath);
+
+                var imported = Read(store, tempDir, filePath);
+                Assert.IsNull(imported.Toast.EntranceMotion);
+                Assert.IsNull(imported.Toast.ExitMotion);
+                Assert.IsNull(imported.Toast.MotionFeel);
+                Assert.IsNull(imported.Toast.MotionSpeed);
+                Assert.IsFalse(imported.Toast.HasCustomMotion);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void ExportPackage_WithTemplates_InspectAndReadRoundTrip()
         {
             var tempDir = CreateTempDirectory();
