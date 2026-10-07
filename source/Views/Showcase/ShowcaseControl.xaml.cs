@@ -1892,8 +1892,19 @@ namespace PlayniteAchievements.Views.Showcase
                 _hostCache.Remove(staleId);
             }
 
-            // Deleted widgets' control bar state goes with them.
-            PlayniteAchievements.ViewModels.Showcase.Widgets.ShowcaseControlBarStates.RemoveExcept(live);
+            // Deleted widgets' control bar state goes with them. Start page widgets share the
+            // adapter registry, so their instances stay live too.
+            var liveControlBars = new HashSet<string>(live, StringComparer.OrdinalIgnoreCase);
+            foreach (var widget in (Layout.StartPageInstances ??
+                new Dictionary<string, ShowcaseWidgetInstanceSettings>()).Values)
+            {
+                if (!string.IsNullOrWhiteSpace(widget?.InstanceId))
+                {
+                    liveControlBars.Add(widget.InstanceId);
+                }
+            }
+
+            PlayniteAchievements.ViewModels.Showcase.Widgets.ShowcaseControlBarStates.RemoveExcept(liveControlBars);
         }
 
         // Reuses the cached control for this widget when there is one, otherwise builds a fresh
