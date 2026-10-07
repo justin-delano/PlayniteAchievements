@@ -306,6 +306,12 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="0.82"
                                    TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_PlatformBody}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="0.82"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
             </Grid>
