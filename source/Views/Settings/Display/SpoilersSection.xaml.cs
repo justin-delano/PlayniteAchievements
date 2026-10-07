@@ -134,11 +134,11 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         // A dropped or pasted image. A global setting has no refresh pass that would materialize
         // a URL later, so a URL is downloaded now rather than persisted as a link.
-        private async void FallbackIcon_Picked(object sender, ImagePickedEventArgs e)
+        private async void FallbackIcon_Picked(object sender, FilePickedEventArgs e)
         {
             if (TryResolveFallbackSlot(sender as FrameworkElement, out var slot))
             {
-                await ApplyFallbackIconAsync(slot, e.ImageSource);
+                await ApplyFallbackIconAsync(slot, e.PickedSource);
             }
         }
 
