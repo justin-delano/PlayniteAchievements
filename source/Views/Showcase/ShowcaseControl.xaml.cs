@@ -2208,9 +2208,9 @@ namespace PlayniteAchievements.Views.Showcase
                    ReferenceEquals(live, request.Host);
         }
 
-        private static bool IsProjectedFrom(ShowcaseWidgetControl host, OverviewDataSnapshot snapshot)
+        private bool IsProjectedFrom(ShowcaseWidgetControl host, OverviewDataSnapshot snapshot)
         {
-            return snapshot != null && ReferenceEquals(host?.Projection?.Snapshot, snapshot);
+            return _host.IsProjectionCurrent(host?.Projection, snapshot);
         }
 
         private void ClearApplyQueue()
