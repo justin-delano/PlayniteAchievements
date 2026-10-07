@@ -47,7 +47,6 @@ namespace PlayniteAchievements.Views.Controls
         private bool calculationScheduled;
         private bool legendSyncScheduled;
         private string hoveredSliceLabel;
-        private string legendRowsKey;
 
         private sealed class IconCandidate
         {
@@ -954,26 +953,31 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
-        /// Rebuilds the legend rows only when what they show has changed, so a layout pass that
-        /// re-runs the calculation does not recreate rows (and drop the row under the mouse).
+        /// Updates the legend rows in place by index, adding or removing only the rows the count
+        /// changed by, so a data change neither regenerates row visuals nor drops the row under
+        /// the mouse.
         /// </summary>
         private void SynchronizeLegendRows()
         {
             var items = ShowLegend
                 ? (LegendItems ?? Enumerable.Empty<LegendItem>()).Where(item => item != null).Take(MaxLegendRows).ToList()
                 : new List<LegendItem>();
-            var key = string.Join("\u001f", items.Select(item => $"{item.Label}\u001e{item.Count}\u001e{item.ColorHex}"));
-            if (string.Equals(key, legendRowsKey, StringComparison.Ordinal) &&
-                LegendRows.Count == items.Count)
+
+            while (LegendRows.Count > items.Count)
             {
-                return;
+                LegendRows.RemoveAt(LegendRows.Count - 1);
             }
 
-            legendRowsKey = key;
-            LegendRows.Clear();
-            foreach (var item in items)
+            for (int i = 0; i < items.Count; i++)
             {
-                LegendRows.Add(new PieLegendRowViewModel(item));
+                if (i < LegendRows.Count)
+                {
+                    LegendRows[i].Update(items[i]);
+                }
+                else
+                {
+                    LegendRows.Add(new PieLegendRowViewModel(items[i]));
+                }
             }
         }
 
