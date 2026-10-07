@@ -72,6 +72,57 @@ namespace PlayniteAchievements.Tests.Views
             Assert.AreEqual(140d, planned["C"]);
         }
 
+        [TestMethod]
+        public void Rescale_HoldsACappedLastColumnAtItsCeilingAndFillsTheTarget()
+        {
+            // The last column's seed alone would take far more than its 120 pixel cap.
+            var ceilings = new[] { double.NaN, double.NaN, 120d };
+            var planned = PlanCapped(new[] { 200d, 200d, 177d }, 1200d, ceilings);
+
+            Assert.AreEqual(1200d, planned.Values.Sum());
+            Assert.AreEqual(120d, planned["C"]);
+            Assert.AreEqual(540d, planned["A"]);
+            Assert.AreEqual(540d, planned["B"]);
+        }
+
+        [TestMethod]
+        public void Rescale_PassesExcessOnWhenAReceivingColumnReachesItsOwnCeiling()
+        {
+            var ceilings = new[] { double.NaN, 150d, 120d };
+            var planned = PlanCapped(new[] { 100d, 100d, 100d }, 900d, ceilings);
+
+            Assert.AreEqual(900d, planned.Values.Sum());
+            Assert.AreEqual(150d, planned["B"]);
+            Assert.AreEqual(120d, planned["C"]);
+            Assert.AreEqual(630d, planned["A"]);
+        }
+
+        [TestMethod]
+        public void Rescale_FallsShortOnlyWhenEveryColumnIsCapped()
+        {
+            var ceilings = new[] { 100d, 100d, 100d };
+            var planned = PlanCapped(new[] { 50d, 50d, 50d }, 600d, ceilings);
+
+            CollectionAssert.AreEqual(new[] { 100d, 100d, 100d }, Keys.Select(k => planned[k]).ToArray());
+        }
+
+        private static Dictionary<string, double> PlanCapped(double[] seeds, double target, double[] ceilings)
+        {
+            var result = ColumnSizingPlanner.TryPlan(
+                Keys,
+                seeds,
+                Floors,
+                protectedKey: null,
+                preferredAbsorberKey: null,
+                rescaleAll: true,
+                targetWidth: target,
+                excludedAbsorberKeys: null,
+                ceilingWidths: ceilings,
+                out var planned);
+            Assert.IsTrue(result);
+            return planned;
+        }
+
         private static Dictionary<string, double> Plan(double[] seeds, double target, string protectedKey)
         {
             var result = ColumnSizingPlanner.TryPlan(
