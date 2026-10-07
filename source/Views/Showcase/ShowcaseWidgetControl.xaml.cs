@@ -300,6 +300,9 @@ namespace PlayniteAchievements.Views.Showcase
             HeaderBorder.Visibility = Visibility.Visible;
         }
 
+        /// <summary>The height a linked timeline gives up so its title clears the bars.</summary>
+        private const double LinkedTitleRoom = 16;
+
         // A linked widget's title is a quiet caption in the body's top-left corner: no band, no
         // weight, so the chart keeps the row's height and reads first.
         private void ApplyHeaderPlacement(bool overlay)
@@ -332,9 +335,17 @@ namespace PlayniteAchievements.Views.Showcase
             // to the foreground so only the background reaches the edge.
             var fullBleed = _projection?.Instance?.Kind == ShowcaseWidgetKind.Profile &&
                             ShowcaseWidgetOptions.GetProfileFullBleed(_projection.Instance);
+            var inset = ShowcaseWidgetViewModelBase.GetBodyInset(_viewport.Density);
+            // A linked timeline's title would sit on its tallest bars, so the chart starts below
+            // it; a pie keeps the row's full height and lets the title share its corner.
+            var titleRoom = _projection?.IsLinked == true &&
+                            _projection.Instance?.Kind == ShowcaseWidgetKind.Timeline &&
+                            !string.IsNullOrWhiteSpace(_projection.ContextLabel)
+                ? LinkedTitleRoom
+                : 0;
             BodyHost.Margin = fullBleed
                 ? new Thickness(0)
-                : new Thickness(ShowcaseWidgetViewModelBase.GetBodyInset(_viewport.Density));
+                : new Thickness(inset, inset + titleRoom, inset, inset);
             if (_projection?.Instance == null)
             {
                 SetBodyContent(CreateEmptyText());
