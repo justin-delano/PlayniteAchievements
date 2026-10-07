@@ -244,6 +244,7 @@ namespace PlayniteAchievements.Views.Showcase
                         Localize("LOCPlayAch_Timeline_SplitByPlatform"),
                         ShowcaseTimelineOptions.GetSplitByPlatform(_settings),
                         value => ShowcaseTimelineOptions.SetSplitByPlatform(_settings, value));
+                    AddShowControlsToggle(panel);
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(
@@ -658,7 +659,7 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     AddRangeChoice(panel);
-
+                    AddShowControlsToggle(panel);
                     break;
             }
 
@@ -817,6 +818,17 @@ namespace PlayniteAchievements.Views.Showcase
         /// The shared time-window picker used by every range-windowed widget (Timeline, Scores,
         /// Activity Calendar). Only the Timeline chart has a bar granularity to override.
         /// </summary>
+        // The time window (and the timeline's bar width and platform split) set from the widget
+        // itself, above its chart.
+        private void AddShowControlsToggle(Panel panel)
+        {
+            AddToggle(
+                panel,
+                Localize("LOCPlayAch_Settings_ShowGridControlBar"),
+                ShowcaseWidgetOptions.GetShowControls(_settings),
+                value => ShowcaseWidgetOptions.SetShowControls(_settings, value));
+        }
+
         private void AddRangeChoice(Panel panel)
         {
             var hasGranularity = _settings.Kind == ShowcaseWidgetKind.Timeline;
