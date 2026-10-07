@@ -88,6 +88,17 @@ namespace PlayniteAchievements.Services.Tests.UI
             Assert.AreEqual(0d, offset.Y);
         }
 
+        [DataTestMethod]
+        [DataRow(ToastMotion.Slide)]
+        [DataRow(ToastMotion.SlideSide)]
+        public void TravelOffset_BottomCenter_SlidesUpFromTheBottomEdge(ToastMotion motion)
+        {
+            var offset = ToastMotionStoryboardFactory.TravelOffset(motion, ToastScreenCorner.BottomCenter, 100, 400);
+
+            Assert.AreEqual(0d, offset.X);
+            Assert.AreEqual(100d, offset.Y);
+        }
+
         [TestMethod]
         public void TravelOffset_InPlaceMotions_AreZero()
         {
