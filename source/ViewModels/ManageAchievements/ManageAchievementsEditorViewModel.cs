@@ -7391,15 +7391,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         {
             get
             {
-                var assigned = AchievementCategoryTypeHelper.Normalize(CategoryTypeValue);
-                if (assigned != null)
+                if (IsBulkRow)
                 {
-                    return assigned;
+                    return AchievementCategoryTypeHelper.Normalize(CategoryTypeValue);
                 }
 
-                return IsBulkRow
-                    ? null
-                    : AchievementCategoryTypeHelper.NormalizeOrDefault(ProviderCategoryTypeValue);
+                // Softcore/Hardcore always come from the provider, whatever the override says.
+                return AchievementCategoryTypeHelper.ApplyOverride(ProviderCategoryTypeValue, CategoryTypeValue);
             }
         }
 
