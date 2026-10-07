@@ -883,6 +883,32 @@
                                                  Visibility="{Binding ShowRarityBar, Converter={StaticResource BoolToVis}}"/>
                                 </Grid>
                             </Border>
+                            <!-- Completion frame: the game summaries grid's cover frame at tile
+                                 size, over the art and the rarity bar. The badge binds the tile's
+                                 summary row, so it makes the same badge choice and shows the same
+                                 capstone count; TileMargin holds the half that hangs below. -->
+                            <Grid Visibility="{Binding ShowCompletionFrame, Converter={StaticResource BoolToVis}}">
+                                <!-- The frame's clearance keeps tiles apart, so the art is never
+                                     seamless here and always has the small corner radius. -->
+                                <Border Style="{StaticResource CompletionFrameBorderStyle}"
+                                        CornerRadius="{StaticResource PlayAch.Radius.Small}"/>
+                                <Grid DataContext="{Binding Game}"
+                                      Height="{StaticResource PlayAch.Size.Icon.Tiny}"
+                                      Margin="0,0,0,-9"
+                                      VerticalAlignment="Bottom">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Image Grid.Column="1"
+                                           Style="{StaticResource CompletionBadgeImageStyle}"
+                                           Width="{StaticResource PlayAch.Size.Icon.Tiny}"
+                                           Height="{StaticResource PlayAch.Size.Icon.Tiny}"/>
+                                    <TextBlock Grid.Column="2"
+                                               Style="{StaticResource CompletionBadgeCountTextStyle}"/>
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </DataTemplate>
             </ListBox.ItemTemplate>

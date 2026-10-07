@@ -64,7 +64,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 useCovers,
                 ShowcaseWidgetOptions.GetGameMosaicShowCompletionGlow(Projection?.Instance),
                 ShowcaseWidgetOptions.GetMosaicSpacing(Projection?.Instance),
-                ShowcaseWidgetOptions.GetMosaicShowRarityBar(Projection?.Instance));
+                ShowcaseWidgetOptions.GetMosaicShowRarityBar(Projection?.Instance),
+                ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(Projection?.Instance));
 
             if (!layout.Equals(_layout))
             {
@@ -117,7 +118,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     _layout.UseCovers,
                     _layout.ShowCompletionGlow,
                     _layout.Spacing,
-                    _layout.ShowRarityBar);
+                    _layout.ShowRarityBar,
+                    _layout.ShowCompletionFrame);
                 _tiles[game] = tile;
             }
 

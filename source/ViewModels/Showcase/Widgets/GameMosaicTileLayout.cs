@@ -17,7 +17,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             bool useCovers,
             bool showCompletionGlow,
             int spacing,
-            bool showRarityBar)
+            bool showRarityBar,
+            bool showCompletionFrame)
         {
             Pinnable = pinnable;
             PinCollectionId = pinCollectionId;
@@ -28,6 +29,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             ShowCompletionGlow = showCompletionGlow;
             Spacing = spacing;
             ShowRarityBar = showRarityBar;
+            ShowCompletionFrame = showCompletionFrame;
         }
 
         public bool Pinnable { get; }
@@ -39,6 +41,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         public bool ShowCompletionGlow { get; }
         public int Spacing { get; }
         public bool ShowRarityBar { get; }
+        public bool ShowCompletionFrame { get; }
 
         public bool Equals(GameMosaicTileLayout other) =>
             other != null &&
@@ -50,7 +53,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             UseCovers == other.UseCovers &&
             ShowCompletionGlow == other.ShowCompletionGlow &&
             Spacing == other.Spacing &&
-            ShowRarityBar == other.ShowRarityBar;
+            ShowRarityBar == other.ShowRarityBar &&
+            ShowCompletionFrame == other.ShowCompletionFrame;
 
         public override bool Equals(object obj) => Equals(obj as GameMosaicTileLayout);
 
