@@ -435,7 +435,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 .ForProvider(editable ? option.Key : null)
                 .ForNotificationKind(editingKind ? ActiveKind : NotificationKind.Base);
             _toastEditorViewModel.SetStyle(
-                kindStyle, imageOwner, editable, persistStyle: null, providerKey: editable ? option.Key : null);
+                kindStyle, imageOwner, editable, persistStyle: null, providerKey: editable ? option.Key : null,
+                isKindStyle: editingKind);
             _frameEditorViewModel.SetStyle(
                 kindStyle, imageOwner, editable, persistStyle: null, providerKey: editable ? option.Key : null);
             ApplySoundsSelection();
@@ -482,7 +483,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             var owner = NotificationImageOwner
                 .ForGame(_gameId)
                 .ForNotificationKind(editingKind ? ActiveKind : NotificationKind.Base);
-            _toastEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist);
+            _toastEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist, isKindStyle: editingKind);
             _frameEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist);
             ApplySoundsSelection();
             UpdateMockups();

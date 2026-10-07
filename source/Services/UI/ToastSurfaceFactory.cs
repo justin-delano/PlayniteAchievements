@@ -247,5 +247,19 @@ namespace PlayniteAchievements.Services.UI
                 ? new Thickness(0, 0, 0, travelDip)
                 : new Thickness(0, travelDip, 0, 0);
         }
+
+        /// <summary>
+        /// Reserves travel room on any combination of sides, for a style motion whose entrance and
+        /// exit may leave through different edges.
+        /// </summary>
+        public static void ApplySlideTravel(ItemsControl surface, Thickness travel)
+        {
+            if (surface == null)
+            {
+                return;
+            }
+
+            surface.Margin = travel;
+        }
     }
 }

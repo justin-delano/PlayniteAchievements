@@ -26,10 +26,11 @@ namespace PlayniteAchievements.Services.Capture
         /// <summary>
         /// Sub-pixel position variant: the synthesized corner-plus-slide position carries fractional
         /// physical pixels, and rounding once here — after the frame scaling — is what keeps a slide
-        /// smooth instead of stair-stepped by an early integer snap.
+        /// smooth instead of stair-stepped by an early integer snap. The size is fractional too, for a
+        /// card scaled by a zoom.
         /// </summary>
         public static Rectangle ScaleRect(
-            double relX, double relY, int cardW, int cardH,
+            double relX, double relY, double cardW, double cardH,
             int clientW, int clientH, int frameW, int frameH)
         {
             if (clientW <= 0 || clientH <= 0 || frameW <= 0 || frameH <= 0)

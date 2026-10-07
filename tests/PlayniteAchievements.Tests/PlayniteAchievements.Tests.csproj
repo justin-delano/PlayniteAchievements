@@ -478,6 +478,7 @@
     <Compile Include="..\..\source\Models\Settings\CategoryCompletionBadgeMode.cs" Link="Source\Models\Settings\CategoryCompletionBadgeMode.cs" />
     <Compile Include="..\..\source\Models\Settings\ToastScreenCorner.cs" Link="Source\Models\Settings\ToastScreenCorner.cs" />
     <Compile Include="..\..\source\Models\Settings\ToastHorizontalAlignment.cs" Link="Source\Models\Settings\ToastHorizontalAlignment.cs" />
+    <Compile Include="..\..\source\Models\Settings\ToastMotion.cs" Link="Source\Models\Settings\ToastMotion.cs" />
     <Compile Include="..\..\source\Models\Settings\GridVerticalAlignment.cs" Link="Source\Models\Settings\GridVerticalAlignment.cs" />
     <Compile Include="..\..\source\Models\Settings\CompactListSortMode.cs" Link="Source\Models\Settings\CompactListSortMode.cs" />
     <Compile Include="..\..\source\Models\Settings\GameSummariesSortMode.cs" Link="Source\Models\Settings\GameSummariesSortMode.cs" />
@@ -716,6 +717,7 @@
     <Compile Include="..\..\source\Services\UI\UnlockScreenshotVariantPolicy.cs" Link="Source\Services\UI\UnlockScreenshotVariantPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\UnlockClipVariantPolicy.cs" Link="Source\Services\UI\UnlockClipVariantPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\ToastWindowPlacer.cs" Link="Source\Services\UI\ToastWindowPlacer.cs" />
+    <Compile Include="..\..\source\Services\UI\ToastMotionStoryboardFactory.cs" Link="Source\Services\UI\ToastMotionStoryboardFactory.cs" />
     <Compile Include="..\..\source\Services\UI\UnlockScreenshotService.cs" Link="Source\Services\UI\UnlockScreenshotService.cs" />
 
     <Reference Include="Playnite.SDK">
