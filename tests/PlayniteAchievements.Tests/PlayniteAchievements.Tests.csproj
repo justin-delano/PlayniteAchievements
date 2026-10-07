@@ -688,6 +688,7 @@
     <Compile Include="..\..\source\Services\Sound\SoundHostProtocol.cs" Link="Source\Services\Sound\SoundHostProtocol.cs" />
     <Compile Include="..\..\source\Services\Sound\SoundHostRestartPolicy.cs" Link="Source\Services\Sound\SoundHostRestartPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\PlayAchResourceService.cs" Link="Source\Services\UI\PlayAchResourceService.cs" />
+    <Compile Include="..\..\source\Services\UI\PlayAchRuntimeResources.cs" Link="Source\Services\UI\PlayAchRuntimeResources.cs" />
     <Compile Include="..\..\source\Services\UI\ProviderNotificationPolicy.cs" Link="Source\Services\UI\ProviderNotificationPolicy.cs" />
     <Compile Include="..\..\source\Services\UI\ScreenshotFrameCompositor.cs" Link="Source\Services\UI\ScreenshotFrameCompositor.cs" />
     <Compile Include="..\..\source\Services\UI\ScreenshotVariants.cs" Link="Source\Services\UI\ScreenshotVariants.cs" />
