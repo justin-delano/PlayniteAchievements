@@ -1773,6 +1773,13 @@ namespace PlayniteAchievements.Views
         private void MiniShowcase_LinkedClick(object sender, ShowcaseLinkedClickEventArgs e)
         {
             e.Handled = true;
+            // Tracing only: the grids and widgets this click re-filters lay out and plot in later
+            // dispatcher passes, which no scope around the handler would cover.
+            if (Common.PerfScope.PerfTracingEnabled)
+            {
+                Common.DispatcherOperationProbe.Arm(_logger, "overview-linked-click", TimeSpan.FromSeconds(2));
+            }
+
             if (e.Span.HasValue)
             {
                 _viewModel?.ToggleUnlockSpanFilter(e.Span.Value);
