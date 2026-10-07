@@ -31,6 +31,30 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(GridControlBarControl),
                 new PropertyMetadata(true, OnVisibilityPropertyChanged));
 
+        /// <summary>
+        /// Whether the filters may drop below the search box and wrap across lines when the bar
+        /// is too narrow for one line. Off keeps the single-line bar. Inherited, so a host such as
+        /// a showcase widget sets it once for every control bar inside it.
+        /// </summary>
+        public static readonly DependencyProperty WrapItemsProperty =
+            DependencyProperty.RegisterAttached(
+                "WrapItems",
+                typeof(bool),
+                typeof(GridControlBarControl),
+                new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
+
+        public static bool GetWrapItems(DependencyObject element) =>
+            (bool)element.GetValue(WrapItemsProperty);
+
+        public static void SetWrapItems(DependencyObject element, bool value) =>
+            element.SetValue(WrapItemsProperty, value);
+
+        public bool WrapItems
+        {
+            get => (bool)GetValue(WrapItemsProperty);
+            set => SetValue(WrapItemsProperty, value);
+        }
+
         public GridControlBarControl()
         {
             InitializeComponent();
