@@ -279,17 +279,16 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void UpdateTitle()
         {
-            // The header only appears when the user gave the widget a custom title, or when a
-            // linked widget narrowed to one game and names it; widgets are otherwise chrome-free
-            // at every density (large StartPage-hosted widgets used to auto-show the kind name
-            // at expanded density).
-            var custom = _projection?.Instance?.CustomTitle?.Trim();
-            var context = _projection?.ContextLabel?.Trim();
-            var title = string.IsNullOrWhiteSpace(context)
-                ? custom
-                : string.IsNullOrWhiteSpace(custom)
-                    ? context
-                    : $"{custom} ({context})";
+            // The header only appears when the user gave the widget a custom title; widgets are
+            // otherwise chrome-free at every density (large StartPage-hosted widgets used to
+            // auto-show the kind name at expanded density). A linked widget is titled by what
+            // the overview narrowed it to instead, laid over the body so a short row keeps its
+            // full height for the chart.
+            var linked = _projection?.IsLinked == true;
+            var title = linked
+                ? _projection.ContextLabel?.Trim()
+                : _projection?.Instance?.CustomTitle?.Trim();
+            ApplyHeaderPlacement(overlay: linked);
             if (string.IsNullOrWhiteSpace(title))
             {
                 TitleText.Text = string.Empty;
@@ -299,6 +298,18 @@ namespace PlayniteAchievements.Views.Showcase
 
             TitleText.Text = title;
             HeaderBorder.Visibility = Visibility.Visible;
+        }
+
+        private void ApplyHeaderPlacement(bool overlay)
+        {
+            Grid.SetRow(HeaderBorder, overlay ? 1 : 0);
+            Panel.SetZIndex(HeaderBorder, overlay ? 1 : 0);
+            HeaderBorder.HorizontalAlignment = overlay ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+            HeaderBorder.VerticalAlignment = overlay ? VerticalAlignment.Top : VerticalAlignment.Stretch;
+            HeaderBorder.Padding = overlay ? new Thickness(6, 2, 6, 2) : new Thickness(9, 5, 9, 5);
+            HeaderBorder.CornerRadius = overlay ? new CornerRadius(0, 0, 4, 0) : new CornerRadius(0);
+            // Clicks pass through to the chart beneath.
+            HeaderBorder.IsHitTestVisible = !overlay;
         }
 
         private void RebuildBody()
