@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Hydration;
 using PlayniteAchievements.Services.Images;
@@ -183,8 +184,7 @@ namespace PlayniteAchievements.Services.Workshop.Preview
         /// <summary>
         /// The game as it would show with <paramref name="predicted"/> stored: a copy of the raw
         /// achievements through the hydration pipeline, with the game-level fields
-        /// <c>GameDataHydrator.Hydrate</c> sets taken from the predicted record. Category image
-        /// overrides are left out.
+        /// <c>GameDataHydrator.Hydrate</c> sets taken from the predicted record.
         /// </summary>
         private static GameAchievementData HydratePredicted(
             GameCustomDataFile predicted,
@@ -200,6 +200,12 @@ namespace PlayniteAchievements.Services.Workshop.Preview
             data.AchievementOrder = resolved.AchievementOrder.Count > 0 ? new List<string>(resolved.AchievementOrder) : null;
             data.GoalAchievements = resolved.GoalAchievementApiNames.Count > 0 ? new List<string>(resolved.GoalAchievementApiNames) : null;
             data.AchievementCategoryOrder = resolved.AchievementCategoryOrder.Count > 0 ? new List<string>(resolved.AchievementCategoryOrder) : null;
+            data.AchievementCategoryImageOverrides = resolved.AchievementCategoryImageOverrides.Count > 0
+                ? AchievementIconOverrideHelper.ResolveCategoryImageOverrides(
+                    resolved.AchievementCategoryImageOverrides,
+                    source.GameId,
+                    source.ManagedCustomIconService)
+                : null;
             data.GameSummaryCategory = resolved.GameSummaryCategory;
 
             AchievementOverlayPipeline.Apply(
