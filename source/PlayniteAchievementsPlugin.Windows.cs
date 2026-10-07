@@ -123,7 +123,9 @@ namespace PlayniteAchievements
             string pageId = null,
             System.Collections.Generic.IReadOnlyDictionary<Services.Workshop.BundleParts, string> bundlePartFiles = null,
             string packagePath = null,
-            string defaultName = null)
+            string defaultName = null,
+            string libraryItemId = null,
+            string publishedItemId = null)
         {
             // A saved preset is shared as the file it already is; everything else is one of the
             // live-settings candidates the share service lists.
@@ -133,7 +135,9 @@ namespace PlayniteAchievements
                     Kind = kind,
                     Label = ViewModels.Workshop.WorkshopItemViewModel.KindLabelFor(kind) + " \u00b7 " + defaultName,
                     DefaultName = defaultName,
-                    PackagePath = packagePath
+                    PackagePath = packagePath,
+                    LibraryItemId = libraryItemId,
+                    PublishedItemId = publishedItemId
                 }
                 : WorkshopShareService.ListCandidates().FirstOrDefault(c =>
                     c.Kind == kind
