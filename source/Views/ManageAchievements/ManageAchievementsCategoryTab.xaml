@@ -579,7 +579,7 @@
                                                  surfaces from under a child that has its own. -->
                                             <TextBox x:Name="CategoryRenameTextBox"
                                                      Text="{Binding RenameOverrideText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                                     LostFocus="CategoryRenameTextBox_LostFocus"
+                                                     LostKeyboardFocus="CategoryRenameTextBox_LostKeyboardFocus"
                                                      KeyDown="CategoryRenameTextBox_KeyDown"
                                                      IsEnabled="{Binding IsDefaultCategory, Converter={StaticResource InvertBoolConverter}}"
                                                      ToolTip="{Binding CategoryPathDisplay}"
