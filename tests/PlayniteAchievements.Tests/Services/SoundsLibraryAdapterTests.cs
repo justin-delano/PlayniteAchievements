@@ -239,6 +239,34 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsTrue(Directory.Exists(platformFolder), "the platform pack still points into it");
         }
 
+        [TestMethod]
+        public void PruneUnreferenced_RemovesAReplacedPick_AndKeepsTheWrittenPack()
+        {
+            var settings = new PersistedSettings();
+            var adapter = new SoundsLibraryAdapter(_store, () => new[] { settings.UnlockSounds });
+            var replaced = _store.ImportFile(WriteWav("old.wav", 4));
+            settings.UnlockSounds.Common = replaced;
+
+            // The pack written now is not the one the referenced packs see, as when a window
+            // edits a settings copy the live settings replaced.
+            var written = new UnlockSoundSettings { Common = _store.ImportFile(WriteWav("new.wav", 5)) };
+            settings.UnlockSounds.Common = null;
+            adapter.PruneUnreferenced(written);
+
+            Assert.IsFalse(File.Exists(replaced), "nothing points at the replaced copy");
+            Assert.IsTrue(File.Exists(written.Common), "the pack just written keeps its copy");
+        }
+
+        [TestMethod]
+        public void PruneUnreferenced_WithoutReferencedPacks_RemovesNothing()
+        {
+            var kept = _store.ImportFile(WriteWav("kept.wav", 6));
+
+            _adapter.PruneUnreferenced(new UnlockSoundSettings());
+
+            Assert.IsTrue(File.Exists(kept));
+        }
+
         private LibraryItem SavePack(string name, params (UnlockSoundTier Tier, byte Seed)[] tiers)
         {
             var path = Path.Combine(_root, LibraryStore.FolderOf(LibraryItemKind.Sounds), name + UnlockSoundPortableStore.PackageFileExtension);
