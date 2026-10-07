@@ -116,8 +116,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string Readme
         {
             get => _readme;
-            set => SetValue(ref _readme, value);
+            set => SetValue(ref _readme, value, nameof(Readme), nameof(HasReadme));
         }
+
+        public bool HasReadme => !string.IsNullOrWhiteSpace(_readme);
 
         /// <summary>True when the item is in the library; for game data, when its game has it applied.</summary>
         public bool IsInstalled
