@@ -116,6 +116,104 @@ namespace PlayniteAchievements.Services.Overview
         }
 
         /// <summary>
+        /// <paramref name="snapshot"/> as seen through an unlock date range: only the unlocks
+        /// whose local day falls in <paramref name="span"/> count. Achievement totals, rarity and
+        /// trophy counts, the per-day counts and the unlocked rows are rebuilt from those unlocks,
+        /// with no locked remainder (a locked achievement has no date to fall in the range); the
+        /// game-level totals (games, completions, providers) are kept as they were.
+        /// </summary>
+        public static OverviewDataSnapshot ClipToSpan(OverviewDataSnapshot snapshot, UnlockDaySpan span)
+        {
+            if (snapshot == null)
+            {
+                return null;
+            }
+
+            var rows = (snapshot.Achievements ?? new List<AchievementDisplayItem>())
+                .Where(item =>
+                    item?.Unlocked == true &&
+                    item.UnlockTimeUtc.HasValue &&
+                    span.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)))
+                .ToList();
+            var clipped = new OverviewDataSnapshot
+            {
+                GameSummaries = snapshot.GameSummaries,
+                Achievements = rows,
+                RecentAchievements = (snapshot.RecentAchievements ?? new List<AchievementDisplayItem>())
+                    .Where(item => item?.UnlockTimeUtc.HasValue == true &&
+                                   span.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)))
+                    .ToList(),
+                CurrentUserIdentities = snapshot.CurrentUserIdentities,
+                UnlockedByProvider = snapshot.UnlockedByProvider,
+                TotalByProvider = snapshot.TotalByProvider,
+                TotalGames = snapshot.TotalGames,
+                CompletedGames = snapshot.CompletedGames,
+                Completions = snapshot.Completions,
+                PossibleCompletions = snapshot.PossibleCompletions,
+                GlobalProgressionPercent = snapshot.GlobalProgressionPercent,
+                GlobalUnlockCountsByDate = ClipCounts(snapshot.GlobalUnlockCountsByDate, span),
+                UnlockCountsByDateByGame = (snapshot.UnlockCountsByDateByGame ??
+                        new Dictionary<Guid, Dictionary<DateTime, int>>())
+                    .ToDictionary(pair => pair.Key, pair => ClipCounts(pair.Value, span))
+            };
+
+            clipped.TotalUnlocked = rows.Count;
+            clipped.TotalAchievements = rows.Count;
+            clipped.TotalLocked = 0;
+            foreach (var row in rows)
+            {
+                switch (row.Rarity)
+                {
+                    case Models.Achievements.RarityTier.UltraRare:
+                        clipped.TotalUltraRare++;
+                        break;
+                    case Models.Achievements.RarityTier.Rare:
+                        clipped.TotalRare++;
+                        break;
+                    case Models.Achievements.RarityTier.Uncommon:
+                        clipped.TotalUncommon++;
+                        break;
+                    default:
+                        clipped.TotalCommon++;
+                        break;
+                }
+
+                switch ((row.TrophyType ?? string.Empty).Trim().ToLowerInvariant())
+                {
+                    case "platinum":
+                        clipped.TotalPlatinum++;
+                        break;
+                    case "gold":
+                        clipped.TotalGold++;
+                        break;
+                    case "silver":
+                        clipped.TotalSilver++;
+                        break;
+                    case "bronze":
+                        clipped.TotalBronze++;
+                        break;
+                }
+            }
+
+            clipped.TotalCommonPossible = clipped.TotalCommon;
+            clipped.TotalUncommonPossible = clipped.TotalUncommon;
+            clipped.TotalRarePossible = clipped.TotalRare;
+            clipped.TotalUltraRarePossible = clipped.TotalUltraRare;
+            clipped.TotalPlatinumPossible = clipped.TotalPlatinum;
+            clipped.TotalGoldPossible = clipped.TotalGold;
+            clipped.TotalSilverPossible = clipped.TotalSilver;
+            clipped.TotalBronzePossible = clipped.TotalBronze;
+            return clipped;
+        }
+
+        private static Dictionary<DateTime, int> ClipCounts(Dictionary<DateTime, int> counts, UnlockDaySpan span)
+        {
+            return (counts ?? new Dictionary<DateTime, int>())
+                .Where(pair => span.Contains(pair.Key))
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        /// <summary>
         /// The part of <paramref name="source"/> that covers <paramref name="kept"/>: its
         /// summary totals, its per-day unlock counts, and its unlocked rows. When every game
         /// is kept the source itself comes back, so widgets share its derived-series cache.
