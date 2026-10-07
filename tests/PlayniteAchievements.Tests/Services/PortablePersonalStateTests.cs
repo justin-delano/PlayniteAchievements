@@ -18,6 +18,18 @@ namespace PlayniteAchievements.Services.Tests
         private static readonly DateTime OtherUnlockTime = new DateTime(2025, 6, 7, 8, 9, 10, DateTimeKind.Utc);
 
         [TestMethod]
+        public void CarryLocal_KeepsTheGameSoundPack()
+        {
+            var current = new GameCustomDataFile { UnlockSounds = new UnlockSoundSettings { Rare = "rare.wav" } };
+            var imported = new GameCustomDataFile();
+
+            PortablePersonalState.CarryLocal(current, imported);
+
+            Assert.AreEqual("rare.wav", imported.UnlockSounds?.Rare);
+            Assert.AreNotSame(current.UnlockSounds, imported.UnlockSounds);
+        }
+
+        [TestMethod]
         public void ExportPortablePackage_OmitsPersonalStateAndKeepsCuration()
         {
             WithStore((store, tempDir) =>
