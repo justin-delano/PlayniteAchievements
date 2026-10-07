@@ -9,12 +9,6 @@ using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public enum ScoreCardType
-    {
-        Collection,
-        Prestige
-    }
-
     public sealed class ScoreCardViewModel : ObservableObject
     {
         private const string DefaultRank = "Bronze5";
