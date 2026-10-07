@@ -233,22 +233,6 @@ namespace PlayniteAchievements.Services.Library
             return new LibraryPartWrite(stored, folder.NameOf(written), keptLocalCopy);
         }
 
-        /// <summary>Records a Workshop item that has no stored package (game data), keeping its name and added time.</summary>
-        public LibraryItem RecordWorkshopItem(LibraryItem incoming)
-        {
-            if (incoming == null || string.IsNullOrWhiteSpace(incoming.Id) || !incoming.IsWorkshop)
-            {
-                throw new ArgumentException("A Workshop library item is required.", nameof(incoming));
-            }
-
-            var existing = _apply.Library.Find(incoming.Id);
-            var item = incoming.Clone();
-            item.Name = existing?.Name ?? incoming.Name;
-            item.RelativePath = existing?.RelativePath;
-            item.AddedUtc = existing?.AddedUtc ?? default(DateTime);
-            return _apply.Library.Upsert(item);
-        }
-
         // ---- followers --------------------------------------------------------------------------
 
         /// <summary>
