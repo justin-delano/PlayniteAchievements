@@ -375,7 +375,7 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
-    <Style x:Key="PreviewBorderStyle" TargetType="Border">
+    <Style x:Key="PreviewBorderStyle" TargetType="Border" BasedOn="{StaticResource PlayAch.ImagePickTarget.Style}">
         <Setter Property="Width" Value="{StaticResource PlayAch.Size.Control.LargeHeight}"/>
         <Setter Property="Height" Value="{StaticResource PlayAch.Size.Control.LargeHeight}"/>
         <Setter Property="CornerRadius" Value="{StaticResource PlayAch.Radius.Small}"/>

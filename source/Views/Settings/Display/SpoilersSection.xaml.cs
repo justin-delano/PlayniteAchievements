@@ -132,41 +132,13 @@ namespace PlayniteAchievements.Views.Settings.Display
             UpdateFallbackThumbnails();
         }
 
-        private void FallbackIconTextBox_PreviewDragOver(object sender, DragEventArgs e)
+        // A dropped or pasted image. A global setting has no refresh pass that would materialize
+        // a URL later, so a URL is downloaded now rather than persisted as a link.
+        private async void FallbackIcon_Picked(object sender, ImagePickedEventArgs e)
         {
-            var hasDropPayload = ImageDropHelper.TryGetFirstImageFilePath(e.Data, out _) ||
-                                 ImageDropHelper.TryGetFirstBrowserUrl(e.Data, out _);
-            e.Effects = hasDropPayload ? DragDropEffects.Copy : DragDropEffects.None;
-            e.Handled = true;
-        }
-
-        private async void FallbackIconTextBox_PreviewDrop(object sender, DragEventArgs e)
-        {
-            if (!TryResolveFallbackSlot(sender as FrameworkElement, out var slot))
+            if (TryResolveFallbackSlot(sender as FrameworkElement, out var slot))
             {
-                return;
-            }
-
-            try
-            {
-                if (ImageDropHelper.TryGetFirstImageFilePath(e.Data, out var imagePath))
-                {
-                    e.Handled = true;
-                    await ApplyFallbackIconAsync(slot, imagePath);
-                    return;
-                }
-
-                // A global setting has no refresh pass that would materialize a URL later, so
-                // download it now rather than persisting the link.
-                if (ImageDropHelper.TryGetFirstBrowserUrl(e.Data, out var url))
-                {
-                    e.Handled = true;
-                    await ApplyFallbackIconAsync(slot, url);
-                }
-            }
-            catch
-            {
-                e.Handled = true;
+                await ApplyFallbackIconAsync(slot, e.ImageSource);
             }
         }
 

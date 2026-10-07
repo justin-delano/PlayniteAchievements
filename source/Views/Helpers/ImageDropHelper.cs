@@ -84,6 +84,47 @@ namespace PlayniteAchievements.Views.Helpers
         }
 
         /// <summary>
+        /// The image a drop or paste payload carries, in order: a decodable image file, an
+        /// http(s) URL, or text naming a decodable image file.
+        /// </summary>
+        public static bool TryGetImageSource(IDataObject data, out string source)
+        {
+            if (TryGetFirstImageFilePath(data, out source) || TryGetFirstBrowserUrl(data, out source))
+            {
+                return true;
+            }
+
+            var text = ReadDroppedText(data, DataFormats.UnicodeText) ??
+                       ReadDroppedText(data, DataFormats.Text);
+            var candidate = (text ?? string.Empty).Trim().Trim('"');
+            if (IsSupportedImageFile(candidate))
+            {
+                source = candidate;
+                return true;
+            }
+
+            source = null;
+            return false;
+        }
+
+        /// <summary>
+        /// <see cref="TryGetImageSource"/> over the clipboard. False when the clipboard holds no
+        /// image source or cannot be opened.
+        /// </summary>
+        public static bool TryGetClipboardImageSource(out string source)
+        {
+            source = null;
+            try
+            {
+                return TryGetImageSource(Clipboard.GetDataObject(), out source);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// True when the path points at an existing file in a format this machine offers and that
         /// a <see cref="BitmapDecoder"/> (or, for WebM, the WebM reader) can actually open.
         /// </summary>

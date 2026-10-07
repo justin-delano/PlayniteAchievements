@@ -1258,6 +1258,15 @@ namespace PlayniteAchievements.Views.ManageAchievements
             e.Handled = true;
         }
 
+        // An image dropped on or pasted into a details-pane icon slot.
+        private void IconPickTarget_Picked(object sender, ImagePickedEventArgs e)
+        {
+            if (TryResolveRowAndVariant(sender as FrameworkElement, out var row, out var variant))
+            {
+                SetIconPath(row, variant, e.ImageSource);
+            }
+        }
+
         private void IconDropTarget_PreviewDragOver(object sender, DragEventArgs e)
         {
             var hasDropPayload = TryGetFirstImageFilePath(e.Data, out _) || TryGetFirstBrowserUrl(e.Data, out _);

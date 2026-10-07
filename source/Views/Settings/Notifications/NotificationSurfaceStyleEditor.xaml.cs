@@ -113,15 +113,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             }
         }
 
-        private void ImageTextBox_PreviewDragOver(object sender, DragEventArgs e)
-        {
-            var hasDropPayload = ImageDropHelper.TryGetFirstImageFilePath(e.Data, out _) ||
-                                 ImageDropHelper.TryGetFirstBrowserUrl(e.Data, out _);
-            e.Effects = hasDropPayload ? DragDropEffects.Copy : DragDropEffects.None;
-            e.Handled = true;
-        }
-
-        private async void ImageTextBox_PreviewDrop(object sender, DragEventArgs e)
+        private async void ImagePickTarget_Picked(object sender, ImagePickedEventArgs e)
         {
             var viewModel = ViewModel;
             if (viewModel == null || !TryResolveSlot(sender as FrameworkElement, out var slot))
@@ -129,25 +121,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 return;
             }
 
-            try
-            {
-                if (ImageDropHelper.TryGetFirstImageFilePath(e.Data, out var imagePath))
-                {
-                    e.Handled = true;
-                    await viewModel.ApplyImageAsync(slot, imagePath);
-                    return;
-                }
-
-                if (ImageDropHelper.TryGetFirstBrowserUrl(e.Data, out var url))
-                {
-                    e.Handled = true;
-                    await viewModel.ApplyImageAsync(slot, url);
-                }
-            }
-            catch
-            {
-                e.Handled = true;
-            }
+            await viewModel.ApplyImageAsync(slot, e.ImageSource);
         }
 
         private void ApplyFontFamilyToAllLines_Click(object sender, RoutedEventArgs e)

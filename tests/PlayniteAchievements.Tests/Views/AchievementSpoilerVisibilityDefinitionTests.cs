@@ -354,8 +354,8 @@ namespace PlayniteAchievements.Tests.Views
             // The cover images only take effect while a row is masked, so they belong here.
             AssertContainsAll(
                 xaml,
-                "Persisted.LockedFallbackIconPath",
-                "Persisted.HiddenFallbackIconPath");
+                "LockedFallbackThumbnailUri",
+                "HiddenFallbackThumbnailUri");
 
             // And none of it may be left behind on the General page.
             foreach (var moved in new[]

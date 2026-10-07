@@ -137,5 +137,19 @@
         </Style.Triggers>
     </Style>
 
+    <!-- An image slot's thumbnail with helpers:ImagePickTarget.IsEnabled: a click focuses it
+         for Ctrl+V, so focus shows on the border. Slot styles add size and
+         background with BasedOn; the triggers here still win over their setters. -->
+    <Style x:Key="PlayAch.ImagePickTarget.Style" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Style.Triggers>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
 
 </ResourceDictionary>

@@ -281,7 +281,7 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="PreviewBorderStyle" TargetType="Border">
+            <Style x:Key="PreviewBorderStyle" TargetType="Border" BasedOn="{StaticResource PlayAch.ImagePickTarget.Style}">
                 <Setter Property="Width" Value="38" />
                 <Setter Property="Height" Value="38" />
                 <Setter Property="CornerRadius" Value="4" />
@@ -2179,13 +2179,15 @@
                                            FontWeight="SemiBold"
                                            Margin="0,0,0,8" />
 
+                                <!-- Each thumbnail is its slot's input: drop an image on it, or
+                                     click it and paste a file or URL. The tooltip names the source. -->
                                 <Grid Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="24" />
                                         <ColumnDefinition Width="46" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
                                     <Border Grid.Column="0"
@@ -2201,7 +2203,11 @@
 
                                     <Border Grid.Column="1"
                                             Style="{StaticResource PreviewBorderStyle}"
-                                            Margin="8,0,0,0">
+                                            Margin="8,0,0,0"
+                                            Tag="Unlocked"
+                                            ToolTip="{Binding UnlockedIconPath}"
+                                            helpers:ImagePickTarget.IsEnabled="True"
+                                            helpers:ImagePickTarget.Picked="IconPickTarget_Picked">
                                         <Image Width="32"
                                                Height="32"
                                                Stretch="Uniform"
@@ -2209,25 +2215,14 @@
                                                helpers:AsyncImage.DecodePixel="72" />
                                     </Border>
 
-                                    <TextBox Grid.Column="2"
-                                             Margin="8,0,0,0"
-                                             Text="{Binding UnlockedIconDisplayText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             KeyDown="EditorTextBox_KeyDown"
-                                             Tag="Unlocked"
-                                             ToolTip="{Binding UnlockedIconPath}"
-                                             AllowDrop="True"
-                                             PreviewDragOver="IconDropTarget_PreviewDragOver"
-                                             PreviewDrop="IconDropTarget_Drop" />
-
-                                    <Button Grid.Column="3"
-                                            Tag="{Binding UnlockedIconDisplayText}"
+                                    <Button Grid.Column="2"
                                             CommandParameter="Unlocked"
                                             Style="{StaticResource IconClearButtonStyle}"
+                                            Visibility="{Binding HasUnlockedIconOverride, Converter={StaticResource BoolToVis}}"
                                             Focusable="True"
                                             Click="ClearIconButton_Click" />
 
-                                    <Button Grid.Column="4"
+                                    <Button Grid.Column="3"
                                             Content="..."
                                             Tag="Unlocked"
                                             ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"
@@ -2239,9 +2234,9 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="24" />
                                         <ColumnDefinition Width="46" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
                                     <Border Grid.Column="0"
@@ -2257,7 +2252,11 @@
 
                                     <Border Grid.Column="1"
                                             Style="{StaticResource PreviewBorderStyle}"
-                                            Margin="8,0,0,0">
+                                            Margin="8,0,0,0"
+                                            Tag="Locked"
+                                            ToolTip="{Binding LockedIconPath}"
+                                            helpers:ImagePickTarget.IsEnabled="True"
+                                            helpers:ImagePickTarget.Picked="IconPickTarget_Picked">
                                         <Image Width="32"
                                                Height="32"
                                                Stretch="Uniform"
@@ -2265,25 +2264,14 @@
                                                helpers:AsyncImage.DecodePixel="72" />
                                     </Border>
 
-                                    <TextBox Grid.Column="2"
-                                             Margin="8,0,0,0"
-                                             Text="{Binding LockedIconDisplayText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                             Style="{StaticResource GridEditorTextBoxStyle}"
-                                             KeyDown="EditorTextBox_KeyDown"
-                                             Tag="Locked"
-                                             ToolTip="{Binding LockedIconPath}"
-                                             AllowDrop="True"
-                                             PreviewDragOver="IconDropTarget_PreviewDragOver"
-                                             PreviewDrop="IconDropTarget_Drop" />
-
-                                    <Button Grid.Column="3"
-                                            Tag="{Binding LockedIconDisplayText}"
+                                    <Button Grid.Column="2"
                                             CommandParameter="Locked"
                                             Style="{StaticResource IconClearButtonStyle}"
+                                            Visibility="{Binding HasLockedIconOverride, Converter={StaticResource BoolToVis}}"
                                             Focusable="True"
                                             Click="ClearIconButton_Click" />
 
-                                    <Button Grid.Column="4"
+                                    <Button Grid.Column="3"
                                             Content="..."
                                             Tag="Locked"
                                             ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"

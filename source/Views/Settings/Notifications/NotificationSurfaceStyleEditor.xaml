@@ -828,9 +828,9 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" MinWidth="110"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -847,32 +847,25 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="0" Grid.Column="1"
+                            Tag="BadgeCommon"
+                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                            helpers:ImagePickTarget.IsEnabled="True"
+                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="1"
                             Margin="0,0,8,6">
                         <Image helpers:AsyncImage.Uri="{Binding BadgeCommonThumbnailUri}"
                                helpers:AsyncImage.DecodePixel="48"
                                Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                    <TextBox Grid.Row="0" Grid.Column="2"
-                             Tag="BadgeCommon"
-                             Text="{Binding Surface.BadgeImages.CommonPath, Mode=OneWay}"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             Margin="0,0,0,6"
-                             AllowDrop="True"
-                             PreviewDragOver="ImageTextBox_PreviewDragOver"
-                             PreviewDrop="ImageTextBox_PreviewDrop"/>
-                    <Button Grid.Row="0" Grid.Column="3"
+                    <Button Grid.Row="0" Grid.Column="2"
                             Tag="BadgeCommon"
                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Click="ImageClear_Click"
-                            Margin="8,0,0,6"
+                            Margin="0,0,0,6"
                             VerticalAlignment="Center"/>
-                    <Button Grid.Row="0" Grid.Column="4"
+                    <Button Grid.Row="0" Grid.Column="3"
                             Tag="BadgeCommon"
                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                             Click="ImageBrowse_Click"
@@ -886,32 +879,25 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="1" Grid.Column="1"
+                            Tag="BadgeUncommon"
+                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                            helpers:ImagePickTarget.IsEnabled="True"
+                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="1"
                             Margin="0,0,8,6">
                         <Image helpers:AsyncImage.Uri="{Binding BadgeUncommonThumbnailUri}"
                                helpers:AsyncImage.DecodePixel="48"
                                Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                    <TextBox Grid.Row="1" Grid.Column="2"
-                             Tag="BadgeUncommon"
-                             Text="{Binding Surface.BadgeImages.UncommonPath, Mode=OneWay}"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             Margin="0,0,0,6"
-                             AllowDrop="True"
-                             PreviewDragOver="ImageTextBox_PreviewDragOver"
-                             PreviewDrop="ImageTextBox_PreviewDrop"/>
-                    <Button Grid.Row="1" Grid.Column="3"
+                    <Button Grid.Row="1" Grid.Column="2"
                             Tag="BadgeUncommon"
                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Click="ImageClear_Click"
-                            Margin="8,0,0,6"
+                            Margin="0,0,0,6"
                             VerticalAlignment="Center"/>
-                    <Button Grid.Row="1" Grid.Column="4"
+                    <Button Grid.Row="1" Grid.Column="3"
                             Tag="BadgeUncommon"
                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                             Click="ImageBrowse_Click"
@@ -925,32 +911,25 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="2" Grid.Column="1"
+                            Tag="BadgeRare"
+                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                            helpers:ImagePickTarget.IsEnabled="True"
+                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="1"
                             Margin="0,0,8,6">
                         <Image helpers:AsyncImage.Uri="{Binding BadgeRareThumbnailUri}"
                                helpers:AsyncImage.DecodePixel="48"
                                Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                    <TextBox Grid.Row="2" Grid.Column="2"
-                             Tag="BadgeRare"
-                             Text="{Binding Surface.BadgeImages.RarePath, Mode=OneWay}"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             Margin="0,0,0,6"
-                             AllowDrop="True"
-                             PreviewDragOver="ImageTextBox_PreviewDragOver"
-                             PreviewDrop="ImageTextBox_PreviewDrop"/>
-                    <Button Grid.Row="2" Grid.Column="3"
+                    <Button Grid.Row="2" Grid.Column="2"
                             Tag="BadgeRare"
                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Click="ImageClear_Click"
-                            Margin="8,0,0,6"
+                            Margin="0,0,0,6"
                             VerticalAlignment="Center"/>
-                    <Button Grid.Row="2" Grid.Column="4"
+                    <Button Grid.Row="2" Grid.Column="3"
                             Tag="BadgeRare"
                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                             Click="ImageBrowse_Click"
@@ -964,32 +943,25 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="3" Grid.Column="1"
+                            Tag="BadgeUltraRare"
+                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                            helpers:ImagePickTarget.IsEnabled="True"
+                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="1"
                             Margin="0,0,8,6">
                         <Image helpers:AsyncImage.Uri="{Binding BadgeUltraRareThumbnailUri}"
                                helpers:AsyncImage.DecodePixel="48"
                                Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                    <TextBox Grid.Row="3" Grid.Column="2"
-                             Tag="BadgeUltraRare"
-                             Text="{Binding Surface.BadgeImages.UltraRarePath, Mode=OneWay}"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             Margin="0,0,0,6"
-                             AllowDrop="True"
-                             PreviewDragOver="ImageTextBox_PreviewDragOver"
-                             PreviewDrop="ImageTextBox_PreviewDrop"/>
-                    <Button Grid.Row="3" Grid.Column="3"
+                    <Button Grid.Row="3" Grid.Column="2"
                             Tag="BadgeUltraRare"
                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Click="ImageClear_Click"
-                            Margin="8,0,0,6"
+                            Margin="0,0,0,6"
                             VerticalAlignment="Center"/>
-                    <Button Grid.Row="3" Grid.Column="4"
+                    <Button Grid.Row="3" Grid.Column="3"
                             Tag="BadgeUltraRare"
                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                             Click="ImageBrowse_Click"
@@ -1003,31 +975,25 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"/>
                     <Border Grid.Row="4" Grid.Column="1"
+                            Tag="BadgeCompletion"
+                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                            helpers:ImagePickTarget.IsEnabled="True"
+                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="1"
                             Margin="0,0,8,0">
                         <Image helpers:AsyncImage.Uri="{Binding BadgeCompletionThumbnailUri}"
                                helpers:AsyncImage.DecodePixel="48"
                                Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                    <TextBox Grid.Row="4" Grid.Column="2"
-                             Tag="BadgeCompletion"
-                             Text="{Binding Surface.BadgeImages.CompletionPath, Mode=OneWay}"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             AllowDrop="True"
-                             PreviewDragOver="ImageTextBox_PreviewDragOver"
-                             PreviewDrop="ImageTextBox_PreviewDrop"/>
-                    <Button Grid.Row="4" Grid.Column="3"
+                    <Button Grid.Row="4" Grid.Column="2"
                             Tag="BadgeCompletion"
                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Click="ImageClear_Click"
-                            Margin="8,0,0,0"
+                            Margin="0,0,0,0"
                             VerticalAlignment="Center"/>
-                    <Button Grid.Row="4" Grid.Column="4"
+                    <Button Grid.Row="4" Grid.Column="3"
                             Tag="BadgeCompletion"
                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                             Click="ImageBrowse_Click"
@@ -1050,37 +1016,31 @@
                 <Grid Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Border Grid.Column="0"
+                            Tag="Background"
+                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                            helpers:ImagePickTarget.IsEnabled="True"
+                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48"
                             Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="1"
                             Margin="0,0,8,0">
                         <Image helpers:AsyncImage.Uri="{Binding BackgroundThumbnailUri}"
                                helpers:AsyncImage.DecodePixel="48"
                                Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                    <TextBox Grid.Column="1"
-                             Tag="Background"
-                             Text="{Binding Style.ToastBackgroundImagePath, Mode=OneWay}"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             AllowDrop="True"
-                             PreviewDragOver="ImageTextBox_PreviewDragOver"
-                             PreviewDrop="ImageTextBox_PreviewDrop"/>
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="1"
                             Tag="Background"
                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                             Click="ImageClear_Click"
-                            Margin="8,0,0,0"
+                            Margin="0,0,0,0"
                             VerticalAlignment="Center"/>
-                    <Button Grid.Column="3"
+                    <Button Grid.Column="2"
                             Tag="Background"
                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                             Click="ImageBrowse_Click"
