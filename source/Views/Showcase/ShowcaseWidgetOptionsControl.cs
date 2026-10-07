@@ -220,6 +220,11 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetPieSmallSliceMode(_settings),
                         value => ShowcaseWidgetOptions.SetPieSmallSliceMode(_settings, value),
                         SmallSliceModeName);
+                    AddToggle(
+                        panel,
+                        Localize("LOCPlayAch_Settings_ShowGridControlBar"),
+                        ShowcaseWidgetOptions.GetPieShowControlBar(_settings),
+                        value => ShowcaseWidgetOptions.SetPieShowControlBar(_settings, value));
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     AddRangeChoice(panel);
