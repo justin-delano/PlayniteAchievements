@@ -215,8 +215,6 @@ namespace PlayniteAchievements.Models.Settings
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;
             target.ShowOverviewPrestigeScoreCard = source.ShowOverviewPrestigeScoreCard;
-            target.OverviewCollectionBadgePosition = source.OverviewCollectionBadgePosition;
-            target.OverviewPrestigeBadgePosition = source.OverviewPrestigeBadgePosition;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompletedProgressColoring = source.ShowCompletedProgressColoring;
             target.TintMissableLocks = source.TintMissableLocks;
