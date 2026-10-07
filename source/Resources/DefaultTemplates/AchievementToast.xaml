@@ -585,25 +585,39 @@
                                    Visibility="{Binding DescriptionLine.ShowDescription, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </Grid>
 
-                    <!-- Game/category line: "game name • category" composed as one string so the
-                         pair trims together instead of overflowing into the provider-icon column. -->
-                    <Grid Grid.Row="{Binding GameCategoryLine.RowIndex}"
-                          Margin="{Binding GameCategoryLine.LeftIndentMargin}"
-                          Visibility="{Binding GameCategoryLine.LineVisibility}"
-                          Effect="{Binding GameCategoryLine.TextShadow}">
-                        <TextBlock helpers:InlineMarkdownFormatter.MarkupText="{Binding GameCategoryLine.GameCategoryText}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontSize="{Binding GameCategoryLine.FontSize}"
-                                   FontFamily="{Binding GameCategoryLine.FontFamily}"
-                                   FontWeight="{Binding GameCategoryLine.FontWeight}"
-                                   FontStyle="{Binding GameCategoryLine.FontStyle}"
-                                   TextDecorations="{Binding GameCategoryLine.TextDecorations}"
-                                   TextWrapping="NoWrap"
-                                   TextTrimming="CharacterEllipsis"
-                                   Effect="{Binding GameCategoryLine.TextShadowInner}"
-                                   Visibility="{Binding GameCategoryLine.HasGameCategoryContent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    </Grid>
+                    <!-- Game/category line: the optional inline rarity badge, then "game name •
+                         category" composed as one string so the pair trims together instead of
+                         overflowing into the provider-icon column. -->
+                    <DockPanel Grid.Row="{Binding GameCategoryLine.RowIndex}"
+                               Margin="{Binding GameCategoryLine.LeftIndentMargin}"
+                               Visibility="{Binding GameCategoryLine.LineVisibility}"
+                               LastChildFill="True">
+                        <Image DockPanel.Dock="Left"
+                               helpers:AsyncImage.Uri="{Binding GameCategoryLine.InlineBadgeSource}"
+                               helpers:AsyncImage.DecodePixel="64"
+                               Width="{Binding GameCategoryLine.InlineBadgeSize}"
+                               Height="{Binding GameCategoryLine.InlineBadgeSize}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,5,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Effect="{Binding GameCategoryLine.ImageShadow}"
+                               Visibility="{Binding GameCategoryLine.ShowInlineBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <Grid Effect="{Binding GameCategoryLine.TextShadow}">
+                            <TextBlock helpers:InlineMarkdownFormatter.MarkupText="{Binding GameCategoryLine.GameCategoryText}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       FontSize="{Binding GameCategoryLine.FontSize}"
+                                       FontFamily="{Binding GameCategoryLine.FontFamily}"
+                                       FontWeight="{Binding GameCategoryLine.FontWeight}"
+                                       FontStyle="{Binding GameCategoryLine.FontStyle}"
+                                       TextDecorations="{Binding GameCategoryLine.TextDecorations}"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"
+                                       Effect="{Binding GameCategoryLine.TextShadowInner}"
+                                       Visibility="{Binding GameCategoryLine.HasGameCategoryContent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </Grid>
+                    </DockPanel>
 
                     <!-- Progress line (progress notifications only): a bar and the "4/10" count.
                          The fill is a full-width Border scaled by ProgressFraction (0..1) inside a
