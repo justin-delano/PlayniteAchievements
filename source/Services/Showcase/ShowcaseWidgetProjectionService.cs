@@ -153,6 +153,31 @@ namespace PlayniteAchievements.Services.Showcase
         /// protected Default collection. Reorder and unpin commands use this stable id.
         /// </summary>
         public string ResolvedPinCollectionId { get; set; }
+
+        /// <summary>
+        /// Set by the overview's mini-showcase: the snapshot already follows the overview's
+        /// filters, the widget shows no control bar of its own, and its clicks set those filters.
+        /// </summary>
+        public bool IsLinked { get; set; }
+
+        /// <summary>
+        /// A linked pie's selected slices as <see cref="OverviewLinkedSliceKeys"/> values or
+        /// provider keys, never display labels.
+        /// </summary>
+        public IReadOnlyCollection<string> LinkedSliceKeys { get; set; } = Array.Empty<string>();
+
+        /// <summary>The overview's unlock-day filter, for a linked timeline or calendar to mark.</summary>
+        public UnlockDaySpan? HighlightedSpan { get; set; }
+
+        /// <summary>The game a linked widget narrowed to, shown beside its title.</summary>
+        public string ContextLabel { get; set; }
+
+        /// <summary>
+        /// The linked state this projection was decorated with (selected slices, the marked
+        /// days, the narrowed game), in one comparable string. That state can change while the
+        /// snapshot does not, and only a widget whose own stamp moved needs reprojecting.
+        /// </summary>
+        public string LinkedStamp { get; set; }
     }
 
     public static class ShowcaseWidgetProjectionService
@@ -881,16 +906,34 @@ namespace PlayniteAchievements.Services.Showcase
             return games.Take(count).ToList();
         }
 
+        /// <param name="trimToUnlocks">
+        /// Narrows the window to the days from the first unlock in it to the last, for a calendar
+        /// following a selection (the overview's mini-showcase) whose span is what matters, not
+        /// the run up to today.
+        /// </param>
         public static ShowcaseActivityCalendar BuildActivityCalendar(
             OverviewDataSnapshot snapshot,
             ShowcaseWidgetInstanceSettings instance,
-            DateTime endDate)
+            DateTime endDate,
+            bool trimToUnlocks = false)
         {
             var counts = NormalizeDailyCounts(snapshot);
             var range = ResolveDayRange(instance, endDate.Date, counts);
             var start = range.Start;
             // A custom window with a fixed end stops the calendar there rather than at today.
             endDate = range.End;
+            if (trimToUnlocks)
+            {
+                var active = counts
+                    .Where(pair => pair.Value > 0 && pair.Key >= start && pair.Key <= endDate)
+                    .Select(pair => pair.Key)
+                    .ToList();
+                if (active.Count > 0)
+                {
+                    start = active.Min();
+                    endDate = active.Max();
+                }
+            }
             // Weeks render as Sunday-first columns, so the window starts on a Sunday.
             while (start.DayOfWeek != DayOfWeek.Sunday)
             {

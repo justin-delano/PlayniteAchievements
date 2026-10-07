@@ -23,7 +23,8 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void AddTrackStrips()
         {
-            foreach (var vertical in new[] { true, false })
+            // A strip's single row can be neither inserted beside nor deleted.
+            foreach (var vertical in _host.IsStrip ? new[] { true } : new[] { true, false })
             {
                 for (var index = 0; index < PageTrackCount(vertical); index++)
                 {

@@ -215,20 +215,6 @@ namespace PlayniteAchievements.Models.Settings
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;
             target.ShowOverviewPrestigeScoreCard = source.ShowOverviewPrestigeScoreCard;
-            target.ShowOverviewPieCharts = source.ShowOverviewPieCharts;
-            target.ShowOverviewGamesPieChart = source.ShowOverviewGamesPieChart;
-            target.ShowOverviewProviderPieChart = source.ShowOverviewProviderPieChart;
-            target.ShowOverviewRarityPieChart = source.ShowOverviewRarityPieChart;
-            target.ShowOverviewTrophyPieChart = source.ShowOverviewTrophyPieChart;
-            target.OverviewPieCenterMode = source.OverviewPieCenterMode;
-            target.ShowOverviewPieIcons = source.ShowOverviewPieIcons;
-            target.ShowOverviewPieLegend = source.ShowOverviewPieLegend;
-            target.OverviewPieLegendPosition = source.OverviewPieLegendPosition;
-            target.OverviewCollectionBadgePosition = source.OverviewCollectionBadgePosition;
-            target.OverviewPrestigeBadgePosition = source.OverviewPrestigeBadgePosition;
-            target.OverviewPieSmallSliceMode = source.OverviewPieSmallSliceMode;
-            target.OverviewPieIncludeLocked = source.OverviewPieIncludeLocked;
-            target.ShowOverviewBarCharts = source.ShowOverviewBarCharts;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompletedProgressColoring = source.ShowCompletedProgressColoring;
             target.TintMissableLocks = source.TintMissableLocks;
@@ -265,6 +251,9 @@ namespace PlayniteAchievements.Models.Settings
             target.CompactLockedListSortMode = source.CompactLockedListSortMode;
             target.CompactLockedListSortDescending = source.CompactLockedListSortDescending;
             target.Showcase = source.Showcase?.Clone();
+            target.OverviewMiniShowcase = source.OverviewMiniShowcase?.Clone();
+            target.OverviewMiniShowcaseHeight = source.OverviewMiniShowcaseHeight;
+            target.ShowOverviewMiniShowcase = source.ShowOverviewMiniShowcase;
             target.GridOptions = source.GridOptions?.Clone() ?? new GridOptionsCatalog();
             target.StartPageActivityScope = source.StartPageActivityScope;
             target.StartPageProgressScope = source.StartPageProgressScope;
@@ -288,9 +277,6 @@ namespace PlayniteAchievements.Models.Settings
                     kvp => kvp.Value?.Clone(),
                     StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
-            target.OverviewTimeWindow = source.OverviewTimeWindow;
-            target.OverviewTimelineGranularity = source.OverviewTimelineGranularity;
-            target.OverviewTimelineSplitByPlatform = source.OverviewTimelineSplitByPlatform;
             target.ViewAchievementsTimeWindow = source.ViewAchievementsTimeWindow;
             target.ViewAchievementsTimelineGranularity = source.ViewAchievementsTimelineGranularity;
             target.ViewAchievementsTimelineVisible = source.ViewAchievementsTimelineVisible;

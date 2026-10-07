@@ -467,8 +467,8 @@
          the View Achievements window on the achievement, as the compact lists do. -->
     <DataTemplate DataType="{x:Type widgets:IconMosaicWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Top"
-                                        Margin="0,0,0,8"
+        <controls:GridControlBarControl DockPanel.Dock="Bottom"
+                                        Margin="0,8,0,0"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <ListBox ItemsSource="{Binding Items}"
@@ -511,8 +511,8 @@
          The optional control bar filters the games the pie's totals come from. -->
     <DataTemplate DataType="{x:Type widgets:PieWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Top"
-                                        Margin="0,0,0,8"
+        <controls:GridControlBarControl DockPanel.Dock="Bottom"
+                                        Margin="0,8,0,0"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <controls:PieChartWithRadialIcons
@@ -533,8 +533,31 @@
 
     <!-- Timeline: the reused LiveCharts column chart with range buttons, identical at every size. -->
     <DataTemplate DataType="{x:Type widgets:TimelineWidgetViewModel}">
-        <!-- The window and granularity are widget settings (the Range and Granularity options);
-             the widget itself is only the chart. -->
+        <!-- The window, bar width and platform split are widget settings; with Show Control Bar
+             on they are also set here, above the chart, and saved back to the widget. -->
+        <DockPanel>
+        <DockPanel DockPanel.Dock="Bottom"
+                   LastChildFill="True"
+                   Margin="0,8,0,0"
+                   Visibility="{Binding ShowControls, Converter={StaticResource BoolToVis}}">
+            <!-- IcoFont "layers": stacked per-platform segments. -->
+            <ToggleButton DockPanel.Dock="Right"
+                          Style="{DynamicResource PlayAch.ToggleButton.BaseStyle}"
+                          IsChecked="{Binding SplitByPlatform, Mode=TwoWay}"
+                          Width="34"
+                          Padding="0"
+                          Margin="{DynamicResource PlayAch.Thickness.Left.Xs}"
+                          VerticalAlignment="Center"
+                          FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                          FontSize="16"
+                          Content="&#xEF5C;"
+                          ToolTip="{DynamicResource LOCPlayAch_Timeline_SplitByPlatform}"/>
+            <controls:TimeWindowPicker Window="{Binding Timeline.Window, Mode=TwoWay}"
+                                       Granularity="{Binding Timeline.Granularity, Mode=TwoWay}"
+                                       UnavailableGranularities="{Binding Timeline.UnavailableGranularities}"
+                                       ShowGranularity="True"
+                                       MinDate="{Binding Timeline.EarliestDate}"/>
+        </DockPanel>
         <controls:UnlockTimelineChart Series="{Binding Timeline.TimelineSeries}"
                                       Labels="{Binding Timeline.TimelineLabels}"
                                       TooltipLabels="{Binding Timeline.TooltipLabels}"
@@ -545,7 +568,9 @@
                                       IsEmpty="{Binding Timeline.IsEmpty}"
                                       MaxTickCount="{Binding Timeline.MaxTickCount, Mode=OneWayToSource}"
                                       MaxBarCount="{Binding Timeline.MaxBarCount, Mode=OneWayToSource}"
-                                      RenderRevision="{Binding Timeline.RenderRevision}"/>
+                                      RenderRevision="{Binding Timeline.RenderRevision}"
+                                      HighlightedIndex="{Binding Timeline.HighlightedIndex}"/>
+        </DockPanel>
     </DataTemplate>
 
     <!-- Statistics: scrolling grid of value/label tiles. -->
@@ -698,8 +723,8 @@
          tiles, reorder/unpin. -->
     <DataTemplate DataType="{x:Type widgets:GameMosaicWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Top"
-                                        Margin="0,0,0,8"
+        <controls:GridControlBarControl DockPanel.Dock="Bottom"
+                                        Margin="0,8,0,0"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <ListBox ItemsSource="{Binding Tiles}"
@@ -1002,6 +1027,12 @@
     </DataTemplate>
 
     <DataTemplate DataType="{x:Type widgets:ActivityCalendarWidgetViewModel}">
+        <DockPanel>
+        <!-- With Show Control Bar on, the calendar's window is set here and saved back to the widget. -->
+        <controls:TimeWindowPicker DockPanel.Dock="Bottom"
+                                   Margin="0,8,0,0"
+                                   Window="{Binding Window, Mode=TwoWay}"
+                                   Visibility="{Binding ShowControls, Converter={StaticResource BoolToVis}}"/>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -1039,6 +1070,8 @@
                          with tooltips and the day popup (ShowcaseActivityDayPopupTemplate)
                          served from hit tests. -->
                     <showcase:ActivityCalendarHeatmap Weeks="{Binding Weeks}"
+                                                      SelectsDays="{Binding IsLinked}"
+                                                      HighlightedDay="{Binding HighlightedDay}"
                                                       ShowMonthLabels="True"
                                                       HorizontalAlignment="Left"
                                                       VerticalAlignment="Top"/>
@@ -1071,6 +1104,7 @@
                            VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
+        </DockPanel>
     </DataTemplate>
 
 </ResourceDictionary>

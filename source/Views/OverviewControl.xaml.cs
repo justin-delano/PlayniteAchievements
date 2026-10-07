@@ -83,6 +83,7 @@ namespace PlayniteAchievements.Views
         private bool _committingOverviewSelection;
         private FriendsOverviewControl _friendsOverview;
         private ShowcaseControl _showcase;
+        private ShowcaseControl _miniShowcase;
         private readonly DispatcherTimer _showcaseDatabaseRefreshTimer;
         private bool _showcaseDatabaseRefreshPending;
         private volatile bool _isDisposed;
@@ -186,6 +187,11 @@ namespace PlayniteAchievements.Views
             {
                 ApplyActiveSubView();
             }
+
+            using (Common.PerfScope.Start(logger, "OverviewControl.CreateMiniShowcase", thresholdMs: 30))
+            {
+                CreateMiniShowcase();
+            }
             // Open/close is its own memory question, separate from refresh churn: if either of
             // these stays live after Dispose, the window's whole visual tree, view model, and
             // row set are still rooted and closing the overview cannot return memory.
@@ -200,7 +206,11 @@ namespace PlayniteAchievements.Views
                 _persistedSubscription = new PersistedSettingsSubscription(
                     _settings,
                     Persisted_PropertyChanged,
-                    LeaveFriendsSubViewIfDisabled);
+                    () =>
+                    {
+                        LeaveFriendsSubViewIfDisabled();
+                        ApplyMiniShowcaseLayoutState();
+                    });
             }
 
             if (_playniteApi?.Database?.Games != null)
@@ -350,6 +360,11 @@ namespace PlayniteAchievements.Views
             {
                 LeaveFriendsSubViewIfDisabled();
             }
+            else if (e?.PropertyName == nameof(PersistedSettings.ShowOverviewMiniShowcase) ||
+                     e?.PropertyName == nameof(PersistedSettings.OverviewMiniShowcaseHeight))
+            {
+                ApplyMiniShowcaseLayoutState();
+            }
         }
 
         // The subview switch is hidden when friends features are off, so staying on the
@@ -486,6 +501,7 @@ namespace PlayniteAchievements.Views
                 GameAchievementsGrid?.Dispose();
                 _friendsOverview?.Dispose();
                 _showcase?.Dispose();
+                _miniShowcase?.Dispose();
                 _showcaseDatabaseRefreshTimer?.Stop();
                 if (_playniteApi?.Database?.Games != null)
                 {
@@ -516,7 +532,6 @@ namespace PlayniteAchievements.Views
             ApplyOverviewColumnRatio();
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
-            UpdatePieChartLayout();
         }
 
         private void Plugin_SettingsSaved(object sender, EventArgs e)
@@ -580,16 +595,6 @@ namespace PlayniteAchievements.Views
             {
                 ResetOverviewSortDirection();
                 return;
-            }
-
-            if (e.PropertyName == nameof(OverviewViewModel.ShowOverviewGamesPieChart)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewProviderPieChart)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewRarityPieChart)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewTrophyPieChart)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewPieCharts)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewBarCharts))
-            {
-                UpdatePieChartLayout();
             }
 
             if (string.IsNullOrEmpty(e.PropertyName)
@@ -1730,70 +1735,51 @@ namespace PlayniteAchievements.Views
             ResetRecentAchievementsSortDirection();
         }
 
-        private void OnProviderPieChartSliceClick(object sender, string providerName)
+        // The mini-showcase is part of the Overview sub-view, so it is built with the control
+        // and lives as long as it does.
+        private void CreateMiniShowcase()
         {
-            _viewModel?.ToggleProviderFilterFromPieChart(providerName);
+            _miniShowcase = new ShowcaseControl(
+                _viewModel,
+                _settings,
+                new OverviewMiniShowcaseHost(_viewModel, _settings, _persistSettingsForUi),
+                _playniteApi,
+                ownsHost: true);
+            MiniShowcaseHost.Content = _miniShowcase;
+            MiniShowcaseHost.AddHandler(
+                ShowcaseWidgetControl.LinkedClickEvent,
+                new ShowcaseLinkedClickEventHandler(MiniShowcase_LinkedClick));
+            ApplyMiniShowcaseLayoutState();
         }
 
-        private void OnGamesPieChartSliceClick(object sender, string completenessLabel)
+        // Visibility is the main settings toggle alone: an empty strip stays, so its right-click
+        // menu can still open the editor.
+        private void ApplyMiniShowcaseLayoutState()
         {
-            _viewModel?.ToggleCompletenessFilterFromPieChart(completenessLabel);
+            var persisted = _settings?.Persisted;
+            if (persisted == null || MiniShowcaseStrip == null)
+            {
+                return;
+            }
+
+            MiniShowcaseStrip.Visibility = persisted.ShowOverviewMiniShowcase ? Visibility.Visible : Visibility.Collapsed;
+            MiniShowcaseHost.Height = persisted.OverviewMiniShowcaseHeight;
+            if (!persisted.ShowOverviewMiniShowcase && _miniShowcase != null)
+            {
+                _miniShowcase.IsEditing = false;
+            }
         }
 
-        private void UpdatePieChartLayout()
+        private void MiniShowcase_LinkedClick(object sender, ShowcaseLinkedClickEventArgs e)
         {
-            if (_viewModel == null || OverviewPieChartsGrid == null) return;
-
-            var panels = new List<(FrameworkElement Element, bool IsVisible)>
+            e.Handled = true;
+            if (e.Span.HasValue)
             {
-                (GamesPieChartPanel, _viewModel.ShowOverviewGamesPieChart),
-                (ProviderPieChartPanel, _viewModel.ShowOverviewProviderPieChart),
-                (RarityPieChartPanel, _viewModel.ShowOverviewRarityPieChart),
-                (TrophyPieChartPanel, _viewModel.ShowOverviewTrophyPieChart)
-            };
-
-            var visibleIndex = 0;
-            foreach (var (element, isVisible) in panels)
-            {
-                if (element == null) continue;
-
-                if (isVisible)
-                {
-                    element.Visibility = Visibility.Visible;
-                    Grid.SetColumn(element, visibleIndex);
-                    // Add spacing to all but last visible panel
-                    element.Margin = new Thickness(0, 0, 8, 0);
-                    visibleIndex++;
-                }
-                else
-                {
-                    element.Visibility = Visibility.Collapsed;
-                }
+                _viewModel?.ToggleUnlockSpanFilter(e.Span.Value);
             }
-
-            // Remove margin from last visible panel
-            if (visibleIndex > 0)
+            else if (e.PieMode.HasValue)
             {
-                var lastVisible = panels.Where(p => p.IsVisible).Last().Element;
-                lastVisible.Margin = new Thickness(0);
-            }
-
-            // Update column definitions: visible get star, hidden get 0
-            for (var i = 0; i < OverviewPieChartsGrid.ColumnDefinitions.Count; i++)
-            {
-                OverviewPieChartsGrid.ColumnDefinitions[i].Width = i < visibleIndex
-                    ? new GridLength(1, GridUnitType.Star)
-                    : new GridLength(0);
-            }
-
-            // Update parent grid column widths based on visible pie count
-            // Formula: pie_width = visible_pies * 0.5, bar_width = 1
-            // This gives: 1 pie = 33%/67%, 2 pies = 50%/50%, 3 pies = 60%/40%, 4 pies = 67%/33%
-            if (ChartsRowGrid != null && visibleIndex > 0)
-            {
-                var pieWidth = visibleIndex * 0.5;
-                ChartsRowGrid.ColumnDefinitions[0].Width = new GridLength(pieWidth, GridUnitType.Star);
-                ChartsRowGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+                _viewModel?.ApplyLinkedSliceClick(e.PieMode.Value, e.SliceKey);
             }
         }
 

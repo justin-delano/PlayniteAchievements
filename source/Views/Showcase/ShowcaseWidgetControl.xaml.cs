@@ -98,9 +98,20 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(ShowCardChromeProperty, value);
         }
 
+        /// <summary>A click on a linked widget's chart, in the terms the overview filters by.</summary>
+        public static readonly RoutedEvent LinkedClickEvent = EventManager.RegisterRoutedEvent(
+            "LinkedClick",
+            RoutingStrategy.Bubble,
+            typeof(ShowcaseLinkedClickEventHandler),
+            typeof(ShowcaseWidgetControl));
+
         public ShowcaseWidgetControl()
         {
             InitializeComponent();
+            var chartClick = new ChartClickEventHandler(OnChartClicked);
+            AddHandler(PieChartWithRadialIcons.SliceClickedEvent, chartClick);
+            AddHandler(UnlockTimelineChart.ColumnClickedEvent, chartClick);
+            AddHandler(ActivityCalendarHeatmap.DayClickedEvent, chartClick);
             // Edit mode makes the widget body inert through IsHitTestVisible (see
             // ShowcaseControl); a hosted slideshow also holds its current image while inert so
             // layout edits do not flip pictures mid-drag.
@@ -221,21 +232,101 @@ namespace PlayniteAchievements.Views.Showcase
             RebuildBody();
         }
 
+        // Only a linked widget's chart clicks mean anything outside the widget; the rest keep
+        // their own behavior (a calendar day opens its popup) and nothing listens for them.
+        private void OnChartClicked(object sender, ChartClickEventArgs e)
+        {
+            if (_projection?.IsLinked != true)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            var linked = new ShowcaseLinkedClickEventArgs(LinkedClickEvent, this)
+            {
+                Widget = _projection.Instance
+            };
+            if (e.RoutedEvent == PieChartWithRadialIcons.SliceClickedEvent &&
+                _bodyViewModel is PieWidgetViewModel pie)
+            {
+                linked.PieMode = pie.Mode;
+                linked.SliceKey = pie.SliceKeyForLabel(e.Label);
+                if (linked.SliceKey == null)
+                {
+                    return;
+                }
+            }
+            else if (e.RoutedEvent == UnlockTimelineChart.ColumnClickedEvent &&
+                     _bodyViewModel is TimelineWidgetViewModel timeline)
+            {
+                linked.Span = timeline.Timeline.SpanAt(e.Index);
+                if (linked.Span == null)
+                {
+                    return;
+                }
+            }
+            else if (e.RoutedEvent == ActivityCalendarHeatmap.DayClickedEvent)
+            {
+                linked.Span = new PlayniteAchievements.Services.Overview.UnlockDaySpan(e.Day, e.Day);
+            }
+            else
+            {
+                return;
+            }
+
+            RaiseEvent(linked);
+        }
+
         private void UpdateTitle()
         {
-            // The header only appears when the user gave the widget a custom title;
-            // widgets are otherwise chrome-free at every density (large StartPage-hosted
-            // widgets used to auto-show the kind name at expanded density).
-            var custom = _projection?.Instance?.CustomTitle?.Trim();
-            if (string.IsNullOrWhiteSpace(custom))
+            // The header only appears when the user gave the widget a custom title; widgets are
+            // otherwise chrome-free at every density (large StartPage-hosted widgets used to
+            // auto-show the kind name at expanded density). A linked widget is titled by what
+            // the overview narrowed it to instead, laid over the body so a short row keeps its
+            // full height for the chart.
+            var linked = _projection?.IsLinked == true;
+            var title = linked
+                ? _projection.ContextLabel?.Trim()
+                : _projection?.Instance?.CustomTitle?.Trim();
+            ApplyHeaderPlacement(overlay: linked);
+            if (string.IsNullOrWhiteSpace(title))
             {
                 TitleText.Text = string.Empty;
                 HeaderBorder.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            TitleText.Text = custom;
+            TitleText.Text = title;
             HeaderBorder.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>The height a linked timeline gives up so its title clears the bars.</summary>
+        private const double LinkedTitleRoom = 16;
+
+        // A linked widget's title is a quiet caption in the body's top-left corner: no band, no
+        // weight, so the chart keeps the row's height and reads first.
+        private void ApplyHeaderPlacement(bool overlay)
+        {
+            Grid.SetRow(HeaderBorder, overlay ? 1 : 0);
+            Panel.SetZIndex(HeaderBorder, overlay ? 1 : 0);
+            HeaderBorder.HorizontalAlignment = overlay ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+            HeaderBorder.VerticalAlignment = overlay ? VerticalAlignment.Top : VerticalAlignment.Stretch;
+            HeaderBorder.Padding = overlay ? new Thickness(8, 4, 8, 0) : new Thickness(9, 5, 9, 5);
+            if (overlay)
+            {
+                HeaderBorder.Background = Brushes.Transparent;
+                TitleText.FontWeight = FontWeights.Normal;
+                TitleText.SetResourceReference(OpacityProperty, "PlayAch.Opacity.Subtle");
+            }
+            else
+            {
+                HeaderBorder.SetResourceReference(Border.BackgroundProperty, "PlayAch.Brush.Overlay.Tint.08");
+                TitleText.FontWeight = FontWeights.SemiBold;
+                TitleText.ClearValue(OpacityProperty);
+            }
+
+            // Clicks pass through to the chart beneath.
+            HeaderBorder.IsHitTestVisible = !overlay;
         }
 
         private void RebuildBody()
@@ -244,9 +335,17 @@ namespace PlayniteAchievements.Views.Showcase
             // to the foreground so only the background reaches the edge.
             var fullBleed = _projection?.Instance?.Kind == ShowcaseWidgetKind.Profile &&
                             ShowcaseWidgetOptions.GetProfileFullBleed(_projection.Instance);
+            var inset = ShowcaseWidgetViewModelBase.GetBodyInset(_viewport.Density);
+            // A linked timeline's title would sit on its tallest bars, so the chart starts below
+            // it; a pie keeps the row's full height and lets the title share its corner.
+            var titleRoom = _projection?.IsLinked == true &&
+                            _projection.Instance?.Kind == ShowcaseWidgetKind.Timeline &&
+                            !string.IsNullOrWhiteSpace(_projection.ContextLabel)
+                ? LinkedTitleRoom
+                : 0;
             BodyHost.Margin = fullBleed
                 ? new Thickness(0)
-                : new Thickness(ShowcaseWidgetViewModelBase.GetBodyInset(_viewport.Density));
+                : new Thickness(inset, inset + titleRoom, inset, inset);
             if (_projection?.Instance == null)
             {
                 SetBodyContent(CreateEmptyText());

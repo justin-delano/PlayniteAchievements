@@ -482,6 +482,123 @@ namespace PlayniteAchievements.ViewModels.Items
         }
     }
 
+    // A from-to day range in the control bar, always shown: a dropdown button like the other
+    // filters, reading the range (or the placeholder while there is none), whose popup holds the
+    // two date pickers. Either end may be left empty for an open range. The owner holds the
+    // dates, so a range set elsewhere (a timeline column clicked in the overview's
+    // mini-showcase) shows here too.
+    public sealed class GridDateRangeFilter : GridControlBarItem
+    {
+        private readonly Func<DateTime?> _getFrom;
+        private readonly Func<DateTime?> _getTo;
+        private readonly Action<DateTime?, DateTime?> _set;
+        private readonly string _placeholder;
+
+        public GridDateRangeFilter(
+            INotifyPropertyChanged source,
+            string sourcePropertyName,
+            Func<DateTime?> getFrom,
+            Func<DateTime?> getTo,
+            Action<DateTime?, DateTime?> set,
+            string placeholder)
+        {
+            _getFrom = getFrom;
+            _getTo = getTo;
+            _set = set;
+            _placeholder = placeholder;
+            GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
+        }
+
+        public string DisplayText
+        {
+            get
+            {
+                var from = From;
+                var to = To;
+                if (!from.HasValue && !to.HasValue)
+                {
+                    return _placeholder;
+                }
+
+                var culture = PlayniteAchievements.Common.FormattingCulture.Current;
+                if (from.HasValue && from == to)
+                {
+                    return from.Value.ToString("d", culture);
+                }
+
+                // One-way ranges read as such: everything from a day on, or everything up to one.
+                if (!to.HasValue)
+                {
+                    return string.Format(culture, ResourceProvider.GetString("LOCPlayAch_Filter_SinceDate"), from.Value.ToString("d", culture));
+                }
+
+                if (!from.HasValue)
+                {
+                    return string.Format(culture, ResourceProvider.GetString("LOCPlayAch_Filter_UntilDate"), to.Value.ToString("d", culture));
+                }
+
+                return from.Value.ToString("d", culture) + " – " + to.Value.ToString("d", culture);
+            }
+        }
+
+        public bool HasFrom => From.HasValue;
+
+        public bool HasTo => To.HasValue;
+
+        public void ClearFrom() => From = null;
+
+        public void ClearTo() => To = null;
+
+        public DateTime? From
+        {
+            get => _getFrom?.Invoke();
+            set
+            {
+                if (Nullable.Equals(From, value?.Date))
+                {
+                    return;
+                }
+
+                _set?.Invoke(value?.Date, To);
+                Refresh();
+            }
+        }
+
+        public DateTime? To
+        {
+            get => _getTo?.Invoke();
+            set
+            {
+                if (Nullable.Equals(To, value?.Date))
+                {
+                    return;
+                }
+
+                _set?.Invoke(From, value?.Date);
+                Refresh();
+            }
+        }
+
+        public bool HasRange => From.HasValue || To.HasValue;
+
+        public void Clear()
+        {
+            _set?.Invoke(null, null);
+            Refresh();
+        }
+
+        public override void Refresh()
+        {
+            OnPropertyChanged(nameof(From));
+            OnPropertyChanged(nameof(To));
+            OnPropertyChanged(nameof(HasRange));
+            OnPropertyChanged(nameof(HasFrom));
+            OnPropertyChanged(nameof(HasTo));
+            OnPropertyChanged(nameof(DisplayText));
+            OnPropertyChanged(nameof(EffectiveIsVisible));
+        }
+    }
+
     // A momentary action button in the control bar (e.g. the category-mode Back button).
     public sealed class GridActionButton : GridControlBarItem
     {

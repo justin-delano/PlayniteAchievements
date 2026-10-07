@@ -109,5 +109,17 @@ namespace PlayniteAchievements.ViewModels
         public List<int> Progress { get; set; }
 
         public List<int> Activity { get; set; }
+
+        /// <summary>An unlock date range's start day, for achievement control bars; null when open.</summary>
+        public DateTime? UnlockedFrom { get; set; }
+
+        /// <summary>An unlock date range's end day; null when open.</summary>
+        public DateTime? UnlockedTo { get; set; }
+
+        /// <summary>Selected rarity tiers, for achievement control bars.</summary>
+        public List<int> Rarities { get; set; }
+
+        /// <summary>Selected trophy types ("platinum", "gold", ...), for achievement control bars.</summary>
+        public List<string> Trophies { get; set; }
     }
 }

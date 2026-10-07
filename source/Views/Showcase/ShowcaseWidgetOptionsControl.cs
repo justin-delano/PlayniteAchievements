@@ -22,18 +22,25 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly ShowcaseWidgetInstanceSettings _settings;
         private readonly Action _persist;
         private readonly bool _publishChanges;
+        private readonly bool _showControlBarOption;
         private DebouncedSettingsPersist _gridOptionsPersist;
 
+        /// <param name="showControlBarOption">
+        /// False for widgets whose filters come from their host (the overview's mini-showcase),
+        /// which therefore never show a control bar of their own.
+        /// </param>
         public ShowcaseWidgetOptionsControl(
             ShowcaseWidgetInstanceSettings settings,
             Action persist = null,
             bool publishChanges = true,
             Thickness? margin = null,
-            bool loadStyles = true)
+            bool loadStyles = true,
+            bool showControlBarOption = true)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _persist = persist;
             _publishChanges = publishChanges;
+            _showControlBarOption = showControlBarOption;
             if (loadStyles)
             {
                 Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -55,6 +62,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Scores:
                 case ShowcaseWidgetKind.Pie:
                 case ShowcaseWidgetKind.Timeline:
+                case ShowcaseWidgetKind.Statistics:
                 case ShowcaseWidgetKind.NativePoints:
                 case ShowcaseWidgetKind.IconMosaic:
                 case ShowcaseWidgetKind.ScreenshotSlideshow:
@@ -220,11 +228,15 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetPieSmallSliceMode(_settings),
                         value => ShowcaseWidgetOptions.SetPieSmallSliceMode(_settings, value),
                         SmallSliceModeName);
-                    AddToggle(
-                        panel,
-                        Localize("LOCPlayAch_Settings_ShowGridControlBar"),
-                        ShowcaseWidgetOptions.GetPieShowControlBar(_settings),
-                        value => ShowcaseWidgetOptions.SetPieShowControlBar(_settings, value));
+                    if (_showControlBarOption)
+                    {
+                        AddToggle(
+                            panel,
+                            Localize("LOCPlayAch_Settings_ShowGridControlBar"),
+                            ShowcaseWidgetOptions.GetPieShowControlBar(_settings),
+                            value => ShowcaseWidgetOptions.SetPieShowControlBar(_settings, value));
+                    }
+
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     AddRangeChoice(panel);
@@ -233,6 +245,10 @@ namespace PlayniteAchievements.Views.Showcase
                         Localize("LOCPlayAch_Timeline_SplitByPlatform"),
                         ShowcaseTimelineOptions.GetSplitByPlatform(_settings),
                         value => ShowcaseTimelineOptions.SetSplitByPlatform(_settings, value));
+                    AddShowControlsToggle(panel);
+                    break;
+                case ShowcaseWidgetKind.Statistics:
+                    AddStatisticsSlots(panel);
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(
@@ -647,7 +663,7 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     AddRangeChoice(panel);
-
+                    AddShowControlsToggle(panel);
                     break;
             }
 
@@ -806,6 +822,17 @@ namespace PlayniteAchievements.Views.Showcase
         /// The shared time-window picker used by every range-windowed widget (Timeline, Scores,
         /// Activity Calendar). Only the Timeline chart has a bar granularity to override.
         /// </summary>
+        // The time window (and the timeline's bar width and platform split) set from the widget
+        // itself, above its chart.
+        private void AddShowControlsToggle(Panel panel)
+        {
+            AddToggle(
+                panel,
+                Localize("LOCPlayAch_Settings_ShowGridControlBar"),
+                ShowcaseWidgetOptions.GetShowControls(_settings),
+                value => ShowcaseWidgetOptions.SetShowControls(_settings, value));
+        }
+
         private void AddRangeChoice(Panel panel)
         {
             var hasGranularity = _settings.Kind == ShowcaseWidgetKind.Timeline;
@@ -921,6 +948,26 @@ namespace PlayniteAchievements.Views.Showcase
         /// </summary>
         private void AddProfileStatSlots(Panel panel)
         {
+            AddStatSlots(
+                panel,
+                ShowcaseWidgetOptions.GetProfileStatKeys(_settings),
+                keys => ShowcaseWidgetOptions.SetProfileStatKeys(_settings, keys));
+        }
+
+        // The Statistics widget's own slots: unset means every statistic, so the editor starts
+        // from the full list in catalog order.
+        private void AddStatisticsSlots(Panel panel)
+        {
+            var current = ShowcaseWidgetOptions.GetStatisticsKeys(_settings) ??
+                ShowcaseWidgetProjectionService.BuildStatistics(null, DateTime.Now).Select(stat => stat.Key).ToList();
+            AddStatSlots(
+                panel,
+                current,
+                keys => ShowcaseWidgetOptions.SetStatisticsKeys(_settings, keys));
+        }
+
+        private void AddStatSlots(Panel panel, IReadOnlyList<string> initial, Action<List<string>> save)
+        {
             // Key/label catalog only; the empty snapshot's values are never shown.
             var catalog = ShowcaseWidgetProjectionService.BuildStatistics(null, DateTime.Now);
 
@@ -933,13 +980,13 @@ namespace PlayniteAchievements.Views.Showcase
             labelBlock.SetResourceReference(TextBlock.ForegroundProperty, "PlayAch.Brush.Text");
             panel.Children.Add(labelBlock);
 
-            var slots = ShowcaseWidgetOptions.GetProfileStatKeys(_settings).ToList();
+            var slots = (initial ?? Array.Empty<string>()).ToList();
             var grid = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2 };
             var rebuilding = false;
 
             void Store()
             {
-                ShowcaseWidgetOptions.SetProfileStatKeys(_settings, slots);
+                save(slots);
                 _persist?.Invoke();
                 if (_publishChanges)
                 {

@@ -146,10 +146,78 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             private set => SetValue(ref _showEmpty, value);
         }
 
+        private bool _isLinked;
+        private DateTime? _highlightedDay;
+
+        /// <summary>Linked to the overview: a day click filters the overview instead of listing the day.</summary>
+        public bool IsLinked
+        {
+            get => _isLinked;
+            private set => SetValue(ref _isLinked, value);
+        }
+
+        /// <summary>The overview's single-day unlock filter, drawn as the selected day.</summary>
+        public DateTime? HighlightedDay
+        {
+            get => _highlightedDay;
+            private set => SetValue(ref _highlightedDay, value);
+        }
+
+        private bool _showControls;
+        private TimeWindow _window = ShowcaseTimelineOptions.DefaultWindow;
+
+        public bool ShowControls
+        {
+            get => _showControls;
+            private set => SetValue(ref _showControls, value);
+        }
+
+        /// <summary>
+        /// The window the picker in the controls shows. Picking one saves it to the widget and
+        /// redraws the calendar from the snapshot already in hand.
+        /// </summary>
+        public TimeWindow Window
+        {
+            get => _window;
+            set
+            {
+                if (value == null || Equals(_window, value))
+                {
+                    return;
+                }
+
+                SetValue(ref _window, value);
+                var instance = Projection?.Instance;
+                if (instance == null || Equals(ShowcaseTimelineOptions.GetWindow(instance), value))
+                {
+                    return;
+                }
+
+                ShowcaseControlBarStates.Store?.Save(instance.InstanceId, ShowcaseTimelineOptions.RangeOption, value.ToKey());
+                BuildWeeks(ShowcaseWidgetProjectionService.BuildActivityCalendar(
+                    Projection.Snapshot,
+                    instance,
+                    DateTime.Now.Date,
+                    trimToUnlocks: Projection.IsLinked));
+            }
+        }
+
         protected override void Refresh()
         {
-            var calendar = Projection?.ActivityCalendar ?? new ShowcaseActivityCalendar();
+            ShowControls = ShowcaseWidgetOptions.GetShowControls(Projection?.Instance);
+            SetValue(ref _window, ShowcaseTimelineOptions.GetWindow(Projection?.Instance), nameof(Window));
+            BuildWeeks(Projection?.ActivityCalendar ?? new ShowcaseActivityCalendar());
+        }
+
+        private void BuildWeeks(ShowcaseActivityCalendar calendar)
+        {
+            calendar = calendar ?? new ShowcaseActivityCalendar();
             ShowEmpty = calendar.TotalCount == 0;
+            IsLinked = Projection?.IsLinked == true;
+            var span = Projection?.HighlightedSpan;
+            HighlightedDay = span.HasValue && span.Value.Start == span.Value.End
+                ? span.Value.Start
+                : (DateTime?)null;
             if (ReferenceEquals(_builtCalendar, calendar))
             {
                 return;

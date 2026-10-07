@@ -107,9 +107,12 @@ namespace PlayniteAchievements.Services.Showcase
             }
 
             // Start page widgets carry control bars too; their instances live in StartPageInstances.
-            var showcase = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.Showcase;
+            // So do the overview mini-showcase's timeline and calendar.
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+            var showcase = persisted?.Showcase;
             return (showcase?.WidgetInstances ?? Enumerable.Empty<ShowcaseWidgetInstanceSettings>())
                 .Concat(showcase?.StartPageInstances?.Values ?? Enumerable.Empty<ShowcaseWidgetInstanceSettings>())
+                .Concat(persisted?.OverviewMiniShowcase?.WidgetInstances ?? Enumerable.Empty<ShowcaseWidgetInstanceSettings>())
                 .FirstOrDefault(widget => string.Equals(widget?.InstanceId, instanceId, StringComparison.OrdinalIgnoreCase));
         }
     }

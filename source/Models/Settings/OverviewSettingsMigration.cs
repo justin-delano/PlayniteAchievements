@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PlayniteAchievements.Services.Showcase;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -143,6 +146,8 @@ namespace PlayniteAchievements.Models.Settings
 
                 changed |= ConvertPiePercentagesToCenterMode(persisted);
 
+                changed |= SeedOverviewMiniShowcase(persisted);
+
                 changed |= CopyLegacyAchievementGridHeaderVisibility(persisted);
 
                 foreach (var dictionaryName in GameSummaryColumnDictionaries)
@@ -202,7 +207,8 @@ namespace PlayniteAchievements.Models.Settings
         private static bool ConvertPiePercentagesToCenterMode(JObject persisted)
         {
             const string oldName = "ShowOverviewPiePercentages";
-            const string newName = nameof(PersistedSettings.OverviewPieCenterMode);
+            // A legacy key itself now: SeedOverviewMiniShowcase reads it into the pies, then drops it.
+            const string newName = "OverviewPieCenterMode";
 
             var oldValue = persisted[oldName];
             if (oldValue == null)
@@ -218,6 +224,155 @@ namespace PlayniteAchievements.Models.Settings
 
             persisted.Remove(oldName);
             return true;
+        }
+
+        /// <summary>
+        /// The settings that drove the overview's fixed chart strip before it became the
+        /// mini-showcase. Removed once their values have been carried into the strip's widgets.
+        /// </summary>
+        private static readonly string[] LegacyOverviewChartSettings =
+        {
+            "ShowOverviewPieCharts",
+            "ShowOverviewGamesPieChart",
+            "ShowOverviewProviderPieChart",
+            "ShowOverviewRarityPieChart",
+            "ShowOverviewTrophyPieChart",
+            "ShowOverviewBarCharts",
+            "OverviewPieCenterMode",
+            "ShowOverviewPieIcons",
+            "ShowOverviewPieLegend",
+            "OverviewPieLegendPosition",
+            "OverviewPieSmallSliceMode",
+            "OverviewPieIncludeLocked",
+            "OverviewTimeWindow",
+            "OverviewTimelineGranularity",
+            "OverviewTimelineSplitByPlatform"
+        };
+
+        /// <summary>
+        /// Rebuilds the overview's chart strip as the mini-showcase: one Pie widget per pie that
+        /// was shown, in the strip's order, carrying the shared pie settings, and a Timeline
+        /// widget carrying the strip's window, granularity and platform split when the timeline
+        /// was shown. Runs only when the profile has legacy chart settings and no mini-showcase
+        /// yet; a fresh profile gets the default strip from the settings getter instead. The
+        /// legacy keys are dropped either way.
+        /// </summary>
+        private static bool SeedOverviewMiniShowcase(JObject persisted)
+        {
+            const string layoutName = nameof(PersistedSettings.OverviewMiniShowcase);
+            const string visibleName = nameof(PersistedSettings.ShowOverviewMiniShowcase);
+
+            if (persisted == null || !LegacyOverviewChartSettings.Any(name => persisted[name] != null))
+            {
+                return false;
+            }
+
+            if (persisted[layoutName] == null)
+            {
+                var allPies = ReadBool(persisted["ShowOverviewPieCharts"], true);
+                var pieModes = new List<ShowcasePieMode>();
+                foreach (var (name, mode) in new[]
+                {
+                    ("ShowOverviewGamesPieChart", ShowcasePieMode.CompletedGames),
+                    ("ShowOverviewProviderPieChart", ShowcasePieMode.Provider),
+                    ("ShowOverviewRarityPieChart", ShowcasePieMode.Rarity),
+                    ("ShowOverviewTrophyPieChart", ShowcasePieMode.Trophy)
+                })
+                {
+                    if (ReadBool(persisted[name], allPies))
+                    {
+                        pieModes.Add(mode);
+                    }
+                }
+
+                var showTimeline = ReadBool(persisted["ShowOverviewBarCharts"], true);
+                var centerMode = ReadEnum(persisted["OverviewPieCenterMode"], PieCenterMode.Percentage);
+                var showIcons = ReadBool(persisted["ShowOverviewPieIcons"], true);
+                var showLegend = ReadBool(persisted["ShowOverviewPieLegend"], false);
+                var legendPosition = ReadEnum(persisted["OverviewPieLegendPosition"], PieLegendPosition.Right);
+                var smallSliceMode = ReadEnum(persisted["OverviewPieSmallSliceMode"], OverviewPieSmallSliceMode.Round);
+                var includeLocked = ReadBool(persisted["OverviewPieIncludeLocked"], true);
+                var window = ReadTimeWindow(persisted["OverviewTimeWindow"], TimeWindow.FromPreset(TimelineRange.OneYear));
+                var granularity = ReadEnum(persisted["OverviewTimelineGranularity"], TimelineGranularity.Auto);
+                var splitByPlatform = ReadBool(persisted["OverviewTimelineSplitByPlatform"], false);
+
+                var layout = OverviewMiniShowcaseLayout.Create(
+                    pieModes,
+                    showTimeline,
+                    pie =>
+                    {
+                        ShowcaseWidgetOptions.SetPieCenterMode(pie, centerMode);
+                        ShowcaseWidgetOptions.SetPieShowIcons(pie, showIcons);
+                        ShowcaseWidgetOptions.SetPieShowLegend(pie, showLegend);
+                        ShowcaseWidgetOptions.SetPieLegendPosition(pie, legendPosition);
+                        ShowcaseWidgetOptions.SetPieSmallSliceMode(pie, smallSliceMode);
+                        ShowcaseWidgetOptions.SetPieIncludeLocked(pie, includeLocked);
+                    },
+                    timeline =>
+                    {
+                        ShowcaseTimelineOptions.SetWindow(timeline, window);
+                        ShowcaseTimelineOptions.SetGranularity(timeline, granularity);
+                        ShowcaseTimelineOptions.SetSplitByPlatform(timeline, splitByPlatform);
+                        // The strip's timeline always showed its window picker and split toggle.
+                        ShowcaseWidgetOptions.SetShowControls(timeline, true);
+                    });
+                persisted[layoutName] = JObject.FromObject(layout);
+                if (persisted[visibleName] == null)
+                {
+                    persisted[visibleName] = pieModes.Count > 0 || showTimeline;
+                }
+            }
+
+            foreach (var name in LegacyOverviewChartSettings)
+            {
+                persisted.Remove(name);
+            }
+
+            return true;
+        }
+
+        private static bool ReadBool(JToken token, bool fallback)
+        {
+            return token != null && token.Type == JTokenType.Boolean ? token.Value<bool>() : fallback;
+        }
+
+        /// <summary>Reads an enum stored either by name or by ordinal.</summary>
+        private static T ReadEnum<T>(JToken token, T fallback)
+            where T : struct
+        {
+            if (token == null)
+            {
+                return fallback;
+            }
+
+            if (token.Type == JTokenType.Integer)
+            {
+                var value = (T)Enum.ToObject(typeof(T), token.Value<long>());
+                return Enum.IsDefined(typeof(T), value) ? value : fallback;
+            }
+
+            return token.Type == JTokenType.String && Enum.TryParse(token.Value<string>(), true, out T parsed)
+                ? parsed
+                : fallback;
+        }
+
+        private static TimeWindow ReadTimeWindow(JToken token, TimeWindow fallback)
+        {
+            if (token == null)
+            {
+                return fallback;
+            }
+
+            var serializer = new JsonSerializer();
+            serializer.Converters.Add(new TimeWindowJsonConverter());
+            try
+            {
+                return token.ToObject<TimeWindow>(serializer) ?? fallback;
+            }
+            catch (Exception)
+            {
+                return fallback;
+            }
         }
 
         private static bool MoveProperty(JObject obj, string oldName, string newName)

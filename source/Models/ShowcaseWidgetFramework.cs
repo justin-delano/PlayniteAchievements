@@ -277,8 +277,9 @@ namespace PlayniteAchievements.Models
     /// </summary>
     public static class ShowcaseTimelineOptions
     {
-        private const string RangeOption = "TimelineRange";
-        private const string GranularityOption = "TimelineGranularity";
+        /// <summary>Option keys, for a widget's own controls to save their choices under.</summary>
+        public const string RangeOption = "TimelineRange";
+        public const string GranularityOption = "TimelineGranularity";
         private const string LegacyRangeDaysOption = "RangeDays";
 
         public static readonly TimeWindow DefaultWindow = TimeWindow.FromPreset(TimelineRange.ThreeMonths);
@@ -335,7 +336,7 @@ namespace PlayniteAchievements.Models
         public static void SetSplitByPlatform(ShowcaseWidgetInstanceSettings instance, bool value) =>
             instance?.SetOption(SplitByPlatformOption, value);
 
-        private const string SplitByPlatformOption = "TimelineSplitByPlatform";
+        public const string SplitByPlatformOption = "TimelineSplitByPlatform";
     }
 
     /// <summary>
@@ -373,6 +374,7 @@ namespace PlayniteAchievements.Models
         internal const string PinCollectionId = "PinCollectionId";
         private const string Content = "Content";
         private const string ProfileStats = "ProfileStats";
+        private const string StatisticsStats = "StatisticsStats";
         private const string ProfileMedals = "ProfileMedals";
         private const string ProfileFullBleed = "ProfileFullBleed";
         private const string ProfileLayoutOption = "ProfileLayout";
@@ -441,6 +443,33 @@ namespace PlayniteAchievements.Models
                 (keys ?? Enumerable.Empty<string>())
                     .Where(key => !string.IsNullOrWhiteSpace(key))
                     .Select(key => key.Trim()));
+        }
+
+        /// <summary>
+        /// Keys of the statistics a Statistics widget shows, in order; null while unset, which
+        /// means every statistic.
+        /// </summary>
+        public static IReadOnlyList<string> GetStatisticsKeys(ShowcaseWidgetInstanceSettings settings)
+        {
+            if (settings?.Options == null || !settings.Options.TryGetValue(StatisticsStats, out var raw))
+            {
+                return null;
+            }
+
+            return (raw ?? string.Empty)
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(key => key.Trim())
+                .Where(key => key.Length > 0)
+                .ToList();
+        }
+
+        public static void SetStatisticsKeys(ShowcaseWidgetInstanceSettings settings, IEnumerable<string> keys)
+        {
+            settings?.SetOption(
+                StatisticsStats,
+                string.Join(",", (keys ?? Enumerable.Empty<string>())
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())));
         }
 
         public static string GetPinCollectionId(ShowcaseWidgetInstanceSettings settings)
@@ -585,6 +614,17 @@ namespace PlayniteAchievements.Models
             settings?.GetOption(ShowControlBar, false) ?? false;
 
         public static void SetPieShowControlBar(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ShowControlBar, value);
+
+        /// <summary>
+        /// Whether a Timeline or Activity Calendar widget shows its own controls (the time window,
+        /// and for the timeline its bar width and platform split) above the chart. Shares the
+        /// pie's option, so one widget has one Show Control Bar setting whatever its kind.
+        /// </summary>
+        public static bool GetShowControls(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowControlBar, false) ?? false;
+
+        public static void SetShowControls(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowControlBar, value);
 
         /// <summary>
@@ -1060,7 +1100,7 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetGameActivityScope(settings, GameActivityScope.All);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    ShowcaseTimelineOptions.SetWindow(settings, TimeWindow.FromPreset(TimelineRange.OneYear));
+                    ShowcaseTimelineOptions.SetWindow(settings, TimeWindow.All);
                     break;
             }
 

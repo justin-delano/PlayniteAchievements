@@ -100,6 +100,17 @@ namespace PlayniteAchievements.Views.Controls
         public static readonly DependencyProperty TooltipForegroundProperty = DependencyProperty.Register(
             nameof(TooltipForeground), typeof(Brush), typeof(UnlockTimelineChart), new PropertyMetadata(null));
 
+        /// <summary>The column to shade as the active selection; -1 shades none.</summary>
+        public static readonly DependencyProperty HighlightedIndexProperty = DependencyProperty.Register(
+            nameof(HighlightedIndex), typeof(int), typeof(UnlockTimelineChart), new PropertyMetadata(-1, OnHighlightedIndexChanged));
+
+        /// <summary>A click on a column, carrying its position along the axis.</summary>
+        public static readonly RoutedEvent ColumnClickedEvent = EventManager.RegisterRoutedEvent(
+            "ColumnClicked",
+            RoutingStrategy.Bubble,
+            typeof(ChartClickEventHandler),
+            typeof(UnlockTimelineChart));
+
         private readonly Axis _axisX;
         private readonly Axis _axisY;
         private readonly CartesianChartTooltip _tooltip;
@@ -156,7 +167,94 @@ namespace PlayniteAchievements.Views.Controls
             _tooltip.SetBinding(CartesianChartTooltip.HeaderLabelsProperty, Bind(nameof(TooltipLabels)));
             Chart.DataTooltip = _tooltip;
 
+            // A selected column stands out by the others fading, styled on the drawn bars
+            // themselves so plain and stacked (platform split) columns match and line up exactly.
+            // Every draw can create new bars, so the styling runs again after each one.
+            Chart.UpdaterTick += sender => ApplyHighlight();
+            Chart.DataClick += OnChartDataClick;
+
             SizeChanged += OnSizeChanged;
+        }
+
+        /// <summary>How strongly the unselected columns fade while one is selected.</summary>
+        private const double UnselectedColumnOpacity = 0.18;
+
+        /// <summary>The outline drawn round the selected column, in the text color for contrast with the accent fill.</summary>
+        private const double SelectedColumnStroke = 1.5;
+
+        public int HighlightedIndex
+        {
+            get => (int)GetValue(HighlightedIndexProperty);
+            set => SetValue(HighlightedIndexProperty, value);
+        }
+
+        private static void OnHighlightedIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((UnlockTimelineChart)d).ApplyHighlight();
+        }
+
+        // Each stacked segment of the selected column gets the outline, so the platform split
+        // reads as one outlined column with its segment edges inside.
+        private void ApplyHighlight()
+        {
+            var index = HighlightedIndex;
+            var outline = index < 0 ? null : TryFindResource("PlayAch.Brush.Text") as Brush;
+            foreach (var series in Series ?? new SeriesCollection())
+            {
+                if (series?.Values == null)
+                {
+                    continue;
+                }
+
+                foreach (var point in series.Values.GetPoints(series))
+                {
+                    if (!(BarOf(point?.View) is System.Windows.Shapes.Rectangle bar))
+                    {
+                        continue;
+                    }
+
+                    var selected = (int)Math.Round(point.X) == index;
+                    bar.Opacity = index < 0 || selected ? 1 : UnselectedColumnOpacity;
+                    bar.Stroke = selected ? outline : null;
+                    bar.StrokeThickness = selected ? SelectedColumnStroke : 0;
+                }
+            }
+        }
+
+        private static System.Reflection.PropertyInfo _barProperty;
+
+        // LiveCharts 0.9.7 draws each column through its internal ColumnPointView, whose public
+        // Rectangle property is the drawn bar; it is reached by reflection since the type is internal.
+        private static object BarOf(object pointView)
+        {
+            if (pointView == null)
+            {
+                return null;
+            }
+
+            var property = _barProperty;
+            if (property == null || property.DeclaringType != pointView.GetType())
+            {
+                property = pointView.GetType().GetProperty("Rectangle");
+                if (property == null)
+                {
+                    return null;
+                }
+
+                _barProperty = property;
+            }
+
+            return property.GetValue(pointView);
+        }
+
+        private void OnChartDataClick(object sender, ChartPoint point)
+        {
+            if (point == null || double.IsNaN(point.X))
+            {
+                return;
+            }
+
+            RaiseEvent(new ChartClickEventArgs(ColumnClickedEvent, this) { Index = (int)Math.Round(point.X) });
         }
 
         public SeriesCollection Series

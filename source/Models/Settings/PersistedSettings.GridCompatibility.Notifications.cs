@@ -119,6 +119,8 @@ namespace PlayniteAchievements.Models.Settings
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.UnlockDateMode), nameof(OverviewRecentAchievementsUnlockDateMode));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.RowHeight), nameof(OverviewRecentAchievementsGridRowHeight));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.MaxRows), nameof(OverviewRecentAchievementsGridMaxRows));
+            Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.SortMode), nameof(OverviewRecentAchievementsGridSortMode));
+            Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.SortDescending), nameof(OverviewRecentAchievementsGridSortDescending));
             Add(A, GridOptionKeys.Achievement.OverviewRecent, nameof(AchievementGridOptions.Columns),
                 nameof(OverviewRecentAchievementColumnVisibility), nameof(OverviewRecentAchievementColumnWidths), nameof(OverviewRecentAchievementColumnOrder),
                 nameof(OverviewRecentAchievementColumnAlignments), nameof(OverviewRecentAchievementColumnVerticalAlignments), nameof(OverviewRecentAchievementColumnHeaderAlignments));

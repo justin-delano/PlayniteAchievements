@@ -154,6 +154,49 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        // The popup closes on the press outside it, so the press on the button that closed it must
+        // not reopen it on the release that completes the click.
+        private void DateRange_Click(object sender, RoutedEventArgs e)
+        {
+            if (!((sender as FrameworkElement)?.Tag is System.Windows.Controls.Primitives.Popup popup))
+            {
+                return;
+            }
+
+            if (popup.Tag is DateTime closedAt && (DateTime.UtcNow - closedAt).TotalMilliseconds < 300)
+            {
+                return;
+            }
+
+            popup.IsOpen = true;
+        }
+
+        private void DateRangePopup_Closed(object sender, EventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.Popup popup)
+            {
+                popup.Tag = DateTime.UtcNow;
+            }
+        }
+
+        private void DateRangeClearFrom_Click(object sender, RoutedEventArgs e)
+        {
+            ((sender as FrameworkElement)?.DataContext as GridDateRangeFilter)?.ClearFrom();
+        }
+
+        private void DateRangeClearTo_Click(object sender, RoutedEventArgs e)
+        {
+            ((sender as FrameworkElement)?.DataContext as GridDateRangeFilter)?.ClearTo();
+        }
+
+        private void DateRangeClear_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is GridDateRangeFilter item)
+            {
+                item.Clear();
+            }
+        }
+
         private void MultiSelectFilter_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;

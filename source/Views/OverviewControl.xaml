@@ -504,7 +504,6 @@
 
                     <controls:ScoreCardControl Style="{StaticResource OverviewScoreCardStyle}"
                                                ScoreCard="{Binding CollectionScoreCard}"
-                                               BadgePosition="{Binding OverviewCollectionBadgePosition}"
                                                Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
 
                     <Border x:Name="ScoreCardsDivider"
@@ -518,7 +517,6 @@
 
                     <controls:ScoreCardControl Style="{StaticResource OverviewScoreCardStyle}"
                                                ScoreCard="{Binding PrestigeScoreCard}"
-                                               BadgePosition="{Binding OverviewPrestigeBadgePosition}"
                                                Visibility="{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
@@ -879,286 +877,20 @@
                         </Grid>
                     </Grid>
 
-                    <Border Grid.Row="2"
+                    <!-- Mini-showcase: one row of widgets linked to the filters and selection above,
+                         edited in place from its right-click menu. The editor sets the row's height
+                         and the widgets fit it. -->
+                    <Border x:Name="MiniShowcaseStrip"
+                            Grid.Row="2"
                             Grid.ColumnSpan="3"
-                            MinHeight="225"
                             Margin="0,0,0,-20"
-                            Padding="0,8,0,20"
+                            Padding="0,0,0,10"
                             Background="Transparent"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                             BorderThickness="0,1,0,0">
-                        <Border.Resources>
-                            <DataTemplate x:Key="OverviewTimelineContentTemplate">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="140"/>
-                                    </Grid.RowDefinitions>
-
-                                    <TextBlock Grid.Row="0"
-                                               Text="{Binding TimelineSectionTitle}"
-                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-
-                                    <DockPanel Grid.Row="1"
-                                               LastChildFill="True"
-                                               Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
-                                        <!-- IcoFont "layers": stacked per-platform segments. -->
-                                        <ToggleButton DockPanel.Dock="Right"
-                                                      Style="{StaticResource PlayAch.ToggleButton.BaseStyle}"
-                                                      IsChecked="{Binding TimelineSplitByPlatform, Mode=TwoWay}"
-                                                      Width="34"
-                                                      Padding="0"
-                                                      Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                                                      VerticalAlignment="Center"
-                                                      FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                                      FontSize="16"
-                                                      Content="&#xEF5C;"
-                                                      ToolTip="{DynamicResource LOCPlayAch_Timeline_SplitByPlatform}"/>
-                                        <controls:TimeWindowPicker Window="{Binding GlobalTimeline.Window, Mode=TwoWay}"
-                                                                   Granularity="{Binding GlobalTimeline.Granularity, Mode=TwoWay}"
-                                                                   UnavailableGranularities="{Binding GlobalTimeline.UnavailableGranularities}"
-                                                                   ShowGranularity="True"
-                                                                   MinDate="{Binding GlobalTimeline.EarliestDate}"/>
-                                    </DockPanel>
-
-                                    <controls:UnlockTimelineChart Grid.Row="2"
-                                                                  Series="{Binding GlobalTimeline.TimelineSeries}"
-                                                                  Labels="{Binding GlobalTimeline.TimelineLabels}"
-                                                                  TooltipLabels="{Binding GlobalTimeline.TooltipLabels}"
-                                                                  XAxisMax="{Binding GlobalTimeline.XAxisMax}"
-                                                                  YAxisMax="{Binding GlobalTimeline.YAxisMax}"
-                                                                  YAxisStep="{Binding GlobalTimeline.YAxisStep}"
-                                                                  YLabelFormatter="{Binding GlobalTimeline.YAxisFormatter}"
-                                                                  IsEmpty="{Binding GlobalTimeline.IsEmpty}"
-                                                                  MaxTickCount="{Binding GlobalTimeline.MaxTickCount, Mode=OneWayToSource}"
-                                                                  MaxBarCount="{Binding GlobalTimeline.MaxBarCount, Mode=OneWayToSource}"
-                                                                  RenderRevision="{Binding GlobalTimeline.RenderRevision}"/>
-                                </Grid>
-                            </DataTemplate>
-                        </Border.Resources>
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding ShowOverviewPieCharts}" Value="False"/>
-                                            <Condition Binding="{Binding ShowOverviewBarCharts}" Value="False"/>
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <Grid x:Name="ChartsRowGrid">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*" x:Name="PieChartsColumn"/>
-                                <ColumnDefinition Width="1*" x:Name="BarChartColumn"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- LEFT: Pie Charts -->
-                            <Border x:Name="OverviewPieChartsHost"
-                                    Grid.Column="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="12,10">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Grid.ColumnSpan" Value="1"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ShowOverviewPieCharts}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding ShowOverviewBarCharts}" Value="False">
-                                                <Setter Property="Grid.ColumnSpan" Value="2"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <Grid x:Name="OverviewPieChartsGrid">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                <!-- Games Completion Pie Chart -->
-                                <Grid x:Name="GamesPieChartPanel" Grid.Column="0">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="40"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0"
-                                               Text="{DynamicResource LOCPlayAch_Overview_GamesPieChart}"
-                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Top"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               Margin="6,0,6,4"/>
-                                    <controls:PieChartWithRadialIcons Grid.Row="1"
-                                                                      PieSeries="{Binding GamesPieChart.PieSeries}"
-                                                                      LegendItems="{Binding GamesPieChart.LegendItems}"
-                                                                      HighlightedLabels="{Binding GamesPieChart.HighlightedLabels}"
-                                                                      ExactUnlockedCount="{Binding GamesPieChart.ExactUnlockedCount}"
-                                                                      ExactTotalCount="{Binding GamesPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding GamesPieChart.ShowCenterPercentage}"
-                                                                      ShowIcons="{Binding GamesPieChart.ShowIcons}"
-                                                                      IsFilled="{Binding GamesPieChart.IsFilled}"
-                                                                      ShowLegend="{Binding GamesPieChart.ShowLegend}"
-                                                                      LegendPosition="{Binding GamesPieChart.LegendPosition}"
-                                                                      IconOffset="12"
-                                                                      SliceClick="OnGamesPieChartSliceClick"/>
-                                </Grid>
-
-                                <!-- Provider Distribution Pie Chart -->
-                                <Grid x:Name="ProviderPieChartPanel" Grid.Column="1">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="40"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0"
-                                               Text="{DynamicResource LOCPlayAch_Overview_ProviderDistribution}"
-                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Top"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               Margin="6,0,6,4"/>
-                                    <controls:PieChartWithRadialIcons x:Name="ProviderPieChartControl"
-                                                                      Grid.Row="1"
-                                                                      PieSeries="{Binding ProviderPieChart.PieSeries}"
-                                                                      LegendItems="{Binding ProviderPieChart.LegendItems}"
-                                                                      HighlightedLabels="{Binding ProviderPieChart.HighlightedLabels}"
-                                                                      ExactUnlockedCount="{Binding ProviderPieChart.ExactUnlockedCount}"
-                                                                      ExactTotalCount="{Binding ProviderPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding ProviderPieChart.ShowCenterPercentage}"
-                                                                      ShowIcons="{Binding ProviderPieChart.ShowIcons}"
-                                                                      IsFilled="{Binding ProviderPieChart.IsFilled}"
-                                                                      ShowLegend="{Binding ProviderPieChart.ShowLegend}"
-                                                                      LegendPosition="{Binding ProviderPieChart.LegendPosition}"
-                                                                      IconOffset="12"
-                                                                      SliceClick="OnProviderPieChartSliceClick"/>
-                                </Grid>
-
-                                <!-- Rarity Pie Chart with Custom Legend -->
-                                <Grid x:Name="RarityPieChartPanel" Grid.Column="2">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="40"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0"
-                                               Text="{Binding RarityPieChartTitle}"
-                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Top"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               Margin="6,0,6,4"/>
-                                    <controls:PieChartWithRadialIcons Grid.Row="1"
-                                                                      PieSeries="{Binding RarityPieChart.PieSeries}"
-                                                                      LegendItems="{Binding RarityPieChart.LegendItems}"
-                                                                      HighlightedLabels="{Binding RarityPieChart.HighlightedLabels}"
-                                                                      ExactUnlockedCount="{Binding RarityPieChart.ExactUnlockedCount}"
-                                                                      ExactTotalCount="{Binding RarityPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding RarityPieChart.ShowCenterPercentage}"
-                                                                      ShowIcons="{Binding RarityPieChart.ShowIcons}"
-                                                                      IsFilled="{Binding RarityPieChart.IsFilled}"
-                                                                      ShowLegend="{Binding RarityPieChart.ShowLegend}"
-                                                                      LegendPosition="{Binding RarityPieChart.LegendPosition}"
-                                                                      IconOffset="12"/>
-                                </Grid>
-
-                                <!-- Trophy Pie Chart -->
-                                <Grid x:Name="TrophyPieChartPanel" Grid.Column="3">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="40"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0"
-                                               Text="{Binding TrophyPieChartTitle}"
-                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Top"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               Margin="6,0,6,4"/>
-                                    <controls:PieChartWithRadialIcons Grid.Row="1"
-                                                                      PieSeries="{Binding TrophyPieChart.PieSeries}"
-                                                                      LegendItems="{Binding TrophyPieChart.LegendItems}"
-                                                                      HighlightedLabels="{Binding TrophyPieChart.HighlightedLabels}"
-                                                                      ExactUnlockedCount="{Binding TrophyPieChart.ExactUnlockedCount}"
-                                                                      ExactTotalCount="{Binding TrophyPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding TrophyPieChart.ShowCenterPercentage}"
-                                                                      ShowIcons="{Binding TrophyPieChart.ShowIcons}"
-                                                                      IsFilled="{Binding TrophyPieChart.IsFilled}"
-                                                                      ShowLegend="{Binding TrophyPieChart.ShowLegend}"
-                                                                      LegendPosition="{Binding TrophyPieChart.LegendPosition}"
-                                                                      IconOffset="12"/>
-                                </Grid>
-                                </Grid>
-                            </Border>
-
-                            <!-- RIGHT: Timeline -->
-                            <Border Grid.Column="1"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="12,10">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ShowOverviewPieCharts}" Value="True"/>
-                                                    <Condition Binding="{Binding ShowOverviewBarCharts}" Value="True"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <ContentControl Content="{Binding}"
-                                                ContentTemplate="{StaticResource OverviewTimelineContentTemplate}"/>
-                            </Border>
-
-                            <!-- FULL-WIDTH Timeline When Pie Charts Are Hidden -->
-                            <Border Grid.ColumnSpan="2"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="12,10">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ShowOverviewPieCharts}" Value="False"/>
-                                                    <Condition Binding="{Binding ShowOverviewBarCharts}" Value="True"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <ContentControl Content="{Binding}"
-                                                ContentTemplate="{StaticResource OverviewTimelineContentTemplate}"/>
-                            </Border>
-                        </Grid>
+                        <ContentControl x:Name="MiniShowcaseHost"
+                                        Focusable="False"
+                                        IsTabStop="False"/>
                     </Border>
 
                 <GridSplitter Grid.Column="1"

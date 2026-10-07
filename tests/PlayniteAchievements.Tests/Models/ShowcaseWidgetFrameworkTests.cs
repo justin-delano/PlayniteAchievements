@@ -218,7 +218,7 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.ThreeMonths), ShowcaseTimelineOptions.GetWindow(scores));
 
             var calendar = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.ActivityCalendar);
-            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), ShowcaseTimelineOptions.GetWindow(calendar));
+            Assert.AreEqual(TimeWindow.All, ShowcaseTimelineOptions.GetWindow(calendar));
             Assert.IsTrue(ShowcaseWidgetCatalog.Get(ShowcaseWidgetKind.ActivityCalendar).AllowMultipleInstances);
         }
 

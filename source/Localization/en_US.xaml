@@ -105,7 +105,7 @@
     <sys:String x:Key="LOCPlayAch_Presets_OverwriteConfirm">Overwrite preset &quot;{0}&quot;?</sys:String>
     <sys:String x:Key="LOCPlayAch_Presets_Save">Save preset</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
-    <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_RecentAchievements">Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
@@ -170,7 +170,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Recordings">Recordings</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Captures">Captures</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Category Art</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Use for Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Use for Games</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -298,7 +298,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryEllipsis">New Category…</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryHint">Enter a name for the new category.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">New Category</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game summary grids. Click again to clear.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game grids. Click again to clear.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Tab_Assign">Assign Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Base">Base</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Challenge">Challenge</sys:String>
@@ -609,7 +609,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Display_Alignment">Alignment</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Colors">Colors</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Formatting">Formatting</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop Theme Integration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Themes">Themes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Enable archive scanning (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
@@ -902,10 +901,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">Which category rows show the completed badge under their progress bar in category mode. First uses the first category in your configured category order, so it stays with that category when you sort the grid by a column.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Achievements Grid</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Game Summaries Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Game Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Selected Game Grid</sys:String>
 
     <!-- Provider: Shared -->
@@ -1065,11 +1064,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Show Friend Spoilers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) Suffix</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completions Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewMiniShowcase">Show Mini Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter">Pie Center</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Percentage">Percentage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Empty">Empty</sys:String>
@@ -1079,9 +1077,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_PieLegendPosition">Legend Position</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CollectionBadgePosition">Collection Badge Position</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PrestigeBadgePosition">Prestige Badge Position</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Show Platform Pie Chart</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewRarityPieChart">Show Rarity Pie Chart</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewTrophyPieChart">Show Trophy Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Show Top Menu Bar Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Column Headers</sys:String>
@@ -1111,11 +1106,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_PieIncludeLocked">Show locked slice</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Icons are hidden on slices under 5% to avoid overlap.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Hides slices under 5% from the overview pie.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">The center percentage always uses exact counts, so it can differ from the pie when slices are hidden or rounded.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Round</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description">Rounds slices under 5% up to 5%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Stats</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Display</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatically tags games by achievement status so you can filter your library.</sys:String>
@@ -1188,13 +1179,16 @@
     <sys:String x:Key="LOCPlayAch_Filter_Played">Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unowned">Unowned</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Unplayed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_AllTime">All Time</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_SinceDate">Since {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_UntilDate">Until {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Visible">Visible</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Started">Started</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Not Started</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completions</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">No game selected in the overview.</sys:String>
@@ -1544,7 +1538,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_IconMosaic">Mosaic</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow">Screenshot Slideshow</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_RecentAchievements">Achievements Grid</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Game Summaries Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Game Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicContent_Achievements">Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicContent_Games">Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_All">Unlocked achievements</sys:String>

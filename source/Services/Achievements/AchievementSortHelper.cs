@@ -142,9 +142,10 @@ namespace PlayniteAchievements.Services.Achievements
                 AchievementSortSurface.OverviewSelectedGame => new AchievementSortSpec(
                     settings.OverviewSelectedGameGridSortMode,
                     settings.OverviewSelectedGameGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                // Default (None) keeps the source order, newest unlock first.
                 AchievementSortSurface.OverviewRecentAchievements => new AchievementSortSpec(
-                    CompactListSortMode.UnlockTime,
-                    ListSortDirection.Descending),
+                    settings.OverviewRecentAchievementsGridSortMode,
+                    settings.OverviewRecentAchievementsGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
                 AchievementSortSurface.SingleGame => new AchievementSortSpec(
                     settings.SingleGameGridSortMode,
                     settings.SingleGameGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
@@ -530,7 +531,9 @@ namespace PlayniteAchievements.Services.Achievements
                 AchievementSortSurface.OverviewSelectedGame =>
                     propertyName == nameof(PersistedSettings.OverviewSelectedGameGridSortMode) ||
                     propertyName == nameof(PersistedSettings.OverviewSelectedGameGridSortDescending),
-                AchievementSortSurface.OverviewRecentAchievements => false,
+                AchievementSortSurface.OverviewRecentAchievements =>
+                    propertyName == nameof(PersistedSettings.OverviewRecentAchievementsGridSortMode) ||
+                    propertyName == nameof(PersistedSettings.OverviewRecentAchievementsGridSortDescending),
                 AchievementSortSurface.SingleGame =>
                     propertyName == nameof(PersistedSettings.SingleGameGridSortMode) ||
                     propertyName == nameof(PersistedSettings.SingleGameGridSortDescending),
