@@ -9,9 +9,10 @@ using Playnite.SDK;
 namespace PlayniteAchievements.Services.Workshop
 {
     /// <summary>
-    /// Looks for newer versions of the library's Workshop items on a slow clock: a few minutes
-    /// after startup, then hourly. One index fetch per tick, nothing when the library holds no
-    /// Workshop item, and a single Playnite notification that opens the Library page; the same item version is never
+    /// Looks for newer versions of the library's Workshop items and of the Workshop game data
+    /// applied to games on a slow clock: a few minutes after startup, then hourly. One index
+    /// fetch per tick, nothing when neither holds a Workshop item, and a single Playnite
+    /// notification that opens the Library page; the same item version is never
     /// announced twice in a session. The first tick also resolves the system proxy for the
     /// Workshop host off the UI thread, which is the slow step .NET Framework otherwise runs
     /// synchronously inside the first request.
@@ -102,13 +103,18 @@ namespace PlayniteAchievements.Services.Workshop
                 WarmProxy(client.IndexUrl);
 
                 var library = _plugin.LibraryStore.Items;
-                if (!library.Any(item => item.IsWorkshop))
+                var gameData = _plugin.GameDataLinks.All.Values.ToList();
+                if (!library.Any(item => item.IsWorkshop) && gameData.Count == 0)
                 {
                     return;
                 }
 
                 var index = await client.FetchIndexAsync(CancellationToken.None).ConfigureAwait(false);
-                var updates = FindUpdates(index, library);
+                var updates = FindUpdates(index, library)
+                    .Concat(Library.GameDataLinkService.FindUpdates(index, gameData))
+                    .GroupBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
+                    .ToList();
                 if (updates.Count == 0)
                 {
                     return;
