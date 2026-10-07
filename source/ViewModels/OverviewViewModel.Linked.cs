@@ -64,7 +64,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(UnlockSpanFilterText));
             // Deferred like the other filters, so the click that set it finishes first.
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() => { ApplyLeftFilters(); UpdateAggregatePieCharts(); }),
+                new Action(ApplyLeftFilters),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
