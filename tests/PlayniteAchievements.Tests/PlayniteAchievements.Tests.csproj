@@ -673,6 +673,7 @@
     <Compile Include="..\..\source\Services\Library\LibraryTargetKeys.cs" Link="Source\Services\Library\LibraryTargetKeys.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryTargetNavigation.cs" Link="Source\Services\Library\LibraryTargetNavigation.cs" />
     <Compile Include="..\..\source\Models\Settings\SettingsNavigationRequest.cs" Link="Source\Models\Settings\SettingsNavigationRequest.cs" />
+    <Compile Include="..\..\source\Models\Settings\NotificationSurface.cs" Link="Source\Models\Settings\NotificationSurface.cs" />
     <Compile Include="..\..\source\Services\Library\GameLinkStore.cs" Link="Source\Services\Library\GameLinkStore.cs" />
     <Compile Include="..\..\source\Services\Library\GameDataLinkService.cs" Link="Source\Services\Library\GameDataLinkService.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryBaselineStore.cs" Link="Source\Services\Library\LibraryBaselineStore.cs" />
@@ -680,6 +681,8 @@
     <Compile Include="..\..\source\Services\Library\LibraryApplyService.cs" Link="Source\Services\Library\LibraryApplyService.cs" />
     <Compile Include="..\..\source\Services\Library\ColorsLibraryAdapter.cs" Link="Source\Services\Library\ColorsLibraryAdapter.cs" />
     <Compile Include="..\..\source\Services\Library\SoundsLibraryAdapter.cs" Link="Source\Services\Library\SoundsLibraryAdapter.cs" />
+    <Compile Include="..\..\source\Services\Library\SoundsLibraryTargets.cs" Link="Source\Services\Library\SoundsLibraryTargets.cs" />
+    <Compile Include="..\..\source\Services\Sound\UnlockSoundScope.cs" Link="Source\Services\Sound\UnlockSoundScope.cs" />
     <Compile Include="..\..\source\Services\Library\ILibraryPackageFolder.cs" Link="Source\Services\Library\ILibraryPackageFolder.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryUpdateService.cs" Link="Source\Services\Library\LibraryUpdateService.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryFileTokens.cs" Link="Source\Services\Library\LibraryFileTokens.cs" />
