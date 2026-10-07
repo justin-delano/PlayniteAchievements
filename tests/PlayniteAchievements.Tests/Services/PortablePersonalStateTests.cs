@@ -190,7 +190,7 @@ namespace PlayniteAchievements.Services.Tests
                 using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
                 using (var writer = new StreamWriter(archive.CreateEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
                 {
-                    writer.WriteLine(CustomAchievementCsvFormat.Header + ",Unlocked Icon,Locked Icon");
+                    writer.WriteLine(CustomAchievementCsvFormat.Header);
                     writer.WriteLine("c1,C1,,10,,false,,,1,3,true,2026-01-02T03:04:05Z,,");
                 }
 
