@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Overview;
@@ -17,7 +18,6 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly OverviewViewModel _overview;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Action _persist;
-        private int _revision;
 
         public OverviewMiniShowcaseHost(
             OverviewViewModel overview,
@@ -61,8 +61,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             var widget = projection.Instance;
             projection.IsLinked = true;
-            projection.LinkedRevision = _revision;
-            projection.ContextLabel = _overview.GetLinkedNarrowedGame(LinkRule(widget).Selection)?.GameName;
+            projection.ContextLabel = ContextLabel(widget);
             switch (widget.Kind)
             {
                 case ShowcaseWidgetKind.Pie:
@@ -73,10 +72,49 @@ namespace PlayniteAchievements.Views.Showcase
                     projection.HighlightedSpan = _overview.UnlockSpanFilter;
                     break;
             }
+
+            projection.LinkedStamp = Stamp(projection.ContextLabel, projection.LinkedSliceKeys, projection.HighlightedSpan);
         }
 
-        public override bool IsProjectionCurrent(ShowcaseWidgetProjection projection, OverviewDataSnapshot snapshot) =>
-            base.IsProjectionCurrent(projection, snapshot) && projection.LinkedRevision == _revision;
+        // A widget is current when its snapshot is the one it would get now and the linked state
+        // it was decorated with still holds, so a filter change that touches neither leaves it
+        // exactly as drawn.
+        public override bool IsProjectionCurrent(ShowcaseWidgetProjection projection, OverviewDataSnapshot snapshot)
+        {
+            if (!base.IsProjectionCurrent(projection, snapshot))
+            {
+                return false;
+            }
+
+            var widget = projection.Instance;
+            var context = ContextLabel(widget);
+            var sliceKeys = widget?.Kind == ShowcaseWidgetKind.Pie
+                ? _overview.GetLinkedSliceKeys(ShowcaseWidgetOptions.GetPieMode(widget))
+                : null;
+            var span = widget?.Kind == ShowcaseWidgetKind.Timeline || widget?.Kind == ShowcaseWidgetKind.ActivityCalendar
+                ? _overview.UnlockSpanFilter
+                : null;
+            return string.Equals(projection.LinkedStamp, Stamp(context, sliceKeys, span), StringComparison.Ordinal);
+        }
+
+        // The widget's title: what the overview's selections narrow it to.
+        private string ContextLabel(ShowcaseWidgetInstanceSettings widget)
+        {
+            var (exclude, selection) = LinkRule(widget);
+            return _overview.GetLinkedContextLabel(exclude, selection);
+        }
+
+        private static string Stamp(
+            string context,
+            System.Collections.Generic.IEnumerable<string> sliceKeys,
+            UnlockDaySpan? span)
+        {
+            var keys = string.Join(
+                "\u001f",
+                (sliceKeys ?? Array.Empty<string>()).OrderBy(key => key, StringComparer.OrdinalIgnoreCase));
+            var days = span.HasValue ? span.Value.Start.Ticks + "-" + span.Value.End.Ticks : string.Empty;
+            return context + "\u001e" + keys + "\u001e" + days;
+        }
 
         /// <summary>
         /// Which filters a widget leaves out and when it follows the selected game: each pie
@@ -110,11 +148,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        private void Overview_LinkedDataChanged(object sender, EventArgs e)
-        {
-            _revision = unchecked(_revision + 1);
-            RaiseDataChanged();
-        }
+        private void Overview_LinkedDataChanged(object sender, EventArgs e) => RaiseDataChanged();
 
         public override void Dispose()
         {
