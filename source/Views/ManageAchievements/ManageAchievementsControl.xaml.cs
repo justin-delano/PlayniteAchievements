@@ -58,6 +58,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
         private bool _pendingIconOverridesFromEditor;
         private bool _pendingIconOverridesEditorRowsStale;
         private bool _selfWriteMarkerClearQueued;
+        private int _editorIconAppliesInFlight;
         private bool _librarySuspensionHeld;
         private ManageAchievementsEditorViewModel _editorViewModel;
         private ManageAchievementsCategoryViewModel _categoryViewModel;
@@ -1114,16 +1115,22 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             var editorRowsStale = _pendingIconOverridesEditorRowsStale;
             _pendingIconOverridesEditorRowsStale = false;
+            var editorSelfWrite = false;
             if (_pendingIconOverridesFromEditor)
             {
                 _pendingIconOverridesFromEditor = false;
                 if (_editorViewModel != null && !editorRowsStale)
                 {
                     _editorViewModel.SuppressExternalRefresh = true;
+                    editorSelfWrite = true;
                 }
             }
 
-            _viewModel?.NotifyIconOverridesChanged(changedApiNames);
+            var apply = _viewModel?.NotifyIconOverridesChanged(changedApiNames);
+            if (editorSelfWrite && apply != null)
+            {
+                HoldEditorSelfWriteUntil(apply);
+            }
 
             // Custom achievement icons are written into their definitions, which the Custom
             // tab edits; it reloads on its next visit unless it holds unsaved edits.
@@ -1185,6 +1192,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
         /// </remarks>
         private bool ConsumeEditorSelfWrite()
         {
+            if (_editorIconAppliesInFlight > 0)
+            {
+                return true;
+            }
+
             if (_editorViewModel?.SuppressExternalRefresh != true)
             {
                 return false;
@@ -1192,6 +1204,39 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             ScheduleSelfWriteMarkerClear();
             return true;
+        }
+
+        /// <summary>
+        /// Keeps the editor's icon apply counted as its own write until the apply has finished.
+        /// </summary>
+        /// <remarks>
+        /// The apply writes the cache from a worker thread, seconds after the edit, so its
+        /// cache-updated event lands well after the cascade the Background-priority clear is
+        /// scoped to. Any other leg consuming the marker first -- a second icon burst, or another
+        /// edit's assignment flush -- cleared it before that event arrived, which then reloaded
+        /// the editor as if something outside had changed the game. Released at Background after
+        /// the apply completes on the dispatcher, behind the event it raised, and clearing the
+        /// marker then too, so an apply that never wrote cannot leave it set.
+        /// </remarks>
+        private async void HoldEditorSelfWriteUntil(System.Threading.Tasks.Task apply)
+        {
+            _editorIconAppliesInFlight++;
+            try
+            {
+                await apply;
+            }
+            catch
+            {
+                // Logged by the apply itself.
+            }
+
+            _ = Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    _editorIconAppliesInFlight--;
+                    ScheduleSelfWriteMarkerClear();
+                }),
+                DispatcherPriority.Background);
         }
 
         private void ScheduleSelfWriteMarkerClear()
