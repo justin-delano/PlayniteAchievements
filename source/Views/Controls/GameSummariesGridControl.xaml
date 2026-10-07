@@ -90,7 +90,6 @@
               RowBackground="{DynamicResource PlayAch.Brush.Grid.RowBackground}"
               CanUserSortColumns="True"
               EnableRowVirtualization="True"
-              EnableColumnVirtualization="True"
               VirtualizingStackPanel.IsVirtualizing="True"
               VirtualizingStackPanel.VirtualizationMode="Recycling"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
