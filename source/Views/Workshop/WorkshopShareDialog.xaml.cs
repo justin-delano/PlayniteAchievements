@@ -349,12 +349,6 @@ namespace PlayniteAchievements.Views.Workshop
                 return;
             }
 
-            if (RightsBox.IsChecked != true)
-            {
-                StatusText.Text = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Rights");
-                return;
-            }
-
             var submission = new WorkshopSubmission
             {
                 Kind = _candidate.Kind,
@@ -367,7 +361,6 @@ namespace PlayniteAchievements.Views.Workshop
                     .Distinct()
                     .Take(10)
                     .ToList(),
-                License = (LicenseBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "CC-BY-4.0",
                 Readme = ReadmeBox.Text.Trim(),
                 ExistingId = ResolveExistingId()
             };

@@ -47,12 +47,6 @@
                     </TextBlock>
                     <TextBox x:Name="TagsBox"/>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_License}" Style="{StaticResource FieldLabel}"/>
-                    <ComboBox x:Name="LicenseBox" Width="160" HorizontalAlignment="Left">
-                        <ComboBoxItem Content="CC-BY-4.0" IsSelected="True"/>
-                        <ComboBoxItem Content="CC0-1.0"/>
-                    </ComboBox>
-
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Readme}" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="ReadmeBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="90"/>
 
@@ -81,14 +75,6 @@
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_UpdateExisting}" Style="{StaticResource FieldLabel}"/>
                     <ComboBox x:Name="ExistingBox" IsEditable="True" DisplayMemberPath="Label" SelectedValuePath="ItemId"/>
-
-                    <!-- An explicit TextBlock: string content goes through the checkbox template's
-                         content presenter, which does not wrap. -->
-                    <CheckBox x:Name="RightsBox" Margin="0,14,0,0" VerticalContentAlignment="Top">
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_Rights}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   TextWrapping="Wrap"/>
-                    </CheckBox>
 
                     <TextBlock x:Name="StatusText"
                                Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
