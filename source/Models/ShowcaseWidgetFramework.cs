@@ -569,6 +569,16 @@ namespace PlayniteAchievements.Models
             OverviewPieSmallSliceMode value) => settings?.SetOption(SmallSliceMode, value);
 
         /// <summary>
+        /// Whether the pie shows a game control bar above the chart. Its filters narrow the games
+        /// the pie's totals are computed from, and stay in effect while the bar is hidden.
+        /// </summary>
+        public static bool GetPieShowControlBar(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowControlBar, false) ?? false;
+
+        public static void SetPieShowControlBar(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ShowControlBar, value);
+
+        /// <summary>
         /// Which counts the profile medal row shows. Trophy is only meaningful for a library
         /// holding PlayStation-shaped games; every other library sums to zero and the row hides.
         /// </summary>
