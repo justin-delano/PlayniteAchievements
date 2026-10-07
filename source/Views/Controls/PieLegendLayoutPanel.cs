@@ -37,6 +37,21 @@ namespace PlayniteAchievements.Views.Controls
             var legendSize = legend?.DesiredSize ?? new Size();
             var legendWidth = ResolveLegendWidth(legendSize.Width);
 
+            // An unbounded height (an Auto row) gives no square to claim: the pie reports its own
+            // desired height and the host's sizing sets the height it is arranged into.
+            if (double.IsInfinity(availableSize.Height))
+            {
+                var pieWidth = double.IsInfinity(availableSize.Width)
+                    ? double.PositiveInfinity
+                    : Math.Max(0, availableSize.Width - legendWidth);
+                Pie?.Measure(new Size(pieWidth, double.PositiveInfinity));
+                var pieDesired = Pie?.DesiredSize ?? new Size();
+
+                return new Size(
+                    double.IsInfinity(availableSize.Width) ? pieDesired.Width + legendWidth : availableSize.Width,
+                    Math.Max(pieDesired.Height, legendSize.Height));
+            }
+
             var side = ResolvePieSide(availableSize, legendWidth);
             Pie?.Measure(new Size(side, side));
 
