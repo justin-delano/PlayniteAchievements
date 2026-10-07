@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Views.Controls
     /// items. On one line the leading and filter zones take their natural widths and the search
     /// box fills the rest (at least <see cref="SearchMinWidth"/>). With <see cref="Wrap"/> set and
     /// too little width for one line, the filter zone moves to a second line at the full width,
-    /// where its own wrap panel breaks it into further lines.
+    /// where its own wrap panel breaks it into further, centered lines.
     /// </summary>
     public sealed class ControlBarLayoutPanel : Panel
     {
@@ -68,7 +68,9 @@ namespace PlayniteAchievements.Views.Controls
 
             var available = availableSize.Width;
             var oneLine = leading.Width + searchMin + items.Width;
-            _wrapped = Wrap && !double.IsInfinity(available) && oneLine > available;
+            // A wrapping bar without a search box always takes the full-width filter layout, so
+            // its filters are centered even when they fit on one line.
+            _wrapped = Wrap && !double.IsInfinity(available) && (!hasSearch || oneLine > available);
 
             if (!_wrapped)
             {
