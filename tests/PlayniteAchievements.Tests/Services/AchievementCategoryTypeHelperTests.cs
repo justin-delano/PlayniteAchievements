@@ -25,6 +25,31 @@ namespace PlayniteAchievements.Tests.Services
         }
 
         [TestMethod]
+        public void OverrideOrNull_NeverStoresDerivedTypes()
+        {
+            Assert.AreEqual("Base|Missable", AchievementCategoryTypeHelper.OverrideOrNull("Base|Hardcore|Missable", "Base|Hardcore"));
+            Assert.IsNull(AchievementCategoryTypeHelper.OverrideOrNull("Base|Softcore", "Base|Hardcore"), "only the derived type differs");
+            Assert.IsNull(AchievementCategoryTypeHelper.OverrideOrNull("Hardcore", null));
+        }
+
+        [TestMethod]
+        public void WithCategoryType_IgnoresDerivedTypes()
+        {
+            Assert.AreEqual("Base", AchievementCategoryTypeHelper.WithCategoryType("Base", "Hardcore", include: true));
+            Assert.AreEqual("Base|Softcore", AchievementCategoryTypeHelper.WithCategoryType("Base|Softcore", "Softcore", include: false));
+        }
+
+        [TestMethod]
+        public void ApplyOverride_TakesDerivedTypesFromTheProviderOnly()
+        {
+            Assert.AreEqual("Base|Missable|Softcore", AchievementCategoryTypeHelper.ApplyOverride("Base|Softcore", "Base|Hardcore|Missable"));
+            Assert.AreEqual("Missable", AchievementCategoryTypeHelper.ApplyOverride("Base", "Missable|Hardcore"));
+            Assert.AreEqual("Hardcore", AchievementCategoryTypeHelper.ApplyOverride("Base|Hardcore", "Default"));
+            Assert.AreEqual("Base|Hardcore", AchievementCategoryTypeHelper.ApplyOverride("Base|Hardcore", null));
+            Assert.AreEqual("Base|Hardcore", AchievementCategoryTypeHelper.ApplyOverride("Base|Hardcore", "Softcore"), "an override of only derived types overrides nothing");
+        }
+
+        [TestMethod]
         public void Normalize_CanonicalizesHardcoreAndSoftcoreAliases()
         {
             Assert.AreEqual("Hardcore", AchievementCategoryTypeHelper.Normalize("hardcore"));
@@ -158,43 +183,73 @@ namespace PlayniteAchievements.Tests.Services
         }
 
         [TestMethod]
-        public void Normalize_CanonicalizesSideProgressionAliasesBetweenProgressionAndWinCondition()
+        public void Normalize_CanonicalizesSideQuestAliasesBetweenProgressionAndWinCondition()
         {
-            Assert.AreEqual("SideProgression", AchievementCategoryTypeHelper.Normalize("sideprogression"));
-            Assert.AreEqual("SideProgression", AchievementCategoryTypeHelper.Normalize("Side Progression"));
-            Assert.AreEqual("SideProgression", AchievementCategoryTypeHelper.Normalize("side-progression"));
-            Assert.AreEqual("SideProgression", AchievementCategoryTypeHelper.Normalize("side_progression"));
-            Assert.AreEqual("SideProgression", AchievementCategoryTypeHelper.Normalize("side quest"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("sidequest"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("Side Quest"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("side-quest"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("side_quest"));
             Assert.AreEqual(
-                "Progression|SideProgression|WinCondition",
-                AchievementCategoryTypeHelper.Normalize("WinCondition|SideProgression|Progression"));
+                "Progression|SideQuest|WinCondition",
+                AchievementCategoryTypeHelper.Normalize("WinCondition|SideQuest|Progression"));
         }
 
         [TestMethod]
-        public void Normalize_CanonicalizesMiscellaneousAliasesBetweenDifficultyAndMissable()
+        public void Normalize_ReadsTheShippedSideProgressionTokenAsSideQuest()
+        {
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("SideProgression"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("Side Progression"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("side-progression"));
+            Assert.AreEqual("SideQuest", AchievementCategoryTypeHelper.Normalize("side_progression"));
+            Assert.AreEqual("Base|SideQuest", AchievementCategoryTypeHelper.Normalize("SideProgression|Base"));
+        }
+
+        [TestMethod]
+        public void Normalize_CanonicalizesTheArcAndTaskTypes()
+        {
+            Assert.AreEqual("PostGame", AchievementCategoryTypeHelper.Normalize("postgame"));
+            Assert.AreEqual("PostGame", AchievementCategoryTypeHelper.Normalize("Post Game"));
+            Assert.AreEqual("PostGame", AchievementCategoryTypeHelper.Normalize("post-game"));
+            Assert.AreEqual("PostGame", AchievementCategoryTypeHelper.Normalize("post_game"));
+            Assert.AreEqual("Completion", AchievementCategoryTypeHelper.Normalize("completion"));
+            Assert.AreEqual("Completion", AchievementCategoryTypeHelper.Normalize("completionist"));
+            Assert.AreEqual("Cumulative", AchievementCategoryTypeHelper.Normalize("cumulative"));
+            Assert.AreEqual("Cumulative", AchievementCategoryTypeHelper.Normalize("grind"));
+            Assert.AreEqual("Challenge", AchievementCategoryTypeHelper.Normalize("challenge"));
+            Assert.AreEqual(
+                "WinCondition|PostGame|Completion|Collectable|Cumulative|Challenge",
+                AchievementCategoryTypeHelper.Normalize("challenge|cumulative|collectable|completion|post game|win condition"));
+        }
+
+        [TestMethod]
+        public void Normalize_CanonicalizesMiscellaneousAliasesAfterUnobtainable()
         {
             Assert.AreEqual("Miscellaneous", AchievementCategoryTypeHelper.Normalize("miscellaneous"));
             Assert.AreEqual("Miscellaneous", AchievementCategoryTypeHelper.Normalize("misc"));
             Assert.AreEqual(
-                "Difficulty|Miscellaneous|Missable",
+                "Difficulty|Missable|Miscellaneous",
                 AchievementCategoryTypeHelper.Normalize("missable|misc|difficulty"));
         }
 
         [TestMethod]
-        public void Normalize_OrdersDifficultyBeforeMissableAndStackableAfterUnobtainable()
+        public void Normalize_OrdersStackableWithTheRunModifiersBeforeMissable()
         {
             Assert.AreEqual(
-                "Difficulty|Missable|Unobtainable|Stackable",
-                AchievementCategoryTypeHelper.Normalize("stackable|unobtainable|missable|difficulty"));
+                "Challenge|Difficulty|Stackable|Missable|Unobtainable",
+                AchievementCategoryTypeHelper.Normalize("stackable|unobtainable|missable|difficulty|challenge"));
         }
 
         [TestMethod]
-        public void AssignableCategoryTypes_IncludesSideProgressionAndMiscellaneous()
+        public void AssignableCategoryTypes_IncludesTheNewTypes()
         {
             var assignable = AchievementCategoryTypeHelper.AssignableCategoryTypes.ToList();
 
-            CollectionAssert.Contains(assignable, "SideProgression");
-            CollectionAssert.Contains(assignable, "Miscellaneous");
+            foreach (var type in new[] { "SideQuest", "PostGame", "Completion", "Cumulative", "Challenge", "Miscellaneous" })
+            {
+                CollectionAssert.Contains(assignable, type);
+            }
+
+            CollectionAssert.DoesNotContain(assignable, "SideProgression");
         }
 
         [TestMethod]
@@ -205,8 +260,11 @@ namespace PlayniteAchievements.Tests.Services
                 {
                     "Default", "Base", "DLC", "Update", "Subset",
                     "Singleplayer", "Multiplayer",
-                    "Progression", "SideProgression", "WinCondition", "Collectable", "Difficulty", "Miscellaneous",
-                    "Missable", "Unobtainable", "Stackable",
+                    "Progression", "SideQuest", "WinCondition", "PostGame", "Completion",
+                    "Collectable", "Cumulative",
+                    "Challenge", "Difficulty", "Stackable",
+                    "Missable", "Unobtainable",
+                    "Miscellaneous",
                     "Softcore", "Hardcore"
                 },
                 AchievementCategoryTypeHelper.AllowedCategoryTypes.ToList());
