@@ -1570,7 +1570,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Downloads">Downloads</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Author">Author</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Version">Version</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_License">License</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Tags">Tags</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents">Contains</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">Open on GitHub</sys:String>
@@ -1624,7 +1623,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">Comma-separated, up to 10</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">Notes shown on the item's page</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Update my earlier submission</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Rights">Everything in this package is my own work or licensed for redistribution, and it contains no personal progress I want to keep private.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">Uploading {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. It appears in the Workshop once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
