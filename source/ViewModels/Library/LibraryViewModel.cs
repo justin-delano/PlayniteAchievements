@@ -25,7 +25,8 @@ namespace PlayniteAchievements.ViewModels.Library
     /// The Library page: every library item (the user's own presets and Workshop items alike),
     /// grouped by kind and filtered by kind and text, with where each is used and how those
     /// places stand. Actions: update (a newer Workshop version, or a re-saved preset its
-    /// followers have not taken), reinstall, export, share, rename and delete. The game data chip
+    /// followers have not taken), reinstall, export, share, rename and delete; each place an item
+    /// is used opens where that place is configured. The game data chip
     /// lists the games that have Workshop game data instead; a row opens the game's Manage
     /// Achievements, where that data is updated, reset or unlinked. The lists follow the library,
     /// the per-game links and the settings links as they change. UI thread.
@@ -100,6 +101,7 @@ namespace PlayniteAchievements.ViewModels.Library
             ResetCommand = new RelayCommand(parameter => Reset(parameter as LibraryUseRow));
             StopFollowingCommand = new RelayCommand(parameter => StopFollowing(parameter as LibraryUseRow));
             OpenGameDataCommand = new RelayCommand(parameter => OpenGameData(parameter as LibraryGameDataRow));
+            OpenTargetCommand = new RelayCommand(parameter => OpenTarget(parameter as LibraryUseRow));
 
             _library.Changed += Source_Changed;
             _gameLinks.Changed += Source_Changed;
@@ -135,6 +137,7 @@ namespace PlayniteAchievements.ViewModels.Library
         public RelayCommand ResetCommand { get; }
         public RelayCommand StopFollowingCommand { get; }
         public RelayCommand OpenGameDataCommand { get; }
+        public RelayCommand OpenTargetCommand { get; }
 
         /// <summary>One row per game with Workshop game data.</summary>
         public ObservableCollection<LibraryGameDataRow> GameDataRows { get; } = new ObservableCollection<LibraryGameDataRow>();
@@ -157,6 +160,9 @@ namespace PlayniteAchievements.ViewModels.Library
 
         /// <summary>Opens the share dialog for a package file.</summary>
         public Action<WorkshopItemKind, string, string> OpenShare { get; set; }
+
+        /// <summary>Shows a place in the settings, where a use of an item is configured.</summary>
+        public Action<SettingsNavigationRequest> OpenSettings { get; set; }
 
         // ---- state ------------------------------------------------------------------------------
 
@@ -362,6 +368,43 @@ namespace PlayniteAchievements.ViewModels.Library
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed opening Manage Achievements for {row.GameId}.");
+                ErrorMessage = string.Format(L("LOCPlayAch_Status_Failed"), ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Goes to where a use is configured: its settings page through the host, a game's
+        /// Manage Achievements on the Notifications tab, or the Overview's Showcase page.
+        /// </summary>
+        private void OpenTarget(LibraryUseRow use)
+        {
+            if (use == null)
+            {
+                return;
+            }
+
+            var navigation = LibraryTargetNavigation.Resolve(use.TargetKey);
+            try
+            {
+                switch (navigation.Destination)
+                {
+                    case LibraryTargetDestination.Settings:
+                        OpenSettings?.Invoke(navigation.Settings);
+                        break;
+                    case LibraryTargetDestination.ManageAchievements:
+                        _plugin.OpenManageAchievementsView(
+                            navigation.GameId,
+                            ViewModels.ManageAchievements.ManageAchievementsTab.Notifications,
+                            notificationsShowFrame: navigation.IsFrame);
+                        break;
+                    case LibraryTargetDestination.Showcase:
+                        _plugin.OpenShowcasePage(navigation.ShowcasePageId);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed opening {use.TargetKey}.");
                 ErrorMessage = string.Format(L("LOCPlayAch_Status_Failed"), ex.Message);
             }
         }
