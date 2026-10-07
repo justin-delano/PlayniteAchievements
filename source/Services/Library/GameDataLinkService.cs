@@ -24,13 +24,23 @@ namespace PlayniteAchievements.Services.Library
         private readonly GameLinkStore _links;
         private readonly string _packageDirectory;
         private readonly string _baselineDirectory;
+        private readonly Func<Guid, GameCustomDataFile> _currentData;
+        private readonly Func<Guid, string> _iconDirectory;
         private readonly Action<Exception, string> _warn;
 
         /// <param name="links">The per-game links.</param>
         /// <param name="libraryDirectory">The library folder (<c>UserData\library</c>); package copies go in its game data folder.</param>
         /// <param name="baselineDirectory">The folder game data baselines are written to; only files there are deleted with a record.</param>
+        /// <param name="currentData">Reads a game's stored custom data, or null when it has none.</param>
+        /// <param name="iconDirectory">A game's managed icon folder.</param>
         /// <param name="warn">Optional sink for file failures.</param>
-        public GameDataLinkService(GameLinkStore links, string libraryDirectory, string baselineDirectory, Action<Exception, string> warn = null)
+        public GameDataLinkService(
+            GameLinkStore links,
+            string libraryDirectory,
+            string baselineDirectory,
+            Func<Guid, GameCustomDataFile> currentData = null,
+            Func<Guid, string> iconDirectory = null,
+            Action<Exception, string> warn = null)
         {
             if (string.IsNullOrWhiteSpace(libraryDirectory))
             {
@@ -40,6 +50,8 @@ namespace PlayniteAchievements.Services.Library
             _links = links ?? throw new ArgumentNullException(nameof(links));
             _packageDirectory = Path.Combine(libraryDirectory, FolderName);
             _baselineDirectory = baselineDirectory;
+            _currentData = currentData;
+            _iconDirectory = iconDirectory;
             _warn = warn;
         }
 
@@ -119,6 +131,27 @@ namespace PlayniteAchievements.Services.Library
             TryDeletePackage(link);
             TryDeleteBaseline(link.BaselineFile);
             return true;
+        }
+
+        /// <summary>
+        /// True when the game's stored data differs from what its record's apply left behind;
+        /// false when it does not, or when that cannot be told. Reads the disk: keep it off the UI
+        /// thread for many games.
+        /// </summary>
+        public bool IsEdited(Guid gameId, LibraryLink link)
+        {
+            GameCustomDataFile current;
+            try
+            {
+                current = _currentData?.Invoke(gameId);
+            }
+            catch (Exception ex)
+            {
+                _warn?.Invoke(ex, $"Failed reading the custom data of {gameId} for its Workshop record.");
+                return false;
+            }
+
+            return IsEdited(link, current, _iconDirectory?.Invoke(gameId)) == true;
         }
 
         /// <summary>
