@@ -72,12 +72,6 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
                     projection.HighlightedSpan = _overview.UnlockSpanFilter;
-                    // Only the weeks the selection's unlocks span, not the run up to today.
-                    projection.ActivityCalendar = ShowcaseWidgetProjectionService.BuildActivityCalendar(
-                        projection.Snapshot,
-                        widget,
-                        DateTime.Now.Date,
-                        trimToUnlocks: true);
                     break;
             }
 
