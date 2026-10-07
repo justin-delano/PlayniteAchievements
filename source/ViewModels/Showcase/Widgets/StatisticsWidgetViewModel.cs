@@ -9,22 +9,32 @@ using PlayniteAchievements.Services.Showcase;
 namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 {
     /// <summary>A single statistic tile: a formatted value over its localized label.</summary>
-    public sealed class StatTileViewModel
+    public sealed class StatTileViewModel : PlayniteAchievements.Common.ObservableObject
     {
-        public StatTileViewModel(string value, string label)
+        private string _value;
+
+        public StatTileViewModel(string key, string value, string label)
         {
-            Value = value;
+            Key = key;
+            _value = value;
             Label = label;
         }
 
-        public string Value { get; }
+        public string Key { get; }
+
+        /// <summary>Replaced in place when the data moves, so the tile keeps its visual.</summary>
+        public string Value
+        {
+            get => _value;
+            set => SetValue(ref _value, value);
+        }
 
         public string Label { get; }
     }
 
     /// <summary>
-    /// Backs the Statistics widget: a grid of stat tiles. Every size shows all tiles (the
-    /// body scrolls); a Tall viewport arranges them in a single column.
+    /// Backs the Statistics widget: a grid of stat tiles, every statistic or the ones chosen in
+    /// its settings. A Tall viewport arranges them in a single column.
     /// </summary>
     public sealed class StatisticsWidgetViewModel : ShowcaseWidgetViewModelBase
     {
@@ -52,11 +62,26 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 items = keys.Where(byKey.ContainsKey).Select(key => byKey[key]).ToList();
             }
 
+            var list = items.Where(item => item != null).ToList();
             Columns = Orientation == WidgetViewportOrientation.Tall ? 1 : 2;
-            Tiles.ReplaceAll(items
-                .Select(item => new StatTileViewModel(
-                    ShowcaseStatisticFormatter.Format(item),
-                    ResourceProvider.GetString(item.LabelKey))));
+
+            // The same statistics in the same order only change their values; replacing the
+            // tiles would regenerate every one of them for that.
+            if (Tiles.Count == list.Count &&
+                Tiles.Select(tile => tile.Key).SequenceEqual(list.Select(item => item.Key), StringComparer.Ordinal))
+            {
+                for (var index = 0; index < list.Count; index++)
+                {
+                    Tiles[index].Value = ShowcaseStatisticFormatter.Format(list[index]);
+                }
+
+                return;
+            }
+
+            Tiles.ReplaceAll(list.Select(item => new StatTileViewModel(
+                item.Key,
+                ShowcaseStatisticFormatter.Format(item),
+                ResourceProvider.GetString(item.LabelKey))));
         }
     }
 }
