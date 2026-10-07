@@ -1066,7 +1066,7 @@ namespace PlayniteAchievements.Services.UI
             Guid gameId,
             ManageAchievementsTab tab,
             bool selectManageCategoriesSubTab = false,
-            bool? notificationsShowFrame = null)
+            NotificationSurface? notificationsSurface = null)
         {
             if (!TryGetTrackedWindow(AchievementWindowKind.ManageAchievements, gameId, out var window))
             {
@@ -1075,7 +1075,7 @@ namespace PlayniteAchievements.Services.UI
 
             if (TryGetWindowContent<ManageAchievementsControl>(window, out var control))
             {
-                control.SelectTab(tab, selectManageCategoriesSubTab, notificationsShowFrame);
+                control.SelectTab(tab, selectManageCategoriesSubTab, notificationsSurface);
             }
 
             ActivateTrackedWindow(window);
@@ -1641,7 +1641,7 @@ namespace PlayniteAchievements.Services.UI
             Guid gameId,
             ManageAchievementsTab initialTab,
             bool selectManageCategoriesSubTab = false,
-            bool? notificationsShowFrame = null)
+            NotificationSurface? notificationsSurface = null)
         {
             try
             {
@@ -1649,7 +1649,7 @@ namespace PlayniteAchievements.Services.UI
                     gameId,
                     initialTab,
                     selectManageCategoriesSubTab,
-                    notificationsShowFrame));
+                    notificationsSurface));
             }
             catch (Exception ex)
             {
@@ -1664,13 +1664,13 @@ namespace PlayniteAchievements.Services.UI
             Guid gameId,
             ManageAchievementsTab initialTab,
             bool selectManageCategoriesSubTab = false,
-            bool? notificationsShowFrame = null)
+            NotificationSurface? notificationsSurface = null)
         {
             if (TryActivateManageAchievementsWindow(
                 gameId,
                 initialTab,
                 selectManageCategoriesSubTab,
-                notificationsShowFrame))
+                notificationsSurface))
             {
                 return;
             }
@@ -1715,7 +1715,7 @@ namespace PlayniteAchievements.Services.UI
                         _settings,
                         _manualSourceRegistry,
                         selectManageCategoriesSubTab,
-                        notificationsShowFrame);
+                        notificationsSurface);
                 }
 
                 var windowOptions = new WindowOptions
