@@ -114,6 +114,23 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreserveProviderUnlockSounds()
+        {
+            var source = new PersistedSettings();
+            source.SetProviderUnlockSounds("Steam", new UnlockSoundSettings { Rare = "steam-rare.wav" });
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual("steam-rare.wav", copy.GetProviderUnlockSounds("steam")?.Rare);
+                Assert.AreNotSame(source.GetProviderUnlockSounds("Steam"), copy.GetProviderUnlockSounds("Steam"));
+            }
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveOverviewPieDisplay()
         {
             var source = new PersistedSettings
