@@ -129,6 +129,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
             PreviewDragOver += EditorTab_PreviewDragOver;
             PreviewDrop += EditorTab_EndArtworkDrag;
             DragLeave += EditorTab_EndArtworkDrag;
+
+            // Text commits on keyboard focus loss, not logical focus loss: switching to another
+            // window keeps logical focus in the box, and the cell's EditOnClickPresenter then
+            // swaps the box out for its display face, so a LostFocus commit never ran.
+            AddHandler(LostKeyboardFocusEvent, new KeyboardFocusChangedEventHandler(EditorTab_LostKeyboardFocus), true);
             CategoryPicker.CreateRequested += CategoryPicker_CreateRequested;
             SeedCategoryPicker();
 
@@ -194,6 +199,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
         /// </remarks>
         public void Cleanup()
         {
+            // A box can still hold an uncommitted edit when the window closes without a focus
+            // change reaching it.
+            FlushFocusedEditorText();
+            RemoveHandler(LostKeyboardFocusEvent, new KeyboardFocusChangedEventHandler(EditorTab_LostKeyboardFocus));
+
             // First, while the grid, the view model and the settings object are all still alive:
             // disposing flushes the pending width writes, which needs all three.
             _columnPersistence?.Dispose();
@@ -1511,12 +1521,46 @@ namespace PlayniteAchievements.Views.ManageAchievements
         }
 
         /// <summary>
-        /// Commits a routed cell's text box on focus loss, which is when every editable box in
-        /// this tab commits.
+        /// Commits a text box in this tab when keyboard focus leaves it, which is when every
+        /// editable box here commits, including when the window itself is deactivated.
         /// </summary>
-        private void RoutedCellTextBox_Commit(object sender, RoutedEventArgs e)
+        private void EditorTab_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            CommitRoutedCellTextBox(sender as TextBox);
+            CommitEditorTextBox(e.OriginalSource as TextBox);
+        }
+
+        private void FlushFocusedEditorText()
+        {
+            var focused = FocusManager.GetFocusedElement(FocusManager.GetFocusScope(this)) as TextBox;
+            if (focused != null && IsAncestorOf(focused))
+            {
+                CommitEditorTextBox(focused);
+            }
+        }
+
+        /// <summary>
+        /// Routed grid cells write through their routed target; the details pane's boxes push
+        /// their two-way binding.
+        /// </summary>
+        private void CommitEditorTextBox(TextBox textBox)
+        {
+            if (textBox == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(EditorCellRouting.GetField(textBox)))
+            {
+                CommitRoutedCellTextBox(textBox);
+                return;
+            }
+
+            var binding = textBox.GetBindingExpression(TextBox.TextProperty);
+            var mode = binding?.ParentBinding.Mode;
+            if (mode == BindingMode.TwoWay || mode == BindingMode.OneWayToSource)
+            {
+                binding.UpdateSource();
+            }
         }
 
         /// <summary>
@@ -1573,8 +1617,15 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 return;
             }
 
-            var target = EditorCellRouting.ResolveTarget(ViewModel, row);
+            // Guarded against the cell's own row, as the date cell is: a focus loss with nothing
+            // typed, such as switching windows, must not stamp this row's text across a selection.
             var value = textBox.Text;
+            if (string.Equals(value, ReadRoutedCellText(row, field), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var target = EditorCellRouting.ResolveTarget(ViewModel, row);
             switch (field)
             {
                 case nameof(AchievementEditorRow.DisplayName):
@@ -1612,6 +1663,28 @@ namespace PlayniteAchievements.Views.ManageAchievements
             // The setters normalize and can refuse, so the box shows what was stored rather than
             // what was typed.
             textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+        }
+
+        /// <summary>
+        /// The text a routed cell shows for its own row, as the box's one-way binding reads it.
+        /// </summary>
+        private static string ReadRoutedCellText(AchievementEditorRow row, string field)
+        {
+            string text;
+            switch (field)
+            {
+                case nameof(AchievementEditorRow.DisplayName): text = row.DisplayName; break;
+                case nameof(AchievementEditorRow.Description): text = row.Description; break;
+                case nameof(AchievementEditorRow.TimeText): text = row.TimeText; break;
+                case nameof(AchievementEditorRow.RarityInput): text = row.RarityInput; break;
+                case nameof(AchievementEditorRow.PointsText): text = row.PointsText; break;
+                case nameof(AchievementEditorRow.ProgressNumText): text = row.ProgressNumText; break;
+                case nameof(AchievementEditorRow.ProgressDenomText): text = row.ProgressDenomText; break;
+                default: return null;
+            }
+
+            // A null source renders as an empty box.
+            return text ?? string.Empty;
         }
 
         /// <summary>
