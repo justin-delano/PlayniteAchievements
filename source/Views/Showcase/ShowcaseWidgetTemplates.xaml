@@ -507,8 +507,14 @@
       </DockPanel>
     </DataTemplate>
 
-    <!-- Pie: reuses PieChartWithRadialIcons, which also draws the optional legend on either side. -->
+    <!-- Pie: reuses PieChartWithRadialIcons, which also draws the optional legend on either side.
+         The optional control bar filters the games the pie's totals come from. -->
     <DataTemplate DataType="{x:Type widgets:PieWidgetViewModel}">
+      <DockPanel>
+        <controls:GridControlBarControl DockPanel.Dock="Top"
+                                        Margin="0,0,0,8"
+                                        ControlBar="{Binding ControlBar}"
+                                        ShowControlBar="{Binding ShowControlBar}"/>
         <controls:PieChartWithRadialIcons
             PieSeries="{Binding Chart.PieSeries}"
             LegendItems="{Binding Chart.LegendItems}"
@@ -522,6 +528,7 @@
             LegendPosition="{Binding Chart.LegendPosition}"
             PieMargin="23"
             MinHeight="70"/>
+      </DockPanel>
     </DataTemplate>
 
     <!-- Timeline: the reused LiveCharts column chart with range buttons, identical at every size. -->
