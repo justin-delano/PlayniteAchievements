@@ -641,8 +641,8 @@
                                                 Height="50"
                                                 Background="Transparent"
                                                 ToolTip="{Binding ArtOverrideValue}"
-                                                helpers:ImagePickTarget.IsEnabled="True"
-                                                helpers:ImagePickTarget.Picked="CategoryImage_Picked">
+                                                helpers:FilePickTarget.IsEnabled="True"
+                                                helpers:FilePickTarget.Picked="CategoryImage_Picked">
                                             <Border.Style>
                                                 <Style TargetType="Border" BasedOn="{StaticResource PreviewBorderStyle}">
                                                     <Style.Triggers>
