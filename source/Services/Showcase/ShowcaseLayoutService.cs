@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.Showcase
@@ -59,16 +60,16 @@ namespace PlayniteAchievements.Services.Showcase
         }
 
         public static ShowcaseSettings CreateDefault(
-            bool showCollectionScore = true,
-            bool showPrestigeScore = true)
+            ScoreCardSlot scoreCard1 = ScoreCardSlot.Collection,
+            ScoreCardSlot scoreCard2 = ScoreCardSlot.Prestige)
         {
             var settings = new ShowcaseSettings();
             var page = CreatePage(
                 ShowcasePageTemplate.Showcase,
                 settings,
                 "Showcase",
-                showCollectionScore,
-                showPrestigeScore);
+                scoreCard1,
+                scoreCard2);
             settings.Pages.Add(page);
             settings.LastSelectedPageId = page.PageId;
             return settings;
@@ -91,8 +92,8 @@ namespace PlayniteAchievements.Services.Showcase
                 template,
                 settings,
                 name,
-                showCollectionScore: true,
-                showPrestigeScore: true);
+                scoreCard1: ScoreCardSlot.Collection,
+                scoreCard2: ScoreCardSlot.Prestige);
             settings.Pages.Add(page);
             settings.LastSelectedPageId = page.PageId;
             return page;
@@ -132,8 +133,8 @@ namespace PlayniteAchievements.Services.Showcase
                 template,
                 settings,
                 page.Name,
-                showCollectionScore: true,
-                showPrestigeScore: true);
+                scoreCard1: ScoreCardSlot.Collection,
+                scoreCard2: ScoreCardSlot.Prestige);
             replacement.PageId = page.PageId;
             replacement.Name = page.Name;
             settings.Pages[pageIndex] = replacement;
@@ -736,6 +737,7 @@ namespace PlayniteAchievements.Services.Showcase
                 return;
             }
 
+            var loadedLayoutVersion = settings.LayoutVersion;
             settings.LayoutVersion = ShowcaseSettings.CurrentLayoutVersion;
             MigrateLegacyProfile(settings);
             settings.WidgetInstances = NormalizeWidgets(settings.WidgetInstances);
@@ -796,6 +798,12 @@ namespace PlayniteAchievements.Services.Showcase
 
                     placedWidgetIds.Add(widget.InstanceId);
                 }
+            }
+
+            // After the blocks are normalized, so a split halves a block of the final partition.
+            if (loadedLayoutVersion < ShowcaseSettings.OneCardScoresLayoutVersion)
+            {
+                MigrateToOneCardScores(settings);
             }
 
             if (!settings.Pages.Any(page =>
@@ -915,8 +923,8 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcasePageTemplate template,
             ShowcaseSettings settings,
             string name,
-            bool showCollectionScore,
-            bool showPrestigeScore)
+            ScoreCardSlot scoreCard1,
+            ScoreCardSlot scoreCard2)
         {
             var page = new ShowcasePageSettings
             {
@@ -933,7 +941,7 @@ namespace PlayniteAchievements.Services.Showcase
             {
                 case ShowcasePageTemplate.Showcase:
                     AddBlock(settings, page, 0, 0, 2, 3, ShowcaseWidgetKind.Profile);
-                    AddScoreBlock(settings, page, 0, 3, 2, 2, showCollectionScore, showPrestigeScore);
+                    AddScoreBlock(settings, page, 0, 3, 2, 2, scoreCard1, scoreCard2);
                     AddBlock(
                         settings,
                         page,
@@ -959,7 +967,7 @@ namespace PlayniteAchievements.Services.Showcase
                             ShowcaseGameGridSource.Pinned));
                     break;
                 case ShowcasePageTemplate.Analytics:
-                    AddScoreBlock(settings, page, 0, 0, 2, 5, true, true);
+                    AddScoreBlock(settings, page, 0, 0, 2, 5, ScoreCardSlot.Collection, ScoreCardSlot.Prestige);
                     AddBlock(settings, page, 2, 0, 3, 3, ShowcaseWidgetKind.ActivityCalendar);
                     AddBlock(settings, page, 2, 3, 1, 2, ShowcaseWidgetKind.Statistics);
                     AddBlock(settings, page, 3, 3, 2, 2, ShowcaseWidgetKind.Pie);
@@ -1035,7 +1043,7 @@ namespace PlayniteAchievements.Services.Showcase
                     break;
                 case ShowcasePageTemplate.TrophyCase:
                     AddBlock(settings, page, 0, 0, 2, 3, ShowcaseWidgetKind.Profile);
-                    AddScoreBlock(settings, page, 0, 3, 2, 2, true, true);
+                    AddScoreBlock(settings, page, 0, 3, 2, 2, ScoreCardSlot.Collection, ScoreCardSlot.Prestige);
                     AddBlock(
                         settings,
                         page,
@@ -1115,6 +1123,11 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseWidgetOptions.SetGameMosaicCount(widget, PresetMosaicCount);
         }
 
+        /// <summary>
+        /// The template's score area: one Scores widget per requested card, split side by side
+        /// as a legacy Both widget is (see <see cref="SplitBlockForSecondCard"/>), or an empty
+        /// block when neither card is requested.
+        /// </summary>
         private static void AddScoreBlock(
             ShowcaseSettings settings,
             ShowcasePageSettings page,
@@ -1122,26 +1135,131 @@ namespace PlayniteAchievements.Services.Showcase
             int column,
             int rowSpan,
             int columnSpan,
-            bool showCollectionScore,
-            bool showPrestigeScore)
+            ScoreCardSlot scoreCard1,
+            ScoreCardSlot scoreCard2)
         {
-            ShowcaseWidgetInstanceSettings widget = null;
-            if (showCollectionScore || showPrestigeScore)
+            var cards = new List<ScoreCardType>();
+            foreach (var slot in new[] { scoreCard1, scoreCard2 })
             {
-                widget = NewWidget(settings, ShowcaseWidgetKind.Scores);
-                ShowcaseWidgetOptions.SetScoreMode(
-                    widget,
-                    showCollectionScore && showPrestigeScore
-                        ? ShowcaseScoreMode.Dual
-                        : showCollectionScore
-                            ? ShowcaseScoreMode.Collection
-                            : ShowcaseScoreMode.Prestige);
-                settings.WidgetInstances.Add(widget);
+                if (ScoreCardTypes.TryGetCardType(ScoreCardTypes.Normalize(slot), out var type))
+                {
+                    cards.Add(type);
+                }
             }
 
-            page.Blocks.Add(NewBlock(row, column, rowSpan, columnSpan, widget?.InstanceId));
+            var block = NewBlock(row, column, rowSpan, columnSpan, null);
+            page.Blocks.Add(block);
+            if (cards.Count == 0)
+            {
+                return;
+            }
+
+            var first = NewWidget(settings, ShowcaseWidgetKind.Scores);
+            ShowcaseWidgetOptions.SetScoreCardType(first, cards[0]);
+            settings.WidgetInstances.Add(first);
+            block.WidgetInstanceId = first.InstanceId;
+            if (cards.Count < 2)
+            {
+                return;
+            }
+
+            var secondBlock = SplitBlockForSecondCard(block);
+            if (secondBlock != null)
+            {
+                var second = NewWidget(settings, ShowcaseWidgetKind.Scores);
+                ShowcaseWidgetOptions.SetScoreCardType(second, cards[1]);
+                settings.WidgetInstances.Add(second);
+                secondBlock.WidgetInstanceId = second.InstanceId;
+                page.Blocks.Add(secondBlock);
+            }
         }
 
+        /// <summary>
+        /// Halves <paramref name="block"/> to make room for a second card: across its columns when
+        /// it spans two or more (the first card keeps the left part), else across its rows when it
+        /// spans two or more (the first card keeps the top part). A 1x1 block cannot be halved and
+        /// returns null. No track is ever added.
+        /// </summary>
+        private static ShowcaseBlockSettings SplitBlockForSecondCard(ShowcaseBlockSettings block)
+        {
+            if (block.ColumnSpan >= 2)
+            {
+                var left = Math.Max(1, block.ColumnSpan / 2);
+                var right = NewBlock(block.Row, block.Column + left, block.RowSpan, block.ColumnSpan - left, null);
+                block.ColumnSpan = left;
+                return right;
+            }
+
+            if (block.RowSpan >= 2)
+            {
+                var top = Math.Max(1, block.RowSpan / 2);
+                var bottom = NewBlock(block.Row + top, block.Column, block.RowSpan - top, block.ColumnSpan, null);
+                block.RowSpan = top;
+                return bottom;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Splits every legacy Both Scores widget placed on <paramref name="page"/> into a
+        /// Collection widget (in the original block) and a Prestige widget beside or below it.
+        /// When the block is 1x1 only the Collection card is kept.
+        /// </summary>
+        public static void SplitLegacyDualScoreWidgets(ShowcaseSettings settings, ShowcasePageSettings page)
+        {
+            if (settings == null || page?.Blocks == null)
+            {
+                return;
+            }
+
+            settings.WidgetInstances ??= new List<ShowcaseWidgetInstanceSettings>();
+            var split = false;
+            foreach (var block in page.Blocks.ToList())
+            {
+                var widget = FindWidget(settings, block?.WidgetInstanceId);
+                if (!ShowcaseWidgetOptions.IsLegacyDualScores(widget))
+                {
+                    continue;
+                }
+
+                var prestige = ShowcaseWidgetOptions.SplitLegacyDualScores(widget);
+                var prestigeBlock = SplitBlockForSecondCard(block);
+                if (prestige != null && prestigeBlock != null)
+                {
+                    prestigeBlock.WidgetInstanceId = prestige.InstanceId;
+                    settings.WidgetInstances.Add(prestige);
+                    page.Blocks.Add(prestigeBlock);
+                    split = true;
+                }
+            }
+
+            if (split)
+            {
+                SortBlocks(page);
+            }
+        }
+
+        /// <summary>
+        /// One-time move to one card per Scores widget, for layouts saved before
+        /// <see cref="ShowcaseSettings.OneCardScoresLayoutVersion"/>: split placed Both widgets,
+        /// then write every remaining Scores widget's legacy options (unplaced ones and start
+        /// page instances, where a Both widget becomes its Collection card) as one-card options.
+        /// </summary>
+        private static void MigrateToOneCardScores(ShowcaseSettings settings)
+        {
+            foreach (var page in settings.Pages ?? new List<ShowcasePageSettings>())
+            {
+                SplitLegacyDualScoreWidgets(settings, page);
+            }
+
+            var widgets = (settings.WidgetInstances ?? new List<ShowcaseWidgetInstanceSettings>())
+                .Concat(settings.StartPageInstances?.Values ?? Enumerable.Empty<ShowcaseWidgetInstanceSettings>());
+            foreach (var widget in widgets)
+            {
+                ShowcaseWidgetOptions.MigrateLegacyScoreOptions(widget);
+            }
+        }
         private static void AddBlock(
             ShowcaseSettings settings,
             ShowcasePageSettings page,

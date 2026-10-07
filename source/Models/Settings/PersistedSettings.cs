@@ -2644,8 +2644,8 @@ namespace PlayniteAchievements.Models.Settings
                 if (_showcase == null)
                 {
                     _showcase = ShowcaseLayoutService.CreateDefault(
-                        ShowOverviewCollectionScoreCard,
-                        ShowOverviewPrestigeScoreCard);
+                    ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
+                    ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None);
                     ShowcaseLayoutService.Normalize(_showcase);
                 }
 
@@ -2654,8 +2654,8 @@ namespace PlayniteAchievements.Models.Settings
             set
             {
                 var normalized = value?.Clone() ?? ShowcaseLayoutService.CreateDefault(
-                    ShowOverviewCollectionScoreCard,
-                    ShowOverviewPrestigeScoreCard);
+                    ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
+                    ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None);
                 ShowcaseLayoutService.Normalize(normalized);
                 SetValue(ref _showcase, normalized);
             }
@@ -3345,8 +3345,8 @@ namespace PlayniteAchievements.Models.Settings
                 CompactLockedListSortMode = this.CompactLockedListSortMode,
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
                 Showcase = this.Showcase?.Clone() ?? ShowcaseLayoutService.CreateDefault(
-                    this.ShowOverviewCollectionScoreCard,
-                    this.ShowOverviewPrestigeScoreCard),
+                    this.ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
+                    this.ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None),
                 OverviewMiniShowcase = this.OverviewMiniShowcase?.Clone() ?? OverviewMiniShowcaseLayout.CreateDefault(),
                 OverviewMiniShowcaseHeight = this.OverviewMiniShowcaseHeight,
                 ShowOverviewMiniShowcase = this.ShowOverviewMiniShowcase,
@@ -3510,8 +3510,8 @@ namespace PlayniteAchievements.Models.Settings
 
 
             Showcase = ShowcaseLayoutService.CreateDefault(
-                defaults.ShowOverviewCollectionScoreCard,
-                defaults.ShowOverviewPrestigeScoreCard);
+                    defaults.ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
+                    defaults.ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None);
             OverviewMiniShowcase = OverviewMiniShowcaseLayout.CreateDefault();
             OverviewMiniShowcaseHeight = defaults.OverviewMiniShowcaseHeight;
             ShowOverviewMiniShowcase = defaults.ShowOverviewMiniShowcase;

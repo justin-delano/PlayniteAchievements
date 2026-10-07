@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Showcase;
 
@@ -80,16 +82,16 @@ namespace PlayniteAchievements.Tests.Models
         [TestMethod]
         public void DefaultLayout_UsesRequestedScoreModeAndExpectedGeometry()
         {
-            var collection = ShowcaseLayoutService.CreateDefault(true, false);
+            var collection = ShowcaseLayoutService.CreateDefault(ScoreCardSlot.Collection, ScoreCardSlot.None);
             var score = collection.WidgetInstances.Single(widget => widget.Kind == ShowcaseWidgetKind.Scores);
 
-            Assert.AreEqual(ShowcaseScoreMode.Collection, score.GetOption("Mode", ShowcaseScoreMode.Dual));
+            Assert.AreEqual(ScoreCardType.Collection, ShowcaseWidgetOptions.GetScoreCardType(score));
             Assert.AreEqual(5, collection.Pages.Single().Blocks.Count);
             Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(
                 collection.Pages.Single().Blocks,
                 collection.Pages.Single().RowCount, collection.Pages.Single().ColumnCount));
 
-            var none = ShowcaseLayoutService.CreateDefault(false, false);
+            var none = ShowcaseLayoutService.CreateDefault(ScoreCardSlot.None, ScoreCardSlot.None);
             var scoreBlock = none.Pages.Single().Blocks.Single(block =>
                 block.Row == 0 && block.Column == 3 && block.ColumnSpan == 2);
             Assert.IsNull(scoreBlock.WidgetInstanceId);
@@ -124,7 +126,8 @@ namespace PlayniteAchievements.Tests.Models
         [TestMethod]
         public void Split_KeepsAnOccupiedWidgetInTheLargerResultingBlock()
         {
-            var settings = ShowcaseLayoutService.CreateDefault();
+            // One score card keeps the template's whole 2x2 score block.
+            var settings = ShowcaseLayoutService.CreateDefault(ScoreCardSlot.Collection, ScoreCardSlot.None);
             var page = settings.Pages.Single();
             var scoreBlock = page.Blocks.Single(block =>
                 block.Row == 0 && block.Column == 3 && block.ColumnSpan == 2);
@@ -687,14 +690,14 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [DataTestMethod]
-        [DataRow(true, true, (int)ShowcaseScoreMode.Dual)]
-        [DataRow(true, false, (int)ShowcaseScoreMode.Collection)]
-        [DataRow(false, true, (int)ShowcaseScoreMode.Prestige)]
-        [DataRow(false, false, -1)]
-        public void PersistedSettings_MigratesEveryLegacyScoreVisibilityCombinationOnce(
+        [DataRow(true, true, "Collection,Prestige")]
+        [DataRow(true, false, "Collection")]
+        [DataRow(false, true, "Prestige")]
+        [DataRow(false, false, "")]
+        public void PersistedSettings_SeedsTheDefaultScoreCardsOnce(
             bool collectionVisible,
             bool prestigeVisible,
-            int expectedMode)
+            string expectedCards)
         {
             var persisted = new PersistedSettings
             {
@@ -704,19 +707,7 @@ namespace PlayniteAchievements.Tests.Models
 
             var first = persisted.Showcase;
             var pageId = first.Pages.Single().PageId;
-            var score = first.WidgetInstances.SingleOrDefault(widget =>
-                widget.Kind == ShowcaseWidgetKind.Scores);
-            if (expectedMode < 0)
-            {
-                Assert.IsNull(score);
-            }
-            else
-            {
-                Assert.IsNotNull(score);
-                Assert.AreEqual(
-                    (ShowcaseScoreMode)expectedMode,
-                    score.GetOption("Mode", ShowcaseScoreMode.Dual));
-            }
+            Assert.AreEqual(expectedCards, ScoreCardsInBlockOrder(first, first.Pages.Single()));
 
             Assert.AreSame(first, persisted.Showcase);
             Assert.AreEqual(pageId, persisted.Showcase.Pages.Single().PageId);
@@ -802,6 +793,183 @@ namespace PlayniteAchievements.Tests.Models
                 collection.Name == "Highlights"));
             Assert.IsTrue(settings.AchievementPinCollections.Any(collection =>
                 collection.Name == "highlights (2)"));
+        }
+
+        [TestMethod]
+        public void DefaultLayout_PlacesCollectionAndPrestigeSideBySide()
+        {
+            var settings = ShowcaseLayoutService.CreateDefault();
+            var page = settings.Pages.Single();
+
+            Assert.AreEqual("Collection,Prestige", ScoreCardsInBlockOrder(settings, page));
+            var scoreBlocks = ScoreBlocks(settings, page);
+            Assert.AreEqual(3, scoreBlocks[0].Column);
+            Assert.AreEqual(1, scoreBlocks[0].ColumnSpan);
+            Assert.AreEqual(4, scoreBlocks[1].Column);
+            Assert.AreEqual(2, scoreBlocks[1].RowSpan);
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
+        }
+
+        [DataTestMethod]
+        // Two or more columns: split the columns, Collection keeps the left floor(span/2).
+        [DataRow(2, 2, "Collection,Prestige", 1, 2, 1, 2)]
+        [DataRow(3, 1, "Collection,Prestige", 1, 1, 2, 1)]
+        // One column, two or more rows: stack, Collection on top.
+        [DataRow(1, 3, "Collection,Prestige", 1, 1, 1, 2)]
+        // 1x1: Collection only.
+        [DataRow(1, 1, "Collection", 1, 1, 0, 0)]
+        public void Normalize_SplitsALegacyBothScoresWidgetByItsBlockGeometry(
+            int columnSpan,
+            int rowSpan,
+            string expectedCards,
+            int firstColumnSpan,
+            int firstRowSpan,
+            int secondColumnSpan,
+            int secondRowSpan)
+        {
+            var settings = LegacyLayoutWithScores(columnSpan, rowSpan, out var legacy);
+            ShowcaseLayoutService.Normalize(settings);
+            var page = settings.Pages.Single();
+
+            Assert.AreEqual(ShowcaseSettings.CurrentLayoutVersion, settings.LayoutVersion);
+            Assert.AreEqual(expectedCards, ScoreCardsInBlockOrder(settings, page));
+            Assert.IsTrue(ShowcaseLayoutService.IsValidPartition(page.Blocks, page.RowCount, page.ColumnCount));
+            var blocks = ScoreBlocks(settings, page);
+            Assert.AreEqual(firstColumnSpan, blocks[0].ColumnSpan);
+            Assert.AreEqual(firstRowSpan, blocks[0].RowSpan);
+            Assert.AreEqual(legacy.InstanceId, blocks[0].WidgetInstanceId);
+            if (secondColumnSpan > 0)
+            {
+                Assert.AreEqual(secondColumnSpan, blocks[1].ColumnSpan);
+                Assert.AreEqual(secondRowSpan, blocks[1].RowSpan);
+            }
+            else
+            {
+                Assert.AreEqual(1, settings.WidgetInstances.Count(widget => widget.Kind == ShowcaseWidgetKind.Scores));
+            }
+        }
+
+        [TestMethod]
+        public void Normalize_SplitCarriesEachScoresBadgeSideAndChartChoice()
+        {
+            var settings = LegacyLayoutWithScores(2, 2, out var legacy);
+            legacy.CustomTitle = "Scores";
+            legacy.SetOption("CollectionBadgePosition", ScoreCardBadgePosition.Right);
+            legacy.SetOption("PrestigeBadgePosition", ScoreCardBadgePosition.Left);
+            legacy.SetOption("ScoreHistory", ShowcaseScoreHistoryMode.Prestige);
+            legacy.SetOption("TopN", 7);
+
+            ShowcaseLayoutService.Normalize(settings);
+            var widgets = ScoreBlocks(settings, settings.Pages.Single())
+                .Select(block => settings.WidgetInstances.Single(widget => widget.InstanceId == block.WidgetInstanceId))
+                .ToList();
+
+            Assert.AreEqual(ScoreCardBadgePosition.Right, ShowcaseWidgetOptions.GetScoreCardBadgePosition(widgets[0]));
+            Assert.IsFalse(ShowcaseWidgetOptions.GetScoreHistoryShown(widgets[0]));
+            Assert.AreEqual(ScoreCardType.Prestige, ShowcaseWidgetOptions.GetScoreCardType(widgets[1]));
+            Assert.AreEqual(ScoreCardBadgePosition.Left, ShowcaseWidgetOptions.GetScoreCardBadgePosition(widgets[1]));
+            Assert.IsTrue(ShowcaseWidgetOptions.GetScoreHistoryShown(widgets[1]));
+            Assert.AreEqual("Scores", widgets[1].CustomTitle);
+            Assert.AreEqual("7", widgets[1].Options["TopN"]);
+            Assert.AreNotEqual(widgets[0].InstanceId, widgets[1].InstanceId);
+            Assert.IsFalse(widgets[0].Options.ContainsKey("Mode"));
+        }
+
+        [TestMethod]
+        public void Normalize_SingleScoreLegacyModesAndStartPageBothBecomeOneCard()
+        {
+            var settings = LegacyLayoutWithScores(2, 2, out var legacy);
+            legacy.SetOption("Mode", ShowcaseScoreMode.Prestige);
+            var startPage = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Scores };
+            startPage.SetOption("Mode", ShowcaseScoreMode.Dual);
+            settings.StartPageInstances["PlayniteAchievements_Showcase_DualScores"] = startPage;
+
+            ShowcaseLayoutService.Normalize(settings);
+
+            Assert.AreEqual("Prestige", ScoreCardsInBlockOrder(settings, settings.Pages.Single()));
+            var migratedStartPage = settings.StartPageInstances.Values.Single();
+            Assert.AreEqual(ScoreCardType.Collection, ShowcaseWidgetOptions.GetScoreCardType(migratedStartPage));
+            Assert.IsFalse(ShowcaseWidgetOptions.IsLegacyDualScores(migratedStartPage));
+        }
+
+        [TestMethod]
+        public void Normalize_SplitsOnlyOnceAndNeverSplitsCurrentLayouts()
+        {
+            var settings = LegacyLayoutWithScores(2, 2, out _);
+            ShowcaseLayoutService.Normalize(settings);
+            var afterFirst = settings.WidgetInstances.Count;
+            ShowcaseLayoutService.Normalize(settings);
+            Assert.AreEqual(afterFirst, settings.WidgetInstances.Count);
+            Assert.AreEqual("Collection,Prestige", ScoreCardsInBlockOrder(settings, settings.Pages.Single()));
+
+            // A current-version layout keeps a widget with no card option as it is: the read
+            // fallback shows its Collection card, and nothing is split.
+            var current = LegacyLayoutWithScores(2, 2, out _);
+            current.LayoutVersion = ShowcaseSettings.CurrentLayoutVersion;
+            ShowcaseLayoutService.Normalize(current);
+            Assert.AreEqual(1, current.WidgetInstances.Count(widget => widget.Kind == ShowcaseWidgetKind.Scores));
+
+            // A fresh layout starts at the current version.
+            Assert.AreEqual(ShowcaseSettings.CurrentLayoutVersion, new ShowcaseSettings().LayoutVersion);
+        }
+
+        private static ShowcaseSettings LegacyLayoutWithScores(
+            int columnSpan,
+            int rowSpan,
+            out ShowcaseWidgetInstanceSettings legacy)
+        {
+            var settings = new ShowcaseSettings { LayoutVersion = 1 };
+            var page = ShowcaseLayoutService.AddPage(settings, ShowcasePageTemplate.Blank);
+            settings.WidgetInstances.Clear();
+            page.RowCount = 3;
+            page.ColumnCount = 3;
+            page.RowWeights = null;
+            page.ColumnWeights = null;
+            page.Blocks.Clear();
+            legacy = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Scores };
+            legacy.SetOption("Mode", ShowcaseScoreMode.Dual);
+            settings.WidgetInstances.Add(legacy);
+            for (var row = 0; row < 3; row++)
+            {
+                for (var column = 0; column < 3; column++)
+                {
+                    if (row < rowSpan && column < columnSpan)
+                    {
+                        continue;
+                    }
+
+                    page.Blocks.Add(new ShowcaseBlockSettings { Row = row, Column = column });
+                }
+            }
+
+            page.Blocks.Add(new ShowcaseBlockSettings
+            {
+                Row = 0,
+                Column = 0,
+                RowSpan = rowSpan,
+                ColumnSpan = columnSpan,
+                WidgetInstanceId = legacy.InstanceId
+            });
+            settings.LayoutVersion = 1;
+            return settings;
+        }
+
+        private static List<ShowcaseBlockSettings> ScoreBlocks(ShowcaseSettings settings, ShowcasePageSettings page)
+        {
+            return page.Blocks
+                .Where(block => settings.WidgetInstances.Any(widget =>
+                    widget.Kind == ShowcaseWidgetKind.Scores &&
+                    widget.InstanceId == block.WidgetInstanceId))
+                .OrderBy(block => block.Row)
+                .ThenBy(block => block.Column)
+                .ToList();
+        }
+
+        private static string ScoreCardsInBlockOrder(ShowcaseSettings settings, ShowcasePageSettings page)
+        {
+            return string.Join(",", ScoreBlocks(settings, page)
+                .Select(block => ShowcaseWidgetOptions.GetScoreCardType(
+                    settings.WidgetInstances.Single(widget => widget.InstanceId == block.WidgetInstanceId))));
         }
     }
 }
