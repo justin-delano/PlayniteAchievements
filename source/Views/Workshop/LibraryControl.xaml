@@ -140,74 +140,6 @@
                 </Grid>
             </DataTemplate>
 
-            <!-- A game with Workshop game data: the game, the item and version applied, its state,
-                 and the open glyph; the whole row opens the game's Manage Achievements. -->
-            <DataTemplate x:Key="LibraryGameDataTemplate" DataType="{x:Type vm:LibraryGameDataRow}">
-                <Grid ToolTip="{DynamicResource LOCPlayAch_Menu_ManageAchievements}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Width="52" Height="34"
-                            Margin="0,0,12,0"
-                            Background="{DynamicResource PlayAch.Brush.Surface}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                            CornerRadius="3">
-                        <controls:GlyphIcon Glyph="{Binding KindGlyph}"
-                                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                            Size="18"
-                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                            Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"/>
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding GameName}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding Secondary}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                        <Border Style="{StaticResource LibraryTagStyle}"
-                                BorderBrush="{DynamicResource PlayAch.Brush.AuthPending}"
-                                Visibility="{Binding IsEdited, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Library_Edited}"
-                                       Style="{StaticResource LibraryTagTextStyle}"
-                                       Foreground="{DynamicResource PlayAch.Brush.AuthPending}"/>
-                        </Border>
-                        <Border Style="{StaticResource LibraryTagStyle}"
-                                BorderBrush="{DynamicResource PlayAch.Brush.Accent}"
-                                Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="{Binding UpdateTag}"
-                                       Style="{StaticResource LibraryTagTextStyle}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
-                        </Border>
-                    </StackPanel>
-                    <controls:GlyphIcon Grid.Column="3"
-                                        Glyph="&#xEF1F;"
-                                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                        Size="14"
-                                        Margin="12,0,0,0"
-                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                        Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                                        VerticalAlignment="Center"
-                                        SnapsToDevicePixels="True"/>
-                </Grid>
-            </DataTemplate>
-
-            <Style x:Key="LibraryGameDataRowStyle" TargetType="ListBoxItem" BasedOn="{StaticResource LibraryRowStyle}">
-                <Setter Property="Cursor" Value="Hand"/>
-                <EventSetter Event="MouseLeftButtonUp" Handler="GameDataRow_MouseLeftButtonUp"/>
-                <EventSetter Event="KeyDown" Handler="GameDataRow_KeyDown"/>
-            </Style>
-
             <DataTemplate x:Key="LibraryUseTemplate" DataType="{x:Type vm:LibraryUseRow}">
                 <Border BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                         BorderThickness="0,0,0,1"
@@ -308,6 +240,11 @@
                         <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}" Margin="0,2,0,0" TextWrapping="Wrap">
                             <Run Text="{Binding KindLabel, Mode=OneWay}"/><Run Text="{Binding Secondary, Mode=OneWay, StringFormat=' · {0}'}"/>
                         </TextBlock>
+                        <TextBlock Text="{Binding Description}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Margin="0,10,0,0"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding HasDescription, Converter={StaticResource BoolToVis}}"/>
 
                         <Grid Margin="0,12,0,0">
                             <Grid.ColumnDefinitions>
@@ -348,7 +285,8 @@
 
                         <!-- Actions as icon buttons: update (download), reinstall (refresh), open on
                              GitHub (external link, for an item this install published), export or
-                             share (upload, the shared two-way menu), rename (edit), delete. -->
+                             share (upload, the shared two-way menu), rename (edit), delete. Game
+                             data has no library copy, so it has no reinstall, export or rename. -->
                         <WrapPanel Margin="0,16,0,0">
                             <Button Content="&#xEF08;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
@@ -360,7 +298,7 @@
                                     Style="{StaticResource LibraryIconButtonStyle}"
                                     ToolTip="{DynamicResource LOCPlayAch_Workshop_Reinstall}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_Reinstall}"
-                                    Visibility="{Binding IsWorkshop, Converter={StaticResource BoolToVis}}"
+                                    Visibility="{Binding ShowReinstall, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.ReinstallCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="&#xEF1F;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
@@ -373,11 +311,13 @@
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
                                     IsEnabled="{Binding HasFile}"
+                                    Visibility="{Binding HasLibraryCopy, Converter={StaticResource BoolToVis}}"
                                     Click="Export_Click"/>
                             <Button Content="&#xEC55;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
                                     ToolTip="{DynamicResource LOCPlayAch_Common_Rename}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Common_Rename}"
+                                    Visibility="{Binding HasLibraryCopy, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="&#xEE09;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
@@ -449,31 +389,8 @@
                          ToolTip="{DynamicResource LOCPlayAch_Button_Search}"/>
             </Grid>
 
-            <!-- The game data chip: one row per game with Workshop game data. -->
-            <Border Grid.Row="2"
-                    Background="{DynamicResource PlayAch.Brush.Surface}"
-                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                    CornerRadius="4"
-                    Visibility="{Binding ShowGameData, Converter={StaticResource BoolToVis}}">
-                <Grid>
-                    <ListBox Style="{StaticResource PlayAch.ListBox.BaseStyle}"
-                             ItemContainerStyle="{StaticResource LibraryGameDataRowStyle}"
-                             ItemsSource="{Binding GameDataView}"
-                             ItemTemplate="{StaticResource LibraryGameDataTemplate}"
-                             SelectionMode="Single"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Empty}"
-                               Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               IsHitTestVisible="False"
-                               Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"/>
-                </Grid>
-            </Border>
-
             <!-- List grouped by kind, and the detail pane. -->
-            <Grid Grid.Row="2" Visibility="{Binding ShowGameData, Converter={StaticResource InverseBoolToVis}}">
+            <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="5*" MinWidth="300"/>
                     <ColumnDefinition Width="Auto"/>
