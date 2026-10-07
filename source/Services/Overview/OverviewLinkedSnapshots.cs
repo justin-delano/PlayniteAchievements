@@ -13,7 +13,9 @@ namespace PlayniteAchievements.Services.Overview
         None = 0,
         Provider = 1,
         Completeness = 2,
-        UnlockSpan = 4
+        UnlockSpan = 4,
+        Rarity = 8,
+        Trophy = 16
     }
 
     /// <summary>
@@ -115,14 +117,24 @@ namespace PlayniteAchievements.Services.Overview
             }
         }
 
-        /// <summary>
-        /// <paramref name="snapshot"/> as seen through an unlock date range: only the unlocks
-        /// whose local day falls in <paramref name="span"/> count. Achievement totals, rarity and
-        /// trophy counts, the per-day counts and the unlocked rows are rebuilt from those unlocks,
-        /// with no locked remainder (a locked achievement has no date to fall in the range); the
-        /// game-level totals (games, completions, providers) are kept as they were.
-        /// </summary>
+        /// <summary><see cref="ClipToAchievements"/> keeping the unlocks whose local day falls in <paramref name="span"/>.</summary>
         public static OverviewDataSnapshot ClipToSpan(OverviewDataSnapshot snapshot, UnlockDaySpan span)
+        {
+            return ClipToAchievements(
+                snapshot,
+                item => item?.UnlockTimeUtc.HasValue == true && span.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)));
+        }
+
+        /// <summary>
+        /// <paramref name="snapshot"/> as seen through an achievement filter: only the unlocks
+        /// <paramref name="keep"/> accepts count. Achievement totals, rarity and trophy counts,
+        /// the per-day counts and the unlocked rows are rebuilt from those unlocks, with no locked
+        /// remainder (the filters describe unlocks); the game-level totals (games, completions,
+        /// providers) are kept as they were.
+        /// </summary>
+        public static OverviewDataSnapshot ClipToAchievements(
+            OverviewDataSnapshot snapshot,
+            Func<AchievementDisplayItem, bool> keep)
         {
             if (snapshot == null)
             {
@@ -130,18 +142,32 @@ namespace PlayniteAchievements.Services.Overview
             }
 
             var rows = (snapshot.Achievements ?? new List<AchievementDisplayItem>())
-                .Where(item =>
-                    item?.Unlocked == true &&
-                    item.UnlockTimeUtc.HasValue &&
-                    span.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)))
+                .Where(item => item?.Unlocked == true && item.UnlockTimeUtc.HasValue && keep(item))
                 .ToList();
+            var byGame = new Dictionary<Guid, Dictionary<DateTime, int>>();
+            var global = new Dictionary<DateTime, int>();
+            foreach (var row in rows)
+            {
+                var day = UnlockDayCounts.DayOf(row.UnlockTimeUtc.Value);
+                global[day] = global.TryGetValue(day, out var total) ? total + 1 : 1;
+                if (row.PlayniteGameId.HasValue)
+                {
+                    if (!byGame.TryGetValue(row.PlayniteGameId.Value, out var counts))
+                    {
+                        counts = new Dictionary<DateTime, int>();
+                        byGame[row.PlayniteGameId.Value] = counts;
+                    }
+
+                    counts[day] = counts.TryGetValue(day, out var count) ? count + 1 : 1;
+                }
+            }
+
             var clipped = new OverviewDataSnapshot
             {
                 GameSummaries = snapshot.GameSummaries,
                 Achievements = rows,
                 RecentAchievements = (snapshot.RecentAchievements ?? new List<AchievementDisplayItem>())
-                    .Where(item => item?.UnlockTimeUtc.HasValue == true &&
-                                   span.Contains(UnlockDayCounts.DayOf(item.UnlockTimeUtc.Value)))
+                    .Where(item => item?.UnlockTimeUtc.HasValue == true && keep(item))
                     .ToList(),
                 CurrentUserIdentities = snapshot.CurrentUserIdentities,
                 UnlockedByProvider = snapshot.UnlockedByProvider,
@@ -151,10 +177,8 @@ namespace PlayniteAchievements.Services.Overview
                 Completions = snapshot.Completions,
                 PossibleCompletions = snapshot.PossibleCompletions,
                 GlobalProgressionPercent = snapshot.GlobalProgressionPercent,
-                GlobalUnlockCountsByDate = ClipCounts(snapshot.GlobalUnlockCountsByDate, span),
-                UnlockCountsByDateByGame = (snapshot.UnlockCountsByDateByGame ??
-                        new Dictionary<Guid, Dictionary<DateTime, int>>())
-                    .ToDictionary(pair => pair.Key, pair => ClipCounts(pair.Value, span))
+                GlobalUnlockCountsByDate = global,
+                UnlockCountsByDateByGame = byGame
             };
 
             clipped.TotalUnlocked = rows.Count;
@@ -204,13 +228,6 @@ namespace PlayniteAchievements.Services.Overview
             clipped.TotalSilverPossible = clipped.TotalSilver;
             clipped.TotalBronzePossible = clipped.TotalBronze;
             return clipped;
-        }
-
-        private static Dictionary<DateTime, int> ClipCounts(Dictionary<DateTime, int> counts, UnlockDaySpan span)
-        {
-            return (counts ?? new Dictionary<DateTime, int>())
-                .Where(pair => span.Contains(pair.Key))
-                .ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         /// <summary>
