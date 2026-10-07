@@ -105,20 +105,45 @@ namespace PlayniteAchievements.Views.Showcase
                     AddProfileStatSlots(panel);
                     break;
                 case ShowcaseWidgetKind.Scores:
+                    // Each card's badge side is its own row, shown only while that card is.
+                    Grid collectionBadgeRow = null;
+                    Grid prestigeBadgeRow = null;
+                    void UpdateBadgeRows(ShowcaseScoreMode mode)
+                    {
+                        collectionBadgeRow.Visibility = mode != ShowcaseScoreMode.Prestige
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                        prestigeBadgeRow.Visibility = mode != ShowcaseScoreMode.Collection
+                            ? Visibility.Visible
+                            : Visibility.Collapsed;
+                    }
+
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_ScoreCards"),
                         new[] { ShowcaseScoreMode.Dual, ShowcaseScoreMode.Collection, ShowcaseScoreMode.Prestige },
                         ShowcaseWidgetOptions.GetScoreMode(_settings),
-                        value => ShowcaseWidgetOptions.SetScoreMode(_settings, value),
+                        value =>
+                        {
+                            ShowcaseWidgetOptions.SetScoreMode(_settings, value);
+                            UpdateBadgeRows(value);
+                        },
                         ScoreModeName);
-                    AddChoice(
+                    collectionBadgeRow = AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Settings_ScoreCardBadgePosition"),
+                        Localize("LOCPlayAch_Settings_CollectionBadgePosition"),
                         new[] { ScoreCardBadgePosition.Left, ScoreCardBadgePosition.Right },
-                        ShowcaseWidgetOptions.GetScoreBadgePosition(_settings),
-                        value => ShowcaseWidgetOptions.SetScoreBadgePosition(_settings, value),
+                        ShowcaseWidgetOptions.GetCollectionBadgePosition(_settings),
+                        value => ShowcaseWidgetOptions.SetCollectionBadgePosition(_settings, value),
                         ScoreBadgePositionName);
+                    prestigeBadgeRow = AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_PrestigeBadgePosition"),
+                        new[] { ScoreCardBadgePosition.Left, ScoreCardBadgePosition.Right },
+                        ShowcaseWidgetOptions.GetPrestigeBadgePosition(_settings),
+                        value => ShowcaseWidgetOptions.SetPrestigeBadgePosition(_settings, value),
+                        ScoreBadgePositionName);
+                    UpdateBadgeRows(ShowcaseWidgetOptions.GetScoreMode(_settings));
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_ScoreHistory"),
