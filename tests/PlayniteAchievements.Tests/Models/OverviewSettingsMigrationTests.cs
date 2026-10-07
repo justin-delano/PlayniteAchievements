@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Showcase;
 
 namespace PlayniteAchievements.Models.Tests
 {
@@ -42,7 +46,11 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlatform"].Value<bool>());
             Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlaytime"].Value<bool>());
             Assert.AreEqual(false, persisted["ShowOverviewGameMetadataRegion"].Value<bool>());
-            Assert.AreEqual("Hide", persisted["OverviewPieSmallSliceMode"].Value<string>());
+            // The strip's pie and timeline settings land on the mini-showcase widgets.
+            var mini = ReadMiniShowcase(persisted);
+            Assert.IsTrue(MiniWidgets(mini, ShowcaseWidgetKind.Pie)
+                .All(pie => ShowcaseWidgetOptions.GetPieSmallSliceMode(pie) == OverviewPieSmallSliceMode.Hide));
+            Assert.IsNull(persisted["OverviewPieSmallSliceMode"]);
             Assert.AreEqual("Alphabetical", persisted["OverviewGameSummariesGridSortMode"].Value<string>());
             Assert.AreEqual(false, persisted["OverviewGameSummariesGridSortDescending"].Value<bool>());
             Assert.AreEqual(84.0, persisted["OverviewGameSummariesGridRowHeight"].Value<double>());
@@ -50,8 +58,11 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual("None", persisted["OverviewSelectedGameGridSortMode"].Value<string>());
             Assert.AreEqual(false, persisted["OverviewSelectedGameGridSortDescending"].Value<bool>());
             Assert.AreEqual(0.64, persisted["OverviewLeftColumnRatio"].Value<double>());
-            // The rename chain lands on the TimeWindow property in one pass.
-            Assert.AreEqual("SixMonths", persisted["OverviewTimeWindow"].Value<string>());
+            // The rename chain lands on the TimeWindow property, which the timeline widget takes.
+            Assert.AreEqual(
+                TimeWindow.FromPreset(TimelineRange.SixMonths),
+                ShowcaseTimelineOptions.GetWindow(MiniWidgets(mini, ShowcaseWidgetKind.Timeline).Single()));
+            Assert.IsNull(persisted["OverviewTimeWindow"]);
             Assert.IsNull(persisted["OverviewTimelineRange"]);
             Assert.AreEqual(false, persisted["ShowOverviewGameSummariesGridColumnHeaders"].Value<bool>());
             Assert.IsNotNull(persisted["StartPageGameSummariesGrid"]);
@@ -341,7 +352,10 @@ namespace PlayniteAchievements.Models.Tests
 
             var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
 
-            Assert.AreEqual(expected, persisted["OverviewPieCenterMode"].Value<string>());
+            var expectedMode = (PieCenterMode)Enum.Parse(typeof(PieCenterMode), expected);
+            Assert.IsTrue(MiniWidgets(ReadMiniShowcase(persisted), ShowcaseWidgetKind.Pie)
+                .All(pie => ShowcaseWidgetOptions.GetPieCenterMode(pie) == expectedMode));
+            Assert.IsNull(persisted["OverviewPieCenterMode"]);
             Assert.IsNull(persisted["ShowOverviewPiePercentages"]);
             Assert.IsNull(persisted["ShowSidebarPiePercentages"]);
         }
@@ -354,8 +368,108 @@ namespace PlayniteAchievements.Models.Tests
 
             var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
 
-            Assert.AreEqual("Filled", persisted["OverviewPieCenterMode"].Value<string>());
+            Assert.IsTrue(MiniWidgets(ReadMiniShowcase(persisted), ShowcaseWidgetKind.Pie)
+                .All(pie => ShowcaseWidgetOptions.GetPieCenterMode(pie) == PieCenterMode.Filled));
             Assert.IsNull(persisted["ShowOverviewPiePercentages"]);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_SeedsMiniShowcaseFromShownChartsInStripOrder()
+        {
+            const string json =
+                @"{ ""Persisted"": {
+                    ""ShowOverviewGamesPieChart"": true,
+                    ""ShowOverviewProviderPieChart"": false,
+                    ""ShowOverviewRarityPieChart"": true,
+                    ""ShowOverviewTrophyPieChart"": false,
+                    ""ShowOverviewBarCharts"": true,
+                    ""OverviewPieCenterMode"": 2,
+                    ""ShowOverviewPieIcons"": false,
+                    ""ShowOverviewPieLegend"": true,
+                    ""OverviewPieLegendPosition"": 1,
+                    ""OverviewPieIncludeLocked"": false,
+                    ""OverviewTimelineGranularity"": ""Week"",
+                    ""OverviewTimelineSplitByPlatform"": true
+                } }";
+
+            var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
+            var mini = ReadMiniShowcase(persisted);
+            var page = mini.Pages.Single();
+            var placed = page.Blocks
+                .OrderBy(block => block.Column)
+                .Select(block => mini.WidgetInstances.Single(widget => widget.InstanceId == block.WidgetInstanceId))
+                .ToList();
+
+            Assert.AreEqual(1, page.RowCount);
+            Assert.AreEqual(3, placed.Count);
+            Assert.AreEqual(ShowcasePieMode.CompletedGames, ShowcaseWidgetOptions.GetPieMode(placed[0]));
+            Assert.AreEqual(ShowcasePieMode.Rarity, ShowcaseWidgetOptions.GetPieMode(placed[1]));
+            Assert.AreEqual(ShowcaseWidgetKind.Timeline, placed[2].Kind);
+            CollectionAssert.AreEqual(new[] { 1d, 1d, 2d }, page.ColumnWeights);
+
+            Assert.AreEqual(PieCenterMode.Filled, ShowcaseWidgetOptions.GetPieCenterMode(placed[0]));
+            Assert.IsFalse(ShowcaseWidgetOptions.GetPieShowIcons(placed[0]));
+            Assert.IsTrue(ShowcaseWidgetOptions.GetPieShowLegend(placed[1]));
+            Assert.AreEqual(PieLegendPosition.Left, ShowcaseWidgetOptions.GetPieLegendPosition(placed[1]));
+            Assert.IsFalse(ShowcaseWidgetOptions.GetPieIncludeLocked(placed[1]));
+            Assert.AreEqual(TimelineGranularity.Week, ShowcaseTimelineOptions.GetGranularity(placed[2]));
+            Assert.IsTrue(ShowcaseTimelineOptions.GetSplitByPlatform(placed[2]));
+            // The strip's own default window, not the timeline widget's.
+            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), ShowcaseTimelineOptions.GetWindow(placed[2]));
+
+            Assert.IsTrue(persisted["ShowOverviewMiniShowcase"].Value<bool>());
+            Assert.IsNull(persisted["ShowOverviewGamesPieChart"]);
+            Assert.IsNull(persisted["ShowOverviewBarCharts"]);
+            Assert.IsNull(persisted["OverviewTimelineSplitByPlatform"]);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_HidesMiniShowcaseWhenNoChartWasShown()
+        {
+            const string json =
+                @"{ ""Persisted"": { ""ShowOverviewPieCharts"": false, ""ShowOverviewBarCharts"": false } }";
+
+            var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
+
+            Assert.IsFalse(persisted["ShowOverviewMiniShowcase"].Value<bool>());
+            Assert.AreEqual(0, ReadMiniShowcase(persisted).WidgetInstances.Count);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_KeepsExistingMiniShowcaseAndDropsLegacyKeys()
+        {
+            var existing = OverviewMiniShowcaseLayout.Create(
+                new[] { ShowcasePieMode.Trophy },
+                includeTimeline: false,
+                configurePie: null,
+                configureTimeline: null);
+            var json = new JObject
+            {
+                ["Persisted"] = new JObject
+                {
+                    ["OverviewMiniShowcase"] = JObject.FromObject(existing),
+                    ["ShowOverviewBarCharts"] = true
+                }
+            }.ToString();
+
+            var persisted = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json))["Persisted"];
+
+            Assert.AreEqual(ShowcasePieMode.Trophy, ShowcaseWidgetOptions.GetPieMode(
+                ReadMiniShowcase(persisted).WidgetInstances.Single()));
+            Assert.IsNull(persisted["ShowOverviewBarCharts"]);
+        }
+
+        private static ShowcaseSettings ReadMiniShowcase(JObject persisted)
+        {
+            Assert.IsNotNull(persisted["OverviewMiniShowcase"], "the mini-showcase was not seeded");
+            return persisted["OverviewMiniShowcase"].ToObject<ShowcaseSettings>();
+        }
+
+        private static IEnumerable<ShowcaseWidgetInstanceSettings> MiniWidgets(
+            ShowcaseSettings mini,
+            ShowcaseWidgetKind kind)
+        {
+            return mini.WidgetInstances.Where(widget => widget.Kind == kind);
         }
     }
 }
