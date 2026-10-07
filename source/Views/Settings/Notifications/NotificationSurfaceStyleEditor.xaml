@@ -848,9 +848,9 @@
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="0" Grid.Column="1"
                             Tag="BadgeCommon"
-                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                            helpers:ImagePickTarget.IsEnabled="True"
-                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
+                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                            helpers:FilePickTarget.IsEnabled="True"
+                            helpers:FilePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
@@ -880,9 +880,9 @@
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="1" Grid.Column="1"
                             Tag="BadgeUncommon"
-                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                            helpers:ImagePickTarget.IsEnabled="True"
-                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
+                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                            helpers:FilePickTarget.IsEnabled="True"
+                            helpers:FilePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
@@ -912,9 +912,9 @@
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="2" Grid.Column="1"
                             Tag="BadgeRare"
-                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                            helpers:ImagePickTarget.IsEnabled="True"
-                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
+                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                            helpers:FilePickTarget.IsEnabled="True"
+                            helpers:FilePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
@@ -944,9 +944,9 @@
                                Margin="0,0,8,6"/>
                     <Border Grid.Row="3" Grid.Column="1"
                             Tag="BadgeUltraRare"
-                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                            helpers:ImagePickTarget.IsEnabled="True"
-                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
+                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                            helpers:FilePickTarget.IsEnabled="True"
+                            helpers:FilePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
@@ -976,9 +976,9 @@
                                Margin="0,0,8,0"/>
                     <Border Grid.Row="4" Grid.Column="1"
                             Tag="BadgeCompletion"
-                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                            helpers:ImagePickTarget.IsEnabled="True"
-                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
+                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                            helpers:FilePickTarget.IsEnabled="True"
+                            helpers:FilePickTarget.Picked="ImagePickTarget_Picked"
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,0">
@@ -1022,9 +1022,9 @@
                     </Grid.ColumnDefinitions>
                     <Border Grid.Column="0"
                             Tag="Background"
-                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                            helpers:ImagePickTarget.IsEnabled="True"
-                            helpers:ImagePickTarget.Picked="ImagePickTarget_Picked"
+                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                            helpers:FilePickTarget.IsEnabled="True"
+                            helpers:FilePickTarget.Picked="ImagePickTarget_Picked"
                             Width="192"
                             Height="108"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
