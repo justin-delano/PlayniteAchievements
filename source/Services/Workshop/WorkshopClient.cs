@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -107,7 +108,7 @@ namespace PlayniteAchievements.Services.Workshop
                 var cached = CachePathFor(url, ".md");
                 if (cached != null && File.Exists(cached))
                 {
-                    return StripImageBlock(File.ReadAllText(cached));
+                    return ReadmeToPlainText(StripImageBlock(File.ReadAllText(cached)), item.Name, item.Description);
                 }
 
                 var text = await _http.GetStringAsync(url).ConfigureAwait(false);
@@ -117,7 +118,7 @@ namespace PlayniteAchievements.Services.Workshop
                     File.WriteAllText(cached, text);
                 }
 
-                return StripImageBlock(text);
+                return ReadmeToPlainText(StripImageBlock(text), item.Name, item.Description);
             }
             catch (Exception ex)
             {
@@ -125,6 +126,64 @@ namespace PlayniteAchievements.Services.Workshop
                 return null;
             }
         }
+
+        private static readonly Regex MarkdownHeading = new Regex(@"^[ \t]{0,3}#{1,6}[ \t]+(.*?)[ \t#]*$", RegexOptions.CultureInvariant);
+        private static readonly Regex MarkdownImage = new Regex(@"!\[[^\]]*\]\([^)]*\)", RegexOptions.CultureInvariant);
+        private static readonly Regex MarkdownLink = new Regex(@"\[([^\]]+)\]\([^)]*\)", RegexOptions.CultureInvariant);
+        private static readonly Regex MarkdownEmphasis = new Regex(@"(\*\*|__)(.+?)\1", RegexOptions.CultureInvariant);
+        private static readonly Regex MarkdownCode = new Regex(@"`([^`]+)`", RegexOptions.CultureInvariant);
+        private static readonly Regex MarkdownBullet = new Regex(@"^([ \t]*)[-*+][ \t]+", RegexOptions.CultureInvariant);
+        private static readonly Regex HtmlComment = new Regex(@"<!--.*?-->", RegexOptions.Singleline | RegexOptions.CultureInvariant);
+        private static readonly Regex HtmlTag = new Regex(@"<[^>\r\n]+>", RegexOptions.CultureInvariant);
+        private static readonly Regex ExtraBlankLines = new Regex(@"(\r?\n)[ \t]*(\r?\n)([ \t]*\r?\n)+", RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// The README as plain text for the detail pane: markdown and HTML markup removed, and a
+        /// heading that repeats the item's name or a paragraph that repeats its description left
+        /// out, since the pane shows those above it. Null when nothing else remains.
+        /// </summary>
+        public static string ReadmeToPlainText(string readme, string name, string description)
+        {
+            if (string.IsNullOrWhiteSpace(readme))
+            {
+                return null;
+            }
+
+            var text = HtmlComment.Replace(readme, string.Empty);
+            var lines = text.Replace("\r\n", "\n").Split('\n');
+            var kept = new List<string>(lines.Length);
+            foreach (var raw in lines)
+            {
+                var line = MarkdownImage.Replace(raw, string.Empty);
+                var heading = MarkdownHeading.Match(line);
+                if (heading.Success)
+                {
+                    line = heading.Groups[1].Value;
+                    if (SameText(line, name))
+                    {
+                        continue;
+                    }
+                }
+
+                line = MarkdownBullet.Replace(line, "$1• ");
+                line = MarkdownLink.Replace(line, "$1");
+                line = MarkdownEmphasis.Replace(line, "$2");
+                line = MarkdownCode.Replace(line, "$1");
+                line = HtmlTag.Replace(line, string.Empty);
+                kept.Add(line.TrimEnd());
+            }
+
+            // Drop a paragraph that only repeats the description.
+            var paragraphs = string.Join("\n", kept).Split(new[] { "\n\n" }, StringSplitOptions.None)
+                .Select(paragraph => paragraph.Trim('\n'))
+                .Where(paragraph => paragraph.Trim().Length > 0 && !SameText(paragraph, description));
+            var result = ExtraBlankLines.Replace(string.Join("\n\n", paragraphs), "$1$2").Trim();
+            return result.Length == 0 ? null : result;
+        }
+
+        private static bool SameText(string a, string b) =>
+            !string.IsNullOrWhiteSpace(a) && !string.IsNullOrWhiteSpace(b) &&
+            string.Equals(Regex.Replace(a.Trim(), @"\s+", " "), Regex.Replace(b.Trim(), @"\s+", " "), StringComparison.OrdinalIgnoreCase);
 
         private static readonly Regex ImageBlock = new Regex(
             @"<!--\s*workshop:images\s*-->.*?<!--\s*/workshop:images\s*-->",
