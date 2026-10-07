@@ -92,6 +92,7 @@ namespace PlayniteAchievements.Services.UI
             public double SlideYPhys;
             public double GlowScale;
             public double HostOpacity;
+            public double HostScale;
             public int ClientW;
             public int ClientH;
             public double ElapsedMs;
@@ -221,7 +222,7 @@ namespace PlayniteAchievements.Services.UI
             AchievementToastViewModel vm, byte[] premulBgra, int width, int height,
             int cardWPhys, int cardHPhys, double slideXPhys, double slideYPhys,
             double glowScale, double hostOpacity,
-            int clientW, int clientH, double elapsedMs)
+            int clientW, int clientH, double elapsedMs, double hostScale = 1d)
         {
             if (vm == null || (premulBgra != null && (width <= 0 || height <= 0)))
             {
@@ -253,6 +254,7 @@ namespace PlayniteAchievements.Services.UI
                     SlideYPhys = slideYPhys,
                     GlowScale = glowScale,
                     HostOpacity = hostOpacity,
+                    HostScale = hostScale,
                     ClientW = clientW,
                     ClientH = clientH,
                     ElapsedMs = elapsedMs,
@@ -536,6 +538,7 @@ namespace PlayniteAchievements.Services.UI
                 SlideYPhys = job.SlideYPhys,
                 GlowScale = job.GlowScale,
                 HostOpacity = job.HostOpacity,
+                HostScale = job.HostScale,
                 ClientW = job.ClientW,
                 ClientH = job.ClientH,
             });
