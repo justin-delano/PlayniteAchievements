@@ -157,16 +157,31 @@ namespace PlayniteAchievements.ViewModels
         }
 
         // Deferred like the other filters, so the click or pick that set it finishes first.
-        // Refiltering the games also refreshes the linked widgets.
+        // Refiltering the games also refilters the achievements and refreshes the linked widgets.
         private void ScheduleAchievementFilterApply()
         {
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() =>
-                {
-                    ApplyRightFilters();
-                    ApplyLeftFilters();
-                }),
+                new Action(ApplyLeftFilters),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
+
+        /// <summary>
+        /// Rows whose game the Games grid lists, so its filters (platform, progress, activity,
+        /// search) combine with the Achievements grid's own; every row while the Games grid is
+        /// unfiltered.
+        /// </summary>
+        private IEnumerable<AchievementDisplayItem> KeepGamesGridGames(IEnumerable<AchievementDisplayItem> items)
+        {
+            var listed = _filteredGameSummaries;
+            if (listed == null || listed.Count == (_allGameSummaries?.Count(game => game != null) ?? 0))
+            {
+                return items;
+            }
+
+            var ids = new HashSet<Guid>(listed
+                .Where(game => game?.PlayniteGameId.HasValue == true)
+                .Select(game => game.PlayniteGameId.Value));
+            return items.Where(item => item?.PlayniteGameId.HasValue == true && ids.Contains(item.PlayniteGameId.Value));
         }
 
         private bool HasAchievementFilters(OverviewLinkedFilter exclude) =>
