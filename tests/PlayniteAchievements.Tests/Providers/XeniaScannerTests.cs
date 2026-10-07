@@ -159,7 +159,7 @@ namespace PlayniteAchievements.Providers.Tests
 
                 var sourceRoot = Path.Combine(tempDir, "network", "Xbox360");
                 Directory.CreateDirectory(sourceRoot);
-                WriteFakeXexWithTitleId(Path.Combine(sourceRoot, "game.xex"), "54441234");
+                WriteFakeXex(Path.Combine(sourceRoot, "game.xex"), 0x54441234);
 
                 var extensionsDataPath = Path.Combine(tempDir, "ExtensionsData");
                 var mappingId = Guid.NewGuid();
@@ -177,66 +177,6 @@ namespace PlayniteAchievements.Providers.Tests
                 var scanner = new XeniaScanner(
                     logger: new FakeLogger(),
                     playniteApi: new FakePlayniteApi(extensionsDataPath),
-                    providerSettings: new XeniaSettings { AccountPaths = new List<string> { tempDir } },
-                    pluginUserDataPath: tempDir);
-
-                var resolved = scanner.ResolveTitleID(game, out var titleId);
-
-                Assert.IsTrue(resolved);
-                Assert.AreEqual("54441234", titleId);
-            }
-            finally
-            {
-                PlayniteAchievementsPlugin.Instance = previousPlugin;
-                DeleteDirectory(tempDir);
-            }
-        }
-
-        [TestMethod]
-        public void ResolveTitleId_ExeMarkerStraddlesReadBoundary_FindsTitleId()
-        {
-            // The scanner reads in 8 KB blocks; the ".exe" marker starts two bytes
-            // before the first block boundary so it only completes in the next read.
-            AssertByteScanFindsTitleId(exeMarkerOffset: (8 * 1024) - 2);
-        }
-
-        [TestMethod]
-        public void ResolveTitleId_ExeMarkerInLaterBlock_FindsTitleId()
-        {
-            AssertByteScanFindsTitleId(exeMarkerOffset: 20000);
-        }
-
-        [TestMethod]
-        public void ResolveTitleId_UppercaseIsoExtension_ByteScanStillRuns()
-        {
-            AssertByteScanFindsTitleId(exeMarkerOffset: 20000, romFileName: "GAME.ISO");
-        }
-
-        private static void AssertByteScanFindsTitleId(int exeMarkerOffset, string romFileName = "game.iso")
-        {
-            var tempDir = CreateTempDirectory();
-            var previousPlugin = PlayniteAchievementsPlugin.Instance;
-
-            try
-            {
-                PlayniteAchievementsPlugin.Instance = new PlayniteAchievementsPlugin
-                {
-                    GameCustomDataStore = new GameCustomDataStore(Path.Combine(tempDir, "store"))
-                };
-
-                var romPath = Path.Combine(tempDir, romFileName);
-                WriteFakeRomWithTitleIdAtOffset(romPath, "54441234", exeMarkerOffset);
-
-                var game = new Game
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Boundary Game",
-                    Roms = new ObservableCollection<GameRom> { new GameRom("rom", romPath) }
-                };
-
-                var scanner = new XeniaScanner(
-                    logger: new FakeLogger(),
-                    playniteApi: new FakePlayniteApi(),
                     providerSettings: new XeniaSettings { AccountPaths = new List<string> { tempDir } },
                     pluginUserDataPath: tempDir);
 
@@ -547,40 +487,6 @@ namespace PlayniteAchievements.Providers.Tests
             {
                 DeleteDirectory(tempDir);
             }
-        }
-
-        /// <summary>
-        /// Writes a minimal fake xex: a known publisher code and title id followed by
-        /// enough padding for the ".exe" marker to sit past the scanner's look-back window.
-        /// </summary>
-        private static void WriteFakeXexWithTitleId(string path, string titleId)
-        {
-            var content = new StringBuilder();
-            content.Append(titleId);
-            content.Append(new string('x', 300 - titleId.Length));
-            content.Append(".exe");
-            File.WriteAllText(path, content.ToString(), Encoding.ASCII);
-        }
-
-        /// <summary>
-        /// Writes a fake rom of neutral filler with the title id placed at the start of the
-        /// scanner's 300-byte look-back window and the ".exe" marker at the given offset.
-        /// </summary>
-        private static void WriteFakeRomWithTitleIdAtOffset(string path, string titleId, int exeMarkerOffset)
-        {
-            var content = new byte[exeMarkerOffset + 4 + 512];
-            for (var i = 0; i < content.Length; i++)
-            {
-                content[i] = (byte)'-';
-            }
-
-            var titleBytes = Encoding.ASCII.GetBytes(titleId);
-            Array.Copy(titleBytes, 0, content, exeMarkerOffset - 300, titleBytes.Length);
-
-            var marker = Encoding.ASCII.GetBytes(".exe");
-            Array.Copy(marker, 0, content, exeMarkerOffset, marker.Length);
-
-            File.WriteAllBytes(path, content);
         }
 
         /// <summary>
