@@ -111,10 +111,10 @@
                                              Visibility="Collapsed"/>
 
         <!-- The after-install category tree, set up as View Achievements' category list:
-             art, leaf names under the tree guide, every node expanded, read-only. -->
+             art, leaf names under the tree guide, every node expanded, read-only. Its column
+             key and column set are set in code. -->
         <controls:GameSummariesGridControl x:Name="CategoryGrid"
                                            Grid.Row="3"
-                                           ColumnSettingsKey="WorkshopPreviewGridCategorySummaries"
                                            PreserveImageResolution="True"
                                            ShowMetadataPlatform="False"
                                            ShowMetadataPlaytime="False"
