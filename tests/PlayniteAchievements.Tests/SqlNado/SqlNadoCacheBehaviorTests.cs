@@ -872,7 +872,7 @@ namespace PlayniteAchievements.SqlNado.Tests
             StringAssert.Contains(store, "customData.AchievementCategoryOverrides");
             StringAssert.Contains(store, "customData.AchievementCategoryTypeOverrides");
             StringAssert.Contains(store, "AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOverride)");
-            StringAssert.Contains(store, "AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride)");
+            StringAssert.Contains(store, "AchievementCategoryTypeHelper.ApplyOverride(item.CategoryType, categoryTypeOverride)");
         }
 
         [TestMethod]
