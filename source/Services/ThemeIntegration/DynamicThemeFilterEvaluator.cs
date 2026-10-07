@@ -87,9 +87,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 case DynamicThemeViewKeys.Bronze:
                     return IsTrophyType(item, filterKey);
                 default:
-                    if (CategoryTypeFilterKeys.Contains(filterKey ?? string.Empty))
+                    // Canonicalized first, so a theme still naming a renamed type (SideProgression)
+                    // filters by its current one.
+                    var categoryTypeKey = Services.Achievements.AchievementCategoryTypeHelper.Normalize(filterKey);
+                    if (CategoryTypeFilterKeys.Contains(categoryTypeKey ?? string.Empty))
                     {
-                        return IsCategoryType(item, filterKey);
+                        return IsCategoryType(item, categoryTypeKey);
                     }
 
                     return true;
