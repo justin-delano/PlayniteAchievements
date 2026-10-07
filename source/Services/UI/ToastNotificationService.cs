@@ -3071,21 +3071,24 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private Services.Sound.UnlockSoundPlayback PlayWaveSound(IReadOnlyList<AchievementToastViewModel> wave)
         {
-            var tier = wave?
+            // The card that sets the tier also sets the scope, so its game's or platform's own
+            // pack plays when it has one.
+            var top = wave?
+                .Where(vm => vm.SoundTier != null)
                 .OrderByDescending(vm => vm.SoundTierRank)
-                .Select(vm => vm.SoundTier)
-                .FirstOrDefault(t => t != null);
+                .FirstOrDefault();
+            var tier = top?.SoundTier;
             if (tier == null || _unlockSounds == null)
             {
                 return null;
             }
 
-            var playback = _unlockSounds.Play(tier.Value);
+            var playback = _unlockSounds.Play(tier.Value, top.ProviderKey, top.PlayniteGameId);
 
             // One line per wave, so a field log can tell "sounds off" from "resolution failed"
             // from "file path flowed but export dropped it".
             _logger?.Info(
-                $"[Toast] Wave sound (tier={tier.Value.ToFileBaseName()}): " +
+                $"[Toast] Wave sound (tier={tier.Value.ToFileBaseName()} provider={top.ProviderKey ?? "<none>"} game={top.PlayniteGameId}): " +
                 (playback == null
                     ? "nothing played"
                     : $"source={playback.Sound.Source} file='{playback.FilePath}' volume={playback.Gain:0.00}"));
