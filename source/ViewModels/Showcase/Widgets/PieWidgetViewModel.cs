@@ -22,14 +22,14 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase, IDisposable
     {
         // The widget instance's shared adapter, so the filters survive view model swaps.
-        private readonly ShowcaseControlBarSlot<GameSummaryGridControlBarAdapter> _controlBarSlot;
+        private readonly ShowcaseControlBarSlot<PieControlBarAdapter> _controlBarSlot;
         private PieChartViewModel _chart = new PieChartViewModel();
         private GridControlBarViewModel _controlBar;
         private bool _showControlBar;
 
         public PieWidgetViewModel()
         {
-            _controlBarSlot = new ShowcaseControlBarSlot<GameSummaryGridControlBarAdapter>(Refresh);
+            _controlBarSlot = new ShowcaseControlBarSlot<PieControlBarAdapter>(Refresh);
         }
 
         public PieChartViewModel Chart { get => _chart; private set => SetValue(ref _chart, value); }
