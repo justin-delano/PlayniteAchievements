@@ -3192,6 +3192,15 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
+            // A strip's data changes come from the user's own filter clicks, so they apply now:
+            // the window that batches the page's library refresh bursts would hold a second
+            // click for up to a second. A widget whose view did not change is skipped cheaply.
+            if (_host.IsStrip)
+            {
+                RefreshWidgetData(includeCachedHosts: true);
+                return;
+            }
+
             if (_snapshotRefreshTimer.IsEnabled)
             {
                 _snapshotRefreshPending = true;
