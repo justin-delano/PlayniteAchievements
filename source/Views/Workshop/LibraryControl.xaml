@@ -221,12 +221,21 @@
                                        TextWrapping="Wrap"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Goes to where the place is configured. LOCOpen is Playnite's own "Open". -->
+                            <Button Content="&#xEF1F;"
+                                    Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
+                                    ContentTemplate="{StaticResource LibraryGlyphContentTemplate}"
+                                    ToolTip="{DynamicResource LOCOpen}"
+                                    AutomationProperties.Name="{DynamicResource LOCOpen}"
+                                    Margin="8,0,0,0"
+                                    Command="{Binding DataContext.OpenTargetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
                             <Button Content="&#xEE0B;"
                                     Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
                                     ContentTemplate="{StaticResource LibraryGlyphContentTemplate}"
                                     ToolTip="{DynamicResource LOCPlayAch_Button_Reset}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Button_Reset}"
-                                    Margin="8,0,0,0"
+                                    Margin="4,0,0,0"
                                     Visibility="{Binding CanReset, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.ResetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
