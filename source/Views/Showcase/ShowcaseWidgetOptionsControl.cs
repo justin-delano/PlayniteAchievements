@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Settings;
 using PlayniteAchievements.Services.Showcase;
@@ -113,62 +114,35 @@ namespace PlayniteAchievements.Views.Showcase
                     AddProfileStatSlots(panel);
                     break;
                 case ShowcaseWidgetKind.Scores:
-                    // Each card's badge side is its own row, shown only while that card is.
-                    Grid collectionBadgeRow = null;
-                    Grid prestigeBadgeRow = null;
-                    void UpdateBadgeRows(ShowcaseScoreMode mode)
-                    {
-                        collectionBadgeRow.Visibility = mode != ShowcaseScoreMode.Prestige
-                            ? Visibility.Visible
-                            : Visibility.Collapsed;
-                        prestigeBadgeRow.Visibility = mode != ShowcaseScoreMode.Collection
-                            ? Visibility.Visible
-                            : Visibility.Collapsed;
-                    }
-
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_ScoreCards"),
-                        new[] { ShowcaseScoreMode.Dual, ShowcaseScoreMode.Collection, ShowcaseScoreMode.Prestige },
-                        ShowcaseWidgetOptions.GetScoreMode(_settings),
-                        value =>
-                        {
-                            ShowcaseWidgetOptions.SetScoreMode(_settings, value);
-                            UpdateBadgeRows(value);
-                        },
-                        ScoreModeName);
-                    collectionBadgeRow = AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Settings_CollectionBadgePosition"),
-                        new[] { ScoreCardBadgePosition.Left, ScoreCardBadgePosition.Right },
-                        ShowcaseWidgetOptions.GetCollectionBadgePosition(_settings),
-                        value => ShowcaseWidgetOptions.SetCollectionBadgePosition(_settings, value),
-                        ScoreBadgePositionName);
-                    prestigeBadgeRow = AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Settings_PrestigeBadgePosition"),
-                        new[] { ScoreCardBadgePosition.Left, ScoreCardBadgePosition.Right },
-                        ShowcaseWidgetOptions.GetPrestigeBadgePosition(_settings),
-                        value => ShowcaseWidgetOptions.SetPrestigeBadgePosition(_settings, value),
-                        ScoreBadgePositionName);
-                    UpdateBadgeRows(ShowcaseWidgetOptions.GetScoreMode(_settings));
-                    AddChoice(
-                        panel,
-                        Localize("LOCPlayAch_Showcase_ScoreHistory"),
+                        Localize("LOCPlayAch_Common_Label_Type"),
                         new[]
                         {
-                            ShowcaseScoreHistoryMode.Dual,
-                            ShowcaseScoreHistoryMode.Collection,
-                            ShowcaseScoreHistoryMode.Prestige,
-                            ShowcaseScoreHistoryMode.None
+                            ScoreCardType.Collection,
+                            ScoreCardType.Prestige,
+                            ScoreCardType.Gamerscore,
+                            ScoreCardType.EpicXp,
+                            ScoreCardType.RetroPoints
                         },
-                        ShowcaseWidgetOptions.GetScoreHistoryMode(_settings),
-                        value => ShowcaseWidgetOptions.SetScoreHistoryMode(_settings, value),
-                        ScoreHistoryModeName);
+                        ShowcaseWidgetOptions.GetScoreCardType(_settings),
+                        value => ShowcaseWidgetOptions.SetScoreCardType(_settings, value),
+                        ScoreCardTypeName);
+                    AddChoice(
+                        panel,
+                        Localize("LOCPlayAch_Settings_ScoreCardBadgePosition"),
+                        new[] { ScoreCardBadgePosition.Left, ScoreCardBadgePosition.Right },
+                        ShowcaseWidgetOptions.GetScoreCardBadgePosition(_settings),
+                        value => ShowcaseWidgetOptions.SetScoreCardBadgePosition(_settings, value),
+                        ScoreBadgePositionName);
+                    AddToggle(
+                        panel,
+                        Localize("LOCPlayAch_Showcase_ScoreHistory"),
+                        ShowcaseWidgetOptions.GetScoreHistoryShown(_settings),
+                        value => ShowcaseWidgetOptions.SetScoreHistoryShown(_settings, value));
                     AddRangeChoice(panel);
 
-                    break;
-                case ShowcaseWidgetKind.Pie:
+                    break;                case ShowcaseWidgetKind.Pie:
                     AddChoice(
                         panel,
                         Localize("LOCPlayAch_Showcase_Mode"),

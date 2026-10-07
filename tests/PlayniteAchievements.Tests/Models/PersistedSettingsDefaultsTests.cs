@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
@@ -682,8 +683,8 @@ namespace PlayniteAchievements.Models.Tests
         {
             var settings = new PersistedSettings();
 
-            Assert.IsTrue(settings.ShowOverviewCollectionScoreCard);
-            Assert.IsTrue(settings.ShowOverviewPrestigeScoreCard);
+            Assert.AreEqual(ScoreCardSlot.Collection, settings.OverviewScoreCardSlot1);
+            Assert.AreEqual(ScoreCardSlot.Prestige, settings.OverviewScoreCardSlot2);
         }
 
         [TestMethod]
@@ -1152,18 +1153,18 @@ namespace PlayniteAchievements.Models.Tests
         {
             var source = new PersistedSettings
             {
-                ShowOverviewCollectionScoreCard = false,
-                ShowOverviewPrestigeScoreCard = false
+                OverviewScoreCardSlot1 = ScoreCardSlot.Gamerscore,
+                OverviewScoreCardSlot2 = ScoreCardSlot.None
             };
 
             var clone = source.Clone();
             var target = new PersistedSettings();
             target.CopyFrom(source);
 
-            Assert.IsFalse(clone.ShowOverviewCollectionScoreCard);
-            Assert.IsFalse(clone.ShowOverviewPrestigeScoreCard);
-            Assert.IsFalse(target.ShowOverviewCollectionScoreCard);
-            Assert.IsFalse(target.ShowOverviewPrestigeScoreCard);
+            Assert.AreEqual(ScoreCardSlot.Gamerscore, clone.OverviewScoreCardSlot1);
+            Assert.AreEqual(ScoreCardSlot.None, clone.OverviewScoreCardSlot2);
+            Assert.AreEqual(ScoreCardSlot.Gamerscore, target.OverviewScoreCardSlot1);
+            Assert.AreEqual(ScoreCardSlot.None, target.OverviewScoreCardSlot2);
         }
 
         [TestMethod]
@@ -1666,8 +1667,8 @@ namespace PlayniteAchievements.Models.Tests
                 RoundRarityPercentages = true,
                 OverviewGameSummariesUseCoverImages = false,
                 OverviewRecentAchievementsUseCoverImages = false,
-                ShowOverviewCollectionScoreCard = false,
-                ShowOverviewPrestigeScoreCard = false,
+                OverviewScoreCardSlot1 = ScoreCardSlot.RetroPoints,
+                OverviewScoreCardSlot2 = ScoreCardSlot.None,
                 ShowOverviewMiniShowcase = false,
                 OverviewMiniShowcaseHeight = 400d,
                 ShowOverviewGameMetadataPlatform = false,
@@ -1775,8 +1776,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.RoundRarityPercentages, settings.RoundRarityPercentages);
             Assert.AreEqual(defaults.OverviewGameSummariesUseCoverImages, settings.OverviewGameSummariesUseCoverImages);
             Assert.AreEqual(defaults.OverviewRecentAchievementsUseCoverImages, settings.OverviewRecentAchievementsUseCoverImages);
-            Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);
-            Assert.AreEqual(defaults.ShowOverviewPrestigeScoreCard, settings.ShowOverviewPrestigeScoreCard);
+            Assert.AreEqual(defaults.OverviewScoreCardSlot1, settings.OverviewScoreCardSlot1);
+            Assert.AreEqual(defaults.OverviewScoreCardSlot2, settings.OverviewScoreCardSlot2);
             Assert.AreEqual(defaults.ShowOverviewMiniShowcase, settings.ShowOverviewMiniShowcase);
             Assert.AreEqual(defaults.OverviewMiniShowcaseHeight, settings.OverviewMiniShowcaseHeight);
             Assert.AreEqual(defaults.ShowOverviewGameMetadataPlatform, settings.ShowOverviewGameMetadataPlatform);

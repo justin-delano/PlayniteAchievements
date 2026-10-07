@@ -41,7 +41,10 @@ namespace PlayniteAchievements.Models.Tests
             var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
             var persisted = (JObject)migrated["Persisted"];
 
-            Assert.AreEqual(false, persisted["ShowOverviewCollectionScoreCard"].Value<bool>());
+            // The renamed Collection toggle (off) and the unsaved Prestige toggle (on) become slots.
+            Assert.AreEqual("Prestige", persisted["OverviewScoreCardSlot1"].Value<string>());
+            Assert.AreEqual("None", persisted["OverviewScoreCardSlot2"].Value<string>());
+            Assert.IsNull(persisted["ShowOverviewCollectionScoreCard"]);
             Assert.IsNull(persisted["ShowOverviewGameMetadata"]);
             Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlatform"].Value<bool>());
             Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlaytime"].Value<bool>());
@@ -69,6 +72,37 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsNull(persisted["ShowSidebarCollectionScoreCard"]);
             Assert.IsNull(persisted["GamesOverviewGridSortMode"]);
             Assert.IsNull(persisted["StartPageGamesOverviewGrid"]);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, true, "Collection", "Prestige")]
+        [DataRow(true, false, "Collection", "None")]
+        [DataRow(false, true, "Prestige", "None")]
+        [DataRow(false, false, "None", "None")]
+        public void MigrateFromJson_ConvertsScoreCardTogglesToSlotsOnce(
+            bool collection,
+            bool prestige,
+            string slot1,
+            string slot2)
+        {
+            var json = "{\"Persisted\":{\"ShowOverviewCollectionScoreCard\":" + collection.ToString().ToLowerInvariant() +
+                ",\"ShowOverviewPrestigeScoreCard\":" + prestige.ToString().ToLowerInvariant() + "}}";
+
+            var migrated = OverviewSettingsMigration.MigrateFromJson(json);
+            var persisted = (JObject)JObject.Parse(migrated)["Persisted"];
+
+            Assert.AreEqual(slot1, persisted["OverviewScoreCardSlot1"].Value<string>());
+            Assert.AreEqual(slot2, persisted["OverviewScoreCardSlot2"].Value<string>());
+            Assert.IsNull(persisted["ShowOverviewCollectionScoreCard"]);
+            Assert.IsNull(persisted["ShowOverviewPrestigeScoreCard"]);
+            // Nothing left to convert: a second pass changes nothing.
+            Assert.AreEqual(migrated, OverviewSettingsMigration.MigrateFromJson(migrated));
+
+            // Saved slots win over stray legacy toggles.
+            var saved = "{\"Persisted\":{\"OverviewScoreCardSlot1\":\"Gamerscore\",\"ShowOverviewCollectionScoreCard\":true}}";
+            var kept = (JObject)JObject.Parse(OverviewSettingsMigration.MigrateFromJson(saved))["Persisted"];
+            Assert.AreEqual("Gamerscore", kept["OverviewScoreCardSlot1"].Value<string>());
+            Assert.IsNull(kept["OverviewScoreCardSlot2"]);
         }
 
         [TestMethod]

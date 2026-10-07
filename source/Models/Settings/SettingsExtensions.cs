@@ -213,8 +213,8 @@ namespace PlayniteAchievements.Models.Settings
                     StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
-            target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;
-            target.ShowOverviewPrestigeScoreCard = source.ShowOverviewPrestigeScoreCard;
+            target.OverviewScoreCardSlot1 = source.OverviewScoreCardSlot1;
+            target.OverviewScoreCardSlot2 = source.OverviewScoreCardSlot2;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompletedProgressColoring = source.ShowCompletedProgressColoring;
             target.TintMissableLocks = source.TintMissableLocks;

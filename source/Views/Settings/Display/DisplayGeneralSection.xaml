@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:settings="clr-namespace:PlayniteAchievements.Models.Settings"
+             xmlns:scoring="clr-namespace:PlayniteAchievements.Models.Achievements.Scoring"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              mc:Ignorable="d"
@@ -213,11 +214,30 @@
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewCollectionScoreCard}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewCollectionScoreCard}"/>
-                    </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard}">
-                        <CheckBox IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"/>
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Showcase_ScoreCards}">
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox SelectedValue="{Binding Persisted.OverviewScoreCardSlot1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag"
+                                      MinWidth="140">
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Showcase_ScoreMode_Collection}" Tag="{x:Static scoring:ScoreCardSlot.Collection}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Showcase_ScoreMode_Prestige}" Tag="{x:Static scoring:ScoreCardSlot.Prestige}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Score_Gamerscore}" Tag="{x:Static scoring:ScoreCardSlot.Gamerscore}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Score_EpicXp}" Tag="{x:Static scoring:ScoreCardSlot.EpicXp}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Score_RetroPoints}" Tag="{x:Static scoring:ScoreCardSlot.RetroPoints}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_None}" Tag="{x:Static scoring:ScoreCardSlot.None}"/>
+                            </ComboBox>
+                            <ComboBox SelectedValue="{Binding Persisted.OverviewScoreCardSlot2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag"
+                                      MinWidth="140"
+                                      Margin="8,0,0,0">
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Showcase_ScoreMode_Collection}" Tag="{x:Static scoring:ScoreCardSlot.Collection}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Showcase_ScoreMode_Prestige}" Tag="{x:Static scoring:ScoreCardSlot.Prestige}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Score_Gamerscore}" Tag="{x:Static scoring:ScoreCardSlot.Gamerscore}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Score_EpicXp}" Tag="{x:Static scoring:ScoreCardSlot.EpicXp}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Score_RetroPoints}" Tag="{x:Static scoring:ScoreCardSlot.RetroPoints}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_None}" Tag="{x:Static scoring:ScoreCardSlot.None}"/>
+                            </ComboBox>
+                        </StackPanel>
                     </controls:SettingRow>
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowOverviewMiniShowcase}"
                                          Margin="0">

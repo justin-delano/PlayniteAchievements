@@ -23,6 +23,10 @@ namespace PlayniteAchievements.Services.Achievements
         public static bool IsUnobtainable(string categoryType) =>
             ParseValues(categoryType).Contains(UnobtainableCategoryType);
 
+        /// <summary>True for an achievement earned in RetroAchievements softcore mode.</summary>
+        public static bool IsSoftcore(string categoryType) =>
+            ParseValues(categoryType).Contains(SoftcoreCategoryType);
+
         // Grouped by what the tag says about an achievement: which set it belongs to, which play
         // mode it needs, where it sits in a playthrough, what kind of task it is, what the run
         // asks of the player, whether it can still be earned, a catch-all, and how it was earned.

@@ -5,16 +5,11 @@ using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public enum ScoreCardType
-    {
-        Collection,
-        Prestige
-    }
-
     public sealed class ScoreCardViewModel : ObservableObject
     {
         private const string DefaultRank = "Bronze5";
@@ -47,16 +42,21 @@ namespace PlayniteAchievements.ViewModels
         private double _levelProgress;
         private string _rank = DefaultRank;
         private bool _useUniformRarityBadges;
-        private AchievementLevelSnapshot _snapshot = AchievementLevelCalculator.CalculateModern(0);
+        private AchievementLevelSnapshot _snapshot;
+        private ScoreCardType _scoreType;
+        private AchievementLevelCurveSettings _curve;
 
         public ScoreCardViewModel(ScoreCardType scoreType)
         {
-            ScoreType = scoreType;
+            _scoreType = scoreType;
+            _curve = ScoreCardTypes.GetCurve(scoreType);
+            _snapshot = AchievementLevelCalculator.Calculate(0, _curve);
             ResolveAccentBrushes();
             UpdateSegments();
         }
 
-        public ScoreCardType ScoreType { get; }
+        /// <summary>The score shown. Fixed per card except through <see cref="ApplyFor"/>, which a slot uses to switch it.</summary>
+        public ScoreCardType ScoreType => _scoreType;
 
         public int Score => _score;
 
@@ -76,14 +76,45 @@ namespace PlayniteAchievements.ViewModels
         public ObservableCollection<ScoreSegmentViewModel> Segments { get; } =
             new ObservableCollection<ScoreSegmentViewModel>();
 
-        public string Label => ScoreType == ScoreCardType.Collection
-            ? L("LOCPlayAch_Score_Collection")
-            : L("LOCPlayAch_Score_Prestige");
+        public string Label => GetLabel(ScoreType);
 
         /// <summary>The score's name without "Score", for hosts that fold it into the tier line.</summary>
-        public string ShortLabel => ScoreType == ScoreCardType.Collection
-            ? L("LOCPlayAch_Showcase_ScoreMode_Collection")
-            : L("LOCPlayAch_Showcase_ScoreMode_Prestige");
+        public string ShortLabel => GetShortLabel(ScoreType);
+
+        public static string GetLabel(ScoreCardType type)
+        {
+            switch (type)
+            {
+                case ScoreCardType.Prestige:
+                    return L("LOCPlayAch_Score_Prestige");
+                case ScoreCardType.Gamerscore:
+                    return L("LOCPlayAch_Score_Gamerscore");
+                case ScoreCardType.EpicXp:
+                    return L("LOCPlayAch_Score_EpicXp");
+                case ScoreCardType.RetroPoints:
+                    return L("LOCPlayAch_Score_RetroPoints");
+                default:
+                    return L("LOCPlayAch_Score_Collection");
+            }
+        }
+
+        /// <summary>The score's short name: the card type's name in pickers and compact tier lines.</summary>
+        public static string GetShortLabel(ScoreCardType type)
+        {
+            switch (type)
+            {
+                case ScoreCardType.Prestige:
+                    return L("LOCPlayAch_Showcase_ScoreMode_Prestige");
+                case ScoreCardType.Gamerscore:
+                    return L("LOCPlayAch_Score_Gamerscore");
+                case ScoreCardType.EpicXp:
+                    return L("LOCPlayAch_Score_EpicXp");
+                case ScoreCardType.RetroPoints:
+                    return L("LOCPlayAch_Provider_RetroAchievements");
+                default:
+                    return L("LOCPlayAch_Showcase_ScoreMode_Collection");
+            }
+        }
 
         public string ScoreText => Score.ToString("N0", FormattingCulture.Current);
 
@@ -192,7 +223,7 @@ namespace PlayniteAchievements.ViewModels
             _levelProgress = levelProgress;
             _rank = rank;
             _useUniformRarityBadges = useUniformRarityBadges;
-            _snapshot = AchievementLevelCalculator.CalculateModern(score);
+            _snapshot = AchievementLevelCalculator.Calculate(score, _curve);
             ResolveAccentBrushes();
             UpdateSegments();
             RaiseAllPropertiesChanged();
@@ -200,13 +231,32 @@ namespace PlayniteAchievements.ViewModels
 
         public void ApplyFromScore(int score, bool useUniformRarityBadges)
         {
-            var snapshot = AchievementLevelCalculator.CalculateModern(score);
+            var snapshot = AchievementLevelCalculator.Calculate(score, _curve);
             Apply(
                 score,
                 GetDisplayLevel(snapshot),
                 snapshot?.LevelProgress ?? 0,
                 snapshot?.Rank,
                 useUniformRarityBadges);
+        }
+
+        /// <summary>
+        /// Shows <paramref name="type"/>'s score from <paramref name="snapshot"/>, switching the card
+        /// to that type first. Every surface applies its cards through this one switch.
+        /// </summary>
+        public void ApplyFor(ScoreCardType type, OverviewDataSnapshot snapshot, bool useUniformRarityBadges)
+        {
+            if (_scoreType != type)
+            {
+                _scoreType = type;
+                _curve = ScoreCardTypes.GetCurve(type);
+
+                // A new type means a new curve, so the same score can land on another level.
+                _score = -1;
+                OnPropertyChanged(nameof(ScoreType));
+            }
+
+            ApplyFromScore(snapshot?.GetScore(type) ?? 0, useUniformRarityBadges);
         }
 
         /// <summary>

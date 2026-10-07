@@ -63,6 +63,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var allGames = new List<GameAchievementSummary>();
             var collectorScore = 0;
             var prestigeScore = 0;
+            var platformScores = new PlatformScoreTotals();
 
             foreach (var data in allData)
             {
@@ -98,6 +99,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var providerName = ProviderRegistry.GetLocalizedName(providerKey);
                 collectorScore = AddScore(collectorScore, stats.CollectionScore);
                 prestigeScore = AddScore(prestigeScore, stats.PrestigeScore);
+                platformScores.Add(providerKey, stats.PlatformScorePoints);
 
                 var summary = new GameAchievementSummary(
                     data.PlayniteGameId.Value,
@@ -140,7 +142,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 state.SilverTrophies,
                 state.BronzeTrophies);
             scoreSnapshot.LegacyLevel = AchievementLevelCalculator.CalculateLegacy(scoreSnapshot.LegacyScore);
-            ApplyScores(state, scoreSnapshot);
+            ApplyScores(state, scoreSnapshot, platformScores);
 
             PopulateAchievementLists(state, allData, token, includeHeavyAchievementLists);
             return state;
@@ -174,6 +176,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var allGames = new List<GameAchievementSummary>();
             var collectorScore = 0;
             var prestigeScore = 0;
+            var platformScores = new PlatformScoreTotals();
 
             for (var i = 0; i < summaryData.Games.Count; i++)
             {
@@ -236,6 +239,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 collectorScore = AddScore(collectorScore, game.CollectionScore);
                 prestigeScore = AddScore(prestigeScore, game.PrestigeScore);
+                platformScores.Add(providerKey, game.PlatformScorePoints);
             }
 
             ApplySummaryListsAndTotals(state, allGames);
@@ -248,7 +252,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 state.SilverTrophies,
                 state.BronzeTrophies);
             scoreSnapshot.LegacyLevel = AchievementLevelCalculator.CalculateLegacy(scoreSnapshot.LegacyScore);
-            ApplyScores(state, scoreSnapshot);
+            ApplyScores(state, scoreSnapshot, platformScores);
 
             PopulateRecentLists(
                 state,
@@ -300,7 +304,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 state.BronzeTrophies;
         }
 
-        private static void ApplyScores(LibraryRuntimeState state, AchievementScoreSnapshot scoreSnapshot)
+        private static void ApplyScores(
+            LibraryRuntimeState state,
+            AchievementScoreSnapshot scoreSnapshot,
+            PlatformScoreTotals platformScores)
         {
             if (state == null || scoreSnapshot == null)
             {
@@ -323,6 +330,28 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             state.PrestigeRank = scoreSnapshot.PrestigeLevel?.Rank ?? "Bronze5";
             state.CollectorMastery = scoreSnapshot.CollectorLevel?.Mastery ?? 0;
             state.PrestigeMastery = scoreSnapshot.PrestigeLevel?.Mastery ?? 0;
+
+            platformScores ??= new PlatformScoreTotals();
+            var gamerscore = ScoreCardTypes.Calculate(ScoreCardType.Gamerscore, platformScores.Gamerscore);
+            state.GamerscoreScore = platformScores.Gamerscore;
+            state.GamerscoreLevel = GetDisplayLevel(gamerscore);
+            state.GamerscoreLevelProgress = gamerscore.LevelProgress;
+            state.GamerscoreRank = gamerscore.Rank ?? "Bronze5";
+            state.GamerscoreMastery = gamerscore.Mastery;
+
+            var epicXp = ScoreCardTypes.Calculate(ScoreCardType.EpicXp, platformScores.EpicXp);
+            state.EpicXpScore = platformScores.EpicXp;
+            state.EpicXpLevel = GetDisplayLevel(epicXp);
+            state.EpicXpLevelProgress = epicXp.LevelProgress;
+            state.EpicXpRank = epicXp.Rank ?? "Bronze5";
+            state.EpicXpMastery = epicXp.Mastery;
+
+            var retroPoints = ScoreCardTypes.Calculate(ScoreCardType.RetroPoints, platformScores.RetroPoints);
+            state.RetroPointsScore = platformScores.RetroPoints;
+            state.RetroPointsLevel = GetDisplayLevel(retroPoints);
+            state.RetroPointsLevelProgress = retroPoints.LevelProgress;
+            state.RetroPointsRank = retroPoints.Rank ?? "Bronze5";
+            state.RetroPointsMastery = retroPoints.Mastery;
         }
 
         private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)

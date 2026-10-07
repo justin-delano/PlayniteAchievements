@@ -24,6 +24,79 @@ namespace PlayniteAchievements.Models.Achievements.Scoring
 
         public IReadOnlyList<AchievementRankThreshold> RankThresholds { get; set; }
 
+        /// <summary>
+        /// Optional explicit curve. When set, level start scores come from the ladder and the
+        /// growth fields are ignored; one mastery cycle ends at <see cref="AchievementMilestoneLadder.CycleEndScore"/>.
+        /// </summary>
+        public AchievementMilestoneLadder Ladder { get; set; }
+
+        /// <summary>
+        /// Lifetime Gamerscore rank starts, one per rank from Bronze 5 to Master 1.
+        /// 1k, 3k, 5k, 10k, 20k, 35k, 50k, 75k, 100k, 200k, 500k, 1M, 3M, 5M and the 10M cycle end
+        /// are Xbox's official lifetime Gamerscore badge tiers; the other rank starts are interpolated.
+        /// </summary>
+        private static readonly int[] XboxGamerscoreRankStarts =
+        {
+            0, 1000, 2000, 3000, 5000,
+            7500, 10000, 15000, 20000, 35000,
+            50000, 75000, 100000, 150000, 200000,
+            300000, 500000, 750000, 1000000, 1500000,
+            2000000, 3000000, 4000000, 5000000, 7500000
+        };
+
+        private const int XboxGamerscoreCycleEnd = 10000000;
+
+        private static readonly AchievementMilestoneLadder GamerscoreLadder = CreateMilestoneLadder(1d);
+
+        // Scale 1.25: a full Epic game pays a 1,000 XP base pool plus the 250 XP Platinum, against ~1,000 Gamerscore.
+        private static readonly AchievementMilestoneLadder EpicXpLadder = CreateMilestoneLadder(1.25d);
+
+        // Scale 0.4: RetroAchievements' former 400-point per-set cap, against ~1,000 Gamerscore.
+        private static readonly AchievementMilestoneLadder RetroAchievementsPointsLadder = CreateMilestoneLadder(0.4d);
+
+        public static AchievementLevelCurveSettings Gamerscore => MilestoneLadder(GamerscoreLadder);
+
+        public static AchievementLevelCurveSettings EpicXp => MilestoneLadder(EpicXpLadder);
+
+        public static AchievementLevelCurveSettings RetroAchievementsPoints => MilestoneLadder(RetroAchievementsPointsLadder);
+
+        /// <summary>
+        /// The Gamerscore ladder with every rank start and the cycle end multiplied by <paramref name="scale"/>,
+        /// on the Modern rank table: 10 levels per rank, 250 levels per pass, repeating as mastery.
+        /// </summary>
+        public static AchievementLevelCurveSettings MilestoneLadder(double scale)
+        {
+            return MilestoneLadder(CreateMilestoneLadder(scale));
+        }
+
+        private static AchievementLevelCurveSettings MilestoneLadder(AchievementMilestoneLadder ladder)
+        {
+            var settings = ModernDefault;
+            settings.Ladder = ladder;
+            return settings;
+        }
+
+        private static AchievementMilestoneLadder CreateMilestoneLadder(double scale)
+        {
+            if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scale));
+            }
+
+            var starts = new int[XboxGamerscoreRankStarts.Length];
+            for (var i = 0; i < starts.Length; i++)
+            {
+                starts[i] = ScaleScore(XboxGamerscoreRankStarts[i], scale);
+            }
+
+            return new AchievementMilestoneLadder(starts, ScaleScore(XboxGamerscoreCycleEnd, scale));
+        }
+
+        private static int ScaleScore(int score, double scale)
+        {
+            return (int)Math.Min(int.MaxValue, Math.Round(score * scale, MidpointRounding.AwayFromZero));
+        }
+
         public static AchievementLevelCurveSettings LegacyCompatible => new AchievementLevelCurveSettings
         {
             InitialLevelSize = 100,
@@ -97,7 +170,8 @@ namespace PlayniteAchievements.Models.Achievements.Scoring
                     ? int.MaxValue
                     : Math.Max(1, settings.MaxDisplayLevel),
                 RepeatsAfterMax = settings.RepeatsAfterMax && settings.MaxDisplayLevel > 0,
-                RankThresholds = settings.RankThresholds ?? CreateDefaultRankThresholds()
+                RankThresholds = settings.RankThresholds ?? CreateDefaultRankThresholds(),
+                Ladder = settings.Ladder
             };
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Views.Showcase
@@ -29,18 +30,29 @@ namespace PlayniteAchievements.Views.Showcase
             return Localize(definition.NameKey);
         }
 
-        public static string ScoreModeName(ShowcaseScoreMode value) =>
-            EnumValueName("LOCPlayAch_Showcase_ScoreMode_", value);
+        /// <summary>A score card choice: the score's name, or None for an empty Overview slot.</summary>
+        public static string ScoreCardSlotName(ScoreCardSlot value) =>
+            ScoreCardTypes.TryGetCardType(value, out var type)
+                ? ScoreCardTypeName(type)
+                : Localize("LOCPlayAch_Common_None");
 
-        /// <summary>
-        /// Names the score-history choices with the card choices' own strings, so "Both" means the
-        /// same thing in both dropdowns. Only None needs a word of its own.
-        /// </summary>
-        public static string ScoreHistoryModeName(ShowcaseScoreHistoryMode value) =>
-            value == ShowcaseScoreHistoryMode.None
-                ? Localize("LOCPlayAch_Common_None")
-                : EnumValueName("LOCPlayAch_Showcase_ScoreMode_", value);
-
+        /// <summary>The score's name as card pickers show it.</summary>
+        public static string ScoreCardTypeName(ScoreCardType value)
+        {
+            switch (value)
+            {
+                case ScoreCardType.Prestige:
+                    return Localize("LOCPlayAch_Showcase_ScoreMode_Prestige");
+                case ScoreCardType.Gamerscore:
+                    return Localize("LOCPlayAch_Score_Gamerscore");
+                case ScoreCardType.EpicXp:
+                    return Localize("LOCPlayAch_Score_EpicXp");
+                case ScoreCardType.RetroPoints:
+                    return Localize("LOCPlayAch_Score_RetroPoints");
+                default:
+                    return Localize("LOCPlayAch_Showcase_ScoreMode_Collection");
+            }
+        }
         // Left and Centered reuse the grid alignment labels; only Stacked is its own string.
         public static string ProfileLayoutName(ShowcaseProfileLayout value)
         {

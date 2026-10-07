@@ -2244,6 +2244,111 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public int GamerscoreScore
+        {
+            get => ModernTheme.GamerscoreScore;
+            set => ModernTheme.GamerscoreScore = value;
+        }
+
+        [DontSerialize]
+        public int GamerscoreLevel
+        {
+            get => ModernTheme.GamerscoreLevel;
+            set => ModernTheme.GamerscoreLevel = value;
+        }
+
+        [DontSerialize]
+        public double GamerscoreLevelProgress
+        {
+            get => ModernTheme.GamerscoreLevelProgress;
+            set => ModernTheme.GamerscoreLevelProgress = value;
+        }
+
+        [DontSerialize]
+        public string GamerscoreRank
+        {
+            get => ModernTheme.GamerscoreRank;
+            set => ModernTheme.GamerscoreRank = value;
+        }
+
+        [DontSerialize]
+        public int GamerscoreMastery
+        {
+            get => ModernTheme.GamerscoreMastery;
+            set => ModernTheme.GamerscoreMastery = value;
+        }
+
+        [DontSerialize]
+        public int EpicXpScore
+        {
+            get => ModernTheme.EpicXpScore;
+            set => ModernTheme.EpicXpScore = value;
+        }
+
+        [DontSerialize]
+        public int EpicXpLevel
+        {
+            get => ModernTheme.EpicXpLevel;
+            set => ModernTheme.EpicXpLevel = value;
+        }
+
+        [DontSerialize]
+        public double EpicXpLevelProgress
+        {
+            get => ModernTheme.EpicXpLevelProgress;
+            set => ModernTheme.EpicXpLevelProgress = value;
+        }
+
+        [DontSerialize]
+        public string EpicXpRank
+        {
+            get => ModernTheme.EpicXpRank;
+            set => ModernTheme.EpicXpRank = value;
+        }
+
+        [DontSerialize]
+        public int EpicXpMastery
+        {
+            get => ModernTheme.EpicXpMastery;
+            set => ModernTheme.EpicXpMastery = value;
+        }
+
+        [DontSerialize]
+        public int RetroPointsScore
+        {
+            get => ModernTheme.RetroPointsScore;
+            set => ModernTheme.RetroPointsScore = value;
+        }
+
+        [DontSerialize]
+        public int RetroPointsLevel
+        {
+            get => ModernTheme.RetroPointsLevel;
+            set => ModernTheme.RetroPointsLevel = value;
+        }
+
+        [DontSerialize]
+        public double RetroPointsLevelProgress
+        {
+            get => ModernTheme.RetroPointsLevelProgress;
+            set => ModernTheme.RetroPointsLevelProgress = value;
+        }
+
+        [DontSerialize]
+        public string RetroPointsRank
+        {
+            get => ModernTheme.RetroPointsRank;
+            set => ModernTheme.RetroPointsRank = value;
+        }
+
+        [DontSerialize]
+        public int RetroPointsMastery
+        {
+            get => ModernTheme.RetroPointsMastery;
+            set => ModernTheme.RetroPointsMastery = value;
+        }
+
+        [DontSerialize]
         public int Level
         {
             get => LegacyTheme.Level;

@@ -320,6 +320,11 @@ namespace PlayniteAchievements.ViewModels.Items
         private int _points;
         public int Points { get => _points; set => SetValue(ref _points, value); }
 
+        // Points that count toward the Gamerscore, Epic XP and RetroAchievements score cards:
+        // the same unlocked sum without RetroAchievements softcore unlocks.
+        private int _platformScorePoints;
+        public int PlatformScorePoints { get => _platformScorePoints; set => SetValue(ref _platformScorePoints, value); }
+
         // Total rarity counts (including locked achievements)
         public int TotalCommonPossible { get; set; }
         public int TotalUncommonPossible { get; set; }

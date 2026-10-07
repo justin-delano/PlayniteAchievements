@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -110,16 +110,19 @@
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Gamerscore">Gamerscore</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_EpicXp">Epic XP</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_RetroPoints">RetroAchievements Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_LevelInTier">Level in tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Max level reached</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_MasteryFormat">Mastery {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} until {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">Score System</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Collection and Prestige Scores</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Collection Score rewards total achievement collecting. Each unlocked achievement gives fixed points from its rarity tier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige Score rewards rare achievement collecting. Rare achievements are worth many more points than common achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Levels and tiers</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Collection and Prestige scores each contribute to a Tier and Level. The first tier is Bronze V, followed by Bronze IV, and continues through Silver, Gold, Platinum, and Master tiers until Master I. Earning 10 levels advances you to the next tier. Reaching level 250 earns a Mastery and starts the tiers again from Bronze V, while your level and total score keep counting.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PlatformBody">Gamerscore (Xbox and Xenia games), Epic XP and RetroAchievements Points (hardcore unlocks) add up each platform's own points on tiers set by Xbox's lifetime Gamerscore milestones, earning a Mastery at 10,000,000 Gamerscore, 12,500,000 Epic XP or 4,000,000 RetroAchievements Points.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_CardHint">Click for score system info</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tier_Master">Master</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
@@ -1067,8 +1070,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) Suffix</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewMiniShowcase">Show Mini Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter">Pie Center</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Percentage">Percentage</sys:String>
@@ -1077,8 +1078,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPieIcons">Show Pie Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPieLegend">Show Pie Legend</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieLegendPosition">Legend Position</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CollectionBadgePosition">Collection Badge Position</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PrestigeBadgePosition">Prestige Badge Position</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScoreCardBadgePosition">Badge Position</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Show Top Menu Bar Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Column Headers</sys:String>
@@ -1191,12 +1191,8 @@
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completions</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">No game selected in the overview.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Achievements by Platform</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Achievements by Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Achievements by Trophy</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Friend Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">Search Friends</sys:String>
@@ -1462,7 +1458,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ThousandsHours">{0:N1}k h</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PerDay">{0:N1}/day</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Cards</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Score Cards</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreHistory">Score over time</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">Both</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Collection">Collection</sys:String>
@@ -1532,7 +1528,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ResumeSlideshow">Resume slideshow</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Profile">Profile</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">Scores</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Pie">Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Timeline">Timeline</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics">Overall Statistics</sys:String>
