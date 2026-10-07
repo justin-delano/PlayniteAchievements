@@ -197,6 +197,10 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showAccentStrip = true;
         private bool _showCountdownBar = true;
         private string _countdownBarColor;
+        private ToastMotion? _entranceMotion;
+        private ToastMotion? _exitMotion;
+        private ToastMotionFeel? _motionFeel;
+        private ToastMotionSpeed? _motionSpeed;
         private FrameVignetteStyle _frameVignette = FrameVignetteStyle.Full;
         private double? _frameVignetteStrength;
         private List<string> _lineOrder;
@@ -421,6 +425,57 @@ namespace PlayniteAchievements.Models.Settings
             get => _countdownBarColor;
             set => SetValue(ref _countdownBarColor, value);
         }
+
+        /// <summary>
+        /// How the toast enters, or null for the theme's slide storyboard (the built-in slide
+        /// when the theme has none). Toast surface only. Read from the global, provider or game
+        /// style; kind styles never change the motion, because every card in a stack moves
+        /// together.
+        /// </summary>
+        public ToastMotion? EntranceMotion
+        {
+            get => _entranceMotion;
+            set => SetValue(ref _entranceMotion, value);
+        }
+
+        /// <summary>
+        /// How the toast leaves, or null to mirror <see cref="EntranceMotion"/>. Toast surface
+        /// only.
+        /// </summary>
+        public ToastMotion? ExitMotion
+        {
+            get => _exitMotion;
+            set => SetValue(ref _exitMotion, value);
+        }
+
+        /// <summary>
+        /// Easing for the entrance and exit, or null for the default (overshoot in, cubic out).
+        /// Toast surface only.
+        /// </summary>
+        public ToastMotionFeel? MotionFeel
+        {
+            get => _motionFeel;
+            set => SetValue(ref _motionFeel, value);
+        }
+
+        /// <summary>
+        /// Entrance and exit speed, or null for <see cref="ToastMotionSpeed.Normal"/>. The hold
+        /// time is the global notification duration. Toast surface only.
+        /// </summary>
+        public ToastMotionSpeed? MotionSpeed
+        {
+            get => _motionSpeed;
+            set => SetValue(ref _motionSpeed, value);
+        }
+
+        /// <summary>
+        /// True when any motion field is set, so the toast uses the style's motion instead of
+        /// the theme's slide storyboard.
+        /// </summary>
+        [JsonIgnore]
+        public bool HasCustomMotion =>
+            _entranceMotion.HasValue || _exitMotion.HasValue ||
+            _motionFeel.HasValue || _motionSpeed.HasValue;
 
         /// <summary>
         /// Vignette darkening on the screenshot frame. Frame surface only; the toast has its own
@@ -855,6 +910,10 @@ namespace PlayniteAchievements.Models.Settings
                 ShowAccentStrip = ShowAccentStrip,
                 ShowCountdownBar = ShowCountdownBar,
                 CountdownBarColor = CountdownBarColor,
+                EntranceMotion = EntranceMotion,
+                ExitMotion = ExitMotion,
+                MotionFeel = MotionFeel,
+                MotionSpeed = MotionSpeed,
                 FrameVignette = FrameVignette,
                 FrameVignetteStrength = FrameVignetteStrength,
                 LineOrder = LineOrder != null ? new List<string>(LineOrder) : null,
