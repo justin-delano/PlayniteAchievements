@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             var items = source ?? Enumerable.Empty<AchievementDetail>();
             foreach (var group in DynamicThemeFilterExpression.Enumerate(filterKey)
+                .Select(CanonicalizeCategoryTypeKey)
                 .GroupBy(key => GetGroupKey(key, DynamicThemeOptionGroups.AchievementFilterGroupMap))
                 .Where(group => !string.IsNullOrWhiteSpace(group.Key)))
             {
@@ -87,12 +88,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 case DynamicThemeViewKeys.Bronze:
                     return IsTrophyType(item, filterKey);
                 default:
-                    // Canonicalized first, so a theme still naming a renamed type (SideProgression)
-                    // filters by its current one.
-                    var categoryTypeKey = Services.Achievements.AchievementCategoryTypeHelper.Normalize(filterKey);
-                    if (CategoryTypeFilterKeys.Contains(categoryTypeKey ?? string.Empty))
+                    if (CategoryTypeFilterKeys.Contains(filterKey ?? string.Empty))
                     {
-                        return IsCategoryType(item, categoryTypeKey);
+                        return IsCategoryType(item, filterKey);
                     }
 
                     return true;
@@ -145,6 +143,18 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             DynamicThemeOptionGroups.AchievementCategoryTypeFilterKeys
                 .Where(key => !string.Equals(key, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase)),
             StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// A category type key in its current spelling, so a theme still naming a renamed type
+        /// (SideProgression) filters by the type it became. Any other key is returned unchanged.
+        /// </summary>
+        private static string CanonicalizeCategoryTypeKey(string filterKey)
+        {
+            var categoryType = Services.Achievements.AchievementCategoryTypeHelper.Normalize(filterKey);
+            return categoryType != null && CategoryTypeFilterKeys.Contains(categoryType)
+                ? categoryType
+                : filterKey;
+        }
 
         private static bool IsCategoryType(AchievementDetail item, string typeKey)
         {
