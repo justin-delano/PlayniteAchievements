@@ -379,6 +379,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _colorRarityColumnsByRarity;
         private bool _showNameAboveProgress;
         private bool _showRarityBadgesBelowProgress = true;
+        private bool _showCompletionFrame;
         private DateDisplayMode _lastPlayedDateMode = DateDisplayMode.DateAndTime;
         private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
         private bool _sortDescending = true;
@@ -436,6 +437,14 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _showRarityBadgesBelowProgress, value);
         }
 
+        // Frames a completed game's cover in the completed brush, with the completion badge
+        // centred on the cover's bottom edge.
+        public bool ShowCompletionFrame
+        {
+            get => _showCompletionFrame;
+            set => SetValue(ref _showCompletionFrame, value);
+        }
+
         public DateDisplayMode LastPlayedDateMode
         {
             get => _lastPlayedDateMode;
@@ -466,6 +475,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.ColorRarityColumnsByRarity = ColorRarityColumnsByRarity;
             clone.ShowNameAboveProgress = ShowNameAboveProgress;
             clone.ShowRarityBadgesBelowProgress = ShowRarityBadgesBelowProgress;
+            clone.ShowCompletionFrame = ShowCompletionFrame;
             clone.LastPlayedDateMode = LastPlayedDateMode;
             clone.SortMode = SortMode;
             clone.SortDescending = SortDescending;
