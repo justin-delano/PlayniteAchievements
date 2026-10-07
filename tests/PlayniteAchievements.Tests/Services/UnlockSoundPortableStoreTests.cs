@@ -78,6 +78,53 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ImportFile_CopiesIntoItsOwnManagedFolder_KeepingTheName()
+        {
+            WithTemp(tempDir =>
+            {
+                var store = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
+                var source = WriteWav(Path.Combine(tempDir, "My Chime.wav"));
+
+                var first = store.ImportFile(source);
+                var second = store.ImportFile(source);
+                File.Delete(source);
+
+                Assert.IsTrue(store.IsManagedPath(first), first);
+                Assert.AreEqual("My Chime.wav", Path.GetFileName(first));
+                Assert.IsTrue(File.Exists(first), "the copy outlives the original");
+                Assert.AreNotEqual(Path.GetDirectoryName(first), Path.GetDirectoryName(second));
+            });
+        }
+
+        [TestMethod]
+        public void ImportFile_ReturnsAManagedPathUnchanged()
+        {
+            WithTemp(tempDir =>
+            {
+                var store = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
+                var managed = store.ImportFile(WriteWav(Path.Combine(tempDir, "a.wav")));
+
+                Assert.AreEqual(managed, store.ImportFile(managed));
+            });
+        }
+
+        [TestMethod]
+        public void ImportFile_RejectsAFileThatIsNotTheAudioItsNameSays_AndLeavesNothingBehind()
+        {
+            WithTemp(tempDir =>
+            {
+                var store = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
+                var fake = Path.Combine(tempDir, "fake.wav");
+                File.WriteAllText(fake, "not a wave file at all");
+
+                Assert.ThrowsException<InvalidOperationException>(() => store.ImportFile(fake));
+                Assert.IsFalse(
+                    Directory.Exists(store.ManagedRoot) && Directory.EnumerateFileSystemEntries(store.ManagedRoot).Any(),
+                    "a rejected file leaves no managed folder");
+            });
+        }
+
+        [TestMethod]
         public void PruneUnreferenced_RemovesPackFoldersNoSlotPointsInto()
         {
             WithTemp(tempDir =>
