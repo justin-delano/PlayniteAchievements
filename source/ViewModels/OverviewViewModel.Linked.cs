@@ -22,8 +22,8 @@ namespace PlayniteAchievements.ViewModels
         private readonly HashSet<string> _selectedRarityFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedTrophyFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        private readonly Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), LinkedSnapshotEntry> _linkedSnapshots =
-            new Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), LinkedSnapshotEntry>();
+        private readonly Dictionary<(OverviewLinkedFilter Exclude, Guid? Game, bool CountsGames), LinkedSnapshotEntry> _linkedSnapshots =
+            new Dictionary<(OverviewLinkedFilter Exclude, Guid? Game, bool CountsGames), LinkedSnapshotEntry>();
 
         /// <summary>
         /// Raised when what <see cref="GetLinkedSnapshot"/> returns may have changed: the
@@ -268,11 +268,16 @@ namespace PlayniteAchievements.ViewModels
         /// The snapshot a linked widget projects from: the overview's snapshot narrowed by every
         /// filter except those in <paramref name="exclude"/>, or by the selected game when
         /// <paramref name="selection"/> says so, with its achievements cut to the ones the
-        /// Achievements grid's filters keep. Null until the overview has a snapshot. A filter
+        /// Achievements grid's filters keep. A view that <paramref name="countsGames"/> keeps
+        /// whole games instead: the achievement filters pick which games, and each keeps all its
+        /// achievements, unlocked and locked. Null until the overview has a snapshot. A filter
         /// change that leaves a view as it was returns the same instance, so the widgets on that
         /// view see no new data and are left alone.
         /// </summary>
-        public OverviewDataSnapshot GetLinkedSnapshot(OverviewLinkedFilter exclude, OverviewLinkedSelection selection)
+        public OverviewDataSnapshot GetLinkedSnapshot(
+            OverviewLinkedFilter exclude,
+            OverviewLinkedSelection selection,
+            bool countsGames = false)
         {
             var source = _latestSnapshot;
             if (source == null)
@@ -284,8 +289,9 @@ namespace PlayniteAchievements.ViewModels
             // Narrowed to one game the games filters no longer apply, but the achievement ones do.
             const OverviewLinkedFilter achievementFilters =
                 OverviewLinkedFilter.UnlockSpan | OverviewLinkedFilter.Rarity | OverviewLinkedFilter.Trophy;
-            var key = (narrowTo.HasValue ? exclude & achievementFilters : exclude, narrowTo);
-            var filterKey = AchievementFilterKey(exclude);
+            var key = (narrowTo.HasValue ? exclude & achievementFilters : exclude, narrowTo, countsGames);
+            // Whole games are not cut, so for them the filters matter only through the games kept.
+            var filterKey = countsGames ? string.Empty : AchievementFilterKey(exclude);
             _linkedSnapshots.TryGetValue(key, out var entry);
             if (entry != null && entry.IsCurrent)
             {
