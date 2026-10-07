@@ -59,6 +59,40 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void ClipToSpan_CountsOnlyUnlocksInRangeWithNoLockedRemainder()
+        {
+            var source = CreateSource();
+            var inRange = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
+            var outOfRange = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+            source.Achievements = new List<PlayniteAchievements.ViewModels.AchievementDisplayItem>
+            {
+                new PlayniteAchievements.ViewModels.AchievementDisplayItem
+                {
+                    PlayniteGameId = GameA, Unlocked = true, UnlockTimeUtc = inRange,
+                    Rarity = PlayniteAchievements.Models.Achievements.RarityTier.Rare, TrophyType = "gold"
+                },
+                new PlayniteAchievements.ViewModels.AchievementDisplayItem
+                {
+                    PlayniteGameId = GameA, Unlocked = true, UnlockTimeUtc = outOfRange,
+                    Rarity = PlayniteAchievements.Models.Achievements.RarityTier.Common, TrophyType = "bronze"
+                }
+            };
+            var day = UnlockDayCounts.DayOf(inRange);
+
+            var clipped = OverviewLinkedSnapshots.ClipToSpan(source, new UnlockDaySpan(day.AddDays(-1), day.AddDays(1)));
+
+            Assert.AreEqual(1, clipped.TotalUnlocked);
+            Assert.AreEqual(1, clipped.TotalAchievements);
+            Assert.AreEqual(0, clipped.TotalLocked);
+            Assert.AreEqual(1, clipped.TotalRare);
+            Assert.AreEqual(0, clipped.TotalCommon);
+            Assert.AreEqual(1, clipped.TotalGold);
+            Assert.AreEqual(0, clipped.TotalBronze);
+            Assert.AreEqual(source.TotalGames, clipped.TotalGames);
+            Assert.IsFalse(clipped.GlobalUnlockCountsByDate.ContainsKey(March20));
+        }
+
+        [TestMethod]
         public void UnlockDaySpan_OrdersItsEndsAndIgnoresTimeOfDay()
         {
             var span = new UnlockDaySpan(March20.AddHours(15), March1.AddHours(9));
