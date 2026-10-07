@@ -93,10 +93,20 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void GameDataKey_GoesNowhere()
+        public void GameDataKey_OpensThatGamesManageAchievementsOverview()
         {
-            // Game data is opened from the game data list, not from an item's uses.
-            Assert.AreEqual(LibraryTargetDestination.None, LibraryTargetNavigation.Resolve(LibraryTargetKeys.GameData(GameId)).Destination);
+            var navigation = LibraryTargetNavigation.Resolve(LibraryTargetKeys.GameData(GameId));
+
+            Assert.AreEqual(LibraryTargetDestination.GameData, navigation.Destination);
+            Assert.AreEqual(GameId, navigation.GameId);
+            Assert.IsFalse(navigation.IsFrame);
+            Assert.IsNull(navigation.Settings);
+        }
+
+        [TestMethod]
+        public void GameDataKey_WithoutAGame_GoesNowhere()
+        {
+            Assert.AreEqual(LibraryTargetDestination.None, LibraryTargetNavigation.Resolve("gamedata:").Destination);
         }
     }
 }
