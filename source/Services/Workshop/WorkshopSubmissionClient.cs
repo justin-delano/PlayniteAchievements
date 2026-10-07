@@ -34,15 +34,6 @@ namespace PlayniteAchievements.Services.Workshop
         public string IssueUrl { get; set; }
     }
 
-    public sealed class WorkshopSubmissionStatus
-    {
-        /// <summary>validating, needs-changes, in-review, published, closed.</summary>
-        public string State { get; set; }
-        public string Message { get; set; }
-        public string PullRequestUrl { get; set; }
-        public string IssueUrl { get; set; }
-    }
-
     /// <summary>
     /// Talks to the Workshop's submission service (the Cloudflare Worker): uploads a package to
     /// temporary storage through the presigned URLs the service hands out, then asks it to open
@@ -183,26 +174,6 @@ namespace PlayniteAchievements.Services.Workshop
                 IssueNumber = response.Value<int?>("issueNumber") ?? 0,
                 IssueUrl = response.Value<string>("issueUrl")
             };
-        }
-
-        public Task<WorkshopSubmissionStatus> GetStatusAsync(int issueNumber, CancellationToken cancel)
-
-            => Task.Run(() => GetStatusCoreAsync(issueNumber, cancel), cancel);
-
-
-        private async Task<WorkshopSubmissionStatus> GetStatusCoreAsync(int issueNumber, CancellationToken cancel)
-        {
-            using (var response = await _http.GetAsync($"{ServiceUrl}/v1/submissions/{issueNumber}", cancel).ConfigureAwait(false))
-            {
-                var json = await ReadJsonOrThrowAsync(response).ConfigureAwait(false);
-                return new WorkshopSubmissionStatus
-                {
-                    State = json.Value<string>("state"),
-                    Message = json.Value<string>("message"),
-                    PullRequestUrl = json.Value<string>("pullRequestUrl"),
-                    IssueUrl = json.Value<string>("issueUrl")
-                };
-            }
         }
 
         /// <summary>The form's dropdown label for a kind; the service and intake parse these.</summary>
