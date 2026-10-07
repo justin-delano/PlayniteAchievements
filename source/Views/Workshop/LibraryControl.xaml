@@ -306,6 +306,12 @@
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
                                     Visibility="{Binding HasPublishedUrl, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.OpenPublishedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <Button Content="&#xEEAD;"
+                                    Style="{StaticResource LibraryIconButtonStyle}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Workshop_RemoveFromWorkshop}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_RemoveFromWorkshop}"
+                                    Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}"
+                                    Command="{Binding DataContext.RemovePublishedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="&#xF01C;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
