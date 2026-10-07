@@ -12,25 +12,19 @@ using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels.Library
 {
-    /// <summary>
-    /// A kind filter chip of the Library page: null kind means every kind. The game data chip
-    /// lists the games that have Workshop game data instead of library items.
-    /// </summary>
+    /// <summary>A kind filter chip of the Library page: null kind means every kind.</summary>
     public sealed class LibraryKindFilter : ObservableObject
     {
         private int _count;
         private bool _isSelected;
 
-        public LibraryKindFilter(LibraryItemKind? kind, string label, bool isGameData = false)
+        public LibraryKindFilter(LibraryItemKind? kind, string label)
         {
             Kind = kind;
             Label = label;
-            IsGameData = isGameData;
         }
 
         public LibraryItemKind? Kind { get; }
-
-        public bool IsGameData { get; }
 
         public string Label { get; }
 
@@ -73,58 +67,10 @@ namespace PlayniteAchievements.ViewModels.Library
     }
 
     /// <summary>
-    /// One game with Workshop game data, as the Library page's game data list shows it: the game,
-    /// the item and version applied, whether the game's data was edited since, and whether the
-    /// Workshop has a newer version.
+    /// One library item as the Library page lists it, with its uses and the Workshop entry it came
+    /// from. Workshop game data is listed the same way from the games' records (it is not stored
+    /// in the library): one row per Workshop item, used in each game that has it.
     /// </summary>
-    public sealed class LibraryGameDataRow : ObservableObject
-    {
-        private WorkshopItem _indexItem;
-
-        public LibraryGameDataRow(Guid gameId, string gameName, LibraryLink link, bool isEdited)
-        {
-            GameId = gameId;
-            GameName = gameName;
-            Link = link ?? throw new ArgumentNullException(nameof(link));
-            IsEdited = isEdited;
-        }
-
-        public Guid GameId { get; }
-
-        public string GameName { get; }
-
-        public LibraryLink Link { get; }
-
-        public bool IsEdited { get; }
-
-        public string ItemName => !string.IsNullOrWhiteSpace(Link.Name)
-            ? Link.Name
-            : _indexItem?.Name ?? GameDataLinkService.WorkshopItemIdOf(Link);
-
-        public string VersionText => string.IsNullOrWhiteSpace(Link.AppliedVersion) ? null : "v" + Link.AppliedVersion;
-
-        /// <summary>The secondary line: the item and the version applied.</summary>
-        public string Secondary => string.Join(" · ", new[] { ItemName, VersionText }.Where(part => !string.IsNullOrWhiteSpace(part)));
-
-        public string KindGlyph => WorkshopItemViewModel.KindGlyphFor(WorkshopItemKind.GameCustomData);
-
-        /// <summary>The Workshop index entry of the item, once the index is read.</summary>
-        public WorkshopItem IndexItem
-        {
-            get => _indexItem;
-            set => SetValue(ref _indexItem, value, nameof(IndexItem), nameof(HasUpdate), nameof(UpdateTag), nameof(ItemName), nameof(Secondary));
-        }
-
-        public bool HasUpdate => GameDataLinkService.HasUpdate(Link, _indexItem);
-
-        public string UpdateTag => HasUpdate
-            ? ResourceProvider.GetString("LOCPlayAch_Workshop_Update") + " " + _indexItem.Version
-            : ResourceProvider.GetString("LOCPlayAch_Workshop_Update");
-
-        public string SearchText => (GameName + " " + ItemName).ToLowerInvariant();
-    }
-
-    /// <summary>One library item as the Library page lists it, with its uses and the Workshop entry it came from.</summary>
     public sealed class LibraryItemRow : ObservableObject
     {
         private string _thumbnailPath;
@@ -146,9 +92,20 @@ namespace PlayniteAchievements.ViewModels.Library
 
         public LibraryItemKind Kind => Item.Kind;
 
-        public string Name => Item.Name;
+        /// <summary>The name; for game data, the Workshop's once the index is read.</summary>
+        public string Name => IsGameData
+            ? FirstNonEmpty(_indexItem?.Name, Item.Name, Item.WorkshopItemId)
+            : Item.Name;
 
         public bool IsWorkshop => Item.IsWorkshop;
+
+        /// <summary>Workshop game data, listed from the games that have it rather than from the library.</summary>
+        public bool IsGameData => Item.Kind == LibraryItemKind.GameData;
+
+        /// <summary>The Workshop's description, once the index is read.</summary>
+        public string Description => _indexItem?.Description;
+
+        public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
 
         /// <summary>The preset file, or null when the item has no stored package.</summary>
         public string FilePath { get; }
@@ -175,7 +132,8 @@ namespace PlayniteAchievements.ViewModels.Library
         {
             get => _indexItem;
             set => SetValue(ref _indexItem, value, nameof(IndexItem), nameof(HasUpdate), nameof(UpdateVersion), nameof(CanUpdate),
-                nameof(CanReinstall), nameof(Author), nameof(Secondary), nameof(UpdateTag));
+                nameof(CanReinstall), nameof(Author), nameof(Secondary), nameof(UpdateTag), nameof(Name), nameof(VersionText),
+                nameof(Description), nameof(HasDescription));
         }
 
         public string ThumbnailPath
@@ -193,25 +151,35 @@ namespace PlayniteAchievements.ViewModels.Library
 
         /// <summary>The secondary line: author and version for a Workshop item, the saved date for the user's own.</summary>
         public string Secondary => IsWorkshop
-            ? string.Join(" · ", new[] { Author, Item.Version }.Where(part => !string.IsNullOrWhiteSpace(part)))
+            ? string.Join(" · ", new[] { Author, WorkshopVersion }.Where(part => !string.IsNullOrWhiteSpace(part)))
             : SavedText;
 
         /// <summary>When the user last saved their own preset.</summary>
         public string SavedText => Item.UpdatedUtc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture);
 
         /// <summary>The version line of the detail pane: the Workshop version, or the saved date of the user's own.</summary>
-        public string VersionText => IsWorkshop ? Item.Version : SavedText;
+        public string VersionText => IsWorkshop ? WorkshopVersion : SavedText;
+
+        /// <summary>
+        /// The library's version of a Workshop item; for game data, the Workshop's current version
+        /// once the index is read, else the highest version a game applied.
+        /// </summary>
+        private string WorkshopVersion => IsGameData ? FirstNonEmpty(_indexItem?.Version, Item.Version) : Item.Version;
 
         public bool IsInUse => HasUses;
 
         public bool IsEdited => Uses.Any(use => use.Use.IsEdited);
 
-        /// <summary>True when the Workshop has a newer version than the library holds.</summary>
-        public bool HasUpdate => _indexItem != null && WorkshopIdentityStore.IsNewer(_indexItem.Version, Item.Version);
+        /// <summary>
+        /// True when the Workshop has a newer version than the library holds. Game data has no
+        /// library copy: a newer version shows on the games that are behind it.
+        /// </summary>
+        public bool HasUpdate => !IsGameData && _indexItem != null && WorkshopIdentityStore.IsNewer(_indexItem.Version, Item.Version);
 
         public string UpdateVersion => HasUpdate ? _indexItem.Version : null;
 
-        public string UpdateTag => HasUpdate
+        /// <summary>"Update" with the Workshop's newer version, when the update brings one.</summary>
+        public string UpdateTag => HasUpdate || (IsGameData && HasFollowerUpdate && _indexItem != null)
             ? ResourceProvider.GetString("LOCPlayAch_Workshop_Update") + " " + _indexItem.Version
             : ResourceProvider.GetString("LOCPlayAch_Workshop_Update");
 
@@ -222,7 +190,12 @@ namespace PlayniteAchievements.ViewModels.Library
 
         public bool CanUpdate => HasUpdate || HasFollowerUpdate;
 
-        public bool CanReinstall => IsWorkshop && _indexItem != null;
+        /// <summary>Reinstall, rename, export and share act on a library copy, which game data does not have.</summary>
+        public bool HasLibraryCopy => !IsGameData;
+
+        public bool ShowReinstall => IsWorkshop && !IsGameData;
+
+        public bool CanReinstall => ShowReinstall && _indexItem != null;
 
         /// <summary>The Workshop id this install published the item as, or null.</summary>
         public string PublishedItemId => _publishedItemId;
@@ -258,6 +231,11 @@ namespace PlayniteAchievements.ViewModels.Library
         }
 
         public string SearchText => (Name + " " + Author + " " + KindLabel).ToLowerInvariant();
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        }
 
         public static string KindLabelFor(LibraryItemKind kind)
         {
