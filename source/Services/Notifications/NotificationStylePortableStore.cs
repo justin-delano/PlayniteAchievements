@@ -104,7 +104,8 @@ namespace PlayniteAchievements.Services.Notifications
         // images and header texts per-surface (toast keeps the legacy entry stems, the frame gets
         // frame_badge_* entries) with no backwards compatibility for the old shared shape. The
         // Kind discriminator is unchanged. v4 added the optional toast motion fields
-        // (EntranceMotion, ExitMotion, MotionFeel, MotionSpeed); older readers ignore them.
+        // (EntranceMotion, ExitMotion, MotionFeel, MotionSpeed) and Position; older readers
+        // ignore them.
         public const int CurrentVersion = 4;
 
         private const string ImagesFolderName = "images";
