@@ -111,7 +111,9 @@ namespace PlayniteAchievements.Services.Workshop
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _identity = identity ?? throw new ArgumentNullException(nameof(identity));
             _logger = logger;
-            _baselines = new WorkshopBaselineStore(Path.Combine(_identity.Directory, WorkshopBaselineStore.FolderName), logger);
+            _baselines = new WorkshopBaselineStore(
+                Path.Combine(plugin.GetPluginUserDataPath(), Library.LibraryStore.GameDataBaselinesFolder),
+                logger);
         }
 
         /// <summary>The baselines game-data updates merge against; read by the Workshop preview.</summary>
@@ -374,7 +376,7 @@ namespace PlayniteAchievements.Services.Workshop
                 WorkshopLibraryItem(request.Item, Library.LibraryItemKind.ShowcasePage, libraryId, part: null),
                 request.PackagePath,
                 new Library.DirectoryPackageFolder(
-                    Path.Combine(_plugin.GetPluginUserDataPath(), Library.LibraryStore.ShowcaseFolderName),
+                    Library.LibraryStore.PresetDirectory(_plugin.GetPluginUserDataPath(), Library.LibraryItemKind.ShowcasePage),
                     ShowcasePagePortableStore.PackageFileExtension));
             result.LibraryItemIds.Add(write.Item.Id);
 

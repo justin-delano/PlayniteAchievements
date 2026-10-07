@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Services.Workshop
     /// </summary>
     internal sealed class WorkshopBaselineStore
     {
-        /// <summary>The baselines folder inside the Workshop folder.</summary>
+        /// <summary>The baselines folder inside the library's game data folder (<see cref="Library.LibraryStore.GameDataBaselinesFolder"/>).</summary>
         public const string FolderName = "baselines";
 
         private readonly string _directory;

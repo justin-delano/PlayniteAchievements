@@ -50,7 +50,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual("neon", item.WorkshopItemId);
             Assert.AreEqual("colors", item.Part);
             Assert.AreEqual("1.2.0", item.Version);
-            Assert.AreEqual(Path.Combine("color_presets", "Neon.pacolors"), item.RelativePath);
+            Assert.AreEqual(Path.Combine("library", "colors", "Neon.pacolors"), item.RelativePath);
             Assert.AreEqual(InstalledAt, item.AddedUtc);
             Assert.IsTrue(plan.CreatedIndex);
             Assert.AreEqual(1, plan.RenamedIds.Count());
@@ -242,11 +242,11 @@ namespace PlayniteAchievements.Services.Tests
             var items = Store().Items;
             Assert.AreEqual(2, items.Count);
             var workshop = items.Single(item => item.Id == "ws:neon");
-            Assert.AreEqual(Path.Combine("color_presets", "Neon (2).pacolors"), workshop.RelativePath);
+            Assert.AreEqual(Path.Combine("library", "colors", "Neon (2).pacolors"), workshop.RelativePath);
             Assert.AreEqual("1.1.0", workshop.Version);
             var local = items.Single(item => item.Id != "ws:neon");
             Assert.AreEqual(LibraryItemOrigin.Local, local.Origin);
-            Assert.AreEqual(Path.Combine("color_presets", "Neon.pacolors"), local.RelativePath);
+            Assert.AreEqual(Path.Combine("library", "colors", "Neon.pacolors"), local.RelativePath);
         }
 
         [TestMethod]

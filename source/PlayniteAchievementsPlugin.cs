@@ -226,14 +226,14 @@ namespace PlayniteAchievements
         public Services.Workshop.PackagePresetStore ColorPresetStore =>
             _colorPresetStore ?? (_colorPresetStore = new Services.Workshop.PackagePresetStore(
                 GetPluginUserDataPath(),
-                "color_presets",
+                Services.Library.LibraryStore.FolderOf(Services.Library.LibraryItemKind.Colors),
                 Services.Workshop.ColorPackPortableStore.PackageFileExtension,
                 path => ColorPackPortableStore.Read(path)));
         /// <summary>Saved sound packs (.pasounds files), the presets behind the unlock sounds card.</summary>
         public Services.Workshop.PackagePresetStore UnlockSoundPresetStore =>
             _unlockSoundPresetStore ?? (_unlockSoundPresetStore = new Services.Workshop.PackagePresetStore(
                 GetPluginUserDataPath(),
-                "unlock_sound_presets",
+                Services.Library.LibraryStore.FolderOf(Services.Library.LibraryItemKind.Sounds),
                 Services.Sound.UnlockSoundPortableStore.PackageFileExtension,
                 path => UnlockSoundPortableStore.Inspect(path)));
         public Services.Workshop.BundlePortableStore BundlePortableStore =>
@@ -270,7 +270,7 @@ namespace PlayniteAchievements
             _gameDataLinks ?? (_gameDataLinks = new Services.Library.GameDataLinkService(
                 GameLinkStore,
                 LibraryStore.LibraryDirectory,
-                System.IO.Path.Combine(WorkshopIdentityStore.Directory, Services.Workshop.WorkshopBaselineStore.FolderName),
+                System.IO.Path.Combine(GetPluginUserDataPath(), Services.Library.LibraryStore.GameDataBaselinesFolder),
                 gameId => GameCustomDataStore != null && GameCustomDataStore.TryLoad(gameId, out var data) ? data : null,
                 gameId => ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D")),
                 (ex, message) => _logger?.Warn(ex, message)));
