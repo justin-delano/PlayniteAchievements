@@ -478,7 +478,7 @@
                         IsHitTestVisible="False"
                         SizeChanged="ScoreCardsSlot_SizeChanged"/>
 
-                <!-- Right: Collection and Prestige score cards, Overview subview only. -->
+                <!-- Right: the two score card slots, Overview subview only. -->
                 <StackPanel x:Name="ScoreCardsPanel"
                             Grid.Row="1"
                             Grid.Column="1"
@@ -503,8 +503,8 @@
                     </StackPanel.Style>
 
                     <controls:ScoreCardControl Style="{StaticResource OverviewScoreCardStyle}"
-                                               ScoreCard="{Binding CollectionScoreCard}"
-                                               Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
+                                               ScoreCard="{Binding ScoreCard1}"
+                                               Visibility="{Binding ShowOverviewScoreCard1, Converter={StaticResource BoolToVis}}"/>
 
                     <Border x:Name="ScoreCardsDivider"
                             Background="{DynamicResource PlayAch.Brush.ControlBorder}"
@@ -516,8 +516,8 @@
                             Visibility="{Binding ShowOverviewScoreCardDivider, Converter={StaticResource BoolToVis}}"/>
 
                     <controls:ScoreCardControl Style="{StaticResource OverviewScoreCardStyle}"
-                                               ScoreCard="{Binding PrestigeScoreCard}"
-                                               Visibility="{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}"/>
+                                               ScoreCard="{Binding ScoreCard2}"
+                                               Visibility="{Binding ShowOverviewScoreCard2, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
                 <!-- Right: showcase page/edit controls, re-hosted from ShowcaseControl so the

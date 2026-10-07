@@ -17,6 +17,8 @@ using PlayniteAchievements.Services.Showcase;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
+using PlayniteAchievements.Models.Achievements.Scoring;
+
 namespace PlayniteAchievements.Models.Settings
 {
     /// <summary>
@@ -192,8 +194,8 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, string> _providerColorOverrides =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private bool _includeUnplayedGames = true;
-        private bool _showOverviewCollectionScoreCard = true;
-        private bool _showOverviewPrestigeScoreCard = true;
+        private ScoreCardSlot _overviewScoreCardSlot1 = ScoreCardSlot.Collection;
+        private ScoreCardSlot _overviewScoreCardSlot2 = ScoreCardSlot.Prestige;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private bool _showTopMenuBarButton = true;
@@ -2272,21 +2274,20 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows the collection score card in the overview header.
+        /// The first score card in the overview header, or None. Profiles saved with the old
+        /// per-card visibility toggles are converted by OverviewSettingsMigration.
         /// </summary>
-        public bool ShowOverviewCollectionScoreCard
+        public ScoreCardSlot OverviewScoreCardSlot1
         {
-            get => _showOverviewCollectionScoreCard;
-            set => SetValue(ref _showOverviewCollectionScoreCard, value);
+            get => _overviewScoreCardSlot1;
+            set => SetValue(ref _overviewScoreCardSlot1, ScoreCardTypes.Normalize(value));
         }
 
-        /// <summary>
-        /// When true, shows the prestige score card in the overview header.
-        /// </summary>
-        public bool ShowOverviewPrestigeScoreCard
+        /// <summary>The second score card in the overview header, or None.</summary>
+        public ScoreCardSlot OverviewScoreCardSlot2
         {
-            get => _showOverviewPrestigeScoreCard;
-            set => SetValue(ref _showOverviewPrestigeScoreCard, value);
+            get => _overviewScoreCardSlot2;
+            set => SetValue(ref _overviewScoreCardSlot2, ScoreCardTypes.Normalize(value));
         }
 
         /// <summary>
@@ -2644,8 +2645,8 @@ namespace PlayniteAchievements.Models.Settings
                 if (_showcase == null)
                 {
                     _showcase = ShowcaseLayoutService.CreateDefault(
-                    ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
-                    ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None);
+                    OverviewScoreCardSlot1,
+                    OverviewScoreCardSlot2);
                     ShowcaseLayoutService.Normalize(_showcase);
                 }
 
@@ -2654,8 +2655,8 @@ namespace PlayniteAchievements.Models.Settings
             set
             {
                 var normalized = value?.Clone() ?? ShowcaseLayoutService.CreateDefault(
-                    ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
-                    ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None);
+                    OverviewScoreCardSlot1,
+                    OverviewScoreCardSlot2);
                 ShowcaseLayoutService.Normalize(normalized);
                 SetValue(ref _showcase, normalized);
             }
@@ -3308,8 +3309,8 @@ namespace PlayniteAchievements.Models.Settings
                         StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
-                ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
-                ShowOverviewPrestigeScoreCard = this.ShowOverviewPrestigeScoreCard,
+                OverviewScoreCardSlot1 = this.OverviewScoreCardSlot1,
+                OverviewScoreCardSlot2 = this.OverviewScoreCardSlot2,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompletedProgressColoring = this.ShowCompletedProgressColoring,
                 TintMissableLocks = this.TintMissableLocks,
@@ -3345,8 +3346,8 @@ namespace PlayniteAchievements.Models.Settings
                 CompactLockedListSortMode = this.CompactLockedListSortMode,
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
                 Showcase = this.Showcase?.Clone() ?? ShowcaseLayoutService.CreateDefault(
-                    this.ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
-                    this.ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None),
+                    this.OverviewScoreCardSlot1,
+                    this.OverviewScoreCardSlot2),
                 OverviewMiniShowcase = this.OverviewMiniShowcase?.Clone() ?? OverviewMiniShowcaseLayout.CreateDefault(),
                 OverviewMiniShowcaseHeight = this.OverviewMiniShowcaseHeight,
                 ShowOverviewMiniShowcase = this.ShowOverviewMiniShowcase,
@@ -3474,8 +3475,8 @@ namespace PlayniteAchievements.Models.Settings
             // The colors are the defaults now, not the library item they followed.
             SetLibraryLink(Services.Library.LibraryTargetKeys.Colors, null);
 
-            ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
-            ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
+            OverviewScoreCardSlot1 = defaults.OverviewScoreCardSlot1;
+            OverviewScoreCardSlot2 = defaults.OverviewScoreCardSlot2;
             ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
             ShowCompletedProgressColoring = defaults.ShowCompletedProgressColoring;
             TintMissableLocks = defaults.TintMissableLocks;
@@ -3510,8 +3511,8 @@ namespace PlayniteAchievements.Models.Settings
 
 
             Showcase = ShowcaseLayoutService.CreateDefault(
-                    defaults.ShowOverviewCollectionScoreCard ? Achievements.Scoring.ScoreCardSlot.Collection : Achievements.Scoring.ScoreCardSlot.None,
-                    defaults.ShowOverviewPrestigeScoreCard ? Achievements.Scoring.ScoreCardSlot.Prestige : Achievements.Scoring.ScoreCardSlot.None);
+                    defaults.OverviewScoreCardSlot1,
+                    defaults.OverviewScoreCardSlot2);
             OverviewMiniShowcase = OverviewMiniShowcaseLayout.CreateDefault();
             OverviewMiniShowcaseHeight = defaults.OverviewMiniShowcaseHeight;
             ShowOverviewMiniShowcase = defaults.ShowOverviewMiniShowcase;

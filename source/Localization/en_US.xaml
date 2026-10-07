@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -1069,8 +1069,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) Suffix</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewMiniShowcase">Show Mini Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter">Pie Center</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Percentage">Percentage</sys:String>
@@ -1463,7 +1461,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ThousandsHours">{0:N1}k h</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PerDay">{0:N1}/day</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Cards</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCards">Score Cards</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreHistory">Score over time</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Dual">Both</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Collection">Collection</sys:String>

@@ -563,8 +563,8 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var count = (_viewModel.ShowOverviewCollectionScoreCard ? 1 : 0) +
-                        (_viewModel.ShowOverviewPrestigeScoreCard ? 1 : 0);
+            var count = (_viewModel.ShowOverviewScoreCard1 ? 1 : 0) +
+                        (_viewModel.ShowOverviewScoreCard2 ? 1 : 0);
             if (count == 0)
             {
                 return;
@@ -598,8 +598,8 @@ namespace PlayniteAchievements.Views
             }
 
             if (string.IsNullOrEmpty(e.PropertyName)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewCollectionScoreCard)
-                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewPrestigeScoreCard))
+                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewScoreCard1)
+                || e.PropertyName == nameof(OverviewViewModel.ShowOverviewScoreCard2))
             {
                 UpdateScoreCardsBadgeOnly();
             }

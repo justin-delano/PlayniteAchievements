@@ -690,19 +690,20 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [DataTestMethod]
-        [DataRow(true, true, "Collection,Prestige")]
-        [DataRow(true, false, "Collection")]
-        [DataRow(false, true, "Prestige")]
-        [DataRow(false, false, "")]
+        [DataRow(ScoreCardSlot.Collection, ScoreCardSlot.Prestige, "Collection,Prestige")]
+        [DataRow(ScoreCardSlot.Collection, ScoreCardSlot.None, "Collection")]
+        [DataRow(ScoreCardSlot.None, ScoreCardSlot.Prestige, "Prestige")]
+        [DataRow(ScoreCardSlot.Gamerscore, ScoreCardSlot.EpicXp, "Gamerscore,EpicXp")]
+        [DataRow(ScoreCardSlot.None, ScoreCardSlot.None, "")]
         public void PersistedSettings_SeedsTheDefaultScoreCardsOnce(
-            bool collectionVisible,
-            bool prestigeVisible,
+            ScoreCardSlot slot1,
+            ScoreCardSlot slot2,
             string expectedCards)
         {
             var persisted = new PersistedSettings
             {
-                ShowOverviewCollectionScoreCard = collectionVisible,
-                ShowOverviewPrestigeScoreCard = prestigeVisible
+                OverviewScoreCardSlot1 = slot1,
+                OverviewScoreCardSlot2 = slot2
             };
 
             var first = persisted.Showcase;

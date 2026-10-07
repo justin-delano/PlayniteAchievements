@@ -25,10 +25,10 @@ namespace PlayniteAchievements.Tests.Views
                 "Visibility=\"{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}\"");
             StringAssert.Contains(
                 xaml,
-                "Visibility=\"{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}\"");
+                "Visibility=\"{Binding ShowOverviewScoreCard1, Converter={StaticResource BoolToVis}}\"");
             StringAssert.Contains(
                 xaml,
-                "Visibility=\"{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}\"");
+                "Visibility=\"{Binding ShowOverviewScoreCard2, Converter={StaticResource BoolToVis}}\"");
             StringAssert.Contains(
                 code,
                 "_lastSelectedSubView == OverviewSubView.Friends");

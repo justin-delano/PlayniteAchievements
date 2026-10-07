@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Services.Showcase;
 
 namespace PlayniteAchievements.Models.Settings
@@ -146,6 +147,8 @@ namespace PlayniteAchievements.Models.Settings
 
                 changed |= ConvertPiePercentagesToCenterMode(persisted);
 
+                changed |= ConvertScoreCardVisibilityToSlots(persisted);
+
                 changed |= SeedOverviewMiniShowcase(persisted);
 
                 changed |= CopyLegacyAchievementGridHeaderVisibility(persisted);
@@ -223,6 +226,46 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             persisted.Remove(oldName);
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces the overview's two score card visibility toggles with its two card slots, in
+        /// order: both shown become Collection and Prestige, one shown becomes that card and None,
+        /// neither becomes None and None. Runs after the property renames so the Sidebar-era names
+        /// are covered too, and only when neither slot is saved yet.
+        /// </summary>
+        private static bool ConvertScoreCardVisibilityToSlots(JObject persisted)
+        {
+            const string collectionName = "ShowOverviewCollectionScoreCard";
+            const string prestigeName = "ShowOverviewPrestigeScoreCard";
+            const string slot1Name = nameof(PersistedSettings.OverviewScoreCardSlot1);
+            const string slot2Name = nameof(PersistedSettings.OverviewScoreCardSlot2);
+
+            if (persisted[collectionName] == null && persisted[prestigeName] == null)
+            {
+                return false;
+            }
+
+            if (persisted[slot1Name] == null && persisted[slot2Name] == null)
+            {
+                var slots = new List<ScoreCardSlot>();
+                if (ReadBool(persisted[collectionName], true))
+                {
+                    slots.Add(ScoreCardSlot.Collection);
+                }
+
+                if (ReadBool(persisted[prestigeName], true))
+                {
+                    slots.Add(ScoreCardSlot.Prestige);
+                }
+
+                persisted[slot1Name] = (slots.Count > 0 ? slots[0] : ScoreCardSlot.None).ToString();
+                persisted[slot2Name] = (slots.Count > 1 ? slots[1] : ScoreCardSlot.None).ToString();
+            }
+
+            persisted.Remove(collectionName);
+            persisted.Remove(prestigeName);
             return true;
         }
 
