@@ -38,8 +38,7 @@ namespace PlayniteAchievements.Services.UI
 
                 void LoadResources()
                 {
-                    PlayAchResourceService.Apply(
-                        app.Resources,
+                    PlayAchResourceService.ApplyToApplication(
                         settings?.Persisted?.ResourceOverrides,
                         settings?.Persisted);
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/DesignTokens.xaml");
