@@ -45,6 +45,7 @@ namespace PlayniteAchievements.Views.Controls
         private readonly List<INotifyPropertyChanged> subscribedSliceItems = new List<INotifyPropertyChanged>();
         private const int MaxLegendRows = 8;
         private bool calculationScheduled;
+        private bool legendSyncScheduled;
         private string hoveredSliceLabel;
         private string legendRowsKey;
 
@@ -268,6 +269,38 @@ namespace PlayniteAchievements.Views.Controls
             // The pie's square changes size when the legend appears or changes width, even when
             // the control itself keeps its size.
             PieHost.SizeChanged += OnSizeChanged;
+            UpdateIconOverflowInset();
+        }
+
+        /// <summary>
+        /// Keeps the radial icons at rest inside this control's width so they do not reach a
+        /// neighboring pie's legend. The panel only shrinks the pie for it when the width, not the
+        /// height, limits the pie.
+        /// </summary>
+        private void UpdateIconOverflowInset()
+        {
+            var margin = PieMargin;
+            var overflow = IconOffset + (IconSize / 2.0) - Math.Min(margin.Left, margin.Right);
+            LayoutPanel.HorizontalInset = ShowIcons ? Math.Max(0, overflow) : 0;
+        }
+
+        /// <summary>
+        /// Rebuilds the legend rows ahead of the next layout pass, so the legend's new width and the
+        /// pie's new size settle in one pass instead of after the deferred position calculation.
+        /// </summary>
+        private void ScheduleLegendSync()
+        {
+            if (legendSyncScheduled)
+            {
+                return;
+            }
+
+            legendSyncScheduled = true;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.DataBind, new Action(() =>
+            {
+                legendSyncScheduled = false;
+                SynchronizeLegendRows();
+            }));
         }
 
         /// <summary>
@@ -375,12 +408,16 @@ namespace PlayniteAchievements.Views.Controls
             {
                 control.UnsubscribeFromLegendItems();
             }
+            control.ScheduleLegendSync();
             control.ScheduleCalculation();
         }
 
         private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((PieChartWithRadialIcons)d).ScheduleCalculation();
+            var control = (PieChartWithRadialIcons)d;
+            control.UpdateIconOverflowInset();
+            control.ScheduleLegendSync();
+            control.ScheduleCalculation();
         }
 
         private static void OnHighlightedLabelsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -499,6 +536,7 @@ namespace PlayniteAchievements.Views.Controls
         private void OnLegendItemsCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             RefreshLegendItemSubscriptions();
+            ScheduleLegendSync();
             ScheduleCalculation();
         }
 
@@ -569,6 +607,7 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnLegendItemPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            ScheduleLegendSync();
             ScheduleCalculation();
         }
 
