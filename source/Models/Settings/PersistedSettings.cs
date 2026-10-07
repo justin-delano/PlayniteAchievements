@@ -194,8 +194,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
         private bool _showOverviewPrestigeScoreCard = true;
-        private ScoreCardBadgePosition _overviewCollectionBadgePosition = ScoreCardBadgePosition.Left;
-        private ScoreCardBadgePosition _overviewPrestigeBadgePosition = ScoreCardBadgePosition.Left;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private bool _showTopMenuBarButton = true;
@@ -2292,24 +2290,6 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Which side of the overview header Collection score card its badge sits on.
-        /// </summary>
-        public ScoreCardBadgePosition OverviewCollectionBadgePosition
-        {
-            get => _overviewCollectionBadgePosition;
-            set => SetValue(ref _overviewCollectionBadgePosition, value);
-        }
-
-        /// <summary>
-        /// Which side of the overview header Prestige score card its badge sits on.
-        /// </summary>
-        public ScoreCardBadgePosition OverviewPrestigeBadgePosition
-        {
-            get => _overviewPrestigeBadgePosition;
-            set => SetValue(ref _overviewPrestigeBadgePosition, value);
-        }
-
-        /// <summary>
         /// When true, shows the top menu bar button for opening the achievements window.
         /// </summary>
         public bool ShowTopMenuBarButton
@@ -3330,8 +3310,6 @@ namespace PlayniteAchievements.Models.Settings
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
                 ShowOverviewPrestigeScoreCard = this.ShowOverviewPrestigeScoreCard,
-                OverviewCollectionBadgePosition = this.OverviewCollectionBadgePosition,
-                OverviewPrestigeBadgePosition = this.OverviewPrestigeBadgePosition,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompletedProgressColoring = this.ShowCompletedProgressColoring,
                 TintMissableLocks = this.TintMissableLocks,
@@ -3498,8 +3476,6 @@ namespace PlayniteAchievements.Models.Settings
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
-            OverviewCollectionBadgePosition = defaults.OverviewCollectionBadgePosition;
-            OverviewPrestigeBadgePosition = defaults.OverviewPrestigeBadgePosition;
             ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
             ShowCompletedProgressColoring = defaults.ShowCompletedProgressColoring;
             TintMissableLocks = defaults.TintMissableLocks;
