@@ -633,7 +633,14 @@ namespace PlayniteAchievements.Views.ManageAchievements
         /// </summary>
         private void AchievementsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ViewModel?.SetSelectedRows(CustomAchievementsGrid.SelectedItems.OfType<AchievementEditorRow>());
+            using (Common.PerfScope.Start(
+                Services.Logging.PluginLogger.GetLogger(nameof(ManageAchievementsEditorTab)),
+                "Editor.SelectionChanged",
+                thresholdMs: 0,
+                context: "selected=" + CustomAchievementsGrid.SelectedItems.Count))
+            {
+                ViewModel?.SetSelectedRows(CustomAchievementsGrid.SelectedItems.OfType<AchievementEditorRow>());
+            }
         }
 
         /// <summary>
