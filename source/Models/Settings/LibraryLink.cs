@@ -4,9 +4,11 @@ using System.Collections.Generic;
 namespace PlayniteAchievements.Models.Settings
 {
     /// <summary>
-    /// Records that a target (the colors, the sounds, a notification scope, a showcase page, a
-    /// game's data) follows a library item: which item, which version of it was applied, and the
-    /// baseline (the target's projection right after that apply) that later updates merge against.
+    /// Records that a target (the colors, the sounds, a notification scope, a showcase page)
+    /// follows a library item: which item, which version of it was applied, and the baseline (the
+    /// target's projection right after that apply) that later updates merge against. A game's
+    /// Workshop data uses the same record without a library item behind it: its link names the
+    /// Workshop item (<c>ws:...</c>) and also carries the item's name and a copy of the package.
     /// Settings-backed targets keep their links in <see cref="PersistedSettings.LibraryLinks"/>,
     /// so Cancel undoes a value and its link together; per-game targets keep them in the
     /// library's links file.
@@ -34,6 +36,21 @@ namespace PlayniteAchievements.Models.Settings
         /// </summary>
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public Dictionary<string, string> IdMap { get; set; }
+
+        /// <summary>
+        /// For a game's Workshop data, the item's display name. Game data is not a library item,
+        /// so its link carries the name itself; null for other targets.
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// For a game's Workshop data, the file name of the copy of the package as applied, in the
+        /// library's game data folder, so Reset works offline; null for other targets and for
+        /// links made before copies were kept.
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string PackageFile { get; set; }
 
         public LibraryLink Clone()
         {
