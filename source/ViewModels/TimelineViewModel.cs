@@ -545,11 +545,19 @@ namespace PlayniteAchievements.ViewModels
 
             if (TimelineSeries.Count == 0)
             {
-                TimelineSeries.Add(new ColumnSeries
+                var single = new ColumnSeries
                 {
                     Title = ResourceProvider.GetString("LOCPlayAch_Achievements"),
                     Values = new ChartValues<int>()
-                });
+                };
+                // The accent with the chart gloss; without the resource the chart's style fill stays.
+                if (System.Windows.Application.Current?.TryFindResource("PlayAch.Brush.Accent") is SolidColorBrush accent)
+                {
+                    single.Fill = ChartGloss.Create(accent.Color);
+                    single.Stroke = accent;
+                }
+
+                TimelineSeries.Add(single);
             }
 
             var values = plan.Buckets.Select(bucket => bucket.Count).ToList();
@@ -588,11 +596,11 @@ namespace PlayniteAchievements.ViewModels
                 var chartSeries = (StackedColumnSeries)TimelineSeries[i];
                 chartSeries.Title = segment.Source.Title;
                 var brush = SegmentBrush(segment.Source.ColorHex);
-                if (!(chartSeries.Fill is SolidColorBrush current) || current.Color != brush.Color)
+                if (!ChartGloss.IsGlossOf(chartSeries.Fill, brush.Color))
                 {
-                    // Stroke too: LiveCharts assigns a palette stroke to a series without one, and
-                    // the tooltip swatch reads the stroke first.
-                    chartSeries.Fill = brush;
+                    // Stroke too, flat: LiveCharts assigns a palette stroke to a series without
+                    // one, and the tooltip swatch reads the stroke first.
+                    chartSeries.Fill = ChartGloss.Create(brush.Color);
                     chartSeries.Stroke = brush;
                 }
 
