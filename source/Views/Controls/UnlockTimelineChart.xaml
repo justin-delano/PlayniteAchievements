@@ -31,6 +31,11 @@
                 <Style TargetType="lvc:ColumnSeries" BasedOn="{StaticResource PlayAch.ChartColumnSeriesStyle}">
                     <Setter Property="ColumnPadding" Value="1"/>
                 </Style>
+                <!-- Per-platform segments; each series sets its own platform fill. -->
+                <Style TargetType="lvc:StackedColumnSeries">
+                    <Setter Property="ColumnPadding" Value="1"/>
+                    <Setter Property="StrokeThickness" Value="0"/>
+                </Style>
             </lvc:CartesianChart.Resources>
         </lvc:CartesianChart>
 
