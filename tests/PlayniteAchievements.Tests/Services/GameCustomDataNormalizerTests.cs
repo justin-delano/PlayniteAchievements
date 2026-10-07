@@ -200,6 +200,25 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void NormalizeInternal_KeepsTheGameSoundPack_AndItAloneKeepsTheRecord()
+        {
+            var gameId = Guid.NewGuid();
+            var data = new GameCustomDataFile
+            {
+                PlayniteGameId = gameId,
+                UnlockSounds = new UnlockSoundSettings { Capstone = "capstone.wav" }
+            };
+
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(data, gameId);
+
+            Assert.AreEqual("capstone.wav", normalized.UnlockSounds?.Capstone);
+            Assert.IsTrue(GameCustomDataNormalizer.HasInternalData(normalized));
+            Assert.AreEqual(
+                "capstone.wav",
+                GameCustomDataNormalizer.MergePreferExisting(new GameCustomDataFile { PlayniteGameId = gameId }, data).UnlockSounds?.Capstone);
+        }
+
+        [TestMethod]
         public void NormalizeInternal_ManualLink_PreservesDisplayPlatformOverride()
         {
             // NormalizeManualLink rebuilds the link field by field on every save, so an omitted
