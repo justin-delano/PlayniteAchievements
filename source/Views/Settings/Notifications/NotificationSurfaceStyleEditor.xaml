@@ -854,10 +854,16 @@
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
-                        <Image helpers:AsyncImage.Uri="{Binding BadgeCommonThumbnailUri}"
-                               helpers:AsyncImage.DecodePixel="48"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Grid>
+                            <!-- The generated badge the notification draws until a custom image is set. -->
+                            <Image Source="{Binding BadgeCommonDefaultImage}"
+                                   Stretch="Uniform"
+                                   Margin="4"/>
+                            <Image helpers:AsyncImage.Uri="{Binding BadgeCommonThumbnailUri}"
+                                   helpers:AsyncImage.DecodePixel="48"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
                     </Border>
                     <Button Grid.Row="0" Grid.Column="2"
                             Tag="BadgeCommon"
@@ -886,10 +892,16 @@
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
-                        <Image helpers:AsyncImage.Uri="{Binding BadgeUncommonThumbnailUri}"
-                               helpers:AsyncImage.DecodePixel="48"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Grid>
+                            <!-- The generated badge the notification draws until a custom image is set. -->
+                            <Image Source="{Binding BadgeUncommonDefaultImage}"
+                                   Stretch="Uniform"
+                                   Margin="4"/>
+                            <Image helpers:AsyncImage.Uri="{Binding BadgeUncommonThumbnailUri}"
+                                   helpers:AsyncImage.DecodePixel="48"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
                     </Border>
                     <Button Grid.Row="1" Grid.Column="2"
                             Tag="BadgeUncommon"
@@ -918,10 +930,16 @@
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
-                        <Image helpers:AsyncImage.Uri="{Binding BadgeRareThumbnailUri}"
-                               helpers:AsyncImage.DecodePixel="48"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Grid>
+                            <!-- The generated badge the notification draws until a custom image is set. -->
+                            <Image Source="{Binding BadgeRareDefaultImage}"
+                                   Stretch="Uniform"
+                                   Margin="4"/>
+                            <Image helpers:AsyncImage.Uri="{Binding BadgeRareThumbnailUri}"
+                                   helpers:AsyncImage.DecodePixel="48"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
                     </Border>
                     <Button Grid.Row="2" Grid.Column="2"
                             Tag="BadgeRare"
@@ -950,10 +968,16 @@
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,6">
-                        <Image helpers:AsyncImage.Uri="{Binding BadgeUltraRareThumbnailUri}"
-                               helpers:AsyncImage.DecodePixel="48"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Grid>
+                            <!-- The generated badge the notification draws until a custom image is set. -->
+                            <Image Source="{Binding BadgeUltraRareDefaultImage}"
+                                   Stretch="Uniform"
+                                   Margin="4"/>
+                            <Image helpers:AsyncImage.Uri="{Binding BadgeUltraRareThumbnailUri}"
+                                   helpers:AsyncImage.DecodePixel="48"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
                     </Border>
                     <Button Grid.Row="3" Grid.Column="2"
                             Tag="BadgeUltraRare"
@@ -982,10 +1006,16 @@
                             Width="48" Height="48"
                             Background="{DynamicResource PlayAch.Brush.Surface}"
                             Margin="0,0,8,0">
-                        <Image helpers:AsyncImage.Uri="{Binding BadgeCompletionThumbnailUri}"
-                               helpers:AsyncImage.DecodePixel="48"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Grid>
+                            <!-- The generated badge the notification draws until a custom image is set. -->
+                            <Image Source="{Binding BadgeCompletionDefaultImage}"
+                                   Stretch="Uniform"
+                                   Margin="4"/>
+                            <Image helpers:AsyncImage.Uri="{Binding BadgeCompletionThumbnailUri}"
+                                   helpers:AsyncImage.DecodePixel="48"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Grid>
                     </Border>
                     <Button Grid.Row="4" Grid.Column="2"
                             Tag="BadgeCompletion"
