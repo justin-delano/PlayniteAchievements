@@ -86,6 +86,43 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(ShowMonthLabelsProperty, value);
         }
 
+        /// <summary>
+        /// When set, clicking a day with unlocks raises <see cref="DayClickedEvent"/> for the host
+        /// to act on instead of opening the day popup.
+        /// </summary>
+        public static readonly DependencyProperty SelectsDaysProperty =
+            DependencyProperty.Register(
+                nameof(SelectsDays),
+                typeof(bool),
+                typeof(ActivityCalendarHeatmap),
+                new PropertyMetadata(false));
+
+        public bool SelectsDays
+        {
+            get => (bool)GetValue(SelectsDaysProperty);
+            set => SetValue(SelectsDaysProperty, value);
+        }
+
+        /// <summary>The day drawn as selected, outlined in the accent color.</summary>
+        public static readonly DependencyProperty HighlightedDayProperty =
+            DependencyProperty.Register(
+                nameof(HighlightedDay),
+                typeof(DateTime?),
+                typeof(ActivityCalendarHeatmap),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public DateTime? HighlightedDay
+        {
+            get => (DateTime?)GetValue(HighlightedDayProperty);
+            set => SetValue(HighlightedDayProperty, value);
+        }
+
+        public static readonly RoutedEvent DayClickedEvent = EventManager.RegisterRoutedEvent(
+            "DayClicked",
+            RoutingStrategy.Bubble,
+            typeof(PlayniteAchievements.Views.Controls.ChartClickEventHandler),
+            typeof(ActivityCalendarHeatmap));
+
         public ActivityCalendarHeatmap()
         {
             AddVisualChild(_hoverVisual);
@@ -191,6 +228,8 @@ namespace PlayniteAchievements.Views.Showcase
             var intensityBrushes = _intensityBrushes;
             var typeface = _typeface;
             var pixelsPerDip = _pixelsPerDip;
+            var highlightedDay = HighlightedDay?.Date;
+            var highlightedRect = Rect.Empty;
 
             for (var weekIndex = 0; weekIndex < weeks.Count; weekIndex++)
             {
@@ -239,7 +278,17 @@ namespace PlayniteAchievements.Views.Showcase
                         ? empty
                         : intensityBrushes[Math.Min(day.Intensity, 4) - 1];
                     drawingContext.DrawRoundedRectangle(brush, null, rect, CellCornerRadius, CellCornerRadius);
+                    if (highlightedDay.HasValue && day.IsDay && day.Date.Date == highlightedDay.Value)
+                    {
+                        highlightedRect = rect;
+                    }
                 }
+            }
+
+            // Drawn last so no neighbouring cell paints over the outline.
+            if (!highlightedRect.IsEmpty)
+            {
+                drawingContext.DrawRoundedRectangle(null, _selectedPen, highlightedRect, CellCornerRadius, CellCornerRadius);
             }
         }
 
@@ -247,6 +296,7 @@ namespace PlayniteAchievements.Views.Showcase
         private Brush _textBrush;
         private Brush[] _intensityBrushes;
         private Pen _hoverPen;
+        private Pen _selectedPen;
         private Typeface _typeface;
         private double _pixelsPerDip;
 
@@ -272,6 +322,14 @@ namespace PlayniteAchievements.Views.Showcase
             if (_hoverPen.CanFreeze)
             {
                 _hoverPen.Freeze();
+            }
+
+            // The selected day: the hover outline at twice the weight. Guarded the same way, since
+            // a theme brush can leave the pen unfreezable.
+            _selectedPen = new Pen(_textBrush, 2);
+            if (_selectedPen.CanFreeze)
+            {
+                _selectedPen.Freeze();
             }
 
             var fontFamily = TextElement.GetFontFamily(this) ?? new FontFamily("Segoe UI");
@@ -461,6 +519,16 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             e.Handled = true;
+            if (SelectsDays)
+            {
+                CloseToolTip();
+                RaiseEvent(new PlayniteAchievements.Views.Controls.ChartClickEventArgs(DayClickedEvent, this)
+                {
+                    Day = day.Date
+                });
+                return;
+            }
+
             if (pressClosedPopup)
             {
                 // The press that started this click closed the popup on this same cell, so the
