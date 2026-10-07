@@ -356,7 +356,8 @@ namespace PlayniteAchievements.Models
         private const string ShowLegend = "ShowLegend";
         private const string ShowIcons = "ShowIcons";
         private const string LegendPosition = "LegendPosition";
-        private const string BadgePosition = "BadgePosition";
+        private const string CollectionBadgePosition = "CollectionBadgePosition";
+        private const string PrestigeBadgePosition = "PrestigeBadgePosition";
         private const string IncludeLocked = "IncludeLocked";
         private const string SmallSliceMode = "SmallSliceMode";
         private const string ActivityScope = "ActivityScope";
@@ -484,12 +485,19 @@ namespace PlayniteAchievements.Models
             ShowcaseWidgetInstanceSettings settings,
             ShowcaseScoreHistoryMode value) => settings?.SetOption(ScoreHistory, value);
 
-        public static ScoreCardBadgePosition GetScoreBadgePosition(ShowcaseWidgetInstanceSettings settings) =>
-            GetEnum(settings, BadgePosition, ScoreCardBadgePosition.Left);
+        public static ScoreCardBadgePosition GetCollectionBadgePosition(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, CollectionBadgePosition, ScoreCardBadgePosition.Left);
 
-        public static void SetScoreBadgePosition(
+        public static void SetCollectionBadgePosition(
             ShowcaseWidgetInstanceSettings settings,
-            ScoreCardBadgePosition value) => settings?.SetOption(BadgePosition, value);
+            ScoreCardBadgePosition value) => settings?.SetOption(CollectionBadgePosition, value);
+
+        public static ScoreCardBadgePosition GetPrestigeBadgePosition(ShowcaseWidgetInstanceSettings settings) =>
+            GetEnum(settings, PrestigeBadgePosition, ScoreCardBadgePosition.Left);
+
+        public static void SetPrestigeBadgePosition(
+            ShowcaseWidgetInstanceSettings settings,
+            ScoreCardBadgePosition value) => settings?.SetOption(PrestigeBadgePosition, value);
 
         public static ShowcasePieMode GetPieMode(ShowcaseWidgetInstanceSettings settings) =>
             GetEnum(settings, Mode, ShowcasePieMode.CompletedGames);
@@ -979,7 +987,8 @@ namespace PlayniteAchievements.Models
                 case ShowcaseWidgetKind.Scores:
                     ShowcaseWidgetOptions.SetScoreMode(settings, ShowcaseScoreMode.Dual);
                     ShowcaseWidgetOptions.SetScoreHistoryMode(settings, ShowcaseScoreHistoryMode.Dual);
-                    ShowcaseWidgetOptions.SetScoreBadgePosition(settings, ScoreCardBadgePosition.Left);
+                    ShowcaseWidgetOptions.SetCollectionBadgePosition(settings, ScoreCardBadgePosition.Left);
+                    ShowcaseWidgetOptions.SetPrestigeBadgePosition(settings, ScoreCardBadgePosition.Left);
                     ShowcaseTimelineOptions.SetWindow(settings, TimeWindow.FromPreset(TimelineRange.ThreeMonths));
                     break;
                 case ShowcaseWidgetKind.Pie:
