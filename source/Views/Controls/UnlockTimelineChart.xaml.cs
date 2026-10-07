@@ -174,7 +174,7 @@ namespace PlayniteAchievements.Views.Controls
             _highlight = new AxisSection
             {
                 SectionWidth = 1,
-                StrokeThickness = 1.5,
+                StrokeThickness = 2,
                 Fill = Brushes.Transparent,
                 Visibility = Visibility.Collapsed
             };
@@ -186,7 +186,10 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>How strongly the unselected columns fade while one is selected.</summary>
-        private const double UnselectedColumnOpacity = 0.3;
+        private const double UnselectedColumnOpacity = 0.18;
+
+        /// <summary>The outline drawn round the selected column, in the text color for contrast with the accent fill.</summary>
+        private const double SelectedColumnStroke = 1.5;
 
         public int HighlightedIndex
         {
@@ -220,12 +223,15 @@ namespace PlayniteAchievements.Views.Controls
 
                 if (series is ColumnSeries column)
                 {
+                    var outline = TryFindResource("PlayAch.Brush.Text") as Brush;
+                    column.StrokeThickness = index < 0 ? 0 : SelectedColumnStroke;
                     column.Configuration = index < 0
                         ? null
                         : LiveCharts.Configurations.Mappers.Xy<int>()
                             .X((value, i) => i)
                             .Y(value => value)
-                            .Fill((value, i) => i == index ? null : FadedFill(column));
+                            .Fill((value, i) => i == index ? null : FadedFill(column))
+                            .Stroke((value, i) => i == index ? outline : Brushes.Transparent);
                 }
             }
 
