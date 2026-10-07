@@ -38,6 +38,13 @@ namespace PlayniteAchievements.Views.Showcase
         {
         }
 
+        /// <summary>
+        /// Whether <paramref name="projection"/> already shows what <paramref name="snapshot"/>
+        /// would, so a data refresh can skip it. A new snapshot instance is new data.
+        /// </summary>
+        public virtual bool IsProjectionCurrent(ShowcaseWidgetProjection projection, OverviewDataSnapshot snapshot) =>
+            snapshot != null && ReferenceEquals(projection?.Snapshot, snapshot);
+
         /// <summary>The strip's height in pixels; only a strip reads or writes it.</summary>
         public virtual double StripHeight
         {
