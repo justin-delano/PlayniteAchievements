@@ -120,7 +120,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void GameData_BecomesOneItemAndReportsEveryGameWithItsBaseline()
+        public void GameData_IsNoLibraryItemAndReportsEveryGameWithItsVersionAndBaseline()
         {
             var gameA = Guid.NewGuid();
             var gameB = Guid.NewGuid();
@@ -135,13 +135,47 @@ namespace PlayniteAchievements.Services.Tests
 
             var plan = Run();
 
-            var item = Store().Find("ws:notes");
-            Assert.AreEqual(LibraryItemKind.GameData, item.Kind);
-            Assert.AreEqual("1.1.0", item.Version);
+            Assert.IsNull(Store().Find("ws:notes"));
+            Assert.AreEqual(0, plan.Steps.Count);
             Assert.AreEqual(2, plan.GameDataInstalls.Count);
             var a = plan.GameDataInstalls.Single(install => install.PlayniteGameId == gameA);
             Assert.AreEqual("ws:notes", a.LibraryItemId);
+            Assert.AreEqual("Notes", a.Name);
+            Assert.AreEqual("1.0.0", a.Version);
             Assert.AreEqual(@"C:\baselines\notes-a.json", a.BaselineFile);
+        }
+
+        [TestMethod]
+        public void MoveGameDataItemsToLinks_CopiesTheNameAndKeepsVersionAndBaseline()
+        {
+            var linked = Guid.NewGuid();
+            var named = Guid.NewGuid();
+            var index = Path.Combine(_root, LibraryStore.DirectoryName, LibraryStore.IndexFileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(index));
+            File.WriteAllText(index, JsonConvert.SerializeObject(new
+            {
+                SchemaVersion = 1,
+                Items = new object[]
+                {
+                    new { Id = "ws:notes", Kind = "GameData", Name = "Notes", Origin = "Workshop", WorkshopItemId = "notes", Version = "2.0.0" }
+                }
+            }));
+            var store = Store();
+            var links = new GameLinkStore(store.LibraryDirectory);
+            links.Set(LibraryTargetKeys.GameData(linked), new LibraryLink { LibraryItemId = "ws:notes", AppliedVersion = "1.0.0", BaselineFile = "a.json" });
+            links.Set(LibraryTargetKeys.GameData(named), new LibraryLink { LibraryItemId = "ws:notes", Name = "Kept", AppliedVersion = "1.5.0" });
+
+            Assert.AreEqual(0, store.Items.Count);
+            var moved = LibraryMigration.MoveGameDataItemsToLinks(store.TakeLegacyGameDataItems(), links);
+
+            Assert.AreEqual(1, moved);
+            var link = links.Get(LibraryTargetKeys.GameData(linked));
+            Assert.AreEqual("Notes", link.Name);
+            Assert.AreEqual("1.0.0", link.AppliedVersion);
+            Assert.AreEqual("a.json", link.BaselineFile);
+            Assert.AreEqual("Kept", links.Get(LibraryTargetKeys.GameData(named)).Name);
+            Assert.AreEqual(0, store.TakeLegacyGameDataItems().Count);
+            StringAssert.DoesNotMatch(File.ReadAllText(index), new System.Text.RegularExpressions.Regex("GameData"));
         }
 
         [TestMethod]
@@ -255,11 +289,13 @@ namespace PlayniteAchievements.Services.Tests
             links.Set(LibraryTargetKeys.GameData(second), new LibraryLink { LibraryItemId = "other" });
 
             var plan = LibraryMigration.Run(store, new WorkshopIdentityStore(_root));
-            var added = LibraryMigration.LinkGameDataInstalls(plan, store, links);
+            var added = LibraryMigration.LinkGameDataInstalls(plan, links);
 
             Assert.AreEqual(1, added);
             var link = links.Get(LibraryTargetKeys.GameData(first));
             Assert.AreEqual("ws:icons", link.LibraryItemId);
+            Assert.AreEqual("Icons", link.Name);
+            Assert.IsNull(link.PackageFile);
             Assert.AreEqual("1.0.0", link.AppliedVersion);
             Assert.AreEqual(@"C:\baselines\first.json", link.BaselineFile);
             Assert.AreEqual("other", links.Get(LibraryTargetKeys.GameData(second)).LibraryItemId);
