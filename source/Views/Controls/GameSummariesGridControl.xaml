@@ -134,11 +134,24 @@
                              fixed row height bounds the layout instead, and Uniform stretch then
                              fits the art inside both cell dimensions without clipping. -->
                         <Grid ClipToBounds="False"
-                              Margin="8,6"
                               UseLayoutRounding="True"
                               SnapsToDevicePixels="True"
                               HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                               VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
+                            <!-- With the completion frame on, the bottom margin also holds the
+                                 half of the frame's badge that hangs below the art (12 of its
+                                 24px), so the next row does not paint over it. Every row reserves
+                                 it, completed or not, so rows keep one shape. -->
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Margin" Value="8,6"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowCompletionFrame, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                                            <Setter Property="Margin" Value="8,6,8,18"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
                             <!-- Rays glow style: arrows riding the art's own silhouette in the
                                  completed gradient's colors, under the two-tone bloom below rather
                                  than in place of it. The same reach as the icon sites, because reach
@@ -240,13 +253,56 @@
                                     </Image>
                                 </Grid>
                             </Border>
-                            <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                    ClipToBounds="True"
-                                    RenderOptions.BitmapScalingMode="HighQuality"
-                                    UseLayoutRounding="True"
-                                    SnapsToDevicePixels="True">
-                                <Image Style="{StaticResource GameImageStyle}"/>
-                            </Border>
+                            <!-- Centered and sized to the art, so the completion frame hugs the
+                                 drawn cover even where Uniform stretch leaves the cell wider or
+                                 taller than the art. -->
+                            <Grid HorizontalAlignment="Center"
+                                  VerticalAlignment="Center">
+                                <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                        ClipToBounds="True"
+                                        RenderOptions.BitmapScalingMode="HighQuality"
+                                        UseLayoutRounding="True"
+                                        SnapsToDevicePixels="True">
+                                    <Image Style="{StaticResource GameImageStyle}"/>
+                                </Border>
+
+                                <!-- Completion frame: the completed-brush band around the art and
+                                     the completion badge centred on its bottom edge, half over the
+                                     art. Last, so it draws over the art and the glow layers. -->
+                                <Grid>
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding ShowCompletionBadge}" Value="True"/>
+                                                        <Condition Binding="{Binding ShowCompletionFrame, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Border Style="{StaticResource CompletionFrameBorderStyle}"
+                                            CornerRadius="{StaticResource PlayAch.Radius.Card}"/>
+                                    <Grid Height="{StaticResource PlayAch.Size.Icon.Medium}"
+                                          Margin="0,0,0,-12"
+                                          VerticalAlignment="Bottom">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Image Grid.Column="1"
+                                               Style="{StaticResource CompletionBadgeImageStyle}"
+                                               Width="{StaticResource PlayAch.Size.Icon.Medium}"
+                                               Height="{StaticResource PlayAch.Size.Icon.Medium}"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Style="{StaticResource CompletionBadgeCountTextStyle}"/>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>

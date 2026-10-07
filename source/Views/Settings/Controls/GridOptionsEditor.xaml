@@ -111,6 +111,12 @@
                       IsChecked="{Binding GameSummaryOptions.ShowCompletionGlow, ElementName=EditorRoot}"
                       Visibility="{Binding ShowCompletionGlowRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+            <!-- Gated with the completion glow: both decorate a completed game's cover, and
+                 every surface that offers one has the Cover column. -->
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionFrame}"
+                      IsChecked="{Binding GameSummaryOptions.ShowCompletionFrame, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowCompletionGlowRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorRarityTextByRarity}"
                       IsChecked="{Binding GameSummaryOptions.ColorRarityColumnsByRarity, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColorNamesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
