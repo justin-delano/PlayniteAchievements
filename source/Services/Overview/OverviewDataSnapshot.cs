@@ -188,6 +188,24 @@ namespace PlayniteAchievements.Services.Overview
         }
 
         /// <summary>
+        /// Builds a snapshot holding only the game-summary totals of <paramref name="games"/>, for
+        /// pie charts drawn over a filtered game list. The scores are left at zero; no pie reads them.
+        /// </summary>
+        public static OverviewDataSnapshot FromGameSummaries(IReadOnlyList<GameSummaryItem> games)
+        {
+            var list = games ?? Array.Empty<GameSummaryItem>();
+            var snapshot = new OverviewDataSnapshot
+            {
+                Achievements = new List<AchievementDisplayItem>(),
+                GameSummaries = new List<GameSummaryItem>(list),
+                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                TotalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            };
+            snapshot.ApplyGameSummaryTotals(list, addClamped: null);
+            return snapshot;
+        }
+
+        /// <summary>
         /// Applies every total derived from the game summaries in one pass: counts, rarity,
         /// completions, trophies, the two per-provider maps, and the raw collector and prestige
         /// scores.
