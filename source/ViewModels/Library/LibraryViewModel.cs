@@ -102,6 +102,7 @@ namespace PlayniteAchievements.ViewModels.Library
             StopFollowingCommand = new RelayCommand(parameter => StopFollowing(parameter as LibraryUseRow), _ => !IsBusy);
             OpenTargetCommand = new RelayCommand(parameter => OpenTarget(parameter as LibraryUseRow));
             OpenPublishedCommand = new RelayCommand(_ => OpenUrl(SelectedRow?.PublishedUrl), _ => SelectedRow?.HasPublishedUrl == true);
+            RemovePublishedCommand = new AsyncCommand(_ => RemovePublishedAsync(SelectedRow), _ => !IsBusy && SelectedRow?.IsMine == true);
 
             _library.Changed += Source_Changed;
             _gameLinks.Changed += Source_Changed;
@@ -141,6 +142,9 @@ namespace PlayniteAchievements.ViewModels.Library
 
         /// <summary>Opens the selected item's Workshop page on GitHub, for an item this install published.</summary>
         public RelayCommand OpenPublishedCommand { get; }
+
+        /// <summary>Asks the Workshop to take down the selected item, for an item this install published.</summary>
+        public AsyncCommand RemovePublishedCommand { get; }
 
         // ---- host callbacks ---------------------------------------------------------------------
 
@@ -477,6 +481,7 @@ namespace PlayniteAchievements.ViewModels.Library
             ReinstallCommand?.RaiseCanExecuteChanged();
             ShareCommand?.RaiseCanExecuteChanged();
             OpenPublishedCommand?.RaiseCanExecuteChanged();
+            RemovePublishedCommand?.RaiseCanExecuteChanged();
             RenameCommand?.RaiseCanExecuteChanged();
             DeleteCommand?.RaiseCanExecuteChanged();
             ResetCommand?.RaiseCanExecuteChanged();
@@ -841,6 +846,41 @@ namespace PlayniteAchievements.ViewModels.Library
                     LibraryItemId = row.Id,
                     PublishedItemId = row.PublishedItemId
                 });
+            }
+        }
+
+        /// <summary>Takes down the Workshop item this row was published as, after a confirmation; the library keeps its copy.</summary>
+        private async Task RemovePublishedAsync(LibraryItemRow row)
+        {
+            if (row == null || IsBusy || !row.IsMine)
+            {
+                return;
+            }
+
+            if (Confirm != null && !Confirm(string.Format(L("LOCPlayAch_Workshop_RemoveConfirm"), row.Name)))
+            {
+                return;
+            }
+
+            IsBusy = true;
+            ErrorMessage = null;
+            try
+            {
+                var kind = row.PublishedItem?.Kind ?? LibraryItemRow.WorkshopKindOf(row.Kind);
+                var receipt = await _plugin.WorkshopShareService.RemoveAsync(kind, row.PublishedItemId, _lifetime.Token);
+                StatusMessage = string.Format(L("LOCPlayAch_Workshop_Share_Submitted"), receipt.IssueUrl);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed removing Workshop item {row.PublishedItemId}.");
+                ErrorMessage = string.Format(L("LOCPlayAch_Status_Failed"), ex.Message);
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 
