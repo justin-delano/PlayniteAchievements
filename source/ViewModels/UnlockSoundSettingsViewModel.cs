@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -323,7 +322,6 @@ namespace PlayniteAchievements.ViewModels
         private readonly UnlockSoundSettingsViewModel _owner;
         private string _customPath;
         private string _sourceLabel;
-        private string _resolvedPath;
         private ImageSource _badgeImage;
 
         public UnlockSoundRowItem(UnlockSoundSettingsViewModel owner, UnlockSoundTier tier)
@@ -356,20 +354,11 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasCustomPath => !string.IsNullOrWhiteSpace(_customPath);
 
-        /// <summary>The user's own file by name; its managed copy keeps the name it was picked with.</summary>
-        public string CustomFileName => SafeFileName(_customPath);
-
         /// <summary>Localized Custom / Theme / Default / None.</summary>
         public string SourceLabel
         {
             get => _sourceLabel;
             private set => SetValue(ref _sourceLabel, value);
-        }
-
-        public string ResolvedPath
-        {
-            get => _resolvedPath;
-            private set => SetValue(ref _resolvedPath, value);
         }
 
         /// <summary>The tier's rarity badge, so the table reads as the rarities it configures.</summary>
@@ -378,15 +367,6 @@ namespace PlayniteAchievements.ViewModels
             get => _badgeImage;
             private set => SetValue(ref _badgeImage, value);
         }
-
-        /// <summary>
-        /// The file name a blank row will actually play, shown where the user's file name would be so
-        /// an unconfigured tier reads as the theme's or built-in sound rather than as nothing at all.
-        /// </summary>
-        public string ResolvedFileName => SafeFileName(ResolvedPath);
-
-        /// <summary>Whether to show <see cref="ResolvedFileName"/> where the user's file name would go.</summary>
-        public bool ShowResolvedFileName => !HasCustomPath && !string.IsNullOrWhiteSpace(ResolvedFileName);
 
         /// <summary>Theme files this tier can be tested against, across both Playnite modes.</summary>
         public ObservableCollection<ThemeUnlockSoundTestItem> ThemeCandidates { get; }
@@ -402,9 +382,7 @@ namespace PlayniteAchievements.ViewModels
             _customPath = string.IsNullOrWhiteSpace(customPath) ? null : customPath;
             OnPropertyChanged(nameof(CustomPath));
             OnPropertyChanged(nameof(HasCustomPath));
-            OnPropertyChanged(nameof(CustomFileName));
             SourceLabel = ResourceProvider.GetString(SourceLabelKey(resolved?.Source ?? UnlockSoundSource.None));
-            ResolvedPath = resolved?.Path;
             BadgeImage = badgeImage;
 
             ThemeCandidates.Clear();
@@ -413,26 +391,7 @@ namespace PlayniteAchievements.ViewModels
                 ThemeCandidates.Add(new ThemeUnlockSoundTestItem(candidate.ModeName, candidate.Path));
             }
 
-            OnPropertyChanged(nameof(ResolvedFileName));
-            OnPropertyChanged(nameof(ShowResolvedFileName));
             OnPropertyChanged(nameof(HasThemeCandidates));
-        }
-
-        private static string SafeFileName(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return null;
-            }
-
-            try
-            {
-                return Path.GetFileName(path);
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
         }
 
         /// <summary>The localization key naming a sound tier, shared with the Workshop sound pack preview.</summary>
