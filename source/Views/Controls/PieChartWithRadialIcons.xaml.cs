@@ -1334,10 +1334,18 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         // Every LiveCharts draw sets each slice's radius back to the pie's, so the growth goes
-        // back on right after, in the same pass, before the frame renders.
+        // back on right after, in the same pass, before the frame renders. A draw can also move
+        // the pie's center (LiveCharts redraws on its own after a resize, later than the resize
+        // recalculation here), so the center percentage follows it from the same place.
         private void OnChartUpdated(object sender)
         {
-            foreach (var series in PieSeries?.OfType<PieSeries>() ?? Enumerable.Empty<PieSeries>())
+            var seriesList = PieSeries?.OfType<PieSeries>().ToList() ?? new List<PieSeries>();
+            if (ShowCenterPercentage)
+            {
+                UpdateCenterPercentageOffset(seriesList);
+            }
+
+            foreach (var series in seriesList)
             {
                 var slice = GetPieSlice(series);
                 if (slice == null)
