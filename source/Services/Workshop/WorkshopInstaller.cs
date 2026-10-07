@@ -71,7 +71,7 @@ namespace PlayniteAchievements.Services.Workshop
         /// <summary>The library names the install wrote, one per saved part; empty for game data.</summary>
         public List<string> PresetNames { get; } = new List<string>();
 
-        /// <summary>The library items the install wrote or recorded.</summary>
+        /// <summary>The library items the install wrote; empty for game data, which is recorded on the game.</summary>
         public List<string> LibraryItemIds { get; } = new List<string>();
 
         /// <summary>For game data, the baseline snapshot written for the next update to merge against.</summary>
@@ -92,8 +92,9 @@ namespace PlayniteAchievements.Services.Workshop
     /// styles, frames, sound packs and bundle parts) become library items under the item's name
     /// and are applied from the owning card, so a first install never changes the current look;
     /// an update or reinstall also brings the targets that follow the item along. Showcase pages
-    /// and game data are also applied on install, and their targets are linked. Runs on the UI
-    /// thread: the showcase refresh needs it.
+    /// are also applied on install, and their pages are linked. Game data goes onto one game and
+    /// is recorded on that game rather than in the library. Runs on the UI thread: the showcase
+    /// refresh needs it.
     /// </summary>
     public sealed class WorkshopInstaller
     {
@@ -110,7 +111,7 @@ namespace PlayniteAchievements.Services.Workshop
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _identity = identity ?? throw new ArgumentNullException(nameof(identity));
             _logger = logger;
-            _baselines = new WorkshopBaselineStore(Path.Combine(_identity.Directory, "baselines"), logger);
+            _baselines = new WorkshopBaselineStore(Path.Combine(_identity.Directory, WorkshopBaselineStore.FolderName), logger);
         }
 
         /// <summary>The baselines game-data updates merge against; read by the Workshop preview.</summary>
@@ -446,7 +447,6 @@ namespace PlayniteAchievements.Services.Workshop
             // A merge onto data the user had before this item treats all of it as theirs: an empty
             // baseline makes every value they set count as an edit, and every icon file on disk is
             // set aside. A replace keeps nothing.
-            var libraryId = Library.LibraryItem.WorkshopId(request.Item.Id);
             var baselineFile = GameDataBaselineFile(request.Item.Id, gameId);
             var iconDirectory = _plugin.ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D"));
             GameCustomDataFile baseline = null;
@@ -526,17 +526,15 @@ namespace PlayniteAchievements.Services.Workshop
                     result.BaselineFile = baselineFile;
                 }
 
-                // The game follows the item: its link carries the baseline the next update merges against.
-                var stored = _plugin.LibraryUpdateService.RecordWorkshopItem(
-                    WorkshopLibraryItem(request.Item, Library.LibraryItemKind.GameData, libraryId, part: null));
-                result.LibraryItemIds.Add(stored.Id);
-                _plugin.GameLinkStore.Set(Library.LibraryTargetKeys.GameData(gameId), new LibraryLink
-                {
-                    LibraryItemId = libraryId,
-                    AppliedVersion = request.Item.Version,
-                    BaselineFile = result.BaselineFile,
-                    AppliedUtc = DateTime.UtcNow
-                });
+                // The game's record: the item, the version, the baseline the next update merges
+                // against, and a copy of the package for Reset.
+                _plugin.GameDataLinks.Record(
+                    gameId,
+                    request.Item.Id,
+                    request.Item.Name,
+                    request.Item.Version,
+                    result.BaselineFile,
+                    request.PackagePath);
 
                 var effects = CustomDataTransition.Analyze(previous, current);
 
@@ -584,10 +582,8 @@ namespace PlayniteAchievements.Services.Workshop
         /// </summary>
         internal string GameDataBaselineFile(string workshopItemId, Guid gameId)
         {
-            var link = _plugin.GameLinkStore.Get(Library.LibraryTargetKeys.GameData(gameId));
-            return link != null && string.Equals(link.LibraryItemId, Library.LibraryItem.WorkshopId(workshopItemId), StringComparison.OrdinalIgnoreCase)
-                ? link.BaselineFile
-                : null;
+            var link = _plugin.GameDataLinks.Get(gameId);
+            return Library.GameDataLinkService.Names(link, workshopItemId) ? link.BaselineFile : null;
         }
 
         // ---- update baselines ----------------------------------------------------------------
