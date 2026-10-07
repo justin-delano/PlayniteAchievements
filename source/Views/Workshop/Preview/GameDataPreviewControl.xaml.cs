@@ -113,6 +113,10 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             // its art, its name and how many achievements it holds.
             CategoryGrid.AllowedColumnKeys = CategoryColumns;
             CategoryGrid.ColumnSettingsKey = "WorkshopPreviewCategorySummaries";
+
+            // The tree's order and its connector lanes are one thing: a column sort would scramble
+            // the rows under lanes drawn for the tree order.
+            CategoryGrid.InternalDataGrid.CanUserSortColumns = false;
             DataContextChanged += (sender, args) => Rebuild();
         }
 
@@ -668,7 +672,9 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         /// <summary>
         /// The after-install category tree as View Achievements' category list shows it: one row
         /// per category with its art and leaf name, nested under the tree guide, every node
-        /// expanded, from every after row whatever the Before / After filters show.
+        /// expanded, from every after row whatever the Before / After filters show. The rows go in
+        /// unsorted, as View Achievements passes them, since a category the category order does
+        /// not list is placed where its first achievement comes.
         /// </summary>
         private List<GameSummaryItem> BuildCategoryRows()
         {
@@ -677,7 +683,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 return _categoryRows;
             }
 
-            var items = _afterItems ?? (_afterItems = BuildItems(_afterData));
+            var items = BuildItems(_afterData, sorted: false);
             var badgeMode = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.CategoryCompletionBadgeMode
                 ?? CategoryCompletionBadgeMode.All;
             _categoryRows = items.Count == 0
@@ -689,9 +695,10 @@ namespace PlayniteAchievements.Views.Workshop.Preview
 
         /// <summary>
         /// The display rows of <paramref name="data"/> as View Achievements builds them: custom
-        /// order applied, then the configured default sort with goals first.
+        /// order applied, then the configured default sort with goals first unless
+        /// <paramref name="sorted"/> is false.
         /// </summary>
-        private List<AchievementDisplayItem> BuildItems(GameAchievementData data)
+        private List<AchievementDisplayItem> BuildItems(GameAchievementData data, bool sorted = true)
         {
             if (data?.Achievements == null)
             {
@@ -709,6 +716,11 @@ namespace PlayniteAchievements.Views.Workshop.Preview
                 .Select(achievement => AchievementDisplayItem.Create(data, achievement, settings, playniteGameIdOverride: data.PlayniteGameId))
                 .Where(item => item != null)
                 .ToList();
+            if (!sorted)
+            {
+                return items;
+            }
+
             AchievementSortHelper.OrderGameAchievementItems(
                 items,
                 columnSortPath: null,
