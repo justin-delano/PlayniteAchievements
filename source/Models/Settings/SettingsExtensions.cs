@@ -127,6 +127,10 @@ namespace PlayniteAchievements.Models.Settings
             target.AllowThemeUnlockSounds = source.AllowThemeUnlockSounds;
             target.UnlockSoundVolumePercent = source.UnlockSoundVolumePercent;
             target.UnlockSounds = source.UnlockSounds?.Clone() ?? UnlockSoundSettings.CreateDefault();
+            target.ProviderUnlockSounds = source.ProviderUnlockSounds.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value?.Clone(),
+                StringComparer.OrdinalIgnoreCase);
             target.UnlockSoundsSeededFromUniPlaySong = source.UnlockSoundsSeededFromUniPlaySong;
             target.EnableUnlockScreenshots = source.EnableUnlockScreenshots;
             target.UnlockScreenshotClean = source.UnlockScreenshotClean;
