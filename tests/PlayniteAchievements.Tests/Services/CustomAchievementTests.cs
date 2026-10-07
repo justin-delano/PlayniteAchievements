@@ -260,6 +260,40 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void CsvParse_ResolvesIconCellsAgainstTheFilesFolder()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(folder, "icons"));
+            try
+            {
+                File.WriteAllBytes(Path.Combine(folder, "icons", "a.png"), new byte[] { 1 });
+                var text =
+                    CustomAchievementCsvFormat.Header + "\r\n" +
+                    "a,,,,,,,,,,,,icons/a.png,https://example.com/a-locked.png\r\n";
+
+                var fromFile = new CustomAchievementTextImportService().Parse(text, iconBaseDirectory: folder);
+                Assert.IsFalse(fromFile.HasErrors, string.Join("; ", fromFile.Errors));
+                Assert.AreEqual(Path.Combine(folder, "icons", "a.png"), fromFile.Rows[0].UnlockedIconPath);
+                Assert.AreEqual("https://example.com/a-locked.png", fromFile.Rows[0].LockedIconPath);
+
+                var missing = new CustomAchievementTextImportService().Parse(
+                    CustomAchievementCsvFormat.Header + "\r\na,,,,,,,,,,,,icons/missing.png,\r\n",
+                    iconBaseDirectory: folder);
+                Assert.IsTrue(
+                    missing.Errors.Any(error => error.StartsWith("Row 2, Unlocked Icon: \"icons/missing.png\" is not a web address or a file that exists")),
+                    string.Join("; ", missing.Errors));
+
+                var fromPackage = new CustomAchievementTextImportService().Parse(
+                    CustomAchievementCsvFormat.Header + "\r\na,,,,,,,,,,,,images/a.png,\r\n");
+                Assert.AreEqual("images/a.png", fromPackage.Rows[0].UnlockedIconPath, "A package's reader resolves its own entries.");
+            }
+            finally
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
+
+        [TestMethod]
         public void CsvFormat_WriteFileEmitsByteOrderMarkAndCrlf()
         {
             var path = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N") + ".csv");
@@ -525,7 +559,7 @@ namespace PlayniteAchievements.Services.Tests
                 using (var archive = System.IO.Compression.ZipFile.Open(packagePath, System.IO.Compression.ZipArchiveMode.Create))
                 using (var writer = new StreamWriter(archive.CreateEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
                 {
-                    writer.WriteLine(CustomAchievementCsvFormat.Header + ",Unlocked Icon,Locked Icon");
+                    writer.WriteLine(CustomAchievementCsvFormat.Header);
                     writer.WriteLine("first-win,\"First, Win\",\"Uses a \"\"quote\"\"\",10,gold,true,12.5%,,1,2,true,2026-01-02 03:04:05,,");
                     writer.WriteLine("second,Second,,,,,,,,,,,,");
                 }
