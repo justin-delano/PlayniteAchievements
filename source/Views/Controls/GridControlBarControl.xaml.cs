@@ -154,6 +154,14 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private void DismissChip_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is GridDismissChip item)
+            {
+                item.Dismiss();
+            }
+        }
+
         private void MultiSelectFilter_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
