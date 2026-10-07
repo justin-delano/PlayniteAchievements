@@ -37,7 +37,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string Description => Item.Description;
         public string Author => Item.Author;
         public string Version => Item.Version;
-        public string License => Item.License;
         public string Updated => Item.Updated;
         private long? _liveDownloads;
 
