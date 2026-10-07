@@ -418,8 +418,6 @@
                                     <MenuItem Header="{DynamicResource LOCPlayAch_Workshop_Share}"
                                               Command="{Binding ShareToWorkshopCommand}" />
                                     <Separator />
-                                    <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportAchievements}"
-                                              Command="{Binding ExportAchievementsCommand}" />
                                     <MenuItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ExportTemplate}"
                                               Command="{Binding ExportTemplateCommand}" />
                                 </ContextMenu>
