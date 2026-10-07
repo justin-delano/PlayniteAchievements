@@ -370,13 +370,15 @@ namespace PlayniteAchievements.Services.Achievements
         /// </summary>
         public static string ApplyOverride(string providerValue, string overrideValue)
         {
-            if (string.IsNullOrWhiteSpace(overrideValue))
+            // An override with nothing left once its derived types are gone overrides nothing.
+            var assigned = StripDerivedTypes(overrideValue);
+            if (assigned == null)
             {
                 return NormalizeOrDefault(providerValue);
             }
 
             var derived = ParseValues(providerValue).Where(DerivedCategoryTypes.Contains);
-            return NormalizeOrDefault(Combine(ParseValues(StripDerivedTypes(overrideValue)).Concat(derived)));
+            return NormalizeOrDefault(Combine(ParseValues(assigned).Concat(derived)));
         }
 
         public static string WithCategoryType(string categoryTypeValue, string categoryType, bool include)
