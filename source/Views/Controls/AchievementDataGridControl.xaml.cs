@@ -32,6 +32,18 @@ namespace PlayniteAchievements.Views.Controls
     public partial class AchievementDataGridControl : UserControl, IDisposable
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
+
+        // Tracing only: rows are realized during measure, so a filter that swaps the rows shows
+        // its grid cost here, per grid, inside the render pass that no other scope covers.
+        private static readonly ILogger PerfLogger = Services.Logging.PluginLogger.GetLogger(nameof(AchievementDataGridControl));
+
+        protected override System.Windows.Size MeasureOverride(System.Windows.Size constraint)
+        {
+            using (Common.PerfScope.Start(PerfLogger, "Grid.Measure", thresholdMs: 10, context: ColumnSettingsKey))
+            {
+                return base.MeasureOverride(constraint);
+            }
+        }
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
         private bool _wheelDiagnosticsAttached;
