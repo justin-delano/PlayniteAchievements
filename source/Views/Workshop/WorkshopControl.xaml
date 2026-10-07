@@ -206,6 +206,11 @@
                                     Margin="8,0,0,0"
                                     Command="{Binding DataContext.ReportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
+                            <Button Content="{DynamicResource LOCPlayAch_Workshop_RemoveFromWorkshop}"
+                                    Margin="8,0,0,0"
+                                    Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}"
+                                    Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding RequiresNewerPluginText}"
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
