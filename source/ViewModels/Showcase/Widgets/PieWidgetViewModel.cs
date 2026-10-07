@@ -49,6 +49,17 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public ShowcasePieMode Mode { get; private set; }
 
+        // What the current chart was built from, so a highlight-only refresh can keep it.
+        private OverviewDataSnapshot _chartSnapshot;
+        private string _chartOptionsKey;
+
+        private static string OptionsKey(ShowcaseWidgetInstanceSettings instance) =>
+            string.Join(
+                "\u001f",
+                (instance?.Options ?? new Dictionary<string, string>())
+                    .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(pair => pair.Key + "=" + pair.Value));
+
         protected override void Refresh()
         {
             // A linked pie's snapshot already follows the overview's filters, which replace the
@@ -60,6 +71,23 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 : ApplyControlBarFilter(Projection?.Snapshot ?? new OverviewDataSnapshot());
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
             Mode = mode;
+
+            // A linked pie is reprojected when the overview's selection moves even though its
+            // data did not; then only the highlight changes, and rebuilding the chart would
+            // redraw every slice for it.
+            var optionsKey = OptionsKey(Projection?.Instance);
+            if (linked &&
+                Chart != null &&
+                ReferenceEquals(snapshot, _chartSnapshot) &&
+                string.Equals(optionsKey, _chartOptionsKey, StringComparison.Ordinal))
+            {
+                Chart.SetSelectedLabels((Projection.LinkedSliceKeys ?? Array.Empty<string>())
+                    .Select(key => LabelForSliceKey(Chart, mode, key)));
+                return;
+            }
+
+            _chartSnapshot = linked ? snapshot : null;
+            _chartOptionsKey = optionsKey;
             var chart = new PieChartViewModel
             {
                 // Both are applied by each Set*Data call, so they must be assigned before
