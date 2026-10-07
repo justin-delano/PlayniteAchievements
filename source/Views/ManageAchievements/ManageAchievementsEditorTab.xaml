@@ -109,12 +109,17 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="GridEditorDisplayTextStyle" TargetType="TextBlock">
-                <!-- Not rounded to whole pixels: the TextBox centers its text without rounding, so a
-                     rounded face would sit a fraction of a pixel off and jump when the box takes over. -->
-                <Setter Property="UseLayoutRounding" Value="False" />
-                <Setter Property="Margin" Value="8,2" />
+            <!-- Built like the TextBox it stands in for, so rounding lands on the same element with the
+                 same values at any DPI: a centered host with the box's 6,2 padding (the ScrollViewer
+                 content host), and the text inset 2px at the sides as the TextBoxView is. Centering the
+                 TextBlock itself put a single line half a pixel off the TextBox's. -->
+            <Style x:Key="GridEditorDisplayHostStyle" TargetType="Border">
+                <Setter Property="Padding" Value="6,2" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="GridEditorDisplayTextStyle" TargetType="TextBlock">
+                <Setter Property="Margin" Value="2,0" />
                 <Setter Property="TextWrapping" Value="Wrap" />
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                 <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}" />
@@ -983,8 +988,10 @@
                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                             <DataTemplate>
                                                 <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
-                                                    <TextBlock Text="{Binding DisplayName}"
-                                                               Style="{StaticResource GridEditorDisplayTextStyle}" />
+                                                    <Border Style="{StaticResource GridEditorDisplayHostStyle}">
+                                                        <TextBlock Text="{Binding DisplayName}"
+                                                                   Style="{StaticResource GridEditorDisplayTextStyle}" />
+                                                    </Border>
                                                 </Border>
                                             </DataTemplate>
                                         </controls:EditOnClickPresenter.DisplayTemplate>
@@ -1098,8 +1105,10 @@
                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                             <DataTemplate>
                                                 <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
-                                                    <TextBlock Text="{Binding Description}"
-                                                               Style="{StaticResource GridEditorDisplayTextStyle}" />
+                                                    <Border Style="{StaticResource GridEditorDisplayHostStyle}">
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   Style="{StaticResource GridEditorDisplayTextStyle}" />
+                                                    </Border>
                                                 </Border>
                                             </DataTemplate>
                                         </controls:EditOnClickPresenter.DisplayTemplate>
@@ -1441,9 +1450,11 @@
                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                             <DataTemplate>
                                                 <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
-                                                    <TextBlock Text="{Binding RarityInput}"
-                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
-                                                               TextWrapping="NoWrap" />
+                                                    <Border Style="{StaticResource GridEditorDisplayHostStyle}">
+                                                        <TextBlock Text="{Binding RarityInput}"
+                                                                   Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                                   TextWrapping="NoWrap" />
+                                                    </Border>
                                                 </Border>
                                             </DataTemplate>
                                         </controls:EditOnClickPresenter.DisplayTemplate>
@@ -1694,9 +1705,11 @@
                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                             <DataTemplate>
                                                 <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
-                                                    <TextBlock Text="{Binding PointsText}"
-                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
-                                                               TextWrapping="NoWrap" />
+                                                    <Border Style="{StaticResource GridEditorDisplayHostStyle}">
+                                                        <TextBlock Text="{Binding PointsText}"
+                                                                   Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                                   TextWrapping="NoWrap" />
+                                                    </Border>
                                                 </Border>
                                             </DataTemplate>
                                         </controls:EditOnClickPresenter.DisplayTemplate>
@@ -1771,9 +1784,11 @@
                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                             <DataTemplate>
                                                 <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
-                                                    <TextBlock Text="{Binding ProgressNumText}"
-                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
-                                                               TextWrapping="NoWrap" />
+                                                    <Border Style="{StaticResource GridEditorDisplayHostStyle}">
+                                                        <TextBlock Text="{Binding ProgressNumText}"
+                                                                   Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                                   TextWrapping="NoWrap" />
+                                                    </Border>
                                                 </Border>
                                             </DataTemplate>
                                         </controls:EditOnClickPresenter.DisplayTemplate>
@@ -1802,9 +1817,11 @@
                                         <controls:EditOnClickPresenter.DisplayTemplate>
                                             <DataTemplate>
                                                 <Border Style="{StaticResource GridEditorDisplayBorderStyle}">
-                                                    <TextBlock Text="{Binding ProgressDenomText}"
-                                                               Style="{StaticResource GridEditorDisplayTextStyle}"
-                                                               TextWrapping="NoWrap" />
+                                                    <Border Style="{StaticResource GridEditorDisplayHostStyle}">
+                                                        <TextBlock Text="{Binding ProgressDenomText}"
+                                                                   Style="{StaticResource GridEditorDisplayTextStyle}"
+                                                                   TextWrapping="NoWrap" />
+                                                    </Border>
                                                 </Border>
                                             </DataTemplate>
                                         </controls:EditOnClickPresenter.DisplayTemplate>
