@@ -337,10 +337,11 @@ namespace PlayniteAchievements.Views.Showcase
                             ShowcaseWidgetOptions.GetProfileFullBleed(_projection.Instance);
             var inset = ShowcaseWidgetViewModelBase.GetBodyInset(_viewport.Density);
             // A linked timeline's title would sit on its tallest bars, so the chart starts below
-            // it; a pie keeps the row's full height and lets the title share its corner.
+            // it, with or without a title: a title coming or going then never resizes the chart,
+            // which would re-bucket and redraw the bars. A pie keeps the row's full height and
+            // lets the title share its corner.
             var titleRoom = _projection?.IsLinked == true &&
-                            _projection.Instance?.Kind == ShowcaseWidgetKind.Timeline &&
-                            !string.IsNullOrWhiteSpace(_projection.ContextLabel)
+                            _projection.Instance?.Kind == ShowcaseWidgetKind.Timeline
                 ? LinkedTitleRoom
                 : 0;
             BodyHost.Margin = fullBleed
