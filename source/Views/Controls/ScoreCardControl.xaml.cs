@@ -1,8 +1,11 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Dialogs;
 
 namespace PlayniteAchievements.Views.Controls
 {
@@ -43,6 +46,15 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(ScoreCardControl),
                 new PropertyMetadata(false));
 
+        public static readonly DependencyProperty BadgePositionProperty =
+            DependencyProperty.Register(
+                nameof(BadgePosition),
+                typeof(ScoreCardBadgePosition),
+                typeof(ScoreCardControl),
+                new PropertyMetadata(ScoreCardBadgePosition.Left));
+
+        private bool _pressed;
+
         public ScoreCardControl()
         {
             InitializeComponent();
@@ -64,6 +76,33 @@ namespace PlayniteAchievements.Views.Controls
                 PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.UseUniformRarityBadges
                 ?? card.UseUniformRarityBadges);
         }
+
+        // Every card opens the score-info dialog, on release over the card it was pressed on.
+        private void Panel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _pressed = PanelBorder.CaptureMouse();
+            e.Handled = _pressed;
+        }
+
+        private void Panel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_pressed)
+            {
+                return;
+            }
+
+            _pressed = false;
+            PanelBorder.ReleaseMouseCapture();
+            var position = e.GetPosition(PanelBorder);
+            if (position.X >= 0 && position.Y >= 0 &&
+                position.X <= PanelBorder.ActualWidth && position.Y <= PanelBorder.ActualHeight)
+            {
+                e.Handled = true;
+                ScoreInfoDialogPresenter.Show();
+            }
+        }
+
+        private void Panel_LostMouseCapture(object sender, MouseEventArgs e) => _pressed = false;
 
         public ScoreCardViewModel ScoreCard
         {
@@ -105,6 +144,16 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(BadgeOnlyProperty);
             set => SetValue(BadgeOnlyProperty, value);
+        }
+
+        /// <summary>
+        /// Which side the badge column sits on. Right mirrors the text column against it, so a
+        /// card on the right of a mirrored layout faces its partner.
+        /// </summary>
+        public ScoreCardBadgePosition BadgePosition
+        {
+            get => (ScoreCardBadgePosition)GetValue(BadgePositionProperty);
+            set => SetValue(BadgePositionProperty, value);
         }
     }
 }
