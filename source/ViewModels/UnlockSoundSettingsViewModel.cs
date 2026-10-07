@@ -27,19 +27,27 @@ namespace PlayniteAchievements.ViewModels
         private readonly UnlockSoundService _sounds;
         private readonly ILogger _logger;
         private readonly DispatcherTimer _applyDebounceTimer;
+        private readonly Func<string, string> _importFile;
+        private readonly Action<UnlockSoundSettings> _pruneUnreferenced;
         private UnlockSoundScope _scope;
         private bool _isEditable = true;
         private string _testProviderKey;
         private Guid _testGameId;
 
+        /// <param name="importFile">Copies a picked file into managed storage and returns the copy's path; null stores picks as they are.</param>
+        /// <param name="pruneUnreferenced">Removes managed copies no pack references after the given pack was written; null keeps them.</param>
         public UnlockSoundSettingsViewModel(
             PlayniteAchievementsSettings settings,
             UnlockSoundService sounds,
-            ILogger logger)
+            ILogger logger,
+            Func<string, string> importFile = null,
+            Action<UnlockSoundSettings> pruneUnreferenced = null)
         {
             _settings = settings;
             _sounds = sounds;
             _logger = logger;
+            _importFile = importFile;
+            _pruneUnreferenced = pruneUnreferenced;
             _applyDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _applyDebounceTimer.Tick += (s, e) =>
             {
@@ -149,6 +157,20 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>Raised after a row's file changed the scope's pack.</summary>
         public event EventHandler SoundsChanged;
 
+        /// <summary>
+        /// Sets the tier to a file the user picked: a copy in managed storage, so the tier keeps
+        /// playing after the original moves. Throws when the file is not a usable sound.
+        /// </summary>
+        internal void PickFile(UnlockSoundTier tier, string path)
+        {
+            if (!IsEditable || string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            SetCustomPath(tier, _importFile != null ? _importFile(path) : path);
+        }
+
         internal void SetCustomPath(UnlockSoundTier tier, string path)
         {
             if (!IsEditable)
@@ -172,6 +194,15 @@ namespace PlayniteAchievements.ViewModels
 
                 pack.SetPath(tier, path);
                 _scope.Write(pack);
+            }
+
+            try
+            {
+                _pruneUnreferenced?.Invoke(CurrentSounds);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Removing unreferenced unlock sound copies failed.");
             }
 
             Refresh();
@@ -325,6 +356,9 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasCustomPath => !string.IsNullOrWhiteSpace(_customPath);
 
+        /// <summary>The user's own file by name; its managed copy keeps the name it was picked with.</summary>
+        public string CustomFileName => SafeFileName(_customPath);
+
         /// <summary>Localized Custom / Theme / Default / None.</summary>
         public string SourceLabel
         {
@@ -346,12 +380,12 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// The file name a blank row will actually play, shown in place of the empty path box so an
-        /// unconfigured tier reads as the theme's or built-in sound rather than as nothing at all.
+        /// The file name a blank row will actually play, shown where the user's file name would be so
+        /// an unconfigured tier reads as the theme's or built-in sound rather than as nothing at all.
         /// </summary>
         public string ResolvedFileName => SafeFileName(ResolvedPath);
 
-        /// <summary>Whether to show <see cref="ResolvedFileName"/> where the user's path would go.</summary>
+        /// <summary>Whether to show <see cref="ResolvedFileName"/> where the user's file name would go.</summary>
         public bool ShowResolvedFileName => !HasCustomPath && !string.IsNullOrWhiteSpace(ResolvedFileName);
 
         /// <summary>Theme files this tier can be tested against, across both Playnite modes.</summary>
@@ -368,6 +402,7 @@ namespace PlayniteAchievements.ViewModels
             _customPath = string.IsNullOrWhiteSpace(customPath) ? null : customPath;
             OnPropertyChanged(nameof(CustomPath));
             OnPropertyChanged(nameof(HasCustomPath));
+            OnPropertyChanged(nameof(CustomFileName));
             SourceLabel = ResourceProvider.GetString(SourceLabelKey(resolved?.Source ?? UnlockSoundSource.None));
             ResolvedPath = resolved?.Path;
             BadgeImage = badgeImage;
