@@ -98,6 +98,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly HashSet<string> _selectedStateFilters =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private List<string> _categoryFilterOptions = new List<string>();
+        private List<string> _typeFilterOptions = new List<string>();
         private bool _canRevealAnyTitle;
         private bool _canRevealAnyDescription;
         private bool _canRevealAnyTrophy;
@@ -3949,6 +3950,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 using (Common.PerfScope.Start(_logger, "Editor.RefreshAssignmentState.Options", thresholdMs: 10))
                 {
                     RefreshAssignableCategoryOptions(resolved);
+                    RebuildTypeFilterOptions();
                     SyncTypeOptionsToEditTarget();
                 }
             }
@@ -6064,18 +6066,17 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private GridMultiSelectFilter BuildTypeFilter()
         {
-            // The full vocabulary, as the Categories tab filter offers it: Default so untyped rows
-            // can be found, and the derived Softcore/Hardcore modes. Only the assignment menus
-            // are limited to AssignableCategoryTypes.
+            // The types this game's achievements carry, Default included when any row is untyped,
+            // so no choice filters the grid to nothing.
             return new GridMultiSelectFilter(
                 this,
                 nameof(FilterOptionsChanged),
                 () => GetSelectedFilterText(
                     _selectedTypeFilters,
-                    AchievementCategoryTypeHelper.AllowedCategoryTypes,
+                    _typeFilterOptions,
                     ResourceProvider.GetString("LOCPlayAch_Common_Label_Type"),
                     ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName),
-                () => AchievementCategoryTypeHelper.AllowedCategoryTypes,
+                () => _typeFilterOptions,
                 option => _selectedTypeFilters.Contains(option),
                 (option, isSelected) => ToggleFilter(_selectedTypeFilters, option, isSelected),
                 getDisplayLabel: ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName)
@@ -6251,6 +6252,57 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 NotifyFilterChanged();
                 CategoryFilterSelectionChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the type choices from the rows, in canonical order, and drops ticks on types
+        /// no row carries any more.
+        /// </summary>
+        private void RebuildTypeFilterOptions()
+        {
+            // An empty grid is a load that failed or has not finished, as in
+            // RefreshAssignableCategoryOptions.
+            if (AchievementRows.Count == 0)
+            {
+                return;
+            }
+
+            var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in AchievementRows)
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+
+                var components = AchievementCategoryTypeHelper.GetCanonicalComponents(
+                    row.EffectiveCategoryTypeValue);
+                for (var i = 0; i < components.Count; i++)
+                {
+                    present.Add(components[i]);
+                }
+            }
+
+            var options = AchievementCategoryTypeHelper.AllowedCategoryTypes
+                .Where(present.Contains)
+                .ToList();
+            if (options.SequenceEqual(_typeFilterOptions, StringComparer.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _typeFilterOptions = options;
+            var removed = _selectedTypeFilters.Where(selected => !present.Contains(selected)).ToList();
+            foreach (var stale in removed)
+            {
+                _selectedTypeFilters.Remove(stale);
+            }
+
+            TypeFilter?.Refresh();
+            if (removed.Count > 0)
+            {
+                NotifyFilterChanged();
             }
         }
 
