@@ -706,18 +706,18 @@ namespace PlayniteAchievements.Views.Controls
             for (int i = 0; i < chartValues.Count && i < LegendItems.Count; i++)
             {
                 double sliceArc = (chartValues[i] / totalValue) * 360.0;
-                double midpointAngle = currentAngle + (sliceArc / 2.0);
-                double angleRadians = midpointAngle * Math.PI / 180.0;
-
                 var legend = LegendItems[i];
                 var series = seriesList[i];
+                var slice = GetPieSlice(series);
+                double midpointAngle = SliceMidAngle(slice, currentAngle + (sliceArc / 2.0));
+                double angleRadians = midpointAngle * Math.PI / 180.0;
+
                 var isHighlighted = !string.IsNullOrWhiteSpace(series?.Title) && highlighted.Contains(series.Title);
                 var highlightOffset = isHighlighted ? SliceHighlightOffset : 0.0;
                 var offsetX = highlightOffset * Math.Sin(angleRadians);
                 var offsetY = -highlightOffset * Math.Cos(angleRadians);
 
                 // Collect slice transform data for batch application
-                var slice = GetPieSlice(series);
                 if (slice != null)
                 {
                     sliceTransformData.Add((slice, offsetX, offsetY));
@@ -826,63 +826,53 @@ namespace PlayniteAchievements.Views.Controls
 
         private void UpdateCenterPercentageOffset(IReadOnlyList<PieSeries> seriesList)
         {
-            if (!TryGetRenderedPieBounds(seriesList, out var pieBounds))
+            if (!TryGetPieCenter(seriesList, out var center))
             {
                 ClearCenterPercentageOffset();
                 return;
             }
 
-            CenterPercentageOffsetX = (pieBounds.Left + (pieBounds.Width / 2.0)) - (PieHost.ActualWidth / 2.0);
-            CenterPercentageOffsetY = (pieBounds.Top + (pieBounds.Height / 2.0)) - (PieHost.ActualHeight / 2.0);
+            CenterPercentageOffsetX = center.X - (PieHost.ActualWidth / 2.0);
+            CenterPercentageOffsetY = center.Y - (PieHost.ActualHeight / 2.0);
+        }
+
+        /// <summary>
+        /// The pie's center in PieHost coordinates: LiveCharts draws every slice around its own
+        /// origin and places that origin, via Canvas.Left and Top, at the center. Unlike the
+        /// slices' rendered bounds, this holds before the redrawn slices render and is not
+        /// pulled toward a popped-out slice.
+        /// </summary>
+        private bool TryGetPieCenter(IReadOnlyList<PieSeries> seriesList, out Point center)
+        {
+            center = default(Point);
+            foreach (var series in seriesList ?? Array.Empty<PieSeries>())
+            {
+                var slice = GetPieSlice(series);
+                var left = slice != null ? Canvas.GetLeft(slice) : double.NaN;
+                var top = slice != null ? Canvas.GetTop(slice) : double.NaN;
+                if (double.IsNaN(left) || double.IsNaN(top) || !(VisualTreeHelper.GetParent(slice) is Visual parent))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    center = parent.TransformToAncestor(PieHost).Transform(new Point(left, top));
+                    return true;
+                }
+                catch (InvalidOperationException)
+                {
+                    // Not under PieHost (between a series swap and the next draw).
+                }
+            }
+
+            return false;
         }
 
         private void ClearCenterPercentageOffset()
         {
             CenterPercentageOffsetX = 0;
             CenterPercentageOffsetY = 0;
-        }
-
-        private bool TryGetRenderedPieBounds(IReadOnlyList<PieSeries> seriesList, out Rect pieBounds)
-        {
-            pieBounds = Rect.Empty;
-            if (seriesList == null || seriesList.Count == 0)
-            {
-                return false;
-            }
-
-            foreach (var series in seriesList)
-            {
-                var slice = GetPieSlice(series);
-                if (slice == null)
-                {
-                    continue;
-                }
-
-                Rect bounds;
-                try
-                {
-                    var localBounds = VisualTreeHelper.GetDescendantBounds(slice);
-                    if (localBounds.IsEmpty)
-                    {
-                        continue;
-                    }
-
-                    bounds = slice.TransformToAncestor(PieHost).TransformBounds(localBounds);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                if (slice.RenderTransform is TranslateTransform translate)
-                {
-                    bounds.Offset(-translate.X, -translate.Y);
-                }
-
-                pieBounds = pieBounds.IsEmpty ? bounds : Rect.Union(pieBounds, bounds);
-            }
-
-            return !pieBounds.IsEmpty;
         }
 
         private void ApplySliceTransformsBatch(List<(PieSlice Slice, double OffsetX, double OffsetY)> transformData)
@@ -1152,11 +1142,11 @@ namespace PlayniteAchievements.Views.Controls
                 var series = seriesList[i];
                 var sliceValue = i < chartValues.Count ? chartValues[i] : 0;
                 var sliceArc = (sliceValue / totalValue) * 360.0;
-                var midpointAngle = currentAngle + (sliceArc / 2.0);
+                var slice = GetPieSlice(series);
+                var midpointAngle = SliceMidAngle(slice, currentAngle + (sliceArc / 2.0));
                 var angleRadians = midpointAngle * Math.PI / 180.0;
                 var isHighlighted = !string.IsNullOrWhiteSpace(series.Title) && highlighted.Contains(series.Title);
                 var offset = isHighlighted ? SliceHighlightOffset : 0.0;
-                var slice = GetPieSlice(series);
                 var offsetX = offset * Math.Sin(angleRadians);
                 var offsetY = -offset * Math.Cos(angleRadians);
 
@@ -1174,6 +1164,18 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             ApplyIconOffsets(iconOffsets);
+        }
+
+        /// <summary>
+        /// The middle of a drawn slice, in degrees clockwise from the top: the slice's own angles
+        /// as LiveCharts set them, so a pop-out runs straight out of the slice that is drawn. The
+        /// angle worked out from the values stands in until the slice exists.
+        /// </summary>
+        private static double SliceMidAngle(PieSlice slice, double fallback)
+        {
+            return slice != null && slice.WedgeAngle > 0
+                ? slice.RotationAngle + (slice.WedgeAngle / 2.0)
+                : fallback;
         }
 
         private void ClearSliceTransforms()
