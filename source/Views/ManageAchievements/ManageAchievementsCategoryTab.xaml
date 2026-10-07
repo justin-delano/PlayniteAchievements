@@ -660,7 +660,7 @@
                                         </Border>
 
                                         <Button Grid.Column="0"
-                                                Style="{StaticResource ClearSearchButtonStyle}"
+                                                Style="{StaticResource PlayAch.ThumbnailClearButton.Style}"
                                                 Visibility="{Binding HasArtOverride, Converter={StaticResource BoolToVis}}"
                                                 HorizontalAlignment="Right"
                                                 VerticalAlignment="Top"
