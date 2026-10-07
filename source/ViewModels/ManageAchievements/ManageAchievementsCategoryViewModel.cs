@@ -479,8 +479,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
                     var effectiveCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
                         hasCategoryOverride ? overrideCategory : providerCategory);
-                    var effectiveCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(
-                        hasCategoryTypeOverride ? overrideCategoryType : providerCategoryType);
+                    var effectiveCategoryType = AchievementCategoryTypeHelper.ApplyOverride(
+                        providerCategoryType,
+                        hasCategoryTypeOverride ? overrideCategoryType : null);
 
                     var projected = AchievementDisplayItem.Create(
                         projectionSource,
