@@ -97,9 +97,12 @@ namespace PlayniteAchievements.Views.Showcase
             return string.Equals(projection.LinkedStamp, Stamp(context, sliceKeys, span), StringComparison.Ordinal);
         }
 
-        // The widget's title: the game it is narrowed to, if any.
-        private string ContextLabel(ShowcaseWidgetInstanceSettings widget) =>
-            _overview.GetLinkedContextLabel(LinkRule(widget).Selection);
+        // The widget's title: the game it is narrowed to, else the platforms it is filtered to.
+        private string ContextLabel(ShowcaseWidgetInstanceSettings widget)
+        {
+            var (exclude, selection) = LinkRule(widget);
+            return _overview.GetLinkedContextLabel(exclude, selection);
+        }
 
         private static string Stamp(
             string context,
@@ -131,9 +134,9 @@ namespace PlayniteAchievements.Views.Showcase
                         case ShowcasePieMode.Provider:
                             return (OverviewLinkedFilter.Provider, OverviewLinkedSelection.Ignore);
                         case ShowcasePieMode.Rarity:
-                            return (OverviewLinkedFilter.None, OverviewLinkedSelection.WhenRarityData);
+                            return (OverviewLinkedFilter.Rarity, OverviewLinkedSelection.WhenRarityData);
                         case ShowcasePieMode.Trophy:
-                            return (OverviewLinkedFilter.None, OverviewLinkedSelection.WhenTrophyData);
+                            return (OverviewLinkedFilter.Trophy, OverviewLinkedSelection.WhenTrophyData);
                         default:
                             return (OverviewLinkedFilter.Completeness, OverviewLinkedSelection.Ignore);
                     }
