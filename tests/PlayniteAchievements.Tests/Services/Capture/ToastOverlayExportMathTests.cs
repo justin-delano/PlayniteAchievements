@@ -382,5 +382,52 @@ namespace PlayniteAchievements.Services.Tests.Capture
             Assert.AreEqual(
                 Rectangle.Empty, OverlayBlitMath.ScaleRect(0.0, 0.0, 10, 10, 0, 1080, 960, 540));
         }
+
+        // === Host scale (zoom motion) ===
+
+        private static void AddScaledSample(ToastOverlayTrack track, int elapsedMs, double hostScale)
+        {
+            AddSample(track, elapsedMs);
+            var sample = track.Samples[track.Samples.Count - 1];
+            sample.HostScale = hostScale;
+            track.Samples[track.Samples.Count - 1] = sample;
+        }
+
+        [TestMethod]
+        public void GetHostScale_UnsetSample_ReadsAsOne()
+        {
+            var track = BottomRightTrack();
+            AddSample(track, 0);
+            AddSample(track, 100);
+
+            Assert.AreEqual(1.0, ToastOverlayExportMath.GetHostScale(track, 0, 0.05), 1e-9);
+        }
+
+        [TestMethod]
+        public void GetHostScale_BetweenSamples_Interpolates()
+        {
+            var track = BottomRightTrack();
+            AddScaledSample(track, 0, 0.8);
+            AddScaledSample(track, 100, 1.0);
+
+            Assert.AreEqual(0.9, ToastOverlayExportMath.GetHostScale(track, 0, 0.05), 1e-9);
+        }
+
+        [TestMethod]
+        public void ComputeDestRect_Scaled_ShrinksAboutTheCardCenter()
+        {
+            var full = BottomRightTrack();
+            AddSample(full, 0);
+            var scaled = BottomRightTrack();
+            AddScaledSample(scaled, 0, 0.5);
+
+            var rest = ToastOverlayExportMath.ComputeDestRect(full, 0, 0.0, ClientW, ClientH);
+            var rect = ToastOverlayExportMath.ComputeDestRect(scaled, 0, 0.0, ClientW, ClientH);
+
+            Assert.AreEqual(CardW / 2, rect.Width);
+            Assert.AreEqual(CardH / 2, rect.Height);
+            Assert.AreEqual(rest.X + (rest.Width / 2.0), rect.X + (rect.Width / 2.0), 1.0);
+            Assert.AreEqual(rest.Y + (rest.Height / 2.0), rect.Y + (rect.Height / 2.0), 1.0);
+        }
     }
 }
