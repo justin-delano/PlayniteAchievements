@@ -318,9 +318,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 return list;
             }
 
-            list.Sort(AchievementSortHelper.WithStableOrder(
-                comparison,
-                AchievementSortHelper.CreateStableOrderMap(list)));
+            if (!AchievementSortHelper.IsOrdered(list, comparison))
+            {
+                list.Sort(AchievementSortHelper.WithStableOrder(
+                    comparison,
+                    AchievementSortHelper.CreateStableOrderMap(list)));
+            }
+
             return list;
         }
 
