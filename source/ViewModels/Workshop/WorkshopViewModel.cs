@@ -144,6 +144,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             PreviewCommand = new AsyncCommand(async parameter => await PreviewAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
             OpenFolderCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopItemViewModel ?? SelectedItem)?.FolderUrl));
             ReportCommand = new RelayCommand(parameter => Report(parameter as WorkshopItemViewModel ?? SelectedItem));
+            RemoveCommand = new AsyncCommand(async parameter => await RemoveAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
         }
 
         public ObservableCollection<WorkshopItemViewModel> Items { get; } = new ObservableCollection<WorkshopItemViewModel>();
@@ -162,6 +163,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public AsyncCommand PreviewCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
         public RelayCommand ReportCommand { get; }
+        public AsyncCommand RemoveCommand { get; }
 
         public WorkshopIdentityStore IdentityStore => _identity;
 
@@ -264,6 +266,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 {
                     InstallCommand.RaiseCanExecuteChanged();
                     PreviewCommand.RaiseCanExecuteChanged();
+                    RemoveCommand?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -1081,6 +1084,40 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         // ---- misc --------------------------------------------------------------------------
+
+        /// <summary>Asks the Workshop to take down an item this install published, after a confirmation.</summary>
+        private async Task RemoveAsync(WorkshopItemViewModel row)
+        {
+            if (row == null || IsBusy || !row.IsMine)
+            {
+                return;
+            }
+
+            if (Confirm != null && !Confirm(string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_RemoveConfirm"), row.Name)))
+            {
+                return;
+            }
+
+            IsBusy = true;
+            ErrorMessage = null;
+            try
+            {
+                var receipt = await _plugin.WorkshopShareService.RemoveAsync(row.Kind, row.Id, _lifetime.Token);
+                StatusMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Submitted"), receipt.IssueUrl);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed removing Workshop item {row.Id}.");
+                ErrorMessage = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message);
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
 
         private void Report(WorkshopItemViewModel row)
         {
