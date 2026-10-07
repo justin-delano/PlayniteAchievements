@@ -75,9 +75,10 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Horizontal left indent (DIPs) applied to this line through the ItemsControl item
-        /// container. Drives the name-line offset: a positive offset indents the title line, a
-        /// negative offset indents the remaining lines instead, so the title line (with its inline
-        /// badge) never slides left under the icon column.
+        /// container. Drives the badge-line offset: a positive offset indents the line carrying the
+        /// inline badge (the title line, or the game/category line when the badge sits there), a
+        /// negative offset indents the remaining lines instead, so the badge line never slides left
+        /// under the icon column.
         /// </summary>
         public double LeftIndent { get; set; }
 
@@ -349,12 +350,18 @@ namespace PlayniteAchievements.ViewModels
             Effect textShadow,
             bool showGameName,
             bool showCategory,
-            bool showSeparator)
+            bool showSeparator,
+            bool showInlineBadge,
+            object inlineBadgeSource,
+            double inlineBadgeSize)
             : base(parent, fontSize, fontFamily, textShadow)
         {
             ShowGameName = showGameName;
             ShowCategory = showCategory;
             ShowSeparator = showSeparator;
+            ShowInlineBadge = showInlineBadge;
+            InlineBadgeSource = inlineBadgeSource;
+            InlineBadgeSize = inlineBadgeSize;
         }
 
         public bool ShowGameName { get; }
@@ -362,6 +369,23 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowCategory { get; }
 
         public bool ShowSeparator { get; }
+
+        /// <summary>
+        /// Whether the rarity/trophy badge is drawn inline, immediately before the game name.
+        /// The badge collapses with the row when the row has no content.
+        /// </summary>
+        public bool ShowInlineBadge { get; }
+
+        /// <summary>
+        /// The inline badge image: a path string for the toast (so animated GIFs play) or a
+        /// pre-decoded ImageSource for the offscreen frame render.
+        /// </summary>
+        public object InlineBadgeSource { get; }
+
+        /// <summary>
+        /// Inline badge render size, the same value the title line's inline badge uses.
+        /// </summary>
+        public double InlineBadgeSize { get; }
 
         // The game name, shown when the game-name setting is on. This applies to completion
         // notifications too (the setting governs whether the completed game's name appears).
