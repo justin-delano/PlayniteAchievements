@@ -1,8 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Views.Settings.Navigation;
 
 namespace PlayniteAchievements.Views.Settings.Notifications
@@ -67,6 +69,45 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
             MasterDetail.ItemsSource = _navigationItems;
             MasterDetail.SelectedItem = _navigationItems[0];
+        }
+
+        /// <summary>Selects the navigation item with the given key (e.g. "Appearance").</summary>
+        public void NavigateToPage(string key)
+        {
+            var item = _navigationItems?.FirstOrDefault(x =>
+                string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase));
+            if (item != null)
+            {
+                MasterDetail.SelectedItem = item;
+            }
+        }
+
+        /// <summary>
+        /// Shows the request's page, then on Appearance its platform and surface, and on
+        /// Behavior the unlock sounds picker. Selecting a page creates its section synchronously.
+        /// </summary>
+        internal void NavigateTo(SettingsNavigationRequest request)
+        {
+            if (request == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.PageKey))
+            {
+                NavigateToPage(request.PageKey);
+            }
+
+            if (request.IsFrame.HasValue
+                && string.Equals(request.PageKey, SettingsNavigationRequest.AppearancePage, StringComparison.OrdinalIgnoreCase))
+            {
+                _appearanceSection?.Preselect(request.ProviderKey, request.IsFrame.Value);
+            }
+
+            if (request.ShowSounds)
+            {
+                _behaviorSection?.BringSoundsIntoView();
+            }
         }
 
         public void Dispose()
