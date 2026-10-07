@@ -52,6 +52,14 @@ namespace PlayniteAchievements.Services.Workshop
 
         public Task<WorkshopIndexFile> FetchIndexAsync(CancellationToken cancel) => Task.Run(() => FetchIndexCoreAsync(cancel), cancel);
 
+        /// <summary>
+        /// The index the last successful fetch returned, by any caller (the update check, Browse,
+        /// the Library page), or null before the first. Read where a fetch would be one too many,
+        /// such as the Manage Achievements window telling whether a game's data has an update.
+        /// </summary>
+        public WorkshopIndexFile LastIndex => Volatile.Read(ref _lastIndex);
+
+        private WorkshopIndexFile _lastIndex;
 
         private async Task<WorkshopIndexFile> FetchIndexCoreAsync(CancellationToken cancel)
         {
@@ -74,6 +82,7 @@ namespace PlayniteAchievements.Services.Workshop
                     }
 
                     index.Items.RemoveAll(item => item == null || string.IsNullOrWhiteSpace(item.Id) || item.Package == null);
+                    Volatile.Write(ref _lastIndex, index);
                     return index;
                 }
             }
