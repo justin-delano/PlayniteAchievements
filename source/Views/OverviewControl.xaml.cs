@@ -263,6 +263,23 @@ namespace PlayniteAchievements.Views
             UpdateFriendsClearSelectionState();
         }
 
+        /// <summary>
+        /// Switches to the Showcase on the given page. Before the Showcase exists the page is
+        /// chosen up front, so it is built once, on that page.
+        /// </summary>
+        internal void ShowShowcasePage(string pageId)
+        {
+            var showcase = _settings?.Persisted?.Showcase;
+            if (_showcase == null
+                && showcase?.Pages?.Any(page => string.Equals(page?.PageId, pageId, StringComparison.OrdinalIgnoreCase)) == true)
+            {
+                showcase.LastSelectedPageId = pageId;
+            }
+
+            ActiveSubView = OverviewSubView.Showcase;
+            _showcase?.SelectPageById(pageId);
+        }
+
         private void EnsureShowcaseCreated()
         {
             if (_showcase != null)
