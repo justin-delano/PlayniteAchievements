@@ -42,7 +42,8 @@ namespace PlayniteAchievements.Services.Showcase
 
         /// <summary>
         /// The strip the overview showed before it became editable: the four pies (completions,
-        /// platform, rarity, trophy) at equal widths, then a one-year timeline at the width of two.
+        /// platform, rarity, trophy) at equal widths, then a one-year timeline at the width of two
+        /// with its window picker showing, as the strip's had.
         /// </summary>
         public static ShowcaseSettings CreateDefault()
         {
@@ -57,7 +58,10 @@ namespace PlayniteAchievements.Services.Showcase
                 includeTimeline: true,
                 configurePie: null,
                 configureTimeline: timeline =>
-                    ShowcaseTimelineOptions.SetWindow(timeline, TimeWindow.FromPreset(TimelineRange.OneYear)));
+                {
+                    ShowcaseTimelineOptions.SetWindow(timeline, TimeWindow.FromPreset(TimelineRange.OneYear));
+                    ShowcaseWidgetOptions.SetShowControls(timeline, true);
+                });
         }
 
         /// <summary>
