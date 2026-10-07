@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
+using PlayniteAchievements.Services.Showcase;
 
 namespace PlayniteAchievements.Models.Tests
 {
@@ -131,15 +133,15 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
-        public void CloneAndCopyFrom_PreserveOverviewPieDisplay()
+        public void CloneAndCopyFrom_PreserveOverviewMiniShowcase()
         {
             var source = new PersistedSettings
             {
-                OverviewPieCenterMode = PieCenterMode.Filled,
-                ShowOverviewPieIcons = false,
-                ShowOverviewPieLegend = true,
-                OverviewPieLegendPosition = PieLegendPosition.Left
+                OverviewMiniShowcaseHeight = 300,
+                ShowOverviewMiniShowcase = false
             };
+            var firstPie = source.OverviewMiniShowcase.WidgetInstances.First(widget => widget.Kind == ShowcaseWidgetKind.Pie);
+            ShowcaseWidgetOptions.SetPieMode(firstPie, ShowcasePieMode.Trophy);
 
             var clone = source.Clone();
             var target = new PersistedSettings();
@@ -147,25 +149,44 @@ namespace PlayniteAchievements.Models.Tests
 
             foreach (var copy in new[] { clone, target })
             {
-                Assert.AreEqual(PieCenterMode.Filled, copy.OverviewPieCenterMode);
-                Assert.IsFalse(copy.ShowOverviewPieIcons);
-                Assert.IsTrue(copy.ShowOverviewPieLegend);
-                Assert.AreEqual(PieLegendPosition.Left, copy.OverviewPieLegendPosition);
+                Assert.AreEqual(300d, copy.OverviewMiniShowcaseHeight);
+                Assert.IsFalse(copy.ShowOverviewMiniShowcase);
+                Assert.AreNotSame(source.OverviewMiniShowcase, copy.OverviewMiniShowcase);
+                Assert.AreEqual(
+                    ShowcasePieMode.Trophy,
+                    ShowcaseWidgetOptions.GetPieMode(copy.OverviewMiniShowcase.WidgetInstances
+                        .First(widget => widget.InstanceId == firstPie.InstanceId)));
             }
         }
 
         [TestMethod]
-        public void CloneAndCopyFrom_PreserveOverviewTimelineSplitByPlatform()
+        public void Constructor_DefaultsOverviewMiniShowcaseToTheChartStrip()
         {
-            var source = new PersistedSettings { OverviewTimelineSplitByPlatform = true };
+            var settings = new PersistedSettings();
+            var page = settings.OverviewMiniShowcase.Pages.Single();
+            var kinds = page.Blocks
+                .OrderBy(block => block.Column)
+                .Select(block => settings.OverviewMiniShowcase.WidgetInstances
+                    .Single(widget => widget.InstanceId == block.WidgetInstanceId))
+                .ToList();
 
-            var clone = source.Clone();
-            var target = new PersistedSettings();
-            target.CopyFrom(source);
+            Assert.IsTrue(settings.ShowOverviewMiniShowcase);
+            Assert.AreEqual(225d, settings.OverviewMiniShowcaseHeight);
+            Assert.AreEqual(1, page.RowCount);
+            CollectionAssert.AreEqual(
+                new[] { ShowcasePieMode.CompletedGames, ShowcasePieMode.Provider, ShowcasePieMode.Rarity, ShowcasePieMode.Trophy },
+                kinds.Take(4).Select(ShowcaseWidgetOptions.GetPieMode).ToList());
+            Assert.AreEqual(ShowcaseWidgetKind.Timeline, kinds[4].Kind);
+        }
 
-            Assert.IsFalse(new PersistedSettings().OverviewTimelineSplitByPlatform);
-            Assert.IsTrue(clone.OverviewTimelineSplitByPlatform);
-            Assert.IsTrue(target.OverviewTimelineSplitByPlatform);
+        [TestMethod]
+        public void OverviewMiniShowcaseHeight_ClampsToItsRange()
+        {
+            var settings = new PersistedSettings { OverviewMiniShowcaseHeight = 10 };
+            Assert.AreEqual(OverviewMiniShowcaseLayout.MinHeight, settings.OverviewMiniShowcaseHeight);
+
+            settings.OverviewMiniShowcaseHeight = 5000;
+            Assert.AreEqual(OverviewMiniShowcaseLayout.MaxHeight, settings.OverviewMiniShowcaseHeight);
         }
 
         [TestMethod]
@@ -698,8 +719,6 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), settings.ViewAchievementsTimeWindow);
             Assert.AreEqual(TimelineGranularity.Auto, settings.ViewAchievementsTimelineGranularity);
-            Assert.AreEqual(TimeWindow.FromPreset(TimelineRange.OneYear), settings.OverviewTimeWindow);
-            Assert.AreEqual(TimelineGranularity.Auto, settings.OverviewTimelineGranularity);
             Assert.IsFalse(settings.ViewAchievementsTimelineVisible);
         }
 
@@ -1675,8 +1694,8 @@ namespace PlayniteAchievements.Models.Tests
                 OverviewRecentAchievementsUseCoverImages = false,
                 ShowOverviewCollectionScoreCard = false,
                 ShowOverviewPrestigeScoreCard = false,
-                ShowOverviewPieCharts = false,
-                ShowOverviewBarCharts = false,
+                ShowOverviewMiniShowcase = false,
+                OverviewMiniShowcaseHeight = 400d,
                 ShowOverviewGameMetadataPlatform = false,
                 ShowOverviewGameMetadataPlaytime = false,
                 ShowOverviewGameMetadataRegion = false,
@@ -1784,12 +1803,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.OverviewRecentAchievementsUseCoverImages, settings.OverviewRecentAchievementsUseCoverImages);
             Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);
             Assert.AreEqual(defaults.ShowOverviewPrestigeScoreCard, settings.ShowOverviewPrestigeScoreCard);
-            Assert.AreEqual(defaults.ShowOverviewPieCharts, settings.ShowOverviewPieCharts);
-            Assert.AreEqual(defaults.ShowOverviewGamesPieChart, settings.ShowOverviewGamesPieChart);
-            Assert.AreEqual(defaults.ShowOverviewProviderPieChart, settings.ShowOverviewProviderPieChart);
-            Assert.AreEqual(defaults.ShowOverviewRarityPieChart, settings.ShowOverviewRarityPieChart);
-            Assert.AreEqual(defaults.ShowOverviewTrophyPieChart, settings.ShowOverviewTrophyPieChart);
-            Assert.AreEqual(defaults.ShowOverviewBarCharts, settings.ShowOverviewBarCharts);
+            Assert.AreEqual(defaults.ShowOverviewMiniShowcase, settings.ShowOverviewMiniShowcase);
+            Assert.AreEqual(defaults.OverviewMiniShowcaseHeight, settings.OverviewMiniShowcaseHeight);
             Assert.AreEqual(defaults.ShowOverviewGameMetadataPlatform, settings.ShowOverviewGameMetadataPlatform);
             Assert.AreEqual(defaults.ShowOverviewGameMetadataPlaytime, settings.ShowOverviewGameMetadataPlaytime);
             Assert.AreEqual(defaults.ShowOverviewGameMetadataRegion, settings.ShowOverviewGameMetadataRegion);
