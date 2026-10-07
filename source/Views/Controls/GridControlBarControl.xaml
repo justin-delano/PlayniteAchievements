@@ -521,12 +521,15 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="30"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
+                                <!-- Either end alone makes a one-way range (since a day, or until
+                                     one); each clears on its own. -->
                                 <TextBlock Text="{DynamicResource LOCPlayAch_DateRange_From}"
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            VerticalAlignment="Center"
@@ -536,6 +539,16 @@
                                             SelectedDate="{Binding From, Mode=TwoWay}"
                                             Height="{StaticResource PlayAch.Size.Control.Height}"
                                             Margin="0,0,0,6"/>
+                                <Button Grid.Column="2"
+                                        Style="{StaticResource GridActionButtonStyle}"
+                                        Content="&#x00D7;"
+                                        Click="DateRangeClearFrom_Click"
+                                        Padding="0"
+                                        Width="24"
+                                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                                        Margin="6,0,0,6"
+                                        ToolTip="{DynamicResource LOCPlayAch_Button_Clear}"
+                                        Visibility="{Binding HasFrom, Converter={StaticResource GridControlBarBoolToVis}}"/>
                                 <TextBlock Grid.Row="1"
                                            Text="{DynamicResource LOCPlayAch_DateRange_To}"
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
@@ -546,8 +559,19 @@
                                             Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
                                             SelectedDate="{Binding To, Mode=TwoWay}"
                                             Height="{StaticResource PlayAch.Size.Control.Height}"/>
+                                <Button Grid.Row="1"
+                                        Grid.Column="2"
+                                        Style="{StaticResource GridActionButtonStyle}"
+                                        Content="&#x00D7;"
+                                        Click="DateRangeClearTo_Click"
+                                        Padding="0"
+                                        Width="24"
+                                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                                        Margin="6,0,0,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Button_Clear}"
+                                        Visibility="{Binding HasTo, Converter={StaticResource GridControlBarBoolToVis}}"/>
                                 <Button Grid.Row="2"
-                                        Grid.ColumnSpan="2"
+                                        Grid.ColumnSpan="3"
                                         Style="{StaticResource GridActionButtonStyle}"
                                         Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                         Click="DateRangeClear_Click"
