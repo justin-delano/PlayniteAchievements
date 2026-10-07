@@ -197,6 +197,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (_viewModel != null)
             {
                 _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+                _viewModel.DetachWorkshopSource();
             }
             if (_refreshService != null)
             {
