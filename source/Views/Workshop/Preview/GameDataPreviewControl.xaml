@@ -111,11 +111,12 @@
                                              Visibility="Collapsed"/>
 
         <!-- The after-install category tree, set up as View Achievements' category list:
-             art, leaf names under the tree guide, every node expanded, read-only. Its column
-             key and column set are set in code. -->
+             art, leaf names under the tree guide, every node expanded, read-only. No completion
+             glow: a package carries no progress. Its column key and column set are set in code. -->
         <controls:GameSummariesGridControl x:Name="CategoryGrid"
                                            Grid.Row="3"
                                            PreserveImageResolution="True"
+                                           ShowCompletionGlow="False"
                                            ShowMetadataPlatform="False"
                                            ShowMetadataPlaytime="False"
                                            ShowMetadataRegion="False"
