@@ -47,6 +47,12 @@ namespace PlayniteAchievements.Services.Library
 
         public static string GameData(Guid gameId) => GameDataPrefix + GameToken(gameId);
 
+        /// <summary>True for a game's Workshop data key, whose link names a Workshop item rather than a library item.</summary>
+        public static bool IsGameData(string targetKey)
+        {
+            return TryGetGameId(targetKey, out _) && targetKey.StartsWith(GameDataPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
         /// <summary>
         /// The key of a notification (<paramref name="isFrame"/> false) or frame scope: a game when
         /// <paramref name="gameId"/> is set, else a platform when <paramref name="providerKey"/> is
