@@ -47,11 +47,19 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             private set => SetValue(ref _showControlBar, value);
         }
 
+        public ShowcasePieMode Mode { get; private set; }
+
         protected override void Refresh()
         {
-            ShowControlBar = ShowcaseWidgetOptions.GetPieShowControlBar(Projection?.Instance);
-            var snapshot = ApplyControlBarFilter(Projection?.Snapshot ?? new OverviewDataSnapshot());
+            // A linked pie's snapshot already follows the overview's filters, which replace the
+            // widget's own control bar.
+            var linked = Projection?.IsLinked == true;
+            ShowControlBar = !linked && ShowcaseWidgetOptions.GetPieShowControlBar(Projection?.Instance);
+            var snapshot = linked
+                ? Projection.Snapshot ?? new OverviewDataSnapshot()
+                : ApplyControlBarFilter(Projection?.Snapshot ?? new OverviewDataSnapshot());
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
+            Mode = mode;
             var chart = new PieChartViewModel
             {
                 // Both are applied by each Set*Data call, so they must be assigned before
@@ -134,6 +142,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     break;
             }
 
+            if (linked)
+            {
+                chart.SetSelectedLabels((Projection.LinkedSliceKeys ?? Array.Empty<string>())
+                    .Select(key => LabelForSliceKey(chart, mode, key)));
+            }
+
             // The replaced chart is subscribed to the process-lifetime appearance event, so it
             // must be released explicitly; otherwise every refresh strands one chart view model
             // and its whole series/slice/legend graph in memory for the rest of the session.
@@ -167,6 +181,54 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             return filtered.Count == games.Count
                 ? snapshot
                 : OverviewDataSnapshot.FromGameSummaries(filtered);
+        }
+
+        /// <summary>
+        /// The slice identity behind a clicked label: a provider key for the platform pie, or an
+        /// <see cref="OverviewLinkedSliceKeys"/> value. Null for a slice the overview cannot filter by.
+        /// </summary>
+        public string SliceKeyForLabel(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return null;
+            }
+
+            switch (Mode)
+            {
+                case ShowcasePieMode.Provider:
+                    return string.Equals(label, Localize("LOCPlayAch_Common_Locked"), StringComparison.OrdinalIgnoreCase)
+                        ? OverviewLinkedSliceKeys.Locked
+                        : Chart?.GetProviderKeyFromLabel(label);
+                case ShowcasePieMode.CompletedGames:
+                    if (string.Equals(label, Localize("LOCPlayAch_Completed"), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return OverviewLinkedSliceKeys.Complete;
+                    }
+
+                    return string.Equals(label, Localize("LOCPlayAch_Overview_Incomplete"), StringComparison.OrdinalIgnoreCase)
+                        ? OverviewLinkedSliceKeys.Incomplete
+                        : null;
+                default:
+                    return null;
+            }
+        }
+
+        private static string LabelForSliceKey(PieChartViewModel chart, ShowcasePieMode mode, string key)
+        {
+            switch (mode)
+            {
+                case ShowcasePieMode.Provider:
+                    return chart.GetLabelForProviderKey(key);
+                case ShowcasePieMode.CompletedGames:
+                    return key == OverviewLinkedSliceKeys.Complete
+                        ? Localize("LOCPlayAch_Completed")
+                        : key == OverviewLinkedSliceKeys.Incomplete
+                            ? Localize("LOCPlayAch_Overview_Incomplete")
+                            : null;
+                default:
+                    return null;
+            }
         }
 
         /// <summary>
