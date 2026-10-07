@@ -86,9 +86,13 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 return;
             }
 
+            // New data under the same options goes into the chart already shown: its Set*Data
+            // calls sync the slices and legend in place, where a fresh chart view model hands
+            // the control a new series collection that it redraws (and animates) from nothing.
+            var reuse = Chart != null && string.Equals(optionsKey, _chartOptionsKey, StringComparison.Ordinal);
             _chartSnapshot = linked ? snapshot : null;
             _chartOptionsKey = optionsKey;
-            var chart = new PieChartViewModel
+            var chart = reuse ? Chart : new PieChartViewModel
             {
                 // Both are applied by each Set*Data call, so they must be assigned before
                 // the data.
