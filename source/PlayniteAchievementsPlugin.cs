@@ -882,6 +882,10 @@ namespace PlayniteAchievements
                     _logger.Debug(ex, "Could not stamp the build into the log.");
                 }
 
+                // Before anything reads the library or a preset folder, so the library's first
+                // reconcile sees every preset at its current place.
+                MigrateLibraryFolders(pluginUserDataPath);
+
                 // Phase 1: Load settings and chart plumbing used by theme controls.
                 using (PerfScope.StartStartup(_logger, "PluginCtor.SettingsLoad", thresholdMs: 50))
                 {
@@ -1846,6 +1850,58 @@ namespace PlayniteAchievements
                     _logger?.Error(ex, "Failed to apply auto capstone text templates.");
                 }
             });
+        }
+
+        /// <summary>
+        /// Moves the preset folders and the game data baselines into the library folder and
+        /// removes folders left empty; a no-op once done. See <see cref="Services.Library.LibraryFolderMigration"/>.
+        /// </summary>
+        private void MigrateLibraryFolders(string pluginUserDataPath)
+        {
+            try
+            {
+                var result = Services.Library.LibraryFolderMigration.Run(
+                    pluginUserDataPath,
+                    (ex, message) => _logger?.Warn(ex, "[Library] " + message));
+                if (!result.HasChanges)
+                {
+                    return;
+                }
+
+                foreach (var group in result.Moved.GroupBy(move => System.IO.Path.GetDirectoryName(move.From), StringComparer.OrdinalIgnoreCase))
+                {
+                    _logger?.Info($"[Library] Moved {group.Count()} file(s) from {group.Key} to {System.IO.Path.GetDirectoryName(group.First().To)}.");
+                }
+
+                foreach (var renamed in result.Renamed)
+                {
+                    _logger?.Info($"[Library] Kept both copies of {renamed.From}: the moved file is {renamed.To}.");
+                }
+
+                if (result.RewrittenItems > 0 || result.RewrittenBaselines > 0)
+                {
+                    _logger?.Info($"[Library] Pointed {result.RewrittenItems} library item(s) and {result.RewrittenBaselines} game data baseline(s) at the moved files.");
+                }
+
+                if (result.Failed > 0)
+                {
+                    _logger?.Warn($"[Library] {result.Failed} file(s) could not be moved into the library; the next startup tries again.");
+                }
+
+                if (result.DeletedRetiredInstalls)
+                {
+                    _logger?.Info("[Library] Deleted the retired installed.migrated.json.");
+                }
+
+                if (result.RemovedFolders.Count > 0)
+                {
+                    _logger?.Info($"[Library] Removed empty folder(s): {string.Join(", ", result.RemovedFolders)}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "[Library] Failed moving the preset folders into the library; the next startup tries again.");
+            }
         }
 
         /// <summary>
