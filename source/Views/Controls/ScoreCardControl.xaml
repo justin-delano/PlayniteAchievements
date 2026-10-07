@@ -209,7 +209,9 @@
             </Style>
 
             <!-- One cell per level of the current rank. The negative right margin cancels the
-                 trailing gap of the last segment so the bar ends flush with the text above it. -->
+                 trailing gap of the last segment so the bar ends flush with the text above it.
+                 With the badge on the right the bar fills from the badge too: the cells run
+                 right to left, and the margin (laid out by the parent) flips by hand. -->
             <Style x:Key="ScoreCardSegmentBarStyle" TargetType="ItemsControl">
                 <Setter Property="Height" Value="6"/>
                 <Setter Property="Margin" Value="0,6,-3,0"/>
@@ -220,6 +222,17 @@
                         <Setter Property="Height" Value="8"/>
                         <Setter Property="Margin" Value="0,9,-3,0"/>
                     </DataTrigger>
+                    <DataTrigger Binding="{Binding BadgePosition, ElementName=Root}" Value="{x:Static settings:ScoreCardBadgePosition.Right}">
+                        <Setter Property="FlowDirection" Value="RightToLeft"/>
+                        <Setter Property="Margin" Value="-3,6,0,0"/>
+                    </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding IsFeatured, ElementName=Root}" Value="True"/>
+                            <Condition Binding="{Binding BadgePosition, ElementName=Root}" Value="{x:Static settings:ScoreCardBadgePosition.Right}"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Margin" Value="-3,9,0,0"/>
+                    </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
 
