@@ -50,12 +50,29 @@ namespace PlayniteAchievements.Views.Controls
         private double reservedLegendWidth;
         private double reservedForAvailableWidth = double.NaN;
 
+        // The legend's reserved height is the tallest legend since the panel was loaded, so a
+        // filter that drops legend rows does not shrink the host (the overview's Auto chart row)
+        // and resize every pie. It starts over on Loaded and when the legend is hidden.
+        private double reservedLegendHeight;
+
+        public PieLegendLayoutPanel()
+        {
+            Loaded += (sender, e) =>
+            {
+                reservedLegendHeight = 0;
+                reservedForAvailableWidth = double.NaN;
+                InvalidateMeasure();
+            };
+        }
+
         protected override Size MeasureOverride(Size availableSize)
         {
             var legend = Legend;
             legend?.Measure(availableSize);
             var legendSize = legend?.DesiredSize ?? new Size();
             ReserveLegendWidth(legendSize.Width, availableSize.Width);
+            reservedLegendHeight = legendSize.Width > 0 ? Math.Max(reservedLegendHeight, legendSize.Height) : 0;
+            legendSize = new Size(legendSize.Width, reservedLegendHeight);
             var legendWidth = ResolveLegendWidth(reservedLegendWidth);
             var insets = 2.0 * Math.Max(0, HorizontalInset);
 
