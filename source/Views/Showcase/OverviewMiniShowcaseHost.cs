@@ -48,8 +48,8 @@ namespace PlayniteAchievements.Views.Showcase
 
         public override OverviewDataSnapshot SnapshotFor(ShowcaseWidgetInstanceSettings widget)
         {
-            var (exclude, selection) = LinkRule(widget);
-            return _overview.GetLinkedSnapshot(exclude, selection);
+            var (exclude, selection, countsGames) = LinkRule(widget);
+            return _overview.GetLinkedSnapshot(exclude, selection, countsGames);
         }
 
         public override void Decorate(ShowcaseWidgetProjection projection)
@@ -108,7 +108,7 @@ namespace PlayniteAchievements.Views.Showcase
         // The widget's title: the game it is narrowed to, else the platforms it is filtered to.
         private string ContextLabel(ShowcaseWidgetInstanceSettings widget)
         {
-            var (exclude, selection) = LinkRule(widget);
+            var (exclude, selection, _) = LinkRule(widget);
             return _overview.GetLinkedContextLabel(exclude, selection);
         }
 
@@ -128,10 +128,12 @@ namespace PlayniteAchievements.Views.Showcase
         /// Which filters a widget leaves out and when it follows the selected game: each pie
         /// follows every filter except its own, the rarity and trophy pies switch to the selected
         /// game when it has that data, and the timeline and calendar mark the unlock range they
-        /// set rather than narrowing to it. Every other widget follows the range: to the games
-        /// with unlocks in it, and to those unlocks where it counts achievements.
+        /// set rather than narrowing to it. Every other widget follows the range and the rarity
+        /// and trophy filters: to the games with matching unlocks, and to those unlocks where it
+        /// counts achievements. The platform and completions pies count whole games, so they keep
+        /// every achievement of the games kept, locked ones included.
         /// </summary>
-        private static (OverviewLinkedFilter Exclude, OverviewLinkedSelection Selection) LinkRule(
+        private static (OverviewLinkedFilter Exclude, OverviewLinkedSelection Selection, bool CountsGames) LinkRule(
             ShowcaseWidgetInstanceSettings widget)
         {
             switch (widget?.Kind)
@@ -140,20 +142,20 @@ namespace PlayniteAchievements.Views.Showcase
                     switch (ShowcaseWidgetOptions.GetPieMode(widget))
                     {
                         case ShowcasePieMode.Provider:
-                            return (OverviewLinkedFilter.Provider, OverviewLinkedSelection.Ignore);
+                            return (OverviewLinkedFilter.Provider, OverviewLinkedSelection.Ignore, true);
                         case ShowcasePieMode.Rarity:
-                            return (OverviewLinkedFilter.Rarity, OverviewLinkedSelection.WhenRarityData);
+                            return (OverviewLinkedFilter.Rarity, OverviewLinkedSelection.WhenRarityData, false);
                         case ShowcasePieMode.Trophy:
-                            return (OverviewLinkedFilter.Trophy, OverviewLinkedSelection.WhenTrophyData);
+                            return (OverviewLinkedFilter.Trophy, OverviewLinkedSelection.WhenTrophyData, false);
                         default:
-                            return (OverviewLinkedFilter.Completeness, OverviewLinkedSelection.Ignore);
+                            return (OverviewLinkedFilter.Completeness, OverviewLinkedSelection.Ignore, true);
                     }
 
                 case ShowcaseWidgetKind.Timeline:
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    return (OverviewLinkedFilter.UnlockSpan, OverviewLinkedSelection.Always);
+                    return (OverviewLinkedFilter.UnlockSpan, OverviewLinkedSelection.Always, false);
                 default:
-                    return (OverviewLinkedFilter.None, OverviewLinkedSelection.Always);
+                    return (OverviewLinkedFilter.None, OverviewLinkedSelection.Always, false);
             }
         }
 
