@@ -526,9 +526,28 @@ namespace PlayniteAchievements.ViewModels.Items
                     return from.Value.ToString("d", culture);
                 }
 
-                return (from?.ToString("d", culture) ?? "…") + " – " + (to?.ToString("d", culture) ?? "…");
+                // One-way ranges read as such: everything from a day on, or everything up to one.
+                if (!to.HasValue)
+                {
+                    return string.Format(culture, ResourceProvider.GetString("LOCPlayAch_Filter_SinceDate"), from.Value.ToString("d", culture));
+                }
+
+                if (!from.HasValue)
+                {
+                    return string.Format(culture, ResourceProvider.GetString("LOCPlayAch_Filter_UntilDate"), to.Value.ToString("d", culture));
+                }
+
+                return from.Value.ToString("d", culture) + " – " + to.Value.ToString("d", culture);
             }
         }
+
+        public bool HasFrom => From.HasValue;
+
+        public bool HasTo => To.HasValue;
+
+        public void ClearFrom() => From = null;
+
+        public void ClearTo() => To = null;
 
         public DateTime? From
         {
@@ -573,6 +592,8 @@ namespace PlayniteAchievements.ViewModels.Items
             OnPropertyChanged(nameof(From));
             OnPropertyChanged(nameof(To));
             OnPropertyChanged(nameof(HasRange));
+            OnPropertyChanged(nameof(HasFrom));
+            OnPropertyChanged(nameof(HasTo));
             OnPropertyChanged(nameof(DisplayText));
             OnPropertyChanged(nameof(EffectiveIsVisible));
         }
