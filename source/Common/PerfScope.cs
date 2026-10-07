@@ -18,8 +18,8 @@ namespace PlayniteAchievements.Common
         /// </summary>
         internal const string TracingOptInFileName = "perftrace.enabled";
 
-        // Diagnostic toggle for perf tracing. A Debug build traces unconditionally; a Release
-        // build traces only when the opt-in file above is present.
+        // Diagnostic toggle for perf tracing. Debug and Release builds alike trace only when the
+        // opt-in file above is present, so one file switches it for whichever build is running.
         //
         // This used to be a hand-flipped constant with a "set this back to false before packing a
         // release" note, and it shipped on. That is expensive, not merely chatty:
@@ -33,17 +33,11 @@ namespace PlayniteAchievements.Common
         //     developer-only main-menu item that would otherwise be hidden from users.
         //
         // Runtime-evaluated (never a const) so branches are not constant-folded away.
-        internal static bool PerfTracingEnabled { get; private set; } =
-#if DEBUG
-            true;
-#else
-            false;
-#endif
+        internal static bool PerfTracingEnabled { get; private set; }
 
         /// <summary>
-        /// Arms tracing for a Release build when the opt-in marker file is present in the
-        /// plugin's user data folder. Call once at startup, before the first scope. A Debug
-        /// build is already on and is left alone; a probe failure leaves tracing off.
+        /// Arms tracing when the opt-in marker file is present in the plugin's user data folder.
+        /// Call once at startup, before the first scope. A probe failure leaves tracing off.
         /// </summary>
         public static void ConfigureTracing(string pluginUserDataPath)
         {
