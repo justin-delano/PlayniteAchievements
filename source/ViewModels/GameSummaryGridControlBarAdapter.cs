@@ -11,8 +11,9 @@ using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public sealed class GameSummaryGridControlBarAdapter : SharedControlBarAdapter
+    public class GameSummaryGridControlBarAdapter : SharedControlBarAdapter
     {
+        private readonly bool _chartFilters;
         private readonly SearchTextIndex<GameSummaryItem> _searchIndex =
             new SearchTextIndex<GameSummaryItem>(item =>
                 SearchTextBuilder.ForGameSummary(item?.GameName));
@@ -26,13 +27,21 @@ namespace PlayniteAchievements.ViewModels
             new ObservableCollection<ProviderFilterGroup>();
 
         public GameSummaryGridControlBarAdapter()
+            : this(chartFilters: false)
         {
-            ProgressFilterOptions = new ObservableCollection<string>
-            {
-                CompleteLabel,
-                InProgressLabel,
-                NoProgressLabel
-            };
+        }
+
+        /// <param name="chartFilters">
+        /// The reduced bar for distribution charts: platform, plus progress limited to Complete
+        /// and In Progress. Search, No Progress and activity are left out, and their saved state
+        /// is not restored.
+        /// </param>
+        protected GameSummaryGridControlBarAdapter(bool chartFilters)
+        {
+            _chartFilters = chartFilters;
+            ProgressFilterOptions = chartFilters
+                ? new ObservableCollection<string> { CompleteLabel, InProgressLabel }
+                : new ObservableCollection<string> { CompleteLabel, InProgressLabel, NoProgressLabel };
             ActivityFilterOptions = new ObservableCollection<string>
             {
                 PlayedLabel,
@@ -165,10 +174,13 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            _searchText = state.SearchText ?? string.Empty;
+            _searchText = _chartFilters ? string.Empty : state.SearchText ?? string.Empty;
             PendingPlatformSelections = state.Platforms;
             RestorePositions(ProgressFilterOptions, _selectedProgressFilters, state.Progress);
-            RestorePositions(ActivityFilterOptions, _selectedActivityFilters, state.Activity);
+            RestorePositions(
+                ActivityFilterOptions,
+                _selectedActivityFilters,
+                _chartFilters ? null : state.Activity);
             OnPropertyChanged(nameof(SearchText));
             OnPropertyChanged(nameof(SelectedProgressFilterText));
             OnPropertyChanged(nameof(SelectedActivityFilterText));
@@ -254,13 +266,15 @@ namespace PlayniteAchievements.ViewModels
         {
             var controlBar = new GridControlBarViewModel
             {
-                Search = new GridSearchControl(
-                    this,
-                    nameof(SearchText),
-                    () => SearchText,
-                    value => SearchText = value,
-                    L("LOCPlayAch_Filter_Games"),
-                    () => SearchText = string.Empty)
+                Search = _chartFilters
+                    ? null
+                    : new GridSearchControl(
+                        this,
+                        nameof(SearchText),
+                        () => SearchText,
+                        value => SearchText = value,
+                        L("LOCPlayAch_Filter_Games"),
+                        () => SearchText = string.Empty)
             };
             controlBar.Items.Add(new GridProviderPlatformFilter(
                 this,
@@ -281,6 +295,11 @@ namespace PlayniteAchievements.ViewModels
             {
                 Width = 170
             });
+            if (_chartFilters)
+            {
+                return controlBar;
+            }
+
             controlBar.Items.Add(new GridMultiSelectFilter(
                 this,
                 nameof(SelectedActivityFilterText),
