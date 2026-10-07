@@ -109,6 +109,13 @@
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                         <Border Style="{StaticResource LibraryTagStyle}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Mine}"
+                                       Style="{StaticResource LibraryTagTextStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
+                        </Border>
+                        <Border Style="{StaticResource LibraryTagStyle}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.AuthSuccess}"
                                 Visibility="{Binding IsInUse, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Library_Applied}"
@@ -339,7 +346,8 @@
                                    TextWrapping="Wrap"
                                    Visibility="{Binding HasUses, Converter={StaticResource InverseBoolToVis}}"/>
 
-                        <!-- Actions as icon buttons: update (download), reinstall (refresh), export or
+                        <!-- Actions as icon buttons: update (download), reinstall (refresh), open on
+                             GitHub (external link, for an item this install published), export or
                              share (upload, the shared two-way menu), rename (edit), delete. -->
                         <WrapPanel Margin="0,16,0,0">
                             <Button Content="&#xEF08;"
@@ -354,6 +362,12 @@
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_Reinstall}"
                                     Visibility="{Binding IsWorkshop, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.ReinstallCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <Button Content="&#xEF1F;"
+                                    Style="{StaticResource LibraryIconButtonStyle}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
+                                    Visibility="{Binding HasPublishedUrl, Converter={StaticResource BoolToVis}}"
+                                    Command="{Binding DataContext.OpenPublishedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="&#xF01C;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExportButton}"
