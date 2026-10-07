@@ -3519,6 +3519,12 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
+            // The Achievements grid shows the achievements of the games listed here, so it follows.
+            if (!IsGameSelected)
+            {
+                ApplyRightFilters();
+            }
+
             InvalidateLinkedSnapshots();
         }
 
@@ -3648,7 +3654,7 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 _filteredRecentAchievements = OverviewAchievementFilters.FilterRecentAchievements(
-                    ApplyAchievementFilters(_allRecentAchievements),
+                    KeepGamesGridGames(ApplyAchievementFilters(_allRecentAchievements)),
                     string.Empty);
 
                 if (searchQuery.HasValue)
