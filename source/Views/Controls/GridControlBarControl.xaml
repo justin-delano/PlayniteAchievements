@@ -490,26 +490,39 @@
                         Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
             </DataTemplate>
 
-            <!-- An externally set filter: the toggle filter's selected look, so it reads as an
-                 active filter, with a close mark; a click clears it. -->
-            <DataTemplate DataType="{x:Type vm:GridDismissChip}">
-                <ToggleButton Style="{StaticResource GridToggleFilterButtonStyle}"
-                              IsChecked="{Binding IsActive, Mode=OneWay}"
-                              Click="DismissChip_Click"
-                              Height="{StaticResource PlayAch.Size.Control.Height}"
-                              Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                              VerticalAlignment="Center"
-                              ToolTip="{Binding ToolTip}"
-                              Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Content}"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="&#x00D7;"
-                                   Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </ToggleButton>
+            <!-- A from-to day range: the plugin's themed date pickers either side of a dash, and a
+                 clear button while either end is set. An empty end leaves that side open. -->
+            <DataTemplate DataType="{x:Type vm:GridDateRangeFilter}">
+                <StackPanel Orientation="Horizontal"
+                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
+                    <DatePicker Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
+                                SelectedDate="{Binding From, Mode=TwoWay}"
+                                ToolTip="{DynamicResource LOCPlayAch_DateRange_From}"
+                                Height="{StaticResource PlayAch.Size.Control.Height}"
+                                Width="122"
+                                VerticalAlignment="Center"/>
+                    <TextBlock Text="&#x2013;"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Margin="6,0"
+                               VerticalAlignment="Center"/>
+                    <DatePicker Style="{DynamicResource PlayAch.DatePicker.BaseStyle}"
+                                SelectedDate="{Binding To, Mode=TwoWay}"
+                                ToolTip="{DynamicResource LOCPlayAch_DateRange_To}"
+                                Height="{StaticResource PlayAch.Size.Control.Height}"
+                                Width="122"
+                                VerticalAlignment="Center"/>
+                    <Button Style="{StaticResource GridActionButtonStyle}"
+                            Content="&#x00D7;"
+                            Click="DateRangeClear_Click"
+                            Height="{StaticResource PlayAch.Size.Control.Height}"
+                            Padding="8,0"
+                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                            VerticalAlignment="Center"
+                            ToolTip="{DynamicResource LOCPlayAch_Button_Clear}"
+                            Visibility="{Binding HasRange, Converter={StaticResource GridControlBarBoolToVis}}"/>
+                </StackPanel>
             </DataTemplate>
 
             <DataTemplate DataType="{x:Type vm:GridModeToggle}">
