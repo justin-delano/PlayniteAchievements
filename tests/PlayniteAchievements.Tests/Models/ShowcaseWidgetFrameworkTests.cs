@@ -91,6 +91,17 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void PieShowControlBar_DefaultsOffAndRoundTrips()
+        {
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Pie };
+            Assert.IsFalse(ShowcaseWidgetOptions.GetPieShowControlBar(instance));
+
+            ShowcaseWidgetOptions.SetPieShowControlBar(instance, true);
+
+            Assert.IsTrue(ShowcaseWidgetOptions.GetPieShowControlBar(instance));
+        }
+
+        [TestMethod]
         public void PieCenterMode_DefaultsToPercentage()
         {
             Assert.AreEqual(
