@@ -2286,10 +2286,10 @@ namespace PlayniteAchievements.Services.UI
 
             var waveIsTestFire = wave[0].IsTestFire;
             _activeToastThemeStylingEnabled = wave[0].ToastUseThemeStyling;
-            // Resolve the corner once for this wave: a theme override wins, otherwise the plugin
-            // setting. Positioning (including the per-frame game-window follow) and slide direction
-            // both read the resolved value.
-            _activePosition = EffectivePosition();
+            // Resolve the corner once for this wave: the style's position, else a theme override,
+            // else the plugin setting. Positioning (including the per-frame game-window follow) and
+            // slide direction both read the resolved value.
+            _activePosition = EffectivePosition(wave[0].MotionSurface);
             // Same reason, and the reason it is here rather than at the slides: resolving the themeable
             // slide storyboards reaches the filesystem and the resource dictionaries, and doing that
             // inside SlideInPhysical/SlideOutPhysical put it on the UI thread on the very frame the
@@ -5154,12 +5154,18 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// The corner the toast uses: a theme override (string resource
-        /// <see cref="AchievementToastTemplateResolver.PositionResourceKey"/>, e.g. "TopRight") when
-        /// present and valid, otherwise the plugin's ToastPosition setting.
+        /// The corner the toast uses: the scope style's position when set, then a theme override
+        /// (string resource <see cref="AchievementToastTemplateResolver.PositionResourceKey"/>, e.g.
+        /// "TopRight") when present and valid, otherwise the plugin's ToastPosition setting.
         /// </summary>
-        private ToastScreenCorner EffectivePosition()
+        private ToastScreenCorner EffectivePosition(NotificationSurfaceStyle scopeToast)
         {
+            var styled = scopeToast?.Position;
+            if (styled.HasValue && Enum.IsDefined(typeof(ToastScreenCorner), styled.Value))
+            {
+                return styled.Value;
+            }
+
             var setting = _settings?.Persisted?.ToastPosition ?? ToastScreenCorner.BottomRight;
             try
             {
