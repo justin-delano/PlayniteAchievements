@@ -189,40 +189,13 @@ namespace PlayniteAchievements.Services.Hydration
             }
         }
 
-        private static string ResolveIconOverridePath(
-            string path,
-            string gameIdText,
-            ManagedCustomIconService managedCustomIconService) =>
-            AchievementIconOverrideHelper.ResolveOverridePath(path, gameIdText, managedCustomIconService);
-
         private static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
             IReadOnlyDictionary<string, CategoryImageOverrideData> source,
-            Guid gameId)
-        {
-            var result = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
-            if (source == null)
-            {
-                return result;
-            }
-
-            var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
-            var gameIdText = gameId.ToString("D");
-            foreach (var pair in source)
-            {
-                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
-                if (string.IsNullOrWhiteSpace(category) || pair.Value == null)
-                {
-                    continue;
-                }
-
-                result[category] = new CategoryImageOverrideData
-                {
-                    Art = ResolveIconOverridePath(pair.Value.Art, gameIdText, managedCustomIconService)
-                };
-            }
-
-            return result;
-        }
+            Guid gameId) =>
+            AchievementIconOverrideHelper.ResolveCategoryImageOverrides(
+                source,
+                gameId,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService);
 
         private static string NormalizeText(string value)
         {
