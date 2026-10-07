@@ -1625,13 +1625,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">Uploading {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. It appears in the Workshop once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Mine">Mine</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_MySubmissions">My submissions</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_NoSubmissions">You have not shared anything yet.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Status_Validating">Checking</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Status_NeedsChanges">Needs changes</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Status_InReview">In review</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Status_Published">Published</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Status_Closed">Closed</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_Before">Before</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_After">After</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_ShowUnchanged">Show unchanged achievements</sys:String>
