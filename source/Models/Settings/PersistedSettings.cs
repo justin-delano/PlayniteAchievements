@@ -194,23 +194,10 @@ namespace PlayniteAchievements.Models.Settings
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
         private bool _showOverviewPrestigeScoreCard = true;
-        private bool _showOverviewPieCharts = true;
-        private bool _showOverviewGamesPieChart = true;
-        private bool _showOverviewProviderPieChart = true;
-        private bool _showOverviewRarityPieChart = true;
-        private bool _showOverviewTrophyPieChart = true;
-        private PieCenterMode _overviewPieCenterMode = PieCenterMode.Percentage;
-        private bool _showOverviewPieIcons = true;
-        private bool _showOverviewPieLegend;
-        private PieLegendPosition _overviewPieLegendPosition = PieLegendPosition.Right;
         private ScoreCardBadgePosition _overviewCollectionBadgePosition = ScoreCardBadgePosition.Left;
         private ScoreCardBadgePosition _overviewPrestigeBadgePosition = ScoreCardBadgePosition.Left;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
-        private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
-        private bool _overviewPieIncludeLocked = true;
-        private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
-        private bool _showOverviewBarCharts = true;
         private bool _showTopMenuBarButton = true;
         private bool _showCompletedProgressColoring = true;
         private bool _tintMissableLocks = true;
@@ -263,9 +250,6 @@ namespace PlayniteAchievements.Models.Settings
         private double _friendsOverviewGameColumnRatio = DefaultFriendsOverviewGameColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
-        private TimeWindow _overviewTimeWindow = TimeWindow.FromPreset(TimelineRange.OneYear);
-        private TimelineGranularity _overviewTimelineGranularity = TimelineGranularity.Auto;
-        private bool _overviewTimelineSplitByPlatform;
         private TimeWindow _viewAchievementsTimeWindow = TimeWindow.FromPreset(TimelineRange.OneYear);
         private TimelineGranularity _viewAchievementsTimelineGranularity = TimelineGranularity.Auto;
         private bool _viewAchievementsTimelineVisible = false;
@@ -2308,122 +2292,6 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Legacy aggregate toggle for overview pie charts.
-        /// New builds use per-chart visibility settings, but this is preserved for migration.
-        /// </summary>
-        public bool ShowOverviewPieCharts
-        {
-            get => _showOverviewPieCharts;
-            set
-            {
-                if (_showOverviewPieCharts == value)
-                {
-                    return;
-                }
-
-                SetValue(ref _showOverviewPieCharts, value);
-                if (_overviewPieChartVisibilityInitializedFromIndividualSettings)
-                {
-                    return;
-                }
-
-                ShowOverviewGamesPieChart = value;
-                ShowOverviewProviderPieChart = value;
-                ShowOverviewRarityPieChart = value;
-                ShowOverviewTrophyPieChart = value;
-            }
-        }
-
-        /// <summary>
-        /// When true, shows the completed-games pie chart in the overview.
-        /// </summary>
-        public bool ShowOverviewGamesPieChart
-        {
-            get => _showOverviewGamesPieChart;
-            set
-            {
-                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showOverviewGamesPieChart, value);
-            }
-        }
-
-        /// <summary>
-        /// When true, shows the platform/provider pie chart in the overview.
-        /// </summary>
-        public bool ShowOverviewProviderPieChart
-        {
-            get => _showOverviewProviderPieChart;
-            set
-            {
-                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showOverviewProviderPieChart, value);
-            }
-        }
-
-        /// <summary>
-        /// When true, shows the rarity pie chart in the overview.
-        /// </summary>
-        public bool ShowOverviewRarityPieChart
-        {
-            get => _showOverviewRarityPieChart;
-            set
-            {
-                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showOverviewRarityPieChart, value);
-            }
-        }
-
-        /// <summary>
-        /// When true, shows the trophy pie chart in the overview.
-        /// </summary>
-        public bool ShowOverviewTrophyPieChart
-        {
-            get => _showOverviewTrophyPieChart;
-            set
-            {
-                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showOverviewTrophyPieChart, value);
-            }
-        }
-
-        /// <summary>
-        /// What overview pie charts draw in their center: the unlocked percentage, nothing,
-        /// or no hole at all.
-        /// </summary>
-        public PieCenterMode OverviewPieCenterMode
-        {
-            get => _overviewPieCenterMode;
-            set => SetValue(ref _overviewPieCenterMode, value);
-        }
-
-        /// <summary>
-        /// When true, shows the radial icons around the slices of overview pie charts.
-        /// </summary>
-        public bool ShowOverviewPieIcons
-        {
-            get => _showOverviewPieIcons;
-            set => SetValue(ref _showOverviewPieIcons, value);
-        }
-
-        /// <summary>
-        /// When true, overview pie charts draw a legend beside the pie.
-        /// </summary>
-        public bool ShowOverviewPieLegend
-        {
-            get => _showOverviewPieLegend;
-            set => SetValue(ref _showOverviewPieLegend, value);
-        }
-
-        /// <summary>
-        /// Which side of each overview pie its legend sits on.
-        /// </summary>
-        public PieLegendPosition OverviewPieLegendPosition
-        {
-            get => _overviewPieLegendPosition;
-            set => SetValue(ref _overviewPieLegendPosition, value);
-        }
-
-        /// <summary>
         /// Which side of the overview header Collection score card its badge sits on.
         /// </summary>
         public ScoreCardBadgePosition OverviewCollectionBadgePosition
@@ -2439,37 +2307,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _overviewPrestigeBadgePosition;
             set => SetValue(ref _overviewPrestigeBadgePosition, value);
-        }
-
-        /// <summary>
-        /// Determines how overview pie charts handle slices below five percent.
-        /// </summary>
-        public OverviewPieSmallSliceMode OverviewPieSmallSliceMode
-        {
-            get => _overviewPieSmallSliceMode;
-            set => SetValue(ref _overviewPieSmallSliceMode, value);
-        }
-
-        /// <summary>
-        /// When true, the overview rarity, provider and trophy pies draw a trailing locked
-        /// slice. The completions pie is unaffected: its trailing slice counts unfinished games,
-        /// not locked achievements. Hiding the locked slice also hides the centre percentage,
-        /// which measures unlocked against a total the pie would no longer show.
-        /// </summary>
-        public bool OverviewPieIncludeLocked
-        {
-            get => _overviewPieIncludeLocked;
-            set => SetValue(ref _overviewPieIncludeLocked, value);
-        }
-
-        /// <summary>
-        /// When true, shows the timeline bar chart at the bottom of the right overview.
-        /// When false, the achievements list takes the full space.
-        /// </summary>
-        public bool ShowOverviewBarCharts
-        {
-            get => _showOverviewBarCharts;
-            set => SetValue(ref _showOverviewBarCharts, value);
         }
 
         /// <summary>
@@ -3015,31 +2852,6 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Last selected window for the overview achievements-over-time chart: a rolling preset or
-        /// a custom date range. Legacy integer <c>OverviewTimelineRange</c> values are read by the converter.
-        /// </summary>
-        [JsonConverter(typeof(TimeWindowJsonConverter))]
-        public TimeWindow OverviewTimeWindow
-        {
-            get => _overviewTimeWindow;
-            set => SetValue(ref _overviewTimeWindow, value ?? TimeWindow.FromPreset(TimelineRange.OneYear));
-        }
-
-        /// <summary>Bar-width override for the overview achievements-over-time chart.</summary>
-        public TimelineGranularity OverviewTimelineGranularity
-        {
-            get => _overviewTimelineGranularity;
-            set => SetValue(ref _overviewTimelineGranularity, value);
-        }
-
-        /// <summary>Splits each overview timeline bar into one stacked segment per platform.</summary>
-        public bool OverviewTimelineSplitByPlatform
-        {
-            get => _overviewTimelineSplitByPlatform;
-            set => SetValue(ref _overviewTimelineSplitByPlatform, value);
-        }
-
-        /// <summary>
         /// Last selected window for the single-game achievements window timeline chart.
         /// </summary>
         [JsonConverter(typeof(TimeWindowJsonConverter))]
@@ -3518,20 +3330,8 @@ namespace PlayniteAchievements.Models.Settings
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
                 ShowOverviewPrestigeScoreCard = this.ShowOverviewPrestigeScoreCard,
-                ShowOverviewPieCharts = this.ShowOverviewPieCharts,
-                ShowOverviewGamesPieChart = this.ShowOverviewGamesPieChart,
-                ShowOverviewProviderPieChart = this.ShowOverviewProviderPieChart,
-                ShowOverviewRarityPieChart = this.ShowOverviewRarityPieChart,
-                ShowOverviewTrophyPieChart = this.ShowOverviewTrophyPieChart,
-                OverviewPieCenterMode = this.OverviewPieCenterMode,
-                ShowOverviewPieIcons = this.ShowOverviewPieIcons,
-                ShowOverviewPieLegend = this.ShowOverviewPieLegend,
-                OverviewPieLegendPosition = this.OverviewPieLegendPosition,
                 OverviewCollectionBadgePosition = this.OverviewCollectionBadgePosition,
                 OverviewPrestigeBadgePosition = this.OverviewPrestigeBadgePosition,
-                OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
-                OverviewPieIncludeLocked = this.OverviewPieIncludeLocked,
-                ShowOverviewBarCharts = this.ShowOverviewBarCharts,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompletedProgressColoring = this.ShowCompletedProgressColoring,
                 TintMissableLocks = this.TintMissableLocks,
@@ -3595,9 +3395,6 @@ namespace PlayniteAchievements.Models.Settings
                         kvp => kvp.Value?.Clone(),
                         StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase),
-                OverviewTimeWindow = this.OverviewTimeWindow,
-                OverviewTimelineGranularity = this.OverviewTimelineGranularity,
-                OverviewTimelineSplitByPlatform = this.OverviewTimelineSplitByPlatform,
                 ViewAchievementsTimeWindow = this.ViewAchievementsTimeWindow,
                 ViewAchievementsTimelineGranularity = this.ViewAchievementsTimelineGranularity,
                 ViewAchievementsTimelineVisible = this.ViewAchievementsTimelineVisible,
@@ -3701,20 +3498,8 @@ namespace PlayniteAchievements.Models.Settings
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
-            ShowOverviewPieCharts = defaults.ShowOverviewPieCharts;
-            ShowOverviewGamesPieChart = defaults.ShowOverviewGamesPieChart;
-            ShowOverviewProviderPieChart = defaults.ShowOverviewProviderPieChart;
-            ShowOverviewRarityPieChart = defaults.ShowOverviewRarityPieChart;
-            ShowOverviewTrophyPieChart = defaults.ShowOverviewTrophyPieChart;
-            OverviewPieCenterMode = defaults.OverviewPieCenterMode;
-            ShowOverviewPieIcons = defaults.ShowOverviewPieIcons;
-            ShowOverviewPieLegend = defaults.ShowOverviewPieLegend;
-            OverviewPieLegendPosition = defaults.OverviewPieLegendPosition;
             OverviewCollectionBadgePosition = defaults.OverviewCollectionBadgePosition;
             OverviewPrestigeBadgePosition = defaults.OverviewPrestigeBadgePosition;
-            OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
-            OverviewPieIncludeLocked = defaults.OverviewPieIncludeLocked;
-            ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
             ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
             ShowCompletedProgressColoring = defaults.ShowCompletedProgressColoring;
             TintMissableLocks = defaults.TintMissableLocks;
