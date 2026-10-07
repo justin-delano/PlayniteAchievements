@@ -316,23 +316,38 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
-        /// Schedule position calculation to run after LiveCharts completes rendering.
-        /// Multiple calls are deduplicated to a single calculation.
+        /// Schedules the icon, center percentage and slice offset positions. Multiple calls are
+        /// deduplicated to a single calculation.
         /// </summary>
-        private void ScheduleCalculation()
+        /// <remarks>
+        /// Runs at DataBind, ahead of the next render, so new slices, their icons and the center
+        /// percentage appear in the same frame. After new values the chart is redrawn first
+        /// rather than left to LiveCharts' own timer, because the slice offsets are applied to
+        /// the slices it draws. Waiting for an idle pass instead put the icons a frame or more
+        /// behind the slices, and behind any filter pass queued meanwhile.
+        /// </remarks>
+        private void ScheduleCalculation(bool dataChanged = false)
         {
+            chartDataChanged |= dataChanged;
             if (calculationScheduled)
             {
                 return;
             }
             calculationScheduled = true;
-            // Use ContextIdle to ensure we run after LiveCharts render pass completes
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ContextIdle, new Action(() =>
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.DataBind, new Action(() =>
             {
                 calculationScheduled = false;
+                if (chartDataChanged && IsLoaded)
+                {
+                    chartDataChanged = false;
+                    Chart.Update(false, true);
+                }
+
                 CalculatePositions();
             }));
         }
+
+        private bool chartDataChanged;
 
         private static void OnPieSeriesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -347,7 +362,7 @@ namespace PlayniteAchievements.Views.Controls
                 newSeries.CollectionChanged += control.OnSeriesCollectionChanged;
                 control.SubscribeToSeries(newSeries);
             }
-            control.ScheduleCalculation();
+            control.ScheduleCalculation(dataChanged: true);
         }
 
         private void UnsubscribeFromSeries()
@@ -391,14 +406,14 @@ namespace PlayniteAchievements.Views.Controls
             if (e.PropertyName == "Values")
             {
                 RefreshSliceDataSubscriptions();
-                ScheduleCalculation();
+                ScheduleCalculation(dataChanged: true);
             }
         }
 
         private void OnChartValuesChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             RefreshSliceDataSubscriptions();
-            ScheduleCalculation();
+            ScheduleCalculation(dataChanged: true);
         }
 
         private static void OnLegendItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -542,7 +557,7 @@ namespace PlayniteAchievements.Views.Controls
             {
                 SubscribeToSeries(PieSeries);
             }
-            ScheduleCalculation();
+            ScheduleCalculation(dataChanged: true);
         }
 
         private void OnLegendItemsCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -588,7 +603,7 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnSliceDataPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            ScheduleCalculation();
+            ScheduleCalculation(dataChanged: true);
         }
 
         private void RefreshLegendItemSubscriptions()
