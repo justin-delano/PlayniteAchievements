@@ -482,46 +482,71 @@ namespace PlayniteAchievements.ViewModels.Items
         }
     }
 
-    // An active filter set from outside the bar (e.g. a timeline bar clicked in the overview's
-    // mini-showcase), shown as a selected chip that clears the filter when clicked. Hidden while
-    // the filter is inactive.
-    public sealed class GridDismissChip : GridControlBarItem
+    // A from-to day range in the control bar, always shown. Either end may be left empty for an
+    // open range; both empty means no range. The owner holds the dates, so a range set elsewhere
+    // (a timeline column clicked in the overview's mini-showcase) shows here too.
+    public sealed class GridDateRangeFilter : GridControlBarItem
     {
-        private readonly Func<string> _getContent;
-        private readonly Func<bool> _getIsActive;
-        private readonly Action _dismiss;
+        private readonly Func<DateTime?> _getFrom;
+        private readonly Func<DateTime?> _getTo;
+        private readonly Action<DateTime?, DateTime?> _set;
 
-        public GridDismissChip(
+        public GridDateRangeFilter(
             INotifyPropertyChanged source,
             string sourcePropertyName,
-            Func<string> getContent,
-            Func<bool> getIsActive,
-            Action dismiss,
-            string toolTip = null)
+            Func<DateTime?> getFrom,
+            Func<DateTime?> getTo,
+            Action<DateTime?, DateTime?> set)
         {
-            _getContent = getContent;
-            _getIsActive = getIsActive;
-            _dismiss = dismiss;
-            ToolTip = toolTip;
+            _getFrom = getFrom;
+            _getTo = getTo;
+            _set = set;
             GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
         }
 
-        public string Content => _getContent?.Invoke() ?? string.Empty;
-
-        public bool IsActive => _getIsActive?.Invoke() == true;
-
-        protected override bool HasAvailableAction => IsActive;
-
-        public void Dismiss()
+        public DateTime? From
         {
-            _dismiss?.Invoke();
+            get => _getFrom?.Invoke();
+            set
+            {
+                if (Nullable.Equals(From, value?.Date))
+                {
+                    return;
+                }
+
+                _set?.Invoke(value?.Date, To);
+                Refresh();
+            }
+        }
+
+        public DateTime? To
+        {
+            get => _getTo?.Invoke();
+            set
+            {
+                if (Nullable.Equals(To, value?.Date))
+                {
+                    return;
+                }
+
+                _set?.Invoke(From, value?.Date);
+                Refresh();
+            }
+        }
+
+        public bool HasRange => From.HasValue || To.HasValue;
+
+        public void Clear()
+        {
+            _set?.Invoke(null, null);
             Refresh();
         }
 
         public override void Refresh()
         {
-            OnPropertyChanged(nameof(Content));
-            OnPropertyChanged(nameof(IsActive));
+            OnPropertyChanged(nameof(From));
+            OnPropertyChanged(nameof(To));
+            OnPropertyChanged(nameof(HasRange));
             OnPropertyChanged(nameof(EffectiveIsVisible));
         }
     }
