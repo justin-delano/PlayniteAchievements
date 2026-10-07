@@ -34,9 +34,11 @@
                             BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                             CornerRadius="3">
                         <Grid>
+                            <!-- Uniform: the whole cover or preview fits the box (a tall game data
+                                 grid or a wide banner would lose its edges to a fill). -->
                             <Image helpers:AsyncImage.Uri="{Binding ThumbnailPath}"
                                    helpers:AsyncImage.DecodePixel="144"
-                                   Stretch="UniformToFill"
+                                   Stretch="Uniform"
                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                             <controls:GlyphIcon Glyph="{Binding KindGlyph}"
                                                 FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
