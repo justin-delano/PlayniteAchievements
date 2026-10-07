@@ -265,6 +265,9 @@ namespace PlayniteAchievements.Models.Settings
             target.CompactLockedListSortMode = source.CompactLockedListSortMode;
             target.CompactLockedListSortDescending = source.CompactLockedListSortDescending;
             target.Showcase = source.Showcase?.Clone();
+            target.OverviewMiniShowcase = source.OverviewMiniShowcase?.Clone();
+            target.OverviewMiniShowcaseHeight = source.OverviewMiniShowcaseHeight;
+            target.ShowOverviewMiniShowcase = source.ShowOverviewMiniShowcase;
             target.GridOptions = source.GridOptions?.Clone() ?? new GridOptionsCatalog();
             target.StartPageActivityScope = source.StartPageActivityScope;
             target.StartPageProgressScope = source.StartPageProgressScope;
