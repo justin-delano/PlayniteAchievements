@@ -153,6 +153,24 @@ namespace PlayniteAchievements.Services.Showcase
         /// protected Default collection. Reorder and unpin commands use this stable id.
         /// </summary>
         public string ResolvedPinCollectionId { get; set; }
+
+        /// <summary>
+        /// Set by the overview's mini-showcase: the snapshot already follows the overview's
+        /// filters, the widget shows no control bar of its own, and its clicks set those filters.
+        /// </summary>
+        public bool IsLinked { get; set; }
+
+        /// <summary>
+        /// A linked pie's selected slices as <see cref="OverviewLinkedSliceKeys"/> values or
+        /// provider keys, never display labels.
+        /// </summary>
+        public IReadOnlyCollection<string> LinkedSliceKeys { get; set; } = Array.Empty<string>();
+
+        /// <summary>The overview's unlock-day filter, for a linked timeline or calendar to mark.</summary>
+        public UnlockDaySpan? HighlightedSpan { get; set; }
+
+        /// <summary>The game a linked widget narrowed to, shown beside its title.</summary>
+        public string ContextLabel { get; set; }
     }
 
     public static class ShowcaseWidgetProjectionService
