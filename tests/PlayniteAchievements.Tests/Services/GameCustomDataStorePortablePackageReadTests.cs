@@ -172,7 +172,7 @@ namespace PlayniteAchievements.Services.Tests
                 {
                     using (var writer = new StreamWriter(archive.CreateEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
                     {
-                        writer.WriteLine(CustomAchievementCsvFormat.Header + ",Unlocked Icon,Locked Icon");
+                        writer.WriteLine(CustomAchievementCsvFormat.Header);
                         writer.WriteLine(customId + ",First win,,,,,,,,,,," + iconEntry + ",");
                         writer.WriteLine("second,Second,,,,,,,,,,,,");
                     }
