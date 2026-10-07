@@ -173,11 +173,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             set => SetOverrideValue(value);
         }
 
-        public string ArtOverrideText
-        {
-            get => GetDisplayOverrideValue();
-            set => SetOverrideValue(value);
-        }
+        public bool HasArtOverride => !string.IsNullOrWhiteSpace(GetNormalizedArtOverrideValue());
 
         public string ArtPreviewPath => BuildPreviewPath(
             ResolvePreviewOverrideValue(GetNormalizedArtOverrideValue()) ?? DefaultArtPath);
@@ -359,11 +355,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 : CategoryPathHelper.GetLeafName(CategoryLabel);
         }
 
-        private string GetDisplayOverrideValue()
-        {
-            return _managedCustomIconService.GetManagedDisplayPath(_artOverrideValue, _gameIdText) ?? string.Empty;
-        }
-
         private string ResolveOverrideInputValue(string value)
         {
             var normalized = NormalizeOverrideValue(value);
@@ -425,7 +416,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void NotifyOverrideStateChanged()
         {
             OnPropertyChanged(nameof(ArtOverrideValue));
-            OnPropertyChanged(nameof(ArtOverrideText));
+            OnPropertyChanged(nameof(HasArtOverride));
             OnPropertyChanged(nameof(HasArtOverrideValidationError));
             OnPropertyChanged(nameof(ArtPreviewPath));
             OnPropertyChanged(nameof(HasValidationErrors));
