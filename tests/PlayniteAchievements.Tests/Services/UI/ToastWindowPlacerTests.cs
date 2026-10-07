@@ -86,6 +86,33 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
+        public void ComputeCorner_CenterSitsMidwayAndIgnoresTheHorizontalGap()
+        {
+            var anchor = Rectangle.FromLTRB(0, 0, 1920, 1040);
+
+            ToastWindowPlacer.ComputeCorner(anchor, 442, 138, 1.0, ToastHorizontalAlignment.Center, true, GapNoGlow, GapNoGlow, out var x, out var y);
+            Assert.AreEqual((1920 - 442) / 2, x);
+            Assert.AreEqual(1040 - 138 - 8, y);
+
+            // The horizontal gap belongs to an edge the centered card does not sit against.
+            ToastWindowPlacer.ComputeCorner(anchor, 442, 138, 1.0, ToastHorizontalAlignment.Center, true, GapBorderGlow, GapNoGlow, out var xGlow, out _);
+            Assert.AreEqual(x, xGlow);
+        }
+
+        [TestMethod]
+        public void ComputeCorner_CenterOnAScaledSecondaryMonitor()
+        {
+            // A 4K monitor at 200% to the right of a 1080p primary: the center is measured from the
+            // monitor's own origin, and only the vertical gap scales.
+            var anchor = Rectangle.FromLTRB(1920, 0, 5760, 2120);
+
+            ToastWindowPlacer.ComputeCorner(anchor, 884, 276, 2.0, ToastHorizontalAlignment.Center, true, GapNoGlow, GapNoGlow, out var x, out var y);
+
+            Assert.AreEqual(1920 + ((3840 - 884) / 2), x);
+            Assert.AreEqual(2120 - 276 - 16, y);
+        }
+
+        [TestMethod]
         public void ClampToBounds_LeavesAnOnScreenCornerAlone()
         {
             var anchor = Rectangle.FromLTRB(0, 0, 3840, 2120);
