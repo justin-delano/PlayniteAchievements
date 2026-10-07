@@ -624,11 +624,13 @@
                         <DataGridTemplateColumn Width="Auto" MinWidth="170" Header="{DynamicResource LOCPlayAch_Column_CategoryArt}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Grid VerticalAlignment="Center">
+                                    <!-- Centered in the cell; Clear sits on the thumbnail's corner,
+                                         as in the editor's icon slots, so rows with and without art
+                                         line up. -->
+                                    <Grid HorizontalAlignment="Center"
+                                          VerticalAlignment="Center">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="96" />
-                                            <!-- Fixed, so Browse lines up across rows whether or not Clear shows. -->
-                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
@@ -657,15 +659,16 @@
                                                    helpers:AsyncImage.DecodePixel="-1" />
                                         </Border>
 
-                                        <Button Grid.Column="1"
+                                        <Button Grid.Column="0"
                                                 Style="{StaticResource ClearSearchButtonStyle}"
                                                 Visibility="{Binding HasArtOverride, Converter={StaticResource BoolToVis}}"
-                                                HorizontalAlignment="Center"
-                                                Margin="0"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                Margin="0,2,2,0"
                                                 Focusable="True"
                                                 Click="ClearCategoryImageButton_Click" />
 
-                                        <Button Grid.Column="2"
+                                        <Button Grid.Column="1"
                                                 Content="..."
                                                 ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"
                                                 Style="{StaticResource InlineBrowseButtonStyle}"
