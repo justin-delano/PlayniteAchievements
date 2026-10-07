@@ -98,9 +98,20 @@ namespace PlayniteAchievements.Views.Showcase
             set => SetValue(ShowCardChromeProperty, value);
         }
 
+        /// <summary>A click on a linked widget's chart, in the terms the overview filters by.</summary>
+        public static readonly RoutedEvent LinkedClickEvent = EventManager.RegisterRoutedEvent(
+            "LinkedClick",
+            RoutingStrategy.Bubble,
+            typeof(ShowcaseLinkedClickEventHandler),
+            typeof(ShowcaseWidgetControl));
+
         public ShowcaseWidgetControl()
         {
             InitializeComponent();
+            var chartClick = new ChartClickEventHandler(OnChartClicked);
+            AddHandler(PieChartWithRadialIcons.SliceClickedEvent, chartClick);
+            AddHandler(UnlockTimelineChart.ColumnClickedEvent, chartClick);
+            AddHandler(ActivityCalendarHeatmap.DayClickedEvent, chartClick);
             // Edit mode makes the widget body inert through IsHitTestVisible (see
             // ShowcaseControl); a hosted slideshow also holds its current image while inert so
             // layout edits do not flip pictures mid-drag.
@@ -221,20 +232,72 @@ namespace PlayniteAchievements.Views.Showcase
             RebuildBody();
         }
 
+        // Only a linked widget's chart clicks mean anything outside the widget; the rest keep
+        // their own behavior (a calendar day opens its popup) and nothing listens for them.
+        private void OnChartClicked(object sender, ChartClickEventArgs e)
+        {
+            if (_projection?.IsLinked != true)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            var linked = new ShowcaseLinkedClickEventArgs(LinkedClickEvent, this)
+            {
+                Widget = _projection.Instance
+            };
+            if (e.RoutedEvent == PieChartWithRadialIcons.SliceClickedEvent &&
+                _bodyViewModel is PieWidgetViewModel pie)
+            {
+                linked.PieMode = pie.Mode;
+                linked.SliceKey = pie.SliceKeyForLabel(e.Label);
+                if (linked.SliceKey == null)
+                {
+                    return;
+                }
+            }
+            else if (e.RoutedEvent == UnlockTimelineChart.ColumnClickedEvent &&
+                     _bodyViewModel is TimelineWidgetViewModel timeline)
+            {
+                linked.Span = timeline.Timeline.SpanAt(e.Index);
+                if (linked.Span == null)
+                {
+                    return;
+                }
+            }
+            else if (e.RoutedEvent == ActivityCalendarHeatmap.DayClickedEvent)
+            {
+                linked.Span = new PlayniteAchievements.Services.Overview.UnlockDaySpan(e.Day, e.Day);
+            }
+            else
+            {
+                return;
+            }
+
+            RaiseEvent(linked);
+        }
+
         private void UpdateTitle()
         {
-            // The header only appears when the user gave the widget a custom title;
-            // widgets are otherwise chrome-free at every density (large StartPage-hosted
-            // widgets used to auto-show the kind name at expanded density).
+            // The header only appears when the user gave the widget a custom title, or when a
+            // linked widget narrowed to one game and names it; widgets are otherwise chrome-free
+            // at every density (large StartPage-hosted widgets used to auto-show the kind name
+            // at expanded density).
             var custom = _projection?.Instance?.CustomTitle?.Trim();
-            if (string.IsNullOrWhiteSpace(custom))
+            var context = _projection?.ContextLabel?.Trim();
+            var title = string.IsNullOrWhiteSpace(context)
+                ? custom
+                : string.IsNullOrWhiteSpace(custom)
+                    ? context
+                    : $"{custom} ({context})";
+            if (string.IsNullOrWhiteSpace(title))
             {
                 TitleText.Text = string.Empty;
                 HeaderBorder.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            TitleText.Text = custom;
+            TitleText.Text = title;
             HeaderBorder.Visibility = Visibility.Visible;
         }
 
