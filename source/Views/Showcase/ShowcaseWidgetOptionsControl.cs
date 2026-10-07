@@ -228,7 +228,11 @@ namespace PlayniteAchievements.Views.Showcase
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     AddRangeChoice(panel);
-
+                    AddToggle(
+                        panel,
+                        Localize("LOCPlayAch_Timeline_SplitByPlatform"),
+                        ShowcaseTimelineOptions.GetSplitByPlatform(_settings),
+                        value => ShowcaseTimelineOptions.SetSplitByPlatform(_settings, value));
                     break;
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(

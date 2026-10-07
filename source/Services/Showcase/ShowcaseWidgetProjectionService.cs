@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
@@ -121,6 +122,9 @@ namespace PlayniteAchievements.Services.Showcase
 
         public IReadOnlyDictionary<DateTime, int> Timeline { get; set; } =
             new Dictionary<DateTime, int>();
+
+        /// <summary>Per-platform segments of <see cref="Timeline"/>; null unless the widget splits by platform.</summary>
+        public IReadOnlyList<TimelineSeriesCounts> TimelineByPlatform { get; set; }
 
         public ShowcaseProfileSettings Profile { get; set; }
 
@@ -335,6 +339,11 @@ namespace PlayniteAchievements.Services.Showcase
                     // TimeWindow the options hold), so the projection hands over the per-day
                     // counts unwindowed rather than clipping them a second time here.
                     result.Timeline = NormalizeDailyCounts(snapshot);
+                    // Built per call rather than cached on the snapshot, so a platform recolor
+                    // reaches the segments on the next rebuild.
+                    result.TimelineByPlatform = ShowcaseTimelineOptions.GetSplitByPlatform(instance)
+                        ? TimelinePlatformSeries.FromSnapshot(snapshot)
+                        : null;
                     break;
             }
 

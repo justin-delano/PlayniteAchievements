@@ -6,10 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.Overview;
@@ -30,6 +32,10 @@ namespace PlayniteAchievements.ViewModels
 
         private readonly object _sync = new object();
         private Dictionary<DateTime, int> _countsByDate = new Dictionary<DateTime, int>();
+
+        // Null draws one accent column per bar; otherwise one stacked segment per series.
+        private IReadOnlyList<TimelineSeriesCounts> _series;
+        private List<string> _appliedSeriesKeys;
         private bool _hasCounts;
         private int _updateVersion;
 
@@ -72,17 +78,59 @@ namespace PlayniteAchievements.ViewModels
             var next = countsByDate != null
                 ? new Dictionary<DateTime, int>(countsByDate)
                 : new Dictionary<DateTime, int>();
-            lock (_sync)
+            if (TryStore(next, null))
             {
-                if (_hasCounts && HasSameCounts(_countsByDate, next))
-                {
-                    return;
-                }
+                ScheduleOrDefer();
+            }
+        }
 
-                _countsByDate = next;
-                _hasCounts = true;
+        /// <summary>
+        /// Replaces the counts with one stacked series per platform. Each bar splits into colored
+        /// segments whose heights sum to the bar <see cref="SetCounts"/> would draw.
+        /// </summary>
+        public void SetSeriesCounts(IReadOnlyList<TimelineSeriesCounts> series)
+        {
+            var nextSeries = (series ?? Array.Empty<TimelineSeriesCounts>())
+                .Where(item => item != null)
+                .Select(item => new TimelineSeriesCounts(
+                    item.Key,
+                    item.Title,
+                    item.ColorHex,
+                    item.CountsByDate.ToDictionary(pair => pair.Key, pair => pair.Value)))
+                .ToList();
+            var total = new Dictionary<DateTime, int>();
+            foreach (var item in nextSeries)
+            {
+                foreach (var pair in item.CountsByDate)
+                {
+                    total[pair.Key] = total.TryGetValue(pair.Key, out var existing) ? existing + pair.Value : pair.Value;
+                }
             }
 
+            if (TryStore(total, nextSeries))
+            {
+                ScheduleOrDefer();
+            }
+        }
+
+        private bool TryStore(Dictionary<DateTime, int> total, IReadOnlyList<TimelineSeriesCounts> series)
+        {
+            lock (_sync)
+            {
+                if (_hasCounts && HasSameCounts(_countsByDate, total) && HasSameSeries(_series, series))
+                {
+                    return false;
+                }
+
+                _countsByDate = total;
+                _series = series;
+                _hasCounts = true;
+                return true;
+            }
+        }
+
+        private void ScheduleOrDefer()
+        {
             // A chart that has not drawn yet (one opened while the editor is up) draws now rather
             // than sitting blank until the editor closes.
             if (_hasScheduled && OpenEditorRegistry.IsAnyOpen)
@@ -159,7 +207,35 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static bool HasSameCounts(Dictionary<DateTime, int> current, Dictionary<DateTime, int> next)
+        private static bool HasSameSeries(IReadOnlyList<TimelineSeriesCounts> current, IReadOnlyList<TimelineSeriesCounts> next)
+        {
+            if (current == null || next == null)
+            {
+                return current == null && next == null;
+            }
+
+            if (current.Count != next.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < current.Count; i++)
+            {
+                var a = current[i];
+                var b = next[i];
+                if (!string.Equals(a.Key, b.Key, StringComparison.Ordinal) ||
+                    !string.Equals(a.Title, b.Title, StringComparison.Ordinal) ||
+                    !string.Equals(a.ColorHex, b.ColorHex, StringComparison.OrdinalIgnoreCase) ||
+                    !HasSameCounts(a.CountsByDate, b.CountsByDate))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HasSameCounts(IReadOnlyDictionary<DateTime, int> current, IReadOnlyDictionary<DateTime, int> next)
         {
             if (current.Count != next.Count)
             {
@@ -334,9 +410,11 @@ namespace PlayniteAchievements.ViewModels
             var version = Interlocked.Increment(ref _updateVersion);
 
             Dictionary<DateTime, int> counts;
+            IReadOnlyList<TimelineSeriesCounts> series;
             lock (_sync)
             {
                 counts = _countsByDate;
+                series = _series;
             }
 
             // Snapshot every input on the calling thread; the pass below never reads the properties.
@@ -356,6 +434,7 @@ namespace PlayniteAchievements.ViewModels
                     var plan = TimelineBucketing.Build(range.Start, range.End, counts, granularity, maxBars);
                     var labels = TimelineAxisTicks.Plan(plan.Buckets, plan.Unit, maxTicks, culture);
                     var scale = NiceScale.ForMax(plan.Max);
+                    var segments = BuildSegments(plan, series);
                     var unavailable = new[] { TimelineGranularity.Day, TimelineGranularity.Week, TimelineGranularity.Month }
                         .Where(candidate => !TimelineBucketing.Fits(candidate, range.Start, range.End, maxBars))
                         .ToList();
@@ -371,7 +450,7 @@ namespace PlayniteAchievements.ViewModels
 
                             using (PerfScope.Start(_logger, "Timeline.Apply", thresholdMs: 16))
                             {
-                                Apply(plan, labels, scale, earliest);
+                                Apply(plan, segments, labels, scale, earliest);
                             }
 
                             UnavailableGranularities = unavailable;
@@ -394,8 +473,75 @@ namespace PlayniteAchievements.ViewModels
             });
         }
 
-        private void Apply(TimelineBucketPlan plan, TimelineAxisLabels labels, NiceScaleResult scale, DateTime? earliest)
+        /// <summary>One stacked segment, bucketed against the total plan.</summary>
+        private sealed class TimelineSegment
         {
+            public TimelineSegment(TimelineSeriesCounts source, int[] values)
+            {
+                Source = source;
+                Values = values;
+            }
+
+            public TimelineSeriesCounts Source { get; }
+
+            public int[] Values { get; }
+        }
+
+        // Largest window total first, so it stacks at the bottom of every bar. Platforms with
+        // nothing in the window are left out of the stack and the tooltip.
+        private static List<TimelineSegment> BuildSegments(TimelineBucketPlan plan, IReadOnlyList<TimelineSeriesCounts> series)
+        {
+            if (series == null)
+            {
+                return null;
+            }
+
+            return series
+                .Select(item => new TimelineSegment(item, TimelineBucketing.SumIntoBuckets(plan, item.CountsByDate)))
+                .Select(segment => new { Segment = segment, Total = segment.Values.Sum() })
+                .Where(entry => entry.Total > 0)
+                .OrderByDescending(entry => entry.Total)
+                .ThenBy(entry => entry.Segment.Source.Title, StringComparer.CurrentCultureIgnoreCase)
+                .Select(entry => entry.Segment)
+                .ToList();
+        }
+
+        private void Apply(
+            TimelineBucketPlan plan,
+            List<TimelineSegment> segments,
+            TimelineAxisLabels labels,
+            NiceScaleResult scale,
+            DateTime? earliest)
+        {
+            if (segments == null)
+            {
+                ApplySingle(plan);
+            }
+            else
+            {
+                ApplyStacked(segments);
+            }
+
+            _plan = plan;
+            CollectionHelper.SynchronizeValueCollection(TimelineLabels, labels.AxisLabels.ToList());
+            CollectionHelper.SynchronizeValueCollection(TooltipLabels, labels.TooltipLabels.ToList());
+            XAxisMax = Math.Max(1, plan.Buckets.Count);
+            YAxisMax = scale.Max;
+            YAxisStep = scale.Step;
+            IsEmpty = plan.Total == 0;
+            EffectiveUnit = plan.Unit;
+            EarliestDate = earliest;
+            RenderRevision = unchecked(_renderRevision + 1);
+        }
+
+        private void ApplySingle(TimelineBucketPlan plan)
+        {
+            if (_appliedSeriesKeys != null)
+            {
+                TimelineSeries.Clear();
+                _appliedSeriesKeys = null;
+            }
+
             if (TimelineSeries.Count == 0)
             {
                 TimelineSeries.Add(new ColumnSeries
@@ -414,17 +560,64 @@ namespace PlayniteAchievements.ViewModels
             {
                 TimelineSeries[0].Values = new ChartValues<int>(values);
             }
+        }
 
-            _plan = plan;
-            CollectionHelper.SynchronizeValueCollection(TimelineLabels, labels.AxisLabels.ToList());
-            CollectionHelper.SynchronizeValueCollection(TooltipLabels, labels.TooltipLabels.ToList());
-            XAxisMax = Math.Max(1, plan.Buckets.Count);
-            YAxisMax = scale.Max;
-            YAxisStep = scale.Step;
-            IsEmpty = plan.Total == 0;
-            EffectiveUnit = plan.Unit;
-            EarliestDate = earliest;
-            RenderRevision = unchecked(_renderRevision + 1);
+        // Updates the stack in place while the platforms and their order are unchanged; any other
+        // change rebuilds the series once, because stack order is collection order.
+        private void ApplyStacked(List<TimelineSegment> segments)
+        {
+            var keys = segments.Select(segment => segment.Source.Key).ToList();
+            if (_appliedSeriesKeys == null || !_appliedSeriesKeys.SequenceEqual(keys, StringComparer.Ordinal))
+            {
+                TimelineSeries.Clear();
+                foreach (var segment in segments)
+                {
+                    TimelineSeries.Add(new StackedColumnSeries
+                    {
+                        Values = new ChartValues<int>(segment.Values)
+                    });
+                }
+
+                _appliedSeriesKeys = keys;
+            }
+
+            for (var i = 0; i < segments.Count; i++)
+            {
+                var segment = segments[i];
+                var chartSeries = (StackedColumnSeries)TimelineSeries[i];
+                chartSeries.Title = segment.Source.Title;
+                var brush = SegmentBrush(segment.Source.ColorHex);
+                if (!(chartSeries.Fill is SolidColorBrush current) || current.Color != brush.Color)
+                {
+                    // Stroke too: LiveCharts assigns a palette stroke to a series without one, and
+                    // the tooltip swatch reads the stroke first.
+                    chartSeries.Fill = brush;
+                    chartSeries.Stroke = brush;
+                }
+
+                if (chartSeries.Values is ChartValues<int> chartValues)
+                {
+                    CollectionHelper.SynchronizeValueCollection(chartValues, segment.Values.ToList());
+                }
+            }
+        }
+
+        private static SolidColorBrush SegmentBrush(string colorHex)
+        {
+            Color color;
+            try
+            {
+                color = (Color)ColorConverter.ConvertFromString(
+                    string.IsNullOrWhiteSpace(colorHex) ? ProviderRegistry.FallbackProviderColorHex : colorHex);
+            }
+            catch (FormatException)
+            {
+                color = (Color)ColorConverter.ConvertFromString(ProviderRegistry.FallbackProviderColorHex);
+            }
+
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
         }
 
         private void ReplanTicks()

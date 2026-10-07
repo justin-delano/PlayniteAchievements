@@ -290,6 +290,7 @@ namespace PlayniteAchievements.Models.Settings
                 : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
             target.OverviewTimeWindow = source.OverviewTimeWindow;
             target.OverviewTimelineGranularity = source.OverviewTimelineGranularity;
+            target.OverviewTimelineSplitByPlatform = source.OverviewTimelineSplitByPlatform;
             target.ViewAchievementsTimeWindow = source.ViewAchievementsTimeWindow;
             target.ViewAchievementsTimelineGranularity = source.ViewAchievementsTimelineGranularity;
             target.ViewAchievementsTimelineVisible = source.ViewAchievementsTimelineVisible;

@@ -262,6 +262,7 @@ namespace PlayniteAchievements.Models.Settings
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
         private TimeWindow _overviewTimeWindow = TimeWindow.FromPreset(TimelineRange.OneYear);
         private TimelineGranularity _overviewTimelineGranularity = TimelineGranularity.Auto;
+        private bool _overviewTimelineSplitByPlatform;
         private TimeWindow _viewAchievementsTimeWindow = TimeWindow.FromPreset(TimelineRange.OneYear);
         private TimelineGranularity _viewAchievementsTimelineGranularity = TimelineGranularity.Auto;
         private bool _viewAchievementsTimelineVisible = false;
@@ -2990,6 +2991,13 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _overviewTimelineGranularity, value);
         }
 
+        /// <summary>Splits each overview timeline bar into one stacked segment per platform.</summary>
+        public bool OverviewTimelineSplitByPlatform
+        {
+            get => _overviewTimelineSplitByPlatform;
+            set => SetValue(ref _overviewTimelineSplitByPlatform, value);
+        }
+
         /// <summary>
         /// Last selected window for the single-game achievements window timeline chart.
         /// </summary>
@@ -3545,6 +3553,7 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase),
                 OverviewTimeWindow = this.OverviewTimeWindow,
                 OverviewTimelineGranularity = this.OverviewTimelineGranularity,
+                OverviewTimelineSplitByPlatform = this.OverviewTimelineSplitByPlatform,
                 ViewAchievementsTimeWindow = this.ViewAchievementsTimeWindow,
                 ViewAchievementsTimelineGranularity = this.ViewAchievementsTimelineGranularity,
                 ViewAchievementsTimelineVisible = this.ViewAchievementsTimelineVisible,

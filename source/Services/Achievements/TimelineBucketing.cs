@@ -169,6 +169,54 @@ namespace PlayniteAchievements.Services.Achievements
         }
 
         /// <summary>
+        /// Sums one series' per-day counts into the bars of an existing plan, so every segment of a
+        /// stacked chart shares the plan's unit and window. Days outside the plan are ignored.
+        /// </summary>
+        public static int[] SumIntoBuckets(TimelineBucketPlan plan, IReadOnlyDictionary<DateTime, int> countsByLocalDate)
+        {
+            var buckets = plan?.Buckets;
+            if (buckets == null || buckets.Count == 0)
+            {
+                return new int[0];
+            }
+
+            var sums = new int[buckets.Count];
+            if (countsByLocalDate == null)
+            {
+                return sums;
+            }
+
+            var start = buckets[0].Start;
+            var end = buckets[buckets.Count - 1].End;
+            var indexByPeriod = new Dictionary<DateTime, int>(buckets.Count);
+            for (var i = 0; i < buckets.Count; i++)
+            {
+                indexByPeriod[buckets[i].PeriodStart] = i;
+            }
+
+            foreach (var pair in countsByLocalDate)
+            {
+                if (pair.Value <= 0)
+                {
+                    continue;
+                }
+
+                var day = pair.Key.Date;
+                if (day < start || day > end)
+                {
+                    continue;
+                }
+
+                if (indexByPeriod.TryGetValue(PeriodStart(plan.Unit, day), out var index))
+                {
+                    sums[index] += pair.Value;
+                }
+            }
+
+            return sums;
+        }
+
+        /// <summary>
         /// Chooses the unit for a window. <see cref="TimelineGranularity.Auto"/> takes the unit whose
         /// bucket count is nearest <see cref="TargetBarCount"/> on a log scale, ties to the finer unit.
         /// Either way the unit escalates while its count exceeds <paramref name="maxBars"/> (capped

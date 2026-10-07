@@ -149,7 +149,7 @@ namespace PlayniteAchievements.Views.Controls
             Chart.AxisX.Add(_axisX);
             Chart.AxisY.Add(_axisY);
 
-            _tooltip = new CartesianChartTooltip();
+            _tooltip = new CartesianChartTooltip { StackedRows = true };
             _tooltip.SetBinding(CartesianChartTooltip.SurfaceBrushProperty, Bind(nameof(TooltipSurfaceBrush)));
             _tooltip.SetBinding(CartesianChartTooltip.OutlineBrushProperty, Bind(nameof(TooltipOutlineBrush)));
             _tooltip.SetBinding(ForegroundProperty, Bind(nameof(TooltipForeground)));

@@ -113,6 +113,78 @@ namespace PlayniteAchievements.Services.Overview
             return earliest;
         }
 
+        /// <summary>
+        /// Regroups per-game day counts by a key per game (the platform), so the groups sum to
+        /// <paramref name="global"/>. Games without a key, and global counts no game accounts for
+        /// (unlocks recorded without a game id), land under <paramref name="remainderKey"/>.
+        /// </summary>
+        public static Dictionary<string, Dictionary<DateTime, int>> GroupByKey(
+            IReadOnlyDictionary<DateTime, int> global,
+            IReadOnlyDictionary<Guid, Dictionary<DateTime, int>> byGame,
+            Func<Guid, string> keyOfGame,
+            string remainderKey)
+        {
+            var groups = new Dictionary<string, Dictionary<DateTime, int>>(StringComparer.OrdinalIgnoreCase);
+            var accounted = new Dictionary<DateTime, int>();
+
+            if (byGame != null)
+            {
+                foreach (var game in byGame)
+                {
+                    if (game.Value == null || game.Value.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    var key = keyOfGame?.Invoke(game.Key);
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        key = remainderKey;
+                    }
+
+                    if (!groups.TryGetValue(key, out var counts))
+                    {
+                        counts = new Dictionary<DateTime, int>();
+                        groups[key] = counts;
+                    }
+
+                    foreach (var day in game.Value)
+                    {
+                        if (day.Value <= 0)
+                        {
+                            continue;
+                        }
+
+                        Increment(counts, day.Key.Date, day.Value);
+                        Increment(accounted, day.Key.Date, day.Value);
+                    }
+                }
+            }
+
+            if (global != null)
+            {
+                foreach (var day in global)
+                {
+                    accounted.TryGetValue(day.Key.Date, out var covered);
+                    var rest = day.Value - covered;
+                    if (rest <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (!groups.TryGetValue(remainderKey, out var counts))
+                    {
+                        counts = new Dictionary<DateTime, int>();
+                        groups[remainderKey] = counts;
+                    }
+
+                    Increment(counts, day.Key.Date, rest);
+                }
+            }
+
+            return groups;
+        }
+
         private static void Increment(IDictionary<DateTime, int> counts, DateTime key, int amount)
         {
             if (counts == null)

@@ -327,6 +327,15 @@ namespace PlayniteAchievements.Models
 
         public static void SetGranularity(ShowcaseWidgetInstanceSettings instance, TimelineGranularity value) =>
             instance?.SetOption(GranularityOption, value);
+
+        /// <summary>Splits each Timeline bar into one stacked segment per platform.</summary>
+        public static bool GetSplitByPlatform(ShowcaseWidgetInstanceSettings instance) =>
+            instance?.GetOption(SplitByPlatformOption, false) ?? false;
+
+        public static void SetSplitByPlatform(ShowcaseWidgetInstanceSettings instance, bool value) =>
+            instance?.SetOption(SplitByPlatformOption, value);
+
+        private const string SplitByPlatformOption = "TimelineSplitByPlatform";
     }
 
     /// <summary>

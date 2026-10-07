@@ -903,13 +903,27 @@
                                                Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
-                                    <controls:TimeWindowPicker Grid.Row="1"
-                                                               Window="{Binding GlobalTimeline.Window, Mode=TwoWay}"
-                                                               Granularity="{Binding GlobalTimeline.Granularity, Mode=TwoWay}"
-                                                               UnavailableGranularities="{Binding GlobalTimeline.UnavailableGranularities}"
-                                                               ShowGranularity="True"
-                                                               MinDate="{Binding GlobalTimeline.EarliestDate}"
-                                                               Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                    <DockPanel Grid.Row="1"
+                                               LastChildFill="True"
+                                               Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                        <!-- IcoFont "layers": stacked per-platform segments. -->
+                                        <ToggleButton DockPanel.Dock="Right"
+                                                      Style="{StaticResource PlayAch.ToggleButton.BaseStyle}"
+                                                      IsChecked="{Binding TimelineSplitByPlatform, Mode=TwoWay}"
+                                                      Width="34"
+                                                      Padding="0"
+                                                      Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                      VerticalAlignment="Center"
+                                                      FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                                      FontSize="16"
+                                                      Content="&#xEF5C;"
+                                                      ToolTip="{DynamicResource LOCPlayAch_Timeline_SplitByPlatform}"/>
+                                        <controls:TimeWindowPicker Window="{Binding GlobalTimeline.Window, Mode=TwoWay}"
+                                                                   Granularity="{Binding GlobalTimeline.Granularity, Mode=TwoWay}"
+                                                                   UnavailableGranularities="{Binding GlobalTimeline.UnavailableGranularities}"
+                                                                   ShowGranularity="True"
+                                                                   MinDate="{Binding GlobalTimeline.EarliestDate}"/>
+                                    </DockPanel>
 
                                     <controls:UnlockTimelineChart Grid.Row="2"
                                                                   Series="{Binding GlobalTimeline.TimelineSeries}"

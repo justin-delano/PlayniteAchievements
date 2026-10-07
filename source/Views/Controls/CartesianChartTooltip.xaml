@@ -26,10 +26,17 @@
                        FontWeight="SemiBold"
                        Margin="0,0,0,2"
                        Visibility="{Binding HasHeader, ElementName=TooltipRoot, Converter={StaticResource CartesianTooltipBoolToVis}}"/>
-            <ItemsControl ItemsSource="{Binding Rows, ElementName=TooltipRoot}">
+            <!-- Shared columns line the values up when a stacked bar lists several platforms. -->
+            <ItemsControl ItemsSource="{Binding Rows, ElementName=TooltipRoot}"
+                          Grid.IsSharedSizeScope="True">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type controls:CartesianChartTooltipRow}">
-                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                        <Grid Margin="0,1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="CartesianTooltipTitle"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="CartesianTooltipValue"/>
+                            </Grid.ColumnDefinitions>
                             <Rectangle Width="10"
                                        Height="10"
                                        RadiusX="2"
@@ -37,17 +44,20 @@
                                        Fill="{Binding Swatch}"
                                        Margin="0,0,6,0"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Foreground="{Binding Foreground, ElementName=TooltipRoot}"
+                            <TextBlock Grid.Column="1"
+                                       Foreground="{Binding Foreground, ElementName=TooltipRoot}"
                                        Opacity="0.72"
                                        Margin="0,0,6,0"
                                        VerticalAlignment="Center"
                                        Text="{Binding Title}"
                                        Visibility="{Binding HasTitle, Converter={StaticResource CartesianTooltipBoolToVis}}"/>
-                            <TextBlock Foreground="{Binding Foreground, ElementName=TooltipRoot}"
+                            <TextBlock Grid.Column="2"
+                                       Foreground="{Binding Foreground, ElementName=TooltipRoot}"
                                        FontWeight="SemiBold"
+                                       HorizontalAlignment="Right"
                                        VerticalAlignment="Center"
                                        Text="{Binding Value}"/>
-                        </StackPanel>
+                        </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

@@ -814,6 +814,7 @@ namespace PlayniteAchievements.ViewModels
                     _providerFilterApplyScheduled = false;
                     ApplyLeftFilters();
                     UpdateAggregatePieCharts();
+                    FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
                 }),
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
@@ -2409,25 +2410,11 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(RarePercentage));
             OnPropertyChanged(nameof(UltraRarePercentage));
 
-            IDictionary<DateTime, int> selectedTimelineCounts = null;
-            IDictionary<DateTime, int> timelineCountsToShow = snapshot.GlobalUnlockCountsByDate;
+            IDictionary<DateTime, int> selectedTimelineCounts = SelectedGame?.PlayniteGameId.HasValue == true
+                ? GetSelectedGameTimelineCounts(SelectedGame.PlayniteGameId.Value)
+                : null;
 
-            if (SelectedGame?.PlayniteGameId.HasValue == true)
-            {
-                if (snapshot.UnlockCountsByDateByGame != null &&
-                    snapshot.UnlockCountsByDateByGame.TryGetValue(SelectedGame.PlayniteGameId.Value, out var selectedCounts))
-                {
-                    selectedTimelineCounts = selectedCounts;
-                }
-                else
-                {
-                    selectedTimelineCounts = new Dictionary<DateTime, int>();
-                }
-
-                timelineCountsToShow = selectedTimelineCounts;
-            }
-
-            GlobalTimeline.SetCounts(timelineCountsToShow);
+            FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
             SnapshotChanged?.Invoke(this, EventArgs.Empty);
             PublishSharedSnapshot(snapshot);
@@ -2911,6 +2898,12 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 UpdateAggregatePieCharts();
+                FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewTimelineSplitByPlatform))
+            {
+                OnPropertyChanged(nameof(TimelineSplitByPlatform));
+                FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
             }
             else if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(propertyName))
             {
@@ -4521,8 +4514,7 @@ namespace PlayniteAchievements.ViewModels
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 SyncSelectedGameAchievementsDisplay();
-                // Restore global timeline to show all games
-                GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
+                FeedGlobalTimeline(null);
                 RefreshSelectedGameHeaderCounts();
                 return true;
             }
@@ -4574,9 +4566,8 @@ namespace PlayniteAchievements.ViewModels
                     UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
                     ApplyRightFilters();
 
-                    var selectedTimelineCounts = GetSelectedGameTimelineCounts(gameId);
-                    GlobalTimeline.SetCounts(selectedTimelineCounts);
-                    SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+                    FeedGlobalTimeline(gameId);
+                    SelectedGameTimeline.SetCounts(GetSelectedGameTimelineCounts(gameId));
                 }
 
                 return true;
@@ -4670,6 +4661,76 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 return new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        /// <summary>
+        /// Feeds the overview timeline: the selected game's unlocks, otherwise every game the
+        /// platform filter (or a provider pie slice) keeps, split into per-platform segments when
+        /// <see cref="TimelineSplitByPlatform"/> is on.
+        /// </summary>
+        private void FeedGlobalTimeline(Guid? selectedGameId)
+        {
+            var snapshot = _latestSnapshot;
+            if (GlobalTimeline == null || snapshot == null)
+            {
+                return;
+            }
+
+            var split = TimelineSplitByPlatform;
+            if (selectedGameId.HasValue)
+            {
+                if (split)
+                {
+                    GlobalTimeline.SetSeriesCounts(TimelinePlatformSeries.ForGame(snapshot, selectedGameId.Value));
+                }
+                else
+                {
+                    GlobalTimeline.SetCounts(GetSelectedGameTimelineCounts(selectedGameId.Value));
+                }
+
+                return;
+            }
+
+            Func<Guid, bool> includeGame = null;
+            if (HasProviderFilter)
+            {
+                var kept = new HashSet<Guid>(
+                    OverviewGameSummaryFilters.ApplyProviderPlatformFilter(
+                            (_allGameSummaries ?? new List<GameSummaryItem>()).Where(game => game != null),
+                            ProviderFilterGroups)
+                        .Where(game => game.PlayniteGameId.HasValue)
+                        .Select(game => game.PlayniteGameId.Value));
+                includeGame = kept.Contains;
+            }
+
+            if (split)
+            {
+                GlobalTimeline.SetSeriesCounts(TimelinePlatformSeries.FromSnapshot(snapshot, includeGame));
+            }
+            else
+            {
+                GlobalTimeline.SetCounts(includeGame == null
+                    ? snapshot.GlobalUnlockCountsByDate
+                    : TimelinePlatformSeries.SumGames(snapshot, includeGame));
+            }
+        }
+
+        /// <summary>Overview timeline platform split; persisted across sessions.</summary>
+        public bool TimelineSplitByPlatform
+        {
+            get => _settings?.Persisted?.OverviewTimelineSplitByPlatform ?? false;
+            set
+            {
+                var persisted = _settings?.Persisted;
+                if (persisted == null || persisted.OverviewTimelineSplitByPlatform == value)
+                {
+                    return;
+                }
+
+                // The persisted-settings listener re-feeds the chart and raises the change.
+                persisted.OverviewTimelineSplitByPlatform = value;
+                SchedulePersistTimelineSettings();
             }
         }
 
