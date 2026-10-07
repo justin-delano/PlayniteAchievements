@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="400"
              d:DesignWidth="700">
@@ -105,21 +106,29 @@
                                      plugin's storage, so its path is not the user's to read; the
                                      name is the one it was picked with. A blank tier names the file
                                      it will actually play, muted, so it reads as its source rather
-                                     than as nothing. -->
-                                <TextBlock Grid.Column="3"
-                                           Text="{Binding CustomFileName}"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                           ToolTip="{Binding ResolvedPath}"
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           Visibility="{Binding HasCustomPath, Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock Grid.Column="3"
-                                           Text="{Binding ResolvedFileName}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           ToolTip="{Binding ResolvedPath}"
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           Visibility="{Binding ShowResolvedFileName, Converter={StaticResource BoolToVis}}"/>
+                                     than as nothing. While the scope is editable the cell takes a
+                                     dropped sound file, or a click and a pasted one. -->
+                                <Border Grid.Column="3"
+                                        Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                                        Background="Transparent"
+                                        CornerRadius="3"
+                                        Padding="6,3"
+                                        ToolTip="{Binding ResolvedPath}"
+                                        VerticalAlignment="Center"
+                                        helpers:FilePickTarget.Kind="Sound"
+                                        helpers:FilePickTarget.IsEnabled="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        helpers:FilePickTarget.Picked="SoundPickTarget_Picked">
+                                    <Grid>
+                                        <TextBlock Text="{Binding CustomFileName}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding HasCustomPath, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Text="{Binding ResolvedFileName}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding ShowResolvedFileName, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </Border>
                                 <Button Grid.Column="4"
                                         Click="UnlockSoundBrowse_Click"
                                         Content="{DynamicResource LOCPlayAch_Button_Browse}"
