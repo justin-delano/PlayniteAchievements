@@ -748,14 +748,9 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         private void ApplyResourceAppearanceOverrides()
         {
-            var resources = Application.Current?.Resources;
-            if (resources != null)
-            {
-                PlayAchResourceService.Apply(
-                    resources,
-                    _settings?.Persisted?.ResourceOverrides,
-                    _settings?.Persisted);
-            }
+            PlayAchResourceService.ApplyToApplication(
+                _settings?.Persisted?.ResourceOverrides,
+                _settings?.Persisted);
         }
 
         private void RefreshRarityAppearanceItems()
