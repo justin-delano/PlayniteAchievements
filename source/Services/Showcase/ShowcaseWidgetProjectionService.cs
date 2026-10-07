@@ -237,7 +237,8 @@ namespace PlayniteAchievements.Services.Showcase
             ShowcaseSettings settings,
             ShowcaseWidgetInstanceSettings instance,
             DateTime? now = null,
-            GridOptionsCatalog gridOptions = null)
+            GridOptionsCatalog gridOptions = null,
+            bool trimCalendarToUnlocks = false)
         {
             snapshot = snapshot ?? new OverviewDataSnapshot();
             settings = settings ?? new ShowcaseSettings();
@@ -354,7 +355,11 @@ namespace PlayniteAchievements.Services.Showcase
 
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    result.ActivityCalendar = GetActivityCalendar(snapshot, instance, (now ?? DateTime.Now).Date);
+                    result.ActivityCalendar = GetActivityCalendar(
+                        snapshot,
+                        instance,
+                        (now ?? DateTime.Now).Date,
+                        trimCalendarToUnlocks);
                     break;
                 case ShowcaseWidgetKind.Scores:
                     result.ScoreHistory = GetScoreHistory(snapshot, instance, (now ?? DateTime.Now).Date);
@@ -411,13 +416,14 @@ namespace PlayniteAchievements.Services.Showcase
         private static ShowcaseActivityCalendar GetActivityCalendar(
             OverviewDataSnapshot snapshot,
             ShowcaseWidgetInstanceSettings instance,
-            DateTime endDate)
+            DateTime endDate,
+            bool trimToUnlocks)
         {
             var cache = DerivedCache.GetOrCreateValue(snapshot);
-            var key = WindowKey(ShowcaseTimelineOptions.GetWindow(instance), endDate);
+            var key = WindowKey(ShowcaseTimelineOptions.GetWindow(instance), endDate) + (trimToUnlocks ? "|trim" : string.Empty);
             if (!cache.ActivityCalendars.TryGetValue(key, out var calendar))
             {
-                calendar = BuildActivityCalendar(snapshot, instance, endDate);
+                calendar = BuildActivityCalendar(snapshot, instance, endDate, trimToUnlocks);
                 cache.ActivityCalendars[key] = calendar;
             }
 
