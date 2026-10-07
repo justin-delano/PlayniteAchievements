@@ -18,19 +18,41 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(LibraryTargetDestination.Settings, navigation.Destination);
             Assert.AreEqual(SettingsNavigationRequest.DisplayTab, navigation.Settings.TabKey);
             Assert.AreEqual(SettingsNavigationRequest.ColorsPage, navigation.Settings.PageKey);
-            Assert.IsNull(navigation.Settings.IsFrame);
-            Assert.IsFalse(navigation.Settings.ShowSounds);
+            Assert.IsNull(navigation.Settings.Surface);
         }
 
         [TestMethod]
-        public void Sounds_OpensNotificationsBehaviorPageAtTheSoundPicker()
+        public void Sounds_OpensTheStylesSoundsTabOnTheDefaultPlatform()
         {
             var navigation = LibraryTargetNavigation.Resolve(LibraryTargetKeys.Sounds);
 
             Assert.AreEqual(LibraryTargetDestination.Settings, navigation.Destination);
             Assert.AreEqual(SettingsNavigationRequest.NotificationsTab, navigation.Settings.TabKey);
-            Assert.AreEqual(SettingsNavigationRequest.BehaviorPage, navigation.Settings.PageKey);
-            Assert.IsTrue(navigation.Settings.ShowSounds);
+            Assert.AreEqual(SettingsNavigationRequest.AppearancePage, navigation.Settings.PageKey);
+            Assert.IsNull(navigation.Settings.ProviderKey);
+            Assert.AreEqual(NotificationSurface.Sounds, navigation.Settings.Surface);
+        }
+
+        [TestMethod]
+        public void ProviderSounds_OpensTheStylesSoundsTabOnThatPlatform()
+        {
+            var navigation = LibraryTargetNavigation.Resolve(LibraryTargetKeys.SoundsProvider("Steam"));
+
+            Assert.AreEqual(LibraryTargetDestination.Settings, navigation.Destination);
+            Assert.AreEqual(SettingsNavigationRequest.AppearancePage, navigation.Settings.PageKey);
+            Assert.AreEqual("Steam", navigation.Settings.ProviderKey);
+            Assert.AreEqual(NotificationSurface.Sounds, navigation.Settings.Surface);
+        }
+
+        [TestMethod]
+        public void GameSounds_OpensManageAchievementsOnTheSoundsTab()
+        {
+            var navigation = LibraryTargetNavigation.Resolve(LibraryTargetKeys.SoundsGame(GameId));
+
+            Assert.AreEqual(LibraryTargetDestination.ManageAchievements, navigation.Destination);
+            Assert.AreEqual(GameId, navigation.GameId);
+            Assert.AreEqual(NotificationSurface.Sounds, navigation.Surface);
+            Assert.IsNull(navigation.Settings);
         }
 
         [DataTestMethod]
@@ -44,7 +66,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(SettingsNavigationRequest.NotificationsTab, navigation.Settings.TabKey);
             Assert.AreEqual(SettingsNavigationRequest.AppearancePage, navigation.Settings.PageKey);
             Assert.IsNull(navigation.Settings.ProviderKey);
-            Assert.AreEqual(isFrame, navigation.Settings.IsFrame);
+            Assert.AreEqual(Surface(isFrame), navigation.Settings.Surface);
         }
 
         [DataTestMethod]
@@ -57,7 +79,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(LibraryTargetDestination.Settings, navigation.Destination);
             Assert.AreEqual(SettingsNavigationRequest.AppearancePage, navigation.Settings.PageKey);
             Assert.AreEqual("Steam", navigation.Settings.ProviderKey);
-            Assert.AreEqual(isFrame, navigation.Settings.IsFrame);
+            Assert.AreEqual(Surface(isFrame), navigation.Settings.Surface);
         }
 
         [DataTestMethod]
@@ -69,7 +91,7 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.AreEqual(LibraryTargetDestination.ManageAchievements, navigation.Destination);
             Assert.AreEqual(GameId, navigation.GameId);
-            Assert.AreEqual(isFrame, navigation.IsFrame);
+            Assert.AreEqual(Surface(isFrame), navigation.Surface);
             Assert.IsNull(navigation.Settings);
         }
 
@@ -99,7 +121,6 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.AreEqual(LibraryTargetDestination.GameData, navigation.Destination);
             Assert.AreEqual(GameId, navigation.GameId);
-            Assert.IsFalse(navigation.IsFrame);
             Assert.IsNull(navigation.Settings);
         }
 
@@ -108,5 +129,8 @@ namespace PlayniteAchievements.Services.Tests
         {
             Assert.AreEqual(LibraryTargetDestination.None, LibraryTargetNavigation.Resolve("gamedata:").Destination);
         }
+
+        private static NotificationSurface Surface(bool isFrame) =>
+            isFrame ? NotificationSurface.Frame : NotificationSurface.Toast;
     }
 }
