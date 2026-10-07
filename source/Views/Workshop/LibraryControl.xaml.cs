@@ -39,7 +39,13 @@ namespace PlayniteAchievements.Views.Workshop
                 Confirm = Confirm,
                 ChooseMergeOrReplace = ChooseMergeOrReplace,
                 AskName = AskName,
-                OpenShare = (kind, path, name) => plugin.OpenWorkshopShare(kind, Window.GetWindow(this), packagePath: path, defaultName: name),
+                OpenShare = share => plugin.OpenWorkshopShare(
+                    share.Kind,
+                    Window.GetWindow(this),
+                    packagePath: share.PackagePath,
+                    defaultName: share.DefaultName,
+                    libraryItemId: share.LibraryItemId,
+                    publishedItemId: share.PublishedItemId),
                 OpenSettings = OpenSettings
             };
         }
