@@ -14,6 +14,11 @@ namespace PlayniteAchievements.Services.Library
         Toast,
         Frame,
         ShowcasePage,
+
+        /// <summary>
+        /// Legacy: Workshop game data, before it was recorded on each game. Read only so the
+        /// migration can take such items out of an older index; nothing writes it.
+        /// </summary>
         GameData
     }
 
@@ -51,7 +56,7 @@ namespace PlayniteAchievements.Services.Library
 
         /// <summary>
         /// The preset file, relative to the plugin's user data folder, or null for a Workshop item
-        /// that has no stored package (a showcase page or game data installed before the library).
+        /// that has no stored package (a showcase page installed before the library).
         /// </summary>
         public string RelativePath { get; set; }
 
