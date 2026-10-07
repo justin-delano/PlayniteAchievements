@@ -218,7 +218,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        private void CategoryRenameTextBox_LostFocus(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// On keyboard focus loss rather than logical: switching to another window keeps logical
+        /// focus in the box, so a LostFocus commit waited for a later click in this window.
+        /// </summary>
+        private void CategoryRenameTextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             ApplyCategoryRenameOverride(sender as TextBox);
         }
