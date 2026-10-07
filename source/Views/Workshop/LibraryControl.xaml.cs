@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Library;
@@ -38,7 +39,8 @@ namespace PlayniteAchievements.Views.Workshop
                 Confirm = Confirm,
                 ChooseMergeOrReplace = ChooseMergeOrReplace,
                 AskName = AskName,
-                OpenShare = (kind, path, name) => plugin.OpenWorkshopShare(kind, Window.GetWindow(this), packagePath: path, defaultName: name)
+                OpenShare = (kind, path, name) => plugin.OpenWorkshopShare(kind, Window.GetWindow(this), packagePath: path, defaultName: name),
+                OpenSettings = OpenSettings
             };
         }
 
@@ -93,6 +95,38 @@ namespace PlayniteAchievements.Views.Workshop
                 ResourceProvider.GetString("LOCPlayAch_Common_Rename"))
                 ? name
                 : null;
+        }
+
+        /// <summary>
+        /// Shows a settings place. Hosted by the settings, the page switches its own window. In
+        /// the Workshop window, that window closes first; the settings window under it switches,
+        /// or the settings open on the place when none is open.
+        /// </summary>
+        private void OpenSettings(SettingsNavigationRequest request)
+        {
+            var hostingSettings = FindAncestor<SettingsControl>(this);
+            if (hostingSettings != null)
+            {
+                hostingSettings.NavigateTo(request);
+                return;
+            }
+
+            // Queued so the settings switch or open after this window has closed and the click
+            // has returned.
+            var dispatcher = Dispatcher;
+            Window.GetWindow(this)?.Close();
+            dispatcher.BeginInvoke(new Action(() => _plugin.OpenSettingsAt(request)));
+        }
+
+        private static T FindAncestor<T>(DependencyObject element)
+            where T : DependencyObject
+        {
+            while (element != null && !(element is T))
+            {
+                element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+            }
+
+            return element as T;
         }
 
         /// <summary>A click on a game data row opens that game's Manage Achievements.</summary>
