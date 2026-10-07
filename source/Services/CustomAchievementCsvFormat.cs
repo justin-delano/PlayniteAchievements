@@ -78,17 +78,28 @@ namespace PlayniteAchievements.Services
 
         public const string UnlockTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-        public static List<string> BuildLines(IEnumerable<CustomAchievementCsvRow> rows)
+        /// <summary>
+        /// The separator the user's spreadsheet expects: Windows' list separator, which is what
+        /// Excel splits a CSV on when opening it. A semicolon in locales whose decimal mark is a
+        /// comma; a comma when the list separator is anything the reader does not take.
+        /// </summary>
+        public static char SpreadsheetDelimiter()
         {
-            var lines = new List<string> { Header };
+            var separator = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+            return separator == ";" || separator == "\t" ? separator[0] : ',';
+        }
+
+        public static List<string> BuildLines(IEnumerable<CustomAchievementCsvRow> rows, char delimiter = ',')
+        {
+            var lines = new List<string> { Header.Replace(',', delimiter) };
             lines.AddRange(
                 (rows ?? Enumerable.Empty<CustomAchievementCsvRow>())
                     .Where(row => row != null)
-                    .Select(FormatRow));
+                    .Select(row => FormatRow(row, delimiter)));
             return lines;
         }
 
-        public static string FormatRow(CustomAchievementCsvRow row)
+        public static string FormatRow(CustomAchievementCsvRow row, char delimiter = ',')
         {
             if (row == null)
             {
@@ -117,7 +128,7 @@ namespace PlayniteAchievements.Services
                 row.LockedIconPath
             };
 
-            return string.Join(",", fields.Select(Escape));
+            return string.Join(delimiter.ToString(), fields.Select(Escape));
         }
 
         /// <summary>
@@ -136,10 +147,14 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        /// <summary>
+        /// Quotes a cell holding a quote, a line break or any separator the reader takes, so the
+        /// cell reads back whole whichever separator the file uses.
+        /// </summary>
         public static string Escape(string value)
         {
             var safe = value ?? string.Empty;
-            if (safe.IndexOfAny(new[] { ',', '"', '\r', '\n' }) < 0)
+            if (safe.IndexOfAny(new[] { ',', ';', '\t', '"', '\r', '\n' }) < 0)
             {
                 return safe;
             }
