@@ -66,13 +66,15 @@ namespace PlayniteAchievements.Views.Workshop
             }
             else
             {
-                // The window's Library tab; settings host the Library page on its own.
-                _library = new LibraryControl(plugin, logger, LibraryKindOf(focusGameId.HasValue ? WorkshopItemKind.GameCustomData : focusKind));
+                // The window's Library tab; settings host the Library page on its own. Opened for
+                // a game or for game data, it starts on the games that have Workshop game data.
+                var focusGameData = focusGameId.HasValue || focusKind == WorkshopItemKind.GameCustomData;
+                _library = new LibraryControl(plugin, logger, focusGameData ? null : LibraryKindOf(focusKind), focusGameData);
                 LibraryTab.Content = _library;
             }
         }
 
-        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles have none.</summary>
+        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles and game data have none.</summary>
         private static Services.Library.LibraryItemKind? LibraryKindOf(WorkshopItemKind? kind)
         {
             switch (kind)
@@ -82,7 +84,6 @@ namespace PlayniteAchievements.Views.Workshop
                 case WorkshopItemKind.NotificationStyle: return Services.Library.LibraryItemKind.Toast;
                 case WorkshopItemKind.ScreenshotFrame: return Services.Library.LibraryItemKind.Frame;
                 case WorkshopItemKind.ShowcasePage: return Services.Library.LibraryItemKind.ShowcasePage;
-                case WorkshopItemKind.GameCustomData: return Services.Library.LibraryItemKind.GameData;
                 default: return null;
             }
         }
