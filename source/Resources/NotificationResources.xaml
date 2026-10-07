@@ -1,5 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    mc:Ignorable="po"
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels">
     <!--
@@ -70,7 +73,7 @@
         on the surface templates); this static resource remains the reference default and keeps
         older custom templates that reference it working.
     -->
-    <DropShadowEffect x:Key="PlayAch.Effect.ContentShadow"
+    <DropShadowEffect x:Key="PlayAch.Effect.ContentShadow" po:Freeze="True"
                       BlurRadius="5"
                       ShadowDepth="1"
                       Direction="315"
