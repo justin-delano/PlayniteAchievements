@@ -19,11 +19,8 @@ namespace PlayniteAchievements.Views.Settings.Workshop
     /// </summary>
     public partial class WorkshopSettingsTab : UserControl, IDisposable
     {
-        /// <summary>The key of the Library page, for <see cref="PendingPageKey"/>.</summary>
+        /// <summary>The key of the Library page.</summary>
         public const string LibraryPageKey = "Library";
-
-        /// <summary>A page to open on the next creation of the tab (set by the update notification); consumed once.</summary>
-        internal static string PendingPageKey { get; set; }
 
         private ObservableCollection<SettingsNavigationItem> _navigationItems;
 
@@ -41,7 +38,8 @@ namespace PlayniteAchievements.Views.Settings.Workshop
         internal WorkshopSettingsTab(
             PlayniteAchievementsSettings settings,
             PlayniteAchievementsPlugin plugin,
-            ILogger logger)
+            ILogger logger,
+            string initialPageKey = null)
             : this()
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
@@ -80,11 +78,25 @@ namespace PlayniteAchievements.Views.Settings.Workshop
                         new WorkshopAccountSection(settings, plugin, logger))
             };
 
-            var pending = PendingPageKey;
-            PendingPageKey = null;
+            // Pages are created on selection, so a settings window opened on another page starts
+            // there rather than building Browse first.
             MasterDetail.ItemsSource = _navigationItems;
-            MasterDetail.SelectedItem = _navigationItems.FirstOrDefault(item => string.Equals(item.Key, pending, StringComparison.Ordinal))
-                                        ?? _navigationItems[0];
+            MasterDetail.SelectedItem = FindPage(initialPageKey) ?? _navigationItems[0];
+        }
+
+        /// <summary>Selects the page with the given key (e.g. <see cref="LibraryPageKey"/>).</summary>
+        public void NavigateToPage(string key)
+        {
+            var item = FindPage(key);
+            if (item != null)
+            {
+                MasterDetail.SelectedItem = item;
+            }
+        }
+
+        private SettingsNavigationItem FindPage(string key)
+        {
+            return _navigationItems?.FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.Ordinal));
         }
 
         public void Dispose()
