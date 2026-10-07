@@ -1042,8 +1042,11 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewScoreCards => _hasAppliedSnapshot && (ShowOverviewCollectionScoreCard || ShowOverviewPrestigeScoreCard);
 
-        public ScoreCardBadgePosition OverviewScoreCardBadgePosition =>
-            _settings?.Persisted?.OverviewScoreCardBadgePosition ?? ScoreCardBadgePosition.Left;
+        public ScoreCardBadgePosition OverviewCollectionBadgePosition =>
+            _settings?.Persisted?.OverviewCollectionBadgePosition ?? ScoreCardBadgePosition.Left;
+
+        public ScoreCardBadgePosition OverviewPrestigeBadgePosition =>
+            _settings?.Persisted?.OverviewPrestigeBadgePosition ?? ScoreCardBadgePosition.Left;
 
         public bool ShowOverviewScoreCardDivider =>_hasAppliedSnapshot && ShowOverviewCollectionScoreCard && ShowOverviewPrestigeScoreCard;
 
@@ -2778,9 +2781,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 RaiseOverviewScoreCardVisibilityChanged();
             }
-            else if (propertyName == nameof(PersistedSettings.OverviewScoreCardBadgePosition))
+            else if (propertyName == nameof(PersistedSettings.OverviewCollectionBadgePosition))
             {
-                OnPropertyChanged(nameof(OverviewScoreCardBadgePosition));
+                OnPropertyChanged(nameof(OverviewCollectionBadgePosition));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewPrestigeBadgePosition))
+            {
+                OnPropertyChanged(nameof(OverviewPrestigeBadgePosition));
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewPieCharts)
                 || propertyName == nameof(PersistedSettings.ShowOverviewGamesPieChart)
