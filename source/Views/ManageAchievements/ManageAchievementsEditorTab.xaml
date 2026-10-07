@@ -2201,14 +2201,26 @@
                                 <!-- Unlocked and locked side by side. Each thumbnail is its slot's
                                      input: drop an image on it, or click it and paste a file or URL.
                                      The tooltip names the source; Clear sits on its corner so the
-                                     slot stays narrow enough for two across the pane. -->
+                                     slot stays narrow enough for two across the pane. The badge and
+                                     Browse center on the thumbnail; the Custom/Default caption sits
+                                     in its own row under it. -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Grid Grid.Column="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
                                         <Border Style="{StaticResource VariantBadgeStyle}"
                                                 ToolTip="{DynamicResource LOCPlayAch_Common_Unlocked}">
                                             <TextBlock Text="&#x2713;"
@@ -2219,8 +2231,7 @@
                                                        VerticalAlignment="Center" />
                                         </Border>
 
-                                        <StackPanel Margin="8,0,0,0" VerticalAlignment="Center">
-                                        <Grid>
+                                        <Grid Grid.Column="1" Margin="8,0,0,0">
                                             <Border Style="{StaticResource PreviewBorderStyle}"
                                                     Tag="Unlocked"
                                                     ToolTip="{Binding UnlockedIconPath}"
@@ -2242,18 +2253,32 @@
                                                     Focusable="True"
                                                     Click="ClearIconButton_Click" />
                                         </Grid>
-                                        <TextBlock Style="{StaticResource IconSourceCaptionStyle}"
-                                                   Tag="{Binding HasUnlockedIconOverride}" />
-                                        </StackPanel>
 
-                                        <Button Content="..."
+                                        <Button Grid.Column="2"
+                                                Content="..."
                                                 Tag="Unlocked"
                                                 ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"
                                                 Style="{StaticResource InlineBrowseButtonStyle}"
                                                 Click="BrowseIconButton_Click" />
-                                    </StackPanel>
 
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <TextBlock Grid.Row="1"
+                                                   Grid.Column="1"
+                                                   Margin="8,3,0,0"
+                                                   Style="{StaticResource IconSourceCaptionStyle}"
+                                                   Tag="{Binding HasUnlockedIconOverride}" />
+                                    </Grid>
+
+                                    <Grid Grid.Column="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
                                         <Border Style="{StaticResource VariantBadgeStyle}"
                                                 ToolTip="{DynamicResource LOCPlayAch_Common_Locked}">
                                             <Image Source="{StaticResource BadgeLocked}"
@@ -2264,8 +2289,7 @@
                                                    Opacity="0.72" />
                                         </Border>
 
-                                        <StackPanel Margin="8,0,0,0" VerticalAlignment="Center">
-                                        <Grid>
+                                        <Grid Grid.Column="1" Margin="8,0,0,0">
                                             <Border Style="{StaticResource PreviewBorderStyle}"
                                                     Tag="Locked"
                                                     ToolTip="{Binding LockedIconPath}"
@@ -2287,16 +2311,20 @@
                                                     Focusable="True"
                                                     Click="ClearIconButton_Click" />
                                         </Grid>
-                                        <TextBlock Style="{StaticResource IconSourceCaptionStyle}"
-                                                   Tag="{Binding HasLockedIconOverride}" />
-                                        </StackPanel>
 
-                                        <Button Content="..."
+                                        <Button Grid.Column="2"
+                                                Content="..."
                                                 Tag="Locked"
                                                 ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"
                                                 Style="{StaticResource InlineBrowseButtonStyle}"
                                                 Click="BrowseIconButton_Click" />
-                                    </StackPanel>
+
+                                        <TextBlock Grid.Row="1"
+                                                   Grid.Column="1"
+                                                   Margin="8,3,0,0"
+                                                   Style="{StaticResource IconSourceCaptionStyle}"
+                                                   Tag="{Binding HasLockedIconOverride}" />
+                                    </Grid>
                                 </Grid>
                             </StackPanel>
                         </Border>
