@@ -342,16 +342,47 @@ namespace PlayniteAchievements.Services.Achievements
         /// </summary>
         public static string OverrideOrNull(string value, string providerValue)
         {
-            var normalized = NormalizeOrDefault(value);
-            return string.Equals(normalized, NormalizeOrDefault(providerValue), StringComparison.OrdinalIgnoreCase)
+            // Derived types are the provider's alone, so neither side of the comparison carries
+            // them and the stored override never does.
+            var normalized = NormalizeOrDefault(StripDerivedTypes(value));
+            return string.Equals(normalized, NormalizeOrDefault(StripDerivedTypes(providerValue)), StringComparison.OrdinalIgnoreCase)
                 ? null
                 : normalized;
+        }
+
+        public static bool IsDerivedCategoryType(string categoryType) =>
+            !string.IsNullOrWhiteSpace(categoryType) && DerivedCategoryTypes.Contains(categoryType.Trim());
+
+        /// <summary>
+        /// <paramref name="rawValue"/> without its derived types (Softcore/Hardcore), normalized;
+        /// null when nothing else remains.
+        /// </summary>
+        public static string StripDerivedTypes(string rawValue)
+        {
+            return Combine(ParseValues(rawValue).Where(value => !DerivedCategoryTypes.Contains(value)));
+        }
+
+        /// <summary>
+        /// The effective category type of an achievement whose provider gives
+        /// <paramref name="providerValue"/> and whose user override is <paramref name="overrideValue"/>.
+        /// The override supplies every type except the derived ones, which always come from the
+        /// provider: only a RetroAchievements refresh says how an achievement was earned.
+        /// </summary>
+        public static string ApplyOverride(string providerValue, string overrideValue)
+        {
+            if (string.IsNullOrWhiteSpace(overrideValue))
+            {
+                return NormalizeOrDefault(providerValue);
+            }
+
+            var derived = ParseValues(providerValue).Where(DerivedCategoryTypes.Contains);
+            return NormalizeOrDefault(Combine(ParseValues(StripDerivedTypes(overrideValue)).Concat(derived)));
         }
 
         public static string WithCategoryType(string categoryTypeValue, string categoryType, bool include)
         {
             var token = Normalize(categoryType);
-            if (string.IsNullOrWhiteSpace(token))
+            if (string.IsNullOrWhiteSpace(token) || DerivedCategoryTypes.Contains(token))
             {
                 return NormalizeOrDefault(categoryTypeValue);
             }
