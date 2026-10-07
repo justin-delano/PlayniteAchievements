@@ -86,7 +86,22 @@ namespace PlayniteAchievements.Views.Workshop
                 .GroupBy(s => s.ItemId, StringComparer.OrdinalIgnoreCase)
                 .Select(g => new ExistingOption { ItemId = g.Key, Label = $"{g.First().Name} ({g.Key})" })
                 .ToList();
+
+            // Shared before (from the Library): updating that item is the default.
+            var published = candidate.PublishedItemId;
+            ExistingOption preselected = null;
+            if (!string.IsNullOrWhiteSpace(published))
+            {
+                preselected = options.FirstOrDefault(option => string.Equals(option.ItemId, published, StringComparison.OrdinalIgnoreCase));
+                if (preselected == null)
+                {
+                    preselected = new ExistingOption { ItemId = published, Label = $"{candidate.DefaultName} ({published})" };
+                    options.Add(preselected);
+                }
+            }
+
             ExistingBox.ItemsSource = options;
+            ExistingBox.SelectedItem = preselected;
             _ = LoadOwnedItemsAsync(options);
         }
 
