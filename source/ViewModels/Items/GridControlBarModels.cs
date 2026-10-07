@@ -482,6 +482,50 @@ namespace PlayniteAchievements.ViewModels.Items
         }
     }
 
+    // An active filter set from outside the bar (e.g. a timeline bar clicked in the overview's
+    // mini-showcase), shown as a selected chip that clears the filter when clicked. Hidden while
+    // the filter is inactive.
+    public sealed class GridDismissChip : GridControlBarItem
+    {
+        private readonly Func<string> _getContent;
+        private readonly Func<bool> _getIsActive;
+        private readonly Action _dismiss;
+
+        public GridDismissChip(
+            INotifyPropertyChanged source,
+            string sourcePropertyName,
+            Func<string> getContent,
+            Func<bool> getIsActive,
+            Action dismiss,
+            string toolTip = null)
+        {
+            _getContent = getContent;
+            _getIsActive = getIsActive;
+            _dismiss = dismiss;
+            ToolTip = toolTip;
+            GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
+        }
+
+        public string Content => _getContent?.Invoke() ?? string.Empty;
+
+        public bool IsActive => _getIsActive?.Invoke() == true;
+
+        protected override bool HasAvailableAction => IsActive;
+
+        public void Dismiss()
+        {
+            _dismiss?.Invoke();
+            Refresh();
+        }
+
+        public override void Refresh()
+        {
+            OnPropertyChanged(nameof(Content));
+            OnPropertyChanged(nameof(IsActive));
+            OnPropertyChanged(nameof(EffectiveIsVisible));
+        }
+    }
+
     // A momentary action button in the control bar (e.g. the category-mode Back button).
     public sealed class GridActionButton : GridControlBarItem
     {
