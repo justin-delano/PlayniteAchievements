@@ -56,49 +56,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string Label { get; }
     }
 
-    public sealed class WorkshopSubmissionViewModel : ObservableObject
-    {
-        private string _stateLabel;
-
-        public WorkshopSubmissionViewModel(WorkshopSubmissionRecord record)
-        {
-            Record = record;
-            _stateLabel = StateLabel(record.LastState);
-        }
-
-        public WorkshopSubmissionRecord Record { get; }
-
-        public string Name => Record.Name;
-
-        public string KindLabel => WorkshopItemViewModel.KindLabelFor(Record.Kind);
-
-        public string Submitted => Record.SubmittedUtc.ToLocalTime().ToString("g");
-
-        public string Url => Record.IssueUrl;
-
-        public string State
-        {
-            get => _stateLabel;
-            set => SetValue(ref _stateLabel, value);
-        }
-
-        public static string StateLabel(string state)
-        {
-            switch (state)
-            {
-                case "needs-changes": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_NeedsChanges");
-                case "in-review": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_InReview");
-                case "published": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_Published");
-                case "closed": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_Closed");
-                default: return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_Validating");
-            }
-        }
-    }
-
     /// <summary>
     /// The Workshop window: loads the index, filters and sorts it, resolves local state per item
-    /// (installed, update available, matching library game), and drives install and the
-    /// submissions list. All collection work happens on the UI thread; network and disk work is awaited.
+    /// (installed, update available, matching library game, published by this install), and
+    /// drives install. All collection work happens on the UI thread; network and disk work is awaited.
     /// </summary>
     public sealed class WorkshopViewModel : ObservableObject, IDisposable
     {
@@ -183,15 +144,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
             PreviewCommand = new AsyncCommand(async parameter => await PreviewAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
             OpenFolderCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopItemViewModel ?? SelectedItem)?.FolderUrl));
             ReportCommand = new RelayCommand(parameter => Report(parameter as WorkshopItemViewModel ?? SelectedItem));
-            OpenSubmissionCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopSubmissionViewModel)?.Url));
-            RefreshSubmissionsCommand = new AsyncCommand(async _ => await RefreshSubmissionStatesAsync());
-
-            ReloadLocalState();
         }
 
         public ObservableCollection<WorkshopItemViewModel> Items { get; } = new ObservableCollection<WorkshopItemViewModel>();
         public ICollectionView ItemsView { get; }
-        public ObservableCollection<WorkshopSubmissionViewModel> Submissions { get; } = new ObservableCollection<WorkshopSubmissionViewModel>();
         public IReadOnlyList<WorkshopKindOption> KindOptions { get; }
 
         /// <summary>False when the window was opened for one kind, so the kind selector is hidden.</summary>
@@ -206,8 +162,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public AsyncCommand PreviewCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
         public RelayCommand ReportCommand { get; }
-        public RelayCommand OpenSubmissionCommand { get; }
-        public AsyncCommand RefreshSubmissionsCommand { get; }
 
         public WorkshopIdentityStore IdentityStore => _identity;
 
@@ -348,8 +302,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             private set => SetValue(ref _progressFraction, value);
         }
 
-        public bool HasSubmissions => Submissions.Count > 0;
-
         // ---- loading -----------------------------------------------------------------------
 
         public async Task LoadAsync()
@@ -402,7 +354,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 }
 
                 ApplySort();
-                ReloadLocalState();
                 _ = PrefetchPreviewsAsync(rows);
 
                 if (_focusGameId.HasValue)
@@ -537,17 +488,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             var owned = library[row.Id].ToList();
             row.IsInstalled = owned.Count > 0;
             row.HasUpdate = owned.Any(item => WorkshopIdentityStore.IsNewer(row.Version, item.Version));
-        }
-
-        private void ReloadLocalState()
-        {
-            Submissions.Clear();
-            foreach (var record in _identity.Submissions)
-            {
-                Submissions.Add(new WorkshopSubmissionViewModel(record));
-            }
-
-            OnPropertyChanged(nameof(HasSubmissions));
         }
 
         /// <summary>
@@ -867,7 +807,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 var result = await _installer.InstallAsync(request, _lifetime.Token);
 
                 ApplyLocalState(row, ReadLibrary(), ReadGameData(), _identity.TryGetSubmitterHash());
-                ReloadLocalState();
                 ItemsView.Refresh();
 
                 StatusMessage = DescribeInstall(result, isUpdate);
@@ -1141,28 +1080,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
-        public async Task RefreshSubmissionStatesAsync()
-        {
-            var client = _plugin.WorkshopSubmissionClient;
-            foreach (var submission in Submissions.ToList())
-            {
-                try
-                {
-                    var status = await client.GetStatusAsync(submission.Record.IssueNumber, _lifetime.Token);
-                    submission.State = WorkshopSubmissionViewModel.StateLabel(status.State);
-                    _identity.UpdateSubmissionState(submission.Record.IssueNumber, status.State);
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, $"Failed reading Workshop submission #{submission.Record.IssueNumber}.");
-                }
-            }
-        }
-
         // ---- misc --------------------------------------------------------------------------
 
         private void Report(WorkshopItemViewModel row)
@@ -1206,8 +1123,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
         /// <summary>
         /// The library changed (an install, an update or a delete from the Library page), a game's
         /// Workshop game data changed (an install, or an unlink from Manage Achievements), or a
-        /// share recorded a submission: re-check every row once on the UI thread, so the installed
-        /// state and My submissions follow without reopening the window.
+        /// share recorded a submission or the submitter key was replaced: re-check every row once
+        /// on the UI thread, so the installed state and Mine follow without reopening the window.
         /// </summary>
         private void Source_Changed(object sender, EventArgs e)
         {
@@ -1246,7 +1163,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 _applyingSourceChange = false;
             }
 
-            ReloadLocalState();
             ItemsView.Refresh();
         }
 
