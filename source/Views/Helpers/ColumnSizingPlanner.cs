@@ -50,6 +50,37 @@ namespace PlayniteAchievements.Views.Helpers
             IReadOnlyCollection<string> excludedAbsorberKeys,
             out Dictionary<string, double> plannedWidths)
         {
+            return TryPlan(
+                keys,
+                seedWidths,
+                floorWidths,
+                protectedKey,
+                preferredAbsorberKey,
+                rescaleAll,
+                targetWidth,
+                excludedAbsorberKeys,
+                ceilingWidths: null,
+                out plannedWidths);
+        }
+
+        /// <param name="ceilingWidths">
+        /// The widest each column may be (a column's MaxWidth), or null when none is capped. A
+        /// column planned past its ceiling keeps the ceiling and the rest goes to the columns that
+        /// still have room, since the grid would clamp it and leave the difference empty at the
+        /// right edge.
+        /// </param>
+        public static bool TryPlan(
+            IReadOnlyList<string> keys,
+            IReadOnlyList<double> seedWidths,
+            IReadOnlyList<double> floorWidths,
+            string protectedKey,
+            string preferredAbsorberKey,
+            bool rescaleAll,
+            double targetWidth,
+            IReadOnlyCollection<string> excludedAbsorberKeys,
+            IReadOnlyList<double> ceilingWidths,
+            out Dictionary<string, double> plannedWidths)
+        {
             plannedWidths = null;
             if (keys == null ||
                 seedWidths == null ||
@@ -104,8 +135,82 @@ namespace PlayniteAchievements.Views.Helpers
                 }
             }
 
-            plannedWidths = RoundToTarget(normalizedKeys, widths, floors, protectedKey, preferredAbsorberKey, excludedAbsorberKeys, targetWidth);
+            var ceilings = ResolveCeilings(ceilingWidths, floors);
+            ApplyCeilings(widths, ceilings);
+
+            plannedWidths = RoundToTarget(normalizedKeys, widths, floors, ceilings, protectedKey, preferredAbsorberKey, excludedAbsorberKeys, targetWidth);
             return true;
+        }
+
+        /// <summary>
+        /// Whole-pixel ceilings, one per column, never below the column's floor; null when no
+        /// column is capped.
+        /// </summary>
+        private static List<double> ResolveCeilings(IReadOnlyList<double> ceilingWidths, IReadOnlyList<double> floors)
+        {
+            if (ceilingWidths == null || ceilingWidths.Count != floors.Count)
+            {
+                return null;
+            }
+
+            var ceilings = new List<double>(floors.Count);
+            var anyCapped = false;
+            for (var i = 0; i < floors.Count; i++)
+            {
+                var ceiling = IsValidWidth(ceilingWidths[i])
+                    ? Math.Max(FloorPixelWidth(floors[i]), Math.Floor(ceilingWidths[i]))
+                    : double.PositiveInfinity;
+                anyCapped |= !double.IsPositiveInfinity(ceiling);
+                ceilings.Add(ceiling);
+            }
+
+            return anyCapped ? ceilings : null;
+        }
+
+        /// <summary>
+        /// Holds every column at or under its ceiling and hands what it sheds to the columns
+        /// below theirs, in proportion to their widths. Repeats because a receiving column can
+        /// reach its own ceiling. When every column is capped the excess has nowhere to go and
+        /// the plan falls short of the target.
+        /// </summary>
+        private static void ApplyCeilings(IList<double> widths, IReadOnlyList<double> ceilings)
+        {
+            if (ceilings == null)
+            {
+                return;
+            }
+
+            for (var pass = 0; pass < widths.Count; pass++)
+            {
+                var excess = 0d;
+                for (var i = 0; i < widths.Count; i++)
+                {
+                    if (widths[i] > ceilings[i])
+                    {
+                        excess += widths[i] - ceilings[i];
+                        widths[i] = ceilings[i];
+                    }
+                }
+
+                if (excess <= LayoutEpsilon)
+                {
+                    return;
+                }
+
+                var receivers = Enumerable.Range(0, widths.Count)
+                    .Where(i => widths[i] < ceilings[i] - LayoutEpsilon)
+                    .ToList();
+                if (receivers.Count == 0)
+                {
+                    return;
+                }
+
+                var weight = receivers.Sum(i => Math.Max(1d, widths[i]));
+                foreach (var i in receivers)
+                {
+                    widths[i] += excess * Math.Max(1d, widths[i]) / weight;
+                }
+            }
         }
 
         public static List<int> BuildAbsorberOrder(
@@ -322,7 +427,8 @@ namespace PlayniteAchievements.Views.Helpers
         /// target. Largest-remainder rounding: every column is floored, then the pixels still
         /// owed go one each to the columns that lost the most, so a proportional rescale spreads
         /// its growth across the columns instead of piling the rounding remainder on one of them.
-        /// The dragged column and locked columns take a remainder pixel only when nobody else can.
+        /// The dragged column and locked columns take a remainder pixel only when nobody else can,
+        /// and a column at its ceiling never does.
         /// The target itself is floored, never rounded up, so the plan never exceeds a fractional
         /// viewport and clips the last column.
         /// </summary>
@@ -330,6 +436,7 @@ namespace PlayniteAchievements.Views.Helpers
             IReadOnlyList<string> keys,
             IReadOnlyList<double> widths,
             IReadOnlyList<double> floorWidths,
+            IReadOnlyList<double> ceilings,
             string protectedKey,
             string preferredAbsorberKey,
             IReadOnlyCollection<string> excludedAbsorberKeys,
@@ -351,7 +458,7 @@ namespace PlayniteAchievements.Views.Helpers
             var remainder = wholeTarget - wholeWidths.Sum();
             if (remainder > LayoutEpsilon)
             {
-                HandOutRemainderPixels(wholeWidths, droppedFractions, keys, protectedKey, excludedAbsorberKeys, (int)Math.Round(remainder));
+                HandOutRemainderPixels(wholeWidths, droppedFractions, ceilings, keys, protectedKey, excludedAbsorberKeys, (int)Math.Round(remainder));
             }
             else if (remainder < -LayoutEpsilon)
             {
@@ -370,6 +477,7 @@ namespace PlayniteAchievements.Views.Helpers
         private static void HandOutRemainderPixels(
             IList<double> widths,
             IReadOnlyList<double> droppedFractions,
+            IReadOnlyList<double> ceilings,
             IReadOnlyList<string> keys,
             string protectedKey,
             IReadOnlyCollection<string> excludedAbsorberKeys,
@@ -380,7 +488,10 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
+            // A capped column at its ceiling would be clamped back by the grid, so the pixel
+            // would show as a gap at the right edge.
             var byFraction = Enumerable.Range(0, widths.Count)
+                .Where(i => ceilings == null || widths[i] + 1d <= ceilings[i])
                 .OrderByDescending(i => droppedFractions[i])
                 .ThenBy(i => i)
                 .ToList();
@@ -394,6 +505,7 @@ namespace PlayniteAchievements.Views.Helpers
             var order = eligible.Count > 0 ? eligible : reserved;
             while (pixels > 0)
             {
+                var handedOut = false;
                 foreach (var index in order)
                 {
                     if (pixels == 0)
@@ -401,11 +513,17 @@ namespace PlayniteAchievements.Views.Helpers
                         break;
                     }
 
+                    if (ceilings != null && widths[index] + 1d > ceilings[index])
+                    {
+                        continue;
+                    }
+
                     widths[index] += 1d;
                     pixels--;
+                    handedOut = true;
                 }
 
-                if (order.Count == 0)
+                if (!handedOut)
                 {
                     break;
                 }
