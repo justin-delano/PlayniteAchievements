@@ -621,53 +621,49 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="4*" MinWidth="260" Header="{DynamicResource LOCPlayAch_Column_CategoryArt}">
+                        <DataGridTemplateColumn Width="Auto" MinWidth="170" Header="{DynamicResource LOCPlayAch_Column_CategoryArt}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid VerticalAlignment="Center">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="96" />
-                                            <ColumnDefinition Width="*" />
+                                            <!-- Fixed, so Browse lines up across rows whether or not Clear shows. -->
+                                            <ColumnDefinition Width="28" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
                                         <!-- Wide box so arbitrary aspect ratios (Steam banner art,
-                                             portrait covers, square icons) stay recognizable. -->
+                                             portrait covers, square icons) stay recognizable. It is
+                                             the slot's input: drop an image on it, or click it and
+                                             paste a file or URL. -->
                                         <Border Grid.Column="0"
                                                 Width="88"
                                                 Height="50"
                                                 Background="Transparent"
-                                                Style="{StaticResource PreviewBorderStyle}">
+                                                ToolTip="{Binding ArtOverrideValue}"
+                                                helpers:ImagePickTarget.IsEnabled="True"
+                                                helpers:ImagePickTarget.Picked="CategoryImage_Picked">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource PreviewBorderStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasArtOverrideValidationError}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.ErrorText}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
                                             <Image Stretch="Uniform"
                                                    helpers:AsyncImage.Uri="{Binding ArtPreviewPath}"
                                                    helpers:AsyncImage.DecodePixel="-1" />
                                         </Border>
 
-                                        <Grid Grid.Column="1"
-                                              VerticalAlignment="Center"
-                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                                            <TextBox Text="{Binding ArtOverrideText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                                     AllowDrop="True"
-                                                     PreviewDragOver="CategoryImageTextBox_PreviewDragOver"
-                                                     Drop="CategoryImageTextBox_Drop"
-                                                     KeyDown="CategoryImageTextBox_KeyDown">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource EditorTextBoxStyle}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasArtOverrideValidationError}" Value="True">
-                                                                <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.ErrorText}" />
-                                                                <Setter Property="BorderThickness" Value="2" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
-
-                                            <Button Tag="{Binding ArtOverrideText}"
-                                                    Style="{StaticResource ClearSearchButtonStyle}"
-                                                    Focusable="True"
-                                                    Click="ClearCategoryImageButton_Click" />
-                                        </Grid>
+                                        <Button Grid.Column="1"
+                                                Style="{StaticResource ClearSearchButtonStyle}"
+                                                Visibility="{Binding HasArtOverride, Converter={StaticResource BoolToVis}}"
+                                                HorizontalAlignment="Center"
+                                                Margin="0"
+                                                Focusable="True"
+                                                Click="ClearCategoryImageButton_Click" />
 
                                         <Button Grid.Column="2"
                                                 Content="..."
