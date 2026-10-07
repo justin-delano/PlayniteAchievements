@@ -111,7 +111,7 @@
                         <Border Style="{StaticResource LibraryTagStyle}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.AuthSuccess}"
                                 Visibility="{Binding IsInUse, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Library_InUse}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Library_Applied}"
                                        Style="{StaticResource LibraryTagTextStyle}"
                                        Foreground="{DynamicResource PlayAch.Brush.AuthSuccess}"/>
                         </Border>
@@ -162,8 +162,12 @@
                                     Visibility="{Binding CanReset, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.ResetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Library_StopFollowing}"
-                                    Margin="8,0,0,0"
+                            <Button Content="&#xEDF8;"
+                                    Style="{StaticResource PlayAch.Button.ToolbarIconStyle}"
+                                    ContentTemplate="{StaticResource LibraryGlyphContentTemplate}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Library_Unlink}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Library_Unlink}"
+                                    Margin="4,0,0,0"
                                     Command="{Binding DataContext.StopFollowingCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
                         </StackPanel>
