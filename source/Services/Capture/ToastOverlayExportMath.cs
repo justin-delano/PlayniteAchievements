@@ -97,6 +97,35 @@ namespace PlayniteAchievements.Services.Capture
         }
 
         /// <summary>
+        /// The slide host's scale at <paramref name="secondsIntoTrack"/>, interpolated like the slide
+        /// offset. A sample with no recorded scale counts as 1.
+        /// </summary>
+        public static double GetHostScale(ToastOverlayTrack track, int sampleIndex, double secondsIntoTrack)
+        {
+            var s0 = ScaleOrOne(track.Samples[sampleIndex].HostScale);
+            if (sampleIndex + 1 >= track.Samples.Count)
+            {
+                return s0;
+            }
+
+            var next = track.Samples[sampleIndex + 1];
+            var span = next.ElapsedMs - track.Samples[sampleIndex].ElapsedMs;
+            if (span <= 0)
+            {
+                return s0;
+            }
+
+            var t = (secondsIntoTrack * 1000.0 - track.Samples[sampleIndex].ElapsedMs) / span;
+            t = Math.Max(0.0, Math.Min(1.0, t));
+            return s0 + ((ScaleOrOne(next.HostScale) - s0) * t);
+        }
+
+        private static double ScaleOrOne(double scale)
+        {
+            return scale > 0 ? scale : 1.0;
+        }
+
+        /// <summary>
         /// Index of the last ray layer at or before <paramref name="secondsIntoTrack"/>; -1 before
         /// the first. Linear from <paramref name="fromIndex"/> — export time only moves forward,
         /// so the caller passes its previous result as the cursor.
@@ -163,8 +192,15 @@ namespace PlayniteAchievements.Services.Capture
                 track.MonitorScale, track.AlignRight, track.AlignBottom, track.GapXDip, track.GapYDip,
                 out var cornerX, out var cornerY);
             GetSlideOffset(track, sampleIndex, secondsIntoTrack, out var slideX, out var slideY);
+
+            // A zoom shrinks the card about its center, the pivot the live host uses for it.
+            var scale = GetHostScale(track, sampleIndex, secondsIntoTrack);
+            var width = sample.CardWPhys * scale;
+            var height = sample.CardHPhys * scale;
             return OverlayBlitMath.ScaleRect(
-                cornerX + slideX, cornerY + slideY, sample.CardWPhys, sample.CardHPhys,
+                cornerX + slideX + ((sample.CardWPhys - width) / 2.0),
+                cornerY + slideY + ((sample.CardHPhys - height) / 2.0),
+                width, height,
                 sample.ClientW, sample.ClientH, frameW, frameH);
         }
     }
