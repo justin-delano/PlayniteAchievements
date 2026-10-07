@@ -1,4 +1,3 @@
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
@@ -10,9 +9,9 @@ using System.Text;
 namespace PlayniteAchievements.Services
 {
     /// <summary>
-    /// One achievement as a CSV line: the editor's spreadsheet export and the CSV inside a
-    /// custom-achievements .pa package share these columns. Every value is optional; a blank cell
-    /// reads back as "leave unchanged".
+    /// One achievement as a CSV line: the editor's spreadsheet export, and what the reader takes
+    /// from a custom-achievements .pa package, whose CSV adds two icon columns. Every value is
+    /// optional; a blank cell reads back as "leave unchanged".
     /// </summary>
     public sealed class CustomAchievementCsvRow
     {
@@ -73,22 +72,19 @@ namespace PlayniteAchievements.Services
         public const string Header =
             "ID,Title,Description,Points,Trophy Type,Hidden,Rarity,Category,Progress,Progress Total,Unlocked,Unlock Time";
 
-        /// <summary>The icon columns a .pa package appends; a bare CSV cannot carry the files.</summary>
-        public const string IconHeader = "Unlocked Icon,Locked Icon";
-
         public const string UnlockTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-        public static List<string> BuildLines(IEnumerable<CustomAchievementCsvRow> rows, bool includeIcons)
+        public static List<string> BuildLines(IEnumerable<CustomAchievementCsvRow> rows)
         {
-            var lines = new List<string> { includeIcons ? Header + "," + IconHeader : Header };
+            var lines = new List<string> { Header };
             lines.AddRange(
                 (rows ?? Enumerable.Empty<CustomAchievementCsvRow>())
                     .Where(row => row != null)
-                    .Select(row => FormatRow(row, includeIcons)));
+                    .Select(FormatRow));
             return lines;
         }
 
-        public static string FormatRow(CustomAchievementCsvRow row, bool includeIcons)
+        public static string FormatRow(CustomAchievementCsvRow row)
         {
             if (row == null)
             {
@@ -115,41 +111,7 @@ namespace PlayniteAchievements.Services
                     : null
             };
 
-            if (includeIcons)
-            {
-                fields.Add(row.UnlockedIconPath);
-                fields.Add(row.LockedIconPath);
-            }
-
             return string.Join(",", fields.Select(Escape));
-        }
-
-        public static CustomAchievementCsvRow FromDefinition(CustomAchievementDefinition definition)
-        {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
-            return new CustomAchievementCsvRow
-            {
-                Id = definition.Id,
-                DisplayName = definition.DisplayName,
-                Description = definition.Description,
-                Points = definition.Points,
-                TrophyType = definition.TrophyType,
-                Hidden = definition.Hidden,
-                RarityTier = definition.GlobalPercentUnlocked.HasValue ? null : definition.Rarity,
-                RarityPercent = definition.GlobalPercentUnlocked,
-                Category = definition.Category,
-                ProgressNum = definition.ProgressNum,
-                ProgressDenom = definition.ProgressDenom,
-                // Blank rather than "false" when locked, so a shared file never re-locks anything.
-                Unlocked = definition.Unlocked ? true : (bool?)null,
-                UnlockTimeUtc = definition.UnlockTimeUtc,
-                UnlockedIconPath = definition.UnlockedIconPath,
-                LockedIconPath = definition.LockedIconPath
-            };
         }
 
         /// <summary>
