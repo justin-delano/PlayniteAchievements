@@ -65,6 +65,19 @@ namespace PlayniteAchievements.Views.Controls
         /// </summary>
         public event EventHandler<string> SliceClick;
 
+        /// <summary>The same click as <see cref="SliceClick"/>, bubbled for hosts outside the control.</summary>
+        public static readonly RoutedEvent SliceClickedEvent = EventManager.RegisterRoutedEvent(
+            "SliceClicked",
+            RoutingStrategy.Bubble,
+            typeof(ChartClickEventHandler),
+            typeof(PieChartWithRadialIcons));
+
+        private void RaiseSliceClick(string label)
+        {
+            SliceClick?.Invoke(this, label);
+            RaiseEvent(new ChartClickEventArgs(SliceClickedEvent, this) { Label = label });
+        }
+
         public static readonly DependencyProperty PieSeriesProperty =
             DependencyProperty.Register(nameof(PieSeries), typeof(SeriesCollection), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(null, OnPieSeriesChanged));
@@ -907,7 +920,7 @@ namespace PlayniteAchievements.Views.Controls
             // Get the label from the PieSeries that was clicked
             if (chartPoint.SeriesView is PieSeries series && !string.IsNullOrEmpty(series.Title))
             {
-                SliceClick?.Invoke(this, series.Title);
+                RaiseSliceClick(series.Title);
             }
         }
 
@@ -948,7 +961,7 @@ namespace PlayniteAchievements.Views.Controls
             var label = ((sender as FrameworkElement)?.DataContext as PieLegendRowViewModel)?.Label;
             if (!string.IsNullOrEmpty(label))
             {
-                SliceClick?.Invoke(this, label);
+                RaiseSliceClick(label);
             }
         }
 
