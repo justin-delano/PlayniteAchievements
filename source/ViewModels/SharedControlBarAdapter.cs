@@ -109,5 +109,11 @@ namespace PlayniteAchievements.ViewModels
         public List<int> Progress { get; set; }
 
         public List<int> Activity { get; set; }
+
+        /// <summary>An unlock date range's start day, for achievement control bars; null when open.</summary>
+        public DateTime? UnlockedFrom { get; set; }
+
+        /// <summary>An unlock date range's end day; null when open.</summary>
+        public DateTime? UnlockedTo { get; set; }
     }
 }
