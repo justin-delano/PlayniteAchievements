@@ -47,6 +47,7 @@ namespace PlayniteAchievements.ViewModels.Library
         private readonly LibraryStore _library;
         private readonly LibraryUpdateService _updates;
         private readonly GameLinkStore _gameLinks;
+        private readonly WorkshopIdentityStore _identity;
         private readonly PersistedSettingsSubscription _settingsSubscription;
         private readonly Dispatcher _dispatcher;
         private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
@@ -72,6 +73,7 @@ namespace PlayniteAchievements.ViewModels.Library
             _library = plugin.LibraryStore;
             _updates = plugin.LibraryUpdateService;
             _gameLinks = plugin.GameLinkStore;
+            _identity = plugin.WorkshopIdentityStore;
             _dispatcher = Dispatcher.CurrentDispatcher;
 
             Filters = new List<LibraryKindFilter> { new LibraryKindFilter(null, ResourceProvider.GetString("LOCPlayAch_Common_All")) };
@@ -102,9 +104,11 @@ namespace PlayniteAchievements.ViewModels.Library
             StopFollowingCommand = new RelayCommand(parameter => StopFollowing(parameter as LibraryUseRow));
             OpenGameDataCommand = new RelayCommand(parameter => OpenGameData(parameter as LibraryGameDataRow));
             OpenTargetCommand = new RelayCommand(parameter => OpenTarget(parameter as LibraryUseRow));
+            OpenPublishedCommand = new RelayCommand(_ => OpenUrl(SelectedRow?.PublishedUrl), _ => SelectedRow?.HasPublishedUrl == true);
 
             _library.Changed += Source_Changed;
             _gameLinks.Changed += Source_Changed;
+            _identity.Changed += Source_Changed;
             if (plugin.Settings != null)
             {
                 _settingsSubscription = new PersistedSettingsSubscription(
@@ -139,6 +143,9 @@ namespace PlayniteAchievements.ViewModels.Library
         public RelayCommand OpenGameDataCommand { get; }
         public RelayCommand OpenTargetCommand { get; }
 
+        /// <summary>Opens the selected item's Workshop page on GitHub, for an item this install published.</summary>
+        public RelayCommand OpenPublishedCommand { get; }
+
         /// <summary>One row per game with Workshop game data.</summary>
         public ObservableCollection<LibraryGameDataRow> GameDataRows { get; } = new ObservableCollection<LibraryGameDataRow>();
 
@@ -158,8 +165,8 @@ namespace PlayniteAchievements.ViewModels.Library
         /// <summary>Asks for a new name, starting from the given one; null on Cancel.</summary>
         public Func<string, string> AskName { get; set; }
 
-        /// <summary>Opens the share dialog for a package file.</summary>
-        public Action<WorkshopItemKind, string, string> OpenShare { get; set; }
+        /// <summary>Opens the share dialog for a library item's package file.</summary>
+        public Action<WorkshopShareCandidate> OpenShare { get; set; }
 
         /// <summary>Shows a place in the settings, where a use of an item is configured.</summary>
         public Action<SettingsNavigationRequest> OpenSettings { get; set; }
@@ -336,6 +343,32 @@ namespace PlayniteAchievements.ViewModels.Library
             _ = EnsureIndexAsync();
         }
 
+        /// <summary>
+        /// Marks a row this install published: a Workshop item whose index entry it owns, or a
+        /// local item a submission was shared from once that learned its Workshop id. Once the
+        /// index is read, an id it no longer lists is not marked.
+        /// </summary>
+        private void ApplyPublished(LibraryItemRow row)
+        {
+            string id = null;
+            try
+            {
+                id = _identity.PublishedIdOf(row.Item, row.IndexItem);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Could not tell whether {row.Id} was published.");
+            }
+
+            WorkshopItem published = null;
+            if (id != null && _index != null && !_index.TryGetValue(id, out published))
+            {
+                id = null;
+            }
+
+            row.SetPublished(id, published);
+        }
+
         private WorkshopItem IndexItemOf(LibraryLink link)
         {
             var id = GameDataLinkService.WorkshopItemIdOf(link);
@@ -424,6 +457,7 @@ namespace PlayniteAchievements.ViewModels.Library
                 row.IndexItem = indexItem;
             }
 
+            ApplyPublished(row);
             if (item.WorkshopItemId != null && _thumbnails.TryGetValue(item.WorkshopItemId, out var thumbnail))
             {
                 row.ThumbnailPath = thumbnail;
@@ -528,6 +562,7 @@ namespace PlayniteAchievements.ViewModels.Library
             UpdateCommand?.RaiseCanExecuteChanged();
             ReinstallCommand?.RaiseCanExecuteChanged();
             ShareCommand?.RaiseCanExecuteChanged();
+            OpenPublishedCommand?.RaiseCanExecuteChanged();
             RenameCommand?.RaiseCanExecuteChanged();
             DeleteCommand?.RaiseCanExecuteChanged();
         }
@@ -617,7 +652,7 @@ namespace PlayniteAchievements.ViewModels.Library
         /// </summary>
         private async Task EnsureIndexAsync()
         {
-            if (_indexRequested || (!Rows.Any(row => row.IsWorkshop) && GameDataRows.Count == 0))
+            if (_indexRequested || (!Rows.Any(row => row.IsWorkshop) && GameDataRows.Count == 0 && !_identity.HasLibrarySubmissions))
             {
                 return;
             }
@@ -630,12 +665,26 @@ namespace PlayniteAchievements.ViewModels.Library
                     .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Id))
                     .GroupBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+                // Submissions shared from here learn their published id from this install's
+                // items, as Browse and the share dialog link them.
+                var owner = _identity.TryGetSubmitterHash();
+                if (owner != null)
+                {
+                    _identity.LinkSubmissions(_index.Values.Where(item => WorkshopIdentityStore.IsOwnedBy(item, owner)));
+                }
+
                 foreach (var row in Rows.Where(row => row.IsWorkshop && row.Item.WorkshopItemId != null))
                 {
                     if (_index.TryGetValue(row.Item.WorkshopItemId, out var item))
                     {
                         row.IndexItem = item;
                     }
+                }
+
+                foreach (var row in Rows)
+                {
+                    ApplyPublished(row);
                 }
 
                 foreach (var row in GameDataRows)
@@ -853,7 +902,33 @@ namespace PlayniteAchievements.ViewModels.Library
         {
             if (row?.HasFile == true)
             {
-                OpenShare?.Invoke(LibraryItemRow.WorkshopKindOf(row.Kind), row.FilePath, row.Name);
+                // Recorded with the submission, so the row learns its Workshop id once published;
+                // an item already published by this install defaults to updating it.
+                OpenShare?.Invoke(new WorkshopShareCandidate
+                {
+                    Kind = LibraryItemRow.WorkshopKindOf(row.Kind),
+                    DefaultName = row.Name,
+                    PackagePath = row.FilePath,
+                    LibraryItemId = row.Id,
+                    PublishedItemId = row.PublishedItemId
+                });
+            }
+        }
+
+        private void OpenUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed opening {url}.");
             }
         }
 
@@ -965,6 +1040,7 @@ namespace PlayniteAchievements.ViewModels.Library
         {
             _library.Changed -= Source_Changed;
             _gameLinks.Changed -= Source_Changed;
+            _identity.Changed -= Source_Changed;
             _settingsSubscription?.Dispose();
             _lifetime.Cancel();
             _lifetime.Dispose();
