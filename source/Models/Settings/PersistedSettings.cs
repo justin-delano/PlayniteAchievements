@@ -203,7 +203,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewPieIcons = true;
         private bool _showOverviewPieLegend;
         private PieLegendPosition _overviewPieLegendPosition = PieLegendPosition.Right;
-        private ScoreCardBadgePosition _overviewScoreCardBadgePosition = ScoreCardBadgePosition.Left;
+        private ScoreCardBadgePosition _overviewCollectionBadgePosition = ScoreCardBadgePosition.Left;
+        private ScoreCardBadgePosition _overviewPrestigeBadgePosition = ScoreCardBadgePosition.Left;
         private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
@@ -2419,12 +2420,21 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Which side of each overview header score card its badge sits on.
+        /// Which side of the overview header Collection score card its badge sits on.
         /// </summary>
-        public ScoreCardBadgePosition OverviewScoreCardBadgePosition
+        public ScoreCardBadgePosition OverviewCollectionBadgePosition
         {
-            get => _overviewScoreCardBadgePosition;
-            set => SetValue(ref _overviewScoreCardBadgePosition, value);
+            get => _overviewCollectionBadgePosition;
+            set => SetValue(ref _overviewCollectionBadgePosition, value);
+        }
+
+        /// <summary>
+        /// Which side of the overview header Prestige score card its badge sits on.
+        /// </summary>
+        public ScoreCardBadgePosition OverviewPrestigeBadgePosition
+        {
+            get => _overviewPrestigeBadgePosition;
+            set => SetValue(ref _overviewPrestigeBadgePosition, value);
         }
 
         /// <summary>
@@ -3468,7 +3478,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewPieIcons = this.ShowOverviewPieIcons,
                 ShowOverviewPieLegend = this.ShowOverviewPieLegend,
                 OverviewPieLegendPosition = this.OverviewPieLegendPosition,
-                OverviewScoreCardBadgePosition = this.OverviewScoreCardBadgePosition,
+                OverviewCollectionBadgePosition = this.OverviewCollectionBadgePosition,
+                OverviewPrestigeBadgePosition = this.OverviewPrestigeBadgePosition,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 OverviewPieIncludeLocked = this.OverviewPieIncludeLocked,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
@@ -3646,7 +3657,8 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewPieIcons = defaults.ShowOverviewPieIcons;
             ShowOverviewPieLegend = defaults.ShowOverviewPieLegend;
             OverviewPieLegendPosition = defaults.OverviewPieLegendPosition;
-            OverviewScoreCardBadgePosition = defaults.OverviewScoreCardBadgePosition;
+            OverviewCollectionBadgePosition = defaults.OverviewCollectionBadgePosition;
+            OverviewPrestigeBadgePosition = defaults.OverviewPrestigeBadgePosition;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             OverviewPieIncludeLocked = defaults.OverviewPieIncludeLocked;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
