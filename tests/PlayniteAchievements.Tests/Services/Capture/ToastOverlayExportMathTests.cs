@@ -1,5 +1,6 @@
 using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Capture;
 
 namespace PlayniteAchievements.Services.Tests.Capture
@@ -17,7 +18,7 @@ namespace PlayniteAchievements.Services.Tests.Capture
         {
             return new ToastOverlayTrack
             {
-                AlignRight = true,
+                HorizontalAlignment = ToastHorizontalAlignment.Right,
                 AlignBottom = true,
                 GapXDip = gapDip,
                 GapYDip = gapYDip ?? gapDip,

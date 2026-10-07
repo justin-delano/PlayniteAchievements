@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.Capture
 {
@@ -35,8 +36,8 @@ namespace PlayniteAchievements.Services.Capture
         /// <summary>Track length: last sample time plus one sample interval.</summary>
         public double DurationSeconds { get; set; }
 
-        /// <summary>Whether the toast corner is on the client rect's right edge.</summary>
-        public bool AlignRight { get; set; }
+        /// <summary>Where the toast sits along the client rect's horizontal axis.</summary>
+        public ToastHorizontalAlignment HorizontalAlignment { get; set; }
 
         /// <summary>Whether the toast corner is on the client rect's bottom edge.</summary>
         public bool AlignBottom { get; set; }

@@ -1231,7 +1231,8 @@ internal static class CaptureHarness
         }
 
         trackType.GetProperty("DurationSeconds").SetValue(track, 4.0);
-        trackType.GetProperty("AlignRight").SetValue(track, false);
+        var horizontal = trackType.GetProperty("HorizontalAlignment");
+        horizontal.SetValue(track, Enum.Parse(horizontal.PropertyType, "Left"));
         trackType.GetProperty("AlignBottom").SetValue(track, true);
         trackType.GetProperty("GapXDip").SetValue(track, 24.0);
         trackType.GetProperty("GapYDip").SetValue(track, 24.0);
