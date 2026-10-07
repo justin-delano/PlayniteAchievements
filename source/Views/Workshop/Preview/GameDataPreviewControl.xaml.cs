@@ -30,7 +30,8 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             Row = row ?? throw new ArgumentNullException(nameof(row));
             BadgeGlyph = row.Changes.HasFlag(AchievementPreviewChange.Added) ? AddedGlyph : null;
             IsCapstone = row.After?.IsCapstone == true;
-            CategoryText = row.After?.Category?.Trim() ?? string.Empty;
+            CategoryText = AchievementCategoryTypeHelper.ToCategoryLabelCellText(row.After?.Category);
+            CategoryPathText = AchievementCategoryTypeHelper.ToCategoryLabelCellPathText(row.After?.Category);
         }
 
         public AchievementPreviewRow Row { get; }
@@ -44,6 +45,9 @@ namespace PlayniteAchievements.Views.Workshop.Preview
         public bool IsCapstone { get; }
 
         public string CategoryText { get; }
+
+        /// <summary>The full category path, for the tooltip of a nested category.</summary>
+        public string CategoryPathText { get; }
     }
 
     /// <summary>
