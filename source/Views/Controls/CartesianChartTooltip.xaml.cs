@@ -9,6 +9,7 @@ using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Common;
+using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.Controls
 {
@@ -66,6 +67,17 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(CartesianChartTooltip),
                 new PropertyMetadata(null));
 
+        /// <summary>
+        /// For stacked columns: with more than one series, zero rows drop, rows sort by value
+        /// descending, and a total row closes the list when two or more remain.
+        /// </summary>
+        public static readonly DependencyProperty StackedRowsProperty =
+            DependencyProperty.Register(
+                nameof(StackedRows),
+                typeof(bool),
+                typeof(CartesianChartTooltip),
+                new PropertyMetadata(false));
+
         private TooltipData _data;
         private string _header;
         private IReadOnlyList<CartesianChartTooltipRow> _rows = Array.Empty<CartesianChartTooltipRow>();
@@ -99,6 +111,12 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (IList<string>)GetValue(HeaderLabelsProperty);
             set => SetValue(HeaderLabelsProperty, value);
+        }
+
+        public bool StackedRows
+        {
+            get => (bool)GetValue(StackedRowsProperty);
+            set => SetValue(StackedRowsProperty, value);
         }
 
         public TooltipSelectionMode? SelectionMode { get; set; } = TooltipSelectionMode.SharedXValues;
@@ -170,20 +188,43 @@ namespace PlayniteAchievements.Views.Controls
             return data.XFormatter?.Invoke(x.Value);
         }
 
-        private static IReadOnlyList<CartesianChartTooltipRow> BuildRows(TooltipData data)
+        private IReadOnlyList<CartesianChartTooltipRow> BuildRows(TooltipData data)
         {
             if (data?.Points == null)
             {
                 return Array.Empty<CartesianChartTooltipRow>();
             }
 
-            return data.Points
-                .Where(point => point?.ChartPoint != null)
+            var points = data.Points.Where(point => point?.ChartPoint != null).ToList();
+            if (!StackedRows || points.Count < 2)
+            {
+                return points
+                    .Select(point => new CartesianChartTooltipRow(
+                        point.Series?.Stroke ?? point.Series?.Fill,
+                        point.Series?.Title,
+                        FormatValue(data, point.ChartPoint.Y)))
+                    .ToList();
+            }
+
+            var nonZero = points
+                .Where(point => point.ChartPoint.Y > 0)
+                .OrderByDescending(point => point.ChartPoint.Y)
+                .ToList();
+            var rows = nonZero
                 .Select(point => new CartesianChartTooltipRow(
                     point.Series?.Stroke ?? point.Series?.Fill,
                     point.Series?.Title,
                     FormatValue(data, point.ChartPoint.Y)))
                 .ToList();
+            if (nonZero.Count > 1)
+            {
+                rows.Add(new CartesianChartTooltipRow(
+                    null,
+                    ResourceProvider.GetString("LOCPlayAch_Column_Total"),
+                    FormatValue(data, nonZero.Sum(point => point.ChartPoint.Y))));
+            }
+
+            return rows;
         }
 
         private static string FormatValue(TooltipData data, double value)
