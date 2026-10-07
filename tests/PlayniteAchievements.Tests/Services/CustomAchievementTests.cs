@@ -234,8 +234,7 @@ namespace PlayniteAchievements.Services.Tests
                         UnlockTimeUtc = unlock
                     },
                     new CustomAchievementCsvRow { Id = "two", DisplayName = "Two", RarityTier = "Rare", Unlocked = false }
-                },
-                includeIcons: false);
+                });
 
             Assert.AreEqual(CustomAchievementCsvFormat.Header, lines[0]);
             Assert.IsTrue(lines[1].Contains("12.5%"), lines[1]);
@@ -514,7 +513,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void CustomAchievementsPackage_RoundTripsDefinitionsWithoutPersonalState()
+        public void CustomAchievementsPackage_ImportsDefinitionsWithoutPersonalState()
         {
             var tempDirectory = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDirectory);
@@ -523,43 +522,15 @@ namespace PlayniteAchievements.Services.Tests
                 var store = new GameCustomDataStore(Path.Combine(tempDirectory, "store"));
                 var gameId = Guid.NewGuid();
                 var packagePath = Path.Combine(tempDirectory, "custom.pa");
-                store.ExportCustomAchievementsPackage(
-                    gameId,
-                    new List<CustomAchievementDefinition>
-                    {
-                        new CustomAchievementDefinition
-                        {
-                            Id = "first-win",
-                            DisplayName = "First, Win",
-                            Description = "Uses a \"quote\"",
-                            Unlocked = true,
-                            UnlockTimeUtc = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc),
-                            Points = 10,
-                            TrophyType = "gold",
-                            Hidden = true,
-                            Rarity = "Rare",
-                            GlobalPercentUnlocked = 12.5,
-                            ProgressNum = 1,
-                            ProgressDenom = 2
-                        },
-                        new CustomAchievementDefinition
-                        {
-                            Id = "second",
-                            DisplayName = "Second"
-                        }
-                    },
-                    packagePath);
-
-                Assert.IsTrue(store.IsCustomAchievementsPackage(packagePath));
-                string csvText;
-                using (var archive = System.IO.Compression.ZipFile.OpenRead(packagePath))
-                using (var reader = new StreamReader(archive.GetEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
+                using (var archive = System.IO.Compression.ZipFile.Open(packagePath, System.IO.Compression.ZipArchiveMode.Create))
+                using (var writer = new StreamWriter(archive.CreateEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
                 {
-                    csvText = reader.ReadToEnd();
+                    writer.WriteLine(CustomAchievementCsvFormat.Header + ",Unlocked Icon,Locked Icon");
+                    writer.WriteLine("first-win,\"First, Win\",\"Uses a \"\"quote\"\"\",10,gold,true,12.5%,,1,2,true,2026-01-02 03:04:05,,");
+                    writer.WriteLine("second,Second,,,,,,,,,,,,");
                 }
 
-                StringAssert.StartsWith(csvText, CustomAchievementCsvFormat.Header + "," + CustomAchievementCsvFormat.IconHeader);
-                StringAssert.DoesNotMatch(csvText, new System.Text.RegularExpressions.Regex("2026-01-02"));
+                Assert.IsTrue(store.IsCustomAchievementsPackage(packagePath));
                 Assert.ThrowsException<InvalidOperationException>(
                     () => store.ImportReplacePortable(gameId, packagePath),
                     "A custom-achievements package must not replace the game's custom data.");
