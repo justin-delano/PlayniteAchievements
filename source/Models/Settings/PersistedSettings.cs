@@ -242,6 +242,9 @@ namespace PlayniteAchievements.Models.Settings
         private StartPageRecentUnlocksGridSettings _startPageRecentUnlocksGrid;
         private StartPageFriendsRecentUnlocksGridSettings _startPageFriendsRecentUnlocksGrid;
         private ShowcaseSettings _showcase;
+        private ShowcaseSettings _overviewMiniShowcase;
+        private double _overviewMiniShowcaseHeight = OverviewMiniShowcaseLayout.DefaultHeight;
+        private bool _showOverviewMiniShowcase = true;
         private GridOptionsCatalog _gridOptions = new GridOptionsCatalog();
         private GameActivityScope _startPageActivityScope = DefaultStartPageActivityScope;
         private GameProgressScope _startPageProgressScope = DefaultStartPageProgressScope;
@@ -2841,6 +2844,44 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
+        /// <summary>
+        /// The overview's one-row mini-showcase of linked widgets. Replaced on load for the same
+        /// reason as <see cref="Showcase"/>: the getter seeds a default.
+        /// </summary>
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public ShowcaseSettings OverviewMiniShowcase
+        {
+            get
+            {
+                if (_overviewMiniShowcase == null)
+                {
+                    _overviewMiniShowcase = OverviewMiniShowcaseLayout.CreateDefault();
+                }
+
+                return _overviewMiniShowcase;
+            }
+            set
+            {
+                var normalized = value?.Clone() ?? OverviewMiniShowcaseLayout.CreateDefault();
+                OverviewMiniShowcaseLayout.Normalize(normalized);
+                SetValue(ref _overviewMiniShowcase, normalized);
+            }
+        }
+
+        /// <summary>Height of the mini-showcase row in pixels; its widgets fit this height.</summary>
+        public double OverviewMiniShowcaseHeight
+        {
+            get => _overviewMiniShowcaseHeight;
+            set => SetValue(ref _overviewMiniShowcaseHeight, OverviewMiniShowcaseLayout.ClampHeight(value));
+        }
+
+        /// <summary>Shows the mini-showcase row under the overview grids.</summary>
+        public bool ShowOverviewMiniShowcase
+        {
+            get => _showOverviewMiniShowcase;
+            set => SetValue(ref _showOverviewMiniShowcase, value);
+        }
+
         public GridOptionsCatalog GridOptions
         {
             get => AttachGridOptionsBridge(_gridOptions ?? (_gridOptions = new GridOptionsCatalog()));
@@ -3528,6 +3569,9 @@ namespace PlayniteAchievements.Models.Settings
                 Showcase = this.Showcase?.Clone() ?? ShowcaseLayoutService.CreateDefault(
                     this.ShowOverviewCollectionScoreCard,
                     this.ShowOverviewPrestigeScoreCard),
+                OverviewMiniShowcase = this.OverviewMiniShowcase?.Clone() ?? OverviewMiniShowcaseLayout.CreateDefault(),
+                OverviewMiniShowcaseHeight = this.OverviewMiniShowcaseHeight,
+                ShowOverviewMiniShowcase = this.ShowOverviewMiniShowcase,
                 GridOptions = this.GridOptions?.Clone() ?? new GridOptionsCatalog(),
                 StartPageActivityScope = this.StartPageActivityScope,
                 StartPageProgressScope = this.StartPageProgressScope,
@@ -3707,6 +3751,9 @@ namespace PlayniteAchievements.Models.Settings
             Showcase = ShowcaseLayoutService.CreateDefault(
                 defaults.ShowOverviewCollectionScoreCard,
                 defaults.ShowOverviewPrestigeScoreCard);
+            OverviewMiniShowcase = OverviewMiniShowcaseLayout.CreateDefault();
+            OverviewMiniShowcaseHeight = defaults.OverviewMiniShowcaseHeight;
+            ShowOverviewMiniShowcase = defaults.ShowOverviewMiniShowcase;
             GridOptions = new GridOptionsCatalog();
             StartPageActivityScope = defaults.StartPageActivityScope;
             StartPageProgressScope = defaults.StartPageProgressScope;
