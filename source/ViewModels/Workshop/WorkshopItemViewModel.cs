@@ -19,6 +19,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private bool _isInstalled;
         private bool _hasUpdate;
         private string _localGameName;
+        private bool _isMine;
 
         public WorkshopItemViewModel(WorkshopItem item)
         {
@@ -144,6 +145,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         public bool IsInLibrary => Kind != WorkshopItemKind.GameCustomData || !string.IsNullOrWhiteSpace(_localGameName);
+
+        /// <summary>True when this install's submitter key published the item.</summary>
+        public bool IsMine
+        {
+            get => _isMine;
+            set => SetValue(ref _isMine, value);
+        }
 
         /// <summary>True when this extension is too old to import the item.</summary>
         public bool RequiresNewerPlugin => WorkshopIdentityStore.IsNewer(Item.MinPluginVersion, PluginManifest.Version);
