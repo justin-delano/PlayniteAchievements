@@ -8,7 +8,8 @@ namespace PlayniteAchievements.Models.Settings
         BottomRight,
         BottomLeft,
         TopRight,
-        TopLeft
+        TopLeft,
+        BottomCenter
     }
 
     public static class ToastScreenCornerExtensions
@@ -21,6 +22,8 @@ namespace PlayniteAchievements.Models.Settings
                 case ToastScreenCorner.BottomLeft:
                 case ToastScreenCorner.TopLeft:
                     return ToastHorizontalAlignment.Left;
+                case ToastScreenCorner.BottomCenter:
+                    return ToastHorizontalAlignment.Center;
                 default:
                     return ToastHorizontalAlignment.Right;
             }

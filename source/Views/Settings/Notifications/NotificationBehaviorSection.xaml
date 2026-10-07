@@ -82,6 +82,7 @@
                                       MinWidth="140">
                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_ToastPosition_BottomRight}" Tag="{x:Static settings:ToastScreenCorner.BottomRight}"/>
                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_ToastPosition_BottomLeft}" Tag="{x:Static settings:ToastScreenCorner.BottomLeft}"/>
+                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_ToastPosition_BottomCenter}" Tag="{x:Static settings:ToastScreenCorner.BottomCenter}"/>
                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_ToastPosition_TopRight}" Tag="{x:Static settings:ToastScreenCorner.TopRight}"/>
                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_ToastPosition_TopLeft}" Tag="{x:Static settings:ToastScreenCorner.TopLeft}"/>
                             </ComboBox>
