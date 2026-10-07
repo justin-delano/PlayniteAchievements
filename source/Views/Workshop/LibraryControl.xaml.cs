@@ -15,8 +15,8 @@ namespace PlayniteAchievements.Views.Workshop
 {
     /// <summary>
     /// The Library page, hosted by Settings > Workshop and by the Workshop window: every saved
-    /// look and every item added from the Workshop, where each is used, and the actions on it.
-    /// Questions go through Playnite's dialogs.
+    /// look and every item added from the Workshop, where each is used, and the actions on it,
+    /// plus the games that have Workshop game data. Questions go through Playnite's dialogs.
     /// </summary>
     public partial class LibraryControl : UserControl
     {
@@ -28,12 +28,12 @@ namespace PlayniteAchievements.Views.Workshop
             InitializeComponent();
         }
 
-        internal LibraryControl(PlayniteAchievementsPlugin plugin, ILogger logger, LibraryItemKind? focusKind = null)
+        internal LibraryControl(PlayniteAchievementsPlugin plugin, ILogger logger, LibraryItemKind? focusKind = null, bool focusGameData = false)
             : this()
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
-            DataContext = new LibraryViewModel(plugin, logger, focusKind)
+            DataContext = new LibraryViewModel(plugin, logger, focusKind, focusGameData)
             {
                 Confirm = Confirm,
                 ChooseMergeOrReplace = ChooseMergeOrReplace,
@@ -93,6 +93,30 @@ namespace PlayniteAchievements.Views.Workshop
                 ResourceProvider.GetString("LOCPlayAch_Common_Rename"))
                 ? name
                 : null;
+        }
+
+        /// <summary>A click on a game data row opens that game's Manage Achievements.</summary>
+        private void GameDataRow_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            OpenGameData(sender);
+        }
+
+        private void GameDataRow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                OpenGameData(sender);
+                e.Handled = true;
+            }
+        }
+
+        private void OpenGameData(object sender)
+        {
+            var row = (sender as ListBoxItem)?.DataContext as LibraryGameDataRow;
+            if (row != null)
+            {
+                ViewModel?.OpenGameDataCommand.Execute(row);
+            }
         }
 
         /// <summary>Export is the same two-way menu as everywhere else: to a file, or shared to the Workshop.</summary>
