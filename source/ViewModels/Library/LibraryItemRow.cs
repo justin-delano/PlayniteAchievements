@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Media;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Workshop;
@@ -11,19 +12,25 @@ using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels.Library
 {
-    /// <summary>A kind filter chip of the Library page: null kind means every kind.</summary>
+    /// <summary>
+    /// A kind filter chip of the Library page: null kind means every kind. The game data chip
+    /// lists the games that have Workshop game data instead of library items.
+    /// </summary>
     public sealed class LibraryKindFilter : ObservableObject
     {
         private int _count;
         private bool _isSelected;
 
-        public LibraryKindFilter(LibraryItemKind? kind, string label)
+        public LibraryKindFilter(LibraryItemKind? kind, string label, bool isGameData = false)
         {
             Kind = kind;
             Label = label;
+            IsGameData = isGameData;
         }
 
         public LibraryItemKind? Kind { get; }
+
+        public bool IsGameData { get; }
 
         public string Label { get; }
 
@@ -63,6 +70,58 @@ namespace PlayniteAchievements.ViewModels.Library
 
         /// <summary>Reset applies the item again as published; offered where the target was edited.</summary>
         public bool CanReset => Use.CanReset && Use.IsEdited;
+    }
+
+    /// <summary>
+    /// One game with Workshop game data, as the Library page's game data list shows it: the game,
+    /// the item and version applied, whether the game's data was edited since, and whether the
+    /// Workshop has a newer version.
+    /// </summary>
+    public sealed class LibraryGameDataRow : ObservableObject
+    {
+        private WorkshopItem _indexItem;
+
+        public LibraryGameDataRow(Guid gameId, string gameName, LibraryLink link, bool isEdited)
+        {
+            GameId = gameId;
+            GameName = gameName;
+            Link = link ?? throw new ArgumentNullException(nameof(link));
+            IsEdited = isEdited;
+        }
+
+        public Guid GameId { get; }
+
+        public string GameName { get; }
+
+        public LibraryLink Link { get; }
+
+        public bool IsEdited { get; }
+
+        public string ItemName => !string.IsNullOrWhiteSpace(Link.Name)
+            ? Link.Name
+            : _indexItem?.Name ?? GameDataLinkService.WorkshopItemIdOf(Link);
+
+        public string VersionText => string.IsNullOrWhiteSpace(Link.AppliedVersion) ? null : "v" + Link.AppliedVersion;
+
+        /// <summary>The secondary line: the item and the version applied.</summary>
+        public string Secondary => string.Join(" · ", new[] { ItemName, VersionText }.Where(part => !string.IsNullOrWhiteSpace(part)));
+
+        public string KindGlyph => WorkshopItemViewModel.KindGlyphFor(WorkshopItemKind.GameCustomData);
+
+        /// <summary>The Workshop index entry of the item, once the index is read.</summary>
+        public WorkshopItem IndexItem
+        {
+            get => _indexItem;
+            set => SetValue(ref _indexItem, value, nameof(IndexItem), nameof(HasUpdate), nameof(UpdateTag), nameof(ItemName), nameof(Secondary));
+        }
+
+        public bool HasUpdate => GameDataLinkService.HasUpdate(Link, _indexItem);
+
+        public string UpdateTag => HasUpdate
+            ? ResourceProvider.GetString("LOCPlayAch_Workshop_Update") + " " + _indexItem.Version
+            : ResourceProvider.GetString("LOCPlayAch_Workshop_Update");
+
+        public string SearchText => (GameName + " " + ItemName).ToLowerInvariant();
     }
 
     /// <summary>One library item as the Library page lists it, with its uses and the Workshop entry it came from.</summary>
