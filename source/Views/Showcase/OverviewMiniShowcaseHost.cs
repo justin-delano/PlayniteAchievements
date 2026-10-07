@@ -97,12 +97,9 @@ namespace PlayniteAchievements.Views.Showcase
             return string.Equals(projection.LinkedStamp, Stamp(context, sliceKeys, span), StringComparison.Ordinal);
         }
 
-        // The widget's title: what the overview's selections narrow it to.
-        private string ContextLabel(ShowcaseWidgetInstanceSettings widget)
-        {
-            var (exclude, selection) = LinkRule(widget);
-            return _overview.GetLinkedContextLabel(exclude, selection);
-        }
+        // The widget's title: the game it is narrowed to, if any.
+        private string ContextLabel(ShowcaseWidgetInstanceSettings widget) =>
+            _overview.GetLinkedContextLabel(LinkRule(widget).Selection);
 
         private static string Stamp(
             string context,
