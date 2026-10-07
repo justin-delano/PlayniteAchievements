@@ -23,6 +23,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var counts = Projection?.Timeline ?? new Dictionary<DateTime, int>();
             _timeline.Window = ShowcaseTimelineOptions.GetWindow(instance);
             _timeline.Granularity = ShowcaseTimelineOptions.GetGranularity(instance);
+            _timeline.HighlightedSpan = Projection?.HighlightedSpan;
             // The chart itself shows the empty caption when the window holds no unlocks.
             var byPlatform = Projection?.TimelineByPlatform;
             if (byPlatform != null)
