@@ -149,6 +149,13 @@ namespace PlayniteAchievements.Services.Capture
             /// </summary>
             public double HostOpacity;
 
+            /// <summary>
+            /// The slide host's scale at this tick, applied about the card's center. A zoom motion
+            /// animates it, and the recorded pixels are captured without it, so export shrinks the
+            /// destination rect by this. Zero (a sample that never set it) reads as 1.
+            /// </summary>
+            public double HostScale;
+
             /// <summary>Game client width at this tick, physical pixels (scales rects into video frames).</summary>
             public int ClientW;
 
