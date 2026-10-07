@@ -780,22 +780,6 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Workshop_Title"),
-                    MenuSection = PluginMainMenuSection,
-                    Action = (a) =>
-                    {
-                        OpenWorkshopSettings();
-                    }
-                };
-
-                yield return new MainMenuItem
-                {
-                    Description = "-",
-                    MenuSection = PluginMainMenuSection
-                };
-
-                yield return new MainMenuItem
-                {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Recent"),
                     MenuSection = PluginMainMenuSection,
                     Action = (a) =>

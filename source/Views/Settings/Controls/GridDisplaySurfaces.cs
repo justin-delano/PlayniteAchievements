@@ -190,7 +190,8 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 [GridOptionKeys.CategorySummaries.OverviewSelectedGame] = AllRows,
                 [GridOptionKeys.CategorySummaries.FriendsOverview] = AllRows,
                 [GridOptionKeys.CategorySummaries.ViewFriendsAchievements] = AllRows,
-                [GridOptionKeys.CategorySummaries.DesktopTheme] = AllRows
+                [GridOptionKeys.CategorySummaries.DesktopTheme] = AllRows,
+                [GridOptionKeys.CategorySummaries.WorkshopPreview] = AllRows
             };
 
         private static readonly Dictionary<string, string> AchievementTitleKeys =
