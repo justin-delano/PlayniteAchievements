@@ -813,36 +813,38 @@
                                      whole cell should accept it. The grid's own drag handler has
                                      already moved the selection onto this row by then, so the
                                      pane shows the icon that changed. -->
-                                <!-- Square from the column width, so the row height is settled in
-                                     the first layout pass and never waits on the bitmap. -->
-                                <Grid Background="Transparent"
-                                      Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
-                                      AllowDrop="True"
-                                      PreviewDragOver="IconDropTarget_PreviewDragOver"
-                                      PreviewDrop="IconDropTarget_Drop">
-                                    <!-- Sized by the cell rather than fixed, the way the shared
-                                         AchievementIconTemplate is, so resizing the column
-                                         resizes the icon instead of the space around it. -->
-                                    <Image Stretch="Uniform"
-                                           Margin="2"
-                                           RenderOptions.BitmapScalingMode="HighQuality"
-                                           helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                                           helpers:AsyncImage.DecodePixel="128"
-                                           PreviewMouseLeftButtonDown="IconImage_PreviewMouseLeftButtonDown">
-                                        <Image.Style>
-                                            <Style TargetType="Image">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding CanReveal}" Value="True">
-                                                        <Setter Property="Cursor" Value="Hand" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsIconCovered}" Value="True">
-                                                        <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Achievements_ClickToReveal}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                </Grid>
+                                <!-- Square from the width the cell offers while measuring, so a new row has its
+                                     height in the first layout pass. A Height bound to ActualWidth arrived a pass
+                                     late, and the grid packed rows in at the short height before they grew. -->
+                                <controls:SquareDecorator>
+                                    <Grid Background="Transparent"
+                                          AllowDrop="True"
+                                          PreviewDragOver="IconDropTarget_PreviewDragOver"
+                                          PreviewDrop="IconDropTarget_Drop">
+                                        <!-- Sized by the cell rather than fixed, the way the shared
+                                             AchievementIconTemplate is, so resizing the column
+                                             resizes the icon instead of the space around it. -->
+                                        <Image Stretch="Uniform"
+                                               Margin="2"
+                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                               helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                                               helpers:AsyncImage.DecodePixel="128"
+                                               PreviewMouseLeftButtonDown="IconImage_PreviewMouseLeftButtonDown">
+                                            <Image.Style>
+                                                <Style TargetType="Image">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding CanReveal}" Value="True">
+                                                            <Setter Property="Cursor" Value="Hand" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsIconCovered}" Value="True">
+                                                            <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Achievements_ClickToReveal}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                    </Grid>
+                                </controls:SquareDecorator>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
