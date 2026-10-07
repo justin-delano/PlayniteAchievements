@@ -197,7 +197,8 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                 BuildWeeks(ShowcaseWidgetProjectionService.BuildActivityCalendar(
                     Projection.Snapshot,
                     instance,
-                    DateTime.Now.Date));
+                    DateTime.Now.Date,
+                    trimToUnlocks: Projection.IsLinked));
             }
         }
 
