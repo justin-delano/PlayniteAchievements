@@ -1100,7 +1100,7 @@ namespace PlayniteAchievements.Models
                     ShowcaseWidgetOptions.SetGameActivityScope(settings, GameActivityScope.All);
                     break;
                 case ShowcaseWidgetKind.ActivityCalendar:
-                    ShowcaseTimelineOptions.SetWindow(settings, TimeWindow.FromPreset(TimelineRange.OneYear));
+                    ShowcaseTimelineOptions.SetWindow(settings, TimeWindow.All);
                     break;
             }
 
