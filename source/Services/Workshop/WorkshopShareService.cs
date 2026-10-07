@@ -281,6 +281,18 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
+        /// <summary>Asks the Workshop to take down an item this install published.</summary>
+        public Task<WorkshopSubmissionReceipt> RemoveAsync(WorkshopItemKind kind, string itemId, CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                throw new ArgumentException("No Workshop item id.", nameof(itemId));
+            }
+
+            var submission = new WorkshopSubmission { Remove = true, ExistingId = itemId, Author = _identity.DisplayName };
+            return ShareAsync(new WorkshopShareCandidate { Kind = kind }, submission, null, null, cancel);
+        }
+
         /// <summary>
         /// Packages, uploads, and submits. Returns the service's receipt and records it locally.
         /// <paramref name="prebuiltPackagePath"/>, when it names an existing file, is uploaded as
