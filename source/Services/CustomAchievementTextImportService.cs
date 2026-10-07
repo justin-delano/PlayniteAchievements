@@ -114,7 +114,8 @@ namespace PlayniteAchievements.Services
         public CustomAchievementCsvParseResult Parse(string text, DateTime? nowUtc = null, string iconBaseDirectory = null)
         {
             var result = new CustomAchievementCsvParseResult();
-            var rows = ParseRows(text);
+            var records = ParseRows(text);
+            var rows = records.Rows;
             var headerIndex = rows.FindIndex(row => !IsEmptyRow(row));
             if (headerIndex < 0)
             {
@@ -165,6 +166,22 @@ namespace PlayniteAchievements.Services
                 }
 
                 var rowNumber = rowIndex + 1;
+
+                // One separator for the whole file: a row saved with another, or one whose
+                // unquoted text pushed cells past the header, would otherwise land its values in
+                // the wrong columns without a word.
+                if (header.Count > 1 && records.MixedRows.Contains(rowIndex))
+                {
+                    result.Errors.Add($"Row {rowNumber}: uses a different separator than the header ({DescribeDelimiter(records.Delimiter)}).");
+                    continue;
+                }
+
+                if (cells.Count > header.Count && cells.Skip(header.Count).Any(value => !string.IsNullOrWhiteSpace(value)))
+                {
+                    result.Errors.Add($"Row {rowNumber}: has more cells than the header; a value containing {DescribeDelimiter(records.Delimiter)} needs quotes.");
+                    continue;
+                }
+
                 var row = new CustomAchievementCsvRow { RowNumber = rowNumber };
                 var rowErrorCount = result.Errors.Count;
                 for (var columnIndex = 0; columnIndex < cells.Count && columnIndex < mapping.Count; columnIndex++)
@@ -566,16 +583,41 @@ namespace PlayniteAchievements.Services
             return row == null || row.All(value => string.IsNullOrWhiteSpace(value));
         }
 
-        /// <summary>
-        /// Splits the text into records. Blank records are kept so a record's index stays its
-        /// spreadsheet row; only a trailing blank one is dropped.
-        /// </summary>
-        private static List<List<string>> ParseRows(string text)
+        private static string DescribeDelimiter(char delimiter)
         {
-            var rows = new List<List<string>>();
+            return delimiter == '\t' ? "tab" : "\"" + delimiter + "\"";
+        }
+
+        /// <summary>The separators a spreadsheet saves CSV with: comma, semicolon or tab.</summary>
+        private static readonly char[] Delimiters = { ',', ';', '\t' };
+
+        private sealed class CsvRecords
+        {
+            public List<List<string>> Rows { get; } = new List<List<string>>();
+
+            /// <summary>Records written with another separator than the file's, by index.</summary>
+            public HashSet<int> MixedRows { get; } = new HashSet<int>();
+
+            public char Delimiter { get; set; } = ',';
+        }
+
+        /// <summary>
+        /// Splits the text into records with the one separator the file uses. Blank records are
+        /// kept so a record's index stays its spreadsheet row; only a trailing blank one is
+        /// dropped.
+        /// </summary>
+        /// <remarks>
+        /// The separator is Excel's "sep=" line when the file starts with one, which Excel hides
+        /// and which is therefore not a row; otherwise whichever of comma, semicolon and tab the
+        /// header uses most. A record that has none of it but does have another separator outside
+        /// quotes was written with a different one, and is flagged rather than read as one cell.
+        /// </remarks>
+        private static CsvRecords ParseRows(string text)
+        {
+            var records = new CsvRecords();
             if (string.IsNullOrWhiteSpace(text))
             {
-                return rows;
+                return records;
             }
 
             if (text[0] == '﻿')
@@ -583,10 +625,34 @@ namespace PlayniteAchievements.Services
                 text = text.Substring(1);
             }
 
-            var delimiter = DetectDelimiter(text);
+            if (TryReadSeparatorLine(ref text, out var declared))
+            {
+                records.Delimiter = declared;
+            }
+            else
+            {
+                records.Delimiter = DetectDelimiter(text);
+            }
+
+            var delimiter = records.Delimiter;
             var row = new List<string>();
             var cell = new StringBuilder();
             var inQuotes = false;
+            var sawOtherDelimiter = false;
+
+            void EndRow()
+            {
+                row.Add(cell.ToString());
+                cell.Clear();
+                if (row.Count == 1 && sawOtherDelimiter)
+                {
+                    records.MixedRows.Add(records.Rows.Count);
+                }
+
+                records.Rows.Add(row);
+                row = new List<string>();
+                sawOtherDelimiter = false;
+            }
 
             for (var i = 0; i < text.Length; i++)
             {
@@ -628,10 +694,7 @@ namespace PlayniteAchievements.Services
 
                 if (c == '\r' || c == '\n')
                 {
-                    row.Add(cell.ToString());
-                    cell.Clear();
-                    rows.Add(row);
-                    row = new List<string>();
+                    EndRow();
                     if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
                     {
                         i++;
@@ -640,36 +703,75 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
+                if (Array.IndexOf(Delimiters, c) >= 0)
+                {
+                    sawOtherDelimiter = true;
+                }
+
                 cell.Append(c);
             }
 
-            row.Add(cell.ToString());
-            if (!IsEmptyRow(row))
+            if (cell.Length > 0 || row.Count > 0)
             {
-                rows.Add(row);
+                EndRow();
             }
 
-            return rows;
+            return records;
+        }
+
+        /// <summary>
+        /// Reads and strips Excel's "sep=X" first line, which names the file's separator.
+        /// </summary>
+        private static bool TryReadSeparatorLine(ref string text, out char delimiter)
+        {
+            delimiter = ',';
+            if (text.Length < 5 || !text.StartsWith("sep=", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var candidate = text[4];
+            var lineEnd = 5;
+            if (Array.IndexOf(Delimiters, candidate) < 0 ||
+                (lineEnd < text.Length && text[lineEnd] != '\r' && text[lineEnd] != '\n'))
+            {
+                return false;
+            }
+
+            if (lineEnd < text.Length && text[lineEnd] == '\r')
+            {
+                lineEnd++;
+            }
+
+            if (lineEnd < text.Length && text[lineEnd] == '\n')
+            {
+                lineEnd++;
+            }
+
+            delimiter = candidate;
+            text = text.Substring(lineEnd);
+            return true;
         }
 
         private static char DetectDelimiter(string text)
         {
-            var header = new StringBuilder();
-            for (var i = 0; i < text.Length; i++)
-            {
-                var c = text[i];
-                if (c == '\r' || c == '\n')
-                {
-                    break;
-                }
+            var lineEnd = text.IndexOfAny(new[] { '\r', '\n' });
+            var headerText = lineEnd < 0 ? text : text.Substring(0, lineEnd);
 
-                header.Append(c);
+            // Ties go to the earlier entry, so a one-column header reads as comma-separated.
+            var best = Delimiters[0];
+            var bestCount = CountOutsideQuotes(headerText, best);
+            foreach (var candidate in Delimiters.Skip(1))
+            {
+                var count = CountOutsideQuotes(headerText, candidate);
+                if (count > bestCount)
+                {
+                    best = candidate;
+                    bestCount = count;
+                }
             }
 
-            var headerText = header.ToString();
-            return CountOutsideQuotes(headerText, '\t') > CountOutsideQuotes(headerText, ',')
-                ? '\t'
-                : ',';
+            return best;
         }
 
         private static int CountOutsideQuotes(string value, char delimiter)
