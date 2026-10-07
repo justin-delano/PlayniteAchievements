@@ -548,6 +548,12 @@ namespace PlayniteAchievements.Views.Helpers
                     useEqualWidthForMissing ? equalWidth : (double?)null))
                 .ToList();
 
+            // A column's MaxWidth caps it on screen, so the plan has to respect it too, or the
+            // width it plans past the cap shows as an empty strip at the grid's right edge.
+            var ceilingWidths = keyColumns
+                .Select(e => IsValidWidth(e.Column.MaxWidth) ? e.Column.MaxWidth : double.NaN)
+                .ToList();
+
             return ColumnSizingPlanner.TryPlan(
                 keys,
                 seedWidths,
@@ -557,6 +563,7 @@ namespace PlayniteAchievements.Views.Helpers
                 rescaleAll,
                 targetWidth,
                 excludedAbsorberKeys,
+                ceilingWidths,
                 out normalized);
         }
 
