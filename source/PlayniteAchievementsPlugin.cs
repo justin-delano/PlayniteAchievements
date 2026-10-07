@@ -1094,6 +1094,11 @@ namespace PlayniteAchievements
                     // duration can come from a theme override rather than the setting.
                     _unlockSounds.MaxPlaybackSeconds =
                         () => _toastNotifications?.GetEffectiveToastDurationSecondsSafe();
+                    _unlockSounds.ResolvePack = (providerKey, gameId) => Services.Sound.UnlockSoundScope.Resolve(
+                        settings?.Persisted,
+                        _gameCustomDataStore,
+                        providerKey,
+                        gameId);
                     _toastNotifications = new ToastNotificationService(
                         PlayniteApi,
                         settings,
