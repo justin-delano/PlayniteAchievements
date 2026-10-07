@@ -99,6 +99,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _allowThemeUnlockSounds = true;
         private int _unlockSoundVolumePercent = 50;
         private UnlockSoundSettings _unlockSounds = UnlockSoundSettings.CreateDefault();
+        private Dictionary<string, UnlockSoundSettings> _providerUnlockSounds;
         private bool _unlockSoundsSeededFromUniPlaySong = false;
         private bool _enableUnlockScreenshots = false;
         private bool _unlockScreenshotClean = false;
@@ -1370,6 +1371,60 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockSounds;
             set => SetValue(ref _unlockSounds, value ?? UnlockSoundSettings.CreateDefault());
+        }
+
+        /// <summary>
+        /// Per-provider whole sound packs keyed by provider key. Only customized providers are
+        /// stored; absent providers follow <see cref="UnlockSounds"/>. Presence means the provider
+        /// owns all six tiers: a blank tier in its pack falls to the theme and bundled sounds,
+        /// never to the global pack.
+        /// </summary>
+        public Dictionary<string, UnlockSoundSettings> ProviderUnlockSounds
+        {
+            get => _providerUnlockSounds ??
+                   (_providerUnlockSounds =
+                       new Dictionary<string, UnlockSoundSettings>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _providerUnlockSounds, NormalizeProviderUnlockSounds(value));
+        }
+
+        /// <summary>The provider's own sound pack, or null when it follows <see cref="UnlockSounds"/>.</summary>
+        public UnlockSoundSettings GetProviderUnlockSounds(string providerKey)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            return providerKey != null &&
+                   ProviderUnlockSounds.TryGetValue(providerKey, out var value)
+                ? value
+                : null;
+        }
+
+        /// <summary>
+        /// Stores a clone of the provider's sound pack, removing the entry when the value is null.
+        /// Reassigns the dictionary so PropertyChanged is raised.
+        /// </summary>
+        public void SetProviderUnlockSounds(string providerKey, UnlockSoundSettings value)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var packs = new Dictionary<string, UnlockSoundSettings>(
+                ProviderUnlockSounds,
+                StringComparer.OrdinalIgnoreCase);
+            if (value == null)
+            {
+                if (!packs.Remove(providerKey))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                packs[providerKey] = value.Clone();
+            }
+
+            ProviderUnlockSounds = packs;
         }
 
         /// <summary>
@@ -3309,6 +3364,10 @@ namespace PlayniteAchievements.Models.Settings
                 AllowThemeUnlockSounds = this.AllowThemeUnlockSounds,
                 UnlockSoundVolumePercent = this.UnlockSoundVolumePercent,
                 UnlockSounds = this.UnlockSounds?.Clone() ?? UnlockSoundSettings.CreateDefault(),
+                ProviderUnlockSounds = this.ProviderUnlockSounds.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.Clone(),
+                    StringComparer.OrdinalIgnoreCase),
                 UnlockSoundsSeededFromUniPlaySong = this.UnlockSoundsSeededFromUniPlaySong,
                 EnableUnlockScreenshots = this.EnableUnlockScreenshots,
                 UnlockScreenshotClean = this.UnlockScreenshotClean,
@@ -3783,6 +3842,24 @@ namespace PlayniteAchievements.Models.Settings
         {
             var normalized = new Dictionary<string, NotificationStyleSettings>(StringComparer.OrdinalIgnoreCase);
             foreach (var pair in value ?? Enumerable.Empty<KeyValuePair<string, NotificationStyleSettings>>())
+            {
+                var key = NormalizeProviderKeyToken(pair.Key);
+                if (key == null || pair.Value == null)
+                {
+                    continue;
+                }
+
+                normalized[key] = pair.Value;
+            }
+
+            return normalized;
+        }
+
+        private static Dictionary<string, UnlockSoundSettings> NormalizeProviderUnlockSounds(
+            IEnumerable<KeyValuePair<string, UnlockSoundSettings>> value)
+        {
+            var normalized = new Dictionary<string, UnlockSoundSettings>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in value ?? Enumerable.Empty<KeyValuePair<string, UnlockSoundSettings>>())
             {
                 var key = NormalizeProviderKeyToken(pair.Key);
                 if (key == null || pair.Value == null)
