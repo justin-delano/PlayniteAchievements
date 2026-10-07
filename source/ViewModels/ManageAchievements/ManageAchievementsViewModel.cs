@@ -1276,9 +1276,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         /// <param name="mergeCustomAchievements">Receives a custom-achievements package's parsed
         /// definitions instead of the stored merge.</param>
-        /// <param name="mergeCsv">Receives a plain CSV's text, which can update every row the
-        /// caller shows. Only the editor has the rows a CSV edits, so without it .csv is not
-        /// offered.</param>
+        /// <param name="mergeCsv">Receives a plain CSV's path, so its relative icon paths read
+        /// against its folder. Only the editor has the rows a CSV edits, so without it .csv is
+        /// not offered.</param>
         /// <param name="beforeReplace">Runs just before a whole-game package is written.</param>
         public void ImportPortable(
             Action<CustomAchievementTextImportResult> mergeCustomAchievements = null,
@@ -1314,7 +1314,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
                 if (mergeCsv != null && dialog.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    mergeCsv(File.ReadAllText(dialog.FileName));
+                    mergeCsv(dialog.FileName);
                     return;
                 }
 
