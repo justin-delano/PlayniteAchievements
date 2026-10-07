@@ -523,6 +523,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _plan = plan;
+            UpdateHighlightedIndex();
             CollectionHelper.SynchronizeValueCollection(TimelineLabels, labels.AxisLabels.ToList());
             CollectionHelper.SynchronizeValueCollection(TooltipLabels, labels.TooltipLabels.ToList());
             XAxisMax = Math.Max(1, plan.Buckets.Count);
@@ -618,6 +619,67 @@ namespace PlayniteAchievements.ViewModels
             var brush = new SolidColorBrush(color);
             brush.Freeze();
             return brush;
+        }
+
+        private UnlockDaySpan? _highlightedSpan;
+        private int _highlightedIndex = -1;
+
+        /// <summary>
+        /// Days to show as selected. The column covering exactly these days is shaded; a span
+        /// no column covers (the bar unit changed since it was picked) shades nothing.
+        /// </summary>
+        public UnlockDaySpan? HighlightedSpan
+        {
+            get => _highlightedSpan;
+            set
+            {
+                if (Nullable.Equals(_highlightedSpan, value))
+                {
+                    return;
+                }
+
+                _highlightedSpan = value;
+                UpdateHighlightedIndex();
+            }
+        }
+
+        /// <summary>The shaded column's index, or -1.</summary>
+        public int HighlightedIndex
+        {
+            get => _highlightedIndex;
+            private set => SetValue(ref _highlightedIndex, value);
+        }
+
+        /// <summary>The days the column at <paramref name="index"/> covers, or null off the axis.</summary>
+        public UnlockDaySpan? SpanAt(int index)
+        {
+            var buckets = _plan?.Buckets;
+            if (buckets == null || index < 0 || index >= buckets.Count)
+            {
+                return null;
+            }
+
+            return new UnlockDaySpan(buckets[index].Start, buckets[index].End);
+        }
+
+        private void UpdateHighlightedIndex()
+        {
+            var span = _highlightedSpan;
+            var buckets = _plan?.Buckets;
+            var index = -1;
+            if (span.HasValue && buckets != null)
+            {
+                for (var i = 0; i < buckets.Count; i++)
+                {
+                    if (buckets[i].Start == span.Value.Start && buckets[i].End == span.Value.End)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+
+            HighlightedIndex = index;
         }
 
         private void ReplanTicks()
