@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public async Task FetchIndex_RejectsNewerSchema()
         {
-            var handler = new FakeHandler(request => Text(SampleIndex.Replace("\"schemaVersion\": 1,\n  \"generated\"", "\"schemaVersion\": 99,\n  \"generated\"")));
+            var handler = new FakeHandler(request => Text(SampleIndex.Replace("\r\n", "\n").Replace("\"schemaVersion\": 1,\n  \"generated\"", "\"schemaVersion\": 99,\n  \"generated\"")));
             var client = new WorkshopClient(() => null, null, null, handler);
             StringAssert.StartsWith(client.IndexUrl, WorkshopClient.DefaultIndexUrl);
 
