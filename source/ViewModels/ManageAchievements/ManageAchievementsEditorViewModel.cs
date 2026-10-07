@@ -6650,6 +6650,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
     public sealed class AchievementEditorRow : ObservableObject
     {
+        private bool _filterRetestToken;
         private string _id;
         private string _displayName;
         private string _description;
@@ -7321,6 +7322,19 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// The category this achievement actually sits in: the user's override when they set one,
         /// otherwise the provider's own.
         /// </summary>
+        /// <summary>
+        /// Carries no value of its own. The editor grid's view live-filters on this property, so
+        /// flipping it makes the view test this one row against the filter again, moving it in or
+        /// out without resetting the grid.
+        /// </summary>
+        public bool FilterRetestToken => _filterRetestToken;
+
+        internal void RequestFilterRetest()
+        {
+            _filterRetestToken = !_filterRetestToken;
+            OnPropertyChanged(nameof(FilterRetestToken));
+        }
+
         public string EffectiveCategoryLabel
         {
             get
