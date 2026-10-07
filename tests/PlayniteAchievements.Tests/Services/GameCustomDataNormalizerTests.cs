@@ -366,6 +366,29 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void NormalizeInternal_CategoryTypeOverrides_DropSoftcoreAndHardcore()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    AchievementCategoryTypeOverrides = new Dictionary<string, string>
+                    {
+                        ["mixed"] = "Base|Hardcore|Missable",
+                        ["derived_only"] = "Hardcore",
+                        ["legacy"] = "SideProgression|Softcore"
+                    }
+                },
+                gameId);
+
+            Assert.AreEqual("Base|Missable", normalized.AchievementCategoryTypeOverrides["mixed"]);
+            Assert.AreEqual("SideQuest", normalized.AchievementCategoryTypeOverrides["legacy"]);
+            Assert.IsFalse(normalized.AchievementCategoryTypeOverrides.ContainsKey("derived_only"));
+            Assert.AreEqual("Base|Missable", normalized.AchievementOverrides["mixed"].CategoryType);
+        }
+
+        [TestMethod]
         public void NormalizeInternal_CategoryMetadata_NormalizesOrderAndImages()
         {
             var gameId = Guid.NewGuid();
