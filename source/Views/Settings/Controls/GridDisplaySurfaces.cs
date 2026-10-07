@@ -106,8 +106,8 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 [GridOptionKeys.Achievement.SingleGame] = new GridDisplayRowCapabilities(
                     showCoverImagesRow: false,
                     showCategoryModeRow: true),
-                [GridOptionKeys.Achievement.OverviewRecent] = new GridDisplayRowCapabilities(
-                    showSortRow: false),
+                // The overview's Achievements grid holds every unlock, so it sorts like the others.
+                [GridOptionKeys.Achievement.OverviewRecent] = AllRows,
                 [GridOptionKeys.Achievement.OverviewSelectedGame] = new GridDisplayRowCapabilities(
                     showCoverImagesRow: false,
                     showCategoryModeRow: true),
