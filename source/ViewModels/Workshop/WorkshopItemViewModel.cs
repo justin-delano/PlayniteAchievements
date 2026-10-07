@@ -19,6 +19,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private bool _isInstalled;
         private bool _hasUpdate;
         private string _localGameName;
+        private bool _isMine;
 
         public WorkshopItemViewModel(WorkshopItem item)
         {
@@ -118,12 +119,17 @@ namespace PlayniteAchievements.ViewModels.Workshop
             set => SetValue(ref _readme, value);
         }
 
-        /// <summary>True when the item is in the library.</summary>
+        /// <summary>True when the item is in the library; for game data, when its game has it applied.</summary>
         public bool IsInstalled
         {
             get => _isInstalled;
             set => SetValue(ref _isInstalled, value, nameof(IsInstalled), nameof(ActionLabel), nameof(CanInstall));
         }
+
+        /// <summary>The installed state's label: game data is applied to a game, everything else is in the library.</summary>
+        public string InstalledLabel => ResourceProvider.GetString(Kind == WorkshopItemKind.GameCustomData
+            ? "LOCPlayAch_Library_Applied"
+            : "LOCPlayAch_Library_InLibrary");
 
         public bool HasUpdate
         {
@@ -131,7 +137,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             set => SetValue(ref _hasUpdate, value, nameof(HasUpdate), nameof(ActionLabel), nameof(CanInstall));
         }
 
-        /// <summary>For game data, the library game it matched, when it did.</summary>
+        /// <summary>For game data, the library game it has been applied to or matched, when there is one.</summary>
         public string LocalGameName
         {
             get => _localGameName;
@@ -140,6 +146,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         public bool IsInLibrary => Kind != WorkshopItemKind.GameCustomData || !string.IsNullOrWhiteSpace(_localGameName);
 
+        /// <summary>True when this install's submitter key published the item.</summary>
+        public bool IsMine
+        {
+            get => _isMine;
+            set => SetValue(ref _isMine, value);
+        }
+
         /// <summary>True when this extension is too old to import the item.</summary>
         public bool RequiresNewerPlugin => WorkshopIdentityStore.IsNewer(Item.MinPluginVersion, PluginManifest.Version);
 
@@ -147,21 +160,17 @@ namespace PlayniteAchievements.ViewModels.Workshop
             string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_RequiresNewerPlugin"), Item.MinPluginVersion);
 
         /// <summary>
-        /// Game data already in the library at the published version: the action applies the
-        /// package again, to the game picked for it. Looks in the library are reinstalled from the
-        /// Library page.
+        /// Install, Update, or the installed label when there is nothing newer. Looks in the
+        /// library are reinstalled from the Library page; game data on a game is reset from that
+        /// game's Manage Achievements.
         /// </summary>
-        public bool IsReinstall => IsInstalled && !HasUpdate && Kind == WorkshopItemKind.GameCustomData;
-
         public string ActionLabel => HasUpdate
             ? ResourceProvider.GetString("LOCPlayAch_Workshop_Update")
-            : IsReinstall
-                ? ResourceProvider.GetString("LOCPlayAch_Workshop_Reinstall")
-                : IsInstalled
-                    ? ResourceProvider.GetString("LOCPlayAch_Library_InLibrary")
-                    : ResourceProvider.GetString("LOCPlayAch_Workshop_Install");
+            : IsInstalled
+                ? InstalledLabel
+                : ResourceProvider.GetString("LOCPlayAch_Workshop_Install");
 
-        public bool CanInstall => !RequiresNewerPlugin && (!IsInstalled || HasUpdate || IsReinstall);
+        public bool CanInstall => !RequiresNewerPlugin && (!IsInstalled || HasUpdate);
 
         /// <summary>A readable line from the manifest's `contents` counts.</summary>
         public string ContentsSummary => SummarizeContents(Item.Contents, Kind);

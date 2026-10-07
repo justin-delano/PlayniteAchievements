@@ -38,6 +38,12 @@ namespace PlayniteAchievements.Services.Workshop
         /// exported from the live settings; the file is copied under the item name.
         /// </summary>
         public string PackagePath { get; set; }
+
+        /// <summary>The library item shared, when shared from the Library; recorded with the submission.</summary>
+        public string LibraryItemId { get; set; }
+
+        /// <summary>The Workshop id this install already published the candidate as; the dialog offers updating it first.</summary>
+        public string PublishedItemId { get; set; }
     }
 
     public enum WorkshopSharePhase
@@ -347,7 +353,8 @@ namespace PlayniteAchievements.Services.Workshop
                     Kind = candidate.Kind,
                     ItemId = submission.ExistingId,
                     SubmittedUtc = DateTime.UtcNow,
-                    LastState = "validating"
+                    LastState = "validating",
+                    LibraryItemId = submission.Remove ? null : candidate.LibraryItemId
                 });
                 return receipt;
             }

@@ -65,6 +65,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
         private bool _notificationsRefreshPending;
         private bool _notificationsRefreshDiscardPending;
         private bool _selectManageCategoriesSubTab;
+        // The Notifications tab's surface to show once its section exists: true for the frame.
+        private bool? _pendingNotificationsShowFrame;
         private bool _ensureTabContentQueued;
         private bool _categoryEditsPendingPropagation;
 
@@ -80,7 +82,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
             ILogger logger,
             PlayniteAchievementsSettings settings,
             ManualSourceRegistry manualSourceRegistry,
-            bool selectManageCategoriesSubTab = false)
+            bool selectManageCategoriesSubTab = false,
+            bool? notificationsShowFrame = null)
         {
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
@@ -94,6 +97,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
             _gameDataSnapshotProvider = new ManageAchievementsDataSnapshotProvider(gameId, _achievementDataService, logger);
             _selectManageCategoriesSubTab =
                 initialTab == ManageAchievementsTab.Category && selectManageCategoriesSubTab;
+            _pendingNotificationsShowFrame =
+                initialTab == ManageAchievementsTab.Notifications ? notificationsShowFrame : null;
 
             _viewModel = new ManageAchievementsViewModel(
                 gameId,
@@ -137,7 +142,8 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        internal void SelectTab(ManageAchievementsTab tab, bool selectManageCategoriesSubTab = false)
+        /// <param name="notificationsShowFrame">On the Notifications tab, the surface to show: true for the frame, false for the notification, null to keep it.</param>
+        internal void SelectTab(ManageAchievementsTab tab, bool selectManageCategoriesSubTab = false, bool? notificationsShowFrame = null)
         {
             if (_viewModel == null)
             {
@@ -147,6 +153,11 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (tab == ManageAchievementsTab.Category && selectManageCategoriesSubTab)
             {
                 _selectManageCategoriesSubTab = true;
+            }
+
+            if (tab == ManageAchievementsTab.Notifications && notificationsShowFrame.HasValue)
+            {
+                _pendingNotificationsShowFrame = notificationsShowFrame;
             }
 
             _viewModel.SelectedTab = tab;
@@ -197,6 +208,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (_viewModel != null)
             {
                 _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+                _viewModel.DetachWorkshopSource();
             }
             if (_refreshService != null)
             {
@@ -340,6 +352,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
             {
                 var hadNotificationsControl = _notificationsControl != null;
                 EnsureNotificationsControl(forceRecreate: false);
+                if (_pendingNotificationsShowFrame.HasValue && _notificationsControl != null)
+                {
+                    _notificationsControl.Preselect(null, _pendingNotificationsShowFrame.Value);
+                    _pendingNotificationsShowFrame = null;
+                }
+
                 if (_notificationsRefreshPending)
                 {
                     if (hadNotificationsControl)

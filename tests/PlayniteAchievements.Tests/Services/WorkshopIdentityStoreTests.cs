@@ -32,6 +32,18 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void IsOwnedBy_MatchesTheOwnerHashIgnoringCase_AndNeverAMissingHash()
+        {
+            var hash = new string('a', 64);
+            Assert.IsTrue(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = hash.ToUpperInvariant() }, hash));
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = new string('b', 64) }, hash));
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = null }, hash), "an item without an owner is no one's");
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = "" }, ""), "two blanks are not a match");
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(new WorkshopItem { OwnerHash = hash }, null), "an install without a key owns nothing");
+            Assert.IsFalse(WorkshopIdentityStore.IsOwnedBy(null, hash));
+        }
+
+        [TestMethod]
         public void ReadLegacyInstalls_IsEmptyWithoutAFileOrForAnUnreadableOne()
         {
             WithTemp(dir =>
@@ -71,6 +83,11 @@ namespace PlayniteAchievements.Services.Tests
                 identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
 
                 Assert.AreEqual(1, raised, "a submission is announced");
+
+                Assert.IsFalse(identity.TrySetSubmitterKey("not a key"));
+                Assert.AreEqual(1, raised, "a rejected key changes nothing");
+                Assert.IsTrue(identity.TrySetSubmitterKey(new string('c', 64)));
+                Assert.AreEqual(2, raised, "a replaced key is announced");
             });
         }
 
@@ -173,6 +190,49 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual("colors/neon", Find(reloaded, 1).ItemId, "same kind and name, case-insensitive");
                 Assert.IsNull(Find(reloaded, 2).ItemId, "a different kind is not linked");
                 Assert.AreEqual("colors/kept", Find(reloaded, 3).ItemId, "an existing id is left alone");
+            });
+        }
+
+        [TestMethod]
+        public void PublishedIdOf_LocalItem_FollowsItsLinkedSubmission_LatestFirst()
+        {
+            WithTemp(dir =>
+            {
+                var identity = new WorkshopIdentityStore(dir);
+                var local = new Library.LibraryItem { Id = "abc", Kind = Library.LibraryItemKind.Colors, Name = "Neon", Origin = Library.LibraryItemOrigin.Local };
+                var other = new Library.LibraryItem { Id = "def", Kind = Library.LibraryItemKind.Colors, Name = "Neon", Origin = Library.LibraryItemOrigin.Local };
+
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 1, Name = "Neon", Kind = WorkshopItemKind.Colors, LibraryItemId = "abc", SubmittedUtc = DateTime.UtcNow.AddDays(-1) });
+                Assert.IsNull(identity.PublishedIdOf(local, null), "not published until the record learns its id");
+                Assert.IsTrue(identity.HasLibrarySubmissions);
+
+                identity.LinkSubmissions(new[] { new WorkshopItem { Id = "colors/neon", Kind = WorkshopItemKind.Colors, Name = "Neon" } });
+                Assert.AreEqual("colors/neon", identity.PublishedIdOf(local, null));
+                Assert.IsNull(identity.PublishedIdOf(other, null), "a same-named item that was not shared is not linked");
+
+                identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 2, Name = "Neon 2", Kind = WorkshopItemKind.Colors, LibraryItemId = "ABC", ItemId = "colors/neon-2", SubmittedUtc = DateTime.UtcNow });
+                Assert.AreEqual("colors/neon-2", new WorkshopIdentityStore(dir).PublishedIdOf(local, null), "the latest submission wins, and the link persists");
+            });
+        }
+
+        [TestMethod]
+        public void PublishedIdOf_WorkshopItem_IsOwnedByThisInstallsKey()
+        {
+            WithTemp(dir =>
+            {
+                var identity = new WorkshopIdentityStore(dir);
+                var installed = new Library.LibraryItem { Id = "ws:colors/neon", Kind = Library.LibraryItemKind.Colors, Origin = Library.LibraryItemOrigin.Workshop, WorkshopItemId = "colors/neon" };
+                var entry = new WorkshopItem { Id = "colors/neon", Kind = WorkshopItemKind.Colors };
+
+                Assert.IsNull(identity.PublishedIdOf(installed, entry), "no key, so nothing is owned");
+
+                entry.OwnerHash = identity.GetSubmitterHash();
+                Assert.AreEqual("colors/neon", identity.PublishedIdOf(installed, entry));
+                Assert.IsNull(identity.PublishedIdOf(installed, null), "without its index entry ownership is unknown");
+                Assert.IsNull(identity.PublishedIdOf(installed, new WorkshopItem { Id = "colors/other", OwnerHash = entry.OwnerHash }), "another item's entry says nothing");
+
+                entry.OwnerHash = new string('b', 64);
+                Assert.IsNull(identity.PublishedIdOf(installed, entry), "someone else's item");
             });
         }
 

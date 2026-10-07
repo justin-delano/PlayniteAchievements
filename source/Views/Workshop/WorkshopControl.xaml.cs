@@ -13,17 +13,16 @@ using System.Windows.Controls;
 
 namespace PlayniteAchievements.Views.Workshop
 {
-    /// <summary>Which of the Workshop panes a control shows: every tab, or one of them without the tab strip.</summary>
+    /// <summary>Which of the Workshop panes a control shows: every tab, or Browse alone without the tab strip.</summary>
     public enum WorkshopPane
     {
         Full,
-        Browse,
-        Submissions
+        Browse
     }
 
     /// <summary>
-    /// The Workshop window: browse and install community items, the library they go into, and
-    /// the items this install has shared.
+    /// The Workshop window: browse and install community items (the ones this install shared
+    /// among them, under Mine), and the library they go into.
     /// </summary>
     public partial class WorkshopControl : UserControl
     {
@@ -56,9 +55,9 @@ namespace PlayniteAchievements.Views.Workshop
 
             if (pane != WorkshopPane.Full)
             {
-                // Hosted as one settings page: that tab alone, with the tab strip hidden. A
+                // Hosted as the Browse settings page: that tab alone, with the tab strip hidden. A
                 // collapsed TabItem still presents its content while it is the selected one.
-                Tabs.SelectedItem = pane == WorkshopPane.Browse ? BrowseTab : SubmissionsTab;
+                Tabs.SelectedItem = BrowseTab;
                 foreach (var item in Tabs.Items.OfType<TabItem>())
                 {
                     item.Visibility = Visibility.Collapsed;
@@ -66,13 +65,15 @@ namespace PlayniteAchievements.Views.Workshop
             }
             else
             {
-                // The window's Library tab; settings host the Library page on its own.
-                _library = new LibraryControl(plugin, logger, LibraryKindOf(focusGameId.HasValue ? WorkshopItemKind.GameCustomData : focusKind));
+                // The window's Library tab; settings host the Library page on its own. Opened for
+                // a game or for game data, it starts on the games that have Workshop game data.
+                var focusGameData = focusGameId.HasValue || focusKind == WorkshopItemKind.GameCustomData;
+                _library = new LibraryControl(plugin, logger, focusGameData ? null : LibraryKindOf(focusKind), focusGameData);
                 LibraryTab.Content = _library;
             }
         }
 
-        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles have none.</summary>
+        /// <summary>The library kind a window scoped to one Workshop kind starts filtered to; bundles and game data have none.</summary>
         private static Services.Library.LibraryItemKind? LibraryKindOf(WorkshopItemKind? kind)
         {
             switch (kind)
@@ -82,7 +83,6 @@ namespace PlayniteAchievements.Views.Workshop
                 case WorkshopItemKind.NotificationStyle: return Services.Library.LibraryItemKind.Toast;
                 case WorkshopItemKind.ScreenshotFrame: return Services.Library.LibraryItemKind.Frame;
                 case WorkshopItemKind.ShowcasePage: return Services.Library.LibraryItemKind.ShowcasePage;
-                case WorkshopItemKind.GameCustomData: return Services.Library.LibraryItemKind.GameData;
                 default: return null;
             }
         }

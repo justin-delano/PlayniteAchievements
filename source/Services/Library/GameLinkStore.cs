@@ -11,7 +11,8 @@ namespace PlayniteAchievements.Services.Library
     /// The links of per-game targets (<c>toast:game:&lt;id&gt;</c>, <c>frame:game:&lt;id&gt;</c>,
     /// <c>gamedata:&lt;id&gt;</c>) in <c>UserData\library\links.json</c>. They live in a file
     /// rather than the settings because per-game data is saved outside the settings edit session.
-    /// Thread-safe; reads return copies.
+    /// A game data link is the game's whole Workshop record rather than a link to a library item,
+    /// so the operations over library items skip it. Thread-safe; reads return copies.
     /// </summary>
     public sealed class GameLinkStore
     {
@@ -112,20 +113,49 @@ namespace PlayniteAchievements.Services.Library
 
         public void Remove(string targetKey) => Set(targetKey, null);
 
-        /// <summary>The target keys whose links point at <paramref name="libraryItemId"/>.</summary>
+        /// <summary>
+        /// The target keys whose links point at the library item <paramref name="libraryItemId"/>.
+        /// Game data links name a Workshop item rather than a library item and are never listed.
+        /// </summary>
         public IReadOnlyList<string> TargetsOf(string libraryItemId)
         {
             lock (_sync)
             {
                 EnsureLoaded();
                 return _links
-                    .Where(pair => string.Equals(pair.Value.LibraryItemId, libraryItemId, StringComparison.OrdinalIgnoreCase))
+                    .Where(pair => !LibraryTargetKeys.IsGameData(pair.Key)
+                                   && string.Equals(pair.Value.LibraryItemId, libraryItemId, StringComparison.OrdinalIgnoreCase))
                     .Select(pair => pair.Key)
                     .ToList();
             }
         }
 
-        /// <summary>Removes every link to the given items (items dropped from the library). Returns the target keys unlinked.</summary>
+        /// <summary>Every game data link, keyed by game.</summary>
+        public IReadOnlyDictionary<Guid, LibraryLink> GameDataLinks
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    EnsureLoaded();
+                    var result = new Dictionary<Guid, LibraryLink>();
+                    foreach (var pair in _links)
+                    {
+                        if (LibraryTargetKeys.IsGameData(pair.Key) && LibraryTargetKeys.TryGetGameId(pair.Key, out var gameId))
+                        {
+                            result[gameId] = pair.Value.Clone();
+                        }
+                    }
+
+                    return result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes every link to the given library items (items dropped from the library). Game
+        /// data links are left alone. Returns the target keys unlinked.
+        /// </summary>
         public IReadOnlyList<string> UnlinkItems(IEnumerable<string> libraryItemIds)
         {
             var ids = new HashSet<string>(libraryItemIds ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
@@ -133,7 +163,10 @@ namespace PlayniteAchievements.Services.Library
             lock (_sync)
             {
                 EnsureLoaded();
-                removed = _links.Where(pair => ids.Contains(pair.Value.LibraryItemId ?? string.Empty)).Select(pair => pair.Key).ToList();
+                removed = _links
+                    .Where(pair => !LibraryTargetKeys.IsGameData(pair.Key) && ids.Contains(pair.Value.LibraryItemId ?? string.Empty))
+                    .Select(pair => pair.Key)
+                    .ToList();
                 foreach (var key in removed)
                 {
                     _links.Remove(key);
@@ -165,11 +198,12 @@ namespace PlayniteAchievements.Services.Library
             lock (_sync)
             {
                 EnsureLoaded();
-                foreach (var link in _links.Values)
+                foreach (var pair in _links)
                 {
-                    if (string.Equals(link.LibraryItemId, oldId, StringComparison.OrdinalIgnoreCase))
+                    if (!LibraryTargetKeys.IsGameData(pair.Key)
+                        && string.Equals(pair.Value.LibraryItemId, oldId, StringComparison.OrdinalIgnoreCase))
                     {
-                        link.LibraryItemId = newId;
+                        pair.Value.LibraryItemId = newId;
                         count++;
                     }
                 }

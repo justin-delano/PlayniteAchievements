@@ -39,15 +39,18 @@ namespace PlayniteAchievements.Services.Tests
             WritePreset(LibraryItemKind.Toast, "Glass", "toast-1");
             WritePreset(LibraryItemKind.Frame, "Gold", "frame-1");
             WritePreset(LibraryItemKind.ShowcasePage, "Stats", "page-1");
-            WritePreset(LibraryItemKind.GameData, "Notes", "data-1");
             File.WriteAllText(Path.Combine(_root, LibraryStore.FolderOf(LibraryItemKind.Colors), "readme.txt"), "not a preset");
+
+            // Game data is recorded on the games: a file in the old game data folder is no item.
+            Directory.CreateDirectory(Path.Combine(_root, "gamedata_presets"));
+            File.WriteAllText(Path.Combine(_root, "gamedata_presets", "Notes.pa"), "data-1");
 
             var store = new LibraryStore(_root);
             Assert.IsFalse(store.IndexExists);
 
             var items = store.Items;
 
-            Assert.AreEqual(6, items.Count);
+            Assert.AreEqual(5, items.Count);
             Assert.IsTrue(store.IndexExists);
             Assert.IsTrue(items.All(item => item.Origin == LibraryItemOrigin.Local));
             var sunset = items.Single(item => item.Kind == LibraryItemKind.Colors);
@@ -253,7 +256,7 @@ namespace PlayniteAchievements.Services.Tests
             Parallel.For(0, 40, i => store.Upsert(new LibraryItem
             {
                 Id = LibraryItem.WorkshopId("item-" + i),
-                Kind = LibraryItemKind.GameData,
+                Kind = LibraryItemKind.ShowcasePage,
                 Name = "Item " + i,
                 Origin = LibraryItemOrigin.Workshop,
                 WorkshopItemId = "item-" + i,

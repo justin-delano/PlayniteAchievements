@@ -20,9 +20,13 @@ namespace PlayniteAchievements.Services.Library
     /// <summary>A game a Workshop game-data item was installed onto, with the baseline its updates merge against.</summary>
     public sealed class LibraryGameDataInstall
     {
+        /// <summary>The id the game's link names the item by (<c>ws:&lt;id&gt;</c>).</summary>
         public string LibraryItemId { get; set; }
 
         public string WorkshopItemId { get; set; }
+
+        /// <summary>The item's name, which the game's link carries.</summary>
+        public string Name { get; set; }
 
         public Guid PlayniteGameId { get; set; }
 
@@ -55,9 +59,10 @@ namespace PlayniteAchievements.Services.Library
     /// Brings what <c>installed.json</c> records into the library. A look (colors, sounds,
     /// notification style, frame, or a bundle part) becomes a Workshop item when a preset file of
     /// its kind still has the hash the install recorded for that part; a preset the user changed
-    /// since stays a local item. Showcase pages and game data, which were applied rather than
-    /// saved as presets, become Workshop items without a package. Planning is pure; running it
-    /// is idempotent, and the file is retired once its installs are in the library.
+    /// since stays a local item. Showcase pages, which were applied rather than saved as presets,
+    /// become Workshop items without a package. Game data is not a library item: each game it
+    /// went onto gets a link that records it. Planning is pure; running it is idempotent, and the
+    /// file is retired once its installs are in the library.
     /// </summary>
     public static class LibraryMigration
     {
@@ -142,20 +147,21 @@ namespace PlayniteAchievements.Services.Library
                 PlanWithoutPackage(plan, working, record, LibraryItemKind.ShowcasePage);
             }
 
+            // Game data is not a library item: each game it went onto gets a link of its own.
             foreach (var group in valid.Where(record => record.Kind == WorkshopItemKind.GameCustomData)
                          .GroupBy(record => record.Id, StringComparer.OrdinalIgnoreCase))
             {
                 var newest = group.OrderByDescending(record => record.InstalledUtc).First();
-                var libraryId = PlanWithoutPackage(plan, working, newest, LibraryItemKind.GameData);
                 foreach (var record in group.Where(record => record.PlayniteGameId.HasValue))
                 {
                     plan.GameDataInstalls.Add(new LibraryGameDataInstall
                     {
-                        LibraryItemId = libraryId,
+                        LibraryItemId = LibraryItem.WorkshopId(record.Id),
                         WorkshopItemId = record.Id,
+                        Name = string.IsNullOrWhiteSpace(record.Name) ? newest.Name : record.Name,
                         PlayniteGameId = record.PlayniteGameId.Value,
                         BaselineFile = record.BaselineFile,
-                        Version = record.Version,
+                        Version = record.Version ?? newest.Version,
                         InstalledUtc = record.InstalledUtc
                     });
                 }
@@ -203,12 +209,13 @@ namespace PlayniteAchievements.Services.Library
 
         /// <summary>
         /// Gives every game a recorded game-data install went onto a <c>gamedata:&lt;id&gt;</c>
-        /// link that carries the install's baseline, unless the game already has a link. Returns
-        /// how many links were added.
+        /// link that carries the item's name, the installed version and the install's baseline,
+        /// unless the game already has a link. Those installs kept no package copy. Returns how
+        /// many links were added.
         /// </summary>
-        public static int LinkGameDataInstalls(LibraryMigrationPlan plan, LibraryStore store, GameLinkStore gameLinks)
+        public static int LinkGameDataInstalls(LibraryMigrationPlan plan, GameLinkStore gameLinks)
         {
-            if (plan == null || store == null || gameLinks == null)
+            if (plan == null || gameLinks == null)
             {
                 return 0;
             }
@@ -225,7 +232,8 @@ namespace PlayniteAchievements.Services.Library
                 gameLinks.Set(key, new Models.Settings.LibraryLink
                 {
                     LibraryItemId = install.LibraryItemId,
-                    AppliedVersion = install.Version ?? store.Find(install.LibraryItemId)?.Version,
+                    Name = install.Name,
+                    AppliedVersion = install.Version,
                     BaselineFile = install.BaselineFile,
                     AppliedUtc = install.InstalledUtc
                 });
@@ -233,6 +241,48 @@ namespace PlayniteAchievements.Services.Library
             }
 
             return added;
+        }
+
+        /// <summary>
+        /// Copies what the game data items of an older index knew into the links of the games they
+        /// went onto: the name, and the version when a link has none. The links keep their version
+        /// and baseline otherwise. Returns how many links changed.
+        /// </summary>
+        public static int MoveGameDataItemsToLinks(IEnumerable<LibraryItem> legacyItems, GameLinkStore gameLinks)
+        {
+            var items = (legacyItems ?? Enumerable.Empty<LibraryItem>())
+                .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Id))
+                .GroupBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+            if (gameLinks == null || items.Count == 0)
+            {
+                return 0;
+            }
+
+            var changed = 0;
+            foreach (var pair in gameLinks.GameDataLinks)
+            {
+                var link = pair.Value;
+                if (string.IsNullOrWhiteSpace(link.LibraryItemId) || !items.TryGetValue(link.LibraryItemId, out var item))
+                {
+                    continue;
+                }
+
+                var name = string.IsNullOrWhiteSpace(link.Name) ? item.Name : link.Name;
+                var version = string.IsNullOrWhiteSpace(link.AppliedVersion) ? item.Version : link.AppliedVersion;
+                if (string.Equals(name, link.Name, StringComparison.Ordinal)
+                    && string.Equals(version, link.AppliedVersion, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                link.Name = name;
+                link.AppliedVersion = version;
+                gameLinks.Set(LibraryTargetKeys.GameData(pair.Key), link);
+                changed++;
+            }
+
+            return changed;
         }
 
         private static void PlanLookPart(

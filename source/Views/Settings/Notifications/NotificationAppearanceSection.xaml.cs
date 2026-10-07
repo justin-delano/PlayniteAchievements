@@ -317,6 +317,29 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             return options;
         }
 
+        /// <summary>
+        /// Shows one scope: the platform (a provider key, or null for the default; a game's
+        /// section has no platform choice and ignores it) and the notification or frame surface.
+        /// A provider the selector does not list leaves the platform as it is.
+        /// </summary>
+        internal void Preselect(string providerKey, bool isFrame)
+        {
+            if (!IsGameMode && PlatformSelector?.ItemsSource is IEnumerable<NotificationStylePlatformOption> options)
+            {
+                var key = string.IsNullOrWhiteSpace(providerKey) ? null : providerKey.Trim();
+                var option = options.FirstOrDefault(candidate => string.Equals(candidate.Key, key, StringComparison.OrdinalIgnoreCase));
+                if (option != null)
+                {
+                    PlatformSelector.SelectedItem = option;
+                }
+            }
+
+            if (SurfaceTabs != null)
+            {
+                SurfaceTabs.SelectedItem = isFrame ? FrameTabItem : ToastTabItem;
+            }
+        }
+
         private void PlatformSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_suppressSelectionChanged)

@@ -102,6 +102,7 @@ namespace PlayniteAchievements
         private Services.Library.NotificationLibraryTargets _notificationLibraryTargets;
         private Services.Library.ShowcaseLibraryTargets _showcaseLibraryTargets;
         private Services.Library.GameLinkStore _gameLinkStore;
+        private Services.Library.GameDataLinkService _gameDataLinks;
         private Services.Library.LibraryUpdateService _libraryUpdateService;
         private int _droppedLibraryItemsQueued;
         private Services.Workshop.WorkshopInstaller _workshopInstaller;
@@ -261,6 +262,16 @@ namespace PlayniteAchievements
         public Services.Library.GameLinkStore GameLinkStore =>
             _gameLinkStore ?? (_gameLinkStore = new Services.Library.GameLinkStore(
                 LibraryStore.LibraryDirectory,
+                (ex, message) => _logger?.Warn(ex, message)));
+
+        /// <summary>Each game's Workshop game data record: its link, package copy and baseline.</summary>
+        public Services.Library.GameDataLinkService GameDataLinks =>
+            _gameDataLinks ?? (_gameDataLinks = new Services.Library.GameDataLinkService(
+                GameLinkStore,
+                LibraryStore.LibraryDirectory,
+                System.IO.Path.Combine(WorkshopIdentityStore.Directory, Services.Workshop.WorkshopBaselineStore.FolderName),
+                gameId => GameCustomDataStore != null && GameCustomDataStore.TryLoad(gameId, out var data) ? data : null,
+                gameId => ManagedCustomIconService?.GetGameCustomIconDirectory(gameId.ToString("D")),
                 (ex, message) => _logger?.Warn(ex, message)));
 
         /// <summary>Writes Workshop packages into the library and keeps the targets that follow library items in step.</summary>
@@ -1832,10 +1843,17 @@ namespace PlayniteAchievements
                         _logger?.Info($"[Library] Indexed the preset folders; {plan.Steps.Count} Workshop install change(s) brought into the library.");
                     }
 
-                    var linked = Services.Library.LibraryMigration.LinkGameDataInstalls(plan, store, gameLinks);
+                    var linked = Services.Library.LibraryMigration.LinkGameDataInstalls(plan, gameLinks);
                     if (linked > 0)
                     {
                         _logger?.Info($"[Library] Linked {linked} game(s) to the Workshop game data installed on them.");
+                    }
+
+                    // Game data is recorded on the games: what the old library items knew moves into their links.
+                    var moved = Services.Library.LibraryMigration.MoveGameDataItemsToLinks(store.TakeLegacyGameDataItems(), gameLinks);
+                    if (moved > 0)
+                    {
+                        _logger?.Info($"[Library] Moved the names of {moved} game data record(s) out of the library index.");
                     }
 
                     // Everything installed.json recorded is in the library now; it is read no more.

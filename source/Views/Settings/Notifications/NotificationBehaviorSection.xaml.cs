@@ -78,6 +78,31 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             });
         }
 
+        /// <summary>
+        /// Scrolls the unlock sounds preset picker into view, once the page is laid out when it
+        /// was only just created.
+        /// </summary>
+        internal void BringSoundsIntoView()
+        {
+            void Bring() => Dispatcher.BeginInvoke(
+                new Action(() => SoundPackPresetPicker?.BringIntoView()),
+                System.Windows.Threading.DispatcherPriority.Loaded);
+
+            if (IsLoaded)
+            {
+                Bring();
+                return;
+            }
+
+            RoutedEventHandler onLoaded = null;
+            onLoaded = (s, e) =>
+            {
+                Loaded -= onLoaded;
+                Bring();
+            };
+            Loaded += onLoaded;
+        }
+
         /// <summary>Writes what each tier plays now, minus the bundled defaults, as a sound pack.</summary>
         private void ExportCurrentSounds(string path)
         {

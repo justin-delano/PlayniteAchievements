@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels.Library;
@@ -15,8 +16,8 @@ namespace PlayniteAchievements.Views.Workshop
 {
     /// <summary>
     /// The Library page, hosted by Settings > Workshop and by the Workshop window: every saved
-    /// look and every item added from the Workshop, where each is used, and the actions on it.
-    /// Questions go through Playnite's dialogs.
+    /// look and every item added from the Workshop, where each is used, and the actions on it,
+    /// plus the games that have Workshop game data. Questions go through Playnite's dialogs.
     /// </summary>
     public partial class LibraryControl : UserControl
     {
@@ -28,17 +29,24 @@ namespace PlayniteAchievements.Views.Workshop
             InitializeComponent();
         }
 
-        internal LibraryControl(PlayniteAchievementsPlugin plugin, ILogger logger, LibraryItemKind? focusKind = null)
+        internal LibraryControl(PlayniteAchievementsPlugin plugin, ILogger logger, LibraryItemKind? focusKind = null, bool focusGameData = false)
             : this()
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
-            DataContext = new LibraryViewModel(plugin, logger, focusKind)
+            DataContext = new LibraryViewModel(plugin, logger, focusKind, focusGameData)
             {
                 Confirm = Confirm,
                 ChooseMergeOrReplace = ChooseMergeOrReplace,
                 AskName = AskName,
-                OpenShare = (kind, path, name) => plugin.OpenWorkshopShare(kind, Window.GetWindow(this), packagePath: path, defaultName: name)
+                OpenShare = share => plugin.OpenWorkshopShare(
+                    share.Kind,
+                    Window.GetWindow(this),
+                    packagePath: share.PackagePath,
+                    defaultName: share.DefaultName,
+                    libraryItemId: share.LibraryItemId,
+                    publishedItemId: share.PublishedItemId),
+                OpenSettings = OpenSettings
             };
         }
 
@@ -93,6 +101,62 @@ namespace PlayniteAchievements.Views.Workshop
                 ResourceProvider.GetString("LOCPlayAch_Common_Rename"))
                 ? name
                 : null;
+        }
+
+        /// <summary>
+        /// Shows a settings place. Hosted by the settings, the page switches its own window. In
+        /// the Workshop window, that window closes first; the settings window under it switches,
+        /// or the settings open on the place when none is open.
+        /// </summary>
+        private void OpenSettings(SettingsNavigationRequest request)
+        {
+            var hostingSettings = FindAncestor<SettingsControl>(this);
+            if (hostingSettings != null)
+            {
+                hostingSettings.NavigateTo(request);
+                return;
+            }
+
+            // Queued so the settings switch or open after this window has closed and the click
+            // has returned.
+            var dispatcher = Dispatcher;
+            Window.GetWindow(this)?.Close();
+            dispatcher.BeginInvoke(new Action(() => _plugin.OpenSettingsAt(request)));
+        }
+
+        private static T FindAncestor<T>(DependencyObject element)
+            where T : DependencyObject
+        {
+            while (element != null && !(element is T))
+            {
+                element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+            }
+
+            return element as T;
+        }
+
+        /// <summary>A click on a game data row opens that game's Manage Achievements.</summary>
+        private void GameDataRow_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            OpenGameData(sender);
+        }
+
+        private void GameDataRow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                OpenGameData(sender);
+                e.Handled = true;
+            }
+        }
+
+        private void OpenGameData(object sender)
+        {
+            var row = (sender as ListBoxItem)?.DataContext as LibraryGameDataRow;
+            if (row != null)
+            {
+                ViewModel?.OpenGameDataCommand.Execute(row);
+            }
         }
 
         /// <summary>Export is the same two-way menu as everywhere else: to a file, or shared to the Workshop.</summary>

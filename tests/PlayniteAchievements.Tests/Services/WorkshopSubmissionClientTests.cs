@@ -112,7 +112,13 @@ namespace PlayniteAchievements.Services.Tests
                 })));
             try
             {
-                await failing.GetStatusAsync(1, CancellationToken.None);
+                await failing.SubmitAsync(
+                    new WorkshopSubmission { Kind = WorkshopItemKind.Colors, Name = "Neon", Author = "Me", Description = "d" },
+                    new string('a', 64),
+                    "2026-10-03/u/neon.pacolors",
+                    null,
+                    "4.1.0",
+                    CancellationToken.None);
                 Assert.Fail("expected the service error");
             }
             catch (InvalidOperationException ex)

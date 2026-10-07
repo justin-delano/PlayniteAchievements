@@ -671,7 +671,10 @@
     <Compile Include="..\..\source\Services\Library\LibraryStore.cs" Link="Source\Services\Library\LibraryStore.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryMigration.cs" Link="Source\Services\Library\LibraryMigration.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryTargetKeys.cs" Link="Source\Services\Library\LibraryTargetKeys.cs" />
+    <Compile Include="..\..\source\Services\Library\LibraryTargetNavigation.cs" Link="Source\Services\Library\LibraryTargetNavigation.cs" />
+    <Compile Include="..\..\source\Models\Settings\SettingsNavigationRequest.cs" Link="Source\Models\Settings\SettingsNavigationRequest.cs" />
     <Compile Include="..\..\source\Services\Library\GameLinkStore.cs" Link="Source\Services\Library\GameLinkStore.cs" />
+    <Compile Include="..\..\source\Services\Library\GameDataLinkService.cs" Link="Source\Services\Library\GameDataLinkService.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryBaselineStore.cs" Link="Source\Services\Library\LibraryBaselineStore.cs" />
     <Compile Include="..\..\source\Services\Library\ILibraryAdapter.cs" Link="Source\Services\Library\ILibraryAdapter.cs" />
     <Compile Include="..\..\source\Services\Library\LibraryApplyService.cs" Link="Source\Services\Library\LibraryApplyService.cs" />

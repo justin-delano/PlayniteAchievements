@@ -197,6 +197,24 @@ namespace PlayniteAchievements.Views.Showcase
             PageSelector?.Focus();
         }
 
+        /// <summary>Shows the page with the given id; false when no page has it.</summary>
+        public bool SelectPageById(string pageId)
+        {
+            var page = Layout.Pages.FirstOrDefault(candidate =>
+                string.Equals(candidate?.PageId, pageId, StringComparison.OrdinalIgnoreCase));
+            if (page == null)
+            {
+                return false;
+            }
+
+            if (!ReferenceEquals(page, CurrentPage))
+            {
+                SelectPage(page);
+            }
+
+            return true;
+        }
+
         public bool MovePage(int direction)
         {
             var pages = Layout.Pages;

@@ -56,49 +56,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public string Label { get; }
     }
 
-    public sealed class WorkshopSubmissionViewModel : ObservableObject
-    {
-        private string _stateLabel;
-
-        public WorkshopSubmissionViewModel(WorkshopSubmissionRecord record)
-        {
-            Record = record;
-            _stateLabel = StateLabel(record.LastState);
-        }
-
-        public WorkshopSubmissionRecord Record { get; }
-
-        public string Name => Record.Name;
-
-        public string KindLabel => WorkshopItemViewModel.KindLabelFor(Record.Kind);
-
-        public string Submitted => Record.SubmittedUtc.ToLocalTime().ToString("g");
-
-        public string Url => Record.IssueUrl;
-
-        public string State
-        {
-            get => _stateLabel;
-            set => SetValue(ref _stateLabel, value);
-        }
-
-        public static string StateLabel(string state)
-        {
-            switch (state)
-            {
-                case "needs-changes": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_NeedsChanges");
-                case "in-review": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_InReview");
-                case "published": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_Published");
-                case "closed": return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_Closed");
-                default: return ResourceProvider.GetString("LOCPlayAch_Workshop_Status_Validating");
-            }
-        }
-    }
-
     /// <summary>
     /// The Workshop window: loads the index, filters and sorts it, resolves local state per item
-    /// (installed, update available, matching library game), and drives install and the
-    /// submissions list. All collection work happens on the UI thread; network and disk work is awaited.
+    /// (installed, update available, matching library game, published by this install), and
+    /// drives install. All collection work happens on the UI thread; network and disk work is awaited.
     /// </summary>
     public sealed class WorkshopViewModel : ObservableObject, IDisposable
     {
@@ -107,6 +68,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private readonly WorkshopClient _client;
         private readonly WorkshopIdentityStore _identity;
         private readonly Services.Library.LibraryStore _library;
+        private readonly Services.Library.GameDataLinkService _gameData;
         private readonly WorkshopInstaller _installer;
         private readonly WorkshopGameMatcher _matcher;
         private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
@@ -116,6 +78,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private WorkshopKindOption _selectedKind;
         private WorkshopSortOption _selectedSort;
         private bool _onlyMyGames = true;
+        private bool _onlyMine;
         private WorkshopItemViewModel _selectedItem;
         private bool _isLoading;
         private bool _isBusy;
@@ -134,12 +97,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
             _client = plugin.WorkshopClient;
             _identity = plugin.WorkshopIdentityStore;
             _library = plugin.LibraryStore;
+            _gameData = plugin.GameDataLinks;
             _installer = plugin.WorkshopInstaller;
             _matcher = plugin.CreateWorkshopGameMatcher();
             _focusGameId = focusGameId;
             _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             _identity.Changed += Source_Changed;
             _library.Changed += Source_Changed;
+            _gameData.Links.Changed += Source_Changed;
 
             KindOptions = new List<WorkshopKindOption>
             {
@@ -179,15 +144,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
             PreviewCommand = new AsyncCommand(async parameter => await PreviewAsync(parameter as WorkshopItemViewModel ?? SelectedItem), _ => !IsBusy);
             OpenFolderCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopItemViewModel ?? SelectedItem)?.FolderUrl));
             ReportCommand = new RelayCommand(parameter => Report(parameter as WorkshopItemViewModel ?? SelectedItem));
-            OpenSubmissionCommand = new RelayCommand(parameter => OpenUrl((parameter as WorkshopSubmissionViewModel)?.Url));
-            RefreshSubmissionsCommand = new AsyncCommand(async _ => await RefreshSubmissionStatesAsync());
-
-            ReloadLocalState();
         }
 
         public ObservableCollection<WorkshopItemViewModel> Items { get; } = new ObservableCollection<WorkshopItemViewModel>();
         public ICollectionView ItemsView { get; }
-        public ObservableCollection<WorkshopSubmissionViewModel> Submissions { get; } = new ObservableCollection<WorkshopSubmissionViewModel>();
         public IReadOnlyList<WorkshopKindOption> KindOptions { get; }
 
         /// <summary>False when the window was opened for one kind, so the kind selector is hidden.</summary>
@@ -202,8 +162,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
         public AsyncCommand PreviewCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
         public RelayCommand ReportCommand { get; }
-        public RelayCommand OpenSubmissionCommand { get; }
-        public AsyncCommand RefreshSubmissionsCommand { get; }
 
         public WorkshopIdentityStore IdentityStore => _identity;
 
@@ -257,7 +215,24 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
-        public bool ShowOnlyMyGames => _selectedKind?.Kind == null || _selectedKind.Kind == WorkshopItemKind.GameCustomData;
+        /// <summary>
+        /// Lists only the items this install published, of every kind; game data among them shows
+        /// whether or not its game is in the library.
+        /// </summary>
+        public bool OnlyMine
+        {
+            get => _onlyMine;
+            set
+            {
+                if (SetValueAndReturn(ref _onlyMine, value, nameof(OnlyMine)))
+                {
+                    OnPropertyChanged(nameof(ShowOnlyMyGames));
+                    ItemsView.Refresh();
+                }
+            }
+        }
+
+        public bool ShowOnlyMyGames => !_onlyMine && (_selectedKind?.Kind == null || _selectedKind.Kind == WorkshopItemKind.GameCustomData);
 
         public WorkshopItemViewModel SelectedItem
         {
@@ -327,8 +302,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             private set => SetValue(ref _progressFraction, value);
         }
 
-        public bool HasSubmissions => Submissions.Count > 0;
-
         // ---- loading -----------------------------------------------------------------------
 
         public async Task LoadAsync()
@@ -353,23 +326,22 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 {
                     var built = new List<WorkshopItemViewModel>();
                     var library = ReadLibrary();
+                    var gameData = ReadGameData();
+                    var owner = _identity.TryGetSubmitterHash();
                     foreach (var item in index.Items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         _lifetime.Token.ThrowIfCancellationRequested();
                         var row = new WorkshopItemViewModel(item);
-                        ApplyLocalState(row, library);
+                        ApplyLocalState(row, library, gameData, owner);
                         built.Add(row);
                     }
 
                     // The index marks every item with its publisher's hash. Records of a first
                     // submission learn their published id from this install's items here, as the
-                    // share dialog links them, so My submissions can address the item.
-                    var owner = _identity.TryGetSubmitterHash();
+                    // share dialog links them, so a later share can update the item.
                     if (owner != null)
                     {
-                        _identity.LinkSubmissions(index.Items.Where(item =>
-                            !string.IsNullOrWhiteSpace(item.OwnerHash) &&
-                            string.Equals(item.OwnerHash, owner, StringComparison.OrdinalIgnoreCase)));
+                        _identity.LinkSubmissions(index.Items.Where(item => WorkshopIdentityStore.IsOwnedBy(item, owner)));
                     }
 
                     return built;
@@ -382,12 +354,15 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 }
 
                 ApplySort();
-                ReloadLocalState();
                 _ = PrefetchPreviewsAsync(rows);
 
                 if (_focusGameId.HasValue)
                 {
-                    var focused = Items.FirstOrDefault(row => _matches.TryGetValue(row.Id, out var match) && match.PlayniteGameId == _focusGameId.Value);
+                    // The item the game has applied, else the one that matches it.
+                    var applied = _gameData.Get(_focusGameId.Value);
+                    var focused = Items.FirstOrDefault(row => row.Kind == WorkshopItemKind.GameCustomData
+                                                              && Services.Library.GameDataLinkService.Names(applied, row.Id))
+                                  ?? Items.FirstOrDefault(row => _matches.TryGetValue(row.Id, out var match) && match.PlayniteGameId == _focusGameId.Value);
                     if (focused != null)
                     {
                         SearchText = focused.GameName ?? string.Empty;
@@ -434,41 +409,85 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
+        /// <summary>Every game's Workshop game data record, read once per pass over the rows.</summary>
+        private IReadOnlyDictionary<Guid, LibraryLink> ReadGameData()
+        {
+            try
+            {
+                return _gameData.All;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed reading the games' Workshop game data for the Workshop list.");
+                return new Dictionary<Guid, LibraryLink>();
+            }
+        }
+
+        /// <summary>
+        /// The game a game data row stands for: a match by provider identity, else a game that
+        /// already has the item applied (the matched game first, then the latest apply), else
+        /// none. Its record gives the row its installed and update state, and an install goes there.
+        /// </summary>
+        private Guid? LinkedOrCertainGame(WorkshopItemViewModel row, IReadOnlyDictionary<Guid, LibraryLink> gameData)
+        {
+            _matches.TryGetValue(row.Id, out var match);
+            if (match != null && match.Confidence == WorkshopGameMatchConfidence.Provider)
+            {
+                return match.PlayniteGameId;
+            }
+
+            return gameData
+                .Where(pair => Services.Library.GameDataLinkService.Names(pair.Value, row.Id))
+                .OrderByDescending(pair => match != null && pair.Key == match.PlayniteGameId)
+                .ThenByDescending(pair => pair.Value.AppliedUtc)
+                .Select(pair => (Guid?)pair.Key)
+                .FirstOrDefault();
+        }
+
         /// <summary>
         /// Marks a row as in the library when any part of it is a library item, with an update
-        /// when the index carries a newer version than the library holds. Game data also learns
-        /// its matching library game.
+        /// when the index carries a newer version than the library holds. Game data is not a
+        /// library item: it is installed when the game it stands for has it applied, with an
+        /// update when the index is newer than that game's version. Marks it as this install's
+        /// when its owner hash is <paramref name="owner"/>.
         /// </summary>
-        private void ApplyLocalState(WorkshopItemViewModel row, ILookup<string, Services.Library.LibraryItem> library)
+        private void ApplyLocalState(
+            WorkshopItemViewModel row,
+            ILookup<string, Services.Library.LibraryItem> library,
+            IReadOnlyDictionary<Guid, LibraryLink> gameData,
+            string owner)
         {
+            row.IsMine = WorkshopIdentityStore.IsOwnedBy(row.Item, owner);
             if (row.Kind == WorkshopItemKind.GameCustomData)
             {
                 var match = _matcher.Match(row.Item.Game?.Keys);
                 if (match != null)
                 {
                     _matches[row.Id] = match;
-                    row.LocalGameName = match.GameName;
                 }
                 else
                 {
-                    row.LocalGameName = null;
+                    _matches.TryRemove(row.Id, out _);
                 }
+
+                var gameId = LinkedOrCertainGame(row, gameData) ?? match?.PlayniteGameId;
+                var link = gameId is Guid id && gameData.TryGetValue(id, out var record)
+                           && Services.Library.GameDataLinkService.Names(record, row.Id)
+                    ? record
+                    : null;
+                row.LocalGameName = gameId == null
+                    ? null
+                    : gameId == match?.PlayniteGameId
+                        ? match.GameName
+                        : _plugin.PlayniteApi?.Database?.Games?.Get(gameId.Value)?.Name;
+                row.IsInstalled = link != null;
+                row.HasUpdate = Services.Library.GameDataLinkService.HasUpdate(link, row.Item);
+                return;
             }
 
             var owned = library[row.Id].ToList();
             row.IsInstalled = owned.Count > 0;
             row.HasUpdate = owned.Any(item => WorkshopIdentityStore.IsNewer(row.Version, item.Version));
-        }
-
-        private void ReloadLocalState()
-        {
-            Submissions.Clear();
-            foreach (var record in _identity.Submissions)
-            {
-                Submissions.Add(new WorkshopSubmissionViewModel(record));
-            }
-
-            OnPropertyChanged(nameof(HasSubmissions));
         }
 
         /// <summary>
@@ -612,7 +631,14 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 return false;
             }
 
-            if (_onlyMyGames && row.Kind == WorkshopItemKind.GameCustomData && !row.IsInLibrary)
+            if (_onlyMine)
+            {
+                if (!row.IsMine)
+                {
+                    return false;
+                }
+            }
+            else if (_onlyMyGames && row.Kind == WorkshopItemKind.GameCustomData && !row.IsInLibrary)
             {
                 return false;
             }
@@ -681,16 +707,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
         /// <summary>
         /// Asks how game data meets what the game already has, or null when the user cancels.
-        /// An update keeps the edits made since the earlier install, as before. An install or
-        /// reinstall onto a game with custom data offers Merge (what the user set stays, the
-        /// package fills the rest) or Replace; onto a game without any, it just confirms.
+        /// Onto a game that already has this item applied it is an update, which keeps the edits
+        /// made since. Onto a game with other custom data it offers Merge (what the user set stays,
+        /// the package fills the rest) or Replace; onto a game without any, it just confirms.
         /// </summary>
         private WorkshopGameDataInstallMode? ChooseGameDataMode(WorkshopItemViewModel row, Guid gameId, string gameName)
         {
-            if (row.HasUpdate)
+            var question = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_InstallConfirmGameData"), row.Name, gameName);
+            if (IsAppliedTo(row, gameId))
             {
-                var updateQuestion = string.Format(ResourceProvider.GetString("LOCPlayAch_Workshop_InstallConfirmGameData"), row.Name, gameName);
-                return Confirm == null || Confirm(updateQuestion) ? WorkshopGameDataInstallMode.KeepEditsSinceInstall : (WorkshopGameDataInstallMode?)null;
+                return Confirm == null || Confirm(question) ? WorkshopGameDataInstallMode.KeepEditsSinceInstall : (WorkshopGameDataInstallMode?)null;
             }
 
             var hasExistingData = _plugin.GameCustomDataStore?.HasPortableData(gameId) ?? false;
@@ -700,13 +726,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 return ChooseMergeOrReplace(choiceQuestion);
             }
 
-            var question = string.Format(
-                ResourceProvider.GetString(row.IsReinstall
-                    ? "LOCPlayAch_Workshop_ReinstallConfirmGameData"
-                    : "LOCPlayAch_Workshop_InstallConfirmGameData"),
-                row.Name,
-                gameName);
             return Confirm == null || Confirm(question) ? WorkshopGameDataInstallMode.Replace : (WorkshopGameDataInstallMode?)null;
+        }
+
+        /// <summary>True when the game's Workshop game data record is this row's item.</summary>
+        private bool IsAppliedTo(WorkshopItemViewModel row, Guid gameId)
+        {
+            return Services.Library.GameDataLinkService.Names(_gameData.Get(gameId), row.Id);
         }
 
         /// <summary>
@@ -725,6 +751,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
             IsBusy = true;
             ErrorMessage = null;
             var scratch = Path.Combine(Path.GetTempPath(), "PlayniteAchievements", "WorkshopInstall", Guid.NewGuid().ToString("N"));
+            var isUpdate = row.HasUpdate;
             try
             {
                 var request = new WorkshopInstallRequest { Item = row.Item };
@@ -758,6 +785,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                     request.TargetGameId = gameId;
                     request.GameDataMode = mode.Value;
+                    isUpdate = mode.Value == WorkshopGameDataInstallMode.KeepEditsSinceInstall;
                 }
 
                 // The install consumes its own copy, so the cached download stays for another
@@ -770,7 +798,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 await Task.Run(() => File.Copy(downloaded, packagePath, overwrite: true), _lifetime.Token);
 
                 // An update brings the targets that follow the item along, keeping their edits.
-                var isUpdate = row.HasUpdate;
                 if (isUpdate && row.Kind != WorkshopItemKind.GameCustomData)
                 {
                     request.FollowerMode = Services.Library.LibraryApplyMode.Merge;
@@ -779,8 +806,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 StatusMessage = ResourceProvider.GetString("LOCPlayAch_Workshop_Installing");
                 var result = await _installer.InstallAsync(request, _lifetime.Token);
 
-                ApplyLocalState(row, ReadLibrary());
-                ReloadLocalState();
+                ApplyLocalState(row, ReadLibrary(), ReadGameData(), _identity.TryGetSubmitterHash());
                 ItemsView.Refresh();
 
                 StatusMessage = DescribeInstall(result, isUpdate);
@@ -850,11 +876,16 @@ namespace PlayniteAchievements.ViewModels.Workshop
             return notes.Count > 0 ? string.Join("\n", notes) : null;
         }
 
+        /// <summary>
+        /// The game game data goes onto: the game the row stands for (a provider match, or a game
+        /// that already has the item applied), else the user's pick.
+        /// </summary>
         private Guid? ResolveTargetGame(WorkshopItemViewModel row)
         {
-            if (_matches.TryGetValue(row.Id, out var match) && match.Confidence == WorkshopGameMatchConfidence.Provider)
+            var known = LinkedOrCertainGame(row, ReadGameData());
+            if (known != null)
             {
-                return match.PlayniteGameId;
+                return known;
             }
 
             // A name-only match or no match: let the user confirm or pick from the library.
@@ -968,10 +999,19 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 var packagePath = await EnsureDownloadedAsync(row);
 
                 var context = WorkshopPreviewContext.FromPlugin(_plugin);
-                var target = row.Kind == WorkshopItemKind.GameCustomData &&
-                             _matches.TryGetValue(row.Id, out var match) &&
-                             (match.Confidence == WorkshopGameMatchConfidence.Provider || match.Confidence == WorkshopGameMatchConfidence.Name)
-                    ? match
+                // The game the row stands for, else a match by name: compared, never prompted for.
+                Guid? targetGameId = null;
+                if (row.Kind == WorkshopItemKind.GameCustomData)
+                {
+                    targetGameId = LinkedOrCertainGame(row, ReadGameData());
+                    if (targetGameId == null && _matches.TryGetValue(row.Id, out var match) && match.Confidence == WorkshopGameMatchConfidence.Name)
+                    {
+                        targetGameId = match.PlayniteGameId;
+                    }
+                }
+
+                var targetGameName = targetGameId is Guid gameIdForName
+                    ? _plugin.PlayniteApi?.Database?.Games?.Get(gameIdForName)?.Name ?? row.LocalGameName
                     : null;
                 var kind = row.Kind;
                 var itemId = row.Id;
@@ -979,22 +1019,21 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 var persisted = _plugin.Settings?.Persisted;
                 var managedIcons = _plugin.ManagedCustomIconService;
                 var baselines = _installer.Baselines;
-                // Only an update keeps edits made since the last install; a reinstall applies the
-                // package fresh, so its preview compares without the baseline.
-                var keepsEdits = row.HasUpdate;
-                var baselineFile = target != null && keepsEdits ? _installer.GameDataBaselineFile(itemId, target.PlayniteGameId) : null;
+                // Only an update onto a game that has the item applied keeps the edits made since;
+                // any other install applies the package fresh, so its preview compares without one.
+                var keepsEdits = targetGameId is Guid appliedTo && IsAppliedTo(row, appliedTo);
+                var baselineFile = keepsEdits ? _installer.GameDataBaselineFile(itemId, targetGameId.Value) : null;
 
                 model = await Task.Run(() =>
                 {
-                    if (target != null)
+                    if (targetGameId is Guid gameId)
                     {
-                        var gameId = target.PlayniteGameId;
                         GameCustomDataFile current = null;
                         context.GameCustomDataStore?.TryLoad(gameId, out current);
                         context.GameDataSource = new GameCustomDataPreviewSource
                         {
                             GameId = gameId,
-                            GameName = target.GameName,
+                            GameName = targetGameName,
                             RawData = dataService?.GetRawGameAchievementData(gameId),
                             CurrentData = dataService?.GetGameAchievementData(gameId),
                             Current = current,
@@ -1041,28 +1080,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
             }
         }
 
-        public async Task RefreshSubmissionStatesAsync()
-        {
-            var client = _plugin.WorkshopSubmissionClient;
-            foreach (var submission in Submissions.ToList())
-            {
-                try
-                {
-                    var status = await client.GetStatusAsync(submission.Record.IssueNumber, _lifetime.Token);
-                    submission.State = WorkshopSubmissionViewModel.StateLabel(status.State);
-                    _identity.UpdateSubmissionState(submission.Record.IssueNumber, status.State);
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, $"Failed reading Workshop submission #{submission.Record.IssueNumber}.");
-                }
-            }
-        }
-
         // ---- misc --------------------------------------------------------------------------
 
         private void Report(WorkshopItemViewModel row)
@@ -1104,9 +1121,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
         }
 
         /// <summary>
-        /// The library changed (an install, an update or a delete from the Library page) or a
-        /// share recorded a submission: re-check every row once on the UI thread, so "In library"
-        /// and My submissions follow without reopening the window.
+        /// The library changed (an install, an update or a delete from the Library page), a game's
+        /// Workshop game data changed (an install, or an unlink from Manage Achievements), or a
+        /// share recorded a submission or the submitter key was replaced: re-check every row once
+        /// on the UI thread, so the installed state and Mine follow without reopening the window.
         /// </summary>
         private void Source_Changed(object sender, EventArgs e)
         {
@@ -1133,9 +1151,11 @@ namespace PlayniteAchievements.ViewModels.Workshop
             try
             {
                 var library = ReadLibrary();
+                var gameData = ReadGameData();
+                var owner = _identity.TryGetSubmitterHash();
                 foreach (var row in Items.ToList())
                 {
-                    ApplyLocalState(row, library);
+                    ApplyLocalState(row, library, gameData, owner);
                 }
             }
             finally
@@ -1143,7 +1163,6 @@ namespace PlayniteAchievements.ViewModels.Workshop
                 _applyingSourceChange = false;
             }
 
-            ReloadLocalState();
             ItemsView.Refresh();
         }
 
@@ -1151,6 +1170,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         {
             _identity.Changed -= Source_Changed;
             _library.Changed -= Source_Changed;
+            _gameData.Links.Changed -= Source_Changed;
             DeleteCachedDownload();
             _lifetime.Cancel();
             _lifetime.Dispose();
