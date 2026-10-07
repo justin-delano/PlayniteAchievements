@@ -214,6 +214,57 @@ namespace PlayniteAchievements.Services.Sound
         }
 
         /// <summary>
+        /// Copies one picked sound file into a fresh managed folder and returns the copy's path, so
+        /// a tier keeps playing after the original is moved or deleted. The copy keeps the original
+        /// file name and passes the same format, size and content checks as <see cref="Import"/>.
+        /// A path already in managed storage is returned unchanged.
+        /// </summary>
+        public string ImportFile(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            {
+                throw new FileNotFoundException("The sound file does not exist.", sourcePath);
+            }
+
+            if (IsManagedPath(sourcePath))
+            {
+                return sourcePath;
+            }
+
+            if (_managedRoot == null)
+            {
+                throw new InvalidOperationException("No managed sounds directory is configured.");
+            }
+
+            var fileName = Path.GetFileName(sourcePath);
+            if (!IsSupportedExtension(Path.GetExtension(fileName)))
+            {
+                throw new InvalidOperationException(
+                    $"The sound '{fileName}' is not a supported format (use {string.Join(", ", UnlockSoundResolver.ProbedExtensions)}).");
+            }
+
+            if (new FileInfo(sourcePath).Length > MaxSoundBytes)
+            {
+                throw new InvalidOperationException($"The sound '{fileName}' is larger than {MaxSoundBytes / (1024 * 1024)} MB.");
+            }
+
+            var packDirectory = Path.Combine(_managedRoot, Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(packDirectory);
+            var destination = Path.Combine(packDirectory, fileName);
+            try
+            {
+                File.Copy(sourcePath, destination);
+                EnsureAudioContentOrThrow(destination, fileName);
+                return destination;
+            }
+            catch
+            {
+                PortablePackage.TryDeleteDirectory(packDirectory);
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Extracts the package's sounds into <paramref name="directory"/> for a preview, with the
         /// same manifest, entry and content checks as <see cref="Import"/>, but without copying
         /// into managed storage or touching any settings. Each file is named after its tier and
