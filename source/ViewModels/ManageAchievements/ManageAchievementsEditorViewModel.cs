@@ -5441,9 +5441,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         unlockedOverrides[apiName] = unlocked;
                     }
 
+                    // Differing from the provider is not enough for the locked slot: with separate
+                    // locked icons off, hydration mirrors a custom unlocked icon into it, and storing
+                    // that mirror minted a .locked copy of the unlocked art on the next apply -- a
+                    // second file per icon, shown in full colour while locked. Only art of its own
+                    // is an override, by the same test the authored save uses.
                     var locked = NormalizeText(row.LockedIconPath);
                     if (!string.IsNullOrWhiteSpace(locked) &&
-                        !string.Equals(locked, NormalizeText(row.ProviderLockedIconPath), StringComparison.OrdinalIgnoreCase))
+                        !string.Equals(locked, NormalizeText(row.ProviderLockedIconPath), StringComparison.OrdinalIgnoreCase) &&
+                        AchievementIconResolver.HasExplicitLockedIcon(locked, row.UnlockedIconPath))
                     {
                         lockedOverrides[apiName] = locked;
                     }
