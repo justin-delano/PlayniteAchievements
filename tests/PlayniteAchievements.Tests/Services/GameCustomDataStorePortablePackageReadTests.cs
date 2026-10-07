@@ -165,18 +165,20 @@ namespace PlayniteAchievements.Services.Tests
 
                 var customApiName = CustomAchievementProjectionService.BuildApiName(customId);
                 var customStem = AchievementIconCachePathBuilder.BuildFileStems(new[] { customApiName })[customApiName];
-                var iconPath = icons.GetAchievementCustomIconPath(gameId.ToString("D"), customStem, AchievementIconVariant.Unlocked);
-                WritePngFile(iconPath);
+                var iconEntry = "images/" + customStem + ".png";
 
                 var packagePath = Path.Combine(tempDir, "custom.pa");
-                store.ExportCustomAchievementsPackage(
-                    gameId,
-                    new List<CustomAchievementDefinition>
+                using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
+                {
+                    using (var writer = new StreamWriter(archive.CreateEntry(GameCustomDataStore.CustomAchievementsPackageCsvEntryName).Open()))
                     {
-                        new CustomAchievementDefinition { Id = customId, DisplayName = "First win", UnlockedIconPath = iconPath },
-                        new CustomAchievementDefinition { Id = "second", DisplayName = "Second" }
-                    },
-                    packagePath);
+                        writer.WriteLine(CustomAchievementCsvFormat.Header + ",Unlocked Icon,Locked Icon");
+                        writer.WriteLine(customId + ",First win,,,,,,,,,,," + iconEntry + ",");
+                        writer.WriteLine("second,Second,,,,,,,,,,,,");
+                    }
+
+                    WritePackageImageEntry(archive, iconEntry);
+                }
 
                 var iconFilesBefore = ListFiles(diskImageService.GetCacheDirectoryPath());
                 var scratch = Path.Combine(tempDir, "scratch");
