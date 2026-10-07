@@ -2650,6 +2650,15 @@ namespace PlayniteAchievements.ViewModels
                     ApplyRightFilters();
                 }
             }
+            else if (AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                propertyName,
+                AchievementSortSurface.OverviewRecentAchievements))
+            {
+                if (!IsGameSelected && string.IsNullOrEmpty(_recentSortPath))
+                {
+                    ApplyRightFilters();
+                }
+            }
             else if (AchievementDisplayItem.IsAppearanceSettingPropertyName(propertyName))
             {
                 _ = RefreshViewAsync();
@@ -3655,6 +3664,12 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
+                    // No column sort: the grid's configured default sort, or newest first.
+                    AchievementSortHelper.ApplyConfiguredDefaultSort(
+                        _filteredRecentAchievements,
+                        _settings?.Persisted,
+                        AchievementSortSurface.OverviewRecentAchievements,
+                        AchievementSortScope.RecentAchievements);
                     SyncRecentAchievementsDisplay();
                 }
             }
