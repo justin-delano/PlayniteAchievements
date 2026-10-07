@@ -6,6 +6,7 @@
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              UseLayoutRounding="True"
              SnapsToDevicePixels="True"
+             helpers:CompletionBadge.PreferTrophyBadges="{Binding PreferTrophyBadges, RelativeSource={RelativeSource Self}}"
              Loaded="OnLoaded"
              Unloaded="OnUnloaded">
     <UserControl.Resources>
