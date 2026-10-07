@@ -467,8 +467,8 @@
          the View Achievements window on the achievement, as the compact lists do. -->
     <DataTemplate DataType="{x:Type widgets:IconMosaicWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Top"
-                                        Margin="0,0,0,8"
+        <controls:GridControlBarControl DockPanel.Dock="Bottom"
+                                        Margin="0,8,0,0"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <ListBox ItemsSource="{Binding Items}"
@@ -511,8 +511,8 @@
          The optional control bar filters the games the pie's totals come from. -->
     <DataTemplate DataType="{x:Type widgets:PieWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Top"
-                                        Margin="0,0,0,8"
+        <controls:GridControlBarControl DockPanel.Dock="Bottom"
+                                        Margin="0,8,0,0"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <controls:PieChartWithRadialIcons
@@ -536,9 +536,9 @@
         <!-- The window, bar width and platform split are widget settings; with Show Control Bar
              on they are also set here, above the chart, and saved back to the widget. -->
         <DockPanel>
-        <DockPanel DockPanel.Dock="Top"
+        <DockPanel DockPanel.Dock="Bottom"
                    LastChildFill="True"
-                   Margin="{DynamicResource PlayAch.Thickness.Bottom.Sm}"
+                   Margin="0,8,0,0"
                    Visibility="{Binding ShowControls, Converter={StaticResource BoolToVis}}">
             <!-- IcoFont "layers": stacked per-platform segments. -->
             <ToggleButton DockPanel.Dock="Right"
@@ -723,8 +723,8 @@
          tiles, reorder/unpin. -->
     <DataTemplate DataType="{x:Type widgets:GameMosaicWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Top"
-                                        Margin="0,0,0,8"
+        <controls:GridControlBarControl DockPanel.Dock="Bottom"
+                                        Margin="0,8,0,0"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <ListBox ItemsSource="{Binding Tiles}"
@@ -1029,8 +1029,8 @@
     <DataTemplate DataType="{x:Type widgets:ActivityCalendarWidgetViewModel}">
         <DockPanel>
         <!-- With Show Control Bar on, the calendar's window is set here and saved back to the widget. -->
-        <controls:TimeWindowPicker DockPanel.Dock="Top"
-                                   Margin="{DynamicResource PlayAch.Thickness.Bottom.Sm}"
+        <controls:TimeWindowPicker DockPanel.Dock="Bottom"
+                                   Margin="0,8,0,0"
                                    Window="{Binding Window, Mode=TwoWay}"
                                    Visibility="{Binding ShowControls, Converter={StaticResource BoolToVis}}"/>
         <Grid>
