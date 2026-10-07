@@ -214,6 +214,20 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ReadmeToPlainText_DropsTheNameHeadingAndDescription_LeavingNothing()
+        {
+            Assert.IsNull(WorkshopClient.ReadmeToPlainText("# SteamStation 5\n\nPlayStation inspired notifications\n", "Steamstation 5", "PlayStation  inspired notifications"));
+        }
+
+        [TestMethod]
+        public void ReadmeToPlainText_RemovesMarkdownAndKeepsTheRest()
+        {
+            var readme = "# Neon\r\n\r\nGlow.\r\n\r\n## Notes\r\n\r\n- Works with **dark** themes, see [the guide](https://example.com).\r\n- Uses `Segoe`.\r\n\r\n![shot](a.png)\r\n<img src=\"b.png\">\r\n";
+
+            Assert.AreEqual("Notes\n\n• Works with dark themes, see the guide.\n• Uses Segoe.", WorkshopClient.ReadmeToPlainText(readme, "Neon", "Glow."));
+        }
+
+        [TestMethod]
         public void StripImageBlock_RemovesALeadingBlockAndItsBlankLines_LF()
         {
             var readme = "<!-- workshop:images -->\n![Cover](cover.png)\n![Preview](preview.png)\n<!-- /workshop:images -->\n\n# Neon\n\nGlow.\n";
