@@ -551,6 +551,111 @@ namespace PlayniteAchievements.ViewModels.Settings
 
         #endregion
 
+        #region Toast motion (toast surface, scope styles only)
+
+        private bool _isKindStyle;
+        private static IReadOnlyList<ToastMotionOption> _entranceMotionOptions;
+        private static IReadOnlyList<ToastMotionOption> _exitMotionOptions;
+        private static IReadOnlyList<ToastMotionOption> _motionFeelOptions;
+        private static IReadOnlyList<ToastMotionOption> _motionSpeedOptions;
+
+        /// <summary>
+        /// Whether the entrance, exit, easing and speed dropdowns show: on the toast surface of a
+        /// scope's style, but not a kind's own copy, because every card in a stack moves together
+        /// and the motion is read from the scope.
+        /// </summary>
+        public bool ShowMotionOptions => IsToastSurface && !_isKindStyle;
+
+        public IReadOnlyList<ToastMotionOption> EntranceMotionOptions =>
+            _entranceMotionOptions ?? (_entranceMotionOptions =
+                MotionChoices(L("LOCPlayAch_Common_Default")));
+
+        public IReadOnlyList<ToastMotionOption> ExitMotionOptions =>
+            _exitMotionOptions ?? (_exitMotionOptions =
+                MotionChoices(L("LOCPlayAch_Settings_Style_MotionMatchEntrance")));
+
+        public IReadOnlyList<ToastMotionOption> MotionFeelOptions =>
+            _motionFeelOptions ?? (_motionFeelOptions = new[]
+            {
+                new ToastMotionOption(null, L("LOCPlayAch_Common_Default")),
+                new ToastMotionOption((int)ToastMotionFeel.Smooth, L("LOCPlayAch_Settings_Style_MotionSmooth")),
+                new ToastMotionOption((int)ToastMotionFeel.Bouncy, L("LOCPlayAch_Settings_Style_MotionBouncy"))
+            });
+
+        // Normal is the null value, so a style that only ever picked Normal still follows the
+        // theme's slide.
+        public IReadOnlyList<ToastMotionOption> MotionSpeedOptions =>
+            _motionSpeedOptions ?? (_motionSpeedOptions = new[]
+            {
+                new ToastMotionOption((int)ToastMotionSpeed.Quick, L("LOCPlayAch_Settings_Style_MotionQuick")),
+                new ToastMotionOption(null, L("LOCPlayAch_Settings_Style_MotionNormal")),
+                new ToastMotionOption((int)ToastMotionSpeed.Relaxed, L("LOCPlayAch_Settings_Style_MotionRelaxed"))
+            });
+
+        private static ToastMotionOption[] MotionChoices(string unsetLabel)
+        {
+            return new[]
+            {
+                new ToastMotionOption(null, unsetLabel),
+                new ToastMotionOption((int)ToastMotion.Slide, L("LOCPlayAch_Settings_Style_MotionSlide")),
+                new ToastMotionOption((int)ToastMotion.SlideSide, L("LOCPlayAch_Settings_Style_MotionSlideSide")),
+                new ToastMotionOption((int)ToastMotion.Fade, L("LOCPlayAch_Settings_Style_MotionFade")),
+                new ToastMotionOption((int)ToastMotion.Zoom, L("LOCPlayAch_Settings_Style_MotionZoom")),
+                new ToastMotionOption((int)ToastMotion.None, L("LOCPlayAch_Common_None"))
+            };
+        }
+
+        public ToastMotionOption SelectedEntranceMotion
+        {
+            get => FindMotionOption(EntranceMotionOptions, (int?)Surface?.EntranceMotion);
+            set => SetSurfaceMotion(value, (surface, v) => surface.EntranceMotion = (ToastMotion?)v);
+        }
+
+        public ToastMotionOption SelectedExitMotion
+        {
+            get => FindMotionOption(ExitMotionOptions, (int?)Surface?.ExitMotion);
+            set => SetSurfaceMotion(value, (surface, v) => surface.ExitMotion = (ToastMotion?)v);
+        }
+
+        public ToastMotionOption SelectedMotionFeel
+        {
+            get => FindMotionOption(MotionFeelOptions, (int?)Surface?.MotionFeel);
+            set => SetSurfaceMotion(value, (surface, v) => surface.MotionFeel = (ToastMotionFeel?)v);
+        }
+
+        public ToastMotionOption SelectedMotionSpeed
+        {
+            get => FindMotionOption(MotionSpeedOptions, (int?)Surface?.MotionSpeed);
+            set => SetSurfaceMotion(value, (surface, v) => surface.MotionSpeed = (ToastMotionSpeed?)v);
+        }
+
+        private static ToastMotionOption FindMotionOption(IReadOnlyList<ToastMotionOption> options, int? value)
+        {
+            return options.FirstOrDefault(option => option.Value == value)
+                   ?? options.First(option => option.Value == null);
+        }
+
+        private void SetSurfaceMotion(ToastMotionOption option, Action<NotificationSurfaceStyle, int?> assign)
+        {
+            var surface = Surface;
+            if (surface == null || option == null)
+            {
+                return;
+            }
+
+            assign(surface, option.Value);
+        }
+
+        private void NotifyMotionOptions()
+        {
+            OnPropertyChanged(nameof(SelectedEntranceMotion));
+            OnPropertyChanged(nameof(SelectedExitMotion));
+            OnPropertyChanged(nameof(SelectedMotionFeel));
+            OnPropertyChanged(nameof(SelectedMotionSpeed));
+        }
+
+        #endregion
+
         #region Frame vignette (frame surface only)
 
         private static IReadOnlyList<FrameVignetteOption> _frameVignetteOptions;
@@ -1886,6 +1991,7 @@ namespace PlayniteAchievements.ViewModels.Settings
             OnPropertyChanged(nameof(IsProviderIconEnabled));
             OnPropertyChanged(nameof(SelectedGlowDisplay));
             OnPropertyChanged(nameof(SelectedFrameVignette));
+            NotifyMotionOptions();
             OnPropertyChanged(nameof(CountdownBarColorText));
             OnPropertyChanged(nameof(CountdownBarSwatch));
             OnPropertyChanged(nameof(TitleLineOffsetText));
@@ -1910,12 +2016,14 @@ namespace PlayniteAchievements.ViewModels.Settings
             NotificationImageOwner imageOwner,
             bool isEditable,
             Action<NotificationStyleSettings> persistStyle = null,
-            string providerKey = null)
+            string providerKey = null,
+            bool isKindStyle = false)
         {
             FlushPendingPersist();
             Unsubscribe();
 
             _style = style;
+            _isKindStyle = isKindStyle;
             _providerKey = string.IsNullOrWhiteSpace(providerKey) ? null : providerKey;
             _imageOwner = imageOwner ?? NotificationImageOwner.Global;
             _persistStyle = persistStyle;
@@ -1931,12 +2039,14 @@ namespace PlayniteAchievements.ViewModels.Settings
             OnPropertyChanged(nameof(Surface));
             OnPropertyChanged(nameof(ProviderKey));
             OnPropertyChanged(nameof(IsEditable));
+            OnPropertyChanged(nameof(ShowMotionOptions));
             OnPropertyChanged(nameof(SelectedFontFamilyOption));
             OnPropertyChanged(nameof(SelectedBadgePlacement));
             OnPropertyChanged(nameof(SelectedPercentPlacement));
             OnPropertyChanged(nameof(IsProviderIconEnabled));
             OnPropertyChanged(nameof(SelectedGlowDisplay));
             OnPropertyChanged(nameof(SelectedFrameVignette));
+            NotifyMotionOptions();
             OnPropertyChanged(nameof(CountdownBarColorText));
             OnPropertyChanged(nameof(CountdownBarSwatch));
             OnPropertyChanged(nameof(HasBackgroundImage));
@@ -2091,6 +2201,13 @@ namespace PlayniteAchievements.ViewModels.Settings
             {
                 OnPropertyChanged(nameof(SelectedFrameVignette));
             }
+            else if (e.PropertyName == nameof(NotificationSurfaceStyle.EntranceMotion) ||
+                     e.PropertyName == nameof(NotificationSurfaceStyle.ExitMotion) ||
+                     e.PropertyName == nameof(NotificationSurfaceStyle.MotionFeel) ||
+                     e.PropertyName == nameof(NotificationSurfaceStyle.MotionSpeed))
+            {
+                NotifyMotionOptions();
+            }
             else if (e.PropertyName == nameof(NotificationSurfaceStyle.BadgeImages) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.HeaderTexts))
             {
@@ -2226,6 +2343,23 @@ namespace PlayniteAchievements.ViewModels.Settings
         }
 
         public GlowDisplay Value { get; }
+
+        public string Display { get; }
+    }
+
+    /// <summary>
+    /// One entry of a toast motion dropdown: an enum value as an int (null for the unset entry)
+    /// and its localized label.
+    /// </summary>
+    internal sealed class ToastMotionOption
+    {
+        public ToastMotionOption(int? value, string display)
+        {
+            Value = value;
+            Display = display;
+        }
+
+        public int? Value { get; }
 
         public string Display { get; }
     }
