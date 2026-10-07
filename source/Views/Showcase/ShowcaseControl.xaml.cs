@@ -3690,7 +3690,7 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void OpenWidgetSettings(ShowcaseWidgetInstanceSettings widget)
         {
-            if (ShowcaseWidgetSettingsDialog.Show(widget, showControlBarOption: !_host.IsStrip))
+            if (ShowcaseWidgetSettingsDialog.Show(widget, linked: _host.IsStrip))
             {
                 SaveAndPublish();
                 EnsureSnapshotCoversLayout();
