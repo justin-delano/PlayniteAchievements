@@ -100,6 +100,7 @@ namespace PlayniteAchievements.Services.Library
             AchievementToastTemplateResolver.CustomTemplatesDirectoryName,
             ShowcaseImageStore.RootFolderName,
             FallbackIconStore.RootFolderName,
+            Sound.UnlockSoundPortableStore.ManagedDirectoryName,
             RecordingBufferFolderName
         };
 
