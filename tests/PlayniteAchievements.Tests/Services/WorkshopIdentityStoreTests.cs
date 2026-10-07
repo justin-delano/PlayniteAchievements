@@ -83,6 +83,11 @@ namespace PlayniteAchievements.Services.Tests
                 identity.RecordSubmission(new WorkshopSubmissionRecord { IssueNumber = 7, Name = "Neon", Kind = WorkshopItemKind.Colors });
 
                 Assert.AreEqual(1, raised, "a submission is announced");
+
+                Assert.IsFalse(identity.TrySetSubmitterKey("not a key"));
+                Assert.AreEqual(1, raised, "a rejected key changes nothing");
+                Assert.IsTrue(identity.TrySetSubmitterKey(new string('c', 64)));
+                Assert.AreEqual(2, raised, "a replaced key is announced");
             });
         }
 
