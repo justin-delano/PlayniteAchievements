@@ -65,7 +65,7 @@
                        Visibility="Collapsed"/>
         </StackPanel>
 
-        <!-- Compared against a library game: which rows, and which side of the install. -->
+        <!-- Which side of the install, or its category tree, and which rows. -->
         <StackPanel x:Name="ComparisonOptions"
                     Grid.Row="2"
                     Orientation="Horizontal"
@@ -81,6 +81,10 @@
                              Style="{StaticResource PlayAch.TimeRangeChip.Style}"
                              Content="{DynamicResource LOCPlayAch_Workshop_Preview_After}"
                              IsChecked="True"
+                             Checked="Options_Changed"/>
+                <RadioButton x:Name="CategoriesButton"
+                             Style="{StaticResource PlayAch.TimeRangeChip.Style}"
+                             Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Category}"
                              Checked="Options_Changed"/>
             </StackPanel>
             <CheckBox x:Name="ShowUnchangedCheckBox"
@@ -105,6 +109,18 @@
                                              AllowDisplaySettingsMenu="False"
                                              DataGridMaxHeight="{x:Static preview:GameDataPreviewControl.UnboundedHeight}"
                                              Visibility="Collapsed"/>
+
+        <!-- The after-install category tree, set up as View Achievements' category list:
+             art, leaf names under the tree guide, every node expanded, read-only. -->
+        <controls:GameSummariesGridControl x:Name="CategoryGrid"
+                                           Grid.Row="3"
+                                           ColumnSettingsKey="WorkshopPreviewGridCategorySummaries"
+                                           PreserveImageResolution="True"
+                                           ShowMetadataPlatform="False"
+                                           ShowMetadataPlaytime="False"
+                                           ShowMetadataRegion="False"
+                                           DisableRowSelection="True"
+                                           Visibility="Collapsed"/>
 
         <TextBlock x:Name="MoreRowsText"
                    Grid.Row="4"
