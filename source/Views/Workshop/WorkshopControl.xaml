@@ -18,6 +18,18 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- A small rounded state tag, as the Library rows draw theirs; the brush comes from the tag's own setter. -->
+            <Style x:Key="WorkshopTagStyle" TargetType="Border">
+                <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
+                <Setter Property="CornerRadius" Value="{StaticResource PlayAch.Radius.PillSmall}"/>
+                <Setter Property="Padding" Value="8,1"/>
+                <Setter Property="Margin" Value="0,2,0,0"/>
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+            </Style>
+            <Style x:Key="WorkshopTagTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+            </Style>
+
             <!-- One row of the browse list. -->
             <DataTemplate x:Key="WorkshopItemRowTemplate" DataType="{x:Type vm:WorkshopItemViewModel}">
                 <Grid Margin="0,4">
@@ -92,6 +104,13 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text}" Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    HorizontalAlignment="Right"
                                    Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}"/>
+                        <Border Style="{StaticResource WorkshopTagStyle}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.AuthSuccess}"
+                                Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Mine}"
+                                       Style="{StaticResource WorkshopTagTextStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.AuthSuccess}"/>
+                        </Border>
                     </StackPanel>
                 </Grid>
             </DataTemplate>
@@ -250,6 +269,10 @@
                                       Margin="12,0,0,0"
                                       VerticalAlignment="Center"
                                       Visibility="{Binding ShowOnlyMyGames, Converter={StaticResource BoolToVis}}"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Workshop_Mine}"
+                                      IsChecked="{Binding OnlyMine}"
+                                      Margin="12,0,0,0"
+                                      VerticalAlignment="Center"/>
                             <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
                                     Margin="12,0,0,0"
                                     Command="{Binding RefreshCommand}"/>
