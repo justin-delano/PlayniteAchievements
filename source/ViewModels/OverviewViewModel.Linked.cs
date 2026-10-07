@@ -14,8 +14,8 @@ namespace PlayniteAchievements.ViewModels
     {
         private UnlockDaySpan? _unlockSpanFilter;
 
-        private readonly Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), OverviewDataSnapshot> _linkedSnapshots =
-            new Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), OverviewDataSnapshot>();
+        private readonly Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), LinkedSnapshotEntry> _linkedSnapshots =
+            new Dictionary<(OverviewLinkedFilter Exclude, Guid? Game), LinkedSnapshotEntry>();
 
         /// <summary>
         /// Raised when what <see cref="GetLinkedSnapshot"/> returns may have changed: the
@@ -83,8 +83,8 @@ namespace PlayniteAchievements.ViewModels
         /// The snapshot a linked widget projects from: the overview's snapshot narrowed by every
         /// grid filter except those in <paramref name="exclude"/>, or by the selected game when
         /// <paramref name="selection"/> says so. Null until the overview has a snapshot.
-        /// Cached until <see cref="LinkedDataChanged"/>, so widgets asking for the same view
-        /// share one instance.
+        /// A filter change that leaves a view's games as they were returns the same instance, so
+        /// the widgets on that view see no new data and are left alone.
         /// </summary>
         public OverviewDataSnapshot GetLinkedSnapshot(OverviewLinkedFilter exclude, OverviewLinkedSelection selection)
         {
@@ -96,29 +96,115 @@ namespace PlayniteAchievements.ViewModels
 
             var narrowTo = GetLinkedNarrowedGame(selection)?.PlayniteGameId;
             var key = (narrowTo.HasValue ? OverviewLinkedFilter.None : exclude, narrowTo);
-            if (_linkedSnapshots.TryGetValue(key, out var cached))
+            _linkedSnapshots.TryGetValue(key, out var entry);
+            if (entry != null && entry.IsCurrent)
             {
-                return cached;
+                return entry.Snapshot;
             }
 
-            OverviewDataSnapshot snapshot;
+            List<GameSummaryItem> kept;
+            bool keptIsAll;
             if (narrowTo.HasValue)
             {
-                var game = (_allGameSummaries ?? new List<GameSummaryItem>())
+                kept = (_allGameSummaries ?? new List<GameSummaryItem>())
                     .Where(candidate => candidate?.PlayniteGameId == narrowTo)
                     .Take(1)
                     .ToList();
-                snapshot = OverviewLinkedSnapshots.Build(source, game, keptIsAll: false);
+                keptIsAll = false;
             }
             else
             {
                 var all = (_allGameSummaries ?? new List<GameSummaryItem>()).Where(game => game != null).ToList();
-                var kept = FilterLinkedGames(all, exclude);
-                snapshot = OverviewLinkedSnapshots.Build(source, kept, keptIsAll: kept.Count == all.Count);
+                kept = FilterLinkedGames(all, exclude);
+                keptIsAll = kept.Count == all.Count;
             }
 
-            _linkedSnapshots[key] = snapshot;
-            return snapshot;
+            var ids = new HashSet<Guid>(kept
+                .Where(game => game.PlayniteGameId.HasValue)
+                .Select(game => game.PlayniteGameId.Value));
+            if (entry != null &&
+                ReferenceEquals(entry.Source, source) &&
+                entry.KeptCount == kept.Count &&
+                entry.KeptIds.SetEquals(ids))
+            {
+                entry.IsCurrent = true;
+                return entry.Snapshot;
+            }
+
+            _linkedSnapshots[key] = new LinkedSnapshotEntry
+            {
+                Source = source,
+                KeptCount = kept.Count,
+                KeptIds = ids,
+                Snapshot = OverviewLinkedSnapshots.Build(source, kept, keptIsAll),
+                IsCurrent = true
+            };
+            return _linkedSnapshots[key].Snapshot;
+        }
+
+        /// <summary>One linked view's snapshot and the games it was built from.</summary>
+        private sealed class LinkedSnapshotEntry
+        {
+            public OverviewDataSnapshot Source;
+            public int KeptCount;
+            public HashSet<Guid> KeptIds;
+            public OverviewDataSnapshot Snapshot;
+
+            // Cleared by InvalidateLinkedSnapshots: the next request re-checks the games.
+            public bool IsCurrent;
+        }
+
+        /// <summary>
+        /// A linked widget's title: what the overview narrowed it to. The selected game when the
+        /// widget follows it, otherwise the active selections it follows (search, platforms,
+        /// progress, activity, unlock days), leaving out the ones it sets itself. Empty when
+        /// nothing narrows it.
+        /// </summary>
+        public string GetLinkedContextLabel(OverviewLinkedFilter exclude, OverviewLinkedSelection selection)
+        {
+            var game = GetLinkedNarrowedGame(selection);
+            if (game != null)
+            {
+                return game.GameName;
+            }
+
+            var parts = new List<string>();
+            var search = LeftSearchText?.Trim();
+            if (!string.IsNullOrEmpty(search))
+            {
+                parts.Add("“" + search + "”");
+            }
+
+            if ((exclude & OverviewLinkedFilter.Provider) == 0)
+            {
+                parts.AddRange((ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>())
+                    .Where(group => group.HasAnySelected && !string.IsNullOrWhiteSpace(group.DisplayName))
+                    .Select(group => group.DisplayName));
+            }
+
+            if ((exclude & OverviewLinkedFilter.Completeness) == 0)
+            {
+                parts.AddRange(OrderedSelections(_selectedCompletenessFilters, CompletenessFilterOptions));
+            }
+
+            parts.AddRange(OrderedSelections(_selectedPlayStatusFilters, PlayStatusFilterOptions));
+            if ((exclude & OverviewLinkedFilter.UnlockSpan) == 0 && _unlockSpanFilter.HasValue)
+            {
+                parts.Add(UnlockSpanFilterText);
+            }
+
+            return string.Join(" · ", parts);
+        }
+
+        // Selected filter values in the order the filter lists them.
+        private static IEnumerable<string> OrderedSelections(ISet<string> selected, IEnumerable<string> options)
+        {
+            if (selected == null || selected.Count == 0)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return (options ?? Enumerable.Empty<string>()).Where(selected.Contains);
         }
 
         /// <summary>The selected game a linked widget with this rule narrows to, or null.</summary>
@@ -228,9 +314,22 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void InvalidateLinkedSnapshots()
+        /// <param name="rebuild">
+        /// True when what the widgets draw changed with no change to their games (platform or
+        /// rarity colors), so every view gets a fresh snapshot instead of keeping its own.
+        /// </param>
+        private void InvalidateLinkedSnapshots(bool rebuild = false)
         {
-            _linkedSnapshots.Clear();
+            if (rebuild)
+            {
+                _linkedSnapshots.Clear();
+            }
+
+            foreach (var entry in _linkedSnapshots.Values)
+            {
+                entry.IsCurrent = false;
+            }
+
             LinkedDataChanged?.Invoke(this, EventArgs.Empty);
         }
     }
