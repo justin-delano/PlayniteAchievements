@@ -6,24 +6,24 @@ using System.Windows.Media.Imaging;
 namespace PlayniteAchievements.Services.Images
 {
     /// <summary>
-    /// Tells whether two icon files show the same picture, whatever their format, size or
-    /// encoder. Used to keep art identical to a provider's own from being stored as a custom icon.
+    /// Tells whether two icon files hold the exact same picture, whatever format each is saved
+    /// in. Used to keep a copy of a provider's own art from being stored as a custom icon.
     /// </summary>
     /// <remarks>
-    /// Both images are decoded, scaled to one small square and compared pixel by pixel. A byte
-    /// comparison would miss the same icon re-encoded by a different pipeline, and the icon
-    /// cache re-encodes and may compress what it downloads.
+    /// Exact means the same pixel size and every channel of every pixel within
+    /// <see cref="MaxChannelDifference"/>, which absorbs lossless re-saves (PNG to a palette PNG,
+    /// premultiplied rounding) and nothing more. A resized, retouched or re-compressed icon is the
+    /// user's own art: a cleaned-up copy of a blocky JPEG differs from it by only a few dozen
+    /// levels in a few places, and a tolerance loose enough to call those equal threw such
+    /// replacements away.
     /// </remarks>
     public static class IconImageComparer
     {
-        private const int SampleSize = 32;
-
-        /// <summary>The largest mean per-channel difference, out of 255, still read as the same image.</summary>
-        private const double MaxMeanDifference = 4.0;
+        private const int MaxChannelDifference = 2;
 
         /// <summary>
-        /// True when both files decode and look the same. False for a missing or undecodable file,
-        /// or for different aspect ratios.
+        /// True when both files decode to the same pixels. False for a missing or undecodable file,
+        /// or for different dimensions.
         /// </summary>
         public static bool AreSameImage(string firstPath, string secondPath)
         {
@@ -42,23 +42,26 @@ namespace PlayniteAchievements.Services.Images
 
             try
             {
-                var first = Sample(firstPath, out var firstAspect);
-                var second = Sample(secondPath, out var secondAspect);
+                var first = Decode(firstPath, out var firstWidth, out var firstHeight);
+                var second = Decode(secondPath, out var secondWidth, out var secondHeight);
                 if (first == null ||
                     second == null ||
-                    first.Length != second.Length ||
-                    Math.Abs(firstAspect - secondAspect) > 0.02)
+                    firstWidth != secondWidth ||
+                    firstHeight != secondHeight ||
+                    first.Length != second.Length)
                 {
                     return false;
                 }
 
-                long total = 0;
                 for (var i = 0; i < first.Length; i++)
                 {
-                    total += Math.Abs(first[i] - second[i]);
+                    if (Math.Abs(first[i] - second[i]) > MaxChannelDifference)
+                    {
+                        return false;
+                    }
                 }
 
-                return (double)total / first.Length <= MaxMeanDifference;
+                return true;
             }
             catch
             {
@@ -66,9 +69,10 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        private static byte[] Sample(string path, out double aspect)
+        private static byte[] Decode(string path, out int width, out int height)
         {
-            aspect = 0;
+            width = 0;
+            height = 0;
             BitmapSource frame;
             using (var stream = File.OpenRead(path))
             {
@@ -84,14 +88,11 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
-            aspect = (double)frame.PixelWidth / frame.PixelHeight;
-            BitmapSource converted = new FormatConvertedBitmap(frame, PixelFormats.Pbgra32, null, 0);
-            converted = new TransformedBitmap(
-                converted,
-                new ScaleTransform((double)SampleSize / frame.PixelWidth, (double)SampleSize / frame.PixelHeight));
-
-            var stride = converted.PixelWidth * 4;
-            var pixels = new byte[stride * converted.PixelHeight];
+            width = frame.PixelWidth;
+            height = frame.PixelHeight;
+            var converted = new FormatConvertedBitmap(frame, PixelFormats.Pbgra32, null, 0);
+            var stride = width * 4;
+            var pixels = new byte[stride * height];
             converted.CopyPixels(pixels, stride, 0);
             return pixels;
         }
