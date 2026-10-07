@@ -363,24 +363,37 @@
                                        Visibility="{Binding FrameDescriptionLine.ShowDescription, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </Grid>
 
-                        <!-- Game/category line. -->
-                        <Grid Grid.Row="{Binding FrameGameCategoryLine.RowIndex}"
-                              Margin="{Binding FrameGameCategoryLine.LeftIndentMargin}"
-                              Visibility="{Binding FrameGameCategoryLine.LineVisibility}"
-                              Effect="{Binding FrameGameCategoryLine.TextShadow}">
-                            <TextBlock helpers:InlineMarkdownFormatter.MarkupText="{Binding FrameGameCategoryLine.GameCategoryText}"
-                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontSize="{Binding FrameGameCategoryLine.FontSize}"
-                                       FontFamily="{Binding FrameGameCategoryLine.FontFamily}"
-                                       FontWeight="{Binding FrameGameCategoryLine.FontWeight}"
-                                       FontStyle="{Binding FrameGameCategoryLine.FontStyle}"
-                                       TextDecorations="{Binding FrameGameCategoryLine.TextDecorations}"
-                                       TextWrapping="NoWrap"
-                                       TextTrimming="CharacterEllipsis"
-                                       Effect="{Binding FrameGameCategoryLine.TextShadowInner}"
-                                       Visibility="{Binding FrameGameCategoryLine.HasGameCategoryContent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                        </Grid>
+                        <!-- Game/category line: the optional inline badge, then the game/category
+                             text. -->
+                        <DockPanel Grid.Row="{Binding FrameGameCategoryLine.RowIndex}"
+                                   Margin="{Binding FrameGameCategoryLine.LeftIndentMargin}"
+                                   Visibility="{Binding FrameGameCategoryLine.LineVisibility}"
+                                   LastChildFill="True">
+                            <Image DockPanel.Dock="Left"
+                                   Source="{Binding FrameGameCategoryLine.InlineBadgeSource}"
+                                   Width="{Binding FrameGameCategoryLine.InlineBadgeSize}"
+                                   Height="{Binding FrameGameCategoryLine.InlineBadgeSize}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,5,0"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   Effect="{Binding FrameGameCategoryLine.ImageShadow}"
+                                   Visibility="{Binding FrameGameCategoryLine.ShowInlineBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <Grid Effect="{Binding FrameGameCategoryLine.TextShadow}">
+                                <TextBlock helpers:InlineMarkdownFormatter.MarkupText="{Binding FrameGameCategoryLine.GameCategoryText}"
+                                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           FontSize="{Binding FrameGameCategoryLine.FontSize}"
+                                           FontFamily="{Binding FrameGameCategoryLine.FontFamily}"
+                                           FontWeight="{Binding FrameGameCategoryLine.FontWeight}"
+                                           FontStyle="{Binding FrameGameCategoryLine.FontStyle}"
+                                           TextDecorations="{Binding FrameGameCategoryLine.TextDecorations}"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center"
+                                           Effect="{Binding FrameGameCategoryLine.TextShadowInner}"
+                                           Visibility="{Binding FrameGameCategoryLine.HasGameCategoryContent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </Grid>
+                        </DockPanel>
                     </Grid>
 
                     <!-- Provider icon column, or (when the rarity badge is placed on the right) a
