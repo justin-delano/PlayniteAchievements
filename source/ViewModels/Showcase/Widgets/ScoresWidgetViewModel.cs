@@ -18,10 +18,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// One score card plus its cumulative score-over-time series for the mini line chart
     /// rendered under the card.
     /// </summary>
-    public sealed class ScoreCardWithHistoryViewModel
+    public sealed class ScoreCardWithHistoryViewModel : ObservableObject
     {
         private static readonly Func<double, string> AxisLabelFormatter =
             value => value.ToString("N0", FormattingCulture.Current);
+
+        private ScoreCardBadgePosition _badgePosition;
 
         public ScoreCardWithHistoryViewModel(
             ScoreCardViewModel card,
@@ -51,6 +53,16 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         }
 
         public ScoreCardViewModel Card { get; }
+
+        /// <summary>
+        /// Set in place by the widget, so flipping a side re-binds the card instead of
+        /// rebuilding it and re-plotting its chart.
+        /// </summary>
+        public ScoreCardBadgePosition BadgePosition
+        {
+            get => _badgePosition;
+            set => SetValue(ref _badgePosition, value);
+        }
 
         public ChartValues<int> HistoryValues { get; }
 
@@ -135,7 +147,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private int _columns = 1;
         private bool _isFeatured = true;
         private double _maxCardWidth = 360;
-        private ScoreCardBadgePosition _badgePosition = ScoreCardBadgePosition.Left;
 
         // What the cards were last built from. Rebuilding the collection makes LiveCharts throw
         // away and re-plot every series, so an unrelated refresh (a pin toggle, another widget's
@@ -159,15 +170,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         public double MaxCardWidth { get => _maxCardWidth; private set => SetValue(ref _maxCardWidth, value); }
 
-        /// <summary>
-        /// Widget-level so flipping the side re-binds the cards instead of rebuilding them.
-        /// </summary>
-        public ScoreCardBadgePosition BadgePosition
-        {
-            get => _badgePosition;
-            private set => SetValue(ref _badgePosition, value);
-        }
-
         protected override void Refresh()
         {
             var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
@@ -181,7 +183,12 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             Columns = count > 1 && !tall ? 2 : 1;
             IsFeatured = true;
             MaxCardWidth = Density == WidgetViewportDensity.Expanded ? 440 : 360;
-            BadgePosition = ShowcaseWidgetOptions.GetScoreBadgePosition(Projection?.Instance);
+            var collectionBadge = ShowcaseWidgetOptions.GetCollectionBadgePosition(Projection?.Instance);
+            var prestigeBadge = ShowcaseWidgetOptions.GetPrestigeBadgePosition(Projection?.Instance);
+            foreach (var existing in Cards)
+            {
+                existing.BadgePosition = BadgePositionFor(existing.Card, collectionBadge, prestigeBadge);
+            }
 
             var history = Projection?.ScoreHistory ?? new List<ShowcaseScorePoint>();
             // Two points is the least that draws a line at all; the option then decides which
@@ -267,8 +274,19 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     historyEnd));
             }
 
+            foreach (var built in cards)
+            {
+                built.BadgePosition = BadgePositionFor(built.Card, collectionBadge, prestigeBadge);
+            }
+
             Cards.ReplaceAll(cards);
         }
+
+        private static ScoreCardBadgePosition BadgePositionFor(
+            ScoreCardViewModel card,
+            ScoreCardBadgePosition collection,
+            ScoreCardBadgePosition prestige) =>
+            card?.ScoreType == ScoreCardType.Prestige ? prestige : collection;
 
     }
 }
