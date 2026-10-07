@@ -545,7 +545,8 @@
                                       IsEmpty="{Binding Timeline.IsEmpty}"
                                       MaxTickCount="{Binding Timeline.MaxTickCount, Mode=OneWayToSource}"
                                       MaxBarCount="{Binding Timeline.MaxBarCount, Mode=OneWayToSource}"
-                                      RenderRevision="{Binding Timeline.RenderRevision}"/>
+                                      RenderRevision="{Binding Timeline.RenderRevision}"
+                                      HighlightedIndex="{Binding Timeline.HighlightedIndex}"/>
     </DataTemplate>
 
     <!-- Statistics: scrolling grid of value/label tiles. -->
@@ -1039,6 +1040,8 @@
                          with tooltips and the day popup (ShowcaseActivityDayPopupTemplate)
                          served from hit tests. -->
                     <showcase:ActivityCalendarHeatmap Weeks="{Binding Weeks}"
+                                                      SelectsDays="{Binding IsLinked}"
+                                                      HighlightedDay="{Binding HighlightedDay}"
                                                       ShowMonthLabels="True"
                                                       HorizontalAlignment="Left"
                                                       VerticalAlignment="Top"/>
