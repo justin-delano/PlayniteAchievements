@@ -216,7 +216,7 @@
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementStatusTemplate}" />
 
-                <DataGridTemplateColumn Width="72" MinWidth="44" MaxWidth="160" CanUserResize="True"
+                <DataGridTemplateColumn Width="72" MinWidth="44" Width="160" CanUserResize="True"
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}" />
 
@@ -642,9 +642,19 @@
                                                 Width="88"
                                                 Height="50"
                                                 Background="Transparent"
-                                                ToolTip="{Binding ArtOverrideValue}"
+                                                ToolTipService.InitialShowDelay="300"
                                                 helpers:FilePickTarget.IsEnabled="True"
                                                 helpers:FilePickTarget.Picked="CategoryImage_Picked">
+                                            <!-- A larger preview of the art, sized up front so the tooltip does not grow as it loads. -->
+                                            <Border.ToolTip>
+                                                <ToolTip>
+                                                    <Image helpers:AsyncImage.Uri="{Binding ArtPreviewPath}"
+                                                           helpers:AsyncImage.DecodePixel="320"
+                                                           Width="320"
+                                                           Height="180"
+                                                           Stretch="Uniform" />
+                                                </ToolTip>
+                                            </Border.ToolTip>
                                             <Border.Style>
                                                 <Style TargetType="Border" BasedOn="{StaticResource PreviewBorderStyle}">
                                                     <Style.Triggers>
