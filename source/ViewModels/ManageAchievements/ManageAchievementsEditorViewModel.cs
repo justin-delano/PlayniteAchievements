@@ -8207,6 +8207,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     OnPropertyChanged(nameof(CanEditUnlockTime));
                     OnPropertyChanged(nameof(UnlockTimeLocal));
                     OnPropertyChanged(nameof(UnlockDate));
+                    OnPropertyChanged(nameof(UnlockDateText));
                     OnPropertyChanged(nameof(UnlockTimeOfDay));
 
                     if (!_isApplyingPickerUpdate)
@@ -8583,6 +8584,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
             }
         }
+
+        /// <summary>
+        /// The unlock date as the grid's date picker shows it, for the cell's resting face.
+        /// </summary>
+        public string UnlockDateText => UnlockDate?.ToString("d", CultureInfo.CurrentCulture);
 
         public TimeSpan? UnlockTimeOfDay
         {
