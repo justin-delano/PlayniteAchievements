@@ -260,14 +260,9 @@ namespace PlayniteAchievements.ViewModels
 
         private void ApplyThemeResources()
         {
-            var resources = Application.Current?.Resources;
-            if (resources != null)
-            {
-                PlayAchResourceService.Apply(
-                    resources,
-                    Settings?.Persisted?.ResourceOverrides,
-                    Settings?.Persisted);
-            }
+            PlayAchResourceService.ApplyToApplication(
+                Settings?.Persisted?.ResourceOverrides,
+                Settings?.Persisted);
         }
 
         private static void AddDuplicateHotkeyError(
