@@ -147,6 +147,23 @@ namespace PlayniteAchievements.Services.Library
             return result;
         }
 
+        /// <summary>
+        /// Removes the managed folders nothing references any more after <paramref name="written"/>
+        /// was stored outside an apply (a picked file replacing an earlier copy). Keeps
+        /// <paramref name="written"/>'s own files whether or not the referenced packs already see
+        /// it. Does nothing without the referenced packs, which are the only thing telling a live
+        /// folder from a stale one.
+        /// </summary>
+        public void PruneUnreferenced(UnlockSoundSettings written)
+        {
+            if (_alsoReferenced == null)
+            {
+                return;
+            }
+
+            Prune(written);
+        }
+
         private void Prune(UnlockSoundSettings sounds)
         {
             var keep = new List<UnlockSoundSettings> { sounds };

@@ -15,6 +15,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Notifications
 {
@@ -28,6 +29,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         private PlayniteAchievementsSettings _settings;
         private PersistedSettingsSubscription _persistedSubscription;
         private UnlockSoundSettingsViewModel _viewModel;
+        private PlayniteAchievementsPlugin _plugin;
         private ILogger _logger;
 
         public UnlockSoundsEditor()
@@ -41,10 +43,18 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         internal void Initialize(PlayniteAchievementsSettings settings, PlayniteAchievementsPlugin plugin, ILogger logger)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _plugin = plugin;
             _logger = logger;
 
             GlobalSwitchesCard.DataContext = settings;
-            _viewModel = new UnlockSoundSettingsViewModel(settings, plugin?.UnlockSounds, logger);
+            var store = plugin?.UnlockSoundPortableStore;
+            var library = plugin?.SoundsLibraryAdapter;
+            _viewModel = new UnlockSoundSettingsViewModel(
+                settings,
+                plugin?.UnlockSounds,
+                logger,
+                store != null ? store.ImportFile : (Func<string, string>)null,
+                library != null ? library.PruneUnreferenced : (Action<UnlockSoundSettings>)null);
             _viewModel.SoundsChanged += (s, e) => SoundsChanged?.Invoke(this, EventArgs.Empty);
             UnlockSoundRows.DataContext = _viewModel;
 
@@ -101,7 +111,33 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                row.CustomPath = dialog.FileName;
+                PickSound(row, dialog.FileName);
+            }
+        }
+
+        // A sound file dropped on or pasted into a row's file cell.
+        private void SoundPickTarget_Picked(object sender, FilePickedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is UnlockSoundRowItem row)
+            {
+                PickSound(row, e.PickedSource);
+            }
+        }
+
+        private void PickSound(UnlockSoundRowItem row, string path)
+        {
+            try
+            {
+                _viewModel?.PickFile(row.Tier, path);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Could not use '{path}' as the {row.Tier} unlock sound.");
+                _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 

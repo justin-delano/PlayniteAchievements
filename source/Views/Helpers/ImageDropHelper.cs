@@ -108,23 +108,6 @@ namespace PlayniteAchievements.Views.Helpers
         }
 
         /// <summary>
-        /// <see cref="TryGetImageSource"/> over the clipboard. False when the clipboard holds no
-        /// image source or cannot be opened.
-        /// </summary>
-        public static bool TryGetClipboardImageSource(out string source)
-        {
-            source = null;
-            try
-            {
-                return TryGetImageSource(Clipboard.GetDataObject(), out source);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
         /// True when the path points at an existing file in a format this machine offers and that
         /// a <see cref="BitmapDecoder"/> (or, for WebM, the WebM reader) can actually open.
         /// </summary>

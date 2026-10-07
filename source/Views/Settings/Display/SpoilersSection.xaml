@@ -204,9 +204,9 @@
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
                                             Tag="Locked"
-                                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                                            helpers:ImagePickTarget.IsEnabled="True"
-                                            helpers:ImagePickTarget.Picked="FallbackIcon_Picked"
+                                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                                            helpers:FilePickTarget.IsEnabled="True"
+                                            helpers:FilePickTarget.Picked="FallbackIcon_Picked"
                                             Width="48" Height="48"
                                             Background="{DynamicResource PlayAch.Brush.Surface}"
                                             Margin="0,0,8,0">
@@ -241,9 +241,9 @@
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
                                             Tag="Hidden"
-                                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
-                                            helpers:ImagePickTarget.IsEnabled="True"
-                                            helpers:ImagePickTarget.Picked="FallbackIcon_Picked"
+                                            Style="{DynamicResource PlayAch.FilePickTarget.Style}"
+                                            helpers:FilePickTarget.IsEnabled="True"
+                                            helpers:FilePickTarget.Picked="FallbackIcon_Picked"
                                             Width="48" Height="48"
                                             Background="{DynamicResource PlayAch.Brush.Surface}"
                                             Margin="0,0,8,0">

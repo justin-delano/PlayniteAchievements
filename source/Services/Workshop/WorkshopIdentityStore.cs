@@ -57,8 +57,8 @@ namespace PlayniteAchievements.Services.Workshop
     public sealed class WorkshopIdentityStore
     {
         public const string DirectoryName = "workshop";
-        private const string InstalledFileName = "installed.json";
-        private const string RetiredInstalledFileName = "installed.migrated.json";
+        public const string InstalledFileName = "installed.json";
+        public const string RetiredInstalledFileName = "installed.migrated.json";
         private const string IdentityFileName = "identity.json";
 
         private readonly string _directory;
@@ -227,7 +227,8 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>
         /// Renames <c>installed.json</c> to <c>installed.migrated.json</c> once the library holds
-        /// its installs, so it is read no more and stays as a backup. True when a file was renamed.
+        /// its installs, so it is read no more; the next startup's library folder migration
+        /// deletes the renamed file. True when a file was renamed.
         /// </summary>
         public bool RetireLegacyInstalls()
         {

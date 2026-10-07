@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using PlayniteAchievements.Services.Library;
 
 namespace PlayniteAchievements.Services.Notifications
 {
@@ -30,9 +31,9 @@ namespace PlayniteAchievements.Services.Notifications
 
     /// <summary>
     /// Stores named per-surface appearance presets as self-contained surface packages
-    /// (<c>.panotif</c> under <c>notification_style_presets\toast</c>, <c>.paframe</c> under
-    /// <c>...\frame</c>) in the plugin's user data folder: the notification and frame part of the
-    /// library. Each preset carries one surface's style plus its bundled images and optional
+    /// (<c>.panotif</c> under <c>library\notifications</c>, <c>.paframe</c> under
+    /// <c>library\frames</c>) in the plugin's user data folder: the notification and frame part of
+    /// the library. Each preset carries one surface's style plus its bundled images and optional
     /// custom template; packages are checked by <see cref="NotificationStylePortableStore"/>, so
     /// a preset file is also a valid style package for the regular import/export flow. Presets
     /// saved by earlier versions as <c>.pastyle</c> are renamed to the surface extension the
@@ -42,12 +43,8 @@ namespace PlayniteAchievements.Services.Notifications
     {
         public const int MaxNameLength = 64;
 
-        private const string PresetsFolderName = "notification_style_presets";
-        private const string ToastFolderName = "toast";
-        private const string FrameFolderName = "frame";
-
         private readonly NotificationStylePortableStore _portableStore;
-        private readonly string _presetsRoot;
+        private readonly string _pluginUserDataPath;
 
         public NotificationStylePresetStore(
             NotificationStylePortableStore portableStore,
@@ -59,7 +56,7 @@ namespace PlayniteAchievements.Services.Notifications
                 throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
             }
 
-            _presetsRoot = Path.Combine(pluginUserDataPath, PresetsFolderName);
+            _pluginUserDataPath = pluginUserDataPath;
         }
 
         public IReadOnlyList<NotificationStylePresetInfo> ListPresets(bool isFrame)
@@ -161,7 +158,7 @@ namespace PlayniteAchievements.Services.Notifications
 
         private string GetSurfaceDirectory(bool isFrame)
         {
-            return Path.Combine(_presetsRoot, isFrame ? FrameFolderName : ToastFolderName);
+            return LibraryStore.PresetDirectory(_pluginUserDataPath, isFrame ? LibraryItemKind.Frame : LibraryItemKind.Toast);
         }
 
         private string GetPresetPath(bool isFrame, string sanitizedName)

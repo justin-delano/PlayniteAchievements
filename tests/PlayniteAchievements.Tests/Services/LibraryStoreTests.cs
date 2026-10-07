@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual("Sunset", sunset.Name);
             Assert.AreEqual(LibraryStore.HashFile(colors), sunset.ContentHash);
             Assert.AreEqual(sunset.ContentHash, sunset.Version, "a local item's version is its hash");
-            Assert.AreEqual(Path.Combine("color_presets", "Sunset.pacolors"), sunset.RelativePath);
+            Assert.AreEqual(Path.Combine("library", "colors", "Sunset.pacolors"), sunset.RelativePath);
             Assert.IsTrue(Guid.TryParseExact(sunset.Id, "N", out _));
         }
 

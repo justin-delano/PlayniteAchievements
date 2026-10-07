@@ -781,6 +781,8 @@ namespace PlayniteAchievements.Services.Recording
                 if (drained)
                 {
                     TryDeleteDirectory(session.BufferDirectory);
+                    var bufferRoot = Path.GetDirectoryName(session.BufferDirectory);
+                    Common.EmptyFolders.RemoveUpTo(bufferRoot, bufferRoot);
                 }
                 else
                 {
@@ -2788,6 +2790,8 @@ namespace PlayniteAchievements.Services.Recording
                     _logger?.Debug($"[Recording] Removing stale recording buffer: {directory}");
                     TryDeleteDirectory(directory);
                 }
+
+                Common.EmptyFolders.RemoveUpTo(bufferRoot, bufferRoot);
             }
             catch (Exception ex)
             {

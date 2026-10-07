@@ -281,7 +281,7 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="PreviewBorderStyle" TargetType="Border" BasedOn="{StaticResource PlayAch.ImagePickTarget.Style}">
+            <Style x:Key="PreviewBorderStyle" TargetType="Border" BasedOn="{StaticResource PlayAch.FilePickTarget.Style}">
                 <Setter Property="Width" Value="56" />
                 <Setter Property="Height" Value="56" />
                 <Setter Property="CornerRadius" Value="4" />
@@ -289,6 +289,25 @@
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- Under an icon slot's thumbnail: whether it shows the user's own art. Tag carries
+                 the slot's override flag. -->
+            <Style x:Key="IconSourceCaptionStyle" TargetType="TextBlock">
+                <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Common_Default}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Secondary}" />
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="Margin" Value="0,3,0,0" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="True">
+                        <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Common_Custom}" />
+                        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Opacity" Value="1" />
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="VariantBadgeStyle" TargetType="Border">
@@ -2200,12 +2219,13 @@
                                                        VerticalAlignment="Center" />
                                         </Border>
 
-                                        <Grid Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <StackPanel Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <Grid>
                                             <Border Style="{StaticResource PreviewBorderStyle}"
                                                     Tag="Unlocked"
                                                     ToolTip="{Binding UnlockedIconPath}"
-                                                    helpers:ImagePickTarget.IsEnabled="True"
-                                                    helpers:ImagePickTarget.Picked="IconPickTarget_Picked">
+                                                    helpers:FilePickTarget.IsEnabled="True"
+                                                    helpers:FilePickTarget.Picked="IconPickTarget_Picked">
                                                 <Image Width="48"
                                                        Height="48"
                                                        Stretch="Uniform"
@@ -2222,6 +2242,9 @@
                                                     Focusable="True"
                                                     Click="ClearIconButton_Click" />
                                         </Grid>
+                                        <TextBlock Style="{StaticResource IconSourceCaptionStyle}"
+                                                   Tag="{Binding HasUnlockedIconOverride}" />
+                                        </StackPanel>
 
                                         <Button Content="..."
                                                 Tag="Unlocked"
@@ -2241,12 +2264,13 @@
                                                    Opacity="0.72" />
                                         </Border>
 
-                                        <Grid Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <StackPanel Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <Grid>
                                             <Border Style="{StaticResource PreviewBorderStyle}"
                                                     Tag="Locked"
                                                     ToolTip="{Binding LockedIconPath}"
-                                                    helpers:ImagePickTarget.IsEnabled="True"
-                                                    helpers:ImagePickTarget.Picked="IconPickTarget_Picked">
+                                                    helpers:FilePickTarget.IsEnabled="True"
+                                                    helpers:FilePickTarget.Picked="IconPickTarget_Picked">
                                                 <Image Width="48"
                                                        Height="48"
                                                        Stretch="Uniform"
@@ -2263,6 +2287,9 @@
                                                     Focusable="True"
                                                     Click="ClearIconButton_Click" />
                                         </Grid>
+                                        <TextBlock Style="{StaticResource IconSourceCaptionStyle}"
+                                                   Tag="{Binding HasLockedIconOverride}" />
+                                        </StackPanel>
 
                                         <Button Content="..."
                                                 Tag="Locked"

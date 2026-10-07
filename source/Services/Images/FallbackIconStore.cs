@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Services.Images
     /// </summary>
     public sealed class FallbackIconStore
     {
-        private const string RootFolderName = "fallback_icons";
+        public const string RootFolderName = "fallback_icons";
 
         private static readonly Dictionary<FallbackIconSlot, string> SlotStems =
             new Dictionary<FallbackIconSlot, string>
@@ -220,6 +220,8 @@ namespace PlayniteAchievements.Services.Images
                         TryDeleteFile(file);
                     }
                 }
+
+                Common.EmptyFolders.RemoveUpTo(directory, directory);
             }
             catch (Exception ex)
             {
