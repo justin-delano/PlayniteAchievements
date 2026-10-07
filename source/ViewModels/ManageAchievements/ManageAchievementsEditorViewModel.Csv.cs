@@ -3,6 +3,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -104,8 +105,28 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 ProgressNum = ParseCsvInt(row.ProgressNumText),
                 ProgressDenom = ParseCsvInt(row.ProgressDenomText),
                 Unlocked = row.Unlocked,
-                UnlockTimeUtc = row.Unlocked ? row.UnlockTime : null
+                UnlockTimeUtc = row.Unlocked ? row.UnlockTime : null,
+                UnlockedIconPath = OwnIcon(row, AchievementIconVariant.Unlocked),
+                LockedIconPath = row.UseSeparateLockedIcons ? OwnIcon(row, AchievementIconVariant.Locked) : null
             };
+        }
+
+        /// <summary>
+        /// The art the user set in a slot, or null where the slot shows the provider's own: an
+        /// export that wrote the provider's cached icons would turn every one of them into an
+        /// override when the file came back.
+        /// </summary>
+        private static string OwnIcon(AchievementEditorRow row, AchievementIconVariant variant)
+        {
+            var current = NormalizeText(ReadIcon(row, variant));
+            if (current == null || !row.IsProviderRow)
+            {
+                return current;
+            }
+
+            return string.Equals(current, NormalizeText(ReadProviderIcon(row, variant)), StringComparison.OrdinalIgnoreCase)
+                ? null
+                : current;
         }
 
         private static string GetCsvKey(AchievementEditorRow row)
@@ -129,9 +150,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// manual unlocks as one link write, the authored rows as one save, and the categories as
         /// one assignment write after the save, so a new row is stored before it is filed.
         /// </remarks>
-        private void MergeCsv(string text)
+        private void MergeCsv(string path)
         {
-            var parsed = new CustomAchievementTextImportService().Parse(text);
+            var parsed = new CustomAchievementTextImportService().Parse(
+                File.ReadAllText(path),
+                iconBaseDirectory: Path.GetDirectoryName(Path.GetFullPath(path)));
             var errors = new List<string>(parsed.Errors);
 
             var rowsByKey = new Dictionary<string, AchievementEditorRow>(StringComparer.OrdinalIgnoreCase);
@@ -228,7 +251,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
                 finally
                 {
-                    _isImportingCsv = false;
                     _isApplyingBulk = previousApplyingBulk;
                     _isTogglingReveal = false;
                 }
@@ -247,14 +269,34 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 SelectedRow = outcome.Added[outcome.Added.Count - 1];
             }
 
-            SetStatus(BuildCsvImportSummary(parsed, matches.Count, outcome), false);
-            _ = FinishCsvImportAsync(outcome);
+            var summary = BuildCsvImportSummary(parsed, matches.Count, outcome);
+            SetStatus(summary, false);
+            _ = FinishCsvImportAsync(outcome, summary);
         }
 
-        private async Task FinishCsvImportAsync(CsvMergeOutcome outcome)
+        /// <summary>
+        /// The writes that wait on files: icons fetched and stored, then the authored rows saved,
+        /// then the categories filed, so a new row exists before it is assigned.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="_isImportingCsv"/> stays set until the last of them, which keeps the icon
+        /// writes from naming steps of their own and the step itself open, so the copies of any
+        /// art written over can be attached to it.
+        /// </remarks>
+        private async Task FinishCsvImportAsync(CsvMergeOutcome outcome, string summary)
         {
             try
             {
+                if (outcome.UnlockedIconRows.Count > 0)
+                {
+                    await ApplyIconEditAsync(outcome.UnlockedIconRows, AchievementIconVariant.Unlocked);
+                }
+
+                if (outcome.LockedIconRows.Count > 0)
+                {
+                    await ApplyIconEditAsync(outcome.LockedIconRows, AchievementIconVariant.Locked);
+                }
+
                 if (outcome.TouchedAuthored)
                 {
                     RefreshComputedState();
@@ -266,12 +308,26 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     PersistCategoryAssignmentsFromRows();
                 }
 
-                RaiseHistoryState();
+                foreach (var restore in outcome.ArtRestores)
+                {
+                    _undoJournal.RecordArtRestore(restore.ApiName, restore.PropertyName, restore.OldValue, restore.NewValue);
+                }
+
+                // An icon that failed to download reports itself; otherwise the summary stands.
+                if (!_statusIsError)
+                {
+                    SetStatus(summary, false);
+                }
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed saving a CSV import for gameId={_gameId}.");
                 SetStatus(string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message), true);
+            }
+            finally
+            {
+                _isImportingCsv = false;
+                RaiseHistoryState();
             }
         }
 
@@ -382,9 +438,69 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
             }
 
+            ApplyCsvIcon(row, csv.UnlockedIconPath, AchievementIconVariant.Unlocked, outcome, ref changed);
+            ApplyCsvIcon(row, csv.LockedIconPath, AchievementIconVariant.Locked, outcome, ref changed);
+
             if (changed)
             {
                 outcome.Updated++;
+            }
+        }
+
+        /// <summary>
+        /// Puts an icon cell into the row's slot, where the editor's icon edit then fetches and
+        /// stores it - and drops it again if it is the provider's own picture.
+        /// </summary>
+        /// <remarks>
+        /// A locked icon only counts on a game set to show separate locked art; elsewhere the
+        /// locked look is drawn from the unlocked icon and the cell is skipped. Art the slot holds
+        /// of the user's own is copied first, because storing the new icon writes over that file.
+        /// </remarks>
+        private void ApplyCsvIcon(
+            AchievementEditorRow row,
+            string source,
+            AchievementIconVariant variant,
+            CsvMergeOutcome outcome,
+            ref bool changed)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            var current = NormalizeText(ReadIcon(row, variant));
+            if (string.Equals(source, current, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (variant == AchievementIconVariant.Locked && !row.UseSeparateLockedIcons)
+            {
+                outcome.Skipped++;
+                return;
+            }
+
+            var own = OwnIcon(row, variant);
+            if (own != null && !string.IsNullOrWhiteSpace(row.OriginalApiName))
+            {
+                outcome.ArtRestores.Add(new EditorRowValueChange(
+                    row.OriginalApiName,
+                    variant == AchievementIconVariant.Locked
+                        ? nameof(AchievementEditorRow.LockedIconPath)
+                        : nameof(AchievementEditorRow.UnlockedIconPath),
+                    RetainIconValue(own),
+                    RetainIconValue(source)));
+            }
+
+            WriteIcon(row, variant, source);
+            changed = true;
+            if (row.IsProviderRow)
+            {
+                (variant == AchievementIconVariant.Locked ? outcome.LockedIconRows : outcome.UnlockedIconRows).Add(row);
+            }
+            else
+            {
+                outcome.TouchedAuthored = true;
             }
         }
 
@@ -558,6 +674,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             public List<AchievementEditorRow> Added { get; } = new List<AchievementEditorRow>();
 
             public List<string> CreatedCategories { get; } = new List<string>();
+
+            public List<AchievementEditorRow> UnlockedIconRows { get; } = new List<AchievementEditorRow>();
+
+            public List<AchievementEditorRow> LockedIconRows { get; } = new List<AchievementEditorRow>();
+
+            public List<EditorRowValueChange> ArtRestores { get; } = new List<EditorRowValueChange>();
 
             public int Updated { get; set; }
 
