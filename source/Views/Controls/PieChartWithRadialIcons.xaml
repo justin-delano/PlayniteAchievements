@@ -15,7 +15,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <controls:PieLegendLayoutPanel LegendPosition="{Binding LegendPosition, ElementName=Root}">
+    <controls:PieLegendLayoutPanel x:Name="LayoutPanel"
+                                   LegendPosition="{Binding LegendPosition, ElementName=Root}">
     <!-- The pie and its overlays share one square host; icon and percentage geometry is
          measured against it, not against the whole control. -->
     <Grid x:Name="PieHost">
