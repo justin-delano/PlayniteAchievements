@@ -11,11 +11,11 @@ namespace PlayniteAchievements.Services.GameCustomData
 {
     /// <summary>
     /// The custom-achievements form of the .pa package: a zip holding one CSV of custom
-    /// achievement definitions (<see cref="CustomAchievementCsvFormat"/>) and, when any
-    /// definition has an icon, the bundled icon files under the package images folder. It has
+    /// achievement definitions (<see cref="CustomAchievementCsvFormat"/>, plus Unlocked Icon and
+    /// Locked Icon columns) and the bundled icon files under the package images folder. It has
     /// no <see cref="PortablePackageManifestEntryName"/> entry, which is what tells it apart from
-    /// a whole-game package. Neither direction carries unlock state or progress
-    /// (<see cref="PortablePersonalState"/>).
+    /// a whole-game package. Nothing in the plugin writes one; a package that exists still
+    /// imports, and never brings unlock state or progress (<see cref="PortablePersonalState"/>).
     /// </summary>
     public sealed partial class GameCustomDataStore
     {
@@ -46,59 +46,6 @@ namespace PlayniteAchievements.Services.GameCustomData
                 StringComparer.OrdinalIgnoreCase);
             return !names.Contains(PortablePackageManifestEntryName) &&
                    names.Contains(CustomAchievementsPackageCsvEntryName);
-        }
-
-        public void ExportCustomAchievementsPackage(
-            Guid playniteGameId,
-            IReadOnlyList<CustomAchievementDefinition> definitions,
-            string destinationPath)
-        {
-            EnsurePortablePackageExtension(destinationPath);
-
-            var clones = (definitions ?? Array.Empty<CustomAchievementDefinition>())
-                .Where(definition => definition != null)
-                .Select(definition => definition.Clone())
-                .ToList();
-            clones.ForEach(PortablePersonalState.Strip);
-            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(
-                clones.Select(definition => CustomAchievementProjectionService.BuildApiName(definition.Id)));
-            var imageSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            RewritePortableCustomAchievementIconsForPackage(playniteGameId, clones, fileStems, imageSources);
-
-            EnsureDestinationDirectory(destinationPath);
-            if (File.Exists(destinationPath))
-            {
-                File.Delete(destinationPath);
-            }
-
-            using (var archive = ZipFile.Open(destinationPath, ZipArchiveMode.Create))
-            {
-                var csvEntry = archive.CreateEntry(CustomAchievementsPackageCsvEntryName, CompressionLevel.Optimal);
-                using (var writer = new StreamWriter(csvEntry.Open()))
-                {
-                    foreach (var line in CustomAchievementCsvFormat.BuildLines(
-                                 clones.Select(CustomAchievementCsvFormat.FromDefinition),
-                                 includeIcons: true))
-                    {
-                        writer.WriteLine(line);
-                    }
-                }
-
-                foreach (var pair in imageSources.OrderBy(a => a.Key, StringComparer.OrdinalIgnoreCase))
-                {
-                    if (string.IsNullOrWhiteSpace(pair.Value) || !File.Exists(pair.Value))
-                    {
-                        throw new InvalidOperationException($"Missing bundled icon file: {pair.Value ?? pair.Key}");
-                    }
-
-                    var imageEntry = archive.CreateEntry(pair.Key, CompressionLevel.Optimal);
-                    using (var source = File.OpenRead(pair.Value))
-                    using (var destination = imageEntry.Open())
-                    {
-                        source.CopyTo(destination);
-                    }
-                }
-            }
         }
 
         /// <summary>
