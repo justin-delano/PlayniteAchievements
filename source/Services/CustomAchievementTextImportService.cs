@@ -107,7 +107,11 @@ namespace PlayniteAchievements.Services
         /// </summary>
         /// <param name="nowUtc">The clock an unlock time is checked against; the current time
         /// when null.</param>
-        public CustomAchievementCsvParseResult Parse(string text, DateTime? nowUtc = null)
+        /// <param name="iconBaseDirectory">The folder of the CSV file, when it was read from one.
+        /// Icon cells must then be a web address or a file that exists, a relative path read
+        /// against this folder. Without it icon cells pass through as written, for a package
+        /// whose reader resolves its own entries.</param>
+        public CustomAchievementCsvParseResult Parse(string text, DateTime? nowUtc = null, string iconBaseDirectory = null)
         {
             var result = new CustomAchievementCsvParseResult();
             var rows = ParseRows(text);
@@ -165,7 +169,7 @@ namespace PlayniteAchievements.Services
                 var rowErrorCount = result.Errors.Count;
                 for (var columnIndex = 0; columnIndex < cells.Count && columnIndex < mapping.Count; columnIndex++)
                 {
-                    ApplyField(result, row, mapping[columnIndex], NormalizeText(header[columnIndex]), cells[columnIndex], rowNumber);
+                    ApplyField(result, row, mapping[columnIndex], NormalizeText(header[columnIndex]), cells[columnIndex], rowNumber, iconBaseDirectory);
                 }
 
                 if (row.Id == null && row.DisplayName == null)
@@ -348,7 +352,8 @@ namespace PlayniteAchievements.Services
             Field field,
             string column,
             string rawValue,
-            int rowNumber)
+            int rowNumber,
+            string iconBaseDirectory)
         {
             var value = NormalizeText(rawValue);
             if (field == Field.Unknown || value == null)
@@ -452,11 +457,52 @@ namespace PlayniteAchievements.Services
                     }
                     break;
                 case Field.UnlockedIconPath:
-                    row.UnlockedIconPath = value;
-                    break;
                 case Field.LockedIconPath:
-                    row.LockedIconPath = value;
+                    var icon = ResolveIconSource(value, iconBaseDirectory);
+                    if (icon == null)
+                    {
+                        Error("is not a web address or a file that exists.");
+                    }
+                    else if (field == Field.UnlockedIconPath)
+                    {
+                        row.UnlockedIconPath = icon;
+                    }
+                    else
+                    {
+                        row.LockedIconPath = icon;
+                    }
                     break;
+            }
+        }
+
+        /// <summary>
+        /// An icon cell as the source to fetch it from: a web address as written, or a local file
+        /// as a full path. Null when it is neither. Without a base folder the cell is kept as
+        /// written.
+        /// </summary>
+        private static string ResolveIconSource(string value, string baseDirectory)
+        {
+            if (baseDirectory == null ||
+                value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return value;
+            }
+
+            try
+            {
+                var path = System.IO.Path.IsPathRooted(value)
+                    ? value
+                    : System.IO.Path.GetFullPath(System.IO.Path.Combine(baseDirectory, value));
+                return System.IO.File.Exists(path) ? path : null;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
             }
         }
 
