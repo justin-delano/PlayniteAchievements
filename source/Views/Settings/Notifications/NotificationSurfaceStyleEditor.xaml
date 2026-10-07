@@ -479,9 +479,10 @@
                              TextAlignment="Right"/>
                 </Grid>
 
-                <!-- Name-line offset: positive indents the name line (badge included) to the
-                     right; negative pushes the other lines right instead, so the name line never
-                     slides left under the icon. -->
+                <!-- Badge-line offset: positive indents the line carrying the inline badge (the
+                     name line, or the game line when the badge sits there) to the right; negative
+                     pushes the other lines right instead, so the badge line never slides left
+                     under the icon. -->
                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Style_TitleLineOffset}"
                            Style="{StaticResource EditorSubGroupHeaderStyle}"/>
                 <Grid HorizontalAlignment="Left"
