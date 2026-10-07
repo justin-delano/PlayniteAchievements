@@ -1906,17 +1906,22 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             Reload();
         }
 
-        internal void NotifyIconOverridesChanged(IReadOnlyCollection<string> changedApiNames)
+        /// <returns>
+        /// The apply, which completes on the dispatcher after its cache write has been announced;
+        /// null when there was nothing to apply.
+        /// </returns>
+        internal Task NotifyIconOverridesChanged(IReadOnlyCollection<string> changedApiNames)
         {
             if (changedApiNames == null || changedApiNames.Count == 0)
             {
-                return;
+                return null;
             }
 
             // Chain onto the previous apply so overlapping edit bursts run one at a time;
             // each run re-reads the override store, so the final run converges to the
             // last persisted state.
             _iconOverridesApplyChain = ApplyIconOverridesAsync(_iconOverridesApplyChain, changedApiNames);
+            return _iconOverridesApplyChain;
         }
 
         private async Task ApplyIconOverridesAsync(
