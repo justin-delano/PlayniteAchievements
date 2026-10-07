@@ -345,16 +345,6 @@
          cumulative score-over-time line under each card outside compact. -->
     <DataTemplate DataType="{x:Type widgets:ScoresWidgetViewModel}">
       <Grid>
-        <!-- One info affordance for the widget. The cards themselves carry none: with both the
-             collection and prestige card on screen, a per-card glyph appeared twice and competed
-             with the label that tells the two cards apart. -->
-        <Button Style="{DynamicResource PlayAch.Button.InfoGlyphStyle}"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                Panel.ZIndex="1"
-                Margin="0,2,4,0"
-                ToolTip="{DynamicResource LOCPlayAch_Score_Info_ButtonTooltip}"
-                showcase:ScoreCardInfoBehavior.Enabled="True"/>
         <ItemsControl ItemsSource="{Binding Cards}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -389,6 +379,7 @@
                         <controls:ScoreCardControl
                             ScoreCard="{Binding Card}"
                             IsFeatured="{Binding DataContext.IsFeatured, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            BadgePosition="{Binding DataContext.BadgePosition, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                             Flat="True"
                             MinWidth="0"
                             HorizontalAlignment="Stretch"/>
