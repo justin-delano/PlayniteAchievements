@@ -152,9 +152,10 @@
                     </Grid>
                 </StackPanel>
 
-                <!-- Toast motion (toast surface of a scope style only): how the card enters and
-                     leaves. Default keeps the theme's slide; the hold time stays the global
-                     notification duration. A kind's own style has none, since a stack moves as one. -->
+                <!-- Toast position and motion (toast surface of a scope style only): where the
+                     card sits and how it enters and leaves. Default keeps the global position and
+                     the theme's slide; the hold time stays the global notification duration. A
+                     kind's own style has none, since a stack sits and moves as one. -->
                 <Grid HorizontalAlignment="Left"
                       Visibility="{Binding ShowMotionOptions, Converter={StaticResource BoolToVis}}">
                     <Grid.ColumnDefinitions>
@@ -166,24 +167,37 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Grid.Column="0"
-                               Text="{DynamicResource LOCPlayAch_Settings_Style_MotionEntrance}"
+                               Text="{DynamicResource LOCPlayAch_Settings_Style_Position}"
                                Style="{StaticResource EditorRowLabelStyle}"
                                Margin="0,0,8,8"/>
                     <ComboBox Grid.Row="0" Grid.Column="1"
+                              ItemsSource="{Binding PositionOptions}"
+                              SelectedItem="{Binding SelectedPosition, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              DisplayMemberPath="Display"
+                              MinWidth="150"
+                              Margin="0,0,16,8"
+                              VerticalAlignment="Center"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="{DynamicResource LOCPlayAch_Settings_Style_MotionEntrance}"
+                               Style="{StaticResource EditorRowLabelStyle}"
+                               Margin="0,0,8,8"/>
+                    <ComboBox Grid.Row="1" Grid.Column="1"
                               ItemsSource="{Binding EntranceMotionOptions}"
                               SelectedItem="{Binding SelectedEntranceMotion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               DisplayMemberPath="Display"
                               MinWidth="150"
                               Margin="0,0,16,8"
                               VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="0" Grid.Column="2"
+                    <TextBlock Grid.Row="1" Grid.Column="2"
                                Text="{DynamicResource LOCPlayAch_Settings_Style_MotionExit}"
                                Style="{StaticResource EditorRowLabelStyle}"
                                Margin="0,0,8,8"/>
-                    <ComboBox Grid.Row="0" Grid.Column="3"
+                    <ComboBox Grid.Row="1" Grid.Column="3"
                               ItemsSource="{Binding ExitMotionOptions}"
                               SelectedItem="{Binding SelectedExitMotion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               DisplayMemberPath="Display"
@@ -191,22 +205,22 @@
                               Margin="0,0,0,8"
                               VerticalAlignment="Center"/>
 
-                    <TextBlock Grid.Row="1" Grid.Column="0"
+                    <TextBlock Grid.Row="2" Grid.Column="0"
                                Text="{DynamicResource LOCPlayAch_Settings_Style_MotionEasing}"
                                Style="{StaticResource EditorRowLabelStyle}"
                                Margin="0,0,8,8"/>
-                    <ComboBox Grid.Row="1" Grid.Column="1"
+                    <ComboBox Grid.Row="2" Grid.Column="1"
                               ItemsSource="{Binding MotionFeelOptions}"
                               SelectedItem="{Binding SelectedMotionFeel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               DisplayMemberPath="Display"
                               MinWidth="150"
                               Margin="0,0,16,8"
                               VerticalAlignment="Center"/>
-                    <TextBlock Grid.Row="1" Grid.Column="2"
+                    <TextBlock Grid.Row="2" Grid.Column="2"
                                Text="{DynamicResource LOCPlayAch_Settings_Style_MotionSpeed}"
                                Style="{StaticResource EditorRowLabelStyle}"
                                Margin="0,0,8,8"/>
-                    <ComboBox Grid.Row="1" Grid.Column="3"
+                    <ComboBox Grid.Row="2" Grid.Column="3"
                               ItemsSource="{Binding MotionSpeedOptions}"
                               SelectedItem="{Binding SelectedMotionSpeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               DisplayMemberPath="Display"
