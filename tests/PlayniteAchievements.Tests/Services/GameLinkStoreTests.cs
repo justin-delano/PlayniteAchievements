@@ -103,7 +103,7 @@ namespace PlayniteAchievements.Services.Tests
             var store = new GameLinkStore(_directory);
             var first = LibraryTargetKeys.FrameGame(Guid.NewGuid());
             var second = LibraryTargetKeys.FrameGame(Guid.NewGuid());
-            var other = LibraryTargetKeys.GameData(Guid.NewGuid());
+            var other = LibraryTargetKeys.ToastGame(Guid.NewGuid());
             store.Set(first, Link("gone"));
             store.Set(second, Link("GONE"));
             store.Set(other, Link("kept"));
@@ -116,6 +116,27 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void GameDataRecords_AreLeftOutOfLibraryItemOperations()
+        {
+            var store = new GameLinkStore(_directory);
+            var game = Guid.NewGuid();
+            var gameData = LibraryTargetKeys.GameData(game);
+            var frame = LibraryTargetKeys.FrameGame(game);
+            store.Set(gameData, Link("ws:notes"));
+            store.Set(frame, Link("ws:notes"));
+
+            CollectionAssert.AreEqual(new[] { frame }, store.TargetsOf("ws:notes").ToList());
+            Assert.AreEqual(1, store.RenameItem("ws:notes", "ws:other"), "only the frame link follows the rename");
+            CollectionAssert.AreEqual(new[] { frame }, store.UnlinkItems(new[] { "ws:other", "ws:notes" }).ToList());
+
+            Assert.AreEqual("ws:notes", store.Get(gameData).LibraryItemId);
+            Assert.AreEqual(1, store.GameDataLinks.Count);
+            Assert.AreEqual("ws:notes", store.GameDataLinks[game].LibraryItemId);
+            Assert.IsTrue(LibraryTargetKeys.IsGameData(gameData));
+            Assert.IsFalse(LibraryTargetKeys.IsGameData(frame));
+        }
+
+        [TestMethod]
         public void RenameItem_RepointsLinks()
         {
             var store = new GameLinkStore(_directory);
@@ -125,6 +146,27 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(1, store.RenameItem("3f2a", "ws:glass"));
 
             Assert.AreEqual("ws:glass", new GameLinkStore(_directory).Get(key).LibraryItemId);
+        }
+
+        [TestMethod]
+        public void GameDataFields_RoundTripAndStayOutOfOtherLinks()
+        {
+            var game = LibraryTargetKeys.GameData(Guid.NewGuid());
+            var frame = LibraryTargetKeys.FrameGame(Guid.NewGuid());
+            var store = new GameLinkStore(_directory);
+            var record = Link("ws:notes");
+            record.Name = "Notes";
+            record.PackageFile = "abc.pa";
+            store.Set(game, record);
+            store.Set(frame, Link("ws:glass"));
+
+            var loaded = new GameLinkStore(_directory);
+
+            Assert.AreEqual("Notes", loaded.Get(game).Name);
+            Assert.AreEqual("abc.pa", loaded.Get(game).PackageFile);
+            StringAssert.DoesNotMatch(
+                File.ReadAllText(Path.Combine(_directory, GameLinkStore.FileName)),
+                new System.Text.RegularExpressions.Regex("\"Name\": null|\"PackageFile\": null"));
         }
 
         [TestMethod]
