@@ -14,46 +14,8 @@
                 <helpers:SharedResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- One package entry: icon, name, and up to two lines of description. -->
-            <DataTemplate x:Key="StateTemplate">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0"
-                            Width="40" Height="40"
-                            Margin="0,0,8,0"
-                            VerticalAlignment="Top"
-                            CornerRadius="3"
-                            ClipToBounds="True"
-                            Background="{DynamicResource PlayAch.Brush.Surface}">
-                        <Image Width="40" Height="40"
-                               helpers:AsyncImage.Uri="{Binding UnlockedIcon}"
-                               helpers:AsyncImage.DecodePixel="80"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                        <TextBlock Text="{Binding DisplayName}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding Description}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   TextWrapping="Wrap"
-                                   TextTrimming="CharacterEllipsis"
-                                   LineStackingStrategy="BlockLineHeight"
-                                   LineHeight="16"
-                                   MaxHeight="32"/>
-                    </StackPanel>
-                </Grid>
-            </DataTemplate>
-
-            <!-- The published image's status cell: the capstone badge only, never the sharer's
-                 unlocked or locked state. -->
+            <!-- The status cell of the published image and of a package's own entries: the
+                 capstone badge only, never anyone's unlocked or locked state. -->
             <DataTemplate x:Key="NeutralStatusTemplate">
                 <Image Source="{DynamicResource BadgeRarityCompleted}"
                        Width="18"
@@ -62,48 +24,6 @@
                        VerticalAlignment="Center"
                        HorizontalAlignment="Center"
                        Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
-            </DataTemplate>
-
-            <!-- Package only: badge | the package's entry | category | capstone. -->
-            <DataTemplate x:Key="PackageRowTemplate" DataType="{x:Type preview:GameDataPreviewRow}">
-                <Grid Height="{x:Static preview:GameDataPreviewControl.RowHeight}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.BadgeColumnWidth}"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.CategoryColumnWidth}"/>
-                        <ColumnDefinition Width="{x:Static preview:GameDataPreviewControl.BadgeColumnWidth}"/>
-                    </Grid.ColumnDefinitions>
-                    <controls:GlyphIcon Grid.Column="0"
-                                        Glyph="{Binding BadgeGlyph}"
-                                        Size="14"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                        Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                                        Visibility="{Binding HasBadge, Converter={StaticResource BoolToVis}}"/>
-                    <ContentControl Grid.Column="1"
-                                    Content="{Binding After}"
-                                    ContentTemplate="{StaticResource StateTemplate}"
-                                    VerticalAlignment="Center"
-                                    Focusable="False"/>
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding CategoryText}"
-                               ToolTip="{Binding CategoryPathText}"
-                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               Opacity="{StaticResource PlayAch.Opacity.Muted}"
-                               TextTrimming="CharacterEllipsis"
-                               VerticalAlignment="Center"
-                               Margin="8,0,0,0"/>
-                    <!-- The capstone badge the achievement grids show (BadgeRarityCompleted). -->
-                    <Image Grid.Column="3"
-                           Source="{DynamicResource BadgeRarityCompleted}"
-                           Width="18"
-                           Height="18"
-                           Stretch="Uniform"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Center"
-                           Visibility="{Binding IsCapstone, Converter={StaticResource BoolToVis}}"/>
-                </Grid>
             </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -170,21 +90,9 @@
                       Unchecked="Options_Changed"/>
         </StackPanel>
 
-        <!-- Package only: the package's own entries. -->
-        <ListBox x:Name="RowList"
-                 Grid.Row="3"
-                 Foreground="{DynamicResource PlayAch.Brush.Text}"
-                 HorizontalContentAlignment="Stretch"
-                 ItemTemplate="{StaticResource PackageRowTemplate}"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 ScrollViewer.CanContentScroll="True"
-                 VirtualizingPanel.IsVirtualizing="True"
-                 VirtualizingPanel.VirtualizationMode="Recycling"
-                 VirtualizingPanel.ScrollUnit="Item"
-                 Visibility="Collapsed"/>
-
-        <!-- Compared: the game's achievements in the grid View Achievements shows them in, one
-             grid after the install and one as they are now; Before / After shows one of them. -->
+        <!-- The game's achievements in the grid View Achievements shows them in, one grid after
+             the install and one as they are now, Before / After showing one of them; without a
+             game, the package's own entries in the after grid. -->
         <controls:AchievementDataGridControl x:Name="AfterGrid"
                                              Grid.Row="3"
                                              ShowControlBar="False"
