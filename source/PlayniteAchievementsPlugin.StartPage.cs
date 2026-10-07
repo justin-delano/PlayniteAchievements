@@ -719,20 +719,7 @@ namespace PlayniteAchievements
                     showcase.DefaultGamePinCollectionId);
             }
 
-            // The four pie views share the showcase Pie kind; each seeds the distribution
-            // its view id has always shown.
-            if (kind == ShowcaseWidgetKind.Pie)
-            {
-                ShowcaseWidgetOptions.SetPieMode(settings, ResolvePieModeForView(viewId));
-            }
-
-            // Likewise the former standalone Prestige score card view seeds the card it showed;
-            // every other score card view starts on the default Collection card.
-            if (kind == ShowcaseWidgetKind.Scores &&
-                string.Equals(viewId, StartPageViewCatalog.PrestigeScoreCardViewId, StringComparison.Ordinal))
-            {
-                ShowcaseWidgetOptions.SetScoreCardType(settings, ScoreCardType.Prestige);
-            }
+            StartPageViewCatalog.SeedViewOptions(viewId, settings);
 
             // Migration: StartPage-hosted grid widgets used to share the fixed StartPage
             // surfaces edited on the Display tab. Seed each new per-instance surface from
@@ -752,21 +739,6 @@ namespace PlayniteAchievements
             showcase.StartPageInstances[key] = settings;
             PersistSettingsForUi();
             return settings;
-        }
-
-        private static ShowcasePieMode ResolvePieModeForView(string viewId)
-        {
-            switch (viewId)
-            {
-                case StartPageViewCatalog.ProviderPieViewId:
-                    return ShowcasePieMode.Provider;
-                case StartPageViewCatalog.RarityPieViewId:
-                    return ShowcasePieMode.Rarity;
-                case StartPageViewCatalog.TrophyPieViewId:
-                    return ShowcasePieMode.Trophy;
-                default:
-                    return ShowcasePieMode.CompletedGames;
-            }
         }
 
         private static string L(string key)

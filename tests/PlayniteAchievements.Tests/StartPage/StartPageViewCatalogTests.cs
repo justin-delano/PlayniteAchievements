@@ -1,5 +1,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.StartPage;
 
@@ -95,6 +97,33 @@ namespace PlayniteAchievements.Tests.StartPage
                 view.ViewId == StartPageViewCatalog.ShowcaseDualScoresViewId)
                 .AllowMultipleInstances);
             Assert.AreEqual(views.Count, views.Select(view => view.ViewId).Distinct().Count());
+        }
+
+        [DataTestMethod]
+        [DataRow(StartPageViewCatalog.CompletedGamesPieViewId, ShowcasePieMode.CompletedGames)]
+        [DataRow(StartPageViewCatalog.ProviderPieViewId, ShowcasePieMode.Provider)]
+        [DataRow(StartPageViewCatalog.RarityPieViewId, ShowcasePieMode.Rarity)]
+        [DataRow(StartPageViewCatalog.TrophyPieViewId, ShowcasePieMode.Trophy)]
+        public void SeedViewOptions_SeedsEachPieViewsMode(string viewId, ShowcasePieMode expected)
+        {
+            var settings = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.Pie, "instance");
+
+            StartPageViewCatalog.SeedViewOptions(viewId, settings);
+
+            Assert.AreEqual(expected, ShowcaseWidgetOptions.GetPieMode(settings));
+        }
+
+        [DataTestMethod]
+        [DataRow(StartPageViewCatalog.PrestigeScoreCardViewId, ScoreCardType.Prestige)]
+        [DataRow(StartPageViewCatalog.CollectionScoreCardViewId, ScoreCardType.Collection)]
+        [DataRow(StartPageViewCatalog.ShowcaseDualScoresViewId, ScoreCardType.Collection)]
+        public void SeedViewOptions_SeedsEachScoreCardViewsCard(string viewId, ScoreCardType expected)
+        {
+            var settings = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.Scores, "instance");
+
+            StartPageViewCatalog.SeedViewOptions(viewId, settings);
+
+            Assert.AreEqual(expected, ShowcaseWidgetOptions.GetScoreCardType(settings));
         }
 
         [TestMethod]
