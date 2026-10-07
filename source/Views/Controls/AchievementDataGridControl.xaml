@@ -111,7 +111,6 @@
               CanUserReorderColumns="True"
               CanUserSortColumns="True"
               EnableRowVirtualization="True"
-              EnableColumnVirtualization="True"
               VirtualizingStackPanel.VirtualizationMode="Recycling"
               VirtualizingStackPanel.ScrollUnit="Pixel"
               ScrollViewer.CanContentScroll="True"
