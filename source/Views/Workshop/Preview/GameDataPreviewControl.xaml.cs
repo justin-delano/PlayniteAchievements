@@ -83,6 +83,11 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             "RarityPercent", "UnlockDate", "CollectionScore", "PrestigeScore"
         };
 
+        private static readonly HashSet<string> CategoryColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Cover", "GameSummaryName", "TotalAchievements"
+        };
+
         private GameCustomDataPreviewDiff _diff;
 
         // What the grid shows after the install: the game's data, or the package's own entries.
@@ -103,6 +108,11 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             var reveal = new RelayCommand(item => (item as AchievementDisplayItem)?.ToggleReveal());
             AfterGrid.RevealCommand = reveal;
             BeforeGrid.RevealCommand = reveal;
+
+            // A package carries no progress, so the category tree shows what each category is:
+            // its art, its name and how many achievements it holds.
+            CategoryGrid.AllowedColumnKeys = CategoryColumns;
+            CategoryGrid.ColumnSettingsKey = "WorkshopPreviewGridCategorySummaries";
             DataContextChanged += (sender, args) => Rebuild();
         }
 
