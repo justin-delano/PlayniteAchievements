@@ -1578,7 +1578,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Installing">Installing...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InstallConfirmGameData">Install "{0}" onto {1}? This replaces that game's custom data (icons, categories, capstones, notes). Your unlock progress is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InstallChoiceGameData">{1} already has custom data. Merge keeps everything you set and fills in only what the package adds; Replace swaps that data for the package. How should "{0}" be installed? Your unlock progress is kept either way.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_ReinstallConfirmGameData">Reinstall "{0}" onto {1}? This replaces that game's custom data with the package again, including any changes you made since installing it. Your unlock progress is kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_ResetConfirmGameData">Reset {1} to "{0}" as published? This replaces that game's custom data with the package, including any changes you made since it was applied. Your unlock progress is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the game this data belongs to</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_NoGameMatch">No game in your library matches "{0}".</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share">Share to Workshop</sys:String>
@@ -1606,7 +1606,7 @@
     <sys:String x:Key="LOCPlayAch_Library_Edited">Edited</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_UsedIn">Used in</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_NotApplied">Not applied anywhere. Apply it from its settings card.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_Unlink">Unlink: keep the current look and stop taking updates from this item</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Unlink">Unlink: keep everything as it is and stop taking updates from this item</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_UpdatesWhenApplied">Notifications, frames and showcase pages that use it take the new version when you apply it again.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_ReinstallChoice">"{0}" is used in {1} places. Merge keeps what you changed there and takes the rest from the package; Replace applies the package as published.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_DeleteConfirm">Delete "{0}" from your library? Places that use it keep their current look.</sys:String>
