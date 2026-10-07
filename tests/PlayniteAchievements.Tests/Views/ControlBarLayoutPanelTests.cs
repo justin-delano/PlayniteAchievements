@@ -70,6 +70,56 @@ namespace PlayniteAchievements.Tests.Views
             });
         }
 
+        [TestMethod]
+        public void NoSearch_Wrapped_TakesTheFullWidthEvenWhenItFits()
+        {
+            RunOnStaThread(() =>
+            {
+                var (panel, _, _, items) = Create(wrap: true, withSearch: false, leadingWidth: 0);
+
+                Layout(panel, 600);
+
+                Assert.AreEqual(new Rect(0, 0, 600, 30), LayoutRect(items));
+            });
+        }
+
+        [TestMethod]
+        public void CenteredWrapPanel_CentersEachLine()
+        {
+            RunOnStaThread(() =>
+            {
+                var panel = new CenteredWrapPanel();
+                var first = new Border { Width = 100, Height = 20 };
+                var second = new Border { Width = 100, Height = 20 };
+                var third = new Border { Width = 60, Height = 20 };
+                panel.Children.Add(first);
+                panel.Children.Add(second);
+                panel.Children.Add(third);
+
+                Layout(panel, 250);
+
+                Assert.AreEqual(new Size(200, 40), panel.DesiredSize);
+                Assert.AreEqual(new Rect(25, 0, 100, 20), LayoutRect(first));
+                Assert.AreEqual(new Rect(125, 0, 100, 20), LayoutRect(second));
+                Assert.AreEqual(new Rect(95, 20, 60, 20), LayoutRect(third));
+            });
+        }
+
+        [TestMethod]
+        public void CenteredWrapPanel_UnboundedWidthKeepsOneLine()
+        {
+            RunOnStaThread(() =>
+            {
+                var panel = new CenteredWrapPanel();
+                panel.Children.Add(new Border { Width = 100, Height = 20 });
+                panel.Children.Add(new Border { Width = 100, Height = 24 });
+
+                panel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+                Assert.AreEqual(new Size(200, 24), panel.DesiredSize);
+            });
+        }
+
         private static (ControlBarLayoutPanel, FrameworkElement, ContentControl, FrameworkElement) Create(
             bool wrap,
             bool withSearch,
