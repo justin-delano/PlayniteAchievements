@@ -207,7 +207,8 @@ namespace PlayniteAchievements.Models.Settings
         private static bool ConvertPiePercentagesToCenterMode(JObject persisted)
         {
             const string oldName = "ShowOverviewPiePercentages";
-            const string newName = nameof(PersistedSettings.OverviewPieCenterMode);
+            // A legacy key itself now: SeedOverviewMiniShowcase reads it into the pies, then drops it.
+            const string newName = "OverviewPieCenterMode";
 
             var oldValue = persisted[oldName];
             if (oldValue == null)
