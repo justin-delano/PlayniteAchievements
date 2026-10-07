@@ -300,6 +300,16 @@ namespace PlayniteAchievements.ViewModels
             return _labelToProviderKey.TryGetValue(label, out var key) ? key : null;
         }
 
+        /// <summary>The slice label a provider key is drawn under, or null when it has no slice.</summary>
+        public string GetLabelForProviderKey(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey)) return null;
+            return _labelToProviderKey
+                .Where(pair => string.Equals(pair.Value, providerKey, StringComparison.OrdinalIgnoreCase))
+                .Select(pair => pair.Key)
+                .FirstOrDefault();
+        }
+
         /// <summary>
         /// Sets the pie chart data for Games completion (Completed vs Incomplete).
         /// </summary>
