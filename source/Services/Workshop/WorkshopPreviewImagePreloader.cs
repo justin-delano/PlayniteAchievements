@@ -20,9 +20,6 @@ namespace PlayniteAchievements.Services.Workshop
     /// </summary>
     internal sealed class WorkshopPreviewImagePreloader
     {
-        /// <summary>Decode size of a game data row icon (the row shows it at 40 DIPs).</summary>
-        public const int GameDataIconDecodePixel = 80;
-
         /// <summary>Decode size of a showcase thumbnail, as the showcase preview requests it.</summary>
         public const int ThumbnailDecodePixel = 320;
 
@@ -44,12 +41,11 @@ namespace PlayniteAchievements.Services.Workshop
         }
 
         /// <summary>
-        /// Decodes every image <paramref name="model"/> displays and swaps the images into it. For
-        /// game data that is the unlocked icons of the first <paramref name="gameDataMaxRows"/>
-        /// changed rows (0 for all), the rows a preview capped at that count shows. Images that
-        /// fail to decode keep their path.
+        /// Decodes every image <paramref name="model"/> displays and swaps the images into it.
+        /// Images that fail to decode keep their path. Game data shows the achievement grid,
+        /// whose icons the render decodes itself, so its model is left as it is.
         /// </summary>
-        public async Task PreloadAsync(WorkshopPreviewModel model, int gameDataMaxRows, CancellationToken cancel)
+        public async Task PreloadAsync(WorkshopPreviewModel model, CancellationToken cancel)
         {
             switch (model)
             {
@@ -58,13 +54,10 @@ namespace PlayniteAchievements.Services.Workshop
                     {
                         if (part != null)
                         {
-                            await PreloadAsync(part, gameDataMaxRows, cancel);
+                            await PreloadAsync(part, cancel);
                         }
                     }
 
-                    break;
-                case GameCustomDataPreviewModel gameData:
-                    await PreloadGameDataAsync(gameData, gameDataMaxRows, cancel);
                     break;
                 case ShowcasePagePreviewModel showcase:
                     await PreloadShowcaseAsync(showcase, cancel);
@@ -72,44 +65,6 @@ namespace PlayniteAchievements.Services.Workshop
                 case NotificationStylePreviewModel style:
                     await PreloadStyleAsync(style, cancel);
                     break;
-            }
-        }
-
-        /// <summary>
-        /// The package entries a package-only game data preview capped at
-        /// <paramref name="maxRows"/> lists. A compared preview shows the achievement grid, whose
-        /// icons the render decodes itself, so it lists none here.
-        /// </summary>
-        internal static IEnumerable<AchievementPreviewRow> DisplayedRows(GameCustomDataPreviewDiff diff, int maxRows)
-        {
-            if (diff == null || diff.AfterData != null)
-            {
-                return Enumerable.Empty<AchievementPreviewRow>();
-            }
-
-            var rows = diff.Rows
-                .Concat(diff.UnchangedRows)
-                .Where(row => row != null && row.Changes != AchievementPreviewChange.None);
-            return maxRows > 0 ? rows.Take(maxRows) : rows;
-        }
-
-        private async Task PreloadGameDataAsync(GameCustomDataPreviewModel model, int maxRows, CancellationToken cancel)
-        {
-            var states = DisplayedRows(model.Diff, maxRows)
-                .SelectMany(row => new[] { row.Before, row.After })
-                .Where(state => state != null)
-                .ToList();
-            var decoded = await DecodeAllAsync(
-                states.Select(state => state.UnlockedIcon as string),
-                path => GameDataIconDecodePixel,
-                cancel);
-
-            foreach (var state in states)
-            {
-                if (state.UnlockedIcon is string path && decoded.TryGetValue(path, out var image))
-                {
-                    state.UnlockedIcon = image;
-                }
             }
         }
 
