@@ -277,8 +277,9 @@ namespace PlayniteAchievements.Models
     /// </summary>
     public static class ShowcaseTimelineOptions
     {
-        private const string RangeOption = "TimelineRange";
-        private const string GranularityOption = "TimelineGranularity";
+        /// <summary>Option keys, for a widget's own controls to save their choices under.</summary>
+        public const string RangeOption = "TimelineRange";
+        public const string GranularityOption = "TimelineGranularity";
         private const string LegacyRangeDaysOption = "RangeDays";
 
         public static readonly TimeWindow DefaultWindow = TimeWindow.FromPreset(TimelineRange.ThreeMonths);
@@ -335,7 +336,7 @@ namespace PlayniteAchievements.Models
         public static void SetSplitByPlatform(ShowcaseWidgetInstanceSettings instance, bool value) =>
             instance?.SetOption(SplitByPlatformOption, value);
 
-        private const string SplitByPlatformOption = "TimelineSplitByPlatform";
+        public const string SplitByPlatformOption = "TimelineSplitByPlatform";
     }
 
     /// <summary>
@@ -585,6 +586,17 @@ namespace PlayniteAchievements.Models
             settings?.GetOption(ShowControlBar, false) ?? false;
 
         public static void SetPieShowControlBar(ShowcaseWidgetInstanceSettings settings, bool value) =>
+            settings?.SetOption(ShowControlBar, value);
+
+        /// <summary>
+        /// Whether a Timeline or Activity Calendar widget shows its own controls (the time window,
+        /// and for the timeline its bar width and platform split) above the chart. Shares the
+        /// pie's option, so one widget has one Show Control Bar setting whatever its kind.
+        /// </summary>
+        public static bool GetShowControls(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowControlBar, false) ?? false;
+
+        public static void SetShowControls(ShowcaseWidgetInstanceSettings settings, bool value) =>
             settings?.SetOption(ShowControlBar, value);
 
         /// <summary>
