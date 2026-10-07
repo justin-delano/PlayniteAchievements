@@ -11,7 +11,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
 {
     public sealed class StartPageScoreCardWidgetViewModel : StartPageWidgetViewModelBase
     {
-        private readonly StartPageWidgetKind _widgetKind;
+        private readonly ScoreCardType _cardType;
 
         public StartPageScoreCardWidgetViewModel(
             StartPageWidgetKind widgetKind,
@@ -20,40 +20,34 @@ namespace PlayniteAchievements.ViewModels.StartPage
             ILogger logger)
             : base(dataCoordinator, settings, logger)
         {
-            if (widgetKind != StartPageWidgetKind.CollectionScoreCard &&
-                widgetKind != StartPageWidgetKind.PrestigeScoreCard)
-            {
-                throw new ArgumentOutOfRangeException(nameof(widgetKind));
-            }
+            _cardType = GetCardType(widgetKind);
+            ScoreCard = new ScoreCardViewModel(_cardType);
+        }
 
-            _widgetKind = widgetKind;
-            ScoreCard = new ScoreCardViewModel(widgetKind == StartPageWidgetKind.CollectionScoreCard
-                ? ScoreCardType.Collection
-                : ScoreCardType.Prestige);
+        public static ScoreCardType GetCardType(StartPageWidgetKind widgetKind)
+        {
+            switch (widgetKind)
+            {
+                case StartPageWidgetKind.CollectionScoreCard:
+                    return ScoreCardType.Collection;
+                case StartPageWidgetKind.PrestigeScoreCard:
+                    return ScoreCardType.Prestige;
+                case StartPageWidgetKind.GamerscoreScoreCard:
+                    return ScoreCardType.Gamerscore;
+                case StartPageWidgetKind.EpicXpScoreCard:
+                    return ScoreCardType.EpicXp;
+                case StartPageWidgetKind.RetroPointsScoreCard:
+                    return ScoreCardType.RetroPoints;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(widgetKind));
+            }
         }
 
         public ScoreCardViewModel ScoreCard { get; }
 
         protected override void ApplySnapshot(OverviewDataSnapshot snapshot)
         {
-            var useUniformRarityBadges = PersistedSettings?.UseUniformRarityBadges ?? false;
-            if (_widgetKind == StartPageWidgetKind.CollectionScoreCard)
-            {
-                ScoreCard.Apply(
-                    snapshot?.CollectorScore ?? 0,
-                    snapshot?.CollectorLevel ?? 0,
-                    snapshot?.CollectorLevelProgress ?? 0,
-                    snapshot?.CollectorRank,
-                    useUniformRarityBadges);
-                return;
-            }
-
-            ScoreCard.Apply(
-                snapshot?.PrestigeScore ?? 0,
-                snapshot?.PrestigeLevel ?? 0,
-                snapshot?.PrestigeLevelProgress ?? 0,
-                snapshot?.PrestigeRank,
-                useUniformRarityBadges);
+            ScoreCard.ApplyFor(_cardType, snapshot, PersistedSettings?.UseUniformRarityBadges ?? false);
         }
 
         protected override void OnPersistedSettingsChanged(string propertyName)

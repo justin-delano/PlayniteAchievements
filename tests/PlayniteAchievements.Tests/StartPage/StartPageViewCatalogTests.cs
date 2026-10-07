@@ -13,10 +13,10 @@ namespace PlayniteAchievements.Tests.StartPage
         {
             var views = StartPageViewCatalog.Views;
 
-            // 8 original views plus the 8 shared showcase views. PinnedAchievements,
+            // 8 original views, the 3 platform score cards, and the 8 shared showcase views. PinnedAchievements,
             // FavoriteGames, and GameMosaic are retired (see ShowcaseWidgetKind), so they
             // no longer contribute views of their own.
-            Assert.AreEqual(16, views.Count);
+            Assert.AreEqual(19, views.Count);
             CollectionAssert.AreEqual(
                 new[]
                 {
@@ -40,7 +40,10 @@ namespace PlayniteAchievements.Tests.StartPage
                     StartPageWidgetKind.RarityPie,
                     StartPageWidgetKind.TrophyPie,
                     StartPageWidgetKind.CollectionScoreCard,
-                    StartPageWidgetKind.PrestigeScoreCard
+                    StartPageWidgetKind.PrestigeScoreCard,
+                    StartPageWidgetKind.GamerscoreScoreCard,
+                    StartPageWidgetKind.EpicXpScoreCard,
+                    StartPageWidgetKind.RetroPointsScoreCard
                 },
                 views.Select(view => view.WidgetKind).ToArray());
 

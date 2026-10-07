@@ -38,6 +38,9 @@ namespace PlayniteAchievements.Services.StartPage
         public const string TrophyPieViewId = "PlayniteAchievements_TrophyPie";
         public const string CollectionScoreCardViewId = "PlayniteAchievements_CollectionScoreCard";
         public const string PrestigeScoreCardViewId = "PlayniteAchievements_PrestigeScoreCard";
+        public const string GamerscoreScoreCardViewId = "PlayniteAchievements_GamerscoreScoreCard";
+        public const string EpicXpScoreCardViewId = "PlayniteAchievements_EpicXpScoreCard";
+        public const string RetroPointsScoreCardViewId = "PlayniteAchievements_RetroPointsScoreCard";
         public const string ShowcaseProfileViewId = "PlayniteAchievements_Showcase_Profile";
         public const string ShowcaseDualScoresViewId = "PlayniteAchievements_Showcase_DualScores";
         public const string ShowcaseTimelineViewId = "PlayniteAchievements_Showcase_Timeline";
@@ -122,6 +125,24 @@ namespace PlayniteAchievements.Services.StartPage
                     ViewId = PrestigeScoreCardViewId,
                     WidgetKind = StartPageWidgetKind.PrestigeScoreCard,
                     NameKey = "LOCPlayAch_Score_Prestige"
+                },
+                new StartPageViewDefinition
+                {
+                    ViewId = GamerscoreScoreCardViewId,
+                    WidgetKind = StartPageWidgetKind.GamerscoreScoreCard,
+                    NameKey = "LOCPlayAch_Score_Gamerscore"
+                },
+                new StartPageViewDefinition
+                {
+                    ViewId = EpicXpScoreCardViewId,
+                    WidgetKind = StartPageWidgetKind.EpicXpScoreCard,
+                    NameKey = "LOCPlayAch_Score_EpicXp"
+                },
+                new StartPageViewDefinition
+                {
+                    ViewId = RetroPointsScoreCardViewId,
+                    WidgetKind = StartPageWidgetKind.RetroPointsScoreCard,
+                    NameKey = "LOCPlayAch_Score_RetroPoints"
                 },
                 Shared(
                     ShowcaseProfileViewId,

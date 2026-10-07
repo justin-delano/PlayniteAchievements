@@ -192,6 +192,9 @@ namespace PlayniteAchievements
             {
                 case StartPageWidgetKind.CollectionScoreCard:
                 case StartPageWidgetKind.PrestigeScoreCard:
+                case StartPageWidgetKind.GamerscoreScoreCard:
+                case StartPageWidgetKind.EpicXpScoreCard:
+                case StartPageWidgetKind.RetroPointsScoreCard:
                     return new StartPageScoreCardWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
                 default:
                     return null;
@@ -210,6 +213,9 @@ namespace PlayniteAchievements
             {
                 case StartPageWidgetKind.CollectionScoreCard:
                 case StartPageWidgetKind.PrestigeScoreCard:
+                case StartPageWidgetKind.GamerscoreScoreCard:
+                case StartPageWidgetKind.EpicXpScoreCard:
+                case StartPageWidgetKind.RetroPointsScoreCard:
                     return new StartPageScoreCardWidgetView();
                 default:
                     return null;
