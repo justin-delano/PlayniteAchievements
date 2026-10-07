@@ -178,6 +178,54 @@ namespace PlayniteAchievements.ViewModels
                 : LockedFallbackColor;
         }
 
+        // Offset of the gloss gradient's stop that carries the slice color itself.
+        private const double SliceGlossBaseOffset = 0.5;
+
+        /// <summary>
+        /// A slice's fill: lighter toward its top-left and deeper toward its bottom-right, around the
+        /// slice color. Locked and padding slices stay flat so they read as unfilled surface.
+        /// </summary>
+        private static Brush CreateSliceFill(Color color, bool isLocked)
+        {
+            if (isLocked || color.A == 0)
+            {
+                var flat = new SolidColorBrush(color);
+                flat.Freeze();
+                return flat;
+            }
+
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 1)
+            };
+            brush.GradientStops.Add(new GradientStop(Blend(color, Colors.White, 0.35), 0));
+            brush.GradientStops.Add(new GradientStop(color, SliceGlossBaseOffset));
+            brush.GradientStops.Add(new GradientStop(Blend(color, Colors.Black, 0.30), 1));
+            brush.Freeze();
+            return brush;
+        }
+
+        private static bool IsSliceFill(Brush brush, Color color, bool isLocked)
+        {
+            if (isLocked || color.A == 0)
+            {
+                return brush is SolidColorBrush solid && solid.Color == color;
+            }
+
+            return brush is LinearGradientBrush gradient &&
+                gradient.GradientStops.Any(stop => stop.Offset == SliceGlossBaseOffset && stop.Color == color);
+        }
+
+        private static Color Blend(Color from, Color to, double amount)
+        {
+            return Color.FromArgb(
+                from.A,
+                (byte)Math.Round(from.R + ((to.R - from.R) * amount)),
+                (byte)Math.Round(from.G + ((to.G - from.G) * amount)),
+                (byte)Math.Round(from.B + ((to.B - from.B) * amount)));
+        }
+
         private bool _appearanceHooked;
 
         public PieChartViewModel()
@@ -859,7 +907,7 @@ namespace PlayniteAchievements.ViewModels
                     continue;
                 }
 
-                series.Fill = new SolidColorBrush(color);
+                series.Fill = CreateSliceFill(color, chartData?.IsLocked == true);
                 if (chartData != null)
                 {
                     chartData.ColorHex = ToColorHex(color);
@@ -967,11 +1015,11 @@ namespace PlayniteAchievements.ViewModels
                 series.Title = slice?.Label ?? string.Empty;
                 series.DataLabels = false;
 
-                var existingBrush = series.Fill as SolidColorBrush;
                 var sliceColor = slice?.Color ?? Colors.Transparent;
-                if (existingBrush == null || existingBrush.Color != sliceColor)
+                var isLocked = slice?.IsLocked == true;
+                if (!IsSliceFill(series.Fill, sliceColor, isLocked))
                 {
-                    series.Fill = new SolidColorBrush(sliceColor);
+                    series.Fill = CreateSliceFill(sliceColor, isLocked);
                 }
 
                 var values = series.Values as ChartValues<PieSliceChartData>;
