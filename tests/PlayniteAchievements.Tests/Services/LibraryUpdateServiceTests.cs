@@ -170,6 +170,9 @@ namespace PlayniteAchievements.Services.Tests
             _apply.ApplyToSettings(_adapter, item, _live);
             _apply.ApplyToSettings(_adapter, item, _snapshot);
             var game = Guid.NewGuid();
+            _gameLinks.Set(LibraryTargetKeys.FrameGame(game), new LibraryLink { LibraryItemId = item.Id });
+
+            // A game's Workshop data record names a Workshop item, not a library item: it stays.
             _gameLinks.Set(LibraryTargetKeys.GameData(game), new LibraryLink { LibraryItemId = item.Id });
 
             File.Delete(_library.FullPath(item));
@@ -178,8 +181,19 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(1, _service.UnlinkDropped());
             Assert.IsNull(_live.GetLibraryLink(LibraryTargetKeys.Colors));
             Assert.IsNull(_snapshot.GetLibraryLink(LibraryTargetKeys.Colors));
-            Assert.IsNull(_gameLinks.Get(LibraryTargetKeys.GameData(game)));
+            Assert.IsNull(_gameLinks.Get(LibraryTargetKeys.FrameGame(game)));
+            Assert.IsNotNull(_gameLinks.Get(LibraryTargetKeys.GameData(game)));
             Assert.AreEqual(0, _service.UnlinkDropped(), "dropped ids are taken once");
+        }
+
+        [TestMethod]
+        public void UsesOf_LeavesGameDataRecordsOut()
+        {
+            var item = _service.WriteWorkshopPart(Workshop("1.0.0"), Package("v1", "#111111"), _folder).Item;
+            _gameLinks.Set(LibraryTargetKeys.GameData(Guid.NewGuid()), new LibraryLink { LibraryItemId = item.Id, AppliedVersion = "0.9.0" });
+
+            Assert.AreEqual(0, _service.UsesOf(item).Count);
+            CollectionAssert.AreEqual(new string[0], _service.TargetsOf(item.Id).ToList());
         }
 
         [TestMethod]
