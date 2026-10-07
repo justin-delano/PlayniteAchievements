@@ -379,7 +379,7 @@
                         <controls:ScoreCardControl
                             ScoreCard="{Binding Card}"
                             IsFeatured="{Binding DataContext.IsFeatured, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                            BadgePosition="{Binding DataContext.BadgePosition, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            BadgePosition="{Binding BadgePosition}"
                             Flat="True"
                             MinWidth="0"
                             HorizontalAlignment="Stretch"/>
