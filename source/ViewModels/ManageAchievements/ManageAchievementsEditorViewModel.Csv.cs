@@ -58,7 +58,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     .ToList();
                 CustomAchievementCsvFormat.WriteFile(
                     dialog.FileName,
-                    CustomAchievementCsvFormat.BuildLines(rows, includeIcons: false));
+                    CustomAchievementCsvFormat.BuildLines(rows));
                 SetStatus(L("LOCPlayAch_Status_Succeeded", "Success!"), false);
             }
             catch (Exception ex)
