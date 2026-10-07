@@ -606,7 +606,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                 if (row.Readme == null)
                 {
-                    row.Readme = await _client.FetchReadmeAsync(row.Item, _lifetime.Token) ?? row.Description;
+                    // The description already shows above the README; an empty result hides it.
+                    row.Readme = await _client.FetchReadmeAsync(row.Item, _lifetime.Token) ?? string.Empty;
                 }
             }
             catch (OperationCanceledException)
