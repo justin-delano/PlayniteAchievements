@@ -15,17 +15,42 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
     /// Backs the Pie widget by reusing PieChartWithRadialIcons/PieChartViewModel. Builds the chart
     /// for the configured distribution (completed games / provider / rarity / trophy); the legend
     /// and its side are per-widget settings that the chart control renders. A fresh chart is
-    /// produced per refresh so the bound control always reflects the latest data.
+    /// produced per refresh so the bound control always reflects the latest data. The widget's
+    /// control bar filters the games the totals are computed from, so a pie can cover a single
+    /// platform or progress bucket.
     /// </summary>
     public sealed class PieWidgetViewModel : ShowcaseWidgetViewModelBase, IDisposable
     {
+        // The widget instance's shared adapter, so the filters survive view model swaps.
+        private readonly ShowcaseControlBarSlot<GameSummaryGridControlBarAdapter> _controlBarSlot;
         private PieChartViewModel _chart = new PieChartViewModel();
+        private GridControlBarViewModel _controlBar;
+        private bool _showControlBar;
+
+        public PieWidgetViewModel()
+        {
+            _controlBarSlot = new ShowcaseControlBarSlot<GameSummaryGridControlBarAdapter>(Refresh);
+        }
 
         public PieChartViewModel Chart { get => _chart; private set => SetValue(ref _chart, value); }
 
+        /// <summary>Game filter bar shown when the widget's Show Control Bar option is on.</summary>
+        public GridControlBarViewModel ControlBar
+        {
+            get => _controlBar;
+            private set => SetValue(ref _controlBar, value);
+        }
+
+        public bool ShowControlBar
+        {
+            get => _showControlBar;
+            private set => SetValue(ref _showControlBar, value);
+        }
+
         protected override void Refresh()
         {
-            var snapshot = Projection?.Snapshot ?? new OverviewDataSnapshot();
+            ShowControlBar = ShowcaseWidgetOptions.GetPieShowControlBar(Projection?.Instance);
+            var snapshot = ApplyControlBarFilter(Projection?.Snapshot ?? new OverviewDataSnapshot());
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
             var chart = new PieChartViewModel
             {
@@ -118,6 +143,30 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             {
                 previous?.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Filters the snapshot's games through the widget instance's control bar (which stays in
+        /// effect while the bar is hidden) and returns a snapshot of the remaining games' totals.
+        /// The original snapshot is returned when the filter keeps every game.
+        /// </summary>
+        private OverviewDataSnapshot ApplyControlBarFilter(OverviewDataSnapshot snapshot)
+        {
+            if (_controlBarSlot.Bind(Projection?.Instance?.InstanceId))
+            {
+                ControlBar = _controlBarSlot.Adapter.ControlBar;
+            }
+
+            var adapter = _controlBarSlot.Adapter;
+            var games = (snapshot.GameSummaries ?? new List<GameSummaryItem>())
+                .Where(game => game != null)
+                .ToList();
+            adapter.UpdateOptions(games);
+
+            var filtered = adapter.Apply(games);
+            return filtered.Count == games.Count
+                ? snapshot
+                : OverviewDataSnapshot.FromGameSummaries(filtered);
         }
 
         /// <summary>
