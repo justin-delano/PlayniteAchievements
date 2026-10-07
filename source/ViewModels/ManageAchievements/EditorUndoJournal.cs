@@ -131,7 +131,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             bool affectsSummaryData,
             bool affectsOverrideMirror,
             IReadOnlyList<string> affectedApiNames,
-            IReadOnlyList<EditorRowValueChange> rowValues = null)
+            IReadOnlyList<EditorRowValueChange> rowValues = null,
+            IReadOnlyList<EditorRowValueChange> artRestores = null)
         {
             LabelKey = labelKey;
             Facets = facets ?? new List<GameCustomDataFacetPatch>();
@@ -139,7 +140,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             AffectsOverrideMirror = affectsOverrideMirror;
             AffectedApiNames = affectedApiNames ?? new List<string>();
             RowValues = rowValues ?? new List<EditorRowValueChange>();
+            ArtRestores = artRestores ?? new List<EditorRowValueChange>();
         }
+
+        /// <summary>
+        /// Icon art a record-level step wrote over in place, held as copies on both sides.
+        /// </summary>
+        /// <remarks>
+        /// A managed icon lives at one file name per achievement, so replacing it overwrites the
+        /// old art. Restoring the record puts the path back but not the picture; these are applied
+        /// after it, the way a field edit's icon change is.
+        /// </remarks>
+        public IReadOnlyList<EditorRowValueChange> ArtRestores { get; }
 
         /// <summary>
         /// The fields this step changed, when it was a field edit. Reversed by setting each one
@@ -170,7 +182,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         public IReadOnlyList<string> AffectedApiNames { get; }
 
-        public int ElementCount => Facets.Sum(patch => patch.ElementCount) + RowValues.Count;
+        public int ElementCount => Facets.Sum(patch => patch.ElementCount) + RowValues.Count + ArtRestores.Count;
 
         /// <summary>The facets this step would rewrite, for deciding whether a foreign write invalidates it.</summary>
         internal IEnumerable<GameCustomDataFacet> TouchedFacets =>
@@ -221,6 +233,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         private readonly Dictionary<string, EditorRowValueChange> _openRowValues =
             new Dictionary<string, EditorRowValueChange>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly List<EditorRowValueChange> _openArtRestores = new List<EditorRowValueChange>();
 
         private EditorEditIntent _openIntent;
         private GameCustomDataFile _openBefore;
@@ -386,6 +400,24 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         /// <summary>
+        /// Attaches icon art the open step overwrote, as copies taken before and after. Ignored
+        /// when no step is open, or when the open step is held as row values, which carry their
+        /// icon art already.
+        /// </summary>
+        public void RecordArtRestore(string apiName, string propertyName, object oldValue, object newValue)
+        {
+            if (_openIntent == null ||
+                _openRowValues.Count > 0 ||
+                string.IsNullOrWhiteSpace(apiName) ||
+                string.IsNullOrWhiteSpace(propertyName))
+            {
+                return;
+            }
+
+            _openArtRestores.Add(new EditorRowValueChange(apiName, propertyName, oldValue, newValue));
+        }
+
+        /// <summary>
         /// Closes the step being collected and puts it on the history. Called when the writes stop
         /// arriving, and before an undo or redo so the step just made is on the stack.
         /// </summary>
@@ -424,19 +456,22 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             var facets = heldAsRowValues
                 ? (IReadOnlyList<GameCustomDataFacetPatch>)Array.Empty<GameCustomDataFacetPatch>()
                 : GameCustomDataFacetDiffer.Diff(_openBefore, _openAfter);
+            var artRestores = heldAsRowValues
+                ? new List<EditorRowValueChange>()
+                : new List<EditorRowValueChange>(_openArtRestores);
 
             ClearOpenStep();
 
             // A gesture that ended where it started is not a step. Typing a value and typing it
             // back is the ordinary way this happens.
-            if (rowValues.Count == 0 && facets.Count == 0)
+            if (rowValues.Count == 0 && facets.Count == 0 && artRestores.Count == 0)
             {
                 return;
             }
 
             _undo.Add(rowValues.Count > 0
                 ? new EditorUndoEntry(labelKey, null, summary, mirror, apiNames, rowValues)
-                : new EditorUndoEntry(labelKey, facets, summary, mirror, apiNames));
+                : new EditorUndoEntry(labelKey, facets, summary, mirror, apiNames, artRestores: artRestores));
 
             // A new step makes the forward history unreachable, as it does in any editor.
             _redo.Clear();
@@ -526,6 +561,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _openAffectsOverrideMirror = false;
             _openApiNames.Clear();
             _openRowValues.Clear();
+            _openArtRestores.Clear();
         }
 
         /// <summary>
