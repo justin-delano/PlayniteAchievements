@@ -247,6 +247,7 @@
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,10"/>
                         <TextBox Text="{Binding Readme, Mode=OneWay}"
+                                 Visibility="{Binding HasReadme, Converter={StaticResource BoolToVis}}"
                                  IsReadOnly="True"
                                  TextWrapping="Wrap"
                                  BorderThickness="0"
