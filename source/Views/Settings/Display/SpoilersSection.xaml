@@ -191,43 +191,37 @@
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                            <!-- Stretch so the read-only path keeps filling the row; the thumbnail,
-                                 Clear and Browse stay at their own widths beside it. -->
+                            <!-- The thumbnail is the slot's input: drop an image on it, or click it
+                                 and paste. Clear and Browse sit beside it. -->
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Common_Locked}"
                                                  HorizontalContentAlignment="Stretch">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
+                                            Tag="Locked"
+                                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                                            helpers:ImagePickTarget.IsEnabled="True"
+                                            helpers:ImagePickTarget.Picked="FallbackIcon_Picked"
                                             Width="48" Height="48"
                                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                            BorderThickness="1"
                                             Margin="0,0,8,0">
                                         <Image helpers:AsyncImage.Uri="{Binding LockedFallbackThumbnailUri, ElementName=SpoilersSectionRoot}"
                                                helpers:AsyncImage.DecodePixel="48"
                                                Stretch="Uniform"
                                                RenderOptions.BitmapScalingMode="HighQuality"/>
                                     </Border>
-                                    <TextBox Grid.Column="1"
-                                             Tag="Locked"
-                                             Text="{Binding Persisted.LockedFallbackIconPath, Mode=OneWay}"
-                                             IsReadOnly="True"
-                                             VerticalAlignment="Center"
-                                             AllowDrop="True"
-                                             PreviewDragOver="FallbackIconTextBox_PreviewDragOver"
-                                             PreviewDrop="FallbackIconTextBox_PreviewDrop"/>
-                                    <Button Grid.Column="2"
+                                    <Button Grid.Column="1"
                                             Tag="Locked"
                                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                             Click="FallbackIconClear_Click"
-                                            Margin="8,0,0,0"
+                                            Margin="0"
                                             VerticalAlignment="Center"/>
-                                    <Button Grid.Column="3"
+                                    <Button Grid.Column="2"
                                             Tag="Locked"
                                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                                             Click="FallbackIconBrowse_Click"
@@ -241,36 +235,30 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
+                                            Tag="Hidden"
+                                            Style="{DynamicResource PlayAch.ImagePickTarget.Style}"
+                                            helpers:ImagePickTarget.IsEnabled="True"
+                                            helpers:ImagePickTarget.Picked="FallbackIcon_Picked"
                                             Width="48" Height="48"
                                             Background="{DynamicResource PlayAch.Brush.Surface}"
-                                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                            BorderThickness="1"
                                             Margin="0,0,8,0">
                                         <Image helpers:AsyncImage.Uri="{Binding HiddenFallbackThumbnailUri, ElementName=SpoilersSectionRoot}"
                                                helpers:AsyncImage.DecodePixel="48"
                                                Stretch="Uniform"
                                                RenderOptions.BitmapScalingMode="HighQuality"/>
                                     </Border>
-                                    <TextBox Grid.Column="1"
-                                             Tag="Hidden"
-                                             Text="{Binding Persisted.HiddenFallbackIconPath, Mode=OneWay}"
-                                             IsReadOnly="True"
-                                             VerticalAlignment="Center"
-                                             AllowDrop="True"
-                                             PreviewDragOver="FallbackIconTextBox_PreviewDragOver"
-                                             PreviewDrop="FallbackIconTextBox_PreviewDrop"/>
-                                    <Button Grid.Column="2"
+                                    <Button Grid.Column="1"
                                             Tag="Hidden"
                                             Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                             Click="FallbackIconClear_Click"
-                                            Margin="8,0,0,0"
+                                            Margin="0"
                                             VerticalAlignment="Center"/>
-                                    <Button Grid.Column="3"
+                                    <Button Grid.Column="2"
                                             Tag="Hidden"
                                             Content="{DynamicResource LOCPlayAch_Button_Browse}"
                                             Click="FallbackIconBrowse_Click"
