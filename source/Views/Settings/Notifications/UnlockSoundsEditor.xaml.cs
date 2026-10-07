@@ -15,6 +15,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Settings.Notifications
 {
@@ -108,18 +109,30 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 Multiselect = false
             };
 
-            if (dialog.ShowDialog() != DialogResult.OK)
+            if (dialog.ShowDialog() == DialogResult.OK)
             {
-                return;
+                PickSound(row, dialog.FileName);
             }
+        }
 
+        // A sound file dropped on or pasted into a row's file cell.
+        private void SoundPickTarget_Picked(object sender, FilePickedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is UnlockSoundRowItem row)
+            {
+                PickSound(row, e.PickedSource);
+            }
+        }
+
+        private void PickSound(UnlockSoundRowItem row, string path)
+        {
             try
             {
-                _viewModel?.PickFile(row.Tier, dialog.FileName);
+                _viewModel?.PickFile(row.Tier, path);
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Could not use '{dialog.FileName}' as the {row.Tier} unlock sound.");
+                _logger?.Warn(ex, $"Could not use '{path}' as the {row.Tier} unlock sound.");
                 _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
                     string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
