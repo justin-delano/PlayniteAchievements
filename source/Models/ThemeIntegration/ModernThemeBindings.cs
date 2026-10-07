@@ -397,6 +397,21 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private int _collectorMastery;
         [DontSerialize]
         private int _prestigeMastery;
+        private int _gamerscoreScore;
+        private int _gamerscoreLevel;
+        private double _gamerscoreLevelProgress;
+        private string _gamerscoreRank = "Bronze5";
+        private int _gamerscoreMastery;
+        private int _epicXpScore;
+        private int _epicXpLevel;
+        private double _epicXpLevelProgress;
+        private string _epicXpRank = "Bronze5";
+        private int _epicXpMastery;
+        private int _retroPointsScore;
+        private int _retroPointsLevel;
+        private double _retroPointsLevelProgress;
+        private string _retroPointsRank = "Bronze5";
+        private int _retroPointsMastery;
 
         [DontSerialize]
         private readonly BulkObservableCollection<GameAchievementSummary> _steamGames = new BulkObservableCollection<GameAchievementSummary>();
@@ -1697,6 +1712,111 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _prestigeMastery, value < 0 ? 0 : value);
         }
 
+        /// <summary>Gamerscore: unlocked Points of Xbox and Xenia games (by effective provider key) on the Xbox lifetime Gamerscore milestone ladder.</summary>
+        [DontSerialize]
+        public int GamerscoreScore
+        {
+            get => _gamerscoreScore;
+            set => SetValue(ref _gamerscoreScore, value < 0 ? 0 : value);
+        }
+
+        [DontSerialize]
+        public int GamerscoreLevel
+        {
+            get => _gamerscoreLevel;
+            set => SetValue(ref _gamerscoreLevel, value < 0 ? 0 : value);
+        }
+
+        [DontSerialize]
+        public double GamerscoreLevelProgress
+        {
+            get => _gamerscoreLevelProgress;
+            set => SetValue(ref _gamerscoreLevelProgress, value);
+        }
+
+        [DontSerialize]
+        public string GamerscoreRank
+        {
+            get => _gamerscoreRank;
+            set => SetValue(ref _gamerscoreRank, value ?? "Bronze5");
+        }
+
+        [DontSerialize]
+        public int GamerscoreMastery
+        {
+            get => _gamerscoreMastery;
+            set => SetValue(ref _gamerscoreMastery, value < 0 ? 0 : value);
+        }
+        /// <summary>Epic XP: unlocked Points of Epic games on the Gamerscore ladder scaled by 1.25.</summary>
+        [DontSerialize]
+        public int EpicXpScore
+        {
+            get => _epicXpScore;
+            set => SetValue(ref _epicXpScore, value < 0 ? 0 : value);
+        }
+
+        [DontSerialize]
+        public int EpicXpLevel
+        {
+            get => _epicXpLevel;
+            set => SetValue(ref _epicXpLevel, value < 0 ? 0 : value);
+        }
+
+        [DontSerialize]
+        public double EpicXpLevelProgress
+        {
+            get => _epicXpLevelProgress;
+            set => SetValue(ref _epicXpLevelProgress, value);
+        }
+
+        [DontSerialize]
+        public string EpicXpRank
+        {
+            get => _epicXpRank;
+            set => SetValue(ref _epicXpRank, value ?? "Bronze5");
+        }
+
+        [DontSerialize]
+        public int EpicXpMastery
+        {
+            get => _epicXpMastery;
+            set => SetValue(ref _epicXpMastery, value < 0 ? 0 : value);
+        }
+        /// <summary>RetroAchievements points: hardcore unlocked Points of RetroAchievements games on the Gamerscore ladder scaled by 0.4.</summary>
+        [DontSerialize]
+        public int RetroPointsScore
+        {
+            get => _retroPointsScore;
+            set => SetValue(ref _retroPointsScore, value < 0 ? 0 : value);
+        }
+
+        [DontSerialize]
+        public int RetroPointsLevel
+        {
+            get => _retroPointsLevel;
+            set => SetValue(ref _retroPointsLevel, value < 0 ? 0 : value);
+        }
+
+        [DontSerialize]
+        public double RetroPointsLevelProgress
+        {
+            get => _retroPointsLevelProgress;
+            set => SetValue(ref _retroPointsLevelProgress, value);
+        }
+
+        [DontSerialize]
+        public string RetroPointsRank
+        {
+            get => _retroPointsRank;
+            set => SetValue(ref _retroPointsRank, value ?? "Bronze5");
+        }
+
+        [DontSerialize]
+        public int RetroPointsMastery
+        {
+            get => _retroPointsMastery;
+            set => SetValue(ref _retroPointsMastery, value < 0 ? 0 : value);
+        }
         [DontSerialize]
         public List<AchievementDetail> AllAchievementsUnlockAsc
         {
