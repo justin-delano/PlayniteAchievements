@@ -967,6 +967,55 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void ScoreHistory_SumsPlatformPointsByTheGamesEffectiveKey()
+        {
+            var endDate = new DateTime(2026, 7, 31);
+            var exophaseXboxGame = Guid.NewGuid();
+            var retroGame = Guid.NewGuid();
+            AchievementDisplayItem Unlock(Guid? gameId, string providerKey, int points, string categoryType, DateTime? when) =>
+                new AchievementDisplayItem
+                {
+                    PlayniteGameId = gameId,
+                    ProviderKey = providerKey,
+                    PointsValue = points,
+                    CategoryType = categoryType,
+                    Unlocked = true,
+                    Rarity = RarityTier.Common,
+                    GlobalPercentUnlocked = 70,
+                    UnlockTimeUtc = when
+                };
+            var snapshot = new OverviewDataSnapshot
+            {
+                GameSummaries = new List<GameSummaryItem>
+                {
+                    new GameSummaryItem { PlayniteGameId = exophaseXboxGame, ProviderKey = "Xbox" },
+                    new GameSummaryItem { PlayniteGameId = retroGame, ProviderKey = "RetroAchievements" }
+                },
+                Achievements = new List<AchievementDisplayItem>
+                {
+                    // Raw provider key Exophase; the game's effective key makes it Gamerscore.
+                    Unlock(exophaseXboxGame, "Exophase", 100, null, endDate.AddDays(-2)),
+                    Unlock(null, "Xenia", 50, null, null),
+                    Unlock(null, "Epic", 40, null, endDate),
+                    Unlock(retroGame, "RetroAchievements", 10, "Base|Hardcore", endDate.AddDays(-1)),
+                    Unlock(retroGame, "RetroAchievements", 25, "Base|Softcore", endDate.AddDays(-1)),
+                    Unlock(null, "Steam", 999, null, endDate)
+                }
+            };
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.Scores };
+
+            var points = ShowcaseWidgetProjectionService.BuildScoreHistory(snapshot, instance, endDate);
+
+            var last = points[points.Count - 1];
+            Assert.AreEqual(150, last.Gamerscore);
+            Assert.AreEqual(40, last.EpicXp);
+            Assert.AreEqual(10, last.RetroPoints);
+            Assert.AreEqual(150, last.GetScore(PlayniteAchievements.Models.Achievements.Scoring.ScoreCardType.Gamerscore));
+            // The undated Xenia unlock is a baseline from the first point.
+            Assert.AreEqual(50, points[0].Gamerscore);
+        }
+
+        [TestMethod]
         public void ScoreHistory_DownsamplesAllTimeToBoundedPointCount()
         {
             var endDate = new DateTime(2026, 7, 31);
