@@ -100,9 +100,21 @@ namespace PlayniteAchievements.Views.Controls
         public static readonly DependencyProperty TooltipForegroundProperty = DependencyProperty.Register(
             nameof(TooltipForeground), typeof(Brush), typeof(UnlockTimelineChart), new PropertyMetadata(null));
 
+        /// <summary>The column to shade as the active selection; -1 shades none.</summary>
+        public static readonly DependencyProperty HighlightedIndexProperty = DependencyProperty.Register(
+            nameof(HighlightedIndex), typeof(int), typeof(UnlockTimelineChart), new PropertyMetadata(-1, OnHighlightedIndexChanged));
+
+        /// <summary>A click on a column, carrying its position along the axis.</summary>
+        public static readonly RoutedEvent ColumnClickedEvent = EventManager.RegisterRoutedEvent(
+            "ColumnClicked",
+            RoutingStrategy.Bubble,
+            typeof(ChartClickEventHandler),
+            typeof(UnlockTimelineChart));
+
         private readonly Axis _axisX;
         private readonly Axis _axisY;
         private readonly CartesianChartTooltip _tooltip;
+        private readonly AxisSection _highlight;
 
         public UnlockTimelineChart()
         {
@@ -156,7 +168,42 @@ namespace PlayniteAchievements.Views.Controls
             _tooltip.SetBinding(CartesianChartTooltip.HeaderLabelsProperty, Bind(nameof(TooltipLabels)));
             Chart.DataTooltip = _tooltip;
 
+            // One column-wide band behind the bars, shown only while a column is selected.
+            _highlight = new AxisSection
+            {
+                SectionWidth = 1,
+                Opacity = 0.18,
+                Visibility = Visibility.Collapsed
+            };
+            _highlight.SetResourceReference(AxisSection.FillProperty, "PlayAch.Brush.Accent");
+            _axisX.Sections.Add(_highlight);
+            Chart.DataClick += OnChartDataClick;
+
             SizeChanged += OnSizeChanged;
+        }
+
+        public int HighlightedIndex
+        {
+            get => (int)GetValue(HighlightedIndexProperty);
+            set => SetValue(HighlightedIndexProperty, value);
+        }
+
+        private static void OnHighlightedIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var chart = (UnlockTimelineChart)d;
+            var index = (int)e.NewValue;
+            chart._highlight.Value = Math.Max(0, index);
+            chart._highlight.Visibility = index >= 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void OnChartDataClick(object sender, ChartPoint point)
+        {
+            if (point == null || double.IsNaN(point.X))
+            {
+                return;
+            }
+
+            RaiseEvent(new ChartClickEventArgs(ColumnClickedEvent, this) { Index = (int)Math.Round(point.X) });
         }
 
         public SeriesCollection Series
