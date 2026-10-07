@@ -342,6 +342,18 @@ namespace PlayniteAchievements.Services.Workshop
             return string.IsNullOrWhiteSpace(key) ? null : HashKey(key);
         }
 
+        /// <summary>
+        /// True when the index marks <paramref name="item"/> with <paramref name="ownerHash"/>, the
+        /// submitter hash of this install; false when either is missing.
+        /// </summary>
+        public static bool IsOwnedBy(WorkshopItem item, string ownerHash)
+        {
+            return item != null
+                && !string.IsNullOrWhiteSpace(item.OwnerHash)
+                && !string.IsNullOrWhiteSpace(ownerHash)
+                && string.Equals(item.OwnerHash.Trim(), ownerHash.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
         private static string HashKey(string key)
         {
             using (var sha = SHA256.Create())
