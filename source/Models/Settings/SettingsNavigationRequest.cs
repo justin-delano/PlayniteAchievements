@@ -26,13 +26,10 @@ namespace PlayniteAchievements.Models.Settings
         /// <summary>The page within the tab; null keeps the tab's current page.</summary>
         public string PageKey { get; }
 
-        /// <summary>The Appearance page's platform: a provider key, or null for the default.</summary>
+        /// <summary>The Styles page's platform: a provider key, or null for the default.</summary>
         public string ProviderKey { get; set; }
 
-        /// <summary>The Appearance page's surface: true for the frame, false for the notification, null to keep it.</summary>
-        public bool? IsFrame { get; set; }
-
-        /// <summary>Brings the Behavior page's unlock sounds picker into view.</summary>
-        public bool ShowSounds { get; set; }
+        /// <summary>The Styles page's tab: the notification, the frame or the sounds; null keeps it.</summary>
+        public NotificationSurface? Surface { get; set; }
     }
 }
