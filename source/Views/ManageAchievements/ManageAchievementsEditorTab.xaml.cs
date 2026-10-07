@@ -326,14 +326,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void ViewModel_FilterChanged(object sender, EventArgs e)
         {
-            var logger = Services.Logging.PluginLogger.GetLogger(nameof(ManageAchievementsEditorTab));
-            // The refresh resets the grid, and the rows it realizes, the layout and the render all
-            // land after this returns; the probe names those operations.
-            Common.DispatcherOperationProbe.Arm(logger, "editor-filter", TimeSpan.FromSeconds(1.5));
-            using (var scope = Common.PerfScope.Start(logger, "Editor.FilterRefresh", thresholdMs: 0))
-            {
-                scope.SetContext(SyncFilteredRows() + " pane=" + (ViewModel?.IsDetailsPaneExpanded == true ? "open" : "collapsed"));
-            }
+            SyncFilteredRows();
         }
 
         // Moved rows times total rows past which a reset is cheaper; see SyncFilteredRows.
@@ -350,20 +343,19 @@ namespace PlayniteAchievements.Views.ManageAchievements
         /// out took 38 ms against 160 ms for a reset; on 5,000 rows, moving 4,940 took 2,087 ms
         /// against 288 ms, and even 120 lost (216 ms against 148 ms).
         /// </remarks>
-        /// <returns>What was done, for the timing log.</returns>
-        private string SyncFilteredRows()
+        private void SyncFilteredRows()
         {
             var rows = ViewModel?.AchievementRows;
             var view = CollectionViewSource.GetDefaultView(rows);
             if (view == null)
             {
-                return "noview";
+                return;
             }
 
             if (!(view is ICollectionViewLiveShaping live) || live.IsLiveFiltering != true)
             {
                 view.Refresh();
-                return "reset";
+                return;
             }
 
             var shown = new HashSet<AchievementEditorRow>(view.OfType<AchievementEditorRow>());
@@ -379,15 +371,13 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if ((long)changed.Count * rows.Count > FilterSyncWorkBudget)
             {
                 view.Refresh();
-                return "reset changed=" + changed.Count + " rows=" + rows.Count;
+                return;
             }
 
             foreach (var row in changed)
             {
                 row.RequestFilterRetest();
             }
-
-            return "sync changed=" + changed.Count + " shown=" + shown.Count;
         }
 
         private void ToggleDetailsPaneButton_Click(object sender, RoutedEventArgs e)
@@ -633,14 +623,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
         /// </summary>
         private void AchievementsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            using (Common.PerfScope.Start(
-                Services.Logging.PluginLogger.GetLogger(nameof(ManageAchievementsEditorTab)),
-                "Editor.SelectionChanged",
-                thresholdMs: 0,
-                context: "selected=" + CustomAchievementsGrid.SelectedItems.Count))
-            {
-                ViewModel?.SetSelectedRows(CustomAchievementsGrid.SelectedItems.OfType<AchievementEditorRow>());
-            }
+            ViewModel?.SetSelectedRows(CustomAchievementsGrid.SelectedItems.OfType<AchievementEditorRow>());
         }
 
         /// <summary>
