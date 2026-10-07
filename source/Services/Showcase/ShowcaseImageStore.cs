@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Images;
 
 namespace PlayniteAchievements.Services.Showcase
 {
@@ -23,16 +24,6 @@ namespace PlayniteAchievements.Services.Showcase
 
         // Where the previous version kept the layout-wide avatar and background under fixed names.
         private const string LegacyProfileFolderName = "profile";
-
-        private static readonly string[] AcceptedExtensions =
-        {
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".bmp",
-            ".gif",
-            ".webp"
-        };
 
         private readonly string _pluginUserDataPath;
         private readonly ILogger _logger;
@@ -54,8 +45,7 @@ namespace PlayniteAchievements.Services.Showcase
 
         public static bool IsAcceptedExtension(string extension)
         {
-            return !string.IsNullOrWhiteSpace(extension) &&
-                   AcceptedExtensions.Contains(extension.Trim(), StringComparer.OrdinalIgnoreCase);
+            return ImageFormats.IsSelectableExtension(extension);
         }
 
         /// <summary>True when the path points at a file inside this store.</summary>

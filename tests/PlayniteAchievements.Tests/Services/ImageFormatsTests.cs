@@ -37,6 +37,7 @@ namespace PlayniteAchievements.Services.Tests
         {
             // Static probe state would otherwise leak into unrelated tests.
             WebpCodecProbe.SupportOverride = null;
+            WebmCodecProbe.SupportOverride = null;
 
             try
             {
@@ -75,13 +76,40 @@ namespace PlayniteAchievements.Services.Tests
         public void Selectable_LeavesEveryOtherFormatUnaffected()
         {
             WebpCodecProbe.SupportOverride = false;
+            WebmCodecProbe.SupportOverride = false;
 
-            foreach (var extension in ImageFormats.All.Where(e => !ImageFormats.IsWebpExtension(e)))
+            foreach (var extension in ImageFormats.All.Where(e => !ImageFormats.IsWebpExtension(e) && !ImageFormats.IsWebmExtension(e)))
             {
                 Assert.IsTrue(
                     ImageFormats.IsSelectableExtension(extension),
                     $"'{extension}' should not depend on the WebP codec.");
             }
+        }
+
+        [TestMethod]
+        public void Webm_IsAlwaysRecognizedButOfferedOnlyWithADecoder()
+        {
+            WebmCodecProbe.SupportOverride = false;
+            Assert.IsTrue(ImageFormats.IsSupportedExtension(".webm"));
+            Assert.IsFalse(ImageFormats.IsSelectableExtension(".webm"));
+            Assert.IsFalse(ImageFormats.BuildOpenFileDialogFilter(includeAllFiles: false).Contains("*.webm"));
+
+            WebmCodecProbe.SupportOverride = true;
+            Assert.IsTrue(ImageFormats.IsSelectableExtension(".WEBM"));
+            Assert.IsTrue(ImageFormats.BuildOpenFileDialogFilter(includeAllFiles: false).Contains("*.webm"));
+        }
+
+        [TestMethod]
+        public void Webm_PlaysNativelyAndIsAnAnimationCandidate()
+        {
+            Assert.IsTrue(ImageFormats.IsAnimationCandidate("https://example.com/loop.webm?v=1"));
+            Assert.IsTrue(ImageFormats.UsesNativePlayer(@"C:\art\loop.webm"));
+            Assert.IsTrue(ImageFormats.UsesNativePlayer(@"C:\art\loop.gif"));
+            Assert.IsFalse(ImageFormats.UsesNativePlayer(@"C:\art\loop.webp"));
+
+            // Nothing to inspect: a remote or missing WebM must not claim to be animated.
+            Assert.IsFalse(ImageFormats.IsAnimatedFile("https://example.com/remote.webm"));
+            Assert.IsFalse(ImageFormats.IsAnimatedFile(Path.Combine(_directory, "missing.webm")));
         }
 
         [TestMethod]

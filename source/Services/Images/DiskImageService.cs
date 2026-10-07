@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using PlayniteAchievements.Services.Images.Webm;
 using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
@@ -706,7 +707,7 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
-            var preserveOriginalFormat = ShouldPreserveOriginalFormat(decodeSize);
+            var preserveOriginalFormat = ShouldPreserveOriginalFormat(uri, decodeSize);
             var resolvedTargetPath = ResolveTargetPathForSource(targetPath, uri, decodeSize);
             EnsureTargetDirectory(resolvedTargetPath);
 
@@ -953,7 +954,10 @@ namespace PlayniteAchievements.Services.Images
         /// </summary>
         public async Task EnsureIconSquareAsync(string path, CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            // WebM keeps its own bytes: WPF can neither decode nor re-encode it.
+            if (string.IsNullOrWhiteSpace(path) ||
+                !File.Exists(path) ||
+                ImageFormats.IsWebmExtension(ImageFormats.GetExtension(path)))
             {
                 return;
             }
@@ -1130,6 +1134,11 @@ namespace PlayniteAchievements.Services.Images
         /// </summary>
         public BitmapSource LoadCachedImage(string cachePath, int decodePixel)
         {
+            if (ImageFormats.IsWebmExtension(ImageFormats.GetExtension(cachePath)))
+            {
+                return WebmStill.TryDecode(cachePath, decodePixel);
+            }
+
             try
             {
                 var bitmap = new BitmapImage();
@@ -1663,7 +1672,7 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
-            var preserveOriginalFormat = ShouldPreserveOriginalFormat(decodeSize);
+            var preserveOriginalFormat = ShouldPreserveOriginalFormat(localPath, decodeSize);
             var resolvedTargetPath = ResolveTargetPathForSource(targetPath, localPath, decodeSize);
 
             // The source can already BE the target. The resolved target takes the source's
@@ -1839,14 +1848,18 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        private static bool ShouldPreserveOriginalFormat(int decodeSize)
+        /// <summary>
+        /// A decode size asks for a resized PNG, but WebM always keeps its own bytes: WPF has no
+        /// decoder that could resize it, and the PNG would lose the animation.
+        /// </summary>
+        private static bool ShouldPreserveOriginalFormat(string source, int decodeSize)
         {
-            return decodeSize <= 0;
+            return decodeSize <= 0 || ImageFormats.IsWebmExtension(GetNormalizedSourceExtension(source));
         }
 
         private static string ResolvePreferredExtensionForSource(string source, int decodeSize)
         {
-            if (!ShouldPreserveOriginalFormat(decodeSize))
+            if (!ShouldPreserveOriginalFormat(source, decodeSize))
             {
                 return ".png";
             }
@@ -1859,7 +1872,7 @@ namespace PlayniteAchievements.Services.Images
 
         internal static string ResolveTargetPathForSource(string targetPath, string source, int decodeSize)
         {
-            return ResolveTargetPathForSource(targetPath, source, ShouldPreserveOriginalFormat(decodeSize));
+            return ResolveTargetPathForSource(targetPath, source, ShouldPreserveOriginalFormat(source, decodeSize));
         }
 
         private static string ResolveTargetPathForSource(string targetPath, string source, bool preserveOriginalFormat)

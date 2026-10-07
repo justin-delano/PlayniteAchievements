@@ -598,8 +598,7 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var localPath = AnimatedImageHelper.NormalizeSourceUri(uriString);
             if (string.IsNullOrWhiteSpace(localPath) ||
-                !Services.Images.ImageFormats.IsGifExtension(
-                    Services.Images.ImageFormats.GetExtension(localPath)) ||
+                !Services.Images.ImageFormats.UsesNativePlayer(localPath) ||
                 !System.IO.Path.IsPathRooted(localPath) ||
                 !System.IO.File.Exists(localPath))
             {
@@ -774,15 +773,14 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 var normalized = AnimatedImageHelper.NormalizeSourceUri(uriString);
                 if (string.IsNullOrWhiteSpace(normalized) ||
-                    !Services.Images.ImageFormats.IsGifExtension(
-                        Services.Images.ImageFormats.GetExtension(normalized)) ||
+                    !Services.Images.ImageFormats.UsesNativePlayer(normalized) ||
                     !LoggedGifPaths.Add(normalized + "|" + path))
                 {
                     return;
                 }
 
                 Logger?.Info(
-                    $"[Image] GIF '{normalized}' plays via the {path} path " +
+                    $"[Image] '{normalized}' plays via the {path} path " +
                     $"(rooted={System.IO.Path.IsPathRooted(normalized)}, " +
                     $"exists={System.IO.File.Exists(normalized)}).");
             }

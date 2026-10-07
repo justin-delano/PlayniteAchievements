@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using PlayniteAchievements.Services.Images.Webm;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,8 +11,8 @@ using System.Windows.Threading;
 namespace PlayniteAchievements.Views.Helpers.Gif
 {
     /// <summary>
-    /// Plays one GIF into one <see cref="WriteableBitmap"/> that every Image showing the file
-    /// shares. Frames are composited on the thread pool, held until their deadline on
+    /// Plays one GIF or WebM into one <see cref="WriteableBitmap"/> that every Image showing the
+    /// file shares. Frames are composited on the thread pool, held until their deadline on
     /// <see cref="GifFrameClock"/>, then copied to the bitmap on the UI thread; the UI thread only
     /// copies the changed rows. Deadlines advance by each frame's own delay rather than from the
     /// time the frame was shown, so timer jitter never adds up and playback keeps the file's rate.
@@ -35,7 +36,7 @@ namespace PlayniteAchievements.Views.Helpers.Gif
         }
 
         private readonly object _sync = new object();
-        private readonly GifCanvas _canvas;
+        private readonly IFrameCanvas _canvas;
         private readonly Dispatcher _dispatcher;
         private readonly WriteableBitmap _bitmap;
         private readonly Action _onClock;
@@ -47,13 +48,15 @@ namespace PlayniteAchievements.Views.Helpers.Gif
         private long _deadline;
         private long _suspendedAt;
         private int _nextIndex;
+        private bool _rendering;
+        private bool _disposed;
         private ImageSource _grayscaleView;
 
-        private GifPlayer(GifCanvas canvas, Dispatcher dispatcher)
+        private GifPlayer(IFrameCanvas canvas, Dispatcher dispatcher)
         {
             _canvas = canvas;
             _dispatcher = dispatcher;
-            _bitmap = new WriteableBitmap(canvas.Image.Width, canvas.Image.Height, 96, 96, PixelFormats.Bgra32, null);
+            _bitmap = new WriteableBitmap(canvas.Width, canvas.Height, 96, 96, PixelFormats.Bgra32, null);
             _onClock = OnClock;
             _present = Present;
             _compose = Compose;
@@ -61,7 +64,7 @@ namespace PlayniteAchievements.Views.Helpers.Gif
 
         internal BitmapSource Bitmap => _bitmap;
 
-        internal int FrameCount => _canvas.Image.Frames.Length;
+        internal int FrameCount => _canvas.FrameCount;
 
         internal bool IsRunning
         {
@@ -79,21 +82,37 @@ namespace PlayniteAchievements.Views.Helpers.Gif
 
         /// <summary>
         /// Parses and composites the first frame off the UI thread, then creates the bitmap on the
-        /// calling thread, which must be <paramref name="dispatcher"/>'s.
+        /// calling thread, which must be <paramref name="dispatcher"/>'s. The format is read from
+        /// the payload's signature: WebM, otherwise GIF.
         /// </summary>
         internal static async Task<GifPlayer> CreateAsync(byte[] payload, Dispatcher dispatcher)
         {
             var canvas = await Task.Run(() =>
             {
-                var created = new GifCanvas(GifImage.Parse(payload));
-                created.Render(0);
-                return created;
+                var created = CreateCanvas(payload);
+                try
+                {
+                    created.Render(0);
+                    return created;
+                }
+                catch
+                {
+                    created.Dispose();
+                    throw;
+                }
             }).ConfigureAwait(true);
 
             var player = new GifPlayer(canvas, dispatcher);
             player.CopyToBitmap();
             player.AfterPresent(GifFrameClock.Now);
             return player;
+        }
+
+        private static IFrameCanvas CreateCanvas(byte[] payload)
+        {
+            return WebmContainer.HasSignature(payload)
+                ? new WebmCanvas(WebmContainer.Parse(payload))
+                : (IFrameCanvas)new GifCanvas(GifImage.Parse(payload));
         }
 
         /// <summary>A live grayscale presentation of the shared bitmap, built once per player.</summary>
@@ -141,16 +160,16 @@ namespace PlayniteAchievements.Views.Helpers.Gif
                     return;
                 }
 
-                var frames = _canvas.Image.Frames;
-                if (frames.Length <= 1)
+                var frameCount = _canvas.FrameCount;
+                if (frameCount <= 1)
                 {
                     _stage = Stage.Stopped;
                     return;
                 }
 
                 var shown = _canvas.RenderedIndex;
-                _deadline = presentedDeadline + GifFrameClock.FromMilliseconds(frames[shown].DelayMs);
-                _nextIndex = (shown + 1) % frames.Length;
+                _deadline = presentedDeadline + GifFrameClock.FromMilliseconds(_canvas.GetDelayMs(shown));
+                _nextIndex = (shown + 1) % frameCount;
                 _stage = Stage.Composing;
                 if (_activeViewers == 0)
                 {
@@ -172,15 +191,36 @@ namespace PlayniteAchievements.Views.Helpers.Gif
                 }
 
                 index = _nextIndex;
+                _rendering = true;
             }
 
+            Exception failure = null;
             try
             {
                 _canvas.Render(index);
             }
             catch (Exception ex)
             {
-                Fail(ex);
+                failure = ex;
+            }
+
+            bool disposeCanvas;
+            lock (_sync)
+            {
+                _rendering = false;
+                disposeCanvas = _disposed;
+            }
+
+            // Dispose waited for this render rather than freeing the decoder under it.
+            if (disposeCanvas)
+            {
+                _canvas.Dispose();
+                return;
+            }
+
+            if (failure != null)
+            {
+                Fail(failure);
                 return;
             }
 
@@ -205,7 +245,7 @@ namespace PlayniteAchievements.Views.Helpers.Gif
 
             // More than one frame late (a stalled dispatcher, a long suspension): restart the
             // schedule from now rather than showing the backlog in a burst.
-            var frameDelay = GifFrameClock.FromMilliseconds(_canvas.Image.Frames[_canvas.RenderedIndex].DelayMs);
+            var frameDelay = GifFrameClock.FromMilliseconds(_canvas.GetDelayMs(_canvas.RenderedIndex));
             if (now - _deadline > frameDelay)
             {
                 _deadline = now;
@@ -264,7 +304,7 @@ namespace PlayniteAchievements.Views.Helpers.Gif
                 return;
             }
 
-            var width = _canvas.Image.Width;
+            var width = _canvas.Width;
             var pixels = _canvas.Pixels;
             _bitmap.Lock();
             try
@@ -303,11 +343,28 @@ namespace PlayniteAchievements.Views.Helpers.Gif
             _dispatcher.BeginInvoke(new Action(() => Failed?.Invoke(exception)));
         }
 
+        /// <summary>
+        /// Stops playback and releases the canvas, deferring that to the end of a render in flight
+        /// on the thread pool.
+        /// </summary>
         public void Dispose()
         {
+            bool disposeCanvas;
             lock (_sync)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
                 _stage = Stage.Stopped;
+                disposeCanvas = !_rendering;
+            }
+
+            if (disposeCanvas)
+            {
+                _canvas.Dispose();
             }
         }
     }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Windows.Media.Imaging;
+using PlayniteAchievements.Services.Images.Webm;
 
 namespace PlayniteAchievements.Services.Images
 {
@@ -12,7 +13,8 @@ namespace PlayniteAchievements.Services.Images
     /// <remarks>
     /// PNG and JPEG are read straight from their headers (<see cref="ImageHeaderDimensions"/>);
     /// anything else goes through a delayed-creation <c>BitmapFrame</c>, which also reads only the
-    /// header. Animated GIFs report their first frame's (logical canvas) size.
+    /// header. Animated GIFs report their first frame's (logical canvas) size, and WebM its video
+    /// track's size.
     /// </remarks>
     internal static class ImagePixelSize
     {
@@ -28,6 +30,11 @@ namespace PlayniteAchievements.Services.Images
                 if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 {
                     return false;
+                }
+
+                if (ImageFormats.IsWebmExtension(ImageFormats.GetExtension(path)))
+                {
+                    return WebmContainer.TryReadSize(path, out width, out height);
                 }
 
                 using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))

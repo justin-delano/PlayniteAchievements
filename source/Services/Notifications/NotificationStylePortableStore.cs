@@ -784,6 +784,14 @@ namespace PlayniteAchievements.Services.Notifications
                     $"The bundled image '{entryName}' is a WebP, which this system has no decoder for. " +
                     "Install the WebP Image Extension from the Microsoft Store, then import again.");
             }
+
+            if (ImageFormats.IsWebmExtension(ImageFormats.GetExtension(entryName)) &&
+                !WebmCodecProbe.IsSupported)
+            {
+                throw new InvalidOperationException(
+                    $"The bundled image '{entryName}' is a WebM, which this system has no decoder for. " +
+                    "Install the VP9 Video Extensions from the Microsoft Store, then import again.");
+            }
         }
 
         private static string NormalizeArchiveEntryName(string value)

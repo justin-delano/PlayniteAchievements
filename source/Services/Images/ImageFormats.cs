@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using PlayniteAchievements.Services.Images.Webm;
 
 namespace PlayniteAchievements.Services.Images
 {
@@ -24,6 +25,7 @@ namespace PlayniteAchievements.Services.Images
     {
         private const string WebpExtension = ".webp";
         private const string GifExtension = ".gif";
+        private const string WebmExtension = ".webm";
 
         /// <summary>
         /// Every extension the plugin recognizes, independent of this machine's codecs. Use for
@@ -38,7 +40,8 @@ namespace PlayniteAchievements.Services.Images
             ".bmp",
             ".tif",
             ".tiff",
-            WebpExtension
+            WebpExtension,
+            WebmExtension
         };
 
         /// <summary>
@@ -66,7 +69,12 @@ namespace PlayniteAchievements.Services.Images
                 return false;
             }
 
-            return !IsWebpExtension(extension) || WebpCodecProbe.IsSupported;
+            if (IsWebpExtension(extension))
+            {
+                return WebpCodecProbe.IsSupported;
+            }
+
+            return !IsWebmExtension(extension) || WebmCodecProbe.IsSupported;
         }
 
         internal static bool HasSelectableExtension(string pathOrUri)
@@ -101,7 +109,17 @@ namespace PlayniteAchievements.Services.Images
         internal static bool IsAnimationCandidate(string pathOrUri)
         {
             var extension = GetExtension(pathOrUri);
-            return IsGifExtension(extension) || IsWebpExtension(extension);
+            return IsGifExtension(extension) || IsWebpExtension(extension) || IsWebmExtension(extension);
+        }
+
+        /// <summary>
+        /// True for the formats the shared frame player plays straight from the file (GIF and WebM)
+        /// rather than through decoded WPF frames.
+        /// </summary>
+        internal static bool UsesNativePlayer(string pathOrUri)
+        {
+            var extension = GetExtension(pathOrUri);
+            return IsGifExtension(extension) || IsWebmExtension(extension);
         }
 
         /// <summary>
@@ -120,13 +138,20 @@ namespace PlayniteAchievements.Services.Images
                 return true;
             }
 
-            if (!IsWebpExtension(extension))
+            if (!IsWebpExtension(extension) && !IsWebmExtension(extension))
             {
                 return false;
             }
 
             var localPath = TryResolveLocalPath(pathOrUri);
-            return !string.IsNullOrWhiteSpace(localPath) && WebpAnimationInfo.IsAnimated(localPath);
+            if (string.IsNullOrWhiteSpace(localPath))
+            {
+                return false;
+            }
+
+            return IsWebpExtension(extension)
+                ? WebpAnimationInfo.IsAnimated(localPath)
+                : WebmContainer.IsAnimated(localPath);
         }
 
         internal static bool IsGifExtension(string extension)
@@ -137,6 +162,11 @@ namespace PlayniteAchievements.Services.Images
         internal static bool IsWebpExtension(string extension)
         {
             return string.Equals(extension, WebpExtension, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsWebmExtension(string extension)
+        {
+            return string.Equals(extension, WebmExtension, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

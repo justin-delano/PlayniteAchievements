@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Images.Webm;
 using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
@@ -497,6 +498,11 @@ namespace PlayniteAchievements.Services.Images
 
         private BitmapSource LoadLocal(string uri, int decodePixel)
         {
+            if (ImageFormats.IsWebmExtension(ImageFormats.GetExtension(uri)))
+            {
+                return WebmStill.TryDecode(uri, decodePixel);
+            }
+
             try
             {
                 var keepFullSize = KeepsFullSizeStill(uri);
@@ -525,13 +531,12 @@ namespace PlayniteAchievements.Services.Images
 
         /// <summary>
         /// True for an animated WebP, whose still must match the size its animation frames are
-        /// decoded at. A GIF's still is only a fallback, since GIFs play from their file at native
-        /// size, so it takes the requested decode size like any other image.
+        /// decoded at. A GIF's or WebM's still is only a fallback, since those play from their file
+        /// at native size, so it takes the requested decode size like any other image.
         /// </summary>
         private static bool KeepsFullSizeStill(string pathOrUri)
         {
-            return ImageFormats.IsAnimatedFile(pathOrUri) &&
-                   !ImageFormats.IsGifExtension(ImageFormats.GetExtension(pathOrUri));
+            return !ImageFormats.UsesNativePlayer(pathOrUri) && ImageFormats.IsAnimatedFile(pathOrUri);
         }
 
         /// <summary>
@@ -560,6 +565,11 @@ namespace PlayniteAchievements.Services.Images
                 if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath))
                 {
                     return null;
+                }
+
+                if (ImageFormats.IsWebmExtension(ImageFormats.GetExtension(cachePath)))
+                {
+                    return await Task.Run(() => WebmStill.TryDecode(cachePath, decodePixel)).ConfigureAwait(false);
                 }
 
                 // Content-based here: the file exists, so a still WebP keeps its decode-time
