@@ -427,12 +427,12 @@ namespace PlayniteAchievements.ViewModels.Library
         private static string UseState(LibraryItem item, LibraryTargetUse use)
         {
             var applied = string.IsNullOrWhiteSpace(use.Link.AppliedVersion) ? item.Version : use.Link.AppliedVersion;
-            var parts = new List<string>
+            var parts = new List<string>();
+            if (item.IsWorkshop && !string.IsNullOrWhiteSpace(applied))
             {
-                string.Format(
-                    L("LOCPlayAch_Library_Following"),
-                    item.IsWorkshop && !string.IsNullOrWhiteSpace(applied) ? "v" + applied : item.Name)
-            };
+                parts.Add("v" + applied);
+            }
+
             if (use.IsEdited)
             {
                 parts.Add(L("LOCPlayAch_Library_Edited"));
