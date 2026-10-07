@@ -1069,6 +1069,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewMiniShowcase">Show Mini Showcase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completions Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter">Pie Center</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Percentage">Percentage</sys:String>
