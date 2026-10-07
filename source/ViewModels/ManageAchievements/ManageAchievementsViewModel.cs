@@ -177,6 +177,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ImportFromWorkshopCommand = new RelayCommand(_ => _plugin?.OpenWorkshopWindow(_gameId), _ => HasGame && _plugin != null);
             ShareToWorkshopCommand = new RelayCommand(_ => ShareToWorkshop(), _ => HasGame && CanExportCustomJson && _plugin != null);
             ClearCustomDataCommand = new RelayCommand(_ => ClearCustomData(), _ => HasGame && CanClearCustomData);
+            InitializeWorkshopSource();
 
             Reload();
         }
@@ -925,6 +926,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     new AchievementPageLinkContext(game, gameData, rawGameData, manualLink));
 
                 RefreshCustomDataState();
+                RefreshWorkshopSource();
                 RebuildSidebarStats();
 
                 if (!HasAchievementData && ManageAchievementsTabs.RequireAchievementData.Contains(SelectedTab))
@@ -1447,6 +1449,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 throw new InvalidOperationException("Imported custom game data was empty.");
             }
 
+            // The file replaced what the Workshop item put there: the game no longer follows it.
+            RemoveWorkshopSource();
+
             var transitionEffects = AnalyzeCustomDataTransition(previousData, currentData);
             NotifyCustomDataChanged(transitionEffects.RequiresRefresh, transitionEffects.ForceIconRefresh);
 
@@ -1531,6 +1536,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 store.Delete(_gameId);
+                RemoveWorkshopSource();
                 var transitionEffects = AnalyzeCustomDataTransition(currentData, null);
                 NotifyCustomDataChanged(transitionEffects.RequiresRefresh, transitionEffects.ForceIconRefresh);
 
@@ -1734,6 +1740,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     _refreshService?.Cache?.RemoveGameCache(_gameId);
                 }
 
+                RemoveWorkshopSource();
                 _playniteApi?.Dialogs?.ShowMessage(
                     L("LOCPlayAch_Status_Succeeded"),
                     L("LOCPlayAch_Title_PluginName"),
@@ -1771,6 +1778,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ShareToWorkshopCommand?.RaiseCanExecuteChanged();
             ImportCustomJsonCommand?.RaiseCanExecuteChanged();
             ClearCustomDataCommand?.RaiseCanExecuteChanged();
+            RaiseWorkshopSourceCommandStates();
         }
 
         private void RefreshCustomDataState()
