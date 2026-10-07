@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 // WinForms file dialogs: on .NET Framework the WPF Microsoft.Win32 dialogs render the legacy
 // pre-Vista picker (their hook blocks the common-item-dialog upgrade); the WinForms ones
@@ -22,6 +23,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Notifications;
+using PlayniteAchievements.Services.Sound;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.ViewModels;
@@ -113,6 +115,10 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             FrameEditor.DataContext = _frameEditorViewModel;
             ToastEditor.ColorPicker = (owner, current) => _plugin.PickColor(owner, current);
             FrameEditor.ColorPicker = (owner, current) => _plugin.PickColor(owner, current);
+
+            // A file edit can make the scope's pack differ from the preset it follows.
+            SoundsEditor.Initialize(settings, plugin, logger);
+            SoundsEditor.SoundsChanged += (s, e) => StylePresetPicker?.RefreshNow();
 
             AsyncImage.AddSourceReadyHandler(
                 ToastBackgroundAnimationHost,
@@ -319,10 +325,10 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
         /// <summary>
         /// Shows one scope: the platform (a provider key, or null for the default; a game's
-        /// section has no platform choice and ignores it) and the notification or frame surface.
-        /// A provider the selector does not list leaves the platform as it is.
+        /// section has no platform choice and ignores it) and the notification, frame or sounds
+        /// tab. A provider the selector does not list leaves the platform as it is.
         /// </summary>
-        internal void Preselect(string providerKey, bool isFrame)
+        internal void Preselect(string providerKey, NotificationSurface surface)
         {
             if (!IsGameMode && PlatformSelector?.ItemsSource is IEnumerable<NotificationStylePlatformOption> options)
             {
@@ -336,7 +342,9 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
             if (SurfaceTabs != null)
             {
-                SurfaceTabs.SelectedItem = isFrame ? FrameTabItem : ToastTabItem;
+                SurfaceTabs.SelectedItem = surface == NotificationSurface.Sounds
+                    ? SoundsTabItem
+                    : surface == NotificationSurface.Frame ? FrameTabItem : ToastTabItem;
             }
         }
 
@@ -430,6 +438,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 kindStyle, imageOwner, editable, persistStyle: null, providerKey: editable ? option.Key : null);
             _frameEditorViewModel.SetStyle(
                 kindStyle, imageOwner, editable, persistStyle: null, providerKey: editable ? option.Key : null);
+            ApplySoundsSelection();
             UpdateMockups();
             RefreshPresetRow();
         }
@@ -475,8 +484,192 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 .ForNotificationKind(editingKind ? ActiveKind : NotificationKind.Base);
             _toastEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist);
             _frameEditorViewModel.SetStyle(kindStyle, owner, hasOverride, persist);
+            ApplySoundsSelection();
             UpdateMockups();
             RefreshPresetRow();
+        }
+
+        /// <summary>
+        /// Points the Sounds tab at the selected scope's pack: the global pack (with the switches
+        /// every scope shares), a platform's own pack, or a game's, each shown read-only while it
+        /// follows the pack it inherits. Then brings the scope column in line with the active tab.
+        /// </summary>
+        private void ApplySoundsSelection()
+        {
+            var persisted = _settings?.Persisted;
+            if (persisted == null || SoundsEditor == null)
+            {
+                return;
+            }
+
+            UnlockSoundScope scope;
+            bool editable;
+            string testProviderKey;
+            if (IsGameMode)
+            {
+                var store = _plugin?.GameCustomDataStore;
+                if (store == null)
+                {
+                    return;
+                }
+
+                scope = UnlockSoundScope.ForGame(store, _gameId, () => _settings?.Persisted, ResolveGameProviderKey);
+                editable = scope.OwnSounds != null;
+                testProviderKey = ResolveGameProviderKey();
+                CustomizeGameSoundsCheckBox.Content = string.Format(
+                    L("LOCPlayAch_Settings_Sounds_Customize"),
+                    _plugin.PlayniteApi?.Database?.Games?.Get(_gameId)?.Name ?? string.Empty);
+                _suppressCustomizeEvents = true;
+                CustomizeGameSoundsCheckBox.IsChecked = editable;
+                _suppressCustomizeEvents = false;
+            }
+            else
+            {
+                scope = UnlockSoundScope.ForSettings(persisted, _selectedProviderKey);
+                editable = _selectedProviderKey == null || scope.OwnSounds != null;
+                testProviderKey = _selectedProviderKey;
+                if (_selectedProviderKey != null)
+                {
+                    CustomizeSoundsCheckBox.Content = string.Format(
+                        L("LOCPlayAch_Settings_Sounds_Customize"),
+                        (PlatformSelector?.SelectedItem as NotificationStylePlatformOption)?.DisplayName ?? _selectedProviderKey);
+                    _suppressCustomizeEvents = true;
+                    CustomizeSoundsCheckBox.IsChecked = editable;
+                    _suppressCustomizeEvents = false;
+                }
+            }
+
+            SoundsEditor.SetScope(
+                scope,
+                editable,
+                showGlobalSwitches: !IsGameMode && _selectedProviderKey == null,
+                testProviderKey,
+                ScopeGameId);
+            ApplySurfaceVisibility();
+        }
+
+        /// <summary>
+        /// Shows the scope column's checkboxes for the active tab: the style ones on the
+        /// notification and frame tabs, the sound ones on the Sounds tab, where the per-kind
+        /// styling has no meaning.
+        /// </summary>
+        private void ApplySurfaceVisibility()
+        {
+            var sounds = IsSoundsTabActive;
+            if (IsGameMode)
+            {
+                CustomizeGameCheckBox.Visibility = sounds ? Visibility.Collapsed : Visibility.Visible;
+                CustomizeGameSoundsCheckBox.Visibility = sounds ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else
+            {
+                var platform = _selectedProviderKey != null;
+                PlatformSelectorPanel.Visibility = platform ? Visibility.Visible : Visibility.Collapsed;
+                CustomizeCheckBox.Visibility = platform && !sounds ? Visibility.Visible : Visibility.Collapsed;
+                CustomizeSoundsCheckBox.Visibility = platform && sounds ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (sounds)
+            {
+                KindStylePanel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>
+        /// Gives the selected platform its own sound pack, copied from the global one, or after
+        /// confirmation makes it play the global pack again.
+        /// </summary>
+        private void CustomizeSoundsCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (_suppressCustomizeEvents)
+            {
+                return;
+            }
+
+            var providerKey = _selectedProviderKey;
+            var persisted = _settings?.Persisted;
+            if (providerKey == null || persisted == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (CustomizeSoundsCheckBox.IsChecked == true)
+                {
+                    persisted.SetProviderUnlockSounds(providerKey, persisted.UnlockSounds.Clone());
+                }
+                else
+                {
+                    if (!Confirm(L("LOCPlayAch_Settings_Sounds_StopSeparateConfirm")))
+                    {
+                        _suppressCustomizeEvents = true;
+                        CustomizeSoundsCheckBox.IsChecked = true;
+                        _suppressCustomizeEvents = false;
+                        return;
+                    }
+
+                    persisted.SetProviderUnlockSounds(providerKey, null);
+                    // The platform plays the global pack again, so it no longer follows a library item.
+                    persisted.SetLibraryLink(LibraryTargetKeys.SoundsProvider(providerKey), null);
+                }
+
+                _plugin.PersistSettingsForUi();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to toggle separate unlock sounds for {providerKey}.");
+            }
+
+            ApplySelection();
+            SoundsEditor.RefreshAndApply();
+        }
+
+        /// <summary>
+        /// Gives the game its own sound pack, copied from the one it plays now, or after
+        /// confirmation makes it play its platform's or the global pack again.
+        /// </summary>
+        private void CustomizeGameSoundsCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (_suppressCustomizeEvents || !IsGameMode)
+            {
+                return;
+            }
+
+            var store = _plugin?.GameCustomDataStore;
+            if (store == null || _settings?.Persisted == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var scope = UnlockSoundScope.ForGame(store, _gameId, () => _settings?.Persisted, ResolveGameProviderKey);
+                if (CustomizeGameSoundsCheckBox.IsChecked == true)
+                {
+                    scope.Write(scope.EffectiveSounds.Clone());
+                }
+                else
+                {
+                    if (!Confirm(L("LOCPlayAch_Settings_Sounds_StopSeparateConfirm")))
+                    {
+                        _suppressCustomizeEvents = true;
+                        CustomizeGameSoundsCheckBox.IsChecked = true;
+                        _suppressCustomizeEvents = false;
+                        return;
+                    }
+
+                    scope.Write(null);
+                    // The game plays the inherited pack again, so it no longer follows a library item.
+                    _plugin.GameLinkStore.Remove(LibraryTargetKeys.SoundsGame(_gameId));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to toggle separate unlock sounds for game {_gameId}.");
+            }
+
+            ApplySelection();
         }
 
         private void ApplyThemeStylingControls(bool editable)
@@ -1246,6 +1439,17 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private void ExportStyle_Click(object sender, RoutedEventArgs e)
         {
+            if (IsSoundsTabActive)
+            {
+                // Only the pack's own and theme files travel, so all-default tiers have nothing to share.
+                WorkshopMenus.OpenExport(
+                    sender as Button,
+                    ExportSoundsFile,
+                    ShareSoundsToWorkshop,
+                    workshopEnabled: SoundsEditor.HasShareableSounds);
+                return;
+            }
+
             // Both scopes share the menu: a file export of what the tab shows, or sharing it to the
             // Workshop as a style of that surface (a game's own look travels like any other),
             // then the surface's default template as a loose .xaml starting point.
@@ -1389,6 +1593,15 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private void ImportStyle_Click(object sender, RoutedEventArgs e)
         {
+            if (IsSoundsTabActive)
+            {
+                WorkshopMenus.OpenImport(
+                    sender as Button,
+                    ImportSoundsFile,
+                    () => _plugin.OpenWorkshopWindow(focusKind: WorkshopItemKind.UnlockSounds));
+                return;
+            }
+
             // From file: the global page saves a preset, a game tab applies straight onto the game.
             // From Workshop: the browser scoped to this surface; installs land in the presets.
             var kind = FrameTabItem?.IsSelected == true
@@ -1574,6 +1787,139 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             }
         }
 
+        /// <summary>Writes what each tier of the shown pack plays, minus the bundled defaults, to a .pasounds file.</summary>
+        private void ExportSoundsFile()
+        {
+            Keyboard.ClearFocus();
+            var store = _plugin?.UnlockSoundPortableStore;
+            if (store == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Filter = UnlockSoundPortableStore.BuildFileDialogFilter(),
+                    AddExtension = true,
+                    DefaultExt = UnlockSoundPortableStore.PackageFileExtension,
+                    FileName = BuildDefaultStyleFileName() + UnlockSoundPortableStore.PackageFileExtension
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                SoundsEditor.ExportCurrent(UnlockSoundPortableStore.NormalizeExportPath(dialog.FileName), store);
+                Inform(L("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed exporting unlock sound pack.");
+                Inform(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Packages the shown pack into a scratch .pasounds and opens the share dialog on it. The
+        /// scratch folder outlives the modal dialog only.
+        /// </summary>
+        private void ShareSoundsToWorkshop()
+        {
+            var store = _plugin?.UnlockSoundPortableStore;
+            if (store == null)
+            {
+                return;
+            }
+
+            var scratch = PortablePackage.CreateScratchDirectory("SoundsShare");
+            try
+            {
+                var name = BuildDefaultStyleFileName();
+                var path = Path.Combine(scratch, name + UnlockSoundPortableStore.PackageFileExtension);
+                SoundsEditor.ExportCurrent(path, store);
+                _plugin.OpenWorkshopShare(
+                    WorkshopItemKind.UnlockSounds,
+                    Window.GetWindow(this),
+                    packagePath: path,
+                    defaultName: name);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed sharing the unlock sound pack.");
+                Inform(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+            finally
+            {
+                PortablePackage.TryDeleteDirectory(scratch);
+            }
+        }
+
+        /// <summary>
+        /// Adds a .pasounds file to the sound presets, named after the file. On the global page
+        /// applying it is the preset list's job; a game tab applies it straight onto the game,
+        /// which then follows it, as a style file does.
+        /// </summary>
+        private void ImportSoundsFile()
+        {
+            Keyboard.ClearFocus();
+            var presets = _plugin?.UnlockSoundPresetStore;
+            if (presets == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = UnlockSoundPortableStore.BuildFileDialogFilter(),
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var saved = presets.SaveFrom(presets.UniqueName(SoundPackageStem(dialog.FileName)), dialog.FileName);
+                var item = StylePresetPicker.AddLocalPreset(saved.FilePath, saved.Name, LibraryItemKind.Sounds);
+                if (IsGameMode && item != null)
+                {
+                    _plugin.LibraryUpdateService.ApplyToGameTarget(LibraryTargetKeys.SoundsGame(_gameId), item);
+                    ApplySelection();
+                    SoundsEditor.RefreshAndApply();
+                    Inform(L("LOCPlayAch_Status_Succeeded"), MessageBoxImage.Information);
+                    return;
+                }
+
+                Inform(string.Format(L("LOCPlayAch_Workshop_SavedAsPreset"), saved.Name), MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed importing unlock sound pack.");
+                Inform(string.Format(L("LOCPlayAch_Status_Failed"), ex.Message), MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>The file name without its package extension, including a trailing .zip.</summary>
+        private static string SoundPackageStem(string path)
+        {
+            var name = Path.GetFileName(path) ?? string.Empty;
+            foreach (var suffix in new[] { ".zip", UnlockSoundPortableStore.PackageFileExtension })
+            {
+                if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    name = name.Substring(0, name.Length - suffix.Length);
+                }
+            }
+
+            return name;
+        }
+
         private void Inform(string message, MessageBoxImage image)
         {
             _plugin?.PlayniteApi?.Dialogs?.ShowMessage(
@@ -1594,6 +1940,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
 
         private bool IsFrameTabActive => FrameTabItem?.IsSelected == true;
 
+        private bool IsSoundsTabActive => SoundsTabItem?.IsSelected == true;
+
         /// <summary>True while the editors show one kind's own copy rather than the scope's shared style.</summary>
         private bool IsEditingKind => _currentStyle != null && !ReferenceEquals(_currentStyle, _currentScopeStyle);
 
@@ -1605,6 +1953,11 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         /// </summary>
         private ILibraryPickerTarget CurrentPickerTarget()
         {
+            if (IsSoundsTabActive)
+            {
+                return CurrentSoundsPickerTarget();
+            }
+
             var targets = _plugin?.NotificationLibraryTargets;
             if (targets == null)
             {
@@ -1670,6 +2023,56 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             return target;
         }
 
+        /// <summary>
+        /// The preset row's target on the Sounds tab: the selected scope's pack (global, a
+        /// platform, or the game), which follows the sound pack applied to it.
+        /// </summary>
+        private ILibraryPickerTarget CurrentSoundsPickerTarget()
+        {
+            var targets = _plugin?.SoundsLibraryTargets;
+            var presets = _plugin?.UnlockSoundPresetStore;
+            if (targets == null || presets == null)
+            {
+                return null;
+            }
+
+            var target = new DelegatePickerTarget
+            {
+                Kind = LibraryItemKind.Sounds,
+                Folder = new PackagePresetFolder(presets),
+                Export = path => SoundsEditor.ExportCurrent(path, _plugin.UnlockSoundPortableStore)
+            };
+
+            var providerKey = IsGameMode ? null : _selectedProviderKey;
+            var key = LibraryTargetKeys.SoundsScope(providerKey, ScopeGameId);
+            var updates = _plugin.LibraryUpdateService;
+            if (IsGameMode)
+            {
+                target.State = () => updates.GetGameTargetState(key);
+                target.ApplyItem = item => updates.ApplyToGameTarget(key, item);
+                target.LinkItem = item => updates.LinkGameTarget(key, item);
+                return target;
+            }
+
+            var settingsAdapter = targets.SettingsAdapter(key);
+            var apply = _plugin.LibraryApplyService;
+            target.State = () => apply.GetSettingsState(settingsAdapter, _settings.Persisted);
+            target.ApplyItem = item =>
+            {
+                apply.ApplyToSettings(settingsAdapter, item, _settings.Persisted);
+                PersistIfSettingsScope();
+            };
+            target.LinkItem = item =>
+            {
+                // A platform that plays the global pack has no pack of its own to follow the preset.
+                if (providerKey == null || _settings.Persisted.GetProviderUnlockSounds(providerKey) != null)
+                {
+                    apply.LinkSettings(settingsAdapter, item, _settings.Persisted);
+                }
+            };
+            return target;
+        }
+
         /// <summary>Writes the active surface as the editors show it, with the scope's custom template, as a package.</summary>
         private void ExportCurrentSurface(bool isFrame, string path)
         {
@@ -1697,6 +2100,13 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         private void OnPresetApplied()
         {
             ApplySelection();
+            if (IsSoundsTabActive)
+            {
+                // The host's preloaded set follows the new files.
+                SoundsEditor.RefreshAndApply();
+                return;
+            }
+
             UpdateMockups();
             ReportTemplateErrors();
         }
@@ -1734,7 +2144,8 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 return;
             }
 
-            StylePresetPicker.IsEnabled = !IsGameMode || CustomizeGameCheckBox?.IsChecked == true;
+            var gameCustomized = IsSoundsTabActive ? CustomizeGameSoundsCheckBox : CustomizeGameCheckBox;
+            StylePresetPicker.IsEnabled = !IsGameMode || gameCustomized?.IsChecked == true;
             StylePresetPicker.RefreshNow();
         }
 
@@ -1907,6 +2318,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
             _persistedSubscription?.Dispose();
             _toastEditorViewModel?.Dispose();
             _frameEditorViewModel?.Dispose();
+            SoundsEditor?.Dispose();
             CloseFramePreview();
         }
 
