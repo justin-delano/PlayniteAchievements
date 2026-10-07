@@ -200,6 +200,67 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsFalse(service.IsEdited(game, new LibraryLink { LibraryItemId = "ws:notes" }), "no baseline, nothing to tell");
         }
 
+        [TestMethod]
+        public void GroupByItem_MakesOneGroupPerItemWithTheHighestVersionAndItsName()
+        {
+            var a = Guid.NewGuid();
+            var b = Guid.NewGuid();
+            var c = Guid.NewGuid();
+            var records = new Dictionary<Guid, LibraryLink>
+            {
+                [a] = new LibraryLink { LibraryItemId = "ws:notes", Name = "Notes", AppliedVersion = "1.0.0" },
+                [b] = new LibraryLink { LibraryItemId = "ws:NOTES", Name = "Notes (renamed)", AppliedVersion = "1.2.0" },
+                [c] = new LibraryLink { LibraryItemId = "ws:icons", AppliedVersion = "3.0.0" },
+                [Guid.NewGuid()] = new LibraryLink { LibraryItemId = null, Name = "Nothing" }
+            };
+
+            var groups = GameDataLinkService.GroupByItem(records);
+
+            Assert.AreEqual(2, groups.Count);
+            var icons = groups.Single(group => group.WorkshopItemId == "icons");
+            Assert.IsNull(icons.Name);
+            Assert.AreEqual("3.0.0", icons.HighestVersion);
+            CollectionAssert.AreEqual(new[] { c }, icons.Games.Select(pair => pair.Key).ToList());
+            var notes = groups.Single(group => string.Equals(group.WorkshopItemId, "notes", StringComparison.OrdinalIgnoreCase));
+            Assert.AreEqual("Notes (renamed)", notes.Name);
+            Assert.AreEqual("1.2.0", notes.HighestVersion);
+            CollectionAssert.AreEquivalent(new[] { a, b }, notes.Games.Select(pair => pair.Key).ToList());
+        }
+
+        [TestMethod]
+        public void GroupByItem_TakesAnyRecordsNameWhenTheHighestHasNone()
+        {
+            var records = new Dictionary<Guid, LibraryLink>
+            {
+                [Guid.NewGuid()] = new LibraryLink { LibraryItemId = "ws:notes", Name = "Notes", AppliedVersion = "1.0.0" },
+                [Guid.NewGuid()] = new LibraryLink { LibraryItemId = "ws:notes", AppliedVersion = "2.0.0" }
+            };
+
+            var group = GameDataLinkService.GroupByItem(records).Single();
+
+            Assert.AreEqual("Notes", group.Name);
+            Assert.AreEqual("2.0.0", group.HighestVersion);
+        }
+
+        [TestMethod]
+        public void GamesBehind_ListsOnlyTheGamesOnAnOlderVersionOfThatItem()
+        {
+            var behind = Guid.NewGuid();
+            var current = Guid.NewGuid();
+            var other = Guid.NewGuid();
+            var records = new Dictionary<Guid, LibraryLink>
+            {
+                [behind] = new LibraryLink { LibraryItemId = "ws:notes", AppliedVersion = "1.0.0" },
+                [current] = new LibraryLink { LibraryItemId = "ws:notes", AppliedVersion = "1.1.0" },
+                [other] = new LibraryLink { LibraryItemId = "ws:icons", AppliedVersion = "0.1.0" }
+            };
+
+            var games = GameDataLinkService.GamesBehind(records, new WorkshopItem { Id = "notes", Version = "1.1.0" });
+
+            CollectionAssert.AreEqual(new[] { behind }, games.ToList());
+            Assert.AreEqual(0, GameDataLinkService.GamesBehind(records, null).Count);
+        }
+
         private GameDataLinkService Service()
         {
             return new GameDataLinkService(
