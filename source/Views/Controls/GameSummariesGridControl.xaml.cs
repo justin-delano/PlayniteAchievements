@@ -646,6 +646,13 @@ namespace PlayniteAchievements.Views.Controls
 
         public DataGrid InternalDataGrid => GameSummariesGrid;
 
+        /// <summary>
+        /// When set, the only columns the grid shows, by column key; every other column stays
+        /// collapsed whatever the saved layout says, and is left out of the column menu. Set it
+        /// before <see cref="ColumnSettingsKey"/>, which is when the saved layout is applied.
+        /// </summary>
+        public ISet<string> AllowedColumnKeys { get; set; }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             if (_isAttached)
@@ -1568,6 +1575,21 @@ namespace PlayniteAchievements.Views.Controls
             {
                 foreach (var key in CategoryExcludedColumnKeys)
                 {
+                    _columnPersistence.ForcedCollapsedKeys.Add(key);
+                    _columnPersistence.ExcludedVisibilityKeys.Add(key);
+                }
+            }
+
+            if (AllowedColumnKeys != null)
+            {
+                foreach (var column in GameSummariesGrid.Columns)
+                {
+                    var key = ColumnVisibilityHelper.GetColumnKey(column);
+                    if (string.IsNullOrEmpty(key) || AllowedColumnKeys.Contains(key))
+                    {
+                        continue;
+                    }
+
                     _columnPersistence.ForcedCollapsedKeys.Add(key);
                     _columnPersistence.ExcludedVisibilityKeys.Add(key);
                 }
