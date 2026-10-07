@@ -281,6 +281,7 @@ namespace PlayniteAchievements.Views.Controls
             // The pie's square changes size when the legend appears or changes width, even when
             // the control itself keeps its size.
             PieHost.SizeChanged += OnSizeChanged;
+            Chart.UpdaterTick += OnChartUpdated;
             UpdateIconOverflowInset();
         }
 
@@ -1249,6 +1250,13 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        /// <summary>
+        /// Highlights a slice by moving its outer edge past the ring, and its inner edge away
+        /// from the center, by the length of (<paramref name="x"/>, <paramref name="y"/>), the same offset
+        /// its icon moves by. The
+        /// slice's sides stay on its neighbours' edges, so no slice slides and the separators
+        /// stay even whatever the slice's angle.
+        /// </summary>
         private static void SetSliceTransform(PieSlice slice, double x, double y)
         {
             if (slice == null)
@@ -1256,29 +1264,12 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (!(slice.RenderTransform is TranslateTransform transform))
-            {
-                transform = new TranslateTransform();
-                slice.RenderTransform = transform;
-            }
-
-            AnimateTransformAxis(transform, TranslateTransform.XProperty, x);
-            AnimateTransformAxis(transform, TranslateTransform.YProperty, y);
-        }
-
-        private static void AnimateTransformAxis(TranslateTransform transform, DependencyProperty property, double target)
-        {
-            var current = property == TranslateTransform.XProperty ? transform.X : transform.Y;
+            var target = Math.Sqrt((x * x) + (y * y));
+            var current = (double)slice.GetValue(SliceGrowthProperty);
             if (Math.Abs(current - target) < 0.01)
             {
-                if (property == TranslateTransform.XProperty)
-                {
-                    transform.X = target;
-                }
-                else
-                {
-                    transform.Y = target;
-                }
+                slice.BeginAnimation(SliceGrowthProperty, null);
+                slice.SetValue(SliceGrowthProperty, target);
                 return;
             }
 
@@ -1290,7 +1281,74 @@ namespace PlayniteAchievements.Views.Controls
                 FillBehavior = FillBehavior.HoldEnd
             };
 
-            transform.BeginAnimation(property, animation, HandoffBehavior.SnapshotAndReplace);
+            slice.BeginAnimation(SliceGrowthProperty, animation, HandoffBehavior.SnapshotAndReplace);
+        }
+
+        /// <summary>How far a slice's outer edge reaches past the pie's radius; animated.</summary>
+        private static readonly DependencyProperty SliceGrowthProperty = DependencyProperty.RegisterAttached(
+            "SliceGrowth",
+            typeof(double),
+            typeof(PieChartWithRadialIcons),
+            new PropertyMetadata(0.0, (d, e) => ApplySliceGrowth(d as PieSlice)));
+
+        /// <summary>The pie's radius as LiveCharts last drew the slice, before any growth.</summary>
+        private static readonly DependencyProperty SliceBaseRadiusProperty = DependencyProperty.RegisterAttached(
+            "SliceBaseRadius",
+            typeof(double),
+            typeof(PieChartWithRadialIcons),
+            new PropertyMetadata(double.NaN));
+
+        /// <summary>The ring's inner radius as LiveCharts last drew the slice, before any growth.</summary>
+        private static readonly DependencyProperty SliceBaseInnerRadiusProperty = DependencyProperty.RegisterAttached(
+            "SliceBaseInnerRadius",
+            typeof(double),
+            typeof(PieChartWithRadialIcons),
+            new PropertyMetadata(double.NaN));
+
+        // Both edges move out by the growth: the outer one past the ring and the inner one away
+        // from the center, so the slice lifts off the hole as well.
+        private static void ApplySliceGrowth(PieSlice slice)
+        {
+            if (slice == null)
+            {
+                return;
+            }
+
+            var baseRadius = (double)slice.GetValue(SliceBaseRadiusProperty);
+            if (double.IsNaN(baseRadius))
+            {
+                baseRadius = slice.Radius;
+                slice.SetValue(SliceBaseRadiusProperty, baseRadius);
+            }
+
+            var baseInnerRadius = (double)slice.GetValue(SliceBaseInnerRadiusProperty);
+            if (double.IsNaN(baseInnerRadius))
+            {
+                baseInnerRadius = slice.InnerRadius;
+                slice.SetValue(SliceBaseInnerRadiusProperty, baseInnerRadius);
+            }
+
+            var growth = (double)slice.GetValue(SliceGrowthProperty);
+            slice.Radius = baseRadius + growth;
+            slice.InnerRadius = baseInnerRadius + growth;
+        }
+
+        // Every LiveCharts draw sets each slice's radius back to the pie's, so the growth goes
+        // back on right after, in the same pass, before the frame renders.
+        private void OnChartUpdated(object sender)
+        {
+            foreach (var series in PieSeries?.OfType<PieSeries>() ?? Enumerable.Empty<PieSeries>())
+            {
+                var slice = GetPieSlice(series);
+                if (slice == null)
+                {
+                    continue;
+                }
+
+                slice.SetValue(SliceBaseRadiusProperty, slice.Radius);
+                slice.SetValue(SliceBaseInnerRadiusProperty, slice.InnerRadius);
+                ApplySliceGrowth(slice);
+            }
         }
     }
 }
