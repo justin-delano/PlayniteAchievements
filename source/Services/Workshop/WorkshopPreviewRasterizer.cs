@@ -132,7 +132,7 @@ namespace PlayniteAchievements.Services.Workshop
             }
 
             var preloader = new WorkshopPreviewImagePreloader(_plugin?.ImageService ?? PlayniteAchievementsPlugin.Instance?.ImageService);
-            await preloader.PreloadAsync(RenderedPart(model), GameDataMaxRows, cancel);
+            await preloader.PreloadAsync(RenderedPart(model), cancel);
             cancel.ThrowIfCancellationRequested();
 
             var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
@@ -208,15 +208,15 @@ namespace PlayniteAchievements.Services.Workshop
             };
         }
 
-        // The game data preview in neutral mode. Compared against a game it shows the achievement
-        // grid, whose icon cells load asynchronously and so never on an offscreen tree: their
-        // sources are decoded ahead and put into the laid-out cells.
+        // The game data preview in neutral mode: the achievement grid, of the game or of the
+        // package's own entries, whose icon cells load asynchronously and so never on an
+        // offscreen tree: their sources are decoded ahead and put into the laid-out cells.
         private Surface BuildGameDataSurface(GameCustomDataPreviewModel gameData)
         {
             var control = new GameDataPreviewControl { MaxRows = GameDataMaxRows, NeutralRender = true };
             control.DataContext = gameData;
             var surface = BuildPanelSurface(control, GameDataWidth, GameDataMaxHeight);
-            if (gameData.Diff?.AfterData == null)
+            if (gameData.Diff == null)
             {
                 return surface;
             }
