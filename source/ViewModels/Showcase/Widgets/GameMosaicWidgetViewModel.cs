@@ -29,7 +29,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
         private readonly Dictionary<GameSummaryItem, GameTileViewModel> _tiles =
             new Dictionary<GameSummaryItem, GameTileViewModel>();
         private readonly HashSet<GameTileViewModel> _probing = new HashSet<GameTileViewModel>();
-        private TileLayout _layout;
+        private GameMosaicTileLayout _layout;
 
         // The rarity index is one pass over the snapshot's achievements, rebuilt only when the
         // snapshot is replaced.
@@ -55,7 +55,7 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             // Icon tiles are square. Cover tiles share the portrait box-art height, and each takes
             // its own cover's width at that height (see GameTileViewModel).
             var coverHeight = useCovers ? Math.Round(coverWidth * 1.4) : coverWidth;
-            var layout = new TileLayout(
+            var layout = new GameMosaicTileLayout(
                 ShowcaseWidgetOptions.GetGameMosaicSource(Projection?.Instance) == ShowcaseGameMosaicSource.Pinned,
                 Projection?.ResolvedPinCollectionId,
                 coverWidth,
@@ -192,58 +192,6 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
                     ? ListSortDirection.Descending
                     : ListSortDirection.Ascending);
             return list;
-        }
-
-        /// <summary>The inputs every tile is built from; a change to any of them rebuilds the tiles.</summary>
-        private sealed class TileLayout : IEquatable<TileLayout>
-        {
-            public TileLayout(
-                bool pinnable,
-                string pinCollectionId,
-                double coverWidth,
-                double coverHeight,
-                int decodePixel,
-                bool useCovers,
-                bool showCompletionGlow,
-                int spacing,
-                bool showRarityBar)
-            {
-                Pinnable = pinnable;
-                PinCollectionId = pinCollectionId;
-                CoverWidth = coverWidth;
-                CoverHeight = coverHeight;
-                DecodePixel = decodePixel;
-                UseCovers = useCovers;
-                ShowCompletionGlow = showCompletionGlow;
-                Spacing = spacing;
-                ShowRarityBar = showRarityBar;
-            }
-
-            public bool Pinnable { get; }
-            public string PinCollectionId { get; }
-            public double CoverWidth { get; }
-            public double CoverHeight { get; }
-            public int DecodePixel { get; }
-            public bool UseCovers { get; }
-            public bool ShowCompletionGlow { get; }
-            public int Spacing { get; }
-            public bool ShowRarityBar { get; }
-
-            public bool Equals(TileLayout other) =>
-                other != null &&
-                Pinnable == other.Pinnable &&
-                string.Equals(PinCollectionId, other.PinCollectionId, StringComparison.Ordinal) &&
-                CoverWidth.Equals(other.CoverWidth) &&
-                CoverHeight.Equals(other.CoverHeight) &&
-                DecodePixel == other.DecodePixel &&
-                UseCovers == other.UseCovers &&
-                ShowCompletionGlow == other.ShowCompletionGlow &&
-                Spacing == other.Spacing &&
-                ShowRarityBar == other.ShowRarityBar;
-
-            public override bool Equals(object obj) => Equals(obj as TileLayout);
-
-            public override int GetHashCode() => DecodePixel ^ Spacing ^ CoverWidth.GetHashCode();
         }
     }
 }
