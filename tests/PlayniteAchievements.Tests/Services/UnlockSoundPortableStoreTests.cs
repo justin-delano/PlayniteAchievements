@@ -97,6 +97,20 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void PruneUnreferenced_RemovesTheManagedFolderOnceNothingIsLeft()
+        {
+            WithTemp(tempDir =>
+            {
+                var store = new UnlockSoundPortableStore(Path.Combine(tempDir, "userdata"));
+                store.ImportFile(WriteWav(Path.Combine(tempDir, "a.wav")));
+
+                store.PruneUnreferenced(new UnlockSoundSettings());
+
+                Assert.IsFalse(Directory.Exists(store.ManagedRoot));
+            });
+        }
+
+        [TestMethod]
         public void ImportFile_ReturnsAManagedPathUnchanged()
         {
             WithTemp(tempDir =>
@@ -118,9 +132,7 @@ namespace PlayniteAchievements.Services.Tests
                 File.WriteAllText(fake, "not a wave file at all");
 
                 Assert.ThrowsException<InvalidOperationException>(() => store.ImportFile(fake));
-                Assert.IsFalse(
-                    Directory.Exists(store.ManagedRoot) && Directory.EnumerateFileSystemEntries(store.ManagedRoot).Any(),
-                    "a rejected file leaves no managed folder");
+                Assert.IsFalse(Directory.Exists(store.ManagedRoot), "a rejected file leaves no managed folder");
             });
         }
 
