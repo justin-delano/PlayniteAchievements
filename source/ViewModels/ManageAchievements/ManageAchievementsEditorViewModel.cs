@@ -588,9 +588,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void UndoStepTimer_Tick(object sender, EventArgs e)
         {
             _undoStepTimer?.Stop();
-            if (IsSaving)
+            if (IsSaving || _isImportingCsv)
             {
-                // A save still in flight means more writes are coming for this gesture.
+                // A save still in flight means more writes are coming for this gesture. A CSV
+                // import is the same while its icons download.
                 RestartUndoStepTimer();
                 return;
             }
@@ -731,6 +732,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _isApplyingBulk = previousApplyingBulk;
                 _isApplyingUndo = false;
+            }
+
+            // The record put the paths back, but art written over in place needs its picture
+            // restored too: replayed from the copies, as a field edit's icon change is.
+            if (entry.ArtRestores.Count > 0)
+            {
+                ApplyRowValueStep(
+                    new EditorUndoEntry(entry.LabelKey, null, false, false, null, entry.ArtRestores),
+                    reverse);
             }
 
             RaiseAssignmentsChanged();
