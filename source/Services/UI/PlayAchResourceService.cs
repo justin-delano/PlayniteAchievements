@@ -131,6 +131,14 @@ namespace PlayniteAchievements.Services.UI
                 .ToList()
                 .AsReadOnly();
 
+        /// <summary>Applies the tokens at application scope as one resource change.</summary>
+        public static void ApplyToApplication(
+            IDictionary<string, ResourceOverrideSetting> overrides,
+            PersistedSettings settings = null)
+        {
+            PlayAchRuntimeResources.Update(resources => Apply(resources, overrides, settings));
+        }
+
         public static void Apply(
             ResourceDictionary resources,
             IDictionary<string, ResourceOverrideSetting> overrides,
