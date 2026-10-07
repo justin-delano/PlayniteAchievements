@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Services.Images.Webm
 {
     /// <summary>
     /// Decodes one VP8 or VP9 bitstream through the decoder Windows provides (a synchronous Media
-    /// Foundation transform) into NV12. Frames go in one at a time in decode order and come out on
+    /// Foundation transform) into NV12, or P010 for a 10-bit stream. Frames go in one at a time in decode order and come out on
     /// the same call; VP8 and VP9 have no frame reordering. Not thread-safe: one owner at a time.
     /// </summary>
     internal sealed class WebmVideoDecoder : IDisposable
@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Services.Images.Webm
         private const int ProvidesSamplesFlags = 0x100 | 0x200;
 
         private static readonly Guid Nv12 = FourCcGuid("NV12");
+        private static readonly Guid P010 = FourCcGuid("P010");
 
         private readonly IDisposable _runtime;
         private readonly Transform _transform;
@@ -57,8 +58,14 @@ namespace PlayniteAchievements.Services.Images.Webm
         /// <summary>Bytes per row of the Y plane and of the interleaved UV plane.</summary>
         internal int Stride { get; private set; }
 
+        /// <summary>
+        /// True for a 10-bit stream (VP9 profile 2), which the decoder only offers as P010: 16-bit
+        /// little-endian samples with the value in the top 10 bits. Otherwise samples are NV12 bytes.
+        /// </summary>
+        internal bool IsTenBit { get; private set; }
+
         /// <summary>The last decoded frame: Y plane, then the half-height interleaved UV plane.</summary>
-        internal byte[] Nv12Buffer { get; private set; } = new byte[0];
+        internal byte[] Planes { get; private set; } = new byte[0];
 
         /// <summary>True when Windows has a decoder for <paramref name="codec"/>.</summary>
         internal static bool IsAvailable(WebmCodec codec)
@@ -75,7 +82,7 @@ namespace PlayniteAchievements.Services.Images.Webm
             }
         }
 
-        /// <summary>Decodes one frame into <see cref="Nv12Buffer"/>.</summary>
+        /// <summary>Decodes one frame into <see cref="Planes"/>.</summary>
         internal void Decode(byte[] payload, int offset, int length)
         {
             using (var buffer = MediaFactory.CreateMemoryBuffer(length))
@@ -184,12 +191,12 @@ namespace PlayniteAchievements.Services.Images.Webm
                         throw new InvalidDataException("The WebM decoder returned a short frame.");
                     }
 
-                    if (Nv12Buffer.Length != expected)
+                    if (Planes.Length != expected)
                     {
-                        Nv12Buffer = new byte[expected];
+                        Planes = new byte[expected];
                     }
 
-                    Marshal.Copy(pointer, Nv12Buffer, 0, expected);
+                    Marshal.Copy(pointer, Planes, 0, expected);
                 }
                 finally
                 {
@@ -198,30 +205,43 @@ namespace PlayniteAchievements.Services.Images.Webm
             }
         }
 
+        /// <summary>
+        /// NV12 for 8-bit streams. A 10-bit stream offers only P010 once its first frame is parsed,
+        /// and keeping the extra precision is what lets smooth gradients convert without banding.
+        /// </summary>
         private void SelectOutputType()
+        {
+            if (!TrySelectOutputType(Nv12) && !TrySelectOutputType(P010))
+            {
+                throw new InvalidDataException("The WebM decoder offers neither NV12 nor P010 output.");
+            }
+        }
+
+        private bool TrySelectOutputType(Guid subtype)
         {
             for (var index = 0; _transform.TryGetOutputAvailableType(0, index, out var candidate); index++)
             {
                 using (candidate)
                 {
-                    if (candidate.Get(MediaTypeAttributeKeys.Subtype) != Nv12)
+                    if (candidate.Get(MediaTypeAttributeKeys.Subtype) != subtype)
                     {
                         continue;
                     }
 
                     _transform.SetOutputType(0, candidate, 0);
+                    IsTenBit = subtype == P010;
                     var frameSize = candidate.Get(MediaTypeAttributeKeys.FrameSize);
                     PlaneWidth = (int)(frameSize >> 32);
                     PlaneHeight = (int)(frameSize & 0xFFFFFFFF);
-                    Stride = ReadStride(candidate, PlaneWidth);
+                    Stride = ReadStride(candidate, PlaneWidth * (IsTenBit ? 2 : 1));
                     _transform.GetOutputStreamInfo(0, out var info);
                     _providesSamples = (info.DwFlags & ProvidesSamplesFlags) != 0;
                     _outputBufferSize = Math.Max(info.CbSize, Stride * PlaneHeight * 3 / 2);
-                    return;
+                    return true;
                 }
             }
 
-            throw new InvalidDataException("The WebM decoder offers no NV12 output.");
+            return false;
         }
 
         private static int ReadStride(MediaType type, int fallback)
