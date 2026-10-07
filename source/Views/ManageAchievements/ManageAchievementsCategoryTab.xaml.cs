@@ -344,20 +344,20 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         // A dropped or pasted image: a local file is copied into managed storage now, a URL is
         // stored as the link.
-        private async void CategoryImage_Picked(object sender, ImagePickedEventArgs e)
+        private async void CategoryImage_Picked(object sender, FilePickedEventArgs e)
         {
             if (!TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
             {
                 return;
             }
 
-            if (ImageDropHelper.IsSupportedImageFile(e.ImageSource))
+            if (ImageDropHelper.IsSupportedImageFile(e.PickedSource))
             {
-                await ViewModel.ApplyCategoryLocalFileOverrideAsync(row, e.ImageSource);
+                await ViewModel.ApplyCategoryLocalFileOverrideAsync(row, e.PickedSource);
                 return;
             }
 
-            row.SetOverrideValue(e.ImageSource);
+            row.SetOverrideValue(e.PickedSource);
         }
 
         private static bool TryResolveCategoryImageRow(
