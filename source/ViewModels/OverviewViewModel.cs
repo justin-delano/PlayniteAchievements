@@ -669,6 +669,8 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _providerFilterApplyScheduled = true;
+            // The linked widgets draw from the new state now; the grids follow in the pass below.
+            InvalidateLinkedSnapshots();
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
                 new Action(() =>
                 {
@@ -735,9 +737,7 @@ namespace PlayniteAchievements.ViewModels
 
             OnPropertyChanged(nameof(SelectedCompletenessFilterText));
             // Defer filter application to avoid interfering with menu click handling.
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(ApplyLeftFilters),
-                System.Windows.Threading.DispatcherPriority.ContextIdle);
+            ScheduleFilterApply();
         }
 
         private ObservableCollection<string> _playStatusFilterOptions;
@@ -766,9 +766,7 @@ namespace PlayniteAchievements.ViewModels
 
             OnPropertyChanged(nameof(SelectedPlayStatusFilterText));
             // Defer filter application to avoid interfering with menu click handling.
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(ApplyLeftFilters),
-                System.Windows.Threading.DispatcherPriority.ContextIdle);
+            ScheduleFilterApply();
         }
 
         /// <summary>
@@ -817,9 +815,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             OnPropertyChanged(nameof(SelectedCompletenessFilterText));
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(ApplyLeftFilters),
-                System.Windows.Threading.DispatcherPriority.ContextIdle);
+            ScheduleFilterApply();
         }
 
         public ObservableCollection<RefreshMode> RefreshModes { get; }
