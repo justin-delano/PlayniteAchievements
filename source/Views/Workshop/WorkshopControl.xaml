@@ -30,6 +30,23 @@
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
             </Style>
 
+            <!-- Icon buttons drawn as vector geometry with GlyphIcon, as on the Library page:
+                 a font glyph rendered as text comes out soft at this size. -->
+            <DataTemplate x:Key="WorkshopGlyphContentTemplate">
+                <controls:GlyphIcon Glyph="{Binding}"
+                                    Size="16"
+                                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    SnapsToDevicePixels="True"/>
+            </DataTemplate>
+            <Style x:Key="WorkshopIconButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.ToolbarIconStyle}">
+                <Setter Property="Margin" Value="8,0,0,8"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="ContentTemplate" Value="{StaticResource WorkshopGlyphContentTemplate}"/>
+            </Style>
+
             <!-- One row of the browse list. -->
             <DataTemplate x:Key="WorkshopItemRowTemplate" DataType="{x:Type vm:WorkshopItemViewModel}">
                 <Grid Margin="0,4">
@@ -188,30 +205,37 @@
                             <Run Text="{DynamicResource LOCPlayAch_Workshop_Contents}"/><Run Text=": "/><Run Text="{Binding ContentsSummary, Mode=OneWay}"/>
                         </TextBlock>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,12,0,12">
+                        <WrapPanel Orientation="Horizontal" Margin="0,12,0,4">
                             <Button Content="{Binding ActionLabel}"
                                     MinWidth="110"
+                                    Margin="0,0,0,8"
                                     IsEnabled="{Binding CanInstall}"
                                     Command="{Binding DataContext.InstallCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
                             <Button Content="{DynamicResource LOCPlayAch_Common_Preview}"
-                                    Margin="8,0,0,0"
+                                    Margin="8,0,0,8"
                                     Command="{Binding DataContext.PreviewCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
-                                    Margin="8,0,0,0"
+                            <Button Content="&#xEF1F;"
+                                    Style="{StaticResource WorkshopIconButtonStyle}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_OpenOnGitHub}"
                                     Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Workshop_Report}"
-                                    Margin="8,0,0,0"
+                            <Button Content="&#xEF2F;"
+                                    Style="{StaticResource WorkshopIconButtonStyle}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Workshop_Report}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_Report}"
                                     Command="{Binding DataContext.ReportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Workshop_RemoveFromWorkshop}"
-                                    Margin="8,0,0,0"
+                            <Button Content="&#xEEAD;"
+                                    Style="{StaticResource WorkshopIconButtonStyle}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Workshop_RemoveFromWorkshop}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Workshop_RemoveFromWorkshop}"
                                     Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}"
                                     Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
-                        </StackPanel>
+                        </WrapPanel>
                         <TextBlock Text="{Binding RequiresNewerPluginText}"
                                    Foreground="{DynamicResource PlayAch.Brush.Accent}"
                                    TextWrapping="Wrap"
