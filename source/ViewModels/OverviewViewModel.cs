@@ -3979,19 +3979,7 @@ namespace PlayniteAchievements.ViewModels
             var gamesList = (useCompletedGamesPieProgressScope
                 ? GetCompletedGamesPieChartGames()
                 : GetPieChartGames()).ToList();
-            var snapshot = new OverviewDataSnapshot
-            {
-                Achievements = new List<AchievementDisplayItem>(),
-                GameSummaries = gamesList,
-                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                TotalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-            };
-
-            // No score accumulation: the pies do not read CollectorScore or PrestigeScore, and
-            // passing no adder leaves both at zero, which is what this builder always produced.
-            snapshot.ApplyGameSummaryTotals(gamesList, addClamped: null);
-
-            return snapshot;
+            return OverviewDataSnapshot.FromGameSummaries(gamesList);
         }
 
         private IEnumerable<GameSummaryItem> GetPieChartGames()
