@@ -24,9 +24,10 @@ namespace PlayniteAchievements.Services.Achievements
             ParseValues(categoryType).Contains(UnobtainableCategoryType);
 
         // Grouped by what the tag says about an achievement: which set it belongs to, which play
-        // mode it needs, what kind of goal it is, whether it can still be earned, and how it was
-        // earned. Every type menu, the joined Type cell text, and the stored pipe-joined value
-        // follow this order.
+        // mode it needs, where it sits in a playthrough, what kind of task it is, what the run
+        // asks of the player, whether it can still be earned, a catch-all, and how it was earned.
+        // Every type menu, the joined Type cell text, and the stored pipe-joined value follow
+        // this order.
         private static readonly string[] CanonicalOrder =
         {
             DefaultCategoryType,
@@ -37,14 +38,18 @@ namespace PlayniteAchievements.Services.Achievements
             "Singleplayer",
             "Multiplayer",
             "Progression",
-            "SideProgression",
+            "SideQuest",
             "WinCondition",
+            "PostGame",
+            "Completion",
             "Collectable",
+            "Cumulative",
+            "Challenge",
             "Difficulty",
-            "Miscellaneous",
+            "Stackable",
             "Missable",
             UnobtainableCategoryType,
-            "Stackable",
+            "Miscellaneous",
             SoftcoreCategoryType,
             HardcoreCategoryType
         };
@@ -101,18 +106,29 @@ namespace PlayniteAchievements.Services.Achievements
                 ["mp"] = "Multiplayer",
                 ["progression"] = "Progression",
                 ["story"] = "Progression",
-                ["sideprogression"] = "SideProgression",
-                ["side progression"] = "SideProgression",
-                ["side-progression"] = "SideProgression",
-                ["side_progression"] = "SideProgression",
-                ["sidequest"] = "SideProgression",
-                ["side quest"] = "SideProgression",
+                ["sidequest"] = "SideQuest",
+                ["side quest"] = "SideQuest",
+                ["side-quest"] = "SideQuest",
+                ["side_quest"] = "SideQuest",
+                ["sideprogression"] = "SideQuest",
+                ["side progression"] = "SideQuest",
+                ["side-progression"] = "SideQuest",
+                ["side_progression"] = "SideQuest",
                 ["wincondition"] = "WinCondition",
                 ["win_condition"] = "WinCondition",
                 ["win condition"] = "WinCondition",
                 ["win-condition"] = "WinCondition",
+                ["postgame"] = "PostGame",
+                ["post game"] = "PostGame",
+                ["post-game"] = "PostGame",
+                ["post_game"] = "PostGame",
+                ["completion"] = "Completion",
+                ["completionist"] = "Completion",
                 ["collectable"] = "Collectable",
                 ["collectible"] = "Collectable",
+                ["cumulative"] = "Cumulative",
+                ["grind"] = "Cumulative",
+                ["challenge"] = "Challenge",
                 ["missable"] = "Missable",
                 ["miss-able"] = "Missable",
                 ["unobtainable"] = UnobtainableCategoryType,
