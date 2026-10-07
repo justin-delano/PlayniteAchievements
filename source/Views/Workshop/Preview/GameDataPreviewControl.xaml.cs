@@ -112,7 +112,7 @@ namespace PlayniteAchievements.Views.Workshop.Preview
             // A package carries no progress, so the category tree shows what each category is:
             // its art, its name and how many achievements it holds.
             CategoryGrid.AllowedColumnKeys = CategoryColumns;
-            CategoryGrid.ColumnSettingsKey = "WorkshopPreviewGridCategorySummaries";
+            CategoryGrid.ColumnSettingsKey = "WorkshopPreviewCategorySummaries";
             DataContextChanged += (sender, args) => Rebuild();
         }
 
