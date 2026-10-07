@@ -28,7 +28,8 @@ namespace PlayniteAchievements.Views.Showcase
             Services.Logging.PluginLogger.GetLogger(nameof(ShowcaseControl));
         private readonly OverviewViewModel _overview;
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly Action _persist;
+        private readonly ShowcaseLayoutHost _host;
+        private readonly bool _ownsHost;
         private readonly IPlayniteAPI _api;
         private bool _updatingPageSelector;
         private bool _publishingConfigurationChange;
@@ -138,13 +139,35 @@ namespace PlayniteAchievements.Views.Showcase
             PlayniteAchievementsSettings settings,
             Action persist,
             IPlayniteAPI api)
+            : this(overview, settings, new GlobalShowcaseLayoutHost(overview, settings, persist), api, ownsHost: true)
+        {
+        }
+
+        /// <summary>
+        /// Renders and edits the layout <paramref name="host"/> owns. The host is disposed with
+        /// this control only when <paramref name="ownsHost"/> is set.
+        /// </summary>
+        internal ShowcaseControl(
+            OverviewViewModel overview,
+            PlayniteAchievementsSettings settings,
+            ShowcaseLayoutHost host,
+            IPlayniteAPI api,
+            bool ownsHost)
         {
             using var perf = PerfScope.Start(Logger, "Showcase.Ctor", thresholdMs: 30);
             InitializeComponent();
             _overview = overview ?? throw new ArgumentNullException(nameof(overview));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _persist = persist ?? throw new ArgumentNullException(nameof(persist));
+            _host = host ?? throw new ArgumentNullException(nameof(host));
+            _ownsHost = ownsHost;
             _api = api;
+            if (_host.IsStrip)
+            {
+                HeaderBar.Visibility = Visibility.Collapsed;
+                ContextMenu = new ContextMenu();
+                ContextMenuOpening += StripContextMenuOpening;
+            }
+
             // Widgets' control bar choices are saved in their own options across restarts.
             PlayniteAchievements.ViewModels.Showcase.Widgets.ShowcaseControlBarStates.Store =
                 ShowcaseControlBarStateStore.Instance;
@@ -162,7 +185,7 @@ namespace PlayniteAchievements.Views.Showcase
             };
             _trackRulerTimer.Tick += TrackRulerTimer_Tick;
             DashboardGrid.SizeChanged += (_, __) => ScheduleTrackRulerUpdate();
-            _overview.SnapshotChanged += Overview_SnapshotChanged;
+            _host.DataChanged += Host_DataChanged;
             ShowcaseConfigurationEvents.Changed += ShowcaseConfigurationEvents_Changed;
             // Rolling windows (the Timeline, Scores, Activity Calendar and played-within filters)
             // end at today; re-project after local midnight so they move with the calendar.
@@ -252,12 +275,43 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             _hostCache.Clear();
-            _overview.SnapshotChanged -= Overview_SnapshotChanged;
+            _host.DataChanged -= Host_DataChanged;
             ShowcaseConfigurationEvents.Changed -= ShowcaseConfigurationEvents_Changed;
             Common.LocalDayRollover.Unsubscribe(LocalDayRollover_DayChanged);
+            if (_ownsHost)
+            {
+                _host.Dispose();
+            }
         }
 
-        private ShowcaseSettings Layout => _settings.Persisted.Showcase;
+        /// <summary>Whether the layout is being edited; a strip host enters and leaves edit mode through this.</summary>
+        public bool IsEditing
+        {
+            get => EditLayoutButton.IsChecked == true;
+            set => EditLayoutButton.IsChecked = value;
+        }
+
+        /// <summary>Raised after edit mode is entered or left.</summary>
+        public event EventHandler EditingChanged;
+
+        // A strip has no header bar, so its right-click menu is how edit mode is entered and
+        // left. It offers only that: whether the strip shows at all is a main settings choice.
+        private void StripContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (_disposed || !(ContextMenu is ContextMenu menu))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            menu.Items.Clear();
+            var editing = IsEditing;
+            menu.Items.Add(MenuItem(
+                Localize(editing ? "LOCPlayAch_Common_View" : "LOCPlayAch_Common_Edit"),
+                () => IsEditing = !editing));
+        }
+
+        private ShowcaseSettings Layout => _host.Layout;
 
         private ShowcasePageSettings CurrentPage =>
             Layout.Pages.FirstOrDefault(page =>
@@ -269,7 +323,7 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void EnsureLayout()
         {
-            ShowcaseLayoutService.Normalize(Layout);
+            _host.Normalize();
         }
 
         private void Rebuild()
@@ -403,8 +457,53 @@ namespace PlayniteAchievements.Views.Showcase
                 }
             }
 
+            if (_host.IsStrip)
+            {
+                AddOverlay(CreateStripHeightGripper(nearEdge: true));
+                AddOverlay(CreateStripHeightGripper(nearEdge: false));
+            }
+
             AddTrackRulers();
             UpdateTrackGripperVisibility();
+        }
+
+        // The strip's height handles: a row gripper's pill on the top corners, since the strip
+        // grows upward from the bottom of its host. The drag is measured against the window
+        // rather than the thumb, which moves with the edge it resizes.
+        private System.Windows.Controls.Primitives.Thumb CreateStripHeightGripper(bool nearEdge)
+        {
+            var thumb = new System.Windows.Controls.Primitives.Thumb
+            {
+                Cursor = Cursors.SizeNS,
+                Focusable = false,
+                Template = TrackGripperTemplateHorizontal,
+                Width = TrackGripperSize,
+                Height = 22,
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = nearEdge ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+                Margin = nearEdge
+                    ? new Thickness(-TrackGripperSize / 2, -11, 0, 0)
+                    : new Thickness(0, -11, -TrackGripperSize / 2, 0)
+            };
+            Grid.SetRow(thumb, 0);
+            Grid.SetColumn(thumb, nearEdge ? 0 : PageColumnCount - 1);
+            Panel.SetZIndex(thumb, 40);
+            var startHeight = 0d;
+            var startY = 0d;
+            thumb.DragStarted += (_, __) =>
+            {
+                startHeight = _host.StripHeight;
+                startY = Mouse.GetPosition(Window.GetWindow(this)).Y;
+            };
+            thumb.DragDelta += (_, __) =>
+            {
+                var y = Mouse.GetPosition(Window.GetWindow(this)).Y;
+                _host.StripHeight = startHeight - (y - startY);
+                ScheduleTrackRulerUpdate();
+            };
+            thumb.DragCompleted += (_, __) => _host.Persist();
+            _trackGrippers.Add(thumb);
+            return thumb;
         }
 
         // How far the labels hang past the grid's top and left edges: the control's own 10px
@@ -550,7 +649,11 @@ namespace PlayniteAchievements.Views.Showcase
             // The label sits on its track's edge strip, so it answers hover and right-click the
             // same way instead of offering the text box's Cut/Copy/Paste menu.
             editor.ContextMenuOpening += (_, args) => args.Handled = true;
-            AttachTrackMenu(ruler, vertical, index);
+            if (vertical || !_host.IsStrip)
+            {
+                AttachTrackMenu(ruler, vertical, index);
+            }
+
             _trackRulers.Add(ruler);
             box = editor;
             return ruler;
@@ -584,6 +687,16 @@ namespace PlayniteAchievements.Views.Showcase
             var digits = new string((text ?? string.Empty).Where(char.IsDigit).ToArray());
             if (!int.TryParse(digits, out var target) || target <= 0)
             {
+                ScheduleTrackRulerUpdate();
+                return;
+            }
+
+            // A strip's row is the strip itself: its size label sets the strip's height, by the
+            // difference so the chrome around the row keeps its share.
+            if (!vertical && _host.IsStrip)
+            {
+                _host.StripHeight += target - Math.Round(ReadTrackSize(vertical: false, index));
+                _host.Persist();
                 ScheduleTrackRulerUpdate();
                 return;
             }
@@ -1893,7 +2006,13 @@ namespace PlayniteAchievements.Views.Showcase
             }
 
             // Deleted widgets' control bar state goes with them. Start page widgets share the
-            // adapter registry, so their instances stay live too.
+            // adapter registry, so their instances stay live too. A strip's widgets carry no
+            // control bar, and its layout cannot vouch for the Showcase page's instances.
+            if (_host.IsStrip)
+            {
+                return;
+            }
+
             var liveControlBars = new HashSet<string>(live, StringComparer.OrdinalIgnoreCase);
             foreach (var widget in (Layout.StartPageInstances ??
                 new Dictionary<string, ShowcaseWidgetInstanceSettings>()).Values)
@@ -1954,7 +2073,7 @@ namespace PlayniteAchievements.Views.Showcase
             // new for it. Every SnapshotChanged publishes a fresh snapshot instance, so
             // reference identity is the data identity (the projection service's per-snapshot
             // cache relies on the same fact). Configuration changes never take this exit.
-            if (snapshotOnly && IsProjectedFrom(host, _overview.LatestSnapshot))
+            if (snapshotOnly && IsProjectedFrom(host, _host.SnapshotFor(widget)))
             {
                 return;
             }
@@ -2033,7 +2152,7 @@ namespace PlayniteAchievements.Views.Showcase
                         continue;
                     }
 
-                    var snapshot = _overview.LatestSnapshot;
+                    var snapshot = _host.SnapshotFor(request.Widget);
                     if (request.SnapshotOnly && IsProjectedFrom(request.Host, snapshot))
                     {
                         continue;
@@ -2131,6 +2250,7 @@ namespace PlayniteAchievements.Views.Showcase
                     Layout,
                     widget,
                     gridOptions: _settings.Persisted?.GridOptions);
+                _host.Decorate(projection);
                 build?.SetContext(context + " " + DescribeProjection(projection));
             }
 
@@ -2251,7 +2371,8 @@ namespace PlayniteAchievements.Views.Showcase
         private void OpenWidgetPicker(ShowcaseBlockSettings block, FrameworkElement target)
         {
             var menu = new ContextMenu();
-            foreach (var definition in ShowcaseWidgetCatalog.Definitions.Where(definition => !definition.Hidden))
+            foreach (var definition in ShowcaseWidgetCatalog.Definitions.Where(definition =>
+                         !definition.Hidden && _host.IsKindAllowed(definition.Kind)))
             {
                 var captured = definition;
                 var item = WidgetPickerItem(
@@ -2892,11 +3013,22 @@ namespace PlayniteAchievements.Views.Showcase
         private void SaveAndPublish()
         {
             RecordHistoryPoint();
-            ShowcaseLayoutService.Normalize(Layout);
+            _host.Normalize();
             ShowcaseLayoutService.PruneOrphanedWidgets(Layout);
-            ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
+            if (!_host.IsStrip)
+            {
+                ShowcaseGridSurfaces.PruneOrphaned(_settings.Persisted?.GridOptions, Layout);
+            }
+
             PruneHostCache();
-            _persist();
+            _host.Persist();
+            // A strip holds none of the Showcase page's shared state, and nothing else listens
+            // to its layout, so it neither prunes that state nor broadcasts.
+            if (_host.IsStrip)
+            {
+                return;
+            }
+
             // Stored profile images are shared by content, so a file goes only once no widget
             // (on any page or the start page) refers to it any more.
             PlayniteAchievementsPlugin.Instance?.ShowcaseImageStore?.Prune(Layout);
@@ -3040,7 +3172,7 @@ namespace PlayniteAchievements.Views.Showcase
             }
         }
 
-        private void Overview_SnapshotChanged(object sender, EventArgs e)
+        private void Host_DataChanged(object sender, EventArgs e)
         {
             Dispatcher.BeginInvoke(new Action(QueueSnapshotRefresh));
         }
@@ -3317,6 +3449,7 @@ namespace PlayniteAchievements.Views.Showcase
             if (_blockVisuals.Count == 0)
             {
                 BuildDashboard();
+                EditingChanged?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
@@ -3344,6 +3477,7 @@ namespace PlayniteAchievements.Views.Showcase
             // + button in favor of the overlay copy, and the loop above resets visibility.
             UpdateLayoutHandles();
             FocusSelectedBlock();
+            EditingChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private ShowcaseBlockSettings SelectedBlock => CurrentPage.Blocks.FirstOrDefault(block =>
@@ -3556,7 +3690,7 @@ namespace PlayniteAchievements.Views.Showcase
 
         private void OpenWidgetSettings(ShowcaseWidgetInstanceSettings widget)
         {
-            if (ShowcaseWidgetSettingsDialog.Show(widget))
+            if (ShowcaseWidgetSettingsDialog.Show(widget, showControlBarOption: !_host.IsStrip))
             {
                 SaveAndPublish();
                 EnsureSnapshotCoversLayout();
@@ -3836,7 +3970,7 @@ namespace PlayniteAchievements.Views.Showcase
                 return;
             }
 
-            if (_clipboardWidget == null)
+            if (_clipboardWidget == null || !_host.IsKindAllowed(_clipboardWidget.Kind))
             {
                 return;
             }
