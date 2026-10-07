@@ -21,6 +21,7 @@
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility" />
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
             <converters:ProviderIconConverter x:Key="ProviderIconConverter" />
+            <converters:FontLineHeightConverter x:Key="FontLineHeightConverter" />
 
             <!-- Column headers reach the view model through this rather than through
                  RelativeSource. A DataGridColumn is not in the visual tree, so a FindAncestor
@@ -62,6 +63,17 @@
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                 <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
+                <!-- The font's own pitch, fixed, so a wrapped line sits at the same height in the
+                     TextBox and in its resting TextBlock face; see FontLineHeightConverter. -->
+                <Setter Property="TextBlock.LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="TextBlock.LineHeight">
+                    <Setter.Value>
+                        <MultiBinding Converter="{StaticResource FontLineHeightConverter}">
+                            <Binding Path="FontFamily" RelativeSource="{RelativeSource Self}" />
+                            <Binding Path="FontSize" RelativeSource="{RelativeSource Self}" />
+                        </MultiBinding>
+                    </Setter.Value>
+                </Setter>
                 <Style.Triggers>
                     <Trigger Property="IsKeyboardFocusWithin" Value="True">
                         <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
@@ -98,12 +110,26 @@
             </Style>
 
             <Style x:Key="GridEditorDisplayTextStyle" TargetType="TextBlock">
+                <!-- Not rounded to whole pixels: the TextBox centers its text without rounding, so a
+                     rounded face would sit a fraction of a pixel off and jump when the box takes over. -->
+                <Setter Property="UseLayoutRounding" Value="False" />
                 <Setter Property="Margin" Value="8,2" />
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="TextWrapping" Value="Wrap" />
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                 <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}" />
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}" />
+                <!-- The font's own pitch, fixed, so a wrapped line sits at the same height in the
+                     TextBox and in its resting TextBlock face; see FontLineHeightConverter. -->
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight">
+                    <Setter.Value>
+                        <MultiBinding Converter="{StaticResource FontLineHeightConverter}">
+                            <Binding Path="FontFamily" RelativeSource="{RelativeSource Self}" />
+                            <Binding Path="FontSize" RelativeSource="{RelativeSource Self}" />
+                        </MultiBinding>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- The unlock-time cell's resting faces stand in for a DatePicker, a TextBox and a
