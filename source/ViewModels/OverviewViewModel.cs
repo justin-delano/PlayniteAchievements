@@ -35,7 +35,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class OverviewViewModel : ObservableObject, IDisposable, IOverviewRefreshHeaderViewModel, Common.IRetentionProbe
+    public partial class OverviewViewModel : ObservableObject, IDisposable, IOverviewRefreshHeaderViewModel, Common.IRetentionProbe
     {
         /// <summary>
         /// Returns true if unplayed games are included during refreshes.
@@ -387,6 +387,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 Width = 170
             });
+            // Set by clicking a timeline column or calendar day in the mini-showcase; shown only
+            // while active.
+            GameSummariesControlBar.Items.Add(new GridDismissChip(
+                this,
+                nameof(UnlockSpanFilterText),
+                () => UnlockSpanFilterText,
+                () => _unlockSpanFilter.HasValue,
+                ClearUnlockSpanFilter));
 
             RecentAchievementsControlBar = new GridControlBarViewModel
             {
@@ -1297,6 +1305,7 @@ namespace PlayniteAchievements.ViewModels
                     if (previousGameId != newGameId)
                     {
                         ResetSelectedGameSortToDefault();
+                        InvalidateLinkedSnapshots();
                     }
 
                     _selectedGameControlBar.ResetFilters();
@@ -2417,6 +2426,7 @@ namespace PlayniteAchievements.ViewModels
             FeedGlobalTimeline(SelectedGame?.PlayniteGameId);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
             SnapshotChanged?.Invoke(this, EventArgs.Empty);
+            InvalidateLinkedSnapshots();
             PublishSharedSnapshot(snapshot);
         }
 
@@ -3807,6 +3817,8 @@ namespace PlayniteAchievements.ViewModels
                 L("LOCPlayAch_Filter_InProgress"),
                 L("LOCPlayAch_Filter_NoProgress"));
 
+            filtered = ApplyUnlockSpanFilter(filtered);
+
             _filteredGameSummaries = filtered.ToList();
             if (!string.IsNullOrEmpty(_overviewSortPath))
             {
@@ -3828,6 +3840,8 @@ namespace PlayniteAchievements.ViewModels
                     SelectedGame = restored;
                 }
             }
+
+            InvalidateLinkedSnapshots();
         }
 
         private void UpdateOverviewPieChartSelectionStates()
