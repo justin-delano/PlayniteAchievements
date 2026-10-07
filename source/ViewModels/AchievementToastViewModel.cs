@@ -92,9 +92,13 @@ namespace PlayniteAchievements.ViewModels
             // The scope's style first, then the kind's own copy when it has one. The settings
             // mockup passes the style it is editing as styleOverride and goes through the same
             // narrowing, so the preview and a live notification cannot disagree.
+            var scopeStyle = styleOverride ?? resolved.Style;
             _style = NotificationStyleResolver.ApplyKind(
-                styleOverride ?? resolved.Style,
+                scopeStyle,
                 NotificationKindResolver.Resolve(_args));
+            // Motion is read before the kind narrowing: every card in a stack moves together,
+            // so it follows the scope rather than any one card's kind.
+            MotionSurface = scopeStyle?.Toast;
             ToastUseThemeStyling =
                 toastUseThemeStylingOverride ?? resolved.ToastUseThemeStyling;
             FrameUseThemeStyling =
@@ -105,6 +109,12 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool ToastUseThemeStyling { get; }
+
+        /// <summary>
+        /// The scope's toast style (game, provider or global, without the kind's own copy), which
+        /// the toast service reads the entrance and exit motion from.
+        /// </summary>
+        internal NotificationSurfaceStyle MotionSurface { get; }
 
         public bool FrameUseThemeStyling { get; }
 
