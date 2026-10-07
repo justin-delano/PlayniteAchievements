@@ -13,6 +13,67 @@
     <converters:AchievementStatusToolTipConverter x:Key="AchievementStatusToolTipConverter"/>
 
     <!-- =======================
+         COMPLETION BADGE AND FRAME
+         ======================= -->
+
+    <!-- The finish badge, keyed off the row's own ShowCompletionBadge and
+         ShowPlatinumInCompletionSpot (GameSummaryItem). When the row's capstones are exactly its
+         platinum trophies and the host prefers trophy badges, the badge becomes the platinum
+         itself. The host states that preference once on its root through the inherited
+         helpers:CompletionBadge.PreferTrophyBadges, so the swap is a property trigger and the
+         style works under any host. Shared by the game summaries progress footer, the Cover
+         column's completion frame and the showcase Game Mosaic tiles; each sets its own size. -->
+    <Style x:Key="CompletionBadgeImageStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+        <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
+        <Setter Property="Source" Value="{DynamicResource BadgeRarityCompleted}"/>
+        <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Completed}"/>
+        <Setter Property="Visibility" Value="{Binding ShowCompletionBadge, Converter={StaticResource BoolToVis}}"/>
+        <Setter Property="helpers:CompletionBadge.ShowsPlatinum" Value="{Binding ShowPlatinumInCompletionSpot}"/>
+        <Style.Triggers>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="helpers:CompletionBadge.ShowsPlatinum" Value="True"/>
+                    <Condition Property="helpers:CompletionBadge.PreferTrophyBadges" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Source" Value="{DynamicResource TrophyPlatinum}"/>
+                <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Trophy_Platinum}"/>
+            </MultiTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The finish badge's count beside the completion frame's badge, for rows with several
+         capstones. Sits half over the cover art, so it carries a shadow to stay legible. -->
+    <Style x:Key="CompletionBadgeCountTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+        <Setter Property="Text" Value="{Binding CompletionCountText}"/>
+        <Setter Property="Visibility" Value="{Binding ShowCompletionCount, Converter={StaticResource BoolToVis}}"/>
+        <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Dynamic_Capstone}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="3,0,0,0"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="{StaticResource PlayAch.Color.Shadow}"
+                                  BlurRadius="3"
+                                  ShadowDepth="1"
+                                  Direction="315"
+                                  Opacity="0.8"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Completion frame: a 2px band in the completed brush around the outside of a cover's
+         rectangle. The art is clipped to a plain rectangle, so the band sits outside it rather
+         than over it; at an outer corner radius of 6 or less the band still covers the art's
+         square corners. The host sets CornerRadius. -->
+    <Style x:Key="CompletionFrameBorderStyle" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.CompletedGame}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="Margin" Value="-2"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <!-- =======================
          ACHIEVEMENT TEMPLATES
          ======================= -->
 

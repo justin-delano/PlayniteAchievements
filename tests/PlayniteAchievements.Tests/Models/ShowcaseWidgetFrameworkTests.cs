@@ -191,6 +191,21 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void GameMosaicShowCompletionFrame_DefaultsOffAndRoundTrips()
+        {
+            Assert.IsFalse(ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(null));
+
+            var instance = new ShowcaseWidgetInstanceSettings { Kind = ShowcaseWidgetKind.IconMosaic };
+            Assert.IsFalse(ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(instance));
+
+            ShowcaseWidgetOptions.SetGameMosaicShowCompletionFrame(instance, true);
+
+            Assert.IsTrue(ShowcaseWidgetOptions.GetGameMosaicShowCompletionFrame(instance));
+            // Its own key: the completion glow keeps its default.
+            Assert.IsTrue(ShowcaseWidgetOptions.GetGameMosaicShowCompletionGlow(instance));
+        }
+
+        [TestMethod]
         public void WidgetFactory_SeedsDefaultsForGridMosaicAndCalendarKinds()
         {
             var summaries = ShowcaseWidgetSettingsFactory.CreateDefault(ShowcaseWidgetKind.GameSummaries);

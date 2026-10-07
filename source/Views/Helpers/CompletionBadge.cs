@@ -1,0 +1,90 @@
+using System;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Data;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
+
+namespace PlayniteAchievements.Views.Helpers
+{
+    /// <summary>
+    /// Inputs of the shared completion badge style (CompletionBadgeImageStyle), which picks
+    /// between the completed badge and the platinum trophy.
+    /// </summary>
+    /// <remarks>
+    /// Both are attached properties so the style can test them with property trigger conditions
+    /// rather than ancestor bindings, which lets any host carry the badge: the game summaries grid
+    /// and the showcase mosaic each set <see cref="PreferTrophyBadgesProperty"/> once on their root,
+    /// and it inherits down to every badge in their trees.
+    /// </remarks>
+    public static class CompletionBadge
+    {
+        /// <summary>
+        /// Whether the host shows trophy badges in place of rarity badges, so a row whose capstones
+        /// are its platinums shows the platinum in the completion spot. Inherits.
+        /// </summary>
+        public static readonly DependencyProperty PreferTrophyBadgesProperty =
+            DependencyProperty.RegisterAttached(
+                "PreferTrophyBadges",
+                typeof(bool),
+                typeof(CompletionBadge),
+                new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.Inherits));
+
+        public static void SetPreferTrophyBadges(DependencyObject element, bool value) =>
+            element?.SetValue(PreferTrophyBadgesProperty, value);
+
+        public static bool GetPreferTrophyBadges(DependencyObject element) =>
+            element == null || (bool)element.GetValue(PreferTrophyBadgesProperty);
+
+        /// <summary>
+        /// The badge's own copy of its row's ShowPlatinumInCompletionSpot, set by a style setter
+        /// binding so the platinum swap can be a property trigger.
+        /// </summary>
+        public static readonly DependencyProperty ShowsPlatinumProperty =
+            DependencyProperty.RegisterAttached(
+                "ShowsPlatinum",
+                typeof(bool),
+                typeof(CompletionBadge),
+                new FrameworkPropertyMetadata(false));
+
+        public static void SetShowsPlatinum(DependencyObject element, bool value) =>
+            element?.SetValue(ShowsPlatinumProperty, value);
+
+        public static bool GetShowsPlatinum(DependencyObject element) =>
+            element != null && (bool)element.GetValue(ShowsPlatinumProperty);
+
+        /// <summary>
+        /// Binds <see cref="PreferTrophyBadgesProperty"/> on <paramref name="element"/> to the global
+        /// progress badge source, through the settings wrapper so a cancelled edit's replaced
+        /// Persisted instance is followed.
+        /// </summary>
+        public static void BindPreferTrophyBadgesToSettings(FrameworkElement element)
+        {
+            var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+            if (element == null || settings?.Persisted == null)
+            {
+                return;
+            }
+
+            element.SetBinding(
+                PreferTrophyBadgesProperty,
+                new Binding($"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.ProgressBadgeSource)}")
+                {
+                    Source = settings,
+                    Mode = BindingMode.OneWay,
+                    Converter = PreferTrophyConverter.Instance
+                });
+        }
+
+        private sealed class PreferTrophyConverter : IValueConverter
+        {
+            public static readonly PreferTrophyConverter Instance = new PreferTrophyConverter();
+
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+                !(value is ProgressBadgeSource source) || source != ProgressBadgeSource.Rarity;
+
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+                Binding.DoNothing;
+        }
+    }
+}

@@ -61,10 +61,12 @@ namespace PlayniteAchievements.Models.Tests
             options.SortDescending = !options.SortDescending;
             options.ShowNameAboveProgress = !options.ShowNameAboveProgress;
             options.ShowRarityBadgesBelowProgress = !options.ShowRarityBadgesBelowProgress;
+            options.ShowCompletionFrame = !options.ShowCompletionFrame;
 
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesGridSortDescending));
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesShowNameAboveProgress));
             CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesShowRarityBadgesBelowProgress));
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewGameSummariesShowCompletionFrame));
         }
 
         [TestMethod]

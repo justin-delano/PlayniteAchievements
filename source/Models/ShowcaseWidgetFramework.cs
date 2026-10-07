@@ -361,6 +361,7 @@ namespace PlayniteAchievements.Models
         private const string ShowControlBar = "ShowControlBar";
         private const string UseCoverImages = "UseCoverImages";
         private const string ShowCompletionGlow = "ShowCompletionGlow";
+        private const string ShowCompletionFrame = "ShowCompletionFrame";
         private const string CenterMode = "CenterMode";
         private const string LegacyShowCenterPercentage = "ShowCenterPercentage";
         private const string ShowLegend = "ShowLegend";
@@ -1011,6 +1012,17 @@ namespace PlayniteAchievements.Models
         public static void SetGameMosaicShowCompletionGlow(
             ShowcaseWidgetInstanceSettings settings,
             bool value) => settings?.SetOption(ShowCompletionGlow, value);
+
+        /// <summary>
+        /// Whether completed games' tiles get the completion frame: a band in the completed brush
+        /// and the completion badge on the cover's bottom edge.
+        /// </summary>
+        public static bool GetGameMosaicShowCompletionFrame(ShowcaseWidgetInstanceSettings settings) =>
+            settings?.GetOption(ShowCompletionFrame, false) ?? false;
+
+        public static void SetGameMosaicShowCompletionFrame(
+            ShowcaseWidgetInstanceSettings settings,
+            bool value) => settings?.SetOption(ShowCompletionFrame, value);
 
         private static T GetEnum<T>(
             ShowcaseWidgetInstanceSettings settings,
