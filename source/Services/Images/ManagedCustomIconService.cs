@@ -123,38 +123,6 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        public string GetManagedDisplayPath(string path, string gameId)
-        {
-            var normalized = NormalizePath(path);
-            if (string.IsNullOrWhiteSpace(normalized) || !IsManagedCustomIconPath(normalized, gameId))
-            {
-                return normalized;
-            }
-
-            try
-            {
-                var baseDirectory = GetCacheRootDirectory();
-                if (string.IsNullOrWhiteSpace(baseDirectory))
-                {
-                    return normalized;
-                }
-
-                var candidate = Path.GetFullPath(normalized)
-                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                var baseWithSeparator = EnsureTrailingSeparator(baseDirectory);
-                if (!candidate.StartsWith(baseWithSeparator, StringComparison.OrdinalIgnoreCase))
-                {
-                    return normalized;
-                }
-
-                return candidate.Substring(baseWithSeparator.Length);
-            }
-            catch
-            {
-                return normalized;
-            }
-        }
-
         /// <summary>
         /// Turns a stored category art override into a path a surface can render. Callers reach
         /// this through <see cref="CategoryArtChainResolver.OverrideDisplayPathResolver"/>, so
@@ -442,18 +410,6 @@ namespace PlayniteAchievements.Services.Images
         private static string NormalizePath(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
-
-        private static string EnsureTrailingSeparator(string directoryPath)
-        {
-            if (string.IsNullOrWhiteSpace(directoryPath))
-            {
-                return directoryPath;
-            }
-
-            return directoryPath.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
-                ? directoryPath
-                : directoryPath + Path.DirectorySeparatorChar;
         }
 
         private static void DeleteEmptyDirectories(string rootDirectory)
