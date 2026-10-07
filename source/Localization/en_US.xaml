@@ -1531,7 +1531,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ResumeSlideshow">Resume slideshow</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Profile">Profile</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">Scores</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Pie">Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Timeline">Timeline</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Statistics">Overall Statistics</sys:String>
