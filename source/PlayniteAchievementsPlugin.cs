@@ -100,6 +100,7 @@ namespace PlayniteAchievements
         private Services.Library.ColorsLibraryAdapter _colorsLibraryAdapter;
         private Services.Library.SoundsLibraryAdapter _soundsLibraryAdapter;
         private Services.Library.NotificationLibraryTargets _notificationLibraryTargets;
+        private Services.Library.SoundsLibraryTargets _soundsLibraryTargets;
         private Services.Library.ShowcaseLibraryTargets _showcaseLibraryTargets;
         private Services.Library.GameLinkStore _gameLinkStore;
         private Services.Library.GameDataLinkService _gameDataLinks;
@@ -283,7 +284,7 @@ namespace PlayniteAchievements
                 () => _settingsViewModel?.Settings?.Persisted,
                 update => ApplyLibrarySettingsChange(update, includeEditSnapshot: true),
                 update => ApplyLibrarySettingsChange(update, includeEditSnapshot: false),
-                new Services.Library.ILibraryTargetResolver[] { NotificationLibraryTargets, ShowcaseLibraryTargets }));
+                new Services.Library.ILibraryTargetResolver[] { NotificationLibraryTargets, SoundsLibraryTargets, ShowcaseLibraryTargets }));
         /// <summary>Applies library items to their targets and keeps the links and baselines.</summary>
         public Services.Library.LibraryApplyService LibraryApplyService =>
             _libraryApplyService ?? (_libraryApplyService = new Services.Library.LibraryApplyService(
@@ -295,17 +296,48 @@ namespace PlayniteAchievements
         public Services.Library.ColorsLibraryAdapter ColorsLibraryAdapter =>
             _colorsLibraryAdapter ?? (_colorsLibraryAdapter = new Services.Library.ColorsLibraryAdapter(ColorPackPortableStore));
         /// <summary>
-        /// The unlock sounds target as a library adapter. Its prunes keep the files the settings
-        /// edit snapshot points at, so a Cancel restores sounds that still exist.
+        /// The unlock sounds target as a library adapter. Its prunes keep every pack's files: the
+        /// global and platform packs of the live settings and of the edit snapshot, so a Cancel
+        /// restores sounds that still exist, and every game's own pack.
         /// </summary>
         public Services.Library.SoundsLibraryAdapter SoundsLibraryAdapter =>
             _soundsLibraryAdapter ?? (_soundsLibraryAdapter = new Services.Library.SoundsLibraryAdapter(
                 UnlockSoundPortableStore,
-                () => new[]
+                ReferencedUnlockSoundPacks));
+
+        /// <summary>The platform and game sound scopes as library targets.</summary>
+        public Services.Library.SoundsLibraryTargets SoundsLibraryTargets =>
+            _soundsLibraryTargets ?? (_soundsLibraryTargets = new Services.Library.SoundsLibraryTargets(
+                SoundsLibraryAdapter,
+                () => _gameCustomDataStore,
+                () => _settingsViewModel?.Settings?.Persisted,
+                gameId => _achievementDataService?.GetGameAchievementData(gameId)?.EffectiveProviderKey));
+
+        private IEnumerable<UnlockSoundSettings> ReferencedUnlockSoundPacks()
+        {
+            var packs = new List<UnlockSoundSettings>();
+            foreach (var persisted in new[] { _settingsViewModel?.Settings?.Persisted, _settingsViewModel?.EditSnapshotPersisted })
+            {
+                if (persisted == null)
                 {
-                    _settingsViewModel?.Settings?.Persisted?.UnlockSounds,
-                    _settingsViewModel?.EditSnapshotPersisted?.UnlockSounds
-                }));
+                    continue;
+                }
+
+                packs.Add(persisted.UnlockSounds);
+                packs.AddRange(persisted.ProviderUnlockSounds.Values);
+            }
+
+            var store = _gameCustomDataStore;
+            if (store != null)
+            {
+                packs.AddRange(store.QueryAll(all => all
+                    .Select(data => data?.UnlockSounds)
+                    .Where(sounds => sounds != null)
+                    .ToList()));
+            }
+
+            return packs;
+        }
 
         /// <summary>
         /// The notification and frame scopes (global, platform, game) as library targets. Their
