@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Services.Tests
         {
             _root = Path.Combine(Path.GetTempPath(), "PlayAchGameDataLinks_" + Guid.NewGuid().ToString("N"));
             _libraryDirectory = Path.Combine(_root, "library");
-            _baselineDirectory = Path.Combine(_root, "workshop", WorkshopBaselineStore.FolderName);
+            _baselineDirectory = Path.Combine(_root, LibraryStore.GameDataBaselinesFolder);
             _iconDirectory = Path.Combine(_root, "icons");
             Directory.CreateDirectory(_baselineDirectory);
             Directory.CreateDirectory(_iconDirectory);

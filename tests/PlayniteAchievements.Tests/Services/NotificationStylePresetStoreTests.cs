@@ -153,7 +153,7 @@ namespace PlayniteAchievements.Services.Tests
                 Save(store, tempDir, isFrame: false, "Alpha", style, null);
                 Save(store, tempDir, isFrame: true, "frame-only", style, null);
 
-                var toastDir = Path.Combine(tempDir, "data", "notification_style_presets", "toast");
+                var toastDir = Path.Combine(tempDir, "data", "library", "notifications");
                 File.WriteAllText(Path.Combine(toastDir, "notes.txt"), "not a preset");
 
                 var toastPresets = store.ListPresets(isFrame: false);

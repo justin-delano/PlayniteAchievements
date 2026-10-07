@@ -49,7 +49,7 @@ namespace PlayniteAchievements.Services.Tests
                 update => update(_live),
                 new ILibraryTargetResolver[] { _targets });
             _folder = new DirectoryPackageFolder(
-                Path.Combine(_root, LibraryStore.ShowcaseFolderName),
+                LibraryStore.PresetDirectory(_root, LibraryItemKind.ShowcasePage),
                 ShowcasePagePortableStore.PackageFileExtension);
 
             _author = new ShowcaseSettings();

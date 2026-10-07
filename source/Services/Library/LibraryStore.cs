@@ -14,8 +14,8 @@ namespace PlayniteAchievements.Services.Library
     /// <summary>
     /// The library index: one entry per preset file in the preset folders, plus Workshop items
     /// that have no stored package (showcase pages installed before the library). Workshop game
-    /// data is not a library item: it is recorded on each game. The preset folders stay the file
-    /// layer; the index at
+    /// data is not a library item: it is recorded on each game. The preset folders under
+    /// <c>UserData\library</c> stay the file layer; the index at
     /// <c>UserData\library\library.json</c> adds identity, origin and version. The first read
     /// reconciles the index with the folders: unindexed files become local items, entries whose
     /// file is gone are dropped (their ids collect in <see cref="TakeDroppedIds"/> so links to
@@ -25,23 +25,38 @@ namespace PlayniteAchievements.Services.Library
     {
         public const string DirectoryName = "library";
         public const string IndexFileName = "library.json";
-        public const string ShowcaseFolderName = "showcase_presets";
 
         private const int SchemaVersion = 1;
 
+        // The whole library layout: each kind's preset folder, relative to the user data folder.
         private static readonly IReadOnlyDictionary<LibraryItemKind, KindLayout> Layouts =
             new Dictionary<LibraryItemKind, KindLayout>
             {
-                [LibraryItemKind.Colors] = new KindLayout("color_presets", ColorPackPortableStore.PackageFileExtension),
-                [LibraryItemKind.Sounds] = new KindLayout("unlock_sound_presets", UnlockSoundPortableStore.PackageFileExtension),
+                [LibraryItemKind.Colors] = new KindLayout(
+                    Path.Combine(DirectoryName, "colors"),
+                    ColorPackPortableStore.PackageFileExtension),
+                [LibraryItemKind.Sounds] = new KindLayout(
+                    Path.Combine(DirectoryName, "sounds"),
+                    UnlockSoundPortableStore.PackageFileExtension),
                 [LibraryItemKind.Toast] = new KindLayout(
-                    Path.Combine("notification_style_presets", "toast"),
+                    Path.Combine(DirectoryName, "notifications"),
                     NotificationStylePortableStore.ToastPackageFileExtension),
                 [LibraryItemKind.Frame] = new KindLayout(
-                    Path.Combine("notification_style_presets", "frame"),
+                    Path.Combine(DirectoryName, "frames"),
                     NotificationStylePortableStore.FramePackageFileExtension),
-                [LibraryItemKind.ShowcasePage] = new KindLayout(ShowcaseFolderName, ShowcasePagePortableStore.PackageFileExtension)
+                [LibraryItemKind.ShowcasePage] = new KindLayout(
+                    Path.Combine(DirectoryName, "showcase_pages"),
+                    ShowcasePagePortableStore.PackageFileExtension)
             };
+
+        /// <summary>
+        /// The folder, relative to the user data folder, that holds the package copies of the
+        /// Workshop game data applied to games (<see cref="GameDataLinkService"/>).
+        /// </summary>
+        public static string GameDataFolder => Path.Combine(DirectoryName, GameDataLinkService.FolderName);
+
+        /// <summary>The folder, relative to the user data folder, of the baselines game data updates merge against.</summary>
+        public static string GameDataBaselinesFolder => Path.Combine(GameDataFolder, WorkshopBaselineStore.FolderName);
 
         private readonly string _root;
         private readonly string _indexPath;
@@ -94,7 +109,7 @@ namespace PlayniteAchievements.Services.Library
         /// <summary>The plugin's user data folder that relative paths resolve against.</summary>
         public string RootPath => _root;
 
-        /// <summary>The library folder (<c>UserData\library</c>), which also holds links and baselines.</summary>
+        /// <summary>The library folder (<c>UserData\library</c>), which holds the preset folders, the links and the baselines.</summary>
         public string LibraryDirectory => Path.Combine(_root, DirectoryName);
 
         public string IndexPath => _indexPath;
@@ -104,6 +119,10 @@ namespace PlayniteAchievements.Services.Library
 
         /// <summary>The folder, relative to the user data folder, that holds presets of a kind.</summary>
         public static string FolderOf(LibraryItemKind kind) => Layouts[kind].Folder;
+
+        /// <summary>The absolute folder that holds presets of a kind under <paramref name="pluginUserDataPath"/>.</summary>
+        public static string PresetDirectory(string pluginUserDataPath, LibraryItemKind kind) =>
+            Path.Combine(pluginUserDataPath, FolderOf(kind));
 
         /// <summary>The preset file extension of a kind, including the dot.</summary>
         public static string ExtensionOf(LibraryItemKind kind) => Layouts[kind].Extension;

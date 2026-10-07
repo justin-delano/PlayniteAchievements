@@ -156,21 +156,21 @@ namespace PlayniteAchievements.Services.Showcase
         {
             try
             {
-                if (!Directory.Exists(RootDirectory))
+                if (Directory.Exists(RootDirectory))
                 {
-                    return;
-                }
-
-                var referenced = new HashSet<string>(
-                    ReferencedPaths(settings).Select(TryGetFullPath).Where(path => path != null),
-                    StringComparer.OrdinalIgnoreCase);
-                foreach (var file in Directory.EnumerateFiles(RootDirectory))
-                {
-                    if (!referenced.Contains(Path.GetFullPath(file)))
+                    var referenced = new HashSet<string>(
+                        ReferencedPaths(settings).Select(TryGetFullPath).Where(path => path != null),
+                        StringComparer.OrdinalIgnoreCase);
+                    foreach (var file in Directory.EnumerateFiles(RootDirectory))
                     {
-                        File.Delete(file);
+                        if (!referenced.Contains(Path.GetFullPath(file)))
+                        {
+                            File.Delete(file);
+                        }
                     }
                 }
+
+                Common.EmptyFolders.RemoveUpTo(RootDirectory, Path.Combine(_pluginUserDataPath, RootFolderName));
             }
             catch (Exception ex)
             {

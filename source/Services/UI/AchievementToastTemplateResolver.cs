@@ -998,6 +998,7 @@ namespace PlayniteAchievements.Services.UI
                 _logger?.Warn(ex, $"Failed to delete custom notification template: {path}");
             }
 
+            Common.EmptyFolders.RemoveUpTo(Path.GetDirectoryName(path), _customTemplatesDirectory);
             ThemeDictionaryCache.Remove($"custom|{path}");
         }
 
