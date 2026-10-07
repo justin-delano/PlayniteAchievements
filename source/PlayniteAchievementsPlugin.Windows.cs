@@ -72,9 +72,10 @@ namespace PlayniteAchievements
         public void OpenManageAchievementsView(
             Guid gameId,
             ManageAchievementsTab initialTab = ManageAchievementsTab.Overview,
-            bool selectManageCategoriesSubTab = false)
+            bool selectManageCategoriesSubTab = false,
+            bool? notificationsShowFrame = null)
         {
-            _windowService.OpenManageAchievementsView(gameId, initialTab, selectManageCategoriesSubTab);
+            _windowService.OpenManageAchievementsView(gameId, initialTab, selectManageCategoriesSubTab, notificationsShowFrame);
         }
 
         private void EnsureAchievementResourcesLoaded()
@@ -177,16 +178,29 @@ namespace PlayniteAchievements
             dialog.Cleanup();
             return true;
         }
-        /// <summary>
-        /// Opens the settings on the Workshop tab: the Playnite settings dialog on desktop, the
-        /// managed popout in fullscreen. The tab is handed over through
-        /// <see cref="Views.SettingsControl.PendingTabKey"/> because neither opener takes one;
-        /// <paramref name="pageKey"/> picks the Workshop page the same way.
-        /// </summary>
+        /// <summary>Opens the settings on the Workshop tab, on <paramref name="pageKey"/> when given.</summary>
         internal void OpenWorkshopSettings(string pageKey = null)
         {
-            Views.SettingsControl.PendingTabKey = "Workshop";
-            Views.Settings.Workshop.WorkshopSettingsTab.PendingPageKey = pageKey;
+            OpenSettingsAt(new Models.Settings.SettingsNavigationRequest(Models.Settings.SettingsNavigationRequest.WorkshopTab, pageKey));
+        }
+
+        /// <summary>
+        /// Shows a place in the settings. An open settings window switches to it and comes to
+        /// the front; otherwise the settings open on it: the Playnite settings dialog on desktop,
+        /// the managed popout in fullscreen. The place is handed over through
+        /// <see cref="Views.SettingsControl.PendingNavigation"/> because neither opener takes one.
+        /// </summary>
+        internal void OpenSettingsAt(Models.Settings.SettingsNavigationRequest request)
+        {
+            var live = Views.SettingsControl.Live;
+            if (live != null)
+            {
+                live.NavigateTo(request);
+                System.Windows.Window.GetWindow(live)?.Activate();
+                return;
+            }
+
+            Views.SettingsControl.PendingNavigation = request;
             if (IsFullscreenMode())
             {
                 OpenSettingsWindow();
@@ -195,6 +209,15 @@ namespace PlayniteAchievements
             {
                 OpenSettingsView();
             }
+        }
+
+        /// <summary>
+        /// Opens the Overview window on the Showcase on one page; an Overview window already open
+        /// switches to it.
+        /// </summary>
+        internal void OpenShowcasePage(string pageId)
+        {
+            _windowService.OpenOverviewWindow(pageId);
         }
 
         /// <summary>
