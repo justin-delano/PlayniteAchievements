@@ -3724,7 +3724,7 @@ namespace PlayniteAchievements.Services.UI
                 window, _activeCardSurface, SlideOffsetDipX(), SlideOffsetDipY(),
                 anchorPhys, renderScale, _activeMonitorScale, Horizontal(), AlignBottom(),
                 EffectiveGapDipX(), EffectiveGapDipY(),
-                measure, ref _placementCorrection, out outcome);
+                measure, ref _placementCorrection, out outcome, _activeSlideHost);
             LogPlacementAnomaly(window, anchorPhys, renderScale, outcome);
 
             // Keep the toast directly above the game window in the z-order (not owned, so the game is
@@ -4686,7 +4686,7 @@ namespace PlayniteAchievements.Services.UI
                 var renderScale = ToastWindowPlacer.RenderScale(window);
                 var measured = ToastWindowPlacer.TryMeasureCardPhysical(
                     window, _activeCardSurface, renderScale, SlideOffsetDipX(), SlideOffsetDipY(),
-                    out var insetX, out var insetY, out var cardW, out var cardH);
+                    out var insetX, out var insetY, out var cardW, out var cardH, _activeSlideHost);
                 ToastWindowPlacer.TryGetPhysicalRect(window, out var windowPhys);
                 _logger?.Info(string.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
