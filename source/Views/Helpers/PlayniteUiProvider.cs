@@ -48,7 +48,7 @@ namespace PlayniteAchievements.Views.Helpers
 
         // The Default theme's StandardWindowStyle starts content at 25 DIP, the row where its
         // caption buttons (top margin 3, height 22) end, so content would sit flush against them.
-        private const double TitleBarContentGap = 6;
+        private const double TitleBarContentGap = 10;
 
         public static void RestoreMainView()
         {
