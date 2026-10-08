@@ -23,7 +23,37 @@ using System.Windows.Threading;
 
 internal static partial class SlideCadenceProbe
 {
-    private const int SlideDurationMs = 240;
+    // Slide timing, overridable with --duration and --ease to compare curves (default: as shipped).
+    private static int SlideDurationMs = 240;
+    private static string EaseName = "back";
+    private static double EaseParameter = 0.35;
+
+    /// <summary>
+    /// The slide's easing: back (overshoot, parameter = amplitude), cubic, quad, quint, sine,
+    /// expo (parameter = exponent), power (parameter = power), or linear. All ease out.
+    /// </summary>
+    private static IEasingFunction CreateEase()
+    {
+        EasingFunctionBase ease;
+        switch (EaseName)
+        {
+            case "back": ease = new BackEase { Amplitude = EaseParameter }; break;
+            case "cubic": ease = new CubicEase(); break;
+            case "quad": ease = new QuadraticEase(); break;
+            case "quint": ease = new QuinticEase(); break;
+            case "sine": ease = new SineEase(); break;
+            case "expo": ease = new ExponentialEase { Exponent = EaseParameter }; break;
+            case "power": ease = new PowerEase { Power = EaseParameter }; break;
+            case "linear": return null;
+            default: throw new ArgumentException("unknown --ease " + EaseName);
+        }
+
+        ease.EasingMode = EasingMode.EaseOut;
+        return ease;
+    }
+
+    /// <summary>Evaluates <see cref="CreateEase"/>'s curve, treating linear (null) as identity.</summary>
+    private static double EaseAt(IEasingFunction ease, double t) => ease == null ? t : ease.Ease(t);
     // Card geometry and effect weight, overridable from the command line. The defaults are the
     // original 442x138 card with a 12-radius shadow, which on any reasonably quick display pins
     // every Transform variant at 100% of refresh - so the BitmapCache and padding variants have no
@@ -113,6 +143,12 @@ internal static partial class SlideCadenceProbe
         /// same duration; only the time base differs.
         /// </summary>
         TransformClock,
+
+        /// <summary>
+        /// <see cref="TransformClock"/> (the shipped time base) in the non-layered window of
+        /// <see cref="TransformDwm"/>.
+        /// </summary>
+        TransformDwmClock,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -123,6 +159,21 @@ internal static partial class SlideCadenceProbe
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+    private const int GwlExStyle = -20;
+    private const int DwmwaCloak = 13;
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLongEx(IntPtr hwnd, int index);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr WindowFromPoint(System.Drawing.Point point);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
 
     /// <summary>
     /// Whether to check, once per window kind, that the transparent padding really shows what is
@@ -287,6 +338,28 @@ internal static partial class SlideCadenceProbe
             else if (args[i] == "--glow" && i + 1 < args.Length)
             {
                 CardGlowRadius = Math.Max(0d, double.Parse(args[++i], CultureInfo.InvariantCulture));
+            }
+            else if (args[i] == "--duration" && i + 1 < args.Length)
+            {
+                SlideDurationMs = Math.Max(1, int.Parse(args[++i], CultureInfo.InvariantCulture));
+            }
+            else if (args[i] == "--ease" && i + 1 < args.Length)
+            {
+                // name or name:parameter, e.g. back:0.35, expo:6, power:4.
+                var spec = args[++i].Split(':');
+                EaseName = spec[0].ToLowerInvariant();
+                if (spec.Length > 1)
+                {
+                    EaseParameter = double.Parse(spec[1], CultureInfo.InvariantCulture);
+                }
+                else if (EaseName == "expo")
+                {
+                    EaseParameter = 6;
+                }
+                else if (EaseName == "power")
+                {
+                    EaseParameter = 3;
+                }
             }
             else if (args[i] == "--nested")
             {
@@ -503,7 +576,7 @@ internal static partial class SlideCadenceProbe
                 var scale = RenderScale(window);
                 var distancePx = (int)Math.Round(travel * scale);
                 var restY = 120 + distancePx;
-                var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+                var ease = CreateEase();
                 var hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
 
                 EventHandler tick = null;
@@ -515,7 +588,7 @@ internal static partial class SlideCadenceProbe
                     }
 
                     var t = Math.Min(1.0, elapsed / SlideDurationMs);
-                    var y = (int)Math.Round((restY + distancePx) + ((restY - (restY + distancePx)) * ease.Ease(t)));
+                    var y = (int)Math.Round((restY + distancePx) + ((restY - (restY + distancePx)) * EaseAt(ease, t)));
                     SetWindowPos(hwnd, IntPtr.Zero, 120, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
                     if (t >= 1.0)
                     {
@@ -542,7 +615,7 @@ internal static partial class SlideCadenceProbe
                     From = travel,
                     To = 0,
                     Duration = new Duration(TimeSpan.FromMilliseconds(SlideDurationMs)),
-                    EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 },
+                    EasingFunction = CreateEase(),
                     FillBehavior = FillBehavior.HoldEnd,
                 };
                 Storyboard.SetTarget(animation, host);
@@ -561,7 +634,7 @@ internal static partial class SlideCadenceProbe
                 var dueTolerance = _displayPeriodMs / 2d;
                 var nextDueMs = sampleIntervalMs;
                 byte[] previous = null;
-                var clockDriven = mechanism == Mechanism.TransformClock;
+                var clockDriven = mechanism == Mechanism.TransformClock || mechanism == Mechanism.TransformDwmClock;
                 var wall = new System.Diagnostics.Stopwatch();
                 var ease = animation.EasingFunction;
 
@@ -588,7 +661,7 @@ internal static partial class SlideCadenceProbe
                     accuracy.Add(
                         (e as RenderingEventArgs)?.RenderingTime.TotalMilliseconds ?? wallMs,
                         wallMs,
-                        slide.Y - (travel * (1d - ease.Ease(progress))));
+                        slide.Y - (travel * (1d - EaseAt(ease, progress))));
 
                     if (sampling && elapsed >= nextDueMs - dueTolerance)
                     {
@@ -661,7 +734,7 @@ internal static partial class SlideCadenceProbe
         Mechanism mechanism, FrameworkElement card, TransformGroup group, bool padded, double travel,
         out Grid host)
     {
-        var dwm = mechanism == Mechanism.TransformDwm;
+        var dwm = mechanism == Mechanism.TransformDwm || mechanism == Mechanism.TransformDwmClock;
         card.Margin = padded ? new Thickness(0, 0, 0, travel) : new Thickness(0);
 
         host = new Grid
@@ -753,19 +826,44 @@ internal static partial class SlideCadenceProbe
             var cardCentre = window.PointToScreen(new Point(window.ActualWidth / 2, CardHeightDip / 2));
             var padding = new System.Drawing.Point(
                 (int)((topLeft.X + bottomRight.X) / 2), (int)bottomRight.Y - 10);
+            var card = new System.Drawing.Point((int)cardCentre.X, (int)cardCentre.Y);
+            var probeHwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
             Console.WriteLine(
-                "{0,-14} window {1:0}x{2:0} px  padding={3}  card={4}",
+                "{0,-16} window {1:0}x{2:0} px  padding={3} {5}  card={4} {6}  exStyle=0x{7:X8}",
                 mechanism,
                 bottomRight.X - topLeft.X,
                 bottomRight.Y - topLeft.Y,
                 Describe(ReadScreen(padding)),
-                Describe(ReadScreen(new System.Drawing.Point((int)cardCentre.X, (int)cardCentre.Y))));
+                Describe(ReadScreen(card)),
+                HitAt(padding, probeHwnd),
+                HitAt(card, probeHwnd),
+                GetWindowLongEx(probeHwnd, GwlExStyle));
+
+            if (mechanism == Mechanism.TransformDwm)
+            {
+                // Window.Opacity needs a layered window, so a DWM window hides by cloaking instead.
+                var cloak = 1;
+                var cloakResult = DwmSetWindowAttribute(probeHwnd, DwmwaCloak, ref cloak, sizeof(int));
+                await WaitFrames(5, 1000);
+                await System.Threading.Tasks.Task.Delay(300);
+                Console.WriteLine(
+                    "{0,-16} cloaked (hr=0x{1:X8}): card={2}",
+                    mechanism, cloakResult, Describe(ReadScreen(card)));
+            }
         }
         finally
         {
             window.Close();
             backdrop.Close();
         }
+    }
+
+    /// <summary>Which window a click at <paramref name="point"/> would reach.</summary>
+    private static string HitAt(System.Drawing.Point point, IntPtr probeHwnd)
+    {
+        var hit = WindowFromPoint(point);
+        var root = hit == IntPtr.Zero ? IntPtr.Zero : GetAncestor(hit, 2);
+        return root == probeHwnd ? "[click hits probe]" : "[click passes through]";
     }
 
     private static System.Drawing.Color ReadScreen(System.Drawing.Point point)
