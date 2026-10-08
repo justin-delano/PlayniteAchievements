@@ -99,8 +99,7 @@
                             <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly}" Tag="{x:Static settings:PlaytimeDisplayMode.HoursOnly}"/>
                         </ComboBox>
                     </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowCompletedProgressColoring}"
-                                         Hint="{DynamicResource LOCPlayAch_Settings_ShowCompletedProgressColoring_Help}">
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ShowCompletedProgressColoring}">
                         <CheckBox IsChecked="{Binding Persisted.ShowCompletedProgressColoring}"/>
                     </controls:SettingRow>
                     <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_HighlightMissable}"

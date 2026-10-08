@@ -242,8 +242,7 @@
                             <!-- Exclusion: one choice between the refresh and summary exclusions. -->
                             <TextBlock Grid.Row="4" Grid.Column="0"
                                        Style="{StaticResource SettingLabelStyle}"
-                                       Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader}"
-                                       ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHint}" />
+                                       Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader}" />
                             <ComboBox Grid.Row="4" Grid.Column="1"
                                       ItemsSource="{Binding ExclusionModeOptions}"
                                       DisplayMemberPath="DisplayName"

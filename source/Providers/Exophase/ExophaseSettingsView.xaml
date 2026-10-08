@@ -210,11 +210,6 @@
                             </CheckBox>
                         </StackPanel>
                     </Border>
-
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_Note}"
-                               Style="{StaticResource MutedTextStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Top.Md}"
-                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
         </StackPanel>

@@ -23,9 +23,6 @@
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Maintenance_Title}"
                                Style="{StaticResource SectionHeaderStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Maintenance_Description}"
-                               Style="{StaticResource MutedTextStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"/>
 
                     <Border Style="{StaticResource SettingGroupCardStyle}" Grid.IsSharedSizeScope="True">
                         <StackPanel>
@@ -129,9 +126,6 @@
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Utilities_Title}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
-                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Utilities_Description}"
-                                       Style="{StaticResource MutedTextStyle}"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetup}">

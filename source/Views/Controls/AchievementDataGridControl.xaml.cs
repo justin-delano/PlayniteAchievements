@@ -1223,11 +1223,11 @@ namespace PlayniteAchievements.Views.Controls
                 _expandAllButton = new GridActionButton(
                     CategoryModeText("LOCExpandAll", "Expand All"),
                     ExpandAllCategories,
-                    CategoryModeText("LOCPlayAch_CategorySummaries_ExpandAllToolTip", "Expand all categories"));
+                    CategoryModeText("LOCExpandAll", "Expand All"));
                 _collapseAllButton = new GridActionButton(
                     CategoryModeText("LOCCollapseAll", "Collapse All"),
                     CollapseAllCategories,
-                    CategoryModeText("LOCPlayAch_CategorySummaries_CollapseAllToolTip", "Collapse all categories"));
+                    CategoryModeText("LOCCollapseAll", "Collapse All"));
             }
 
             if (!ReferenceEquals(_controlBarWithToggle, ControlBar))

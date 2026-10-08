@@ -98,7 +98,6 @@
                                    Style="{StaticResource SectionHeaderStyle}"/>
 
                         <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_EnableFriendsFeatures}"
-                                             Hint="{DynamicResource LOCPlayAch_Settings_EnableFriendsFeatures_Description}"
                                              Margin="0">
                             <CheckBox IsChecked="{Binding Persisted.EnableFriendsFeatures}"/>
                         </controls:SettingRow>

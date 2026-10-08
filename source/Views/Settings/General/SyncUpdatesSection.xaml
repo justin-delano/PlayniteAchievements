@@ -92,8 +92,7 @@
                     </StackPanel>
 
                     <!-- Default Overview Refresh Mode -->
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_DefaultOverviewRefreshMode}"
-                                         Hint="{DynamicResource LOCPlayAch_Settings_DefaultOverviewRefreshMode_Description}">
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_DefaultOverviewRefreshMode}">
                         <ComboBox SelectedValue="{Binding Persisted.DefaultOverviewRefreshMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   SelectedValuePath="Tag"
                                   MinWidth="140">
@@ -138,13 +137,11 @@
                                 <CheckBox IsChecked="{Binding Persisted.IncludeHiddenGamesInSummaries}"/>
                             </controls:SettingRow>
 
-                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_IncludeUnplayedGames}"
-                                                 Hint="{DynamicResource LOCPlayAch_IncludeUnplayedGames_Help}">
+                            <controls:SettingRow Label="{DynamicResource LOCPlayAch_IncludeUnplayedGames}">
                                 <CheckBox IsChecked="{Binding Persisted.IncludeUnplayedGames}"/>
                             </controls:SettingRow>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh}"
-                                                 Hint="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh_Help}"
                                                  Margin="0">
                                 <CheckBox IsChecked="{Binding Persisted.EnableParallelProviderRefresh}"/>
                             </controls:SettingRow>
