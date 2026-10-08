@@ -507,6 +507,59 @@ rate: sine ease-out moves on most presented frames (29 of 35 at 360 ms) where th
 moves on 7 of 21, so a late frame is a small step instead of a jump. Sine / 300 ms keeps most of the
 360 ms gain at a quicker entrance.
 
+## The hold probe
+
+```powershell
+tools\capture-harness\bin\HoldProbe.exe [--card-width 2328] [--card-height 496] [--glow 72]
+    [--repeats 5] [--seconds 4] [--load N] [--only A,B] [--shape notch|rect|soft] [--fps 50]
+    [--scale 1] [--compare-only] [--dump <dir>]
+```
+
+Prices the seconds a notification rests on screen, and checks on screen that cheaper layerings look the
+same. The card mirrors the bundled `AchievementToast.xaml`: a glow layer with the border-glow
+`DropShadowEffect` pulsed through `Effect.Opacity` (as `RarityGlowPulse` does with `Target="Effect"`)
+over a backing copy of the background, then an effect-free content layer with the visible background
+copy and text lines carrying the nested shadow pair. The background is a synthetic animated bitmap
+updated like `GifPlayer` updates its `WriteableBitmap`; `notch` gives it binary alpha that is the same
+in every frame (a GIF's case), `soft` a fading edge (a translucent WebM's case). Windows are
+DWM-composited, as revealed notifications are.
+
+Per variant it reports the composition rate the UI thread held, DWM's composed frames, and this
+process's CPU time per second. Then each candidate is frozen at the same background frame and pulse
+value over a solid backdrop and compared pixel for pixel with Shipped (the backdrop matters: without it
+the transparent areas read the console behind the card as it prints).
+
+Measured 2026-10-08 on the 165 Hz display at the default geometry (a 1164x248 card at 200%), medians of
+5 interleaved runs:
+
+| variant | idle cpu ms/s | `--load 1` composed | on screen vs Shipped, notch | soft |
+|---|---|---|---|---|
+| Shipped | 363-406 | 59-62% | - | - |
+| FrozenBacking (backing copy a still) | 336-394 | 58-60% | 3 px, max 1 level | 252k px, max 49 levels |
+| CachedGlow (BitmapCache, pulse on layer Opacity) | 344 | 61% | 185k px, max 4 levels | max 42 levels |
+| CachedText (BitmapCache per text line) | 266 | 63% | 90k px, max 114 levels | same |
+| SplitGlow (glow layer in its own window behind) | 223-246 | 66-72% | 3 px, max 1 level | - |
+| SplitAllLive (glow, background and text in three windows) | 223 | 97% | 1 px, max 1 level | 162k px, max 1 level |
+| NoTextShadow (price, not a candidate) | 188-191 | 97-98% | - | - |
+| PulseOff (price) | 133-141 | - | - | - |
+| NoGlow (price) | 125 | - | - | - |
+
+What it establishes:
+
+- WPF does not keep an effect's output. Any redraw of a region re-runs every effect in it, and the pulse
+  redraws the whole card at the refresh rate, so the text shadows run 165 times a second. They are what
+  drops frames under load: without them the card holds 97-98% instead of about 60%.
+- `BitmapCache` stops the re-runs but changes pixels: up to 4 levels on the glow, and visibly heavier
+  glyph edges on cached text (up to 114 levels), with or without `SnapsToDevicePixels`.
+- WPF tracks redraws per window, and DWM blends the windows' retained surfaces. Splitting the layers into
+  windows stacked in the template's order leaves each one redrawing only when its own content changes:
+  the text window never, after its first frame. On screen it matches the single window to within
+  1 level (8-bit rounding of the blend order), on binary and soft alpha alike.
+- Freezing the backing copy is lossless only for binary alpha that is the same in every frame, and buys
+  nothing on its own while the pulse runs; with the layers split it is not needed.
+
+Not measured yet: whether the windows stay in step during a slide, when all of them move every frame.
+
 ## The composer probe
 
 ```powershell
