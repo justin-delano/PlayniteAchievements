@@ -110,7 +110,8 @@ $extraSources = @{
         (Join-Path $repo 'source\Services\Recording\HapticEndpointClassifier.cs'),
         (Join-Path $repo 'source\Services\UI\ControllerPadIds.cs'))
     SlideCadenceProbe = @(
-        (Join-Path $here 'SlideTruth.cs'))
+        (Join-Path $here 'SlideTruth.cs'),
+        (Join-Path $here 'SplitTruth.cs'))
     HapticProbe = @(
         (Join-Path $repo 'source\Services\Recording\ProcessLoopbackCapture.cs'),
         (Join-Path $repo 'source\Services\Recording\AudioGapTracker.cs'),
