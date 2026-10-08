@@ -329,24 +329,7 @@ namespace PlayniteAchievements
                     Height = 720
                 },
                 "WorkshopSettingsPopout",
-                () =>
-                {
-                    view.Dispose();
-
-                    // The Account page edits the live settings (the endpoint URLs). Saved here
-                    // unless a settings window is open, whose own OK or Cancel owns those edits.
-                    if (Views.SettingsControl.Live == null)
-                    {
-                        try
-                        {
-                            SavePluginSettings(_settingsViewModel.Settings);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger?.Error(ex, "Failed to save settings from the Workshop window.");
-                        }
-                    }
-                });
+                () => view.Dispose());
         }
 
         private bool _settingsViewOpen;
