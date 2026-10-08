@@ -551,7 +551,7 @@ namespace PlayniteAchievements.ViewModels.Settings
 
         #endregion
 
-        #region Toast motion (toast surface, scope styles only)
+        #region Toast position and motion (toast surface, scope styles only)
 
         private bool _isKindStyle;
         private static IReadOnlyList<ToastMotionOption> _entranceMotionOptions;
@@ -605,6 +605,28 @@ namespace PlayniteAchievements.ViewModels.Settings
             };
         }
 
+        private static IReadOnlyList<ToastMotionOption> _positionOptions;
+
+        /// <summary>
+        /// Position choices for the style. Default follows the global position setting.
+        /// </summary>
+        public IReadOnlyList<ToastMotionOption> PositionOptions =>
+            _positionOptions ?? (_positionOptions = new[]
+            {
+                new ToastMotionOption(null, L("LOCPlayAch_Common_Default")),
+                new ToastMotionOption((int)ToastScreenCorner.BottomRight, L("LOCPlayAch_Settings_ToastPosition_BottomRight")),
+                new ToastMotionOption((int)ToastScreenCorner.BottomLeft, L("LOCPlayAch_Settings_ToastPosition_BottomLeft")),
+                new ToastMotionOption((int)ToastScreenCorner.BottomCenter, L("LOCPlayAch_Settings_ToastPosition_BottomCenter")),
+                new ToastMotionOption((int)ToastScreenCorner.TopRight, L("LOCPlayAch_Settings_ToastPosition_TopRight")),
+                new ToastMotionOption((int)ToastScreenCorner.TopLeft, L("LOCPlayAch_Settings_ToastPosition_TopLeft"))
+            });
+
+        public ToastMotionOption SelectedPosition
+        {
+            get => FindMotionOption(PositionOptions, (int?)Surface?.Position);
+            set => SetSurfaceMotion(value, (surface, v) => surface.Position = (ToastScreenCorner?)v);
+        }
+
         public ToastMotionOption SelectedEntranceMotion
         {
             get => FindMotionOption(EntranceMotionOptions, (int?)Surface?.EntranceMotion);
@@ -648,6 +670,7 @@ namespace PlayniteAchievements.ViewModels.Settings
 
         private void NotifyMotionOptions()
         {
+            OnPropertyChanged(nameof(SelectedPosition));
             OnPropertyChanged(nameof(SelectedEntranceMotion));
             OnPropertyChanged(nameof(SelectedExitMotion));
             OnPropertyChanged(nameof(SelectedMotionFeel));
@@ -2204,7 +2227,8 @@ namespace PlayniteAchievements.ViewModels.Settings
             else if (e.PropertyName == nameof(NotificationSurfaceStyle.EntranceMotion) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.ExitMotion) ||
                      e.PropertyName == nameof(NotificationSurfaceStyle.MotionFeel) ||
-                     e.PropertyName == nameof(NotificationSurfaceStyle.MotionSpeed))
+                     e.PropertyName == nameof(NotificationSurfaceStyle.MotionSpeed) ||
+                     e.PropertyName == nameof(NotificationSurfaceStyle.Position))
             {
                 NotifyMotionOptions();
             }
@@ -2348,8 +2372,8 @@ namespace PlayniteAchievements.ViewModels.Settings
     }
 
     /// <summary>
-    /// One entry of a toast motion dropdown: an enum value as an int (null for the unset entry)
-    /// and its localized label.
+    /// One entry of a toast motion or position dropdown: an enum value as an int (null for the unset
+    /// entry) and its localized label.
     /// </summary>
     internal sealed class ToastMotionOption
     {

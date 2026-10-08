@@ -244,11 +244,13 @@ namespace PlayniteAchievements.Services.Tests
                 style.Toast.ExitMotion = ToastMotion.Fade;
                 style.Toast.MotionFeel = ToastMotionFeel.Smooth;
                 style.Toast.MotionSpeed = ToastMotionSpeed.Relaxed;
+                style.Toast.Position = ToastScreenCorner.BottomCenter;
 
                 var filePath = Path.Combine(tempDir, "motion.panotif");
                 store.ExportSurfacePackage(isFrame: false, style, filePath);
 
                 var imported = Read(store, tempDir, filePath);
+                Assert.AreEqual(ToastScreenCorner.BottomCenter, imported.Toast.Position);
                 Assert.AreEqual(ToastMotion.Zoom, imported.Toast.EntranceMotion);
                 Assert.AreEqual(ToastMotion.Fade, imported.Toast.ExitMotion);
                 Assert.AreEqual(ToastMotionFeel.Smooth, imported.Toast.MotionFeel);
@@ -277,6 +279,7 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsNull(imported.Toast.ExitMotion);
                 Assert.IsNull(imported.Toast.MotionFeel);
                 Assert.IsNull(imported.Toast.MotionSpeed);
+                Assert.IsNull(imported.Toast.Position);
                 Assert.IsFalse(imported.Toast.HasCustomMotion);
             }
             finally

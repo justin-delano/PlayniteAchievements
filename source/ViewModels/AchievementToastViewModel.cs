@@ -112,7 +112,7 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// The scope's toast style (game, provider or global, without the kind's own copy), which
-        /// the toast service reads the entrance and exit motion from.
+        /// the toast service reads the entrance and exit motion and the position from.
         /// </summary>
         internal NotificationSurfaceStyle MotionSurface { get; }
 

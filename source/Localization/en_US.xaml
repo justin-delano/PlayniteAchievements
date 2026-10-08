@@ -705,6 +705,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShowAccentStrip">Left rarity accent</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShowCountdownBar">Timer bar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_CountdownBarColor">Timer bar color</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_Position">Position</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_MotionEntrance">Entrance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_MotionExit">Exit</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_MotionEasing">Easing</sys:String>
