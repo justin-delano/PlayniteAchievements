@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public enum ToastMotionFeel
     {
-        /// <summary>Cubic ease with no overshoot.</summary>
+        /// <summary>Sine ease with no overshoot. The default.</summary>
         Smooth,
 
         /// <summary>Overshoots slightly on entry before settling.</summary>
