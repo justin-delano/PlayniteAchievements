@@ -2631,13 +2631,21 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 // Cloaked from before Show to the reveal, as Opacity = 0 does for a layered window.
+                // DWM can still compose a newly shown window's first frame or two before the cloak
+                // takes hold (recorded: the card flashed at its pre-placement spot after Show), so the
+                // card stays hidden, laid out but not drawn, until the cloak has settled below.
                 if (_activeDwmComposed)
                 {
                     ToastWindowSurface.SetCloaked(window, true);
+                    slideHost.Visibility = Visibility.Hidden;
                 }
 
                 PlaceWindow(window, "preshow");
                 window.Show();
+                if (_activeDwmComposed)
+                {
+                    ToastWindowSurface.SetCloaked(window, true);
+                }
 
                 // Moving the per-monitor window onto the target monitor raises WM_DPICHANGED
                 // asynchronously; WPF then resizes/repositions the window. Wait for that to settle (the
@@ -2690,6 +2698,18 @@ namespace PlayniteAchievements.Services.UI
                 // starts. Bounded like the settle loop above, and it runs for an unrevealed wave too,
                 // whose recorded track would otherwise carry the same jump. The slide-in's motion
                 // cache is realized in the same frames.
+                if (_activeDwmComposed)
+                {
+                    // Past the frames DWM may compose before the cloak holds, the card can draw.
+                    await WaitForComposedFramesAsync(CloakSettleFrames, WarmFrameTimeoutMs).ConfigureAwait(true);
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
+                    slideHost.Visibility = Visibility.Visible;
+                }
+
                 EngageMotionCache(_activeSlideHost, window);
                 var warmFrames = await WaitForComposedFramesAsync(WarmFrameCount, WarmFrameTimeoutMs)
                     .ConfigureAwait(true);
@@ -4087,6 +4107,9 @@ namespace PlayniteAchievements.Services.UI
         // uncloaked: the UI thread runs at most a frame ahead of the render thread, so three is past
         // the frame that presents the start.
         private const int RevealHoldFrames = 3;
+        // Composed frames after Show before a cloaked DWM window's card may draw: the recorded flash
+        // spanned the first two frames after Show, before the cloak took hold.
+        private const int CloakSettleFrames = 3;
         private const int WarmFrameTimeoutMs = 150;
         // Frame period assumed when the anchor monitor's refresh rate can't be read (60 Hz).
         private const double FallbackFramePeriodMs = 1000d / 60d;
