@@ -66,7 +66,7 @@ $tools = @(
     'CaptureHarness', 'FrameDump', 'AttributeBisect', 'PacerProbe', 'GenerationLoss',
     'SlideProbe', 'SlideStoryboardProbe', 'SlideCadenceProbe',
     'ChimeSeparationProbe', 'ChimeBurstProbe', 'HapticProbe', 'ComposerProbe',
-    'CaptureStarvationProbe', 'ChannelMapProbe', 'ClipRemnantProbe', 'ThemeToastClipProbe', 'HoldProbe')
+    'CaptureStarvationProbe', 'ChannelMapProbe', 'ClipRemnantProbe', 'ThemeToastClipProbe', 'HoldProbe', 'ScreenFrameRecorder')
 # Tools that compile plugin source files in directly, so they always test the current algorithm
 # rather than a built DLL.
 $extraSources = @{
