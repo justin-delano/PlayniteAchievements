@@ -66,6 +66,7 @@ namespace PlayniteAchievements.Views.Showcase
             {
                 case ShowcaseWidgetKind.Pie:
                     projection.LinkedSliceKeys = _overview.GetLinkedSliceKeys(ShowcaseWidgetOptions.GetPieMode(widget));
+                    projection.LinkedOptionGames = _overview.LatestSnapshot?.GameSummaries;
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     projection.HighlightedSpan = _overview.UnlockSpanFilter;
