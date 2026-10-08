@@ -24,6 +24,9 @@ namespace PlayniteAchievements
         private static string PluginGameMaintenanceSection =>
             PluginGameMenuSection + "|" + ResourceProvider.GetString("LOCPlayAch_Settings_Maintenance_Title");
         private static string PluginMainMenuSection => "@" + ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+        // Nested "Refresh" submenu under the plugin's main-menu section, holding every refresh mode.
+        private static string PluginMainRefreshSection =>
+            PluginMainMenuSection + "|" + ResourceProvider.GetString("LOCPlayAch_Button_Refresh");
         private int _fullscreenMenuGlobalProgressActive;
 
         private bool IsRefreshInProgress()
@@ -792,14 +795,8 @@ namespace PlayniteAchievements
             {
                 yield return new MainMenuItem
                 {
-                    Description = "-",
-                    MenuSection = PluginMainMenuSection
-                };
-
-                yield return new MainMenuItem
-                {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Recent"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         _ = StartMenuRefreshAsync(new RefreshRequest { Mode = RefreshModeType.Recent });
@@ -809,7 +806,7 @@ namespace PlayniteAchievements
                 yield return new MainMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Full"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         _ = StartMenuRefreshAsync(new RefreshRequest { Mode = RefreshModeType.Full });
@@ -819,7 +816,7 @@ namespace PlayniteAchievements
                 yield return new MainMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Installed"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         _ = StartMenuRefreshAsync(new RefreshRequest { Mode = RefreshModeType.Installed });
@@ -829,7 +826,7 @@ namespace PlayniteAchievements
                 yield return new MainMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Favorites"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         _ = StartMenuRefreshAsync(new RefreshRequest { Mode = RefreshModeType.Favorites });
@@ -839,7 +836,7 @@ namespace PlayniteAchievements
                 yield return new MainMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Selected"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         _ = StartMenuRefreshAsync(new RefreshRequest { Mode = RefreshModeType.LibrarySelected });
@@ -849,7 +846,7 @@ namespace PlayniteAchievements
                 yield return new MainMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Missing"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         _ = StartMenuRefreshAsync(new RefreshRequest { Mode = RefreshModeType.Missing });
@@ -859,7 +856,7 @@ namespace PlayniteAchievements
                 yield return new MainMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_MenuItem"),
-                    MenuSection = PluginMainMenuSection,
+                    MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
                         if (!CustomRefreshControl.TryShowDialog(
