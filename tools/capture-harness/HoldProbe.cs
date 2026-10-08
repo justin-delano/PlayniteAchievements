@@ -85,11 +85,20 @@ internal static class HoldProbe
 
         /// <summary>SplitAll with the backing copy left animating, for backgrounds whose alpha is not binary.</summary>
         SplitAllLive,
+
+        /// <summary>Motion mode: the moving host cached (BitmapCache) for the motion's span.</summary>
+        CachedHost,
+
+        /// <summary>
+        /// Motion mode, slide only: the DWM window itself is moved by SetWindowPos in whole device
+        /// pixels each frame, with no travel room and no transform, so WPF redraws nothing.
+        /// </summary>
+        WindowMove,
     }
 
     private static readonly Variant[] Candidates =
     {
-        Variant.FrozenBacking, Variant.CachedGlow, Variant.CachedText, Variant.CachedGlowText, Variant.SplitGlow, Variant.SplitAll, Variant.SplitAllLive,
+        Variant.FrozenBacking, Variant.CachedGlow, Variant.CachedText, Variant.CachedGlowText, Variant.SplitGlow, Variant.SplitAll, Variant.SplitAllLive, Variant.CachedHost,
     };
 
     private static bool CachesGlow(Variant v) => v == Variant.CachedGlow || v == Variant.CachedGlowText;
@@ -122,6 +131,18 @@ internal static class HoldProbe
     private static TextHintingMode? _cacheHint;
     private static TextRenderingMode? _cacheRendering;
     private static bool _cacheSnap;
+    // Motion mode: slide, fade or zoom cycling continuously at the shipped 300 ms sine, with the
+    // background and pulse still, as the quiet gate holds them during a notification's motion.
+    private static string _motion;
+    private const double MotionMs = 300;
+    // Motion mode's frozen comparison pose: the shown fraction (1 at rest, 0 off or transparent).
+    private static double _pose = 1;
+    // Rounds the slide offset to whole pixels (this display is at 100%, so DIP are device pixels).
+    private static bool _snap;
+    // Rounds only the live (uncached) card, to compare a self-snapping cache against it.
+    private static bool _snapLive;
+    private static double _hostCacheScale = 1;
+    private static bool _hostCacheSnap;
     private static double _fps = 50;
     private static HashSet<string> _only;
     private static double _periodMs;
@@ -154,6 +175,12 @@ internal static class HoldProbe
                 case "--cache-hint": _cacheHint = (TextHintingMode)Enum.Parse(typeof(TextHintingMode), args[++i], true); break;
                 case "--cache-render": _cacheRendering = (TextRenderingMode)Enum.Parse(typeof(TextRenderingMode), args[++i], true); break;
                 case "--cache-snap": _cacheSnap = true; break;
+                case "--motion": _motion = args[++i].ToLowerInvariant(); break;
+                case "--pose": _pose = next(); break;
+                case "--snap": _snap = true; break;
+                case "--snap-live": _snapLive = true; break;
+                case "--host-cache-scale": _hostCacheScale = next(); break;
+                case "--host-cache-snap": _hostCacheSnap = true; break;
                 case "--only":
                     _only = new HashSet<string>(args[++i].Split(','), StringComparer.OrdinalIgnoreCase);
                     break;
@@ -268,7 +295,7 @@ internal static class HoldProbe
                 Left = 0,
                 Top = 0,
                 Width = (_cardWidth + (2 * _glow)) * _scale + 200,
-                Height = (_cardHeight + (2 * _glow)) * _scale + 200,
+                Height = (_cardHeight + (2 * _glow) + (_motion == "slide" ? _cardHeight + 40 : 0)) * _scale + 200,
             };
             backdrop.Show();
 
@@ -311,7 +338,16 @@ internal static class HoldProbe
             window.Show();
             card.Front?.Show();
             await WaitFrames(10);
-            card.Start(animate: variant != Variant.StaticBackground);
+            EventHandler motion = null;
+            if (_motion != null)
+            {
+                motion = MotionDriver(variant, card, window);
+                CompositionTarget.Rendering += motion;
+            }
+            else
+            {
+                card.Start(animate: variant != Variant.StaticBackground);
+            }
             await Task.Delay(1000);
 
             var ticks = 0;
@@ -335,6 +371,10 @@ internal static class HoldProbe
             CompositionTarget.Rendering += count;
             await Task.Delay(TimeSpan.FromSeconds(_seconds));
             CompositionTarget.Rendering -= count;
+            if (motion != null)
+            {
+                CompositionTarget.Rendering -= motion;
+            }
             var wall = clock.Elapsed.TotalSeconds;
             process.Refresh();
             var cpu = (process.TotalProcessorTime - cpu0).TotalMilliseconds;
@@ -373,6 +413,10 @@ internal static class HoldProbe
             window.Show();
             card.Front?.Show();
             card.Freeze(FrozenFrame, FrozenPulse);
+            if (_motion != null)
+            {
+                ApplyPose(card, _pose);
+            }
             await WaitFrames(10);
             await Task.Delay(400);
 
@@ -497,6 +541,10 @@ internal static class HoldProbe
         public int Presented;
         public Window Behind;
         public Window Front;
+        public Grid MoveHost;
+        public ScaleTransform Scale;
+        public TranslateTransform Translate;
+        public double Travel;
         private Thread _thread;
         private volatile bool _running;
         private int _index;
@@ -584,6 +632,84 @@ internal static class HoldProbe
         }
     }
 
+    /// <summary>
+    /// Drives one motion continuously: the entrance over <see cref="MotionMs"/> and the exit over the
+    /// same, back to back, on a Stopwatch as the notification's clock-driven slide does.
+    /// </summary>
+    private static EventHandler MotionDriver(Variant variant, Card card, Window window)
+    {
+        var ease = new SineEase { EasingMode = EasingMode.EaseOut };
+        var clock = Stopwatch.StartNew();
+        var hwnd = new WindowInteropHelper(window).Handle;
+        GetWindowRect(hwnd, out var rest);
+        var scale = PresentationSource.FromVisual(window)?.CompositionTarget?.TransformToDevice.M22 ?? 1d;
+        return (s, e) =>
+        {
+            var cycle = clock.Elapsed.TotalMilliseconds % (2 * MotionMs);
+            var entering = cycle < MotionMs;
+            var t = (entering ? cycle : cycle - MotionMs) / MotionMs;
+            // Shown fraction: 0 off or transparent, 1 at rest.
+            var shown = entering ? ease.Ease(t) : 1 - ease.Ease(t);
+            switch (_motion)
+            {
+                case "slide":
+                    if (variant == Variant.WindowMove)
+                    {
+                        var dy = (int)Math.Round(card.Travel * scale * (1 - shown));
+                        SetWindowPos(hwnd, IntPtr.Zero, rest.Left, rest.Top + dy, 0, 0, 0x0001 | 0x0004 | 0x0010);
+                    }
+                    else
+                    {
+                        card.Translate.Y = card.Travel * (1 - shown);
+                    }
+
+                    break;
+                case "fade":
+                    card.MoveHost.Opacity = shown;
+                    break;
+                case "zoom":
+                    var z = 0.85 + (0.15 * shown);
+                    card.Scale.ScaleX = z;
+                    card.Scale.ScaleY = z;
+                    card.MoveHost.Opacity = shown;
+                    break;
+            }
+        };
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rect32
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out Rect32 rect);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+
+    /// <summary>Holds the motion at one shown fraction, as a frame mid-motion would show it.</summary>
+    private static void ApplyPose(Card card, double shown)
+    {
+        switch (_motion)
+        {
+            case "slide":
+                var exact = card.Travel * (1 - shown);
+                card.Translate.Y = _snap || (_snapLive && card.MoveHost.CacheMode == null) ? Math.Round(exact * _scale) / _scale : exact;
+                break;
+            case "fade":
+                card.MoveHost.Opacity = shown;
+                break;
+            case "zoom":
+                var z = 0.85 + (0.15 * shown);
+                card.Scale.ScaleX = z;
+                card.Scale.ScaleY = z;
+                card.MoveHost.Opacity = shown;
+                break;
+        }
+    }
+
     private static readonly Dictionary<BitmapSource, byte[]> FramePixels = new Dictionary<BitmapSource, byte[]>();
 
     private static void CopyFrame(BitmapSource frame, WriteableBitmap target)
@@ -615,7 +741,37 @@ internal static class HoldProbe
         {
             LayoutTransform = Math.Abs(_scale - 1) > 1e-6 ? new ScaleTransform(_scale, _scale) : null,
         };
-        outerRoot.Children.Add(root);
+        if (_motion != null)
+        {
+            // The notification's slide host: scale at 0, translate at 1, travel room below the
+            // card for a slide that moves inside the window.
+            card.Scale = new ScaleTransform(1, 1);
+            card.Translate = new TranslateTransform();
+            var group = new TransformGroup();
+            group.Children.Add(card.Scale);
+            group.Children.Add(card.Translate);
+            card.Travel = _cardHeight + 40;
+            var moveHost = new Grid
+            {
+                RenderTransform = group,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                Margin = _motion == "slide" && variant != Variant.WindowMove
+                    ? new Thickness(0, 0, 0, card.Travel)
+                    : new Thickness(0),
+            };
+            if (variant == Variant.CachedHost)
+            {
+                moveHost.CacheMode = new BitmapCache { RenderAtScale = _hostCacheScale, SnapsToDevicePixels = _hostCacheSnap };
+            }
+
+            moveHost.Children.Add(root);
+            card.MoveHost = moveHost;
+            outerRoot.Children.Add(moveHost);
+        }
+        else
+        {
+            outerRoot.Children.Add(root);
+        }
 
         if (variant != Variant.NoGlow)
         {
