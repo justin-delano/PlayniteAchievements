@@ -490,6 +490,8 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
             var owned = library[row.Id].ToList();
             row.IsInstalled = owned.Count > 0;
+            var updates = _plugin.LibraryUpdateService;
+            row.IsApplied = updates != null && owned.Any(item => updates.UsesOf(item).Count > 0);
             row.HasUpdate = owned.Any(item => WorkshopIdentityStore.IsNewer(row.Version, item.Version));
         }
 
