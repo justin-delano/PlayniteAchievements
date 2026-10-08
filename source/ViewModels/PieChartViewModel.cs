@@ -985,6 +985,9 @@ namespace PlayniteAchievements.ViewModels
             }
         };
 
+        /// <summary>The separator thickness LiveCharts gives pie slices.</summary>
+        private const double SliceSeparatorThickness = 2.0;
+
         private void SynchronizePieSeries(IReadOnlyList<PieSliceData> slices)
         {
             var sliceCount = slices?.Count ?? 0;
@@ -1024,14 +1027,11 @@ namespace PlayniteAchievements.ViewModels
                 // A separator belongs between slices. A lone slice is a full turn whose stroke
                 // would still draw its start and end edges as a seam at the start angle, and a
                 // zero-value slice is only a stroked line, so neither gets one.
-                if (drawnSlices > 1 && slice != null && slice.ChartValue > 0)
-                {
-                    series.ClearValue(LiveCharts.Wpf.Series.StrokeThicknessProperty);
-                }
-                else
-                {
-                    series.StrokeThickness = 0;
-                }
+                // Set rather than cleared: LiveCharts gives a pie series its 2 px in the
+                // constructor, so clearing the value would drop it to the property's default of 0.
+                series.StrokeThickness = drawnSlices > 1 && slice != null && slice.ChartValue > 0
+                    ? SliceSeparatorThickness
+                    : 0;
 
                 var sliceColor = slice?.Color ?? Colors.Transparent;
                 var isLocked = slice?.IsLocked == true;
