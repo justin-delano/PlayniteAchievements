@@ -493,12 +493,103 @@ namespace PlayniteAchievements.Views.Controls
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             AttachCurrentSources();
+            AttachTooltip();
             ScheduleCalculation();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             DetachCurrentSources();
+            DetachTooltip();
+        }
+
+        // The hover tooltip, shown in the window's adorner layer in place of LiveCharts' Popup
+        // (see ChartTooltipAdorner). A window without an adorner layer keeps the Popup.
+        private PieChartTooltip _tooltip;
+        private ChartTooltipAdorner _tooltipAdorner;
+
+        /// <summary>How far LiveCharts sets a pie tooltip off the center toward the slice.</summary>
+        private const double TooltipCenterOffset = 15.0;
+
+        private void AttachTooltip()
+        {
+            if (_tooltipAdorner != null || !(System.Windows.Documents.AdornerLayer.GetAdornerLayer(PieHost) is System.Windows.Documents.AdornerLayer layer))
+            {
+                return;
+            }
+
+            _tooltip = _tooltip ?? new PieChartTooltip();
+            _tooltipAdorner = new ChartTooltipAdorner(PieHost, _tooltip) { Visibility = Visibility.Collapsed };
+            layer.Add(_tooltipAdorner);
+            Chart.DataTooltip = null;
+        }
+
+        private void DetachTooltip()
+        {
+            if (_tooltipAdorner == null)
+            {
+                return;
+            }
+
+            System.Windows.Documents.AdornerLayer.GetAdornerLayer(PieHost)?.Remove(_tooltipAdorner);
+            _tooltipAdorner = null;
+        }
+
+        /// <summary>
+        /// Shows the hovered slice's tooltip where LiveCharts put its own: a little off the pie's
+        /// center toward the slice, on the side of the center the slice is on. The content and
+        /// the position are set together, so they change in the same frame.
+        /// </summary>
+        private void ShowTooltip(ChartPoint point)
+        {
+            if (_tooltipAdorner == null || !(point?.SeriesView is PieSeries series))
+            {
+                return;
+            }
+
+            var slice = GetPieSlice(series);
+            if (slice == null || !TryGetPieCenter(new[] { series }, out var center))
+            {
+                HideTooltip();
+                return;
+            }
+
+            _tooltip.Points = new List<DataPointViewModel>
+            {
+                new DataPointViewModel
+                {
+                    ChartPoint = point,
+                    Series = new SeriesViewModel { Title = series.Title, Fill = series.Fill, Stroke = series.Stroke }
+                }
+            };
+            _tooltip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var size = _tooltip.DesiredSize;
+
+            // LiveCharts' own placement (PieChart.GetTooltipPosition), from the pie's center.
+            var angle = SliceMidAngle(slice, 0);
+            var radians = (angle + 180.0) * Math.PI / 180.0;
+            var x = center.X + (angle > 0.0 && angle < 180.0 ? -size.Width : 0) + (Math.Sin(radians) * TooltipCenterOffset);
+            var y = center.Y + (angle > 90.0 && angle < 270.0 ? -size.Height : 0) - (Math.Cos(radians) * TooltipCenterOffset);
+            _tooltipAdorner.MoveTo(new Point(x, y));
+            _tooltipAdorner.Visibility = Visibility.Visible;
+        }
+
+        private void HideTooltip()
+        {
+            if (_tooltipAdorner != null)
+            {
+                _tooltipAdorner.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        // Off the slices (the hole, the gaps, the margin) the tooltip goes, as LiveCharts' did
+        // when the mouse left a slice. Over a slice the topmost element is its hover shape.
+        private void OnPieChartMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!(e.OriginalSource is PieSlice))
+            {
+                HideTooltip();
+            }
         }
 
         // A new size redraws the slices now; LiveCharts' own redraw comes on its timer, frames
@@ -940,11 +1031,13 @@ namespace PlayniteAchievements.Views.Controls
         private void OnPieChartDataHover(object sender, ChartPoint chartPoint)
         {
             SetHoveredSlice((chartPoint?.SeriesView as PieSeries)?.Title);
+            ShowTooltip(chartPoint);
         }
 
         private void OnPieChartMouseLeave(object sender, MouseEventArgs e)
         {
             SetHoveredSlice(null);
+            HideTooltip();
         }
 
         private void SetHoveredSlice(string label)
