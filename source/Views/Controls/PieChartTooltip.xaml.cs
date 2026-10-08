@@ -32,6 +32,24 @@ namespace PlayniteAchievements.Views.Controls
             {
                 _data = value;
                 OnPropertyChanged();
+                Points = value?.Points;
+            }
+        }
+
+        private System.Collections.Generic.IEnumerable<DataPointViewModel> _points;
+
+        /// <summary>
+        /// The rows shown: the points LiveCharts hands over in <see cref="Data"/>, or the ones a
+        /// host sets directly when it shows the tooltip itself (TooltipData cannot be built
+        /// outside LiveCharts).
+        /// </summary>
+        public System.Collections.Generic.IEnumerable<DataPointViewModel> Points
+        {
+            get => _points;
+            set
+            {
+                _points = value;
+                OnPropertyChanged();
             }
         }
 
