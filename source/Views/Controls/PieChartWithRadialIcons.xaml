@@ -39,6 +39,17 @@
             </lvc:PieChart.DataTooltip>
         </lvc:PieChart>
 
+        <!-- A lone slice draws no separator, which would leave a seam at its start angle; its
+             outer and inner edges are outlined here instead, placed from code-behind. -->
+        <Canvas IsHitTestVisible="False">
+            <Ellipse x:Name="SingleSliceOuterOutline"
+                     Stroke="{DynamicResource PlayAch.Brush.Chart.Separator}"
+                     Visibility="Collapsed"/>
+            <Ellipse x:Name="SingleSliceInnerOutline"
+                     Stroke="{DynamicResource PlayAch.Brush.Chart.Separator}"
+                     Visibility="Collapsed"/>
+        </Canvas>
+
         <TextBlock Text="{Binding CenterPercentageText, ElementName=Root}"
                    FontSize="{Binding CenterPercentageFontSize, ElementName=Root}"
                    Visibility="{Binding CenterPercentageVisibility, ElementName=Root}"
