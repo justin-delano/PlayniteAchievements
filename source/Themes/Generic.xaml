@@ -113,26 +113,22 @@
                 <ControlTemplate TargetType="{x:Type controls:TimeWindowPicker}">
                     <StackPanel>
                         <DockPanel LastChildFill="True">
-                            <ComboBox x:Name="PART_Granularity"
-                                      DockPanel.Dock="Right"
-                                      MinWidth="96"
-                                      MinHeight="0"
-                                      Height="26"
-                                      Padding="6,0"
-                                      Margin="8,0,0,0"
-                                      VerticalAlignment="Center"
-                                      Style="{StaticResource PlayAch.ComboBox.BaseStyle}"
-                                      FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                      ItemsSource="{TemplateBinding GranularityItems}"
-                                      DisplayMemberPath="Label"
-                                      Visibility="{Binding ShowGranularity, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
-                                <!-- Entries the window cannot honor (Day across years, say) are greyed out. -->
-                                <ComboBox.ItemContainerStyle>
-                                    <Style TargetType="ComboBoxItem" BasedOn="{StaticResource PlayAch.ComboBoxItem.BaseStyle}">
-                                        <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
-                                    </Style>
-                                </ComboBox.ItemContainerStyle>
-                            </ComboBox>
+                            <!-- The control bars' dropdown: a selector button opening a menu of the
+                                 units, with the ones the window cannot honor (Day across years, say)
+                                 greyed out. The styles come from the app-level grid styles, which
+                                 this dictionary does not merge, hence the dynamic lookups. -->
+                            <Button x:Name="PART_Granularity"
+                                    DockPanel.Dock="Right"
+                                    MinWidth="96"
+                                    Height="{StaticResource PlayAch.Size.Control.Height}"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Style="{DynamicResource AchievementSelectorButtonStyle}"
+                                    Visibility="{Binding ShowGranularity, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                                <Button.ContextMenu>
+                                    <ContextMenu Style="{DynamicResource AchievementSelectorContextMenuStyle}"/>
+                                </Button.ContextMenu>
+                            </Button>
                             <WrapPanel VerticalAlignment="Center">
                                 <ItemsControl x:Name="PART_Presets"
                                               ItemsSource="{TemplateBinding PresetItems}"
