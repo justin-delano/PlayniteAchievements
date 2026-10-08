@@ -3924,13 +3924,13 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        // Physical-pixel slide for the in-game path: the window is positioned by SetWindowPos, so the
-        // WPF Window.Top animation can't be used. The physical Y is interpolated using the easing and
-        // duration authored in the themeable slide storyboards (SlideIn/SlideOutStoryboardKey); these
-        // are only the fallbacks used when a theme defines no slide storyboard.
-        private const double SlideOvershootAmplitude = 0.35;
-        private const int SlideInDurationMs = 240;
-        private const int SlideOutDurationMs = 200;
+        // Fallback slide timing, used when no slide storyboard resolves and as the base a style motion
+        // scales. The bundled storyboards in NotificationResources.xaml carry the same values. A sine
+        // ease without overshoot spreads the travel across the slide, so a frame DWM presents late
+        // shows a small step rather than a jump (tools/capture-harness/README.md, "Under load, the
+        // curve is the lever").
+        private const int SlideInDurationMs = 300;
+        private const int SlideOutDurationMs = 250;
         // Extra travel beyond the card height so the card fully clears the screen edge in and out.
         private const double SlideTravelPaddingDip = 40d;
 
@@ -4045,9 +4045,9 @@ namespace PlayniteAchievements.Services.UI
         }
 
         private static readonly IEasingFunction DefaultSlideInEase =
-            new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = SlideOvershootAmplitude };
+            ToastMotionStoryboardFactory.MotionEase(entering: true, feel: null);
         private static readonly IEasingFunction DefaultSlideOutEase =
-            new CubicEase { EasingMode = EasingMode.EaseIn };
+            ToastMotionStoryboardFactory.MotionEase(entering: false, feel: null);
 
         /// <summary>
         /// Per-frame bookkeeping for one <c>CompositionTarget.Rendering</c> subscription: hands the
