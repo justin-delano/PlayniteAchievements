@@ -233,6 +233,9 @@ internal static partial class SlideCadenceProbe
     /// </summary>
     private static bool Truth;
 
+    /// <summary>Runs the three-window slide alignment check (see SplitTruth.cs).</summary>
+    private static bool SplitTruthMode;
+
     /// <summary>Mechanisms to run, by name; null runs all of them.</summary>
     private static HashSet<string> Only;
 
@@ -372,6 +375,10 @@ internal static partial class SlideCadenceProbe
                     System.Diagnostics.Process.GetCurrentProcess().Handle, priority);
                 Console.WriteLine("GPU scheduling priority class {0}: status=0x{1:X8}", priority, status);
             }
+            else if (args[i] == "--split-truth")
+            {
+                SplitTruthMode = true;
+            }
             else if (args[i] == "--truth")
             {
                 Truth = true;
@@ -421,6 +428,12 @@ internal static partial class SlideCadenceProbe
                 }
 
                 Console.WriteLine();
+
+                if (SplitTruthMode)
+                {
+                    await RunSplitTruth(repeats);
+                    return;
+                }
 
                 if (Truth)
                 {
