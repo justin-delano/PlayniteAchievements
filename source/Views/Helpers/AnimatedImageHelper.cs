@@ -145,6 +145,7 @@ namespace PlayniteAchievements.Views.Helpers
 
                 if (keyFrames.CanFreeze)
                 {
+                    AnimationFrameRate.Apply(keyFrames);
                     keyFrames.Freeze();
                 }
 
