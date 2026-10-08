@@ -814,7 +814,13 @@ namespace PlayniteAchievements.Services
                     anchorBias);
             }
 
-            AnnounceHeldCapstones(state.Game.Id, emittableKeys.Count > 0, observedUtc, anchorPolicy, anchorBias);
+            // Only a read that ran maintenance can own a held capstone. An unchanged write means the
+            // refresh prong recorded these unlocks first, and the capstone it held is that prong's
+            // to send after the unlock it claims; draining it here would drop it.
+            if (write.Changed)
+            {
+                AnnounceHeldCapstones(state.Game.Id, emittableKeys.Count > 0, observedUtc, anchorPolicy, anchorBias);
+            }
 
             if (completion != null)
             {
