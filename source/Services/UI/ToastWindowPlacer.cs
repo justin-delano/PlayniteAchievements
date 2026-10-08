@@ -454,7 +454,8 @@ namespace PlayniteAchievements.Services.UI
             double gapDipY,
             out int x,
             out int y,
-            out bool clamped)
+            out bool clamped,
+            FrameworkElement slideHost = null)
         {
             x = 0;
             y = 0;
@@ -470,7 +471,7 @@ namespace PlayniteAchievements.Services.UI
             // the window would place the padding at the corner and push the card inward by the travel.
             // Falls back to the window's own size before layout, where the two are the same thing.
             if (!TryMeasureCardPhysical(window, card, renderScale, slideDipX, slideDipY,
-                    out var insetX, out var insetY, out var physW, out var physH))
+                    out var insetX, out var insetY, out var physW, out var physH, slideHost))
             {
                 insetX = 0;
                 insetY = 0;
@@ -528,7 +529,15 @@ namespace PlayniteAchievements.Services.UI
         /// The slide transform's current value (window DIPs), removed from the measurement so this
         /// always reports the card's <em>resting</em> offset. Without it a placement pass that lands
         /// mid-slide would read the animated position as the inset and move the window to chase the
-        /// animation, doubling the motion. Zero when no slide is running.
+        /// animation, doubling the motion. Zero when no slide is running. Ignored when
+        /// <paramref name="slideHost"/> is given, which removes the slide along with the rest of the
+        /// host's transform.
+        /// </param>
+        /// <param name="slideHost">
+        /// The element whose render transform carries the toast's entrance and exit motion, or null.
+        /// When given, its whole render transform is removed from the measurement, so a pass that
+        /// lands mid-zoom reads the card at full size rather than scaled, which would place the window
+        /// off by the scaled-away margin and snap it back when the zoom ends.
         /// </param>
         public static bool TryMeasureCardPhysical(
             Window window,
@@ -539,7 +548,8 @@ namespace PlayniteAchievements.Services.UI
             out int offsetX,
             out int offsetY,
             out int physW,
-            out int physH)
+            out int physH,
+            FrameworkElement slideHost = null)
         {
             offsetX = 0;
             offsetY = 0;
@@ -571,7 +581,18 @@ namespace PlayniteAchievements.Services.UI
                     return false;
                 }
 
-                var bounds = card.TransformToAncestor(window).TransformBounds(new Rect(card.RenderSize));
+                Rect bounds;
+                if (TryMeasureAtRest(window, card, slideHost, out var restBounds))
+                {
+                    bounds = restBounds;
+                    slideDipX = 0d;
+                    slideDipY = 0d;
+                }
+                else
+                {
+                    bounds = card.TransformToAncestor(window).TransformBounds(new Rect(card.RenderSize));
+                }
+
                 if (bounds.Width <= 0 || bounds.Height <= 0)
                 {
                     return false;
@@ -589,6 +610,46 @@ namespace PlayniteAchievements.Services.UI
                 // or a template swap between passes); the window-sized fallback is correct there.
                 return false;
             }
+        }
+
+        /// <summary>
+        /// The card's bounds in window DIPs with <paramref name="slideHost"/>'s render transform
+        /// removed: the card is measured inside the host, then carried to the window by the host's
+        /// layout placement alone. False when there is no host or its transform cannot be undone, and
+        /// the caller measures through the transform as before.
+        /// </summary>
+        private static bool TryMeasureAtRest(Window window, FrameworkElement card, FrameworkElement slideHost, out Rect bounds)
+        {
+            bounds = Rect.Empty;
+            if (slideHost == null || !slideHost.IsAncestorOf(card) || !window.IsAncestorOf(slideHost))
+            {
+                return false;
+            }
+
+            if (!(slideHost.TransformToAncestor(window) is Transform hostToWindow))
+            {
+                return false;
+            }
+
+            // The render transform as WPF applies it: about RenderTransformOrigin, in the host's own
+            // coordinates.
+            var origin = new System.Windows.Point(
+                slideHost.RenderTransformOrigin.X * slideHost.RenderSize.Width,
+                slideHost.RenderTransformOrigin.Y * slideHost.RenderSize.Height);
+            var render = Matrix.Identity;
+            render.Translate(-origin.X, -origin.Y);
+            render.Append(slideHost.RenderTransform?.Value ?? Matrix.Identity);
+            render.Translate(origin.X, origin.Y);
+            if (!render.HasInverse)
+            {
+                return false;
+            }
+
+            render.Invert();
+            var layoutOnly = render * hostToWindow.Value;
+            var inHost = card.TransformToAncestor(slideHost).TransformBounds(new Rect(card.RenderSize));
+            bounds = Rect.Transform(inHost, layoutOnly);
+            return true;
         }
 
         /// <summary>
@@ -855,13 +916,14 @@ namespace PlayniteAchievements.Services.UI
             double gapDipY,
             bool measure,
             ref PlacementCorrection correction,
-            out PlacementOutcome outcome)
+            out PlacementOutcome outcome,
+            FrameworkElement slideHost = null)
         {
             outcome = default(PlacementOutcome);
             if (!TryComputeCorner(
                 window, card, slideDipX, slideDipY, gameClientPhys, renderScale, monitorScale,
                 horizontal, alignBottom, gapDipX, gapDipY,
-                out var x, out var y, out var clamped))
+                out var x, out var y, out var clamped, slideHost))
             {
                 return false;
             }
