@@ -983,29 +983,61 @@ namespace PlayniteAchievements.Services.UI
 
         private static bool IsOverviewWindow(Window window)
         {
-            return ContainsOverviewControl(window?.Content);
+            return HostsControl<OverviewControl>(window?.Content);
         }
 
-        private static bool ContainsOverviewControl(object content)
+        /// <summary>
+        /// For hotkeys: brings the open plugin window that hosts a <typeparamref name="T"/> to the
+        /// front, or closes it when it is already the active window. False when none is open.
+        /// Runs on the UI thread.
+        /// </summary>
+        public bool TryToggleOpenWindowHosting<T>() where T : class
+        {
+            var application = Application.Current;
+            var window = application?.Windows?
+                .OfType<Window>()
+                .FirstOrDefault(candidate => candidate != null
+                                             && candidate.IsVisible
+                                             && !ReferenceEquals(candidate, application.MainWindow)
+                                             && HostsControl<T>(candidate.Content));
+            if (window == null)
+            {
+                return false;
+            }
+
+            if (window.IsActive)
+            {
+                window.Close();
+            }
+            else
+            {
+                ActivateTrackedWindow(window);
+            }
+
+            return true;
+        }
+
+        /// <summary>Whether a window's content is, or directly wraps, a <typeparamref name="T"/>.</summary>
+        private static bool HostsControl<T>(object content) where T : class
         {
             if (content == null)
             {
                 return false;
             }
 
-            if (content is OverviewControl)
+            if (content is T)
             {
                 return true;
             }
 
             if (content is FullscreenOverlayContainer overlay)
             {
-                return ContainsOverviewControl(overlay.HostedContent);
+                return HostsControl<T>(overlay.HostedContent);
             }
 
             if (content is ContentControl contentControl)
             {
-                return ContainsOverviewControl(contentControl.Content);
+                return HostsControl<T>(contentControl.Content);
             }
 
             return false;
