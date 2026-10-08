@@ -164,6 +164,7 @@ namespace PlayniteAchievements.Services.Overview
 
             var clipped = new OverviewDataSnapshot
             {
+                IsAchievementClip = true,
                 GameSummaries = snapshot.GameSummaries,
                 Achievements = rows,
                 RecentAchievements = (snapshot.RecentAchievements ?? new List<AchievementDisplayItem>())
@@ -269,6 +270,21 @@ namespace PlayniteAchievements.Services.Overview
                 .ToList();
             snapshot.CurrentUserIdentities = source.CurrentUserIdentities;
             return snapshot;
+        }
+
+        /// <summary>
+        /// A linked view narrowed further to <paramref name="kept"/>, as a widget's own control
+        /// bar does. A view cut to the unlocks an achievement filter keeps stays cut: its rows
+        /// are exactly those unlocks, so the narrowed view is cut again from its own rows.
+        /// </summary>
+        public static OverviewDataSnapshot NarrowToGames(
+            OverviewDataSnapshot linked,
+            IReadOnlyList<GameSummaryItem> kept)
+        {
+            var narrowed = Build(linked, kept, keptIsAll: false);
+            return linked?.IsAchievementClip == true
+                ? ClipToAchievements(narrowed, _ => true)
+                : narrowed;
         }
     }
 }
