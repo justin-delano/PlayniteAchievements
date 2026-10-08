@@ -562,15 +562,13 @@ namespace PlayniteAchievements.Views.Controls
                     Series = new SeriesViewModel { Title = series.Title, Fill = series.Fill, Stroke = series.Stroke }
                 }
             };
-            _tooltip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            var size = _tooltip.DesiredSize;
-
-            // LiveCharts' own placement (PieChart.GetTooltipPosition), from the pie's center.
+            // LiveCharts' own placement (PieChart.GetTooltipPosition), from the pie's center. It
+            // shifts by the tooltip's size, so it runs once the new content has been measured.
             var angle = SliceMidAngle(slice, 0);
             var radians = (angle + 180.0) * Math.PI / 180.0;
-            var x = center.X + (angle > 0.0 && angle < 180.0 ? -size.Width : 0) + (Math.Sin(radians) * TooltipCenterOffset);
-            var y = center.Y + (angle > 90.0 && angle < 270.0 ? -size.Height : 0) - (Math.Cos(radians) * TooltipCenterOffset);
-            _tooltipAdorner.MoveTo(new Point(x, y));
+            _tooltipAdorner.Place(size => new Point(
+                center.X + (angle > 0.0 && angle < 180.0 ? -size.Width : 0) + (Math.Sin(radians) * TooltipCenterOffset),
+                center.Y + (angle > 90.0 && angle < 270.0 ? -size.Height : 0) - (Math.Cos(radians) * TooltipCenterOffset)));
             _tooltipAdorner.Visibility = Visibility.Visible;
         }
 
