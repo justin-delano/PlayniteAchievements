@@ -751,12 +751,13 @@ namespace PlayniteAchievements
             }
 
             // The Overview, settings and the Workshop show in every mode, mid-refresh included.
+            // Overview and Settings use Playnite's own labels, which are already translated.
             // Fullscreen can't open Playnite's native plugin-settings dialog (OpenSettingsView is
             // a no-op there), so it hosts the plugin's settings UI in a managed popout that saves
             // on close.
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_OpenOverview"),
+                Description = ResourceProvider.GetString("LOCOverviewLabel"),
                 MenuSection = PluginMainMenuSection,
                 Action = (a) =>
                 {
@@ -766,7 +767,7 @@ namespace PlayniteAchievements
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Landing_OpenSettings"),
+                Description = ResourceProvider.GetString("LOCSettingsLabel"),
                 MenuSection = PluginMainMenuSection,
                 Action = (a) =>
                 {
