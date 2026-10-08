@@ -1313,6 +1313,57 @@ namespace PlayniteAchievements.Views.Controls
 
         // Both edges move out by the growth: the outer one past the ring and the inner one away
         // from the center, so the slice lifts off the hole as well.
+        /// <summary>The control a slice belongs to, so a growth step can move its outline too.</summary>
+        private static readonly DependencyProperty SliceOwnerProperty = DependencyProperty.RegisterAttached(
+            "SliceOwner",
+            typeof(PieChartWithRadialIcons),
+            typeof(PieChartWithRadialIcons),
+            new PropertyMetadata(null));
+
+        /// <summary>The separator thickness LiveCharts gives pie slices.</summary>
+        private const double SliceOutlineThickness = 2.0;
+
+        /// <summary>
+        /// Outlines a lone slice's outer and inner edges, which its own separator would draw
+        /// with a seam at its start angle. Each circle's stroke straddles the edge as a slice's
+        /// outline does; an ellipse draws its stroke inside its bounds, hence the half-stroke
+        /// padding. Hidden whenever two or more slices have values.
+        /// </summary>
+        private void UpdateSingleSliceOutline()
+        {
+            var drawn = (PieSeries?.OfType<PieSeries>() ?? Enumerable.Empty<PieSeries>())
+                .Where(series => (series.Values as ChartValues<PieSliceChartData>)?.FirstOrDefault()?.ChartValue > 0)
+                .Take(2)
+                .ToList();
+            var slice = drawn.Count == 1 ? GetPieSlice(drawn[0]) : null;
+            if (slice == null || slice.Radius <= 0 || !TryGetPieCenter(drawn, out var center))
+            {
+                SingleSliceOuterOutline.Visibility = Visibility.Collapsed;
+                SingleSliceInnerOutline.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            PlaceOutline(SingleSliceOuterOutline, center, slice.Radius);
+            PlaceOutline(SingleSliceInnerOutline, center, slice.InnerRadius);
+        }
+
+        private static void PlaceOutline(System.Windows.Shapes.Ellipse outline, Point center, double radius)
+        {
+            if (radius <= 0)
+            {
+                outline.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var reach = radius + (SliceOutlineThickness / 2.0);
+            outline.StrokeThickness = SliceOutlineThickness;
+            outline.Width = reach * 2;
+            outline.Height = reach * 2;
+            Canvas.SetLeft(outline, center.X - reach);
+            Canvas.SetTop(outline, center.Y - reach);
+            outline.Visibility = Visibility.Visible;
+        }
+
         private static void ApplySliceGrowth(PieSlice slice)
         {
             if (slice == null)
@@ -1337,6 +1388,7 @@ namespace PlayniteAchievements.Views.Controls
             var growth = (double)slice.GetValue(SliceGrowthProperty);
             slice.Radius = baseRadius + growth;
             slice.InnerRadius = baseInnerRadius + growth;
+            (slice.GetValue(SliceOwnerProperty) as PieChartWithRadialIcons)?.UpdateSingleSliceOutline();
         }
 
         // Every LiveCharts draw sets each slice's radius back to the pie's, so the growth goes
@@ -1359,10 +1411,13 @@ namespace PlayniteAchievements.Views.Controls
                     continue;
                 }
 
+                slice.SetValue(SliceOwnerProperty, this);
                 slice.SetValue(SliceBaseRadiusProperty, slice.Radius);
                 slice.SetValue(SliceBaseInnerRadiusProperty, slice.InnerRadius);
                 ApplySliceGrowth(slice);
             }
+
+            UpdateSingleSliceOutline();
         }
     }
 }
