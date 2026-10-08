@@ -9,6 +9,7 @@ using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.Controls
@@ -88,6 +89,7 @@ namespace PlayniteAchievements.Views.Controls
             Focusable = false;
             IsHitTestVisible = false;
             IsTabStop = false;
+            ClickThroughPopupHost.Attach(this);
 
             // Resource references are local values, so a brush set on the chart's usage wins.
             SetResourceReference(SurfaceBrushProperty, "PlayAch.Brush.PopupSurface");
