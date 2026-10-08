@@ -558,7 +558,36 @@ What it establishes:
 - Freezing the backing copy is lossless only for binary alpha that is the same in every frame, and buys
   nothing on its own while the pulse runs; with the layers split it is not needed.
 
-Not measured yet: whether the windows stay in step during a slide, when all of them move every frame.
+Forcing `TextOptions.TextHintingMode` (Fixed, Animated) or `TextRenderingMode` (Grayscale, Aliased) on
+a cached line (`--cache-hint`, `--cache-render`) left the difference exactly unchanged (89,746 pixels,
+max 114 levels), so it comes from how the cached layer is composited, not from text rasterization;
+`--cache-snap` made it worse.
+
+### Split windows while moving: `SlideCadenceProbe --split-truth`
+
+```powershell
+tools\capture-harness\bin\SlideCadenceProbe.exe --split-truth [--repeats 10] [--load N]
+    [--ease sine] [--duration 300] [--card-width 2328] [--card-height 496] [--glow 72]
+```
+
+`SplitTruth.cs` slides three stacked DWM windows (the pulsing glow, a 50 fps animated background, text
+with its shadows) through one shared `TranslateTransform` set from the clock each frame, and reads every
+frame DWM presents through desktop duplication. Each window carries a solid marker in its own screen
+column (the back one in the glow margin); a frame is misaligned when the three marker edges are more than
+1 px apart.
+
+Measured 2026-10-08, sine / 300 ms at the default geometry, 10 slides each:
+
+| load | moving frames | misaligned | worst spread |
+|---|---|---|---|
+| none | 430 | 1 | 2 px |
+| `--load 1` | 269 | 21 | 58 px |
+
+Idle the windows move together; under GPU load each window's frame reaches DWM on its own, and one in
+thirteen presented frames shows them apart. A card split across windows must therefore stand still while
+split, and any change between one window and several is not guaranteed to land in a single frame under
+load. A group opacity (fade, zoom) also cannot be reproduced per layer: each layer faded separately lets
+the background show through the text mid-fade.
 
 ## The composer probe
 
