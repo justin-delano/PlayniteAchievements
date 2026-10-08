@@ -127,6 +127,16 @@ namespace PlayniteAchievements.Services.Tests.UI
             Assert.AreEqual(400d, child.From);
             Assert.AreEqual(0d, child.To);
             Assert.IsNull(Storyboard.GetTarget(child));
+            Assert.IsInstanceOfType(child.EasingFunction, typeof(SineEase));
+        }
+
+        [TestMethod]
+        public void Build_BouncyEntrance_Overshoots()
+        {
+            var storyboard = ToastMotionStoryboardFactory.Build(
+                ToastMotion.Slide, true, ToastMotionFeel.Bouncy, 240, new Vector(0, 180));
+
+            var child = (DoubleAnimation)storyboard.Children.Single();
             Assert.IsInstanceOfType(child.EasingFunction, typeof(BackEase));
         }
 
@@ -140,7 +150,7 @@ namespace PlayniteAchievements.Services.Tests.UI
             Assert.AreEqual(TranslateTransform.YProperty, LastPathParameter(child));
             Assert.AreEqual(0d, child.From);
             Assert.AreEqual(180d, child.To);
-            Assert.IsInstanceOfType(child.EasingFunction, typeof(CubicEase));
+            Assert.IsInstanceOfType(child.EasingFunction, typeof(SineEase));
         }
 
         [TestMethod]
