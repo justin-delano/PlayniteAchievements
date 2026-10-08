@@ -183,9 +183,16 @@ namespace PlayniteAchievements.Services.Showcase
 
         /// <summary>
         /// Set by the overview's mini-showcase: the snapshot already follows the overview's
-        /// filters, the widget shows no control bar of its own, and its clicks set those filters.
+        /// filters, and the widget's clicks set those filters.
         /// </summary>
         public bool IsLinked { get; set; }
+
+        /// <summary>
+        /// The overview's whole library, for a linked widget's own control bar to offer its
+        /// choices from, so the overview's filters (set by other widgets' clicks too) never
+        /// shrink that bar or drop its selections. Null for an unlinked widget.
+        /// </summary>
+        public IReadOnlyList<GameSummaryItem> LinkedOptionGames { get; set; }
 
         /// <summary>
         /// A linked pie's selected slices as <see cref="OverviewLinkedSliceKeys"/> values or
