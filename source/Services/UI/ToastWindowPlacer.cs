@@ -284,6 +284,36 @@ namespace PlayniteAchievements.Services.UI
         /// awareness does not virtualize it. Returns false (and 0) whenever the rate can't be trusted,
         /// leaving callers on their own defaults.
         /// </summary>
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr clip, MonitorEnumProc callback, IntPtr data);
+
+        private delegate bool MonitorEnumProc(IntPtr monitor, IntPtr hdc, IntPtr rect, IntPtr data);
+
+        /// <summary>The highest refresh rate among the connected monitors, or 0 when none can be read.</summary>
+        public static int MaxMonitorRefreshHz()
+        {
+            var max = 0;
+            try
+            {
+                EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (monitor, hdc, rect, data) =>
+                {
+                    if (TryGetRefreshHz(monitor, out var hz) && hz > max)
+                    {
+                        max = hz;
+                    }
+
+                    return true;
+                }, IntPtr.Zero);
+            }
+            catch
+            {
+                // No monitor read: the caller keeps WPF's default.
+            }
+
+            return max;
+        }
+
         public static bool TryGetMonitorRefreshHz(IntPtr windowHandle, out int hz)
         {
             hz = 0;
@@ -294,12 +324,24 @@ namespace PlayniteAchievements.Services.UI
 
             try
             {
-                var monitor = MonitorFromWindow(windowHandle, MONITOR_DEFAULTTONEAREST);
-                if (monitor == IntPtr.Zero)
-                {
-                    return false;
-                }
+                return TryGetRefreshHz(MonitorFromWindow(windowHandle, MONITOR_DEFAULTTONEAREST), out hz);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
+        private static bool TryGetRefreshHz(IntPtr monitor, out int hz)
+        {
+            hz = 0;
+            if (monitor == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            try
+            {
                 var info = new MONITORINFOEX { cbSize = Marshal.SizeOf(typeof(MONITORINFOEX)) };
                 if (!GetMonitorInfoEx(monitor, ref info) || string.IsNullOrEmpty(info.szDevice))
                 {
