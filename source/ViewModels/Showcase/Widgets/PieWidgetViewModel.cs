@@ -212,7 +212,10 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             var games = (snapshot.GameSummaries ?? new List<GameSummaryItem>())
                 .Where(game => game != null)
                 .ToList();
-            adapter.UpdateOptions(games);
+            // A linked pie's bar offers the whole library, not what the overview's filters left.
+            adapter.UpdateOptions(linked && Projection?.LinkedOptionGames != null
+                ? Projection.LinkedOptionGames.Where(game => game != null)
+                : games);
 
             var filtered = adapter.Apply(games);
             if (filtered.Count == games.Count)
