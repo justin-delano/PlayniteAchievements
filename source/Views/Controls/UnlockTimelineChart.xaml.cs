@@ -157,6 +157,15 @@ namespace PlayniteAchievements.Views.Controls
             _axisY.SetBinding(Axis.ForegroundProperty, Bind(nameof(AxisForeground)));
             _axisY.SetResourceReference(Axis.FontSizeProperty, "PlayAch.FontSize.Caption");
 
+            // Axis lines: the baseline under the bars and the line up the left edge, in the
+            // separator brush at full strength against the faint gridlines. LiveCharts has no
+            // axis line, so each is an empty section on the plot's edge; an empty section's
+            // rectangle is as thick as StrokeThickness, and with no stroke the fill draws it.
+            // The X axis shifts sections half a column to centre them on bars, so the left
+            // edge is half a column before the first.
+            _axisY.Sections.Add(CreateAxisLine(0));
+            _axisX.Sections.Add(CreateAxisLine(-0.5));
+
             Chart.AxisX.Add(_axisX);
             Chart.AxisY.Add(_axisY);
 
@@ -366,6 +375,20 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         private Binding Bind(string path) => new Binding(path) { Source = this };
+
+        private AxisSection CreateAxisLine(double value)
+        {
+            var line = new AxisSection
+            {
+                Value = value,
+                SectionWidth = 0,
+                StrokeThickness = 1,
+                Stroke = null,
+                IsHitTestVisible = false
+            };
+            line.SetBinding(AxisSection.FillProperty, Bind(nameof(SeparatorStroke)));
+            return line;
+        }
 
         private static void OnRenderRevisionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
