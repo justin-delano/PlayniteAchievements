@@ -86,7 +86,35 @@ namespace PlayniteAchievements.Views.Controls
             nameof(MaxBarCount), typeof(int), typeof(UnlockTimelineChart), new PropertyMetadata(400));
 
         public static readonly DependencyProperty AxisForegroundProperty = DependencyProperty.Register(
-            nameof(AxisForeground), typeof(Brush), typeof(UnlockTimelineChart), new PropertyMetadata(null));
+            nameof(AxisForeground), typeof(Brush), typeof(UnlockTimelineChart), new PropertyMetadata(null, OnAxisForegroundChanged));
+
+        /// <summary>
+        /// The axis lines' brush: the axis label color at half strength. The label color always
+        /// reads against the chart's surface, where the border brush can fall back to a background
+        /// color and vanish.
+        /// </summary>
+        private static readonly DependencyProperty AxisLineBrushProperty = DependencyProperty.Register(
+            nameof(AxisLineBrush), typeof(Brush), typeof(UnlockTimelineChart), new PropertyMetadata(null));
+
+        private const double AxisLineOpacity = 0.5;
+
+        private Brush AxisLineBrush => (Brush)GetValue(AxisLineBrushProperty);
+
+        private static void OnAxisForegroundChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            Brush line = null;
+            if (e.NewValue is Brush brush)
+            {
+                line = brush.CloneCurrentValue();
+                line.Opacity = brush.Opacity * AxisLineOpacity;
+                if (line.CanFreeze)
+                {
+                    line.Freeze();
+                }
+            }
+
+            d.SetValue(AxisLineBrushProperty, line);
+        }
 
         public static readonly DependencyProperty SeparatorStrokeProperty = DependencyProperty.Register(
             nameof(SeparatorStroke), typeof(Brush), typeof(UnlockTimelineChart), new PropertyMetadata(null));
@@ -158,7 +186,7 @@ namespace PlayniteAchievements.Views.Controls
             _axisY.SetResourceReference(Axis.FontSizeProperty, "PlayAch.FontSize.Caption");
 
             // Axis lines: the baseline under the bars and the line up the left edge, in the
-            // separator brush at full strength against the faint gridlines. LiveCharts has no
+            // axis label color at half strength (AxisLineBrush). LiveCharts has no
             // axis line, so each is an empty section on the plot's edge; an empty section's
             // rectangle is as thick as StrokeThickness, and with no stroke the fill draws it.
             // The X axis shifts sections half a column to centre them on bars, so the left
@@ -386,7 +414,7 @@ namespace PlayniteAchievements.Views.Controls
                 Stroke = null,
                 IsHitTestVisible = false
             };
-            line.SetBinding(AxisSection.FillProperty, Bind(nameof(SeparatorStroke)));
+            line.SetBinding(AxisSection.FillProperty, new Binding { Path = new PropertyPath(AxisLineBrushProperty), Source = this });
             return line;
         }
 
