@@ -32,6 +32,7 @@
                       TooltipTimeout="0:0:0.1"
                       Series="{Binding PieSeries, ElementName=Root}"
                       DataHover="OnPieChartDataHover"
+                      MouseMove="OnPieChartMouseMove"
                       MouseLeave="OnPieChartMouseLeave"
                       DataClick="OnPieChartDataClick">
             <lvc:PieChart.DataTooltip>
