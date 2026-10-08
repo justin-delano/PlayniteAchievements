@@ -5,7 +5,8 @@
 //
 // Desktop duplication of the output containing the region; every presented frame whose region
 // pixels differ from the last saved one is written as a PNG named by its index and its present
-// time in ms since recording started. The region defaults to the bottom-right quarter of the
+// time in ms since recording started, with DXGI's accumulated-frame count (above 1 means presents
+// were missed between captures). The region defaults to the bottom-right quarter of the
 // primary display, where notifications appear by default. Coordinates are physical pixels.
 using System;
 using System.Collections.Concurrent;
@@ -163,7 +164,7 @@ internal static class ScreenFrameRecorder
                         previous = pixels;
                         var ms = (info.LastPresentTime - startQpc) * 1000d / Stopwatch.Frequency;
                         queue.Add(Tuple.Create(
-                            Path.Combine(outDir, string.Format(CultureInfo.InvariantCulture, "f{0:0000}_{1:000000.0}ms.png", saved, ms)),
+                            Path.Combine(outDir, string.Format(CultureInfo.InvariantCulture, "f{0:0000}_{1:000000.0}ms_acc{2}.png", saved, ms, info.AccumulatedFrames)),
                             pixels));
                         saved++;
                     }
