@@ -1432,8 +1432,9 @@ namespace PlayniteAchievements.Services
             // with at least one new unlock in hand. Deliberately not IsCompleted: a capstone
             // unlock marks the game completed library-wide, but the standalone completion
             // notification is reserved for true 100% (the capstone's own toast, flagged
-            // IsCapstone, is the capstone notification).
-            var reaches100Percent = unlocks.Count > 0 && before?.IsFullyUnlocked != true && after?.IsFullyUnlocked == true;
+            // IsCapstone, is the capstone notification). Gated on the claimed unlocks rather than
+            // the shown ones: a notification filter hiding the final unlock does not undo the 100%.
+            var reaches100Percent = claimed.Count > 0 && before?.IsFullyUnlocked != true && after?.IsFullyUnlocked == true;
 
             // The single unlock that finished the game: the capstone when it lands in the
             // 100%-reaching batch, otherwise the last achievement to unlock. Null when this batch
@@ -1460,7 +1461,7 @@ namespace PlayniteAchievements.Services
             // The completion time is the triggering achievement's unlock time — the latest in the
             // completing batch. Null when the provider supplies no timestamps, so the completion
             // toast shows no datetime exactly when its unlocks don't.
-            var completionTimeUtc = unlocks.Select(a => a?.UnlockTimeUtc).Max();
+            var completionTimeUtc = claimed.Select(a => a?.UnlockTimeUtc).Max();
             return reaches100Percent
                 ? CreateUserCompletionEventArgs(game, after, completionTimeUtc, observedUtc, anchorPolicy, anchorBias)
                 : null;
