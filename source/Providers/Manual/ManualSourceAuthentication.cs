@@ -110,24 +110,32 @@ namespace PlayniteAchievements.Providers.Manual
             }
 
             var localized = ResourceProvider.GetString(exception.MessageKey);
-            return string.IsNullOrWhiteSpace(localized) || string.Equals(localized, exception.MessageKey, StringComparison.Ordinal)
-                ? exception.Message
+            if (string.IsNullOrWhiteSpace(localized) || string.Equals(localized, exception.MessageKey, StringComparison.Ordinal))
+            {
+                return exception.Message;
+            }
+
+            return string.Equals(exception.MessageKey, SignInRequiredKey, StringComparison.Ordinal)
+                ? string.Format(localized, ResourceProvider.GetString($"LOCPlayAch_Provider_{exception.SourceKey}"))
                 : localized;
         }
+
+        /// <summary>"Sign in to {0} in plugin settings first.", formatted with the source's platform name.</summary>
+        internal const string SignInRequiredKey = "LOCPlayAch_ManualAchievements_SignInRequired";
 
         private static string ResolveMessageKey(IManualSource source, AuthProbeResult probeResult)
         {
             var sourceKey = source?.SourceKey?.Trim();
             if (string.Equals(sourceKey, "Steam", StringComparison.OrdinalIgnoreCase))
             {
-                return "LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired";
+                return SignInRequiredKey;
             }
 
             if (string.Equals(sourceKey, "Exophase", StringComparison.OrdinalIgnoreCase))
             {
                 return probeResult?.Outcome == AuthOutcome.ProbeFailed
                     ? "LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed"
-                    : "LOCPlayAch_ManualAchievements_ExophaseAuthRequired";
+                    : SignInRequiredKey;
             }
 
             return "LOCPlayAch_Status_AuthRequired";

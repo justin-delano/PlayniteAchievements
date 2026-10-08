@@ -46,8 +46,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3",
             raw => Rpcs3MatchIdHelper.TryNormalize(raw, out var matchId)
                 ? ProviderOverrideValidation.Valid(matchId)
-                : ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_Rpcs3MatchId_InvalidId"));
+                : ProviderOverrideValidation.InvalidId("NPWR12345_00"));
 
         private readonly Rpcs3Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;

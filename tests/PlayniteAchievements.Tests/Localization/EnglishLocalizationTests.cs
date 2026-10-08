@@ -62,7 +62,7 @@ namespace PlayniteAchievements.Tests.Localization
                 "LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired",
                 "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice",
                 "LOCPlayAch_Menu_PsnNpCommId_InvalidId",
-                "LOCPlayAch_Menu_XboxTitleId_InvalidId"
+                "LOCPlayAch_Common_Validation_InvalidId"
             };
 
             var missing = expected

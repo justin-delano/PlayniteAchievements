@@ -24,8 +24,7 @@ namespace PlayniteAchievements.Providers.Xbox
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xbox",
             raw => XboxTitleIdResolver.TryNormalizeTitleId(raw, out var titleId)
                 ? ProviderOverrideValidation.Valid(titleId)
-                : ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_XboxTitleId_InvalidId"));
+                : ProviderOverrideValidation.InvalidId("4D5307E6"));
 
         // Xbox library plugin ID from Playnite
         internal static readonly Guid XboxLibraryPluginId = Guid.Parse("7e4fbb5e-2ae3-48d4-8ba0-6b30e7a4e287");

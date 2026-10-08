@@ -127,7 +127,7 @@ namespace PlayniteAchievements.Manual.Tests
                 () => source.GetAchievementsAsync("123", "english", CancellationToken.None)).ConfigureAwait(false);
 
             Assert.AreEqual("Steam", ex.SourceKey);
-            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_SignInRequired", ex.MessageKey);
         }
 
         [TestMethod]
@@ -147,7 +147,7 @@ namespace PlayniteAchievements.Manual.Tests
                 () => ManualSourceAuthentication.EnsureAuthenticatedAsync(source, CancellationToken.None)).ConfigureAwait(false);
 
             Assert.AreEqual("Steam", ex.SourceKey);
-            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_SignInRequired", ex.MessageKey);
             Assert.AreEqual(1, sessionManager.ProbeCallCount);
         }
 
@@ -193,7 +193,7 @@ namespace PlayniteAchievements.Manual.Tests
                 () => ManualSourceAuthentication.EnsureAuthenticatedAsync(source, CancellationToken.None)).ConfigureAwait(false);
 
             Assert.AreEqual("Exophase", ex.SourceKey);
-            Assert.AreEqual("LOCPlayAch_ManualAchievements_ExophaseAuthRequired", ex.MessageKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_SignInRequired", ex.MessageKey);
             Assert.AreEqual(1, sessionManager.ProbeCallCount);
         }
 
@@ -293,7 +293,7 @@ namespace PlayniteAchievements.Manual.Tests
                     CancellationToken.None)).ConfigureAwait(false);
 
             Assert.AreEqual("Steam", ex.SourceKey);
-            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_SignInRequired", ex.MessageKey);
         }
 
         [TestMethod]

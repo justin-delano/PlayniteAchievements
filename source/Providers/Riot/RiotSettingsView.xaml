@@ -54,7 +54,7 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"
-                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_Riot_SetupStep1}"
+                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1}"
                                    helpers:HyperlinkFormatText.LinkText="Riot Developer Portal"
                                    helpers:HyperlinkFormatText.NavigateUri="https://developer.riotgames.com/"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Riot_SetupStep2}"

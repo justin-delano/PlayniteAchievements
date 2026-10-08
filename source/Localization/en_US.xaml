@@ -68,6 +68,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Validation_NonNegativeInteger">Enter a whole number of 0 or more, or leave blank.</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidDateTime">Enter a valid date, or leave blank.</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_DateRangeOrder">The start date must be on or before the end date.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidId">Enter a valid {0}, such as {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Completed</sys:String>
     <!-- DateRange: tooltips of the From/To date pickers -->
@@ -216,14 +217,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend">Clear Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Clear cached achievement data for {0}?&#10;&#10;It is fetched again on the next friend refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameJoltGameId_InvalidId">Enter a valid numeric Game Jolt game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Enter a valid numeric game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Enter a valid 8-character hexadecimal Xenia Title ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Enter a valid RPCS3 trophy NP Communication ID such as NPWR12345_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Enter a valid numeric Steam App ID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Enter a valid PSN NP Communication ID such as NPWR12345_00. For a collection, join each game's ID with "+", such as NPWR12345_00+NPWR67890_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
@@ -419,8 +413,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Sign in to Exophase in plugin settings to use manual linking.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">Sign in to Steam in plugin settings to fetch achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_SignInRequired">Sign in to {0} in plugin settings first.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">The selected game has no achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Search for a game to link achievements from. The selected game's achievements will be linked to this Playnite game.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">No games found. Try a different search term.</sys:String>
@@ -769,9 +762,6 @@
     <sys:String x:Key="LOCPlayAch_Exophase_SelectPlatforms">Select platforms</sys:String>
 
     <!-- Provider: HoYoverse -->
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">Enable Honkai: Star Rail</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">Enable Zenless Zone Zero</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker Export Files</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">How to Get the JSON</sys:String>
@@ -920,7 +910,6 @@
 
     <!-- Provider: Guild Wars 2 -->
     <sys:String x:Key="LOCPlayAch_Settings_GW2_Help">Guild Wars 2 achievements are read from ArenaNet's official API, which needs a free API key tied to your Guild Wars 2 account:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep1">1. Open the {0} and sign in with your Guild Wars 2 account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep2">2. Create a new key and tick progression. That is the only permission this plugin needs, and a key limited to it cannot read your wallet, inventory or trading post history.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_SetupStep3">3. Copy the key into the box below, then click Check.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GW2_NoDatesNote">Guild Wars 2 does not record when an achievement was earned and publishes no completion rates, so Guild Wars 2 achievements show no unlock date and no rarity.</sys:String>
@@ -935,7 +924,6 @@
 
     <!-- Provider: Riot -->
     <sys:String x:Key="LOCPlayAch_Settings_Riot_Help">Reading League of Legends Challenges uses Riot's official API, which needs a free API key tied to your Riot account. Riot publishes no per-player endpoint that works without one:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep1">1. Open the {0} and sign in with your Riot account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep2">2. Copy the development API key shown on the dashboard into the API Key box below. Use the regenerate button there if it has expired.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep3">3. Enter your Riot ID and pick the region your account plays on, then click Check.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_Expiry">A development key stops working after 24 hours and has to be regenerated each time. For a key that does not expire, use Register Product on the portal to apply for a personal key.</sys:String>
@@ -1139,9 +1127,7 @@
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">Loading friends {1}/{2}: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Refreshing friend libraries {0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Refreshing friend libraries {0}/{1}: {2}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Refreshing friend games {0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Refreshing friend games {0}/{1}: {2}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->

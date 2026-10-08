@@ -1107,10 +1107,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessageKey))
+            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessage))
             {
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L(validationMessageKey),
+                    validationMessage,
                     L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -2086,23 +2086,25 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             string providerKey,
             string value,
             out ProviderOverrideData providerOverride,
-            out string validationMessageKey)
+            out string validationMessage)
         {
             providerOverride = null;
-            validationMessageKey = null;
+            validationMessage = null;
 
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
             var descriptor = GetProviderOverrideDescriptor(normalizedKey);
             if (descriptor == null)
             {
-                validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
+                validationMessage = L("LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid");
                 return false;
             }
 
             var result = descriptor.Validate(value);
             if (!result.IsValid)
             {
-                validationMessageKey = result.ErrorMessageKey ?? "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
+                validationMessage = result.ErrorExample != null
+                    ? string.Format(L(result.ErrorMessageKey), L(descriptor.InputLabelKey), result.ErrorExample)
+                    : L(result.ErrorMessageKey ?? "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid");
                 return false;
             }
 
