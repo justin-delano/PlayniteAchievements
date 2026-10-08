@@ -93,6 +93,50 @@ namespace PlayniteAchievements.Tests.Models
         }
 
         [TestMethod]
+        public void NarrowToGames_KeepsAClippedViewClipped()
+        {
+            var source = CreateSource();
+            var when = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
+            source.Achievements = new List<PlayniteAchievements.ViewModels.AchievementDisplayItem>
+            {
+                new PlayniteAchievements.ViewModels.AchievementDisplayItem
+                {
+                    PlayniteGameId = GameA, Unlocked = true, UnlockTimeUtc = when,
+                    Rarity = PlayniteAchievements.Models.Achievements.RarityTier.Rare
+                },
+                new PlayniteAchievements.ViewModels.AchievementDisplayItem
+                {
+                    PlayniteGameId = GameB, Unlocked = true, UnlockTimeUtc = when,
+                    Rarity = PlayniteAchievements.Models.Achievements.RarityTier.Common
+                }
+            };
+            var clipped = OverviewLinkedSnapshots.ClipToAchievements(source, _ => true);
+            var keptA = clipped.GameSummaries.Where(game => game.PlayniteGameId == GameA).ToList();
+
+            var narrowed = OverviewLinkedSnapshots.NarrowToGames(clipped, keptA);
+
+            Assert.IsTrue(narrowed.IsAchievementClip);
+            Assert.AreEqual(1, narrowed.TotalUnlocked);
+            Assert.AreEqual(0, narrowed.TotalLocked);
+            Assert.AreEqual(1, narrowed.TotalRare);
+            Assert.AreEqual(0, narrowed.TotalCommon);
+            Assert.AreEqual(1, narrowed.TotalGames);
+        }
+
+        [TestMethod]
+        public void NarrowToGames_KeepsAWholeGameViewWhole()
+        {
+            var source = CreateSource();
+            var keptA = source.GameSummaries.Where(game => game.PlayniteGameId == GameA).ToList();
+
+            var narrowed = OverviewLinkedSnapshots.NarrowToGames(source, keptA);
+
+            Assert.IsFalse(narrowed.IsAchievementClip);
+            Assert.AreEqual(10, narrowed.TotalAchievements);
+            Assert.AreEqual(4, narrowed.TotalUnlocked);
+        }
+
+        [TestMethod]
         public void UnlockDaySpan_OrdersItsEndsAndIgnoresTimeOfDay()
         {
             var span = new UnlockDaySpan(March20.AddHours(15), March1.AddHours(9));
