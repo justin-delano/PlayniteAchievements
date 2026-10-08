@@ -541,7 +541,8 @@
                    LastChildFill="True"
                    Margin="0,8,0,0"
                    Visibility="{Binding ShowControls, Converter={StaticResource BoolToVis}}">
-            <!-- IcoFont "layers": stacked per-platform segments. -->
+            <!-- IcoFont "layers": stacked per-platform segments, drawn as vector geometry like
+                 the plugin's other icon glyphs, in the button's own foreground. -->
             <ToggleButton DockPanel.Dock="Right"
                           Style="{DynamicResource PlayAch.ToggleButton.BaseStyle}"
                           IsChecked="{Binding SplitByPlatform, Mode=TwoWay}"
@@ -549,10 +550,15 @@
                           Padding="0"
                           Margin="{DynamicResource PlayAch.Thickness.Left.Xs}"
                           VerticalAlignment="Center"
-                          FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                          FontSize="16"
-                          Content="&#xEF5C;"
-                          ToolTip="{DynamicResource LOCPlayAch_Timeline_SplitByPlatform}"/>
+                          ToolTip="{DynamicResource LOCPlayAch_Timeline_SplitByPlatform}">
+                <controls:GlyphIcon Glyph="&#xEF5C;"
+                                    Size="16"
+                                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    SnapsToDevicePixels="True"/>
+            </ToggleButton>
             <controls:TimeWindowPicker Window="{Binding Timeline.Window, Mode=TwoWay}"
                                        Granularity="{Binding Timeline.Granularity, Mode=TwoWay}"
                                        UnavailableGranularities="{Binding Timeline.UnavailableGranularities}"
