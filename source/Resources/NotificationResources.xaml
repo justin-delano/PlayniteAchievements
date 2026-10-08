@@ -40,21 +40,20 @@
     -->
     <Storyboard x:Key="PlayAch.Storyboard.ToastSlideIn">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                         Duration="0:0:0.24"
+                         Duration="0:0:0.3"
                          FillBehavior="HoldEnd">
             <DoubleAnimation.EasingFunction>
-                <BackEase EasingMode="EaseOut"
-                          Amplitude="0.35"/>
+                <SineEase EasingMode="EaseOut"/>
             </DoubleAnimation.EasingFunction>
         </DoubleAnimation>
     </Storyboard>
 
     <Storyboard x:Key="PlayAch.Storyboard.ToastSlideOut">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                         Duration="0:0:0.2"
+                         Duration="0:0:0.25"
                          FillBehavior="HoldEnd">
             <DoubleAnimation.EasingFunction>
-                <CubicEase EasingMode="EaseIn"/>
+                <SineEase EasingMode="EaseIn"/>
             </DoubleAnimation.EasingFunction>
         </DoubleAnimation>
     </Storyboard>
