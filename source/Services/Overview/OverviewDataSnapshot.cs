@@ -30,6 +30,12 @@ namespace PlayniteAchievements.Services.Overview
         public bool UnlockNextPoolBuilt { get; set; }
 
         /// <summary>
+        /// Whether this snapshot was cut to the unlocks an achievement filter keeps, so its
+        /// achievement totals count those unlocks only and it holds no locked remainder.
+        /// </summary>
+        public bool IsAchievementClip { get; set; }
+
+        /// <summary>
         /// Every achievement pin (see <see cref="AchievementPinKey"/>) the build considered when it
         /// hydrated locked pinned rows into <see cref="Achievements"/>. A pin added afterwards is
         /// absent here, so its locked row was never hydrated; consumers rebuild off
