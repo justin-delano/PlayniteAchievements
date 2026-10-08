@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Views.Controls
     internal sealed class ChartTooltipAdorner : Adorner
     {
         private readonly UIElement _tooltip;
-        private Point _position;
+        private System.Func<Size, Point> _placement;
 
         public ChartTooltipAdorner(UIElement adornedElement, UIElement tooltip)
             : base(adornedElement)
@@ -23,9 +23,14 @@ namespace PlayniteAchievements.Views.Controls
             IsHitTestVisible = false;
         }
 
-        public void MoveTo(Point position)
+        /// <summary>
+        /// Places the tooltip by its size, which is only known once its new content has been
+        /// measured; the placement runs in this adorner's layout pass, after that measure.
+        /// </summary>
+        public void Place(System.Func<Size, Point> placement)
         {
-            _position = position;
+            _placement = placement;
+            InvalidateMeasure();
             InvalidateArrange();
         }
 
@@ -41,7 +46,8 @@ namespace PlayniteAchievements.Views.Controls
 
         protected override Size ArrangeOverride(Size finalSize)
         {
-            _tooltip.Arrange(new Rect(_position, _tooltip.DesiredSize));
+            var size = _tooltip.DesiredSize;
+            _tooltip.Arrange(new Rect(_placement?.Invoke(size) ?? default(Point), size));
             return finalSize;
         }
     }
