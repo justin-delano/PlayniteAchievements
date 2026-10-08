@@ -33,17 +33,17 @@
                                FontWeight="SemiBold"
                                TextWrapping="Wrap"/>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Column_Name}" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="{DynamicResource LOCNameLabel}" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="NameBox" MaxLength="80"/>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Workshop_Share_AuthorName}" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="AuthorBox" MaxLength="40"/>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Column_Description}" Style="{StaticResource FieldLabel}"/>
+                    <TextBlock Text="{DynamicResource LOCGameDescriptionTitle}" Style="{StaticResource FieldLabel}"/>
                     <TextBox x:Name="DescriptionBox" MaxLength="400" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="56"/>
 
                     <TextBlock Style="{StaticResource FieldLabel}">
-                        <Run Text="{DynamicResource LOCPlayAch_Workshop_Tags}"/><Run Text=" ("/><Run Text="{DynamicResource LOCPlayAch_Workshop_Share_TagsHint}"/><Run Text=")"/>
+                        <Run Text="{DynamicResource LOCTagsLabel}"/><Run Text=" ("/><Run Text="{DynamicResource LOCPlayAch_Workshop_Share_TagsHint}"/><Run Text=")"/>
                     </TextBlock>
                     <TextBox x:Name="TagsBox"/>
 
@@ -61,7 +61,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="CoverBox" IsReadOnly="True" TextChanged="CoverBox_TextChanged"/>
                         <Button Grid.Column="1" Content="{DynamicResource LOCPlayAch_Button_Browse}" Margin="6,0,0,0" Click="BrowseCover_Click"/>
-                        <Button Grid.Column="2" Content="{DynamicResource LOCPlayAch_Button_Clear}" Margin="6,0,0,0" Click="ClearCover_Click"/>
+                        <Button Grid.Column="2" Content="{DynamicResource LOCClearLabel}" Margin="6,0,0,0" Click="ClearCover_Click"/>
                     </Grid>
                     <!-- The chosen cover itself, so the sharer sees what listings will show. -->
                     <Border x:Name="CoverImageFrame"
@@ -93,7 +93,7 @@
                         Click="Submit_Click"
                         IsDefault="True"/>
                 <Button x:Name="CancelButton"
-                        Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                        Content="{DynamicResource LOCCancelLabel}"
                         MinWidth="90"
                         Margin="8,0,0,0"
                         Click="Cancel_Click"

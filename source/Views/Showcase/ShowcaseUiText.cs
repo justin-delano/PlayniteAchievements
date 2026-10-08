@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Views.Showcase
         public static string ScoreCardSlotName(ScoreCardSlot value) =>
             ScoreCardTypes.TryGetCardType(value, out var type)
                 ? ScoreCardTypeName(type)
-                : Localize("LOCPlayAch_Common_None");
+                : Localize("LOCNone");
 
         /// <summary>The score's name as card pickers show it.</summary>
         public static string ScoreCardTypeName(ScoreCardType value)
@@ -63,7 +63,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseProfileLayout.Stacked:
                     return Localize("LOCPlayAch_Showcase_ProfileLayout_Stacked");
                 default:
-                    return Localize("LOCPlayAch_Settings_GridAlignment_Left");
+                    return Localize("LOCDockLeft");
             }
         }
 
@@ -118,7 +118,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseScreenshotVariant.Framed:
                     return Localize("LOCPlayAch_Settings_ScreenshotVariantFramed");
                 default:
-                    return Localize("LOCPlayAch_Common_All");
+                    return Localize("LOCAll");
             }
         }
 
@@ -166,11 +166,11 @@ namespace PlayniteAchievements.Views.Showcase
             switch (value)
             {
                 case ShowcaseInfoPanelPosition.Left:
-                    return Localize("LOCPlayAch_Settings_GridAlignment_Left");
+                    return Localize("LOCDockLeft");
                 case ShowcaseInfoPanelPosition.Right:
-                    return Localize("LOCPlayAch_Settings_GridAlignment_Right");
+                    return Localize("LOCDockRight");
                 case ShowcaseInfoPanelPosition.Bottom:
-                    return Localize("LOCPlayAch_Settings_GridVerticalAlignment_Bottom");
+                    return Localize("LOCDockBottom");
                 default:
                     return Localize("LOCPlayAch_Settings_Override_Off");
             }

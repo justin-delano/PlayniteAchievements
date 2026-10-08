@@ -228,7 +228,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var selected = GetSelectedCategoryTypeValues(TypeSelectionOptions);
                 return selected.Count == 0
-                    ? L("LOCPlayAch_Common_Label_Type")
+                    ? L("LOCTypeLabel")
                     : string.Join(", ", selected.Select(AchievementCategoryTypeHelper.ToCategoryTypeDisplayText));
             }
         }
@@ -239,7 +239,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 var selected = GetSelectedCategoryTypeFilterValues();
                 return selected.Count == 0
-                    ? L("LOCPlayAch_Common_Label_Type")
+                    ? L("LOCTypeLabel")
                     : string.Join(", ", selected.Select(AchievementCategoryTypeHelper.ToCategoryTypeDisplayText));
             }
         }
@@ -337,7 +337,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (_selectedCategoryLabelFilters.Count == 0)
                 {
-                    return L("LOCPlayAch_Common_Label_Category");
+                    return L("LOCCategoryLabel");
                 }
 
                 var ordered = CategoryLabelFilterOptions

@@ -78,7 +78,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedProviderFilterText =>
             OverviewGameSummaryFilters.BuildProviderFilterText(
                 ProviderFilterGroups,
-                L("LOCPlayAch_Common_Label_Platform"));
+                L("LOCPlatformTitle"));
 
         public ObservableCollection<string> ProgressFilterOptions { get; }
 

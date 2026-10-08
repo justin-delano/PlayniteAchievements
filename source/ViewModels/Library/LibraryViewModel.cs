@@ -81,7 +81,7 @@ namespace PlayniteAchievements.ViewModels.Library
             _dispatcher = Dispatcher.CurrentDispatcher;
             _focusGameId = focusGameId;
 
-            Filters = new List<LibraryKindFilter> { new LibraryKindFilter(null, ResourceProvider.GetString("LOCPlayAch_Common_All")) };
+            Filters = new List<LibraryKindFilter> { new LibraryKindFilter(null, ResourceProvider.GetString("LOCAll")) };
             Filters.AddRange(KindOrder.Select(kind => new LibraryKindFilter(kind, LibraryItemRow.KindLabelFor(kind))));
             _selectedFilter = Filters.FirstOrDefault(filter => filter.Kind == focusKind) ?? Filters[0];
             _selectedFilter.IsSelected = true;

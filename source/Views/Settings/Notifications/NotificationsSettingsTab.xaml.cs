@@ -61,7 +61,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                         new NotificationAppearanceSection(settings, plugin, logger)),
                 new SettingsNavigationItem(
                     "Platforms",
-                    ResourceProvider.GetString("LOCPlayAch_Common_Label_Platforms"),
+                    ResourceProvider.GetString("LOCPlatformsTitle"),
                     iconGlyph: "\uEA30",
                     viewFactory: () => _platformsSection =
                         new NotificationPlatformsSection(settings, plugin, logger))

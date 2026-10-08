@@ -29,7 +29,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _importPortable?.Invoke(
                 MergeImportedDefinitions,
                 MergeCsv,
-                () => MarkUndoIntent(EditorEditIntent.Atomic("Import", "LOCPlayAch_Common_Import")));
+                () => MarkUndoIntent(EditorEditIntent.Atomic("Import", "LOCImportLabel")));
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            MarkUndoIntent(EditorEditIntent.Command("ImportCsv", "LOCPlayAch_Common_Import"));
+            MarkUndoIntent(EditorEditIntent.Command("ImportCsv", "LOCImportLabel"));
 
             var outcome = new CsvMergeOutcome();
             var usedIds = new HashSet<string>(

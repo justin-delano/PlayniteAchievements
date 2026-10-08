@@ -216,7 +216,7 @@ namespace PlayniteAchievements.ViewModels.Settings
                     var options = new List<FontFamilyOption>
                     {
                         new FontFamilyOption(
-                            L("LOCPlayAch_Common_Default"),
+                            L("LOCDefault"),
                             familyName: null,
                             previewFamily: System.Windows.SystemFonts.MessageFontFamily)
                     };
@@ -349,7 +349,7 @@ namespace PlayniteAchievements.ViewModels.Settings
         public IReadOnlyList<RarityBadgePlacementOption> BadgePlacementOptions =>
             _badgePlacementOptions ?? (_badgePlacementOptions = new[]
             {
-                new RarityBadgePlacementOption(RarityBadgePlacement.None, L("LOCPlayAch_Common_None")),
+                new RarityBadgePlacementOption(RarityBadgePlacement.None, L("LOCNone")),
                 new RarityBadgePlacementOption(RarityBadgePlacement.UnderIcon, L("LOCPlayAch_Settings_Style_Rarity_BadgeUnderIcon")),
                 new RarityBadgePlacementOption(RarityBadgePlacement.Inline, L("LOCPlayAch_Settings_Style_Rarity_InlineBadge")),
                 new RarityBadgePlacementOption(RarityBadgePlacement.InlineGame, L("LOCPlayAch_Settings_Style_Rarity_InlineGameBadge")),
@@ -359,7 +359,7 @@ namespace PlayniteAchievements.ViewModels.Settings
         public IReadOnlyList<RarityPercentPlacementOption> PercentPlacementOptions =>
             _percentPlacementOptions ?? (_percentPlacementOptions = new[]
             {
-                new RarityPercentPlacementOption(RarityPercentPlacement.None, L("LOCPlayAch_Common_None")),
+                new RarityPercentPlacementOption(RarityPercentPlacement.None, L("LOCNone")),
                 new RarityPercentPlacementOption(RarityPercentPlacement.UnderIcon, L("LOCPlayAch_Settings_Style_Rarity_PercentUnderIcon")),
                 new RarityPercentPlacementOption(RarityPercentPlacement.WithBadge, L("LOCPlayAch_Settings_Style_Rarity_PercentWithBadge"))
             });
@@ -483,15 +483,15 @@ namespace PlayniteAchievements.ViewModels.Settings
         public IReadOnlyList<GlowDisplayOption> GlowDisplayOptions => IsFrameSurface
             ? (_frameGlowDisplayOptions ?? (_frameGlowDisplayOptions = new[]
             {
-                new GlowDisplayOption(GlowDisplay.Icon, L("LOCPlayAch_Column_Icon")),
-                new GlowDisplayOption(GlowDisplay.None, L("LOCPlayAch_Common_None"))
+                new GlowDisplayOption(GlowDisplay.Icon, L("LOCGameIconTitle")),
+                new GlowDisplayOption(GlowDisplay.None, L("LOCNone"))
             }))
             : (_toastGlowDisplayOptions ?? (_toastGlowDisplayOptions = new[]
             {
-                new GlowDisplayOption(GlowDisplay.Icon, L("LOCPlayAch_Column_Icon")),
+                new GlowDisplayOption(GlowDisplay.Icon, L("LOCGameIconTitle")),
                 new GlowDisplayOption(GlowDisplay.Notification, L("LOCPlayAch_Settings_Style_ToastTab")),
                 new GlowDisplayOption(GlowDisplay.Both, L("LOCPlayAch_Common_Both")),
-                new GlowDisplayOption(GlowDisplay.None, L("LOCPlayAch_Common_None"))
+                new GlowDisplayOption(GlowDisplay.None, L("LOCNone"))
             }));
 
         /// <summary>
@@ -568,7 +568,7 @@ namespace PlayniteAchievements.ViewModels.Settings
 
         public IReadOnlyList<ToastMotionOption> EntranceMotionOptions =>
             _entranceMotionOptions ?? (_entranceMotionOptions =
-                MotionChoices(L("LOCPlayAch_Common_Default")));
+                MotionChoices(L("LOCDefault")));
 
         public IReadOnlyList<ToastMotionOption> ExitMotionOptions =>
             _exitMotionOptions ?? (_exitMotionOptions =
@@ -577,7 +577,7 @@ namespace PlayniteAchievements.ViewModels.Settings
         public IReadOnlyList<ToastMotionOption> MotionFeelOptions =>
             _motionFeelOptions ?? (_motionFeelOptions = new[]
             {
-                new ToastMotionOption(null, L("LOCPlayAch_Common_Default")),
+                new ToastMotionOption(null, L("LOCDefault")),
                 new ToastMotionOption((int)ToastMotionFeel.Smooth, L("LOCPlayAch_Settings_Style_MotionSmooth")),
                 new ToastMotionOption((int)ToastMotionFeel.Bouncy, L("LOCPlayAch_Settings_Style_MotionBouncy"))
             });
@@ -601,7 +601,7 @@ namespace PlayniteAchievements.ViewModels.Settings
                 new ToastMotionOption((int)ToastMotion.SlideSide, L("LOCPlayAch_Settings_Style_MotionSlideSide")),
                 new ToastMotionOption((int)ToastMotion.Fade, L("LOCPlayAch_Settings_Style_MotionFade")),
                 new ToastMotionOption((int)ToastMotion.Zoom, L("LOCPlayAch_Settings_Style_MotionZoom")),
-                new ToastMotionOption((int)ToastMotion.None, L("LOCPlayAch_Common_None"))
+                new ToastMotionOption((int)ToastMotion.None, L("LOCNone"))
             };
         }
 
@@ -613,7 +613,7 @@ namespace PlayniteAchievements.ViewModels.Settings
         public IReadOnlyList<ToastMotionOption> PositionOptions =>
             _positionOptions ?? (_positionOptions = new[]
             {
-                new ToastMotionOption(null, L("LOCPlayAch_Common_Default")),
+                new ToastMotionOption(null, L("LOCDefault")),
                 new ToastMotionOption((int)ToastScreenCorner.BottomRight, L("LOCPlayAch_Settings_ToastPosition_BottomRight")),
                 new ToastMotionOption((int)ToastScreenCorner.BottomLeft, L("LOCPlayAch_Settings_ToastPosition_BottomLeft")),
                 new ToastMotionOption((int)ToastScreenCorner.BottomCenter, L("LOCPlayAch_Settings_ToastPosition_BottomCenter")),
@@ -692,8 +692,8 @@ namespace PlayniteAchievements.ViewModels.Settings
             _frameVignetteOptions ?? (_frameVignetteOptions = new[]
             {
                 new FrameVignetteOption(FrameVignetteStyle.Full, L("LOCPlayAch_Settings_Style_VignetteFull")),
-                new FrameVignetteOption(FrameVignetteStyle.Bottom, L("LOCPlayAch_Settings_GridVerticalAlignment_Bottom")),
-                new FrameVignetteOption(FrameVignetteStyle.None, L("LOCPlayAch_Common_None"))
+                new FrameVignetteOption(FrameVignetteStyle.Bottom, L("LOCDockBottom")),
+                new FrameVignetteOption(FrameVignetteStyle.None, L("LOCNone"))
             });
 
         /// <summary>
@@ -1950,9 +1950,9 @@ namespace PlayniteAchievements.ViewModels.Settings
                 case NotificationSurfaceStyle.LineTitle:
                     return L("LOCPlayAch_Settings_ToastShowName");
                 case NotificationSurfaceStyle.LineDescription:
-                    return L("LOCPlayAch_Column_Description");
+                    return L("LOCGameDescriptionTitle");
                 case NotificationSurfaceStyle.LineGameCategory:
-                    return L("LOCPlayAch_Settings_ToastShowGameName") + " / " + L("LOCPlayAch_Common_Label_Category");
+                    return L("LOCPlayAch_Settings_ToastShowGameName") + " / " + L("LOCCategoryLabel");
                 case NotificationSurfaceStyle.LineProgress:
                     return L("LOCPlayAch_Progress");
                 default:

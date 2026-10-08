@@ -69,7 +69,7 @@
                                   ItemTemplate="{StaticResource TemplateRowTemplate}"
                                   Margin="{StaticResource PlayAch.Thickness.SettingRow.Indent}"/>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                    <TextBlock Text="{DynamicResource LOCCategoryLabel}"
                                Style="{StaticResource SubSectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.SubSectionHeading}"/>
                     <ItemsControl x:Name="CategoryTemplateItems"

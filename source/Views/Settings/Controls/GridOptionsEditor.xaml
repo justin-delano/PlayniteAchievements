@@ -96,13 +96,13 @@
                            Style="{StaticResource SubSectionHeaderStyle}"
                            Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                 <StackPanel Margin="16,0,0,0">
-                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Platform}"
+                    <CheckBox Content="{DynamicResource LOCPlatformTitle}"
                               IsChecked="{Binding GameSummaryOptions.ShowMetadataPlatform, ElementName=EditorRoot}"
                               Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                     <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Playtime}"
                               IsChecked="{Binding GameSummaryOptions.ShowMetadataPlaytime, ElementName=EditorRoot}"
                               Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Region}"
+                    <CheckBox Content="{DynamicResource LOCRegionLabel}"
                               IsChecked="{Binding GameSummaryOptions.ShowMetadataRegion, ElementName=EditorRoot}"
                               Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                 </StackPanel>
@@ -251,14 +251,14 @@
                            VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
             </StackPanel>
             <StackPanel Visibility="{Binding ShowSortRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
+                <TextBlock Text="{DynamicResource LOCMenuSortByTitle}"
                            Style="{StaticResource SubSectionHeaderStyle}"
                            Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                 <StackPanel Orientation="Horizontal">
                     <ComboBox SelectedValue="{Binding AchievementOptions.SortMode, ElementName=EditorRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               SelectedValuePath="Tag"
                               MinWidth="180">
-                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
+                        <ComboBoxItem Content="{DynamicResource LOCDefault}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                     </ComboBox>
@@ -290,7 +290,7 @@
         <!-- Game-summary trailing rows: sort -->
         <StackPanel Style="{StaticResource GameSummaryPanelStyle}">
             <StackPanel Visibility="{Binding ShowSortRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
+                <TextBlock Text="{DynamicResource LOCMenuSortByTitle}"
                            Style="{StaticResource SubSectionHeaderStyle}"
                            Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                 <StackPanel Orientation="Horizontal">
@@ -301,10 +301,10 @@
                                       Tag="{x:Static settings:GameSummariesSortMode.PinOrder}"
                                       Visibility="{Binding ShowGameSortPinOrderChoice, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_LastUnlock}" Tag="{x:Static settings:GameSummariesSortMode.RecentUnlock}"/>
-                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_LastPlayed}" Tag="{x:Static settings:GameSummariesSortMode.LastPlayed}"/>
+                        <ComboBoxItem Content="{DynamicResource LOCLastPlayed}" Tag="{x:Static settings:GameSummariesSortMode.LastPlayed}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Total}" Tag="{x:Static settings:GameSummariesSortMode.TotalAchievements}"/>
                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Progress}" Tag="{x:Static settings:GameSummariesSortMode.Progress}"/>
-                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Name}" Tag="{x:Static settings:GameSummariesSortMode.Alphabetical}"/>
+                        <ComboBoxItem Content="{DynamicResource LOCNameLabel}" Tag="{x:Static settings:GameSummariesSortMode.Alphabetical}"/>
                     </ComboBox>
                     <ToggleButton ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
                                   Margin="{StaticResource PlayAch.Thickness.Left.Xs}"

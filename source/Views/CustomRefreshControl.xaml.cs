@@ -462,7 +462,7 @@ namespace PlayniteAchievements.Views
             _recentLimitOverrideText = (_settings?.Persisted?.RecentRefreshGamesCount ?? 10).ToString();
             _placeholderPreset = new CustomRefreshPreset
             {
-                Name = L("LOCPlayAch_Common_None"),
+                Name = L("LOCNone"),
                 Options = null
             };
 
@@ -550,7 +550,7 @@ namespace PlayniteAchievements.Views
             _providersByKey.Clear();
 
             var readyText = L("LOCPlayAch_CustomRefresh_ProviderStatus_Ready");
-            var disabledText = L("LOCPlayAch_Common_Status_Disabled");
+            var disabledText = L("LOCDisabledTitle");
             var noAuthText = L("LOCPlayAch_Common_NotAuthenticated");
 
             foreach (var provider in _refreshService.Providers)
@@ -1149,7 +1149,7 @@ namespace PlayniteAchievements.Views
                 .ToList();
 
             var providerDisplay = selectedProviderNames.Count == 0
-                ? L("LOCPlayAch_Common_None")
+                ? L("LOCNone")
                 : string.Join(", ", selectedProviderNames);
 
             var request = BuildSummaryEstimateRequest(selectedProviders);

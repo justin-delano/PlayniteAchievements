@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Models
                     return "LOCPlayAch_RefreshModeShort_Recent";
                 case RefreshModeType.Custom:
                 case RefreshModeType.FriendsCustom:
-                    return "LOCPlayAch_Common_Custom";
+                    return "LOCCustomLabel";
                 default:
                     return $"LOCPlayAch_RefreshModeShort_{mode}";
             }

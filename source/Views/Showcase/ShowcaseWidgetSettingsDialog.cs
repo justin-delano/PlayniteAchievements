@@ -138,14 +138,14 @@ namespace PlayniteAchievements.Views.Showcase
             buttons.SetResourceReference(MarginProperty, "PlayAch.Thickness.Top.Md");
             var cancel = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Cancel"),
+                Content = Localize("LOCCancelLabel"),
                 MinWidth = 82
             };
             cancel.SetResourceReference(MarginProperty, "PlayAch.Thickness.Right.Sm");
             cancel.Click += (_, __) => Window.GetWindow(this)?.Close();
             var save = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Save"),
+                Content = Localize("LOCSaveLabel"),
                 MinWidth = 82,
                 IsDefault = true
             };

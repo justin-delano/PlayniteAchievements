@@ -95,9 +95,9 @@ namespace PlayniteAchievements.Common
             switch (GetBucket(localValue, localNow))
             {
                 case RelativeDateBucket.Today:
-                    return ResourceProvider.GetString("LOCPlayAch_Common_Date_Today");
+                    return ResourceProvider.GetString("LOCToday");
                 case RelativeDateBucket.Yesterday:
-                    return ResourceProvider.GetString("LOCPlayAch_Common_Date_Yesterday");
+                    return ResourceProvider.GetString("LOCYesterday");
                 case RelativeDateBucket.ThisWeek:
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_ThisWeek");
                 case RelativeDateBucket.LastWeek:

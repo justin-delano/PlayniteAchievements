@@ -1622,7 +1622,7 @@ namespace PlayniteAchievements.Services.Showcase
             result.Add(new ShowcaseChartEntry
             {
                 Key = "Other",
-                LabelKey = "LOCPlayAch_Settings_ProviderGroup_Other",
+                LabelKey = "LOCOther",
                 Value = ordered.Skip(topN).Sum(entry => entry.Value)
             });
             return result;

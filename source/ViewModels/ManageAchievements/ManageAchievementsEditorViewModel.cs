@@ -1893,7 +1893,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public IReadOnlyList<CustomAchievementSelectionOption> TrophyTypeOptions { get; } =
             new[]
             {
-                new CustomAchievementSelectionOption(string.Empty, L("LOCPlayAch_Common_None", "None")),
+                new CustomAchievementSelectionOption(string.Empty, L("LOCNone", "None")),
                 new CustomAchievementSelectionOption("bronze", L("LOCPlayAch_Trophy_Bronze", "Bronze")),
                 new CustomAchievementSelectionOption("silver", L("LOCPlayAch_Trophy_Silver", "Silver")),
                 new CustomAchievementSelectionOption("gold", L("LOCPlayAch_Trophy_Gold", "Gold")),
@@ -2319,7 +2319,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 ProviderRegistry.TryResolveProviderVisuals(CustomProviderKeys.BaseKey, out var defaultIconKey, out var defaultColorHex);
                 var defaultOption = new CustomProviderOption(
                     null,
-                    ResourceProvider.GetString("LOCPlayAch_Common_Default"),
+                    ResourceProvider.GetString("LOCDefault"),
                     defaultIconKey,
                     defaultColorHex);
                 CustomProviderOptions.Add(defaultOption);
@@ -2372,7 +2372,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private void ApplyCustomProviderAssignment(string customProviderId)
         {
-            MarkUndoIntent(EditorEditIntent.Command("CustomProvider", "LOCPlayAch_Common_Label_Platform"));
+            MarkUndoIntent(EditorEditIntent.Command("CustomProvider", "LOCPlatformTitle"));
 
             try
             {
@@ -2505,7 +2505,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private void AddRow()
         {
-            MarkUndoIntent(EditorEditIntent.Command("Add", "LOCPlayAch_Common_Add"));
+            MarkUndoIntent(EditorEditIntent.Command("Add", "LOCAddTitle"));
 
             var row = AchievementEditorRow.CreateNew(AchievementRows.Count + 1);
             AssignStableId(row);
@@ -2587,7 +2587,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 thresholdMs: 10,
                 context: "rows=" + AchievementRows.Count);
 
-            MarkUndoIntent(EditorEditIntent.Command("Category", "LOCPlayAch_Common_Label_Category"));
+            MarkUndoIntent(EditorEditIntent.Command("Category", "LOCCategoryLabel"));
 
             var targets = ResolveSelectionTargets()
                 .Where(row => row.CanEditAssignments && !string.IsNullOrWhiteSpace(row.OriginalApiName))
@@ -2708,7 +2708,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 thresholdMs: 10,
                 context: "rows=" + AchievementRows.Count);
 
-            MarkUndoIntent(EditorEditIntent.Command("CategoryType", "LOCPlayAch_Common_Label_Type"));
+            MarkUndoIntent(EditorEditIntent.Command("CategoryType", "LOCTypeLabel"));
 
             var targets = ResolveSelectionTargets()
                 .Where(row => row.CanEditAssignments && !string.IsNullOrWhiteSpace(row.OriginalApiName))
@@ -2743,7 +2743,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 thresholdMs: 10,
                 context: "rows=" + AchievementRows.Count);
 
-            MarkUndoIntent(EditorEditIntent.Command("CategoryType", "LOCPlayAch_Common_Label_Type"));
+            MarkUndoIntent(EditorEditIntent.Command("CategoryType", "LOCTypeLabel"));
 
             var targets = ResolveSelectionTargets()
                 .Where(row => row.CanEditAssignments && !string.IsNullOrWhiteSpace(row.OriginalApiName))
@@ -3405,7 +3405,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            MarkUndoIntent(EditorEditIntent.Atomic("Import", "LOCPlayAch_Common_Import"));
+            MarkUndoIntent(EditorEditIntent.Atomic("Import", "LOCImportLabel"));
 
             if (result.Definitions.Count == 0)
             {
@@ -5337,7 +5337,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         {
             var targets = _selectedRows.ToList();
             MarkUndoIntent(
-                EditorEditIntent.Command("Icon:" + variant, "LOCPlayAch_Column_Icon"),
+                EditorEditIntent.Command("Icon:" + variant, "LOCGameIconTitle"),
                 targets.Select(row => row.OriginalApiName));
             StageAcross(targets, apply);
             _ = ApplyIconEditAsync(targets, variant);
@@ -6094,7 +6094,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 () => GetSelectedFilterText(
                     _selectedCategoryFilters,
                     _categoryFilterOptions,
-                    ResourceProvider.GetString("LOCPlayAch_Common_Label_Category"),
+                    ResourceProvider.GetString("LOCCategoryLabel"),
                     AchievementCategoryTypeHelper.ToCategoryLeafDisplayText),
                 () => _categoryFilterOptions,
                 option => _selectedCategoryFilters.Contains(option),
@@ -6120,7 +6120,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 () => GetSelectedFilterText(
                     _selectedTypeFilters,
                     _typeFilterOptions,
-                    ResourceProvider.GetString("LOCPlayAch_Common_Label_Type"),
+                    ResourceProvider.GetString("LOCTypeLabel"),
                     ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName),
                 () => _typeFilterOptions,
                 option => _selectedTypeFilters.Contains(option),
@@ -7670,7 +7670,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             if ((facets & AchievementCustomizationFacet.Authored) != 0)
             {
-                return ResourceProvider.GetString("LOCPlayAch_Common_Custom");
+                return ResourceProvider.GetString("LOCCustomLabel");
             }
 
             var lines = new List<string> { ResourceProvider.GetString("LOCPlayAch_Tagging_Customized") };
@@ -7942,11 +7942,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 if (IsCapstone)
                 {
-                    return ResourceProvider.GetString("LOCPlayAch_Button_Remove");
+                    return ResourceProvider.GetString("LOCRemoveLabel");
                 }
 
                 return string.IsNullOrWhiteSpace(CapstoneReplacesDisplayName)
-                    ? ResourceProvider.GetString("LOCPlayAch_Common_Add")
+                    ? ResourceProvider.GetString("LOCAddTitle")
                     : ResourceProvider.GetString("LOCPlayAch_Button_Replace");
             }
         }

@@ -160,7 +160,7 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(plugin, "InvalidateStartPageData();");
             StringAssert.Contains(editor, "PlayniteUiProvider.CreateExtensionWindow");
             StringAssert.Contains(editor, "LOCPlayAch_Showcase_WidgetSettingsTitle");
-            StringAssert.Contains(profileEditor, "LOCPlayAch_Button_Clear");
+            StringAssert.Contains(profileEditor, "LOCClearLabel");
             StringAssert.Contains(localization, "LOCPlayAch_Showcase_MergeDeleteConfirm");
             StringAssert.Contains(localization, "LOCPlayAch_Showcase_Stat_CurrentStreak");
             StringAssert.Contains(uiText, "Localize(string key)");

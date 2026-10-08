@@ -159,7 +159,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedProviderFilterText =>
             OverviewGameSummaryFilters.BuildProviderFilterText(
                 ProviderFilterGroups,
-                ResourceProvider.GetString("LOCPlayAch_Common_Label_Platform"));
+                ResourceProvider.GetString("LOCPlatformTitle"));
 
         /// <summary>
         /// Sets the library's game summaries: rows resolve their provider and platforms from them,

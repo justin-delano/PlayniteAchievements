@@ -98,12 +98,12 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
             if ((selection & offered) == offered)
             {
-                return Localize("LOCPlayAch_Common_All");
+                return Localize("LOCAll");
             }
 
             if ((selection & offered) == RaritySelection.None)
             {
-                return Localize("LOCPlayAch_Common_None");
+                return Localize("LOCNone");
             }
 
             var labels = new List<string>();
@@ -120,7 +120,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
                 labels.Add(Localize("LOCPlayAch_Completed"));
             }
 
-            return labels.Count > 0 ? string.Join(", ", labels) : Localize("LOCPlayAch_Common_None");
+            return labels.Count > 0 ? string.Join(", ", labels) : Localize("LOCNone");
         }
 
         private static MenuItem CreateMenuItem(Button button, string header, bool isChecked, Action<bool> onToggle)

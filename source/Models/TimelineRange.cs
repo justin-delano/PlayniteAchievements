@@ -36,7 +36,7 @@ namespace PlayniteAchievements.Models
                 case TimelineRange.OneYear:
                     return Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_TimeRange_1Y");
                 case TimelineRange.All:
-                    return Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Common_All");
+                    return Playnite.SDK.ResourceProvider.GetString("LOCAll");
                 default:
                     return Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_TimeRange_3M");
             }

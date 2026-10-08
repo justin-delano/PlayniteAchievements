@@ -56,7 +56,7 @@
                 </Border>
 
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Column_Name}"
+                    <TextBlock Text="{DynamicResource LOCNameLabel}"
                                Style="{StaticResource FieldLabelStyle}" />
                     <TextBox x:Name="NameTextBox"
                              Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -94,7 +94,7 @@
                                 Margin="8,0,0,0" />
                     </Grid>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Column_Icon}"
+                    <TextBlock Text="{DynamicResource LOCGameIconTitle}"
                                Style="{StaticResource FieldLabelStyle}"
                                Margin="0,12,0,4" />
                     <Grid>
@@ -116,7 +116,7 @@
                                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                 Margin="8,0,0,0" />
                         <Button Grid.Column="2"
-                                Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                Content="{DynamicResource LOCClearLabel}"
                                 Command="{Binding ClearIconCommand}"
                                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                 Margin="8,0,0,0" />
@@ -144,14 +144,14 @@
                         MinWidth="80"
                         Visibility="{Binding IsNew, Converter={StaticResource InverseBoolToVis}}" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
+                    <Button Content="{DynamicResource LOCOKLabel}"
                             Click="OkButton_Click"
                             IsEnabled="{Binding CanConfirm}"
                             Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"
                             Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                             IsDefault="True" />
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    <Button Content="{DynamicResource LOCCancelLabel}"
                             Click="CancelButton_Click"
                             Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"

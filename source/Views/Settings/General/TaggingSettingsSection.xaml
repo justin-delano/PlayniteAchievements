@@ -79,7 +79,7 @@
                               Padding="12,10,12,12"
                               Visibility="{Binding Persisted.TaggingSettings.EnableTagging, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Expander.Header>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Advanced}"
+                            <TextBlock Text="{DynamicResource LOCSettingsAdvancedLabel}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        FontWeight="SemiBold"/>
                         </Expander.Header>

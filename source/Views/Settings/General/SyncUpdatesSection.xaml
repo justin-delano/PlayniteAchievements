@@ -122,7 +122,7 @@
                               Margin="{StaticResource PlayAch.Thickness.Top.Lg}"
                               Padding="12,10,12,12">
                         <Expander.Header>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Advanced}"
+                            <TextBlock Text="{DynamicResource LOCSettingsAdvancedLabel}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        FontWeight="SemiBold"/>
                         </Expander.Header>

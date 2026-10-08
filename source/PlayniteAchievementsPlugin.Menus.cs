@@ -146,7 +146,7 @@ namespace PlayniteAchievements
 
             yield return new GameMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Button_Cancel"),
+                Description = ResourceProvider.GetString("LOCCancelLabel"),
                 MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
@@ -184,7 +184,7 @@ namespace PlayniteAchievements
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Button_Cancel"),
+                Description = ResourceProvider.GetString("LOCCancelLabel"),
                 MenuSection = PluginMainMenuSection,
                 Action = (a) =>
                 {
@@ -856,7 +856,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Common_Custom") + "...",
+                    Description = ResourceProvider.GetString("LOCCustomLabel") + "...",
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {

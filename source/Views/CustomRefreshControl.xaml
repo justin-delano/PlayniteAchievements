@@ -73,7 +73,7 @@
                                 Margin="{StaticResource PlayAch.Thickness.Right.Compact}" />
 
                         <Button Grid.Column="2"
-                                Content="{DynamicResource LOCPlayAch_Button_Save}"
+                                Content="{DynamicResource LOCSaveLabel}"
                                 Click="SavePresetButton_Click"
                                 IsEnabled="{Binding CanSavePreset}"
                                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
@@ -97,7 +97,7 @@
                 </GroupBox>
 
                 <GroupBox Grid.Row="1"
-                          Header="{DynamicResource LOCPlayAch_Common_Label_Platforms}"
+                          Header="{DynamicResource LOCPlatformsTitle}"
                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                           BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                           Margin="0,0,0,10">
@@ -290,7 +290,7 @@
                     MinWidth="100"
                     Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                     IsDefault="True" />
-            <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+            <Button Content="{DynamicResource LOCCancelLabel}"
                     Click="CancelButton_Click"
                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="100"

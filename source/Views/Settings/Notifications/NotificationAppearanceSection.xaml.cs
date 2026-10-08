@@ -2351,7 +2351,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         {
             return new NotificationStylePlatformOption
             {
-                DisplayName = ResourceProvider.GetString("LOCPlayAch_Common_Default")
+                DisplayName = ResourceProvider.GetString("LOCDefault")
             };
         }
 

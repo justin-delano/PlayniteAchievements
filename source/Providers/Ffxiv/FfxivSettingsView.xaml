@@ -91,7 +91,7 @@
                                         <TextBox Text="{Binding Settings.World, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  Padding="4"/>
 
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Region}"
+                                        <TextBlock Text="{DynamicResource LOCRegionLabel}"
                                                    Margin="0,12,0,8"/>
                                         <ComboBox SelectedValue="{Binding Settings.Region, Mode=TwoWay}"
                                                   SelectedValuePath="Tag"

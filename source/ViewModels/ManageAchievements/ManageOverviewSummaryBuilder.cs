@@ -57,10 +57,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
     /// </summary>
     internal static class ManageOverviewSummaryBuilder
     {
-        public const string CustomAchievementsLabelKey = "LOCPlayAch_Common_Custom";
+        public const string CustomAchievementsLabelKey = "LOCCustomLabel";
         public const string OrderLabelKey = "LOCPlayAch_ManageAchievements_Tab_AchievementOrder";
         public const string CategoryArtLabelKey = "LOCPlayAch_Column_CategoryArt";
-        public const string NotificationsLabelKey = "LOCPlayAch_Settings_TabNotifications";
+        public const string NotificationsLabelKey = "LOCNotifications";
         public const string ProviderOverrideLabelKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderHeader";
         public const string ExophaseEnrichmentLabelKey = "LOCPlayAch_ManageAchievements_Overrides_ExophaseEnrichmentHeader";
         public const string SeparateLockedIconsLabelKey = "LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader";

@@ -60,7 +60,7 @@
                 </StackPanel>
                 <Button x:Name="ResetCategoryButton"
                         Grid.Column="1"
-                        Content="{DynamicResource LOCPlayAch_Button_Reset}"
+                        Content="{DynamicResource LOCResetLabel}"
                         Click="ResetCategoryButton_Click"
                         Style="{StaticResource ManageAchievementsHeaderActionButtonStyle}"
                         IsEnabled="{Binding HasCustomOverrides}" />
@@ -125,13 +125,13 @@
                         VerticalAlignment="Center"
                         Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                 <Button x:Name="SelectAllButton"
-                        Content="{DynamicResource LOCPlayAch_Common_SelectAll}"
+                        Content="{DynamicResource LOCSelectAll}"
                         Click="SelectAllButton_Click"
                         Height="{StaticResource PlayAch.Size.Control.Height}"
                         Padding="10,2"
                         Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
                 <Button x:Name="DeselectAllButton"
-                        Content="{DynamicResource LOCPlayAch_Common_DeselectAll}"
+                        Content="{DynamicResource LOCDeselectAll}"
                         Click="DeselectAllButton_Click"
                         Height="{StaticResource PlayAch.Size.Control.Height}"
                         Padding="10,2" />
@@ -224,7 +224,7 @@
                                         CellTemplate="{StaticResource ManageAchievementInfoTemplate}" />
 
                 <DataGridTextColumn Width="160"
-                    Header="{DynamicResource LOCPlayAch_Common_Label_Type}"
+                    Header="{DynamicResource LOCTypeLabel}"
                     Binding="{Binding CategoryTypeDisplay}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource EllipsisWrappedCenteredDataGridTextStyle}">
@@ -246,7 +246,7 @@
                 </DataGridTextColumn>
 
                 <DataGridTextColumn Width="190"
-                    Header="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                    Header="{DynamicResource LOCCategoryLabel}"
                     Binding="{Binding CategoryDisplay}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource EllipsisWrappedCenteredDataGridTextStyle}">
@@ -398,13 +398,13 @@
                             <WrapPanel Orientation="Horizontal"
                                        HorizontalAlignment="Right">
                                 <Button x:Name="AddCategoryButton"
-                                        Content="{DynamicResource LOCPlayAch_Common_Add}"
+                                        Content="{DynamicResource LOCAddTitle}"
                                         Click="AddCategoryButton_Click"
                                         Style="{StaticResource ToolbarButtonStyle}"
                                         IsEnabled="{Binding HasAchievements}"
                                         Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
                                 <Button x:Name="ResetCategoryMetadataButton"
-                                        Content="{DynamicResource LOCPlayAch_Button_Reset}"
+                                        Content="{DynamicResource LOCResetLabel}"
                                         Click="ResetCategoryMetadataButton_Click"
                                         Style="{StaticResource ToolbarButtonStyle}"
                                         IsEnabled="{Binding HasCustomCategoryMetadata}" />
@@ -549,7 +549,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="3*" MinWidth="260" Header="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                        <DataGridTemplateColumn Width="3*" MinWidth="260" Header="{DynamicResource LOCCategoryLabel}"
                                                 CellStyle="{StaticResource PlayAch.TreeGuideDataGridCellStyle}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
