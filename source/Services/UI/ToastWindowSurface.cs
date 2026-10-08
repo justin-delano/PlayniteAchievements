@@ -43,23 +43,6 @@ namespace PlayniteAchievements.Services.UI
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
-
-        /// <summary>DWM's cloaked state for the window (DWMWA_CLOAKED), or -1 when it cannot be read.</summary>
-        public static int CloakedState(Window window)
-        {
-            try
-            {
-                var hwnd = window == null ? IntPtr.Zero : new WindowInteropHelper(window).Handle;
-                return hwnd != IntPtr.Zero && DwmGetWindowAttribute(hwnd, 14, out var value, sizeof(int)) == 0 ? value : -1;
-            }
-            catch
-            {
-                return -1;
-            }
-        }
-
         [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
         private static extern int GetWindowLong(IntPtr hwnd, int index);
 
