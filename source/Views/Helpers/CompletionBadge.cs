@@ -71,23 +71,6 @@ namespace PlayniteAchievements.Views.Helpers
             element == null ? 24d : (double)element.GetValue(FrameBadgeSizeProperty);
 
         /// <summary>
-        /// Corner radius of the art the completion frame draws on, so the frame's outer band follows
-        /// the art's own rounding.
-        /// </summary>
-        public static readonly DependencyProperty FrameCornerRadiusProperty =
-            DependencyProperty.RegisterAttached(
-                "FrameCornerRadius",
-                typeof(CornerRadius),
-                typeof(CompletionBadge),
-                new FrameworkPropertyMetadata(new CornerRadius(6)));
-
-        public static void SetFrameCornerRadius(DependencyObject element, CornerRadius value) =>
-            element?.SetValue(FrameCornerRadiusProperty, value);
-
-        public static CornerRadius GetFrameCornerRadius(DependencyObject element) =>
-            element == null ? new CornerRadius(6) : (CornerRadius)element.GetValue(FrameCornerRadiusProperty);
-
-        /// <summary>
         /// Binds <see cref="PreferTrophyBadgesProperty"/> on <paramref name="element"/> to the global
         /// progress badge source, through the settings wrapper so a cancelled edit's replaced
         /// Persisted instance is followed.

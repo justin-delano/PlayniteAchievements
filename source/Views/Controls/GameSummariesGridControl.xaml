@@ -246,7 +246,7 @@
                             <Grid HorizontalAlignment="Center"
                                   VerticalAlignment="Center">
                                 <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                        helpers:RoundedClip.Radius="6"
+                                        ClipToBounds="True"
                                         RenderOptions.BitmapScalingMode="HighQuality"
                                         UseLayoutRounding="True"
                                         SnapsToDevicePixels="True">
@@ -258,8 +258,7 @@
                                 <Control Template="{StaticResource CompletionFrameTemplate}"
                                          Focusable="False"
                                          IsTabStop="False"
-                                         helpers:CompletionBadge.FrameBadgeSize="{StaticResource PlayAch.Size.Icon.Tiny}"
-                                         helpers:CompletionBadge.FrameCornerRadius="{StaticResource PlayAch.Radius.Card}">
+                                         helpers:CompletionBadge.FrameBadgeSize="{StaticResource PlayAch.Size.Icon.Tiny}">
                                     <Control.Style>
                                         <Style TargetType="Control">
                                             <Setter Property="Visibility" Value="Collapsed"/>
