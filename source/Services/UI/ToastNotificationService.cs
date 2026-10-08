@@ -2680,7 +2680,7 @@ namespace PlayniteAchievements.Services.UI
                 // Let the card actually reach the screen before the slide starts timing itself.
                 // ApplyDpiCompensation's UpdateLayout is measure/arrange, not pixels; on a monitor at
                 // the system scale the settle loop above does not await at all, so without this the
-                // slide's first frame is also the toast's first frame — the one paying for the layered
+                // slide's first frame is also the toast's first frame — the one paying for the
                 // window's surface, the template's visuals, text realization and the shadow effects.
                 // The slide reads progress from frame timestamps, so that cost does not slow the slide,
                 // it skips it: the second frame reports a clock that has already run most of the
