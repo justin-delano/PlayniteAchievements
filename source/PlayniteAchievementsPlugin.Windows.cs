@@ -297,15 +297,56 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
-        /// The Workshop hotkey: an open Workshop window comes to the front, or closes when it is
-        /// already active, so repeated presses never build a second window and reload the index.
+        /// The Workshop hotkey: the Settings > Workshop tab. An open settings window switches to
+        /// that tab; otherwise the tab opens on its own in a popout, which comes to the front on
+        /// the next press or closes when it is already active, so repeated presses never build a
+        /// second one and reload the index.
         /// </summary>
         private void ToggleWorkshopWindowFromHotkey()
         {
-            if (!_windowService.TryToggleOpenWindowHosting<Views.Workshop.WorkshopControl>())
+            if (Views.SettingsControl.Live != null)
             {
-                OpenWorkshopWindow();
+                OpenWorkshopSettings();
+                return;
             }
+
+            if (_windowService.TryToggleOpenWindowHosting<Views.Settings.Workshop.WorkshopSettingsTab>())
+            {
+                return;
+            }
+
+            var view = new Views.Settings.Workshop.WorkshopSettingsTab(_settingsViewModel.Settings, this, _logger);
+            _windowService.OpenManagedPopout(
+                ResourceProvider.GetString("LOCPlayAch_Workshop_Title"),
+                view,
+                new Views.Helpers.WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1100,
+                    Height = 720
+                },
+                "WorkshopSettingsPopout",
+                () =>
+                {
+                    view.Dispose();
+
+                    // The Account page edits the live settings (the endpoint URLs). Saved here
+                    // unless a settings window is open, whose own OK or Cancel owns those edits.
+                    if (Views.SettingsControl.Live == null)
+                    {
+                        try
+                        {
+                            SavePluginSettings(_settingsViewModel.Settings);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Error(ex, "Failed to save settings from the Workshop window.");
+                        }
+                    }
+                });
         }
 
         private bool _settingsViewOpen;
