@@ -796,7 +796,7 @@ namespace PlayniteAchievements
             {
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Recent"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Recent"),
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
@@ -806,7 +806,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Full"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Full"),
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
@@ -816,7 +816,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Installed"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Installed"),
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
@@ -826,7 +826,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Favorites"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Favorites"),
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
@@ -836,7 +836,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Selected"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Selected"),
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
@@ -846,7 +846,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Missing"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Missing"),
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
@@ -856,7 +856,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_MenuItem"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Custom") + "...",
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {
