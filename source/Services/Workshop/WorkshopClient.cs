@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -31,6 +32,8 @@ namespace PlayniteAchievements.Services.Workshop
         private readonly string _cacheDirectory;
         private readonly ILogger _logger;
         private readonly HttpClient _http;
+        private readonly ConcurrentDictionary<string, Lazy<Task<string>>> _imageFetches =
+            new ConcurrentDictionary<string, Lazy<Task<string>>>(StringComparer.OrdinalIgnoreCase);
 
         /// <param name="getIndexUrl">The index URL from settings; blank falls back to <see cref="DefaultIndexUrl"/>.</param>
         /// <param name="cacheDirectory">Where previews and READMEs are cached (<c>UserData\workshop\cache</c>).</param>
@@ -84,6 +87,7 @@ namespace PlayniteAchievements.Services.Workshop
 
                     index.Items.RemoveAll(item => item == null || string.IsNullOrWhiteSpace(item.Id) || item.Package == null);
                     Volatile.Write(ref _lastIndex, index);
+                    PruneCache(index);
                     return index;
                 }
             }
@@ -105,7 +109,7 @@ namespace PlayniteAchievements.Services.Workshop
 
             try
             {
-                var cached = CachePathFor(url, ".md");
+                var cached = ReadmeCachePathFor(url);
                 if (cached != null && File.Exists(cached))
                 {
                     return ReadmeToPlainText(StripImageBlock(File.ReadAllText(cached)), item.Name, item.Description);
@@ -114,8 +118,7 @@ namespace PlayniteAchievements.Services.Workshop
                 var text = await _http.GetStringAsync(url).ConfigureAwait(false);
                 if (cached != null)
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(cached));
-                    File.WriteAllText(cached, text);
+                    WriteCacheFile(cached, new System.Text.UTF8Encoding(false).GetBytes(text));
                 }
 
                 return ReadmeToPlainText(StripImageBlock(text), item.Name, item.Description);
@@ -221,7 +224,7 @@ namespace PlayniteAchievements.Services.Workshop
 
         /// <summary>
         /// The item's preview image as a local cached file path, or null. Cached by URL; the URL
-        /// is pinned to the publishing commit, so a changed preview has a new URL.
+        /// is pinned to the last commit that changed the file, so a changed preview has a new URL.
         /// </summary>
         public Task<string> FetchPreviewAsync(WorkshopItem item, CancellationToken cancel)
             => Task.Run(() => FetchImageCoreAsync(item, item?.Urls?.Preview, item?.Preview, "preview"), cancel);
@@ -235,12 +238,7 @@ namespace PlayniteAchievements.Services.Workshop
 
         private async Task<string> FetchImageCoreAsync(WorkshopItem item, string url, string fileName, string label)
         {
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return null;
-            }
-
-            var cached = CachePathFor(url, Path.GetExtension(string.IsNullOrWhiteSpace(fileName) ? ".png" : fileName));
+            var cached = ImageCachePathFor(url, fileName);
             if (cached == null)
             {
                 return null;
@@ -251,17 +249,27 @@ namespace PlayniteAchievements.Services.Workshop
                 return cached;
             }
 
+            // The list prefetch and the detail pane ask for the same image; they share one download.
+            var fetch = _imageFetches.GetOrAdd(cached, path => new Lazy<Task<string>>(() => DownloadImageAsync(item, url, path, label)));
+            return await fetch.Value.ConfigureAwait(false);
+        }
+
+        private async Task<string> DownloadImageAsync(WorkshopItem item, string url, string cached, string label)
+        {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(cached));
                 var bytes = await _http.GetByteArrayAsync(url).ConfigureAwait(false);
-                File.WriteAllBytes(cached, bytes);
+                WriteCacheFile(cached, bytes);
                 return cached;
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"Failed fetching Workshop {label} for {item?.Id}.");
                 return null;
+            }
+            finally
+            {
+                _imageFetches.TryRemove(cached, out _);
             }
         }
 
@@ -434,9 +442,84 @@ namespace PlayniteAchievements.Services.Workshop
             }
         }
 
+        private string ImageCachePathFor(string url, string fileName) =>
+            CachePathFor(url, Path.GetExtension(string.IsNullOrWhiteSpace(fileName) ? ".png" : fileName));
+
+        private string ReadmeCachePathFor(string url) => CachePathFor(url, ".md");
+
+        /// <summary>
+        /// Writes beside the target and renames, so an interrupted write never leaves a truncated
+        /// file that later reads as cached.
+        /// </summary>
+        private static void WriteCacheFile(string path, byte[] bytes)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var temp = path + "." + Guid.NewGuid().ToString("N") + ".part";
+            try
+            {
+                File.WriteAllBytes(temp, bytes);
+                if (!File.Exists(path))
+                {
+                    File.Move(temp, path);
+                }
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+            }
+            finally
+            {
+                TryDelete(temp);
+            }
+        }
+
+        /// <summary>
+        /// Deletes cached images and READMEs that no item in the index points at, so the files of
+        /// an item's earlier URLs do not pile up. Partial files of downloads still running are kept.
+        /// </summary>
+        private void PruneCache(WorkshopIndexFile index)
+        {
+            if (string.IsNullOrWhiteSpace(_cacheDirectory) || !Directory.Exists(_cacheDirectory))
+            {
+                return;
+            }
+
+            var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            void Keep(string path)
+            {
+                if (path != null)
+                {
+                    keep.Add(Path.GetFileName(path));
+                }
+            }
+
+            foreach (var item in index.Items)
+            {
+                Keep(ImageCachePathFor(item.Urls?.Preview, item.Preview));
+                Keep(ImageCachePathFor(item.Urls?.Cover, item.Cover));
+                Keep(ReadmeCachePathFor(item.Urls?.Readme));
+            }
+
+            try
+            {
+                var running = _imageFetches.Keys.Select(Path.GetFileName).ToList();
+                foreach (var file in Directory.EnumerateFiles(_cacheDirectory))
+                {
+                    var name = Path.GetFileName(file);
+                    if (!keep.Contains(name) && !running.Any(target => name.StartsWith(target, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        TryDelete(file);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                _logger?.Debug(ex, "Failed pruning the Workshop cache.");
+            }
+        }
+
         private string CachePathFor(string url, string extension)
         {
-            if (string.IsNullOrWhiteSpace(_cacheDirectory))
+            if (string.IsNullOrWhiteSpace(_cacheDirectory) || string.IsNullOrWhiteSpace(url))
             {
                 return null;
             }
