@@ -46,8 +46,8 @@ namespace PlayniteAchievements.Views.Showcase
         public bool Saved { get; private set; }
 
         /// <param name="linked">
-        /// True for a widget linked to the overview: its filters and its title come from the
-        /// overview's selections, so neither a control bar option nor a title field is offered.
+        /// True for a widget linked to the overview: its title comes from the overview's
+        /// selections, so no title field is offered.
         /// </param>
         public static bool Show(ShowcaseWidgetInstanceSettings widget, bool linked = false)
         {
@@ -127,8 +127,7 @@ namespace PlayniteAchievements.Views.Showcase
                     _workingWidget,
                     publishChanges: false,
                     margin: new Thickness(0),
-                    loadStyles: false,
-                    showControlBarOption: !_linked));
+                    loadStyles: false));
             }
 
             var buttons = new StackPanel
