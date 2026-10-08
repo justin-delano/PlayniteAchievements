@@ -36,20 +36,24 @@
 Playnite Achievements features include:
 
 * PC storefronts, RetroAchievements & emulator support
-  * [Steam](https://github.com/justin-delano/PlayniteAchievements/wiki/Steam), [GOG](https://github.com/justin-delano/PlayniteAchievements/wiki/GOG), [Epic Games Store](https://github.com/justin-delano/PlayniteAchievements/wiki/Epic), [Battle.net](https://github.com/justin-delano/PlayniteAchievements/wiki/BattleNet), [EA app](https://github.com/justin-delano/PlayniteAchievements/wiki/EA), [Game Jolt](https://github.com/justin-delano/PlayniteAchievements/wiki/GameJolt), [Riot Games](https://github.com/justin-delano/PlayniteAchievements/wiki/Riot)
-  * [PlayStation Network](https://github.com/justin-delano/PlayniteAchievements/wiki/PSN), [Xbox Live](https://github.com/justin-delano/PlayniteAchievements/wiki/Xbox)
+  * [Steam](https://github.com/justin-delano/PlayniteAchievements/wiki/Steam), [GOG](https://github.com/justin-delano/PlayniteAchievements/wiki/GOG), [Epic Games Store](https://github.com/justin-delano/PlayniteAchievements/wiki/Epic), [Battle.net](https://github.com/justin-delano/PlayniteAchievements/wiki/BattleNet), [EA app](https://github.com/justin-delano/PlayniteAchievements/wiki/EA), [Ubisoft Connect](https://github.com/justin-delano/PlayniteAchievements/wiki/Ubisoft), [Game Jolt](https://github.com/justin-delano/PlayniteAchievements/wiki/GameJolt), [Riot Games](https://github.com/justin-delano/PlayniteAchievements/wiki/Riot)
+  * [PlayStation Network](https://github.com/justin-delano/PlayniteAchievements/wiki/PSN), [Xbox Live](https://github.com/justin-delano/PlayniteAchievements/wiki/Xbox), [Meta Quest](https://github.com/justin-delano/PlayniteAchievements/wiki/Meta)
   * [RetroAchievements](https://github.com/justin-delano/PlayniteAchievements/wiki/RetroAchievements), [RPCS3](https://github.com/justin-delano/PlayniteAchievements/wiki/RPCS3), [ShadPS4](https://github.com/justin-delano/PlayniteAchievements/wiki/ShadPS4), [Xenia](https://github.com/justin-delano/PlayniteAchievements/wiki/Xenia)
   * [Final Fantasy XIV](https://github.com/justin-delano/PlayniteAchievements/wiki/Ffxiv), [Guild Wars 2](https://github.com/justin-delano/PlayniteAchievements/wiki/Guild-Wars-2), [Hypixel](https://github.com/justin-delano/PlayniteAchievements/wiki/Hypixel)
   * [HoYoverse](https://github.com/justin-delano/PlayniteAchievements/wiki/Hoyoverse)
   * [Exophase](https://github.com/justin-delano/PlayniteAchievements/wiki/Exophase)
+* [Workshop](https://github.com/justin-delano/PlayniteAchievements/wiki/Workshop) for sharing colors, notifications, sounds, Showcase pages and game data
+* [Showcase dashboards](https://github.com/justin-delano/PlayniteAchievements/wiki/Showcase-And-Pin-Collections)
+* [Achievement editor](https://github.com/justin-delano/PlayniteAchievements/wiki/Editor) with spreadsheet import and export
+* [Custom achievements](https://github.com/justin-delano/PlayniteAchievements/wiki/Editor#custom-achievements)
 * [Manual achievement support](https://github.com/justin-delano/PlayniteAchievements/wiki/Manual-Tracking)
-* [Friends achievement data](https://github.com/justin-delano/PlayniteAchievements/wiki/Friends)
-* [Automatic syncing](https://github.com/justin-delano/PlayniteAchievements/wiki/Custom-Refresh)
-* [Achievement unlock notifications](https://github.com/justin-delano/PlayniteAchievements/wiki/General) (with screenshots/recordings)
+* [Friends achievement data](https://github.com/justin-delano/PlayniteAchievements/wiki/Friends-Overview)
+* [Automatic syncing](https://github.com/justin-delano/PlayniteAchievements/wiki/Refreshing)
+* [Achievement unlock notifications](https://github.com/justin-delano/PlayniteAchievements/wiki/Notifications) (with screenshots/recordings)
 * [Achievement groups](https://github.com/justin-delano/PlayniteAchievements/wiki/Categories)
-* [Custom achievement icons](https://github.com/justin-delano/PlayniteAchievements/wiki/Icons)
+* [Custom achievement icons](https://github.com/justin-delano/PlayniteAchievements/wiki/Editor#icons) (animated GIF and WebM included)
 * [Theme Migration](https://github.com/justin-delano/PlayniteAchievements/wiki/Theme-Migration)
-* [Hotkeys](https://github.com/justin-delano/PlayniteAchievements/wiki/General)
+* [Hotkeys](https://github.com/justin-delano/PlayniteAchievements/wiki/Menus-And-Hotkeys)
 * [Tags](https://github.com/justin-delano/PlayniteAchievements/wiki/Tag-Sync)
 * [Easy maintenance](https://github.com/justin-delano/PlayniteAchievements/wiki/General)
 
@@ -79,7 +83,9 @@ Refresh progress is shown at the top of the overview window. There are various t
 
 ![Score cards](Images/scores.png)
 
-At the top right corner of the overview are your Score Cards. Your Collection Score increases as you collect achievements, with slight boosts for collecting rare achievements. Your Prestige Score increases as you unlock rare achievements, and common achievements are worth far less. Click the info button on either Score Card to learn more.
+At the top right corner of the overview are your Score Cards. Your Collection Score increases as you collect achievements, with slight boosts for collecting rare achievements. Your Prestige Score increases as you unlock rare achievements, and common achievements are worth far less. Click either Score Card to learn more.
+
+Platforms with their own point systems get score cards too: Gamerscore, Epic XP and RetroAchievements points each have their own levels. Right-click a score card to pick which two the header shows, and which side each card's badge sits on.
 
 ![Refresh complete](Images/refresh-complete.png)
 
@@ -99,7 +105,9 @@ Note, with many friends and many games, these refreshes can take a significant a
 
 ![Friends overview](Images/friends-overview.png)
 
-Every friends option is described on the [Friends](https://github.com/justin-delano/PlayniteAchievements/wiki/Friends) settings page on the wiki.
+Favorite friends can be marked to narrow the list, and the Compare dropdown in any achievement grid compares your progress against a friend's, game by game.
+
+See the [Friends Overview](https://github.com/justin-delano/PlayniteAchievements/wiki/Friends-Overview) guide and the [Friends](https://github.com/justin-delano/PlayniteAchievements/wiki/Friends) settings page on the wiki for more detail.
 
 # Customization
 
@@ -116,64 +124,89 @@ PlayniteAchievements features comprehensive customization options.
 * Color and font customizations
   * All UI colors and fonts can be freely edited
   * 20 Presets for easy experimentation
+  * Save, export and import your own color sets, or install them from the Workshop
   * Options to automatically follow Playnite theme colors.
 * Rarity and completion accents
-  * Add glowing borders to rare achievements or completed games.
+  * Add a glowing halo, a rotating sunburst, or both to the rarities of your choice, or to completed games.
   * Color text by achievement rarity
   * Show a special progress bar for completed games
+  * Frame the covers of completed games with laurels
 * Flexible Overview visualizations
-  * Pie charts for visualizing achievements per platform, rarity, or completion.
-  * Bar chart for showing achievement progress over time.
+  * Pie charts for visualizing achievements per platform, rarity, or completion, as a full pie or a ring, with a legend on either side.
+  * Bar chart for showing achievement progress over time, optionally split by platform.
+  * A Mini Showcase below the grids, whose charts follow your filters and can filter the grids in turn.
+* Filter the Achievements grid by unlock date, rarity and trophy
+* Leave games hidden in Playnite out of your totals
+
+![Mini Showcase](Images/mini-showcase.png)
 
 ![Appearance settings](Images/appearance.png)
 
-Every appearance option is described on the [Display](https://github.com/justin-delano/PlayniteAchievements/wiki/Display) settings page on the wiki.
+Every appearance option is described on the [Display](https://github.com/justin-delano/PlayniteAchievements/wiki/Display) settings page and the [Overview Window](https://github.com/justin-delano/PlayniteAchievements/wiki/Overview-Window) guide on the wiki.
+
+# Showcase
+
+![Showcase dashboard](Images/showcase.png)
+
+Showcase is the third tab of the Overview window, providing customizable dashboards for your achievement collection. Each Showcase page is a 3×3 grid of widgets, including your profile and score cards, pie charts, a timeline, an activity calendar, overall statistics, pinned achievements, favorite games, icon mosaics, and a slideshow of your unlock screenshots.
+
+Edit layout allows widgets to be moved, blocks to be split or merged in any direction, and new pages to be created from blank, analytics, or collection templates. Any number of pages can be created, and controller bumpers move between them.
+
+Any achievement or game can be pinned to Showcase from its right-click menu, into any number of named collections, and each widget can display a different collection.
+
+Every Showcase widget can also be placed on [StartPage](https://github.com/felixkmh/StartPage-for-Playnite) with its own settings, and Showcase pages can be shared through the Workshop.
+
+See the [Showcase and Pin Collections](https://github.com/justin-delano/PlayniteAchievements/wiki/Showcase-And-Pin-Collections) guide for the full workflow.
+
+# Workshop
+
+![Workshop](Images/workshop-browse.png)
+
+The Workshop is a community repository for PlayniteAchievements customizations: color sets, notification and frame styles, sound packs, Showcase pages, and per-game achievement data. Open it from Settings > Workshop to browse items shared by other users, preview them, and install them. No account is required.
+
+Every surface with an Export button also has a Share to Workshop entry. Bundles share several parts together, with a choice of which saved preset the colors, sounds, notification, and frame each come from.
+
+Installed items are kept in your Library, which shows where each item is in use. Workshop items are checked for updates every hour, and updates keep any changes you have made.
+
+Game data allows per-game work to be shared: if another user has already reordered, categorized, or re-iconed a game's achievements, their data can be applied to your copy of the game. Right-click a game and choose Workshop to see what has been shared for it.
+
+See the [Workshop](https://github.com/justin-delano/PlayniteAchievements/wiki/Workshop) guide for more detail.
 
 # Per-Game Customization
 
-The [Manage Achievements](https://github.com/justin-delano/PlayniteAchievements/wiki/Manage-Achievements) menu opens up another extremely powerful form of customization, with options available for each individual game in your library.
+The [Manage Achievements](https://github.com/justin-delano/PlayniteAchievements/wiki/Manage-Achievements) menu opens up another extremely powerful form of customization, with options available for each individual game in your library. The window has four tabs: Overview, Editor, Categories, and Notifications.
 
 ## Overview
 
 ![Game overview tab](Images/game-overview.png)
 
-The overview tab allows you to see the general achievement status for the game. Additionally, you can export all per-game customized data to share with other users, or import their per-game customizations.
+The overview tab shows the general achievement status for the game. If a game is not behaving automatically, forced overrides make it use data from a specific platform, and games can be excluded from refreshes here too. All of a game's customized data can be exported to share with other users, imported from theirs, or installed from the Workshop.
 
-## Capstones
+See [Overview](https://github.com/justin-delano/PlayniteAchievements/wiki/Overview) on the wiki for more detail.
+
+## Editor
+
+![Editor tab](Images/editor.png)
+
+The Editor contains every achievement of a game in one place. Achievements can be renamed, re-iconed, reordered, categorized, filtered, annotated, set as goals, or marked as capstones, individually or in bulk, with full undo and redo.
+
+* Filtered achievements are hidden from your views. This is particularly useful for games with unobtainable or multiplayer-specific achievements. For example, achievements could be filtered out of Tomb Raider’s list for these reasons.
+* Notes can link to an achievement guide, mark an achievement as bugged, or keep track of progress.
+* Order fixes platforms which sort achievements alphabetically, and not in the order a player may achieve them. When Metal Hellsinger achievements are reordered, there is a very satisfying progression (seen in icons).
+* Goals pin the achievements you are chasing to the top of your lists (themes included), and retire themselves once unlocked.
+* Types mark achievements as Singleplayer, Stackable, Missable, Unobtainable, Progression, Win Condition, Post Game, Completion, Cumulative, Challenge, or Side Quest. Many are filled in automatically for Steam, RetroAchievements, Riot, World of Warcraft and Guild Wars 2.
+
+Achievements can also be exported to a CSV spreadsheet, edited (icons included), and imported back.
+
+### Capstones
 
 ![Capstone unlock marking a game complete](Images/capstone-2.png)
 
 Some platforms automatically unlock an achievement to mark game completion, for example with PlayStation and Platinum trophies. To generalize this, PlayniteAchievements developed a Capstone system, which can be used by games on all platforms. Unlocking an achievement that has been marked as a capstone will mark the game as completed. This is particularly useful when DLC/Multiplayer trophies should not count towards game completion.
 
-![Capstone tab](Images/capstone-1.png)
+Each category can have its own capstone, allowing the base game and each DLC to be completed separately. Auto Capstone sets a game's capstone to its platinum in one click, or creates one if the game has none, and can be applied to every game automatically as it refreshes.
 
-## Categories
-
-![Categories tab](Images/categories.png)
-
-Achievements can be manually (or, in some cases, automatically) organized into categories. Each category can have a set of Types (Singleplayer, Stackable, Missable) as well as a Label ("DLC #1"). Categories are especially helpful for multi-game collections or games with many DLC packs.
-
-## Filters
-
-![Filters tab](Images/filter.png)
-
-Filtered achievements are hidden from your views. This is particularly useful for games with unobtainable or multiplayer-specific achievements. For example, achievements could be filtered out of Tomb Raider’s list for these reasons.
-
-## Notes
-
-![Notes tab](Images/notes.png)
-
-Notes can be added to each of a game’s achievements. This could be used to link to an achievement guide, mark if an achievement is bugged, or keep track of progress.
-
-## Order
-
-![Order tab](Images/order.png)
-
-Achievements can be freely reordered per game. This is useful for platforms which initially sort achievements alphabetically, and not in the order a player may achieve them.
-
-For example, when Metal Hellsinger achievements are reordered, there is a very satisfying progression (seen in icons).
-
-## Icons
+### Icons
 
 Locked and unlocked achievement icons can be individually customized, from web links or local files. By default, some platforms use very low-resolution images, and some are more high resolution. For comparison, here is an achievement from Flower, with Steam and PlayStation icons.
 
@@ -181,19 +214,41 @@ Locked and unlocked achievement icons can be individually customized, from web l
 
 <p align="center"><em>Left: Steam 64x64 .jpg &nbsp;|&nbsp; Right: PlayStation 240x240 .png</em></p>
 
-## Overrides
+Animated GIF and WebM icons are supported too, transparency included.
 
-If a game is not behaving automatically, forced overrides can resolve these issues. Overrides force a game to use data from a specific platform. Games can also be excluded from refreshes in this way.
+### Custom achievements
 
-Each of these tabs has its own wiki page: [Overview](https://github.com/justin-delano/PlayniteAchievements/wiki/Overview), [Capstones](https://github.com/justin-delano/PlayniteAchievements/wiki/Capstones), [Categories](https://github.com/justin-delano/PlayniteAchievements/wiki/Categories), [Filters](https://github.com/justin-delano/PlayniteAchievements/wiki/Filters), [Notes](https://github.com/justin-delano/PlayniteAchievements/wiki/Notes), [Order](https://github.com/justin-delano/PlayniteAchievements/wiki/Achievement-Order), [Icons](https://github.com/justin-delano/PlayniteAchievements/wiki/Icons), and [Overrides](https://github.com/justin-delano/PlayniteAchievements/wiki/Overrides).
+![Custom achievements](Images/custom-achievements.png)
+
+Achievements can be authored for any game, including games without a supported platform. In the Editor, custom achievements can be created from scratch or duplicated from existing ones, and a game can be given its own custom platform with a name, color, and icon. Custom achievements behave like any other achievement, with categories, capstones, notifications, and score contributions, and can be shared as a file or through the Workshop.
+
+See [Editor](https://github.com/justin-delano/PlayniteAchievements/wiki/Editor) and [Capstones](https://github.com/justin-delano/PlayniteAchievements/wiki/Capstones) on the wiki for more detail.
+
+## Categories
+
+![Categories tab](Images/categories.png)
+
+Achievements can be manually (or, in some cases, automatically) organized into categories. Each category can have a set of Types (Singleplayer, Stackable, Missable) as well as a Label ("DLC #1"). Categories are especially helpful for multi-game collections or games with many DLC packs.
+
+Categories can contain other categories, and platforms that group their achievements (Steam DLC, PlayStation collections, World of Warcraft, StarCraft II, Final Fantasy XIV, and more) show their real structure automatically. Every achievement grid has a Category Mode that groups achievements by category, and a whole category can be excluded from your stats in one click.
+
+See [Categories](https://github.com/justin-delano/PlayniteAchievements/wiki/Categories) on the wiki for more detail.
+
+## Notifications
+
+The Notifications tab gives a game its own notification style and unlock sounds, separate from those of its platform. It uses the same editor as the Notifications settings page, described under [Overlay](#overlay).
 
 # Overlay
 
 PlayniteAchievements includes a robust achievement notification and tracking system. When achievements are unlocked while you are in a game, notifications appear, and screenshots or videos can be taken to record your progress.
 
+Steam, RetroAchievements and Guild Wars 2 detect unlocks as they happen, and progress notifications appear as you approach an achievement. Notifications can be styled separately for each rarity tier, platform, or game, and controllers (Xbox, DualSense, DualShock 4, and Steam Controller) can vibrate on each unlock.
+
+Notifications can slide, slide in from the side, fade, or zoom, at your choice of speed and with a smooth or bouncy feel. They can sit in any corner or at the bottom center of the screen, and each notification style can carry its own position.
+
 Screenshots can be taken with/without the achievement notification on screen, or they can be taken with a full presentation frame.
 
-Unlock videos show the moment you earned an achievement, with a configurable amount of buffer time around the moment.
+Unlock videos show the moment you earned an achievement, with a configurable amount of buffer time around the moment. All screenshots and clips are available in the Captures viewer, accessible from any achievement grid.
 
 **Clean**
 
@@ -219,7 +274,11 @@ Themes can create custom notification and frame styles, for full consistency. Fo
 
 ![Aniki-ReMake custom frame](Images/mike-aniki-frame.png)
 
-Notification and capture settings are described on the [General](https://github.com/justin-delano/PlayniteAchievements/wiki/General) settings page. Theme authors can build custom styles with [Toast and Frame Overrides](https://github.com/justin-delano/PlayniteAchievements/wiki/Toast-And-Frame-Overrides).
+## Unlock sounds
+
+Unlock sounds are built in: each notification plays a sound for its rarity tier, or for hidden and capstone unlocks. Pick your own sound files, use different sounds for each platform or game, save your favorites as sound packs, or install one from the Workshop. Themes can ship their own sounds too.
+
+Notification, sound and capture settings are described on the [Notifications](https://github.com/justin-delano/PlayniteAchievements/wiki/Notifications) settings page and the [Captures](https://github.com/justin-delano/PlayniteAchievements/wiki/Captures) guide. Theme authors can build custom styles with [Notification Overrides](https://github.com/justin-delano/PlayniteAchievements/wiki/Notification-Overrides).
 
 # Integration with Themes
 
@@ -233,27 +292,11 @@ See [Theme Migration](https://github.com/justin-delano/PlayniteAchievements/wiki
 
 PlayniteAchievements supports additional features when used with the following extensions:
 
-## Unlock sounds
-
-Unlock sounds are built in: each notification plays a sound for its rarity tier (or for hidden and capstone unlocks), with a volume slider and a per-tier file picker under Settings > Notifications. Themes can ship their own sounds by dropping `common`/`uncommon`/`rare`/`ultrarare`/`hidden`/`capstone` files into `PlayniteAchievements/Sounds/` in the theme folder; the UniPlaySong-era `audio/Achievements/` layout is still read. UniPlaySong is no longer involved: this plugin no longer sends it the unlock signal, so its achievement sounds stay silent even if it is still installed, and the first launch copies its volume and custom files into these settings.
-
 ## StartPage
 
 PlayniteAchievements tables and visualizations can be added to [StartPage](https://github.com/felixkmh/StartPage-for-Playnite), with their own separate customization, so you can create stunning dashboards like the example below:
 
 ![StartPage dashboard](Images/startpage.png)
-
-## Showcase dashboards
-
-Showcase is the third tab in the achievement Overview window. It provides one or more named 3×3 dashboard pages. Use **Edit layout** to select a block, then use the compact **Widget** and **Layout** menus or drag a widget to a highlighted move/swap target. Layout actions split or merge in any direction. A merge includes the smallest rectangular set of neighboring blocks and keeps the selected block's widget; any other widgets are deleted after confirmation. Page actions create blank, analytics, or collection templates; pages can also be duplicated, renamed, reordered, reset, and deleted. Controller bumpers move between pages.
-
-The responsive widget catalog includes Profile, Collection and Prestige Scores, Pie Charts, an optional Timeline, Overall Statistics, provider-native points, Pinned Achievements, Favorite Games, Icon Mosaic, and Screenshot Slideshow. Timeline is available from the gallery but is not included in any seeded layout. The slideshow uses the shared capture library and configured filename suffixes, watches the configured capture directories, ignores unreadable captures, and supports capture-variant filters, shuffle, interval, fit, pause, and navigation.
-
-Achievement and game row context menus include a **Pin to Showcase** submenu. Achievement pins and game pins each have their own named collections, and an item can belong to more than one collection. Choose an existing collection to toggle membership, use its pencil or trash action to rename or clear/delete it, or choose **New Collection…** to create a collection and pin the selected item immediately. Each pin type always has a protected Default collection: it can be renamed or cleared, but not deleted. Achievement pins use the Playnite game ID and achievement API name, retaining their last-known labels if source data becomes unavailable. Playnite's native library-game context menu does not add a Showcase pin entry; game pinning is available from PlayniteAchievements game-summary rows. Favorite Games can instead follow Playnite favorites.
-
-Pinned Achievements and Favorite Games widgets can be placed multiple times on Showcase pages and StartPage. Every placement owns its display mode, column layout, and selected pin collection. Icon Mosaic and Game Mosaic also expose a collection selector when their source is Pinned; Playnite Favorites sources ignore collections. Missing or deleted selections fall back to Default, and pin, unpin, reorder, rename, clear, and delete changes refresh all open Showcase and StartPage views.
-
-The same responsive widgets are available as individual StartPage views. Multiple instances keep their settings under the StartPage instance ID and remove those settings when the view is deleted. See the [Showcase and Pin Collections guide](https://github.com/justin-delano/PlayniteAchievements/wiki/Showcase-And-Pin-Collections) for the full workflow.
 
 ## Docs
 
