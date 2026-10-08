@@ -7,10 +7,10 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Dialogs
 {
-    /// <summary>Hosts the shared capture lightbox for gallery-style surfaces.</summary>
-    internal static class FullscreenMediaViewerPresenter
+    /// <summary>Opens a single image or video in the media lightbox.</summary>
+    internal static class MediaLightboxPresenter
     {
-        private static readonly ILogger Logger = PluginLogger.GetLogger(nameof(FullscreenMediaViewerPresenter));
+        private static readonly ILogger Logger = PluginLogger.GetLogger(nameof(MediaLightboxPresenter));
 
         public static void Show(FrameworkElement owner, string path, bool isVideo)
         {
@@ -19,7 +19,7 @@ namespace PlayniteAchievements.Views.Dialogs
                 return;
             }
 
-            var content = new FullscreenMediaViewer(path, isVideo);
+            var content = new MediaLightbox(path, isVideo);
             var window = new Window
             {
                 WindowStyle = WindowStyle.None,

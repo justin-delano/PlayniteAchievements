@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Views.Dialogs
                 Transport.Pause();
             }
 
-            FullscreenMediaViewerPresenter.Show(this, path, isVideo);
+            MediaLightboxPresenter.Show(this, path, isVideo);
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)

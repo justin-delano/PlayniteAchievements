@@ -7,18 +7,18 @@ using PlayniteAchievements.Views.Helpers;
 namespace PlayniteAchievements.Views.Dialogs
 {
     /// <summary>
-    /// Black-background lightbox that shows a single capture (image or video) filling the screen,
-    /// hosted in a borderless maximized window by the gallery viewer. Clicking closes an image;
+    /// Black-background lightbox that shows a single image or video filling the screen,
+    /// hosted in a borderless maximized window by MediaLightboxPresenter. Clicking closes an image;
     /// clicking toggles play/pause on a video, which also gets the shared transport bar for seeking.
     /// Esc (handled by the host window) closes either.
     /// </summary>
-    public partial class FullscreenMediaViewer : UserControl
+    public partial class MediaLightbox : UserControl
     {
         private static readonly TimeSpan SeekStep = TimeSpan.FromSeconds(5);
 
         private readonly bool _isVideo;
 
-        public FullscreenMediaViewer(string path, bool isVideo)
+        public MediaLightbox(string path, bool isVideo)
         {
             _isVideo = isVideo;
             InitializeComponent();
@@ -29,7 +29,7 @@ namespace PlayniteAchievements.Views.Dialogs
                 Player.Visibility = Visibility.Visible;
                 Transport.Visibility = Visibility.Visible;
                 Transport.Attach(Player);
-                PreviewKeyDown += FullscreenMediaViewer_PreviewKeyDown;
+                PreviewKeyDown += MediaLightbox_PreviewKeyDown;
                 Loaded += (_, __) =>
                 {
                     Focus();
@@ -112,9 +112,9 @@ namespace PlayniteAchievements.Views.Dialogs
         }
 
         /// <summary>
-        /// Unlike the gallery, the lightbox has no previous/next, so the plain arrows seek here.
+        /// The lightbox has no previous/next, so the plain arrows seek here.
         /// </summary>
-        private void FullscreenMediaViewer_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void MediaLightbox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             switch (e.Key)
             {

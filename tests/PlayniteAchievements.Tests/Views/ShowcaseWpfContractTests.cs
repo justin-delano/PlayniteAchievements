@@ -345,7 +345,7 @@ namespace PlayniteAchievements.Tests.Views
             StringAssert.Contains(gallery, "{StaticResource PlayAch.Capture.NavButtonStyle}");
             Assert.IsFalse(gallery.Contains("x:Key=\"CaptureNavArrowStyle\""));
             StringAssert.Contains(slideshow, "IReadOnlyList<CaptureItem>");
-            StringAssert.Contains(slideshow, "FullscreenMediaViewerPresenter.Show");
+            StringAssert.Contains(slideshow, "MediaLightboxPresenter.Show");
             StringAssert.Contains(slideshow, "PlayAch.Capture.NavButtonStyle");
             StringAssert.Contains(slideshow, "CreatePlaybackOrder(items)");
             StringAssert.Contains(

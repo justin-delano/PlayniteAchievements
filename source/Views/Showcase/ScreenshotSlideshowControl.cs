@@ -698,7 +698,7 @@ namespace PlayniteAchievements.Views.Showcase
             var current = Current;
             if (current != null)
             {
-                FullscreenMediaViewerPresenter.Show(this, current.FilePath, false);
+                MediaLightboxPresenter.Show(this, current.FilePath, false);
             }
         }
 
