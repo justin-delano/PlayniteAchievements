@@ -16,6 +16,7 @@ using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Showcase;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Controls;
+using PlayniteAchievements.Views.Helpers;
 using static PlayniteAchievements.Services.Showcase.ShowcaseGeometry;
 using static PlayniteAchievements.Views.Showcase.ShowcaseUiText;
 
@@ -2776,7 +2777,7 @@ namespace PlayniteAchievements.Views.Showcase
                 {
                     state.Glow.BeginAnimation(
                         UIElement.OpacityProperty,
-                        new DoubleAnimation
+                        AnimationFrameRate.Apply(new DoubleAnimation
                         {
                             From = 0.12,
                             To = 0.30,
@@ -2787,7 +2788,7 @@ namespace PlayniteAchievements.Views.Showcase
                             {
                                 EasingMode = EasingMode.EaseInOut
                             }
-                        },
+                        }),
                         HandoffBehavior.SnapshotAndReplace);
                 }
 
