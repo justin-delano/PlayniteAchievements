@@ -480,12 +480,11 @@ namespace PlayniteAchievements
                 new Services.Workshop.WorkshopInstaller(this, WorkshopIdentityStore, _logger));
         public Services.Workshop.WorkshopClient WorkshopClient =>
             _workshopClient ?? (_workshopClient = new Services.Workshop.WorkshopClient(
-                () => _settingsViewModel?.Settings?.Persisted?.WorkshopIndexUrl,
+                null,
                 System.IO.Path.Combine(GetPluginUserDataPath(), Services.Workshop.WorkshopIdentityStore.DirectoryName, "cache"),
                 _logger));
         public Services.Workshop.WorkshopSubmissionClient WorkshopSubmissionClient =>
-            _workshopSubmissionClient ?? (_workshopSubmissionClient = new Services.Workshop.WorkshopSubmissionClient(
-                () => _settingsViewModel?.Settings?.Persisted?.WorkshopServiceUrl));
+            _workshopSubmissionClient ?? (_workshopSubmissionClient = new Services.Workshop.WorkshopSubmissionClient(null));
         public Services.Workshop.WorkshopShareService WorkshopShareService =>
             _workshopShareService ?? (_workshopShareService =
                 new Services.Workshop.WorkshopShareService(this, WorkshopSubmissionClient, WorkshopIdentityStore, _logger));
