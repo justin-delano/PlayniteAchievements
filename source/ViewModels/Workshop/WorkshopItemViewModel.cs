@@ -18,6 +18,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
         private string _readme;
         private bool _isInstalled;
         private bool _hasUpdate;
+        private bool _isApplied;
         private string _localGameName;
         private bool _isMine;
 
@@ -128,8 +129,15 @@ namespace PlayniteAchievements.ViewModels.Workshop
             set => SetValue(ref _isInstalled, value, nameof(IsInstalled), nameof(ActionLabel), nameof(CanInstall));
         }
 
-        /// <summary>The installed state's label: game data is applied to a game, everything else is in the library.</summary>
-        public string InstalledLabel => ResourceProvider.GetString(Kind == WorkshopItemKind.GameCustomData
+        /// <summary>For a look in the library, true when a setting or game uses it, as the Library page shows.</summary>
+        public bool IsApplied
+        {
+            get => _isApplied;
+            set => SetValue(ref _isApplied, value, nameof(IsApplied), nameof(InstalledLabel), nameof(ActionLabel));
+        }
+
+        /// <summary>The installed state's label: game data is applied to a game; a look is applied when something uses it, else in the library.</summary>
+        public string InstalledLabel => ResourceProvider.GetString(Kind == WorkshopItemKind.GameCustomData || _isApplied
             ? "LOCPlayAch_Library_Applied"
             : "LOCPlayAch_Library_InLibrary");
 
