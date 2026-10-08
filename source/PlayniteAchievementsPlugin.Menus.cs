@@ -856,7 +856,7 @@ namespace PlayniteAchievements
 
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshModeShort_Custom") + "...",
+                    Description = ResourceProvider.GetString("LOCPlayAch_Common_Custom") + "...",
                     MenuSection = PluginMainRefreshSection,
                     Action = (a) =>
                     {

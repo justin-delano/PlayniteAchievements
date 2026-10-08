@@ -198,7 +198,7 @@
             </DataGridTemplateColumn>
 
             <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
-                                Header="{DynamicResource LOCPlayAch_Column_SharedGames}"
+                                Header="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                 Binding="{Binding SharedGamesCount, Converter={StaticResource BlankZeroNumber}}"
                                 SortMemberPath="SharedGamesCount"
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"

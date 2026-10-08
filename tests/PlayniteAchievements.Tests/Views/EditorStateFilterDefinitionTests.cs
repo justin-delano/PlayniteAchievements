@@ -75,7 +75,7 @@ namespace PlayniteAchievements.Tests.Views
             {
                 "LOCPlayAch_Common_Unlocked",
                 "LOCPlayAch_Common_Locked",
-                "LOCPlayAch_ManageAchievements_Custom_Hidden",
+                "LOCPlayAch_Filter_Hidden",
                 "LOCPlayAch_Column_Status"
             })
             {

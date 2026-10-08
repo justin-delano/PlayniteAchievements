@@ -473,6 +473,12 @@ namespace PlayniteAchievements.Services.Achievements
         {
             var values = ParseValues(NormalizeOrDefault(categoryType));
             var canonical = values.Count == 0 ? DefaultCategoryType : values[0];
+            // Default reuses the shared "Default" label rather than a second identical string.
+            if (string.Equals(canonical, DefaultCategoryType, StringComparison.OrdinalIgnoreCase))
+            {
+                return L("LOCPlayAch_Common_Default", canonical);
+            }
+
             return L($"LOCPlayAch_ManageAchievements_Category_Type_{canonical}", canonical);
         }
 

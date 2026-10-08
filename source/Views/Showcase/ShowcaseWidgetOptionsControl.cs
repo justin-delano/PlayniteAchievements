@@ -750,7 +750,7 @@ namespace PlayniteAchievements.Views.Showcase
             AddLastPlayedWindowChoice(container);
             AddToggle(
                 container,
-                Localize("LOCPlayAch_Showcase_FinishNextIncludeUnplayed"),
+                Localize("LOCPlayAch_IncludeUnplayedGames"),
                 ShowcaseWidgetOptions.GetFinishNextIncludeUnplayed(_settings),
                 value => ShowcaseWidgetOptions.SetFinishNextIncludeUnplayed(_settings, value));
             AddNumberRow(

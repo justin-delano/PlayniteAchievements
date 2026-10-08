@@ -78,7 +78,7 @@ namespace PlayniteAchievements.Views.Showcase
                 _onChanged);
             AddImagePicker(
                 panel,
-                Localize("LOCPlayAch_Showcase_ProfileAvatar"),
+                Localize("LOCPlayAch_Column_Avatar"),
                 () => _profile.AvatarPath,
                 value => _profile.AvatarPath = value);
             AddImagePicker(
@@ -157,7 +157,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             var add = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Add"),
+                Content = Localize("LOCPlayAch_Common_Add"),
                 MinWidth = 82
             };
             add.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");

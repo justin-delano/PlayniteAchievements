@@ -3369,7 +3369,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         /// </summary>
         private void DeleteSelected()
         {
-            MarkUndoIntent(EditorEditIntent.Command("Delete", "LOCPlayAch_Button_Delete"));
+            MarkUndoIntent(EditorEditIntent.Command("Delete", "LOCPlayAch_Common_Delete"));
 
             var targets = ResolveSelectionTargets()
                 .Where(row => !row.IsProviderRow)
@@ -6185,7 +6185,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             return string.Equals(option, LockedFilterKey, StringComparison.OrdinalIgnoreCase)
                 ? ResourceProvider.GetString("LOCPlayAch_Common_Locked")
-                : ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Custom_Hidden");
+                : ResourceProvider.GetString("LOCPlayAch_Filter_Hidden");
         }
 
         private static string GetCustomizationFilterLabel(string option)
@@ -7670,7 +7670,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             if ((facets & AchievementCustomizationFacet.Authored) != 0)
             {
-                return ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Tab_Custom");
+                return ResourceProvider.GetString("LOCPlayAch_Common_Custom");
             }
 
             var lines = new List<string> { ResourceProvider.GetString("LOCPlayAch_Tagging_Customized") };
@@ -7946,7 +7946,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 return string.IsNullOrWhiteSpace(CapstoneReplacesDisplayName)
-                    ? ResourceProvider.GetString("LOCPlayAch_Button_Add")
+                    ? ResourceProvider.GetString("LOCPlayAch_Common_Add")
                     : ResourceProvider.GetString("LOCPlayAch_Button_Replace");
             }
         }

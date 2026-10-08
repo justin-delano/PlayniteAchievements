@@ -248,7 +248,7 @@ namespace PlayniteAchievements.Views.Helpers
                         ? $"{capstone} — {replace}"
                         : $"{capstone} — {replace}: {displacedDisplayName}";
                 default:
-                    return $"{capstone} — {L(resourceOwner, "LOCPlayAch_Button_Add")}";
+                    return $"{capstone} — {L(resourceOwner, "LOCPlayAch_Common_Add")}";
             }
         }
 

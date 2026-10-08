@@ -1475,7 +1475,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Editor_Revert"),
                 viewModel.RevertCommand));
             menu.Items.Add(CreateCommandMenuItem(
-                ResourceProvider.GetString("LOCPlayAch_Button_Delete"),
+                ResourceProvider.GetString("LOCPlayAch_Common_Delete"),
                 viewModel.DeleteCommand));
 
             return menu;

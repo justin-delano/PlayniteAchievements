@@ -57,7 +57,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
     /// </summary>
     internal static class ManageOverviewSummaryBuilder
     {
-        public const string CustomAchievementsLabelKey = "LOCPlayAch_ManageAchievements_Tab_Custom";
+        public const string CustomAchievementsLabelKey = "LOCPlayAch_Common_Custom";
         public const string OrderLabelKey = "LOCPlayAch_ManageAchievements_Tab_AchievementOrder";
         public const string CategoryArtLabelKey = "LOCPlayAch_Column_CategoryArt";
         public const string NotificationsLabelKey = "LOCPlayAch_Settings_TabNotifications";

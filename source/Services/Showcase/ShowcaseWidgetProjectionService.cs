@@ -567,7 +567,7 @@ namespace PlayniteAchievements.Services.Showcase
             {
                 Stat("unlocked", "LOCPlayAch_Common_Unlocked", snapshot.TotalUnlocked),
                 Stat("locked", "LOCPlayAch_Common_Locked", snapshot.TotalLocked),
-                Stat("completion", "LOCPlayAch_Showcase_Stat_Completion", snapshot.GlobalProgressionPercent),
+                Stat("completion", "LOCPlayAch_ManageAchievements_Overview_Completion", snapshot.GlobalProgressionPercent),
                 Stat("trackedGames", "LOCPlayAch_Showcase_Stat_TrackedGames", snapshot.TotalGames),
                 Stat("playedGames", "LOCPlayAch_Showcase_Stat_PlayedGames", playedGames),
                 Stat("completedGames", "LOCPlayAch_Showcase_Stat_CompletedGames", snapshot.Completions),
@@ -1622,7 +1622,7 @@ namespace PlayniteAchievements.Services.Showcase
             result.Add(new ShowcaseChartEntry
             {
                 Key = "Other",
-                LabelKey = "LOCPlayAch_Showcase_Other",
+                LabelKey = "LOCPlayAch_Settings_ProviderGroup_Other",
                 Value = ordered.Skip(topN).Sum(entry => entry.Value)
             });
             return result;

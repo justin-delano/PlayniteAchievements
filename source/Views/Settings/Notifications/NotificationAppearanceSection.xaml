@@ -83,7 +83,7 @@
                             <TabItem x:Name="FrameTabItem"
                                      Header="{DynamicResource LOCPlayAch_Settings_FrameHeader}"/>
                             <TabItem x:Name="SoundsTabItem"
-                                     Header="{DynamicResource LOCPlayAch_Workshop_Kind_UnlockSounds}"/>
+                                     Header="{DynamicResource LOCPlayAch_Workshop_Share_Sounds}"/>
                         </TabControl>
 
                         <WrapPanel Grid.Column="1"
@@ -104,7 +104,7 @@
                                 <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
                                 <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
                                 <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderCongratulations}"/>
                                 <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
                                 <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
                             </ComboBox>
@@ -119,7 +119,7 @@
                                 <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
                                 <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
                                 <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderCongratulations}"/>
                             </ComboBox>
 
                             <!-- Platform selector: Default edits the global appearance; a platform can

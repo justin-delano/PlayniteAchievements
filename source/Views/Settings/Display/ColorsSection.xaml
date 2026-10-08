@@ -59,7 +59,7 @@
                                                     MinWidth="58"
                                                     Click="ExportColors_Click"/>
 
-                                            <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                            <Button Content="{DynamicResource LOCPlayAch_Common_Import}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                                     Margin="8,0,0,0"
                                                     MinWidth="58"
                                                     Click="ImportColors_Click"/>

@@ -692,7 +692,7 @@ namespace PlayniteAchievements.ViewModels.Settings
             _frameVignetteOptions ?? (_frameVignetteOptions = new[]
             {
                 new FrameVignetteOption(FrameVignetteStyle.Full, L("LOCPlayAch_Settings_Style_VignetteFull")),
-                new FrameVignetteOption(FrameVignetteStyle.Bottom, L("LOCPlayAch_Settings_Style_VignetteBottom")),
+                new FrameVignetteOption(FrameVignetteStyle.Bottom, L("LOCPlayAch_Settings_GridVerticalAlignment_Bottom")),
                 new FrameVignetteOption(FrameVignetteStyle.None, L("LOCPlayAch_Common_None"))
             });
 
@@ -1950,7 +1950,7 @@ namespace PlayniteAchievements.ViewModels.Settings
                 case NotificationSurfaceStyle.LineTitle:
                     return L("LOCPlayAch_Settings_ToastShowName");
                 case NotificationSurfaceStyle.LineDescription:
-                    return L("LOCPlayAch_Settings_ToastShowDescription");
+                    return L("LOCPlayAch_Column_Description");
                 case NotificationSurfaceStyle.LineGameCategory:
                     return L("LOCPlayAch_Settings_ToastShowGameName") + " / " + L("LOCPlayAch_Common_Label_Category");
                 case NotificationSurfaceStyle.LineProgress:

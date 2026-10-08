@@ -62,7 +62,7 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Button Content="{DynamicResource LOCPlayAch_Button_Add}"
+        <Button Content="{DynamicResource LOCPlayAch_Common_Add}"
                 HorizontalAlignment="Left"
                 Click="Add_Click"
                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Compact}"/>

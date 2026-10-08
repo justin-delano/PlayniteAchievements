@@ -135,7 +135,7 @@
                                  Margin="0,0,12,0"/>
 
                         <Button Grid.Column="2"
-                                Content="{DynamicResource LOCPlayAch_Button_Add}"
+                                Content="{DynamicResource LOCPlayAch_Common_Add}"
                                 Command="{Binding AddManualFriendCommand}"
                                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"/>
                     </Grid>

@@ -56,6 +56,16 @@ namespace PlayniteAchievements.Models
                 case RefreshModeType.LibrarySelected:
                 case RefreshModeType.FriendsSelectedGame:
                     return "LOCPlayAch_RefreshModeShort_Selected";
+                // Friend modes share the library modes' short names.
+                case RefreshModeType.FriendsFull:
+                    return "LOCPlayAch_RefreshModeShort_Full";
+                case RefreshModeType.FriendsInstalled:
+                    return "LOCPlayAch_RefreshModeShort_Installed";
+                case RefreshModeType.FriendsRecent:
+                    return "LOCPlayAch_RefreshModeShort_Recent";
+                case RefreshModeType.Custom:
+                case RefreshModeType.FriendsCustom:
+                    return "LOCPlayAch_Common_Custom";
                 default:
                     return $"LOCPlayAch_RefreshModeShort_{mode}";
             }

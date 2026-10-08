@@ -327,8 +327,8 @@
                                     Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Button Content="&#xEE09;"
                                     Style="{StaticResource LibraryIconButtonStyle}"
-                                    ToolTip="{DynamicResource LOCPlayAch_Button_Delete}"
-                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Button_Delete}"
+                                    ToolTip="{DynamicResource LOCPlayAch_Common_Delete}"
+                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Common_Delete}"
                                     Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                         </WrapPanel>
                     </StackPanel>

@@ -33,7 +33,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PieChartPreview}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Showcase_Widget_Pie}"
                                    Style="{StaticResource SectionHeaderStyle}"
                                    Margin="0"/>
                         <CheckBox Grid.Column="1"

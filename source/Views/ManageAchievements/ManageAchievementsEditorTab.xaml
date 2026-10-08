@@ -359,7 +359,7 @@
                     <StackPanel Orientation="Horizontal"
                                 Margin="0,10,0,0"
                                 Visibility="{Binding IsManuallyTrackedGame, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overview_Provider}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                    Style="{StaticResource FieldLabelStyle}"
                                    Margin="0,0,8,0"
                                    VerticalAlignment="Center" />
@@ -376,7 +376,7 @@
                     <StackPanel Margin="0,10,0,0"
                                 Visibility="{Binding IsCustomOnlyGame, Converter={StaticResource BoolToVis}}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overview_Provider}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                        Style="{StaticResource FieldLabelStyle}"
                                        Margin="0,0,8,0"
                                        VerticalAlignment="Center" />
@@ -1310,7 +1310,7 @@
                          to the selection the way the pane does. All start hidden; the header's
                          right-click menu is where they are turned on. -->
 
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
+                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Filter_Hidden}"
                                             Width="64"
                                             MinWidth="52"
                                             IsReadOnly="True"
@@ -2089,7 +2089,7 @@
                                            VerticalAlignment="Center"
                                            helpers:AsyncImage.Uri="{Binding DataContext.HiddenCoverIcon, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                            helpers:AsyncImage.DecodePixel="28" />
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Custom_Hidden}"
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
                                               IsChecked="{Binding HiddenState, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                               MinHeight="{StaticResource PlayAch.Size.Control.Height}"
                                               Margin="0,0,18,2"
@@ -2513,7 +2513,7 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Custom_ProgressNum}"
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Progress}"
                                                Style="{StaticResource FieldLabelStyle}" />
                                     <TextBox Text="{Binding ProgressNumText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                              Style="{StaticResource GridEditorTextBoxStyle}"

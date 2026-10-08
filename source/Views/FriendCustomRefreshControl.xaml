@@ -33,7 +33,7 @@
             <ScrollViewer Grid.Row="1"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <GroupBox Header="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}"
+                    <GroupBox Header="{DynamicResource LOCPlayAch_Common_Label_Platforms}"
                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                               BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                               Margin="0,0,0,10">
@@ -110,7 +110,7 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="{DynamicResource LOCPlayAch_Column_SharedGames}"
+                    <GroupBox Header="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                               BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                               Margin="0,0,0,10">

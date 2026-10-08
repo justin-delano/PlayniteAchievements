@@ -598,7 +598,7 @@ namespace PlayniteAchievements.ViewModels
                         SelectedGame.GameName);
                 }
 
-                return ResourceProvider.GetString("LOCPlayAch_RecentAchievements");
+                return ResourceProvider.GetString("LOCPlayAch_Achievements");
             }
         }
 

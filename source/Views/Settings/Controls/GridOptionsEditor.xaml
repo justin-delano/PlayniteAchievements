@@ -135,7 +135,7 @@
                       IsChecked="{Binding CategorySummaryOptions.UseCoverImages, ElementName=EditorRoot}"
                       Visibility="{Binding ShowCoverImagesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                       IsChecked="{Binding CategorySummaryOptions.ShowColumnHeaders, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColumnHeadersRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
@@ -175,7 +175,7 @@
                         <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding AchievementOptions, ElementName=EditorRoot}" Value="{x:Null}">
-                                <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"/>
+                                <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>

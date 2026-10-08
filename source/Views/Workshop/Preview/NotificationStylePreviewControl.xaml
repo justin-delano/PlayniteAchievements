@@ -76,7 +76,7 @@
                     <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
                     <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
                     <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                    <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                    <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderCongratulations}"/>
                     <ComboBoxItem x:Name="FriendSample" Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
                     <ComboBoxItem x:Name="ProgressSample" Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
                 </ComboBox>

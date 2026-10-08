@@ -398,7 +398,7 @@
                             <WrapPanel Orientation="Horizontal"
                                        HorizontalAlignment="Right">
                                 <Button x:Name="AddCategoryButton"
-                                        Content="{DynamicResource LOCPlayAch_Button_Add}"
+                                        Content="{DynamicResource LOCPlayAch_Common_Add}"
                                         Click="AddCategoryButton_Click"
                                         Style="{StaticResource ToolbarButtonStyle}"
                                         IsEnabled="{Binding HasAchievements}"

@@ -24,7 +24,7 @@
                 <!-- What fires -->
                 <Border Style="{StaticResource SectionBorderStyle}">
                     <StackPanel Grid.IsSharedSizeScope="True">
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Section_Notifications}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabNotifications}"
                                    Style="{StaticResource SectionHeaderStyle}"
                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>

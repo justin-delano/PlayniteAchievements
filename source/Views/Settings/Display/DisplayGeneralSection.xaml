@@ -68,7 +68,7 @@
                                   SelectedValuePath="Tag"
                                   MinWidth="140">
                             <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Top}" Tag="{x:Static settings:GridVerticalAlignment.Top}"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Center}" Tag="{x:Static settings:GridVerticalAlignment.Center}"/>
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Center}" Tag="{x:Static settings:GridVerticalAlignment.Center}"/>
                             <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Bottom}" Tag="{x:Static settings:GridVerticalAlignment.Bottom}"/>
                         </ComboBox>
                     </controls:SettingRow>
@@ -195,7 +195,7 @@
                                  Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                  TextAlignment="Right"/>
                     </controls:SettingRow>
-                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_RarityGlowPulseSpeed}"
+                    <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_Style_MotionSpeed}"
                                          IsEnabled="{Binding Persisted.AnimateRarityGlows}"
                                          Margin="0">
                         <TextBox helpers:UnitIntervalInput.Value="{Binding Persisted.RarityGlowPulseSpeed, Mode=TwoWay}"

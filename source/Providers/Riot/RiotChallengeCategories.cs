@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Providers.Riot
                 ["2"] = "LOCPlayAch_Riot_ChallengeCategory_Expertise",
                 ["3"] = "LOCPlayAch_Riot_ChallengeCategory_Veterancy",
                 ["4"] = "LOCPlayAch_Riot_ChallengeCategory_Teamwork",
-                ["5"] = "LOCPlayAch_Riot_ChallengeCategory_Collection"
+                ["5"] = "LOCPlayAch_Showcase_ScoreMode_Collection"
             };
 
         /// <summary>

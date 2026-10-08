@@ -567,7 +567,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 () => DuplicateCategoriesFromContext(actionLabels)));
 
             menu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_Button_Delete"),
+                L("LOCPlayAch_Common_Delete"),
                 () => DeleteCategoriesFromContext(actionLabels)));
 
             return menu;

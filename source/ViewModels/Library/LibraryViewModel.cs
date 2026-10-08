@@ -505,8 +505,8 @@ namespace PlayniteAchievements.ViewModels.Library
             var surface = key.StartsWith("sounds:", StringComparison.OrdinalIgnoreCase)
                 ? L("LOCPlayAch_Workshop_Share_Sounds")
                 : key.StartsWith("frame:", StringComparison.OrdinalIgnoreCase)
-                    ? L("LOCPlayAch_Workshop_Share_GlobalFrame")
-                    : L("LOCPlayAch_Workshop_Share_GlobalStyle");
+                    ? L("LOCPlayAch_Settings_FrameHeader")
+                    : L("LOCPlayAch_Settings_Style_ToastTab");
             if (string.Equals(key, LibraryTargetKeys.ToastGlobal, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, LibraryTargetKeys.FrameGlobal, StringComparison.OrdinalIgnoreCase))
             {

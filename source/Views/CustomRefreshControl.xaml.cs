@@ -535,7 +535,7 @@ namespace PlayniteAchievements.Views
         private void InitializeScopeOptions()
         {
             ScopeOptions.Clear();
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.All, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_All") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.All, DisplayName = L("LOCPlayAch_Showcase_GameMosaicSource_All") });
             ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_Installed") });
             ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Favorites, DisplayName = L("LOCPlayAch_RefreshModeShort_Favorites") });
             ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_Recent") });

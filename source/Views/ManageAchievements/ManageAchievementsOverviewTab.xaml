@@ -80,7 +80,7 @@
                             <WrapPanel Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
                                 <Border Style="{StaticResource MetaChipStyle}">
                                     <TextBlock Style="{StaticResource ChipTextStyle}">
-                                        <Run Text="{DynamicResource LOCPlayAch_ManageAchievements_Overview_Provider}" /><Run Text=": " /><Run Text="{Binding ProviderName, Mode=OneWay}" />
+                                        <Run Text="{DynamicResource LOCPlayAch_Common_Label_Platform}" /><Run Text=": " /><Run Text="{Binding ProviderName, Mode=OneWay}" />
                                     </TextBlock>
                                 </Border>
                                 <Border Style="{StaticResource MetaChipStyle}">
@@ -318,7 +318,7 @@
                                     </ContextMenu>
                                 </Button.ContextMenu>
                             </Button>
-                            <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                            <Button Content="{DynamicResource LOCPlayAch_Common_Import}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                     Click="ContextMenuButton_Click"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                     Margin="{StaticResource PlayAch.Thickness.Right.Sm}">

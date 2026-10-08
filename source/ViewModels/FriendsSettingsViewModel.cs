@@ -156,7 +156,7 @@ namespace PlayniteAchievements.ViewModels
         // selected rows are already opted out, mirroring the ignore button.
         public string SkipFullScansSelectedLabel => ShouldAllowFullScansSelected()
             ? ResourceProvider.GetString("LOCPlayAch_FriendsSettings_AllowFullScansSelected")
-            : ResourceProvider.GetString("LOCPlayAch_FriendsSettings_SkipFullScansSelected");
+            : ResourceProvider.GetString("LOCPlayAch_Column_SkipFullScans");
 
         public bool UseExophaseForSteamFriendOwnership
         {

@@ -224,7 +224,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 case NotificationKind.Capstone:
                     return L("LOCPlayAch_Settings_ToastPreviewCapstone");
                 case NotificationKind.Completion:
-                    return L("LOCPlayAch_Settings_ToastPreviewComplete");
+                    return L("LOCPlayAch_Settings_Style_HeaderCongratulations");
                 case NotificationKind.Friend:
                     return L("LOCPlayAch_Settings_ToastPreviewFriend");
                 case NotificationKind.Progress:

@@ -442,7 +442,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public string ExophaseEnrichmentSlugStatusText =>
             HasExophaseEnrichmentSlugOverride
                 ? string.Format(
-                    L("LOCPlayAch_ManageAchievements_Overrides_ExophaseEnrichmentStatusValue"),
+                    L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue"),
                     _exophaseEnrichmentSlugValue)
                 : L("LOCPlayAch_Common_Status_NoOverrideSet");
 

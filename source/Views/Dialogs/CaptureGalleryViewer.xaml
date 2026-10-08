@@ -122,7 +122,7 @@
                         Margin="14,0,0,0"
                         VerticalAlignment="Center"
                         Content="&#xEFD5;"
-                        ToolTip="{DynamicResource LOCPlayAch_Captures_Fullscreen}"
+                        ToolTip="{DynamicResource LOCPlayAch_Common_Fullscreen}"
                         IsEnabled="{Binding HasCurrent}"
                         Style="{StaticResource PlayAch.Capture.GlyphButtonStyle}"
                         Click="FullscreenButton_Click"/>

@@ -180,24 +180,27 @@ namespace PlayniteAchievements.Tests.Views
             AssertEnumKeys<ShowcasePageTemplate>(
                 localization,
                 "LOCPlayAch_Showcase_Template_",
-                value => value != ShowcasePageTemplate.Showcase);
-            AssertEnumKeys<ShowcaseScoreMode>(localization, "LOCPlayAch_Showcase_ScoreMode_");
-            AssertEnumKeys<ShowcasePieMode>(localization, "LOCPlayAch_Showcase_PieMode_");
-            AssertEnumKeys<ShowcasePointsGrouping>(localization, "LOCPlayAch_Showcase_PointsGrouping_");
+                value => value != ShowcasePageTemplate.Showcase && value != ShowcasePageTemplate.Collection);
+            // Values that reuse another feature's label (ShowcaseUiText) are excluded; the
+            // ScreenshotVariant, MosaicContent and GameGridSource enums reuse labels for every value.
+            AssertEnumKeys<ShowcaseScoreMode>(
+                localization,
+                "LOCPlayAch_Showcase_ScoreMode_",
+                value => value != ShowcaseScoreMode.Dual);
+            AssertEnumKeys<ShowcasePieMode>(
+                localization,
+                "LOCPlayAch_Showcase_PieMode_",
+                value => value != ShowcasePieMode.CompletedGames);
+            AssertEnumKeys<ShowcasePointsGrouping>(
+                localization,
+                "LOCPlayAch_Showcase_PointsGrouping_",
+                value => value != ShowcasePointsGrouping.Game);
             AssertEnumKeys<ShowcaseMosaicSource>(localization, "LOCPlayAch_Showcase_MosaicSource_");
-            AssertEnumKeys<ShowcaseScreenshotVariant>(localization, "LOCPlayAch_Showcase_ScreenshotVariant_");
             AssertEnumKeys<ShowcaseSlideshowSource>(localization, "LOCPlayAch_Showcase_SlideshowSource_");
-            AssertEnumKeys<ShowcaseMosaicContent>(localization, "LOCPlayAch_Showcase_MosaicContent_");
-            // Unlock Next and Finish Next reuse the mosaic's labels (ShowcaseUiText), which the
-            // MosaicSource and GameMosaicSource assertions cover.
             AssertEnumKeys<ShowcaseAchievementGridSource>(
                 localization,
                 "LOCPlayAch_Showcase_AchievementGridSource_",
                 value => value != ShowcaseAchievementGridSource.UnlockNext);
-            AssertEnumKeys<ShowcaseGameGridSource>(
-                localization,
-                "LOCPlayAch_Showcase_GameGridSource_",
-                value => value != ShowcaseGameGridSource.FinishNext);
             AssertEnumKeys<ShowcaseImageFitMode>(localization, "LOCPlayAch_Showcase_ImageFit_");
             AssertEnumKeys<ShowcaseGameMosaicSource>(localization, "LOCPlayAch_Showcase_GameMosaicSource_");
             AssertEnumKeys<UnlockNextCriterion>(localization, "LOCPlayAch_Showcase_UnlockNextCriterion_");

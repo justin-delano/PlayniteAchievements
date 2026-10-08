@@ -68,7 +68,7 @@ namespace PlayniteAchievements.Services.UI
                 case "friend":
                     var friend = SampleUnlock("Rare", 7.5, false);
                     friend.IsFriendUnlock = true;
-                    friend.FriendDisplayName = L("LOCPlayAch_Settings_ToastPreviewSampleFriend");
+                    friend.FriendDisplayName = L("LOCPlayAch_Column_Friend");
                     friend.FriendAvatarUrl =
                         "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
                     return friend;
