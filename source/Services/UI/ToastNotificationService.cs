@@ -2680,13 +2680,15 @@ namespace PlayniteAchievements.Services.UI
                 // Let the card actually reach the screen before the slide starts timing itself.
                 // ApplyDpiCompensation's UpdateLayout is measure/arrange, not pixels; on a monitor at
                 // the system scale the settle loop above does not await at all, so without this the
-                // slide's first frame is also the toast's first frame — the one paying for the layered
+                // slide's first frame is also the toast's first frame — the one paying for the
                 // window's surface, the template's visuals, text realization and the shadow effects.
                 // The slide reads progress from frame timestamps, so that cost does not slow the slide,
                 // it skips it: the second frame reports a clock that has already run most of the
                 // duration and the card jumps. Two composed frames put that work before the clock
                 // starts. Bounded like the settle loop above, and it runs for an unrevealed wave too,
-                // whose recorded track would otherwise carry the same jump.
+                // whose recorded track would otherwise carry the same jump. The slide-in's motion
+                // cache is realized in the same frames.
+                EngageMotionCache(_activeSlideHost, window);
                 var warmFrames = await WaitForComposedFramesAsync(WarmFrameCount, WarmFrameTimeoutMs)
                     .ConfigureAwait(true);
                 if (_disposed)
@@ -2962,6 +2964,15 @@ namespace PlayniteAchievements.Services.UI
                 // played no slide-out on screen, so its tracks simply end at the last sample.
                 if (!endedHidden)
                 {
+                    // Realize the slide-out's motion cache at rest, where it matches the live card,
+                    // a frame before the slide-out starts timing itself.
+                    EngageMotionCache(_activeSlideHost, window);
+                    await WaitForComposedFramesAsync(1, WarmFrameTimeoutMs).ConfigureAwait(true);
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
                     var slideOutMs = SlideOutPhysical(window);
                     await Task.Delay((int)Math.Round(slideOutMs) + SlideSettleBufferMs).ConfigureAwait(true);
                 }
@@ -4554,6 +4565,7 @@ namespace PlayniteAchievements.Services.UI
                 // Reported too: a theme authoring a zero duration gets a snap rather than a slide,
                 // which is worth seeing in the log instead of an absent line.
                 _activeSlideTicks = new RenderTickCounter();
+                ReleaseMotionCache(host);
                 ReportActiveSlide("instant");
                 return;
             }
@@ -4563,6 +4575,7 @@ namespace PlayniteAchievements.Services.UI
             {
                 transform.Y = restDip;
                 _activeSlideTicks = new RenderTickCounter();
+                ReleaseMotionCache(host);
                 ReportActiveSlide("instant");
                 return;
             }
@@ -4619,7 +4632,7 @@ namespace PlayniteAchievements.Services.UI
             // or invalidates stands down so the slide gets the whole frame budget. Completed
             // releases it at the slide's natural end (attached before Begin — later subscribers
             // never reach the running clock); StopActiveSlide backstops every cut-short path.
-            _activeSlideQuiet = new SlideQuietScope(host);
+            _activeSlideQuiet = new SlideQuietScope(host, _activeWindow);
             storyboard.Completed += (s, e) => DisposeSlideQuiet();
 
             transform.Y = restDip;
@@ -5008,20 +5021,75 @@ namespace PlayniteAchievements.Services.UI
         /// <summary>
         /// Everything that stands down for one slide's span: the process-wide quiet gate (ray
         /// invalidations, deferred periodic work) plus the card's own animation clocks (glow
-        /// pulse, GIF decoders), which freeze so the slide owns the frame budget. Each step is
-        /// independently guarded so a failure in one can never leave another unreleased, and
-        /// disposal is idempotent because three paths race to release it.
+        /// pulse, GIF decoders), which freeze so the slide owns the frame budget, and the host's
+        /// motion cache. Each step is independently guarded so a failure in one can never leave
+        /// another unreleased, and disposal is idempotent because three paths race to release it.
         /// </summary>
+        /// <summary>
+        /// Caches the slide host for a motion. The card is still inside itself for the motion (the
+        /// quiet scope's stand-downs), yet WPF redraws the moving card, and re-runs every shadow and
+        /// glow effect in it, each frame; on the DWM-composited window that is what drops a motion's
+        /// frames under load. Cached, it is drawn once and moved, faded or scaled as a bitmap: under
+        /// GPU load a slide, fade and zoom held 97-99% of refresh instead of 42-61%. Rendered at the
+        /// window's device scale (WPF does not fold the display scale into a cache's resolution)
+        /// and snapped to device pixels, the cache is pixel-identical to the live card at rest and
+        /// through a slide (which lands on whole pixels), within one level through a fade, and
+        /// resampled through a zoom (tools/capture-harness/README.md, "Motion"). Anything still
+        /// animating inside re-renders the cache, which costs that frame's saving and nothing else.
+        ///
+        /// Being identical at rest, it is engaged a composed frame before a motion starts, so the
+        /// one full render that realizes it does not land on the motion's first frame, which the
+        /// clock-driven slide would show as a skipped step. <see cref="SlideQuietScope"/> releases it.
+        /// </summary>
+        private static void EngageMotionCache(FrameworkElement host, Window window)
+        {
+            try
+            {
+                if (host != null && host.CacheMode == null)
+                {
+                    var scale = ToastWindowPlacer.RenderScale(window);
+                    host.CacheMode = new BitmapCache
+                    {
+                        RenderAtScale = scale > 0 ? scale : 1d,
+                        SnapsToDevicePixels = true,
+                    };
+                }
+            }
+            catch
+            {
+                // Uncached, the motion simply renders live as it always did.
+            }
+        }
+
+        /// <summary>Returns the slide host to live rendering, as the card has when it rests.</summary>
+        private static void ReleaseMotionCache(FrameworkElement host)
+        {
+            try
+            {
+                if (host?.CacheMode is BitmapCache)
+                {
+                    host.CacheMode = null;
+                }
+            }
+            catch
+            {
+                // The window may be tearing down.
+            }
+        }
+
         private sealed class SlideQuietScope : IDisposable
         {
             private readonly FrameworkElement _host;
             private IDisposable _gate;
             private bool _disposed;
 
-            public SlideQuietScope(FrameworkElement host)
+            public SlideQuietScope(FrameworkElement host, Window window)
             {
                 _host = host;
                 _gate = RenderQuietGate.Engage();
+
+                // Normally engaged a frame earlier; this covers a motion started without that.
+                EngageMotionCache(host, window);
 
                 try
                 {
@@ -5041,10 +5109,6 @@ namespace PlayniteAchievements.Services.UI
                     // Same: the slide runs, merely without this stand-down.
                 }
 
-                // Deliberately no BitmapCache on the host: SlideCadenceProbe measured it changing
-                // nothing at the refresh ceiling AND under GPU saturation (both configurations
-                // drop identically) — the contended cost is the layered window's composition, not
-                // card re-rasterization, which the retained tree already avoids for a static card.
             }
 
             public void Dispose()
@@ -5055,6 +5119,10 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 _disposed = true;
+
+                // At rest the card renders live again, so a resumed GIF or pulse does not
+                // re-render a cache every frame.
+                ReleaseMotionCache(_host);
 
                 try
                 {
