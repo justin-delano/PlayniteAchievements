@@ -62,13 +62,11 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
 
         protected override void Refresh()
         {
-            // A linked pie's snapshot already follows the overview's filters, which replace the
-            // widget's own control bar.
+            // A linked pie's snapshot already follows the overview's filters; its own control bar
+            // narrows that further.
             var linked = Projection?.IsLinked == true;
-            ShowControlBar = !linked && ShowcaseWidgetOptions.GetPieShowControlBar(Projection?.Instance);
-            var snapshot = linked
-                ? Projection.Snapshot ?? new OverviewDataSnapshot()
-                : ApplyControlBarFilter(Projection?.Snapshot ?? new OverviewDataSnapshot());
+            ShowControlBar = ShowcaseWidgetOptions.GetPieShowControlBar(Projection?.Instance);
+            var snapshot = ApplyControlBarFilter(Projection?.Snapshot ?? new OverviewDataSnapshot(), linked);
             var mode = ShowcaseWidgetOptions.GetPieMode(Projection?.Instance);
             Mode = mode;
 
@@ -191,12 +189,19 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             }
         }
 
+        // The last narrowed linked view, reused while its source and games are unchanged so a
+        // reprojection that only moves the selection still takes the highlight-only path.
+        private OverviewDataSnapshot _narrowedFrom;
+        private HashSet<GameSummaryItem> _narrowedGames;
+        private OverviewDataSnapshot _narrowed;
+
         /// <summary>
         /// Filters the snapshot's games through the widget instance's control bar (which stays in
         /// effect while the bar is hidden) and returns a snapshot of the remaining games' totals.
-        /// The original snapshot is returned when the filter keeps every game.
+        /// The original snapshot is returned when the filter keeps every game. A linked view keeps
+        /// what the overview's filters made of it, cut to matching unlocks where it was.
         /// </summary>
-        private OverviewDataSnapshot ApplyControlBarFilter(OverviewDataSnapshot snapshot)
+        private OverviewDataSnapshot ApplyControlBarFilter(OverviewDataSnapshot snapshot, bool linked)
         {
             if (_controlBarSlot.Bind(Projection?.Instance?.InstanceId))
             {
@@ -210,9 +215,25 @@ namespace PlayniteAchievements.ViewModels.Showcase.Widgets
             adapter.UpdateOptions(games);
 
             var filtered = adapter.Apply(games);
-            return filtered.Count == games.Count
-                ? snapshot
-                : OverviewDataSnapshot.FromGameSummaries(filtered);
+            if (filtered.Count == games.Count)
+            {
+                return snapshot;
+            }
+
+            if (!linked)
+            {
+                return OverviewDataSnapshot.FromGameSummaries(filtered);
+            }
+
+            var kept = new HashSet<GameSummaryItem>(filtered);
+            if (!ReferenceEquals(_narrowedFrom, snapshot) || _narrowedGames == null || !_narrowedGames.SetEquals(kept))
+            {
+                _narrowedFrom = snapshot;
+                _narrowedGames = kept;
+                _narrowed = OverviewLinkedSnapshots.NarrowToGames(snapshot, filtered);
+            }
+
+            return _narrowed;
         }
 
         /// <summary>
