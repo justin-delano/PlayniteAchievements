@@ -143,6 +143,45 @@ internal static class HoldProbe
     private static bool _snapLive;
     private static double _hostCacheScale = 1;
     private static bool _hostCacheSnap;
+    // Physical screen point to place the windows at, per-monitor-v2 aware, as the plugin realizes a
+    // toast on a monitor whose scale differs from the system's. Unset keeps the default placement.
+    private static int? _atX;
+    private static int? _atY;
+    private static readonly IntPtr PerMonitorV2 = new IntPtr(-4);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+
+    /// <summary>
+    /// Shows a probe window. With --at, its handle is created under a per-monitor-v2 thread context
+    /// and it is placed in physical pixels, offset by <paramref name="offsetPx"/>.
+    /// </summary>
+    private static void ShowAt(Window window, int offsetPx)
+    {
+        if (window == null)
+        {
+            return;
+        }
+
+        if (!_atX.HasValue)
+        {
+            window.Show();
+            return;
+        }
+
+        var previous = SetThreadDpiAwarenessContext(PerMonitorV2);
+        try
+        {
+            var hwnd = new WindowInteropHelper(window).EnsureHandle();
+            SetWindowPos(hwnd, IntPtr.Zero, _atX.Value + offsetPx, _atY.Value + offsetPx, 0, 0, 0x0001 | 0x0004 | 0x0010);
+            window.Show();
+            SetWindowPos(hwnd, IntPtr.Zero, _atX.Value + offsetPx, _atY.Value + offsetPx, 0, 0, 0x0001 | 0x0004 | 0x0010);
+        }
+        finally
+        {
+            SetThreadDpiAwarenessContext(previous);
+        }
+    }
     private static double _fps = 50;
     private static HashSet<string> _only;
     private static double _periodMs;
@@ -181,6 +220,11 @@ internal static class HoldProbe
                 case "--snap-live": _snapLive = true; break;
                 case "--host-cache-scale": _hostCacheScale = next(); break;
                 case "--host-cache-snap": _hostCacheSnap = true; break;
+                case "--at":
+                    var at = args[++i].Split(',');
+                    _atX = int.Parse(at[0], CultureInfo.InvariantCulture);
+                    _atY = int.Parse(at[1], CultureInfo.InvariantCulture);
+                    break;
                 case "--only":
                     _only = new HashSet<string>(args[++i].Split(','), StringComparer.OrdinalIgnoreCase);
                     break;
@@ -297,7 +341,7 @@ internal static class HoldProbe
                 Width = (_cardWidth + (2 * _glow)) * _scale + 200,
                 Height = (_cardHeight + (2 * _glow) + (_motion == "slide" ? _cardHeight + 40 : 0)) * _scale + 200,
             };
-            backdrop.Show();
+            ShowAt(backdrop, -40);
 
             // Shipped against itself first: the floor any capture-to-capture difference sits on.
             var reference = await CaptureFrozenAsync(Variant.Shipped, frames);
@@ -334,9 +378,9 @@ internal static class HoldProbe
         var window = BuildWindow(variant, frames, out card);
         try
         {
-            card.Behind?.Show();
-            window.Show();
-            card.Front?.Show();
+            ShowAt(card.Behind, 0);
+            ShowAt(window, 0);
+            ShowAt(card.Front, 0);
             await WaitFrames(10);
             EventHandler motion = null;
             if (_motion != null)
@@ -409,9 +453,9 @@ internal static class HoldProbe
         {
             window.Left = 40;
             window.Top = 40;
-            card.Behind?.Show();
-            window.Show();
-            card.Front?.Show();
+            ShowAt(card.Behind, 0);
+            ShowAt(window, 0);
+            ShowAt(card.Front, 0);
             card.Freeze(FrozenFrame, FrozenPulse);
             if (_motion != null)
             {
@@ -420,15 +464,41 @@ internal static class HoldProbe
             await WaitFrames(10);
             await Task.Delay(400);
 
-            var topLeft = window.PointToScreen(new Point(0, 0));
-            var bottomRight = window.PointToScreen(new Point(window.ActualWidth, window.ActualHeight));
-            var width = (int)Math.Round(bottomRight.X - topLeft.X);
-            var height = (int)Math.Round(bottomRight.Y - topLeft.Y);
+            // Physical pixels throughout: the window rect and the screen copy both read under a
+            // per-monitor-v2 thread context, so neither is virtualized on a scaled monitor.
+            Rect32 rect;
+            var previous = SetThreadDpiAwarenessContext(PerMonitorV2);
+            try
+            {
+                GetWindowRect(new WindowInteropHelper(window).Handle, out rect);
+            }
+            finally
+            {
+                SetThreadDpiAwarenessContext(previous);
+            }
+
+            var deviceScale = PresentationSource.FromVisual(window)?.CompositionTarget?.TransformToDevice.M11 ?? 1d;
+            if (_atX.HasValue)
+            {
+                Console.WriteLine("  {0}: window renders at {1:0.###}x, {2}x{3} px", variant, deviceScale, rect.Right - rect.Left, rect.Bottom - rect.Top);
+            }
+
+            var topLeft = new Point(rect.Left, rect.Top);
+            var width = rect.Right - rect.Left;
+            var height = rect.Bottom - rect.Top;
             using (var bitmap = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             {
                 using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
                 {
-                    graphics.CopyFromScreen((int)topLeft.X, (int)topLeft.Y, 0, 0, new System.Drawing.Size(width, height));
+                    var before = SetThreadDpiAwarenessContext(PerMonitorV2);
+                    try
+                    {
+                        graphics.CopyFromScreen((int)topLeft.X, (int)topLeft.Y, 0, 0, new System.Drawing.Size(width, height));
+                    }
+                    finally
+                    {
+                        SetThreadDpiAwarenessContext(before);
+                    }
                 }
 
                 var data = bitmap.LockBits(
