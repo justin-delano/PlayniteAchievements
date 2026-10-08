@@ -10,6 +10,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace PlayniteAchievements.Views.Workshop
 {
@@ -131,6 +132,16 @@ namespace PlayniteAchievements.Views.Workshop
 
             var any = viewModel.ItemsView.Cast<object>().Any();
             EmptyText.Visibility = !any && !viewModel.IsLoading && !viewModel.HasError ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>Opens the clicked cover or preview, whose path the border carries in Tag, full size.</summary>
+        private void DetailImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.Tag is string path)
+            {
+                MediaLightboxPresenter.Show(this, path, false);
+                e.Handled = true;
+            }
         }
 
         private BundleParts? PickBundleParts(WorkshopItemViewModel item, BundleParts available)
