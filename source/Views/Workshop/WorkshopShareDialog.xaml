@@ -69,6 +69,8 @@
                             HorizontalAlignment="Left"
                             BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                             BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                            Cursor="Hand"
+                            MouseLeftButtonUp="CoverImageFrame_MouseLeftButtonUp"
                             Visibility="Collapsed">
                         <Image x:Name="CoverImage" MaxHeight="160" MaxWidth="480" Stretch="Uniform"/>
                     </Border>

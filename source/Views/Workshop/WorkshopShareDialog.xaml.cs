@@ -2,6 +2,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Workshop;
 using PlayniteAchievements.Services.Workshop.Preview;
+using PlayniteAchievements.Views.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 // WinForms dialog: the WPF Microsoft.Win32 picker renders legacy-style on .NET Framework.
 using DialogResult = System.Windows.Forms.DialogResult;
@@ -342,6 +344,16 @@ namespace PlayniteAchievements.Views.Workshop
 
             CoverImage.Source = image;
             CoverImageFrame.Visibility = image != null ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void CoverImageFrame_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var path = CoverBox.Text;
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            {
+                MediaLightboxPresenter.Show(this, path, false);
+                e.Handled = true;
+            }
         }
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
