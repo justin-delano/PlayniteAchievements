@@ -146,6 +146,10 @@ foreach ($tool in $tools) {
     }
     else {
         Write-Output "  built   $tool"
+        # A tool's own app config travels with it: HoldProbe's turns on WPF's per-monitor scaling,
+        # as Playnite runs with it, so a window placed on a scaled monitor renders at that scale.
+        $config = Join-Path $here ($tool + '.exe.config')
+        if (Test-Path $config) { Copy-Item $config (Join-Path $out ($tool + '.exe.config')) -Force }
     }
 }
 
