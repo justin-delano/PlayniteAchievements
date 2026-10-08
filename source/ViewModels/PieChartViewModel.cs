@@ -989,6 +989,7 @@ namespace PlayniteAchievements.ViewModels
         {
             var sliceCount = slices?.Count ?? 0;
             var targetCount = Math.Max(sliceCount, MinimumSeriesCount);
+            var drawnSlices = (slices ?? Array.Empty<PieSliceData>()).Count(slice => slice != null && slice.ChartValue > 0);
             for (int i = 0; i < targetCount; i++)
             {
                 LiveCharts.Wpf.PieSeries series = null;
@@ -1019,6 +1020,18 @@ namespace PlayniteAchievements.ViewModels
                 var slice = i < sliceCount ? slices[i] : null;
                 series.Title = slice?.Label ?? string.Empty;
                 series.DataLabels = false;
+
+                // A separator belongs between slices. A lone slice is a full turn whose stroke
+                // would still draw its start and end edges as a seam at the start angle, and a
+                // zero-value slice is only a stroked line, so neither gets one.
+                if (drawnSlices > 1 && slice != null && slice.ChartValue > 0)
+                {
+                    series.ClearValue(LiveCharts.Wpf.Series.StrokeThicknessProperty);
+                }
+                else
+                {
+                    series.StrokeThickness = 0;
+                }
 
                 var sliceColor = slice?.Color ?? Colors.Transparent;
                 var isLocked = slice?.IsLocked == true;
