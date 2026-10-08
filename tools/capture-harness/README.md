@@ -305,7 +305,12 @@ display's own period read from the OS.
 ```powershell
 tools\capture-harness\bin\SlideCadenceProbe.exe [--repeats 5] [--load N]
     [--card-width 442] [--card-height 138] [--glow 12] [--nested]
+    [--ease back:0.35|cubic|quad|quint|sine|expo:6|power:3|linear] [--duration 240]
+    [--only A,B] [--verify] [--truth]
 ```
+
+`--ease` and `--duration` set the slide curve (always ease-out) and length for every mechanism and for
+`--truth`; the defaults are the shipped `BackEase` 0.35 over 240 ms.
 
 The geometry flags matter more than they look: the default 442x138 card with a 12-radius shadow pins
 every transform variant at 100% of refresh on a quick display, and a variant measured with no headroom
@@ -441,6 +446,66 @@ The default `BackEase` (amplitude 0.35) also concentrates the motion: the card r
 offset about 100 ms into the 240 ms slide and spends the rest in the overshoot, so most of the
 visible travel happens in a handful of frames at peak speed. Residual in pixels is speed times
 timing error, so a curve that spreads the travel over the whole duration lowers it in proportion.
+
+#### At the user's device size, the layered surface is the ceiling and a DWM window lifts it
+
+Re-measured at the device-pixel geometry of a reported VRR user's card
+(`--card-width 2328 --card-height 496 --glow 72 --nested`; 1164x248 at 200%), 2026-10-08.
+Frames of an ideal 40 at 165 Hz, idle, across three runs:
+
+| mechanism | frames |
+|---|---|
+| `TransformClock` (layered, real clock: what ships) | 22-29 |
+| `TransformNoPadding` | 34-35 |
+| `TransformDwm` | 35-39 |
+| `TransformDwmClock` (DWM window, real clock) | 40 |
+
+`--truth`, 9 repeats, median residual:
+
+| load | `TransformClock` | `TransformDwmClock` |
+|---|---|---|
+| none | 12.7 px | 4.7 px |
+| `--load 1` | 16.4 px | 16.9 px |
+
+So the earlier "a non-layered window does not help" holds only under GPU load. With headroom, the
+layered window's per-frame surface copy, which grows with device pixels, is what drops frames, and a
+DWM window removes it. On a VRR display DWM composes at the game's present rate, so frames this
+process fails to deliver are dropped on top of the game's own unevenness.
+
+What a DWM window loses, checked with `--verify`:
+
+- Click-through. A layered window passes clicks through its fully transparent pixels; a DWM window
+  takes every click in its rectangle, travel padding included (`WindowFromPoint` lands on it).
+- `Window.Opacity`, which only applies with `AllowsTransparency`. `DWMWA_CLOAK` hides the window
+  instead (the card reads as the backdrop while cloaked).
+- Adding `WS_EX_LAYERED` back to a non-transparent WPF window to get both does not work: the bit is
+  dropped from the extended style even through a `WM_STYLECHANGING` hook, and
+  `SetLayeredWindowAttributes` then fails with error 87. `WS_EX_TRANSPARENT` and `WS_EX_NOACTIVATE` do stick.
+
+#### Under load, the curve is the lever
+
+`--truth --load 1` at the same geometry, 9 repeats, median residual (spread of all runs):
+
+| curve / duration | `TransformClock` | `TransformDwmClock` |
+|---|---|---|
+| back 0.35 / 240 ms (shipped) | 17.7 px | 11.0 px |
+| back 0.15 / 240 ms | 10.5 px | 12.1 px |
+| cubic / 240 ms | 10.2 px | 10.2 px |
+| sine / 240 ms | 8.1-8.3 px | 7.4-10.7 px |
+| sine / 280 ms | 7.7 px | 9.5 px |
+| sine / 300 ms | 6.6 px (5.7-9.8) | 8.6 px |
+| sine / 320 ms | 6.8 px | 7.6 px |
+| cubic / 360 ms | 8.2 px | 8.8 px |
+| sine / 360 ms | 5.4-5.5 px | 5.9-6.8 px |
+| quint / 400 ms | 6.2 px | 8.0 px |
+
+Idle, `TransformDwmClock` with sine / 300 ms measured 2.1 px; the idle DWM column is the noisiest,
+with single runs above 10 px at most settings.
+
+Removing the overshoot and spreading the travel across the slide is what helps once DWM sets the
+rate: sine ease-out moves on most presented frames (29 of 35 at 360 ms) where the shipped curve
+moves on 7 of 21, so a late frame is a small step instead of a jump. Sine / 300 ms keeps most of the
+360 ms gain at a quicker entrance.
 
 ## The composer probe
 
