@@ -512,8 +512,8 @@
          The optional control bar filters the games the pie's totals come from. -->
     <DataTemplate DataType="{x:Type widgets:PieWidgetViewModel}">
       <DockPanel>
-        <controls:GridControlBarControl DockPanel.Dock="Bottom"
-                                        Margin="0,8,0,0"
+        <controls:GridControlBarControl DockPanel.Dock="Top"
+                                        Margin="0,0,0,8"
                                         ControlBar="{Binding ControlBar}"
                                         ShowControlBar="{Binding ShowControlBar}"/>
         <controls:PieChartWithRadialIcons
