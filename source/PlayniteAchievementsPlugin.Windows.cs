@@ -296,6 +296,18 @@ namespace PlayniteAchievements
             _windowService.ToggleOverviewWindowFromHotkey();
         }
 
+        /// <summary>
+        /// The Workshop hotkey: an open Workshop window comes to the front, or closes when it is
+        /// already active, so repeated presses never build a second window and reload the index.
+        /// </summary>
+        private void ToggleWorkshopWindowFromHotkey()
+        {
+            if (!_windowService.TryToggleOpenWindowHosting<Views.Workshop.WorkshopControl>())
+            {
+                OpenWorkshopWindow();
+            }
+        }
+
         private bool _settingsViewOpen;
 
         /// <summary>
