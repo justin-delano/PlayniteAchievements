@@ -4682,7 +4682,8 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            var storyboard = BuildSlideStoryboard(authored, host, fromDip, toDip, fallbackEase, durationMs);
+            var storyboard = AnimationFrameRate.Apply(
+                BuildSlideStoryboard(authored, host, fromDip, toDip, fallbackEase, durationMs));
             if (storyboard == null)
             {
                 transform.Y = restDip;
@@ -5560,11 +5561,9 @@ namespace PlayniteAchievements.Services.UI
                 // The countdown must track the actual display time, so the runtime duration always
                 // wins over whatever placeholder the storyboard authored.
                 animation.Duration = duration;
-                // No Timeline.DesiredFrameRate here: a WPF timeline already advances once per composed
-                // frame, so requesting the monitor's rate buys nothing, and requesting a rate below the
-                // real composition rate (a 59.94 Hz panel reporting 60, adaptive sync, plain rounding)
-                // throttles the whole render loop — measured dropping a 163 Hz tick to 90 Hz, which would
-                // coarsen the slide as well as the bar.
+                // At the display's rate rather than an inherited process-wide default
+                // (AnimationFrameRate), which another extension can lower.
+                AnimationFrameRate.Apply(animation);
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, animation);
             }
         }
