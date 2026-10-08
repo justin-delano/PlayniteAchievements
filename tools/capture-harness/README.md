@@ -563,6 +563,41 @@ a cached line (`--cache-hint`, `--cache-render`) left the difference exactly unc
 max 114 levels), so it comes from how the cached layer is composited, not from text rasterization;
 `--cache-snap` made it worse.
 
+### Motion: `--motion slide|fade|zoom`
+
+With `--motion`, the background and pulse stand still (as the quiet gate holds them during a
+notification's motion) and the card cycles its entrance and exit continuously at the shipped sine /
+300 ms, on the slide host's transform group as the plugin animates it. `CachedHost` caches that host
+for the motion; `--pose` freezes the comparison at a shown fraction (1 at rest), `--snap` / `--snap-live`
+round the slide offset to whole device pixels, `--host-cache-snap` sets the cache's
+`SnapsToDevicePixels`, and `--host-cache-scale` its `RenderAtScale`.
+
+Composed rate held, `--load 1`, default geometry, medians of 3:
+
+| motion | Shipped | NoGlow | NoTextShadow | CachedHost |
+|---|---|---|---|---|
+| slide | 61% | 67% | 98% | 99% |
+| fade | 42% | 51% | 96% | 97% |
+| zoom | 43% (55% idle) | 53% | 98% | 99% |
+
+On screen against the live card:
+
+| case | difference |
+|---|---|
+| at rest, every motion | 0 px |
+| slide mid-motion, fractional offset | max 29-32 levels |
+| slide mid-motion, cache `SnapsToDevicePixels` vs live at the rounded offset | 0 px |
+| fade mid-motion | max 1 level |
+| zoom mid-motion | max 145-207 levels at `RenderAtScale` 1 or 2 (a scaled cache is resampled) |
+| `--scale 1.5` ancestor, cache at `RenderAtScale` 1 | max 249 levels even at rest |
+| `--scale 1.5` ancestor, cache at `RenderAtScale` 1.5: rest, rounded slide / mid-fade | 0 px / max 1 level |
+
+So during a motion the card's effects are what drop frames (the moving card is redrawn, and every effect
+re-run, each frame), and caching the host for the motion's span removes that cost. It matches the live
+card exactly when the cache renders at the card's full scale and snaps to device pixels, which rounds
+the slide to whole pixels; a fade is within 1 level; a zoom is not reproducible from a cache. Whether
+WPF already folds the display's DPI into the cache's resolution was not measurable on a 100% display.
+
 ### Split windows while moving: `SlideCadenceProbe --split-truth`
 
 ```powershell
