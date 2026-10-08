@@ -145,6 +145,9 @@ namespace PlayniteAchievements.Services.UI
         private EventHandler _activeSlideTick;
         // Starts the clock of a slide held at its start for a DWM reveal (RevealAtMotionStart).
         private Action _releaseHeldSlide;
+        // Puts a held entrance's base values, seeded at its start pose, back at rest. Run once the
+        // entrance reaches its end and, as a backstop, before its storyboard is removed.
+        private Action _restoreRestBase;
         // Set while a DWM-composed wave's entrance is held at its start ahead of the reveal.
         private bool _activeEntranceBegun;
         // The running slide's frame bookkeeping, direction and requested duration, kept out of the tick
@@ -4431,12 +4434,15 @@ namespace PlayniteAchievements.Services.UI
 
             var host = _activeSlideHost;
             var transform = _activeSlideTransform;
-            if (host != null && transform != null)
+            var scale = SlideHostScale();
+            var fades = motion == ToastMotion.Fade || motion == ToastMotion.Zoom;
+
+            // Base values where the card rests once the motion is over: an exit leaves it off
+            // screen or transparent rather than back at rest.
+            Action seedRest = () =>
             {
                 transform.X = entering ? 0d : offset.X;
-                var hidden = !entering && (motion == ToastMotion.Fade || motion == ToastMotion.Zoom);
-                host.Opacity = hidden ? 0d : 1d;
-                var scale = SlideHostScale();
+                host.Opacity = !entering && fades ? 0d : 1d;
                 if (scale != null)
                 {
                     var restScale = !entering && motion == ToastMotion.Zoom
@@ -4444,6 +4450,27 @@ namespace PlayniteAchievements.Services.UI
                         : 1d;
                     scale.ScaleX = restScale;
                     scale.ScaleY = restScale;
+                }
+            };
+
+            // A held entrance seeds its start instead, for the reason RunSlideStoryboard does.
+            var seedStart = entering && holdAtStart;
+            if (host != null && transform != null)
+            {
+                if (seedStart)
+                {
+                    transform.X = offset.X;
+                    host.Opacity = fades ? 0d : 1d;
+                    if (scale != null)
+                    {
+                        var startScale = motion == ToastMotion.Zoom ? ToastMotionStoryboardFactory.ZoomFromScale : 1d;
+                        scale.ScaleX = startScale;
+                        scale.ScaleY = startScale;
+                    }
+                }
+                else
+                {
+                    seedRest();
                 }
 
                 if (motion == ToastMotion.Zoom)
@@ -4456,6 +4483,24 @@ namespace PlayniteAchievements.Services.UI
             RunSlideStoryboard(
                 storyboard, entering ? offset.Y : 0d, entering ? 0d : offset.Y, DefaultSlideInEase,
                 storyboard == null ? 0d : durationMs, travels, label, holdAtStart);
+
+            if (seedStart && host != null && transform != null)
+            {
+                if (_runningSlideStoryboard == null)
+                {
+                    // Nothing is animating (an instant or failed motion): the card goes straight to rest.
+                    seedRest();
+                }
+                else
+                {
+                    var restoreY = _restoreRestBase;
+                    _restoreRestBase = () =>
+                    {
+                        restoreY?.Invoke();
+                        seedRest();
+                    };
+                }
+            }
         }
 
         /// <summary>The scale at index 0 of the slide host's transform group, or null.</summary>
@@ -4739,6 +4784,12 @@ namespace PlayniteAchievements.Services.UI
 
                 if (driving)
                 {
+                    // At its end the card shows its rest, so the base values can return there too.
+                    if (clock.Elapsed.TotalMilliseconds >= durationMs)
+                    {
+                        RestoreRestBase();
+                    }
+
                     driving = DriveSlideByClock(storyboard, host, clock.Elapsed, durationMs);
                 }
 
@@ -4766,7 +4817,17 @@ namespace PlayniteAchievements.Services.UI
             _activeSlideQuiet = new SlideQuietScope(host, _activeWindow);
             storyboard.Completed += (s, e) => DisposeSlideQuiet();
 
-            transform.Y = restDip;
+            // A held entrance seeds its START instead, until it reaches its end. Recorded in Playnite:
+            // for a frame after Begin/Pause and again at the first seek, WPF can drop the animated
+            // value and show the base value, which at rest flashed the whole card at its corner
+            // before the slide (the reveal trace read y=0 on exactly those frames). With the start
+            // as the base, such a frame shows the pose already on screen.
+            transform.Y = holdAtStart ? fromDip : restDip;
+            if (holdAtStart)
+            {
+                _restoreRestBase = () => transform.Y = restDip;
+            }
+
             CompositionTarget.Rendering += tick;
             try
             {
@@ -4804,6 +4865,7 @@ namespace PlayniteAchievements.Services.UI
                 CompositionTarget.Rendering -= tick;
                 _activeSlideTick = null;
                 _runningSlideStoryboard = null;
+                RestoreRestBase();
                 transform.Y = restDip;
                 ReportActiveSlide("failed");
             }
@@ -5297,6 +5359,13 @@ namespace PlayniteAchievements.Services.UI
             quiet?.Dispose();
         }
 
+        private void RestoreRestBase()
+        {
+            var restore = _restoreRestBase;
+            _restoreRestBase = null;
+            restore?.Invoke();
+        }
+
         private void StopActiveSlide()
         {
             DisposeSlideQuiet();
@@ -5307,6 +5376,9 @@ namespace PlayniteAchievements.Services.UI
                 CompositionTarget.Rendering -= _activeSlideTick;
                 _activeSlideTick = null;
             }
+
+            // Removing the storyboard reverts to the base values, which must then be the rest.
+            RestoreRestBase();
 
             // Stop the storyboard AND clear the animation off the property. Stop alone leaves the
             // animation holding the property at its base value, so a later direct write to Y would be
