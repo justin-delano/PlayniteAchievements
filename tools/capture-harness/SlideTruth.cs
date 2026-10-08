@@ -32,6 +32,11 @@ internal static partial class SlideCadenceProbe
         public double ResidualMaxDip;
     }
 
+    private static readonly Mechanism[] TruthMechanisms =
+    {
+        Mechanism.Transform, Mechanism.TransformClock, Mechanism.TransformDwm, Mechanism.TransformDwmClock,
+    };
+
     /// <summary>
     /// Runs each selected transform mechanism <paramref name="repeats"/> times under desktop
     /// duplication and prints the fitted residual per mechanism.
@@ -39,7 +44,7 @@ internal static partial class SlideCadenceProbe
     private static async System.Threading.Tasks.Task RunTruth(int repeats)
     {
         var results = new List<TruthResult>();
-        foreach (var mechanism in new[] { Mechanism.Transform, Mechanism.TransformClock })
+        foreach (var mechanism in TruthMechanisms)
         {
             if (Only != null && !Only.Contains(mechanism.ToString()))
             {
@@ -59,7 +64,7 @@ internal static partial class SlideCadenceProbe
         Console.WriteLine(
             "{0,-16} {1,9} {2,7} {3,10} {4,11} {5,11}",
             "mechanism", "presented", "moving", "latencyMs", "residualSd", "residualMax");
-        foreach (var mechanism in new[] { Mechanism.Transform, Mechanism.TransformClock })
+        foreach (var mechanism in TruthMechanisms)
         {
             var runs = results.FindAll(r => r.Mechanism == mechanism);
             if (runs.Count == 0)
@@ -117,7 +122,7 @@ internal static partial class SlideCadenceProbe
                 From = travel,
                 To = 0,
                 Duration = new Duration(TimeSpan.FromMilliseconds(SlideDurationMs)),
-                EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 },
+                EasingFunction = CreateEase(),
                 FillBehavior = FillBehavior.HoldEnd,
             };
             Storyboard.SetTarget(animation, host);
@@ -131,7 +136,7 @@ internal static partial class SlideCadenceProbe
             var storyboard = new Storyboard();
             storyboard.Children.Add(animation);
 
-            var clockDriven = mechanism == Mechanism.TransformClock;
+            var clockDriven = mechanism == Mechanism.TransformClock || mechanism == Mechanism.TransformDwmClock;
             var wall = new System.Diagnostics.Stopwatch();
             var finished = new System.Threading.Tasks.TaskCompletionSource<bool>(
                 System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
@@ -285,7 +290,7 @@ internal static partial class SlideCadenceProbe
         foreach (var p in points)
         {
             var t = Math.Max(0d, Math.Min(1d, (p.TMs - shiftMs) / SlideDurationMs));
-            var r = p.OffsetDip - (travel * (1d - ease.Ease(t)));
+            var r = p.OffsetDip - (travel * (1d - EaseAt(ease, t)));
             raw.Add(r);
             mean += r;
         }
