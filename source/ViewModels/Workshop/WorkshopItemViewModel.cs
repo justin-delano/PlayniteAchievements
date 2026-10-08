@@ -209,7 +209,7 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                 if (token.Type == JTokenType.Integer && token.Value<int>() > 0)
                 {
-                    parts.Add(token.Value<int>() + " " + label);
+                    parts.Add(label + ": " + token.Value<int>().ToString("N0", FormattingCulture.Current));
                 }
                 else if (token.Type == JTokenType.Boolean && token.Value<bool>())
                 {
@@ -220,13 +220,13 @@ namespace PlayniteAchievements.ViewModels.Workshop
             switch (kind)
             {
                 case WorkshopItemKind.GameCustomData:
-                    Count("achievementIcons", "icons");
-                    Count("customAchievements", "custom achievements");
-                    Count("categories", "categories");
-                    Count("capstones", "capstones");
-                    Count("achievementOverrides", "overrides");
-                    Count("notes", "notes");
-                    Count("achievementOrder", "order");
+                    Count("achievementIcons", "Icons");
+                    Count("customAchievements", "Custom achievements");
+                    Count("categories", "Categories");
+                    Count("capstones", "Capstones");
+                    Count("achievementOverrides", "Overrides");
+                    Count("notes", "Notes");
+                    Count("achievementOrder", "Order");
                     break;
                 case WorkshopItemKind.UnlockSounds:
                     if (contents["slots"] is JArray slots)
@@ -243,19 +243,19 @@ namespace PlayniteAchievements.ViewModels.Workshop
 
                     break;
                 case WorkshopItemKind.ShowcasePage:
-                    Count("widgets", "widgets");
-                    Count("images", "images");
+                    Count("widgets", "Widgets");
+                    Count("images", "Images");
                     break;
                 case WorkshopItemKind.Colors:
-                    Count("rarityColors", "rarity colors");
-                    Count("providerColors", "provider colors");
-                    Count("resourceOverrides", "resource overrides");
+                    Count("rarityColors", "Rarity colors");
+                    Count("providerColors", "Provider colors");
+                    Count("resourceOverrides", "Resource overrides");
                     break;
                 default:
-                    Count("toastTemplate", "custom template");
-                    Count("frameTemplate", "custom frame template");
-                    Count("images", "images");
-                    Count("kindStyles", "per-kind styles");
+                    Count("toastTemplate", "Custom template");
+                    Count("frameTemplate", "Custom frame template");
+                    Count("images", "Images");
+                    Count("kindStyles", "Per-kind styles");
                     break;
             }
 
