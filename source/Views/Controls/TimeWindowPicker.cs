@@ -239,7 +239,7 @@ namespace PlayniteAchievements.Views.Controls
         private DatePicker _from;
         private DatePicker _to;
         private Button _clear;
-        private ComboBox _granularity;
+        private Button _granularity;
         private TextBox _fromTextBox;
         private TextBox _toTextBox;
         private bool _syncing;
@@ -382,7 +382,7 @@ namespace PlayniteAchievements.Views.Controls
             _from = GetTemplateChild(inline ? PartInlineFrom : PartFrom) as DatePicker;
             _to = GetTemplateChild(inline ? PartInlineTo : PartTo) as DatePicker;
             _clear = GetTemplateChild(inline ? PartInlineClear : PartClear) as Button;
-            _granularity = GetTemplateChild(PartGranularity) as ComboBox;
+            _granularity = GetTemplateChild(PartGranularity) as Button;
 
             if (_customChip != null)
             {
@@ -416,7 +416,7 @@ namespace PlayniteAchievements.Views.Controls
 
             if (_granularity != null)
             {
-                _granularity.SelectionChanged += Granularity_SelectionChanged;
+                _granularity.Click += Granularity_Click;
             }
 
             ApplyDateLimits();
@@ -480,7 +480,7 @@ namespace PlayniteAchievements.Views.Controls
 
             if (_granularity != null)
             {
-                _granularity.SelectionChanged -= Granularity_SelectionChanged;
+                _granularity.Click -= Granularity_Click;
             }
         }
 
@@ -634,15 +634,7 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            _syncing = true;
-            try
-            {
-                _granularity.SelectedItem = GranularityItems?.FirstOrDefault(item => item.Value == Granularity);
-            }
-            finally
-            {
-                _syncing = false;
-            }
+            _granularity.Content = GranularityItems?.FirstOrDefault(item => item.Value == Granularity)?.Label;
         }
 
         private void CustomChip_Click(object sender, RoutedEventArgs e)
@@ -800,14 +792,37 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
-        private void Granularity_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // One row per unit, the current one checked; a pick sets the unit and closes the menu.
+        private void Granularity_Click(object sender, RoutedEventArgs e)
         {
-            if (_syncing || !(_granularity?.SelectedItem is TimelineGranularityChoice choice))
+            var menu = _granularity?.ContextMenu;
+            if (menu == null)
             {
                 return;
             }
 
-            Granularity = choice.Value;
+            menu.Items.Clear();
+            var itemStyle = _granularity.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
+            foreach (var choice in GranularityItems ?? new TimelineGranularityChoice[0])
+            {
+                var item = new MenuItem
+                {
+                    Header = choice.Label,
+                    IsCheckable = true,
+                    IsChecked = choice.Value == Granularity,
+                    IsEnabled = choice.IsEnabled
+                };
+                if (itemStyle != null)
+                {
+                    item.Style = itemStyle;
+                }
+
+                var value = choice.Value;
+                item.Click += (_, __) => Granularity = value;
+                menu.Items.Add(item);
+            }
+
+            MultiSelectFilterMenu.OpenSelectorContextMenu(_granularity, menu);
         }
 
         // The plugin's DatePickerTextBox template has no watermark part, so the blank marker is
