@@ -404,15 +404,15 @@
                             <Path Data="{StaticResource GeoLock}"
                                   Fill="{DynamicResource PlayAch.Brush.Glyph}"/>
                         </Viewbox>
-                        <TextBlock x:Name="HiddenGlyph"
-                                   Text="&#xEF22;"
-                                   FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Glyph}"
-                                   FontSize="15"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Visibility="Collapsed"/>
+                        <controls:GlyphIcon x:Name="HiddenGlyph"
+                                            Glyph="&#xEF22;"
+                                            Size="15"
+                                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                            Foreground="{DynamicResource PlayAch.Brush.Glyph}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            SnapsToDevicePixels="True"
+                                            Visibility="Collapsed"/>
                         <!-- Same star the friend grids draw in their favorite gutters. -->
                         <TextBlock x:Name="FavoriteGlyph"
                                    Text="&#x2605;"
