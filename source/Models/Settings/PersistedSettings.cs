@@ -47,6 +47,7 @@ namespace PlayniteAchievements.Models.Settings
         public const string DefaultOpenSettingsHotkey = "Ctrl+Alt+P";
         public const string DefaultCategoryModeHotkey = "C";
         public const string DefaultTestUnlockHotkey = "Ctrl+Alt+T";
+        public const string DefaultWorkshopHotkey = "Ctrl+Alt+W";
 
         /// <summary>
         /// Column key of the Progress column in game-summaries grids (matches the XAML ColumnKey and
@@ -154,6 +155,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableOpenSettingsHotkey = true;
         private bool _enableCategoryModeHotkey = true;
         private bool _enableTestUnlockHotkey = true;
+        private bool _enableWorkshopHotkey = true;
         private bool _enableCaptureTestFolder = false;
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
         private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
@@ -161,6 +163,7 @@ namespace PlayniteAchievements.Models.Settings
         private string _openSettingsHotkey = DefaultOpenSettingsHotkey;
         private string _categoryModeHotkey = DefaultCategoryModeHotkey;
         private string _testUnlockHotkey = DefaultTestUnlockHotkey;
+        private string _workshopHotkey = DefaultWorkshopHotkey;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
@@ -1094,6 +1097,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Enables the Workshop shortcut individually. Gated by <see cref="EnableAchievementHotkeys"/>.
+        /// </summary>
+        public bool EnableWorkshopHotkey
+        {
+            get => _enableWorkshopHotkey;
+            set => SetValue(ref _enableWorkshopHotkey, value);
+        }
+
+        /// <summary>
         /// Routes retriggered captures into the shared "Test" subfolder of the capture root instead of
         /// the game's own folder. The capture library hides that subfolder, so retriggers become
         /// throwaway test output rather than part of the game's collection.
@@ -1161,6 +1173,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _testUnlockHotkey;
             set => SetValue(ref _testUnlockHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that opens, focuses, or toggles the Workshop window. In-app only: it is never
+        /// registered as a global hotkey.
+        /// </summary>
+        public string WorkshopHotkey
+        {
+            get => _workshopHotkey;
+            set => SetValue(ref _workshopHotkey, NormalizeHotkeyText(value));
         }
 
         #endregion
@@ -3189,12 +3211,14 @@ namespace PlayniteAchievements.Models.Settings
                 EnableOpenSettingsHotkey = this.EnableOpenSettingsHotkey,
                 EnableCategoryModeHotkey = this.EnableCategoryModeHotkey,
                 EnableTestUnlockHotkey = this.EnableTestUnlockHotkey,
+                EnableWorkshopHotkey = this.EnableWorkshopHotkey,
                 ViewAchievementsHotkey = this.ViewAchievementsHotkey,
                 ManageAchievementsHotkey = this.ManageAchievementsHotkey,
                 OverviewHotkey = this.OverviewHotkey,
                 OpenSettingsHotkey = this.OpenSettingsHotkey,
                 CategoryModeHotkey = this.CategoryModeHotkey,
                 TestUnlockHotkey = this.TestUnlockHotkey,
+                WorkshopHotkey = this.WorkshopHotkey,
                 EnableCaptureTestFolder = this.EnableCaptureTestFolder,
 
                 HiddenManageSidebarStatGroups = this.HiddenManageSidebarStatGroups,
