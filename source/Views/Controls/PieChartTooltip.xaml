@@ -25,7 +25,7 @@
             CornerRadius="4"
             IsHitTestVisible="False"
             Padding="8,4">
-        <ItemsControl ItemsSource="{Binding Data.Points}">
+        <ItemsControl ItemsSource="{Binding Points}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type wpf:DataPointViewModel}">
                     <StackPanel Orientation="Horizontal">
