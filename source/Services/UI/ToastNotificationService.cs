@@ -143,6 +143,8 @@ namespace PlayniteAchievements.Services.UI
         // itself is a WPF storyboard, and this exists only so the [Toast] Slide line can still report the
         // cadence the motion actually got.
         private EventHandler _activeSlideTick;
+        // Starts the clock of a slide held at its start for a DWM reveal (RevealAtMotionStart).
+        private Action _releaseHeldSlide;
         // The running slide's frame bookkeeping, direction and requested duration, kept out of the tick
         // closure so the one diagnostic line each slide emits can be written from either exit: the slide
         // is routinely force-stopped (the post-slide snap, teardown) before its final frame runs.
@@ -2741,7 +2743,7 @@ namespace PlayniteAchievements.Services.UI
                     }
                 }
 
-                SlideInPhysical(window, reveal: visible);
+                var slideInStarted = SlideInPhysical(window, reveal: visible);
 
                 // Start sampling each card's overlay track now, at the slide-in — revealed or not
                 // — so the slide-in animation lands in the tracks (not just the settled toast).
@@ -2823,6 +2825,8 @@ namespace PlayniteAchievements.Services.UI
                 // mid-flight — on screen and in the recorded track alike.
                 var captureDelayMs = Math.Max(
                     300, (int)Math.Round(_activeSlideInMs) + (2 * SlideSettleBufferMs));
+                // Timed from when the slide-in's clock starts, which a reveal holds for a few frames.
+                await slideInStarted.ConfigureAwait(true);
                 await Task.Delay(captureDelayMs).ConfigureAwait(true);
                 if (_disposed)
                 {
@@ -4079,6 +4083,10 @@ namespace PlayniteAchievements.Services.UI
         // an expensive first paint short and hand the remainder back to the slide's first frame, which is
         // the whole defect. It only costs latency in a pathological case where frames stop entirely.
         private const int WarmFrameCount = 2;
+        // Composed frames a held motion start is given to reach DWM before a DWM-composed window is
+        // uncloaked: the UI thread runs at most a frame ahead of the render thread, so three is past
+        // the frame that presents the start.
+        private const int RevealHoldFrames = 3;
         private const int WarmFrameTimeoutMs = 150;
         // Frame period assumed when the anchor monitor's refresh rate can't be read (60 Hz).
         private const double FallbackFramePeriodMs = 1000d / 60d;
@@ -4202,11 +4210,11 @@ namespace PlayniteAchievements.Services.UI
         /// A unrevealed wave slides without revealing: the motion is what the overlay track records,
         /// so the composited clip shows the same slide-in a visible notification would.
         /// </summary>
-        private void SlideInPhysical(Window window, bool reveal)
+        private Task SlideInPhysical(Window window, bool reveal)
         {
             if (window == null)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             if (reveal && !_activeDwmComposed)
@@ -4218,9 +4226,17 @@ namespace PlayniteAchievements.Services.UI
             // card moves. Place once here so the slide starts from a settled position.
             PlaceWindow(window);
 
+            // A DWM-composed window is revealed by uncloaking, which DWM applies at once to whatever
+            // the window last presented, while WPF presents on its own render thread. Uncloaked with
+            // the slide, the first visible frame could still be the warm-up's: the card at rest, then
+            // jumping to the motion's start. So the motion begins held at its start while the window
+            // is cloaked, and its clock only runs once that start has been presented and the window
+            // uncloaked. Opacity on a layered window changes in the same render as the motion and
+            // needs no hold.
+            var holdForReveal = reveal && _activeDwmComposed;
             if (_activeMotionPlan != null)
             {
-                RunStyleMotion(window, _activeMotionPlan.Entrance, entering: true, _activeSlideInMs, "in");
+                RunStyleMotion(window, _activeMotionPlan.Entrance, entering: true, _activeSlideInMs, "in", holdForReveal);
             }
             else
             {
@@ -4228,30 +4244,26 @@ namespace PlayniteAchievements.Services.UI
                 var from = SlideFromBottom() ? distance : -distance;
                 RunSlideStoryboard(
                     _activeSlideInStoryboard, from, 0d, DefaultSlideInEase, _activeSlideInMs,
-                    _activeSlideInTravels, "in");
+                    _activeSlideInTravels, "in", holdForReveal);
             }
 
-            if (reveal && _activeDwmComposed)
-            {
-                UncloakAfterFirstSlideFrame(window);
-            }
+            return holdForReveal ? RevealAtMotionStart(window) : Task.CompletedTask;
         }
 
         /// <summary>
-        /// Uncloaks a DWM-composed window once WPF has rendered the slide's first frame. Uncloaking
-        /// takes effect in DWM at once, while the storyboard's first value only reaches the window at
-        /// WPF's next render, so uncloaking here would show the card at rest for a frame before the
-        /// slide moves it to its start. Opacity on a layered window changes in the same render as the
-        /// storyboard and needs no such wait.
+        /// Uncloaks a DWM-composed window once its held motion start has been presented, then starts
+        /// the motion's clock. WPF's UI thread runs at most a frame ahead of its render thread, so by
+        /// the third composed frame after the motion began, the start pose is what DWM holds for the
+        /// window. A motion that ran instantly has nothing held and simply reveals the card at rest.
         /// </summary>
-        private void UncloakAfterFirstSlideFrame(Window window)
+        private Task RevealAtMotionStart(Window window)
         {
+            var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var ticks = new RenderTickCounter();
             EventHandler tick = null;
             tick = (s, e) =>
             {
-                // The second composed frame begins after the first has rendered the slide's start.
-                if (!ticks.TryAdvance(e, out _) || ticks.Frames < 2)
+                if (!ticks.TryAdvance(e, out _) || ticks.Frames < RevealHoldFrames)
                 {
                     return;
                 }
@@ -4260,9 +4272,15 @@ namespace PlayniteAchievements.Services.UI
                 if (ReferenceEquals(_activeWindow, window))
                 {
                     ToastWindowSurface.SetCloaked(window, false);
+                    var release = _releaseHeldSlide;
+                    _releaseHeldSlide = null;
+                    release?.Invoke();
                 }
+
+                started.TrySetResult(true);
             };
             CompositionTarget.Rendering += tick;
+            return started.Task;
         }
 
         // Returns the slide-out duration (ms) so the caller waits exactly that long; 0 if it didn't run.
@@ -4294,7 +4312,8 @@ namespace PlayniteAchievements.Services.UI
         /// seeds the translate's Y: stopping the storyboard reverts to the local value, and an exit
         /// must leave the card off screen or transparent rather than back at rest.
         /// </summary>
-        private void RunStyleMotion(Window window, ToastMotion motion, bool entering, double durationMs, string label)
+        private void RunStyleMotion(
+            Window window, ToastMotion motion, bool entering, double durationMs, string label, bool holdAtStart = false)
         {
             var offset = ToastMotionStoryboardFactory.TravelOffset(
                 motion, _activePosition, SlideDistanceDip(window), SlideDistanceDipX(window));
@@ -4327,7 +4346,7 @@ namespace PlayniteAchievements.Services.UI
             var travels = ToastMotionStoryboardFactory.Travels(motion);
             RunSlideStoryboard(
                 storyboard, entering ? offset.Y : 0d, entering ? 0d : offset.Y, DefaultSlideInEase,
-                storyboard == null ? 0d : durationMs, travels, label);
+                storyboard == null ? 0d : durationMs, travels, label, holdAtStart);
         }
 
         /// <summary>The scale at index 0 of the slide host's transform group, or null.</summary>
@@ -4536,7 +4555,7 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private void RunSlideStoryboard(
             Storyboard authored, double fromDip, double toDip, IEasingFunction fallbackEase,
-            double durationMs, bool travels, string label)
+            double durationMs, bool travels, string label, bool holdAtStart = false)
         {
             StopActiveSlide();
             var host = _activeSlideHost;
@@ -4599,9 +4618,12 @@ namespace PlayniteAchievements.Services.UI
             // raises Completed exactly as a free-running one does.
             var clock = new Stopwatch();
             var driving = false;
+            // Held at its start (paused at zero by Begin and Pause below) until released; the
+            // frames before that are not the slide's, so they are neither driven nor counted.
+            var held = holdAtStart;
             EventHandler tick = (s, e) =>
             {
-                if (!ticks.TryAdvance(e, out _))
+                if (held || !ticks.TryAdvance(e, out _))
                 {
                     return;
                 }
@@ -4643,12 +4665,24 @@ namespace PlayniteAchievements.Services.UI
                 try
                 {
                     storyboard.Pause(host);
-                    clock.Start();
                     driving = true;
+                    if (held)
+                    {
+                        _releaseHeldSlide = () =>
+                        {
+                            held = false;
+                            clock.Start();
+                        };
+                    }
+                    else
+                    {
+                        clock.Start();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // Free-running on WPF's own clock is the slide as it always ran.
+                    // Free-running on WPF's own clock is the slide as it always ran, and cannot be held.
+                    held = false;
                     _logger?.Debug(ex, "Toast slide could not be clock-driven; running free.");
                 }
             }
@@ -5157,6 +5191,7 @@ namespace PlayniteAchievements.Services.UI
         private void StopActiveSlide()
         {
             DisposeSlideQuiet();
+            _releaseHeldSlide = null;
 
             if (_activeSlideTick != null)
             {
