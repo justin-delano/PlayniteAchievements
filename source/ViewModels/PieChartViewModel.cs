@@ -965,8 +965,25 @@ namespace PlayniteAchievements.ViewModels
             // This ensures when CalculatePositions fires after PieSeries changes,
             // LegendItems already contains matching data.
             SynchronizeLegendItems(slices);
-            SynchronizePieSeries(slices);
+            SynchronizePieSeries(slices.Any(slice => slice != null && slice.ChartValue > 0) ? slices : BlankPie());
         }
+
+        /// <summary>
+        /// A pie with nothing to count, as when filters leave no games: one flat slice in the
+        /// empty color, so the pie keeps its ring rather than vanishing. It has no legend row,
+        /// icon or label, and a click on it filters nothing.
+        /// </summary>
+        private static IReadOnlyList<PieSliceData> BlankPie() => new[]
+        {
+            new PieSliceData
+            {
+                Label = string.Empty,
+                Color = GetLockedColor(),
+                IsLocked = true,
+                ChartValue = 1,
+                ShowRadialIcon = false
+            }
+        };
 
         private void SynchronizePieSeries(IReadOnlyList<PieSliceData> slices)
         {
