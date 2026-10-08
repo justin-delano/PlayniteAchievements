@@ -147,17 +147,16 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// Easing for movement and scale. The default entrance overshoots and the default exit
-        /// accelerates away, matching the built-in slide; Smooth drops the overshoot and Bouncy
-        /// adds a small wind-up to the exit.
+        /// Easing for movement and scale. The default is Smooth, matching the built-in slide: a sine
+        /// ease that decelerates into the entrance and accelerates away on exit. Bouncy overshoots on
+        /// entry and winds up before the exit.
         /// </summary>
-        private static IEasingFunction MotionEase(bool entering, ToastMotionFeel? feel)
+        public static IEasingFunction MotionEase(bool entering, ToastMotionFeel? feel)
         {
             var mode = entering ? EasingMode.EaseOut : EasingMode.EaseIn;
-            var bouncy = entering ? feel != ToastMotionFeel.Smooth : feel == ToastMotionFeel.Bouncy;
-            return bouncy
+            return feel == ToastMotionFeel.Bouncy
                 ? (IEasingFunction)new BackEase { EasingMode = mode, Amplitude = OvershootAmplitude }
-                : new CubicEase { EasingMode = mode };
+                : new SineEase { EasingMode = mode };
         }
 
         // Opacity never overshoots: an eased value past 1 or below 0 has nothing to show.
