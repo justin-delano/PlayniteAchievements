@@ -46,6 +46,10 @@ namespace PlayniteAchievements.Views.Helpers
         // render scale are the same scale read through two APIs, not a real mismatch.
         private const double MonitorScaleTolerance = 0.01;
 
+        // The Default theme's StandardWindowStyle starts content at 25 DIP, the row where its
+        // caption buttons (top margin 3, height 22) end, so content would sit flush against them.
+        private const double TitleBarContentGap = 6;
+
         public static void RestoreMainView()
         {
             API.Instance.MainView.SwitchToLibraryView();
@@ -105,16 +109,18 @@ namespace PlayniteAchievements.Views.Helpers
             windowExtension.ResizeMode = windowOptions.CanBeResizable ? ResizeMode.CanResize : ResizeMode.NoResize;
             windowExtension.Owner = API.Instance.Dialogs.GetCurrentAppWindow();
             windowExtension.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            var margin = ViewExtension.Margin;
+            ViewExtension.Margin = new Thickness(margin.Left, margin.Top + TitleBarContentGap, margin.Right, margin.Bottom);
             windowExtension.Content = ViewExtension;
 
             if (!double.IsNaN(ViewExtension.Height) && !double.IsNaN(ViewExtension.Width))
             {
-                windowExtension.Height = ViewExtension.Height + 25;
+                windowExtension.Height = ViewExtension.Height + 25 + TitleBarContentGap;
                 windowExtension.Width = ViewExtension.Width;
             }
             else if (!double.IsNaN(ViewExtension.MinHeight) && !double.IsNaN(ViewExtension.MinWidth) && ViewExtension.MinHeight > 0 && ViewExtension.MinWidth > 0)
             {
-                windowExtension.Height = ViewExtension.MinHeight + 25;
+                windowExtension.Height = ViewExtension.MinHeight + 25 + TitleBarContentGap;
                 windowExtension.Width = ViewExtension.MinWidth;
             }
             else if (windowOptions.Width != 0 && windowOptions.Height != 0)
