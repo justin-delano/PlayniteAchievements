@@ -297,12 +297,12 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
-        /// The Workshop hotkey: the Settings > Workshop tab. An open settings window switches to
-        /// that tab; otherwise the tab opens on its own in a popout, which comes to the front on
+        /// The Workshop hotkey and main-menu entry: the Settings > Workshop tab. An open settings
+        /// window switches to that tab; otherwise the tab opens on its own in a popout, which comes to the front on
         /// the next press or closes when it is already active, so repeated presses never build a
         /// second one and reload the index.
         /// </summary>
-        private void ToggleWorkshopWindowFromHotkey()
+        private void ToggleWorkshopTabWindow()
         {
             if (Views.SettingsControl.Live != null)
             {

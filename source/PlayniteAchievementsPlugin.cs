@@ -1237,7 +1237,7 @@ namespace PlayniteAchievements
                         TryFlipCategoryModeInActiveView,
                         TryRefreshActivePluginView,
                         runningGameId => _inGameMonitor?.FireTestNotification(runningGameId),
-                        ToggleWorkshopWindowFromHotkey);
+                        ToggleWorkshopTabWindow);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
