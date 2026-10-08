@@ -118,6 +118,10 @@ internal static class HoldProbe
     private static double _scale = 1;
     private static string _dumpDir;
     private static bool _compareOnly;
+    // Text settings forced on a cached text line, to match how the live line rasterizes.
+    private static TextHintingMode? _cacheHint;
+    private static TextRenderingMode? _cacheRendering;
+    private static bool _cacheSnap;
     private static double _fps = 50;
     private static HashSet<string> _only;
     private static double _periodMs;
@@ -147,6 +151,9 @@ internal static class HoldProbe
                 case "--scale": _scale = next(); break;
                 case "--dump": _dumpDir = args[++i]; break;
                 case "--compare-only": _compareOnly = true; break;
+                case "--cache-hint": _cacheHint = (TextHintingMode)Enum.Parse(typeof(TextHintingMode), args[++i], true); break;
+                case "--cache-render": _cacheRendering = (TextRenderingMode)Enum.Parse(typeof(TextRenderingMode), args[++i], true); break;
+                case "--cache-snap": _cacheSnap = true; break;
                 case "--only":
                     _only = new HashSet<string>(args[++i].Split(','), StringComparer.OrdinalIgnoreCase);
                     break;
@@ -685,7 +692,16 @@ internal static class HoldProbe
             };
             if (CachesText(variant))
             {
-                outer.CacheMode = new BitmapCache { RenderAtScale = 1, SnapsToDevicePixels = false };
+                outer.CacheMode = new BitmapCache { RenderAtScale = 1, SnapsToDevicePixels = _cacheSnap };
+                if (_cacheHint.HasValue)
+                {
+                    TextOptions.SetTextHintingMode(outer, _cacheHint.Value);
+                }
+
+                if (_cacheRendering.HasValue)
+                {
+                    TextOptions.SetTextRenderingMode(outer, _cacheRendering.Value);
+                }
             }
 
             outer.Children.Add(inner);
