@@ -778,6 +778,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsTrue(settings.EnableOpenSettingsHotkey);
             Assert.IsTrue(settings.EnableCategoryModeHotkey);
             Assert.IsTrue(settings.EnableTestUnlockHotkey);
+            Assert.IsTrue(settings.EnableWorkshopHotkey);
 
             // Off by default: a retrigger captures into the game's own folder, and the test folder
             // is the opt-in that turns it into throwaway output instead.
@@ -788,6 +789,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(PersistedSettings.DefaultOpenSettingsHotkey, settings.OpenSettingsHotkey);
             Assert.AreEqual(PersistedSettings.DefaultCategoryModeHotkey, settings.CategoryModeHotkey);
             Assert.AreEqual(PersistedSettings.DefaultTestUnlockHotkey, settings.TestUnlockHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultWorkshopHotkey, settings.WorkshopHotkey);
         }
 
         [TestMethod]
@@ -1203,13 +1205,15 @@ namespace PlayniteAchievements.Models.Tests
                 EnableOpenSettingsHotkey = false,
                 EnableCategoryModeHotkey = false,
                 EnableTestUnlockHotkey = false,
+                EnableWorkshopHotkey = false,
                 EnableCaptureTestFolder = true,
                 ViewAchievementsHotkey = "F8",
                 ManageAchievementsHotkey = "Shift+F9",
                 OverviewHotkey = "F10",
                 OpenSettingsHotkey = "F11",
                 CategoryModeHotkey = "Shift+G",
-                TestUnlockHotkey = "Ctrl+Alt+K"
+                TestUnlockHotkey = "Ctrl+Alt+K",
+                WorkshopHotkey = "Ctrl+Shift+W"
             };
 
             var clone = source.Clone();
@@ -1224,6 +1228,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(clone.EnableOpenSettingsHotkey);
             Assert.IsFalse(clone.EnableCategoryModeHotkey);
             Assert.IsFalse(clone.EnableTestUnlockHotkey);
+            Assert.IsFalse(clone.EnableWorkshopHotkey);
             Assert.IsTrue(clone.EnableCaptureTestFolder);
             Assert.AreEqual("F8", clone.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", clone.ManageAchievementsHotkey);
@@ -1231,6 +1236,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual("F11", clone.OpenSettingsHotkey);
             Assert.AreEqual("Shift+G", clone.CategoryModeHotkey);
             Assert.AreEqual("Ctrl+Alt+K", clone.TestUnlockHotkey);
+            Assert.AreEqual("Ctrl+Shift+W", clone.WorkshopHotkey);
 
             Assert.IsFalse(target.EnableAchievementHotkeys);
             Assert.IsTrue(target.EnableGlobalAchievementHotkeys);
@@ -1240,6 +1246,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(target.EnableOpenSettingsHotkey);
             Assert.IsFalse(target.EnableCategoryModeHotkey);
             Assert.IsFalse(target.EnableTestUnlockHotkey);
+            Assert.IsFalse(target.EnableWorkshopHotkey);
             Assert.IsTrue(target.EnableCaptureTestFolder);
             Assert.AreEqual("F8", target.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", target.ManageAchievementsHotkey);
@@ -1247,6 +1254,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual("F11", target.OpenSettingsHotkey);
             Assert.AreEqual("Shift+G", target.CategoryModeHotkey);
             Assert.AreEqual("Ctrl+Alt+K", target.TestUnlockHotkey);
+            Assert.AreEqual("Ctrl+Shift+W", target.WorkshopHotkey);
         }
 
         [TestMethod]
