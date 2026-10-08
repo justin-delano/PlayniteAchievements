@@ -111,6 +111,11 @@ namespace PlayniteAchievements.Services.UI
         // the game's z-order; placement itself still runs, because the overlay track reads the
         // window's physical rect every frame.
         private bool _activeSuppressZOrder;
+        // Set for a revealed wave, whose window composites through DWM (ToastWindowSurface): it hides
+        // by cloaking rather than Window.Opacity, and passes clicks through outside the card only
+        // while the hit region is set. An unrevealed wave keeps the layered window, which is never
+        // shown and passes every click through.
+        private bool _activeDwmComposed;
         private double _activeMonitorScale = 1.0;
         // The anchor monitor's refresh rate (Hz), resolved with the scale above, or 0 when it can't be
         // read. Every on-screen cadence derives from it: the composition tick that drives the slide
@@ -2495,6 +2500,11 @@ namespace PlayniteAchievements.Services.UI
                 _api,
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             _activeWindow = window;
+            _activeDwmComposed = visible;
+            if (_activeDwmComposed)
+            {
+                ToastWindowSurface.UseDwmComposition(window);
+            }
 
             // The card surface goes inside a slide host: the window stays put and the host translates,
             // so the slide never issues a window move and never leaves the window's own DIP space. The
@@ -2565,7 +2575,10 @@ namespace PlayniteAchievements.Services.UI
             items.LayoutTransform = Math.Abs(contentScale - 1.0) > ContentScaleEpsilon
                 ? new ScaleTransform(contentScale, contentScale)
                 : null;
-            window.Opacity = 0;
+            if (!_activeDwmComposed)
+            {
+                window.Opacity = 0;
+            }
             // Do not move the window during Loaded: a SizeToContent window moved before it is first
             // presented at DPI > 100% gets an HWND sized from unscaled DIPs, which clips content
             // inside the card. Pre-place before Show() so the HWND is created at its final rect on
@@ -2574,6 +2587,7 @@ namespace PlayniteAchievements.Services.UI
 
             EventHandler onRendering = null;
             EventHandler onTrackSample = null;
+            SizeChangedEventHandler onHoldSurfaceSized = null;
             ToastOverlayTrackRecorder trackRecorder = null;
             // Overlay-track sampling stats for the wave's diagnostic line: the composed frames the
             // sampler saw against the samples it actually took is what shows the cadence landing where
@@ -2612,6 +2626,12 @@ namespace PlayniteAchievements.Services.UI
                 else
                 {
                     new WindowInteropHelper(window).EnsureHandle();
+                }
+
+                // Cloaked from before Show to the reveal, as Opacity = 0 does for a layered window.
+                if (_activeDwmComposed)
+                {
+                    ToastWindowSurface.SetCloaked(window, true);
                 }
 
                 PlaceWindow(window, "preshow");
@@ -2859,6 +2879,16 @@ namespace PlayniteAchievements.Services.UI
                     return;
                 }
 
+                // While the card rests, only its own bounds take clicks; the travel room passes them
+                // to the game. Re-applied if the cards resize during the hold.
+                if (_activeDwmComposed && _activeCardSurface != null)
+                {
+                    ToastWindowSurface.SetHitRegion(window, _activeCardSurface, HitRegionAllowanceDip);
+                    onHoldSurfaceSized = (s, e) =>
+                        ToastWindowSurface.SetHitRegion(window, _activeCardSurface, HitRegionAllowanceDip);
+                    _activeCardSurface.SizeChanged += onHoldSurfaceSized;
+                }
+
                 // Follow the anchor window every rendered frame (smooth while dragging). The anchor
                 // handle was resolved once at wave start (game window, else the Playnite window) and
                 // stays valid even if focus later changes. The overlay tracks are sampled separately
@@ -2913,6 +2943,18 @@ namespace PlayniteAchievements.Services.UI
                 {
                     CompositionTarget.Rendering -= onRendering;
                     onRendering = null;
+                }
+
+                // The slide-out moves the card through the travel room, which the region would clip.
+                if (onHoldSurfaceSized != null)
+                {
+                    if (_activeCardSurface != null)
+                    {
+                        _activeCardSurface.SizeChanged -= onHoldSurfaceSized;
+                    }
+
+                    onHoldSurfaceSized = null;
+                    ToastWindowSurface.SetHitRegion(window, null, 0d);
                 }
 
                 // Track sampling keeps running through the slide-out so the exit motion (and any
@@ -2977,6 +3019,11 @@ namespace PlayniteAchievements.Services.UI
                     CompositionTarget.Rendering -= onTrackSample;
                 }
 
+                if (onHoldSurfaceSized != null && _activeCardSurface != null)
+                {
+                    _activeCardSurface.SizeChanged -= onHoldSurfaceSized;
+                }
+
                 // Unconditional: waves are sequential, so this only ever clears this wave's rate.
                 RayAnimationDriver.ClearSamplingFps();
 
@@ -2994,6 +3041,7 @@ namespace PlayniteAchievements.Services.UI
                 _activeReferenceHwnd = IntPtr.Zero;
                 _activeIsGame = false;
                 _activeSuppressZOrder = false;
+                _activeDwmComposed = false;
                 _activeMonitorScale = 1.0;
 
                 try
@@ -3933,6 +3981,9 @@ namespace PlayniteAchievements.Services.UI
         private const int SlideOutDurationMs = 250;
         // Extra travel beyond the card height so the card fully clears the screen edge in and out.
         private const double SlideTravelPaddingDip = 40d;
+        // How far past the card surface's bounds the hold's hit region reaches, for theme effects
+        // drawn outside them. The bundled template keeps its glow inside the surface.
+        private const double HitRegionAllowanceDip = 16d;
 
         /// <summary>
         /// What the slide animates: the translate in the slide host's transform group. Everything is
@@ -4147,7 +4198,7 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            if (reveal)
+            if (reveal && !_activeDwmComposed)
             {
                 window.Opacity = 1;
             }
@@ -4159,14 +4210,48 @@ namespace PlayniteAchievements.Services.UI
             if (_activeMotionPlan != null)
             {
                 RunStyleMotion(window, _activeMotionPlan.Entrance, entering: true, _activeSlideInMs, "in");
-                return;
+            }
+            else
+            {
+                var distance = SlideDistanceDip(window);
+                var from = SlideFromBottom() ? distance : -distance;
+                RunSlideStoryboard(
+                    _activeSlideInStoryboard, from, 0d, DefaultSlideInEase, _activeSlideInMs,
+                    _activeSlideInTravels, "in");
             }
 
-            var distance = SlideDistanceDip(window);
-            var from = SlideFromBottom() ? distance : -distance;
-            RunSlideStoryboard(
-                _activeSlideInStoryboard, from, 0d, DefaultSlideInEase, _activeSlideInMs,
-                _activeSlideInTravels, "in");
+            if (reveal && _activeDwmComposed)
+            {
+                UncloakAfterFirstSlideFrame(window);
+            }
+        }
+
+        /// <summary>
+        /// Uncloaks a DWM-composed window once WPF has rendered the slide's first frame. Uncloaking
+        /// takes effect in DWM at once, while the storyboard's first value only reaches the window at
+        /// WPF's next render, so uncloaking here would show the card at rest for a frame before the
+        /// slide moves it to its start. Opacity on a layered window changes in the same render as the
+        /// storyboard and needs no such wait.
+        /// </summary>
+        private void UncloakAfterFirstSlideFrame(Window window)
+        {
+            var ticks = new RenderTickCounter();
+            EventHandler tick = null;
+            tick = (s, e) =>
+            {
+                // The second composed frame begins after the first has rendered the slide's start.
+                if (!ticks.TryAdvance(e, out _) || ticks.Frames < 2)
+                {
+                    return;
+                }
+
+                CompositionTarget.Rendering -= tick;
+                if (ReferenceEquals(_activeWindow, window))
+                {
+                    ToastWindowSurface.SetCloaked(window, false);
+                }
+            };
+            CompositionTarget.Rendering += tick;
         }
 
         // Returns the slide-out duration (ms) so the caller waits exactly that long; 0 if it didn't run.
