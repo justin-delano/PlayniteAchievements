@@ -868,11 +868,9 @@
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="{StaticResource PlayAch.Radius.Small}"/>
-                                        <Setter Property="helpers:RoundedClip.Radius" Value="4"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsSeamless}" Value="True">
                                                 <Setter Property="CornerRadius" Value="0"/>
-                                                <Setter Property="helpers:RoundedClip.Radius" Value="0"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -889,9 +887,8 @@
                             <!-- Completion frame: the game summaries grid's cover frame at tile
                                  size, drawn on the art over the rarity bar. It binds the tile's
                                  summary row, so it makes the same badge choice and shows the same
-                                 capstone count. Seamless tiles have square art, so the frame's
-                                 outer band squares with them. Icon tiles letterbox their art, so
-                                 the frame insets to the picture actually drawn. -->
+                                 capstone count. Icon tiles letterbox their art, so the frame
+                                 insets to the picture actually drawn. -->
                             <Control Template="{StaticResource CompletionFrameTemplate}"
                                      DataContext="{Binding Game}"
                                      Focusable="False"
@@ -906,16 +903,6 @@
                                         <Binding ElementName="TileArtImage" Path="Stretch"/>
                                     </MultiBinding>
                                 </Control.Margin>
-                                <Control.Style>
-                                    <Style TargetType="Control">
-                                        <Setter Property="helpers:CompletionBadge.FrameCornerRadius" Value="{StaticResource PlayAch.Radius.Small}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding DataContext.IsSeamless, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
-                                                <Setter Property="helpers:CompletionBadge.FrameCornerRadius" Value="0"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Control.Style>
                             </Control>
                         </Grid>
                     </DataTemplate>
