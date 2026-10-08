@@ -2716,11 +2716,8 @@ namespace PlayniteAchievements.Services.UI
                     // card is never drawn at rest before the reveal and the warm-up renders it where
                     // the motion begins. In Playnite, DWM was recorded showing a warm-up frame of the
                     // card at rest at the uncloak, whatever the cloaked frames after it held.
-                    StartRevealTrace(window);
                     BeginEntrance(window, holdAtStart: true);
-                    MarkRevealTrace("begun");
                     slideHost.Visibility = Visibility.Visible;
-                    MarkRevealTrace("visible");
                 }
 
                 EngageMotionCache(_activeSlideHost, window);
@@ -4325,74 +4322,16 @@ namespace PlayniteAchievements.Services.UI
                 CompositionTarget.Rendering -= tick;
                 if (ReferenceEquals(_activeWindow, window))
                 {
-                    MarkRevealTrace("uncloak");
                     ToastWindowSurface.SetCloaked(window, false);
                     var release = _releaseHeldSlide;
                     _releaseHeldSlide = null;
                     release?.Invoke();
-                    MarkRevealTrace("release");
                 }
 
                 started.TrySetResult(true);
             };
             CompositionTarget.Rendering += tick;
             return started.Task;
-        }
-
-        // Temporary reveal diagnostic: per composed frame from the held entrance's start, the
-        // card's slide offset, opacity, visibility and DWM's cloaked state, logged as one line.
-        private System.Text.StringBuilder _revealTrace;
-        private Stopwatch _revealTraceClock;
-
-        private void StartRevealTrace(Window window)
-        {
-            _revealTrace = new System.Text.StringBuilder();
-            _revealTraceClock = Stopwatch.StartNew();
-            MarkRevealTrace("begin");
-            var frames = 0;
-            var lastTime = TimeSpan.Zero;
-            EventHandler tick = null;
-            tick = (s, e) =>
-            {
-                var time = ((RenderingEventArgs)e).RenderingTime;
-                if (time == lastTime)
-                {
-                    return;
-                }
-
-                lastTime = time;
-                MarkRevealTrace("f" + frames);
-                if (++frames < 24 && ReferenceEquals(_activeWindow, window))
-                {
-                    return;
-                }
-
-                CompositionTarget.Rendering -= tick;
-                _logger?.Info("[Toast] RevealTrace: " + _revealTrace);
-                _revealTrace = null;
-            };
-            CompositionTarget.Rendering += tick;
-        }
-
-        private void MarkRevealTrace(string label)
-        {
-            if (_revealTrace == null)
-            {
-                return;
-            }
-
-            var host = _activeSlideHost;
-            var transform = _activeSlideTransform;
-            _revealTrace.AppendFormat(
-                System.Globalization.CultureInfo.InvariantCulture,
-                "{0}@{1:0.0}ms y={2:0.0} x={3:0.0} op={4:0.00} vis={5} cloak={6} | ",
-                label,
-                _revealTraceClock.Elapsed.TotalMilliseconds,
-                transform?.Y ?? double.NaN,
-                transform?.X ?? double.NaN,
-                host?.Opacity ?? double.NaN,
-                host?.Visibility.ToString() ?? "-",
-                ToastWindowSurface.CloakedState(_activeWindow));
         }
 
         // Returns the slide-out duration (ms) so the caller waits exactly that long; 0 if it didn't run.
@@ -4743,7 +4682,8 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            var storyboard = BuildSlideStoryboard(authored, host, fromDip, toDip, fallbackEase, durationMs);
+            var storyboard = AnimationFrameRate.Apply(
+                BuildSlideStoryboard(authored, host, fromDip, toDip, fallbackEase, durationMs));
             if (storyboard == null)
             {
                 transform.Y = restDip;
@@ -5621,11 +5561,9 @@ namespace PlayniteAchievements.Services.UI
                 // The countdown must track the actual display time, so the runtime duration always
                 // wins over whatever placeholder the storyboard authored.
                 animation.Duration = duration;
-                // No Timeline.DesiredFrameRate here: a WPF timeline already advances once per composed
-                // frame, so requesting the monitor's rate buys nothing, and requesting a rate below the
-                // real composition rate (a 59.94 Hz panel reporting 60, adaptive sync, plain rounding)
-                // throttles the whole render loop — measured dropping a 163 Hz tick to 90 Hz, which would
-                // coarsen the slide as well as the bar.
+                // At the display's rate rather than an inherited process-wide default
+                // (AnimationFrameRate), which another extension can lower.
+                AnimationFrameRate.Apply(animation);
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, animation);
             }
         }

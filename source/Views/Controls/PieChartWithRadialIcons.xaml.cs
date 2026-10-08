@@ -18,6 +18,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Controls
 {
@@ -1279,13 +1280,13 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            var animation = new DoubleAnimation
+            var animation = AnimationFrameRate.Apply(new DoubleAnimation
             {
                 To = target,
                 Duration = SliceAnimationDuration,
                 EasingFunction = SliceAnimationEasing,
                 FillBehavior = FillBehavior.HoldEnd
-            };
+            });
 
             slice.BeginAnimation(SliceGrowthProperty, animation, HandoffBehavior.SnapshotAndReplace);
         }

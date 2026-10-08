@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net462</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -182,6 +182,7 @@
     <Compile Include="..\..\source\Services\Images\RayTrackBuilder.cs" Link="Source\Services\Images\RayTrackBuilder.cs" />
     <Compile Include="..\..\source\Services\Images\RayTrackService.cs" Link="Source\Services\Images\RayTrackService.cs" />
     <Compile Include="..\..\source\Views\Helpers\AnimatedImageHelper.cs" Link="Source\Views\Helpers\AnimatedImageHelper.cs" />
+    <Compile Include="..\..\source\Views\Helpers\AnimationFrameRate.cs" Link="Source\Views\Helpers\AnimationFrameRate.cs" />
     <Compile Include="..\..\source\Views\Helpers\Gif\GifCanvas.cs" Link="Source\Views\Helpers\Gif\GifCanvas.cs" />
     <Compile Include="..\..\source\Views\Helpers\Gif\GifFrameClock.cs" Link="Source\Views\Helpers\Gif\GifFrameClock.cs" />
     <Compile Include="..\..\source\Views\Helpers\Gif\GifImage.cs" Link="Source\Views\Helpers\Gif\GifImage.cs" />

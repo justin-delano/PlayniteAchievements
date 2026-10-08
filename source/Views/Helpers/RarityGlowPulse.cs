@@ -290,7 +290,7 @@ namespace PlayniteAchievements.Views.Helpers
             // it. The BeginTime is stamped immediately before each BeginAnimation call —
             // computing it earlier would bake the deferral delay in as a phase error.
             var cycleMilliseconds = seconds * 2000.0;
-            var animation = new DoubleAnimation
+            var animation = AnimationFrameRate.Apply(new DoubleAnimation
             {
                 From = min,
                 To = max,
@@ -298,7 +298,7 @@ namespace PlayniteAchievements.Views.Helpers
                 AutoReverse = true,
                 RepeatBehavior = RepeatBehavior.Forever,
                 EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-            };
+            });
 
             if (GetTarget(element) == RarityGlowPulseTarget.Element && GetPhaseLock(element))
             {
