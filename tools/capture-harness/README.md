@@ -595,8 +595,15 @@ On screen against the live card:
 So during a motion the card's effects are what drop frames (the moving card is redrawn, and every effect
 re-run, each frame), and caching the host for the motion's span removes that cost. It matches the live
 card exactly when the cache renders at the card's full scale and snaps to device pixels, which rounds
-the slide to whole pixels; a fade is within 1 level; a zoom is not reproducible from a cache. Whether
-WPF already folds the display's DPI into the cache's resolution was not measurable on a 100% display.
+the slide to whole pixels; a fade is within 1 level; a zoom is not reproducible from a cache.
+
+WPF does not fold the display scale into the cache's resolution. Measured on a monitor set to 150%
+(`--at <x,y>` creates the windows per-monitor-v2 there and places them in physical pixels;
+`HoldProbe.exe.config` turns on WPF's per-monitor scaling, as Playnite runs with it, and the probe
+prints the scale the window actually renders at): a cache at `RenderAtScale` 1 differed by up to 225
+levels at rest, and at 1.5 matched exactly at rest for every motion, within 1 level mid-fade and on a
+snapped mid-slide, with zoom resampled as at 100%. The cache's scale is therefore the window's own
+device scale.
 
 ### Split windows while moving: `SlideCadenceProbe --split-truth`
 
